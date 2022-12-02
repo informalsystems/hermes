@@ -3,6 +3,8 @@
 use std::prelude::v1::*;
 use tendermint_proto::crypto::ProofOps;
 
+pub const TYPE_URL: &str = "/stride.interchainquery.v1.MsgSubmitQueryResponse";
+
 /// https://github.com/Stride-Labs/stride/blob/main/proto/stride/interchainquery/v1/messages.proto
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitQueryResponse {

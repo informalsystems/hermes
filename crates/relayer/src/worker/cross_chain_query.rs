@@ -91,8 +91,7 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                     // After updating client, send response tx to querying chain
                     chain_a_msgs.push(response.to_any(
                         chain_a_handle.get_signer().unwrap(),
-                        // temporary hard-coded
-                        "/stride.interchainquery.v1.MsgSubmitQueryResponse",
+                        ibc_relayer_types::applications::ics31_icq::proto::TYPE_URL,
                     ));
                 });
 
