@@ -112,6 +112,53 @@ jobs:
               test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2
 
+  multi-versions-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package1: [.#gaia6, .#gaia7, .#gaia8]
+          - package2: [.#gaia6, .#gaia7, .#gaia8]
+            command: gaiad
+            account_prefix: cosmos
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v15
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v10
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --no-fail-fast --no-run
+      - uses: nick-fields/retry@v2
+        env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          CHAIN_COMMAND_PATHS: $(nix shell ${{ matrix.chain.package1 }} -c which gaiad),$(nix shell ${{ matrix.chain.package2 }} -c which ${{ matrix.chain.command }})
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+        with:
+          max_attempts: 3
+          timeout_minutes: 45
+          command: |
+            nix shell .#python -c cargo \
+              test -p ibc-integration-test --no-fail-fast -- \
+              --nocapture --test-threads=2
+
   ordered-channel-test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
