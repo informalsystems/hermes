@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use super::{Ed25519KeyPair, Secp256k1KeyPair, SigningKeyPair};
+use super::{Ed25519KeyPair, KeyType, Secp256k1KeyPair, SigningKeyPair};
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]
@@ -14,6 +14,13 @@ impl AnySigningKeyPair {
         match self {
             Self::Secp256k1(key_pair) => key_pair.account(),
             Self::Ed25519(key_pair) => key_pair.account(),
+        }
+    }
+
+    pub fn key_type(&self) -> KeyType {
+        match self {
+            Self::Secp256k1(_) => Secp256k1KeyPair::KEY_TYPE,
+            Self::Ed25519(_) => Ed25519KeyPair::KEY_TYPE,
         }
     }
 

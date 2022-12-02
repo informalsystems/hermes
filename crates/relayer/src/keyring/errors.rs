@@ -117,8 +117,10 @@ define_error! {
                 address: Vec<u8>,
                 public_key: Vec<u8>,
             }
-            |_| {
-                "No address type found that matches the public key"
+            |e| {
+                format!("No address type found for address {:?} that matches the public key {:?}",
+                        e.address,
+                        e.public_key)
             },
 
         InvalidAddressLength
@@ -127,7 +129,9 @@ define_error! {
                 expected_length: usize,
             }
             |e| {
-                format!("Address length did not match expected length {}", e.expected_length)
+                format!("Length of address {:?} did not match expected length {}",
+                        e.address,
+                        e.expected_length)
             },
 
 

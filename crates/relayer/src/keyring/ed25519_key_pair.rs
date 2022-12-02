@@ -54,6 +54,7 @@ impl Clone for Ed25519KeyPair {
         } = self;
         Self {
             keypair: Keypair {
+                // Needed as `SecretKey` does not implement `Clone`
                 secret: SecretKey::from_bytes(secret.as_bytes()).unwrap(),
                 public: *public,
             },

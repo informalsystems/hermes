@@ -426,7 +426,9 @@ where
         key: AnySigningKeyPair,
         reply_to: ReplyTo<()>,
     ) -> Result<(), Error> {
-        let key = key.downcast().ok_or_else(|| Error::invalid_key_type(key))?;
+        let key = key
+            .downcast()
+            .ok_or_else(|| Error::invalid_key_type(key.key_type()))?;
         let result = self.chain.add_key(&key_name, key);
         reply_to.send(result).map_err(Error::send)
     }

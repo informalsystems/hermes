@@ -1,6 +1,7 @@
 pub mod errors;
 pub use any_signing_key_pair::AnySigningKeyPair;
 pub use ed25519_key_pair::Ed25519KeyPair;
+pub use key_type::KeyType;
 pub use secp256k1_key_pair::Secp256k1KeyPair;
 pub use signing_key_pair::{SigningKeyPair, SigningKeyPairSized};
 
@@ -22,7 +23,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{chain::ChainType, config::ChainConfig};
 use errors::Error;
-use key_type::KeyType;
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
 pub const KEYSTORE_DISK_BACKEND: &str = "keyring-test";
