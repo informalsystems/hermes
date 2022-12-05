@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use tendermint::merkle::proof::Proof as TendermintProof;
+use tendermint::merkle::proof::ProofOps as TendermintProof;
 
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
@@ -28,7 +28,7 @@ impl From<CommitmentRoot> for MerkleRoot {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
 }

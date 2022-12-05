@@ -1,12 +1,12 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 
-use tendermint_rpc::abci::transaction;
-
 use crate::link::relay_sender::AsyncReply;
+
+use tendermint::Hash as TxHash;
 
 /// A collection of transaction hashes.
 #[derive(Clone)]
-pub struct TxHashes(pub Vec<transaction::Hash>);
+pub struct TxHashes(pub Vec<TxHash>);
 
 impl From<AsyncReply> for TxHashes {
     fn from(r: AsyncReply) -> Self {
@@ -14,7 +14,7 @@ impl From<AsyncReply> for TxHashes {
     }
 }
 
-impl From<TxHashes> for Vec<transaction::Hash> {
+impl From<TxHashes> for Vec<TxHash> {
     fn from(hs: TxHashes) -> Self {
         hs.0
     }

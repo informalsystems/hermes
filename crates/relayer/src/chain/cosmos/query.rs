@@ -1,4 +1,6 @@
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
+use tendermint::block::Height;
 use tendermint_rpc::query::Query;
 
 use crate::chain::requests::{QueryClientEventRequest, QueryPacketEventDataRequest, QueryTxHash};
@@ -11,6 +13,14 @@ pub mod fee;
 pub mod status;
 pub mod tx;
 pub mod version;
+
+/// Generic query response type
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct QueryResponse {
+    pub value: Vec<u8>,
+    pub proof: Option<MerkleProof>,
+    pub height: Height,
+}
 
 pub fn packet_query(request: &QueryPacketEventDataRequest, seq: Sequence) -> Query {
     Query::eq(
