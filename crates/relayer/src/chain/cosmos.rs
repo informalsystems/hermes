@@ -9,19 +9,12 @@ use core::{
 use num_bigint::BigInt;
 use std::{cmp::Ordering, thread};
 
-use ibc_proto::protobuf::Protobuf;
-use tendermint::block::Height as TmHeight;
-use tendermint::node::info::TxIndexStatus;
-use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
-use tendermint_rpc::{
-    abci::Path as TendermintABCIPath, endpoint::broadcast::tx_sync::Response, endpoint::status,
-    Client, HttpClient, Order,
-};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, trace, warn};
 
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+use ibc_proto::protobuf::Protobuf;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
@@ -50,10 +43,18 @@ use ibc_relayer_types::core::ics24_host::{
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 
+use tendermint::block::Height as TmHeight;
+use tendermint::node::info::TxIndexStatus;
+use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
+use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use tendermint_rpc::endpoint::status;
+use tendermint_rpc::{Client, HttpClient, Order};
+
+use crate::account::Balance;
 use crate::chain::client::ClientSettings;
-use crate::chain::cosmos::batch::sequential_send_batched_messages_and_wait_commit;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
+    sequential_send_batched_messages_and_wait_commit,
 };
 use crate::chain::cosmos::encode::key_entry_to_signer;
 use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
@@ -72,33 +73,23 @@ use crate::chain::cosmos::types::gas::{
     default_gas_from_config, gas_multiplier_from_config, max_gas_from_config,
 };
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
-use crate::chain::requests::{Qualified, QueryPacketEventDataRequest};
+use crate::chain::handle::Subscription;
+use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
-use crate::event::monitor::{EventReceiver, TxMonitorCmd};
+use crate::event::monitor::{EventMonitor, TxMonitorCmd};
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
-use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel};
-use crate::util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection};
-use crate::{account::Balance, event::monitor::EventMonitor};
-
-use super::requests::{
-    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
-    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+use crate::util::pretty::{
+    PrettyConsensusStateWithHeight, PrettyIdentifiedChannel, PrettyIdentifiedClientState,
+    PrettyIdentifiedConnection,
 };
 
 pub mod batch;
@@ -139,8 +130,11 @@ pub struct CosmosSdkChain {
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
+
     /// A cached copy of the account information
     account: Option<Account>,
+
+    tx_monitor_cmd: Option<TxMonitorCmd>,
 }
 
 impl CosmosSdkChain {
@@ -277,6 +271,25 @@ impl CosmosSdkChain {
         Ok(())
     }
 
+    fn init_event_monitor(&mut self) -> Result<TxMonitorCmd, Error> {
+        crate::time!("init_event_monitor");
+
+        let (mut event_monitor, monitor_tx) = EventMonitor::new(
+            self.config.id.clone(),
+            self.config.websocket_addr.clone(),
+            self.rt.clone(),
+        )
+        .map_err(Error::event_monitor)?;
+
+        event_monitor
+            .init_subscriptions()
+            .map_err(Error::event_monitor)?;
+
+        thread::spawn(move || event_monitor.run());
+
+        Ok(monitor_tx)
+    }
+
     /// Query the chain staking parameters
     pub fn query_staking_params(&self) -> Result<StakingParams, Error> {
         crate::time!("query_staking_params");
@@ -340,9 +353,7 @@ impl CosmosSdkChain {
     ) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
-        // SAFETY: Creating a Path from a constant; this should never fail
-        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH)
-            .expect("Turning IBC query path constant into a Tendermint ABCI path");
+        let path = IBC_QUERY_PATH.into();
 
         let height = TmHeight::try_from(height_query)?;
 
@@ -388,9 +399,7 @@ impl CosmosSdkChain {
         query_data: ClientUpgradePath,
         query_height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        // SAFETY: Creating a Path from a constant; this should never fail
-        let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
-            .expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
+        let path = SDK_UPGRADE_QUERY_PATH.into();
 
         let response: QueryResponse = self.block_on(abci_query(
             &self.rpc_client,
@@ -564,6 +573,7 @@ impl CosmosSdkChain {
                 .map(|ev| IbcEventWithHeight::new(ev, response_height))
                 .collect(),
         );
+
         Ok((begin_block_events, end_block_events))
     }
 
@@ -577,22 +587,29 @@ impl CosmosSdkChain {
         let mut begin_block_events = vec![];
         let mut end_block_events = vec![];
 
-        for seq in request.sequences.iter() {
+        for seq in request.sequences.iter().copied() {
             let response = self
                 .block_on(self.rpc_client.block_search(
-                    packet_query(request, *seq),
+                    packet_query(request, seq),
+                    // We only need the first page
                     1,
-                    1, // there should only be a single match for this query
-                    Order::Ascending,
+                    // There should only be a single match for this query, but due to
+                    // the fact that the indexer treat the query as a disjunction over
+                    // all events in a block rather than a conjunction over a single event,
+                    // we may end up with partial matches and therefore have to account for
+                    // that by fetching multiple results and filter it down after the fact.
+                    // In the worst case we get N blocks where N is the number of channels,
+                    // but 10 seems to work well enough in practice while keeping the response
+                    // size, and therefore pressure on the node, fairly low.
+                    10,
+                    // We could pick either ordering here, since matching blocks may be at pretty
+                    // much any height relative to the target blocks, so we went with most recent
+                    // blocks first.
+                    Order::Descending,
                 ))
                 .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-            assert!(
-                response.blocks.len() <= 1,
-                "block_search: unexpected number of blocks"
-            );
-
-            if let Some(block) = response.blocks.first().map(|first| &first.block) {
+            for block in response.blocks.into_iter().map(|response| response.block) {
                 let response_height =
                     ICSHeight::new(self.id().version(), u64::from(block.header.height))
                         .map_err(|_| Error::invalid_height_no_source())?;
@@ -603,13 +620,16 @@ impl CosmosSdkChain {
                     }
                 }
 
+                // `query_packet_from_block` retrieves the begin and end block events
+                // and filter them to retain only those matching the query
                 let (new_begin_block_events, new_end_block_events) =
-                    self.query_packet_from_block(request, &[*seq], &response_height)?;
+                    self.query_packet_from_block(request, &[seq], &response_height)?;
 
                 begin_block_events.extend(new_begin_block_events);
                 end_block_events.extend(new_end_block_events);
             }
         }
+
         Ok((begin_block_events, end_block_events))
     }
 }
@@ -644,34 +664,19 @@ impl ChainEndpoint for CosmosSdkChain {
             light_client,
             rt,
             keybase,
-            account: None,
             tx_config,
+            account: None,
+            tx_monitor_cmd: None,
         };
 
         Ok(chain)
     }
 
-    fn init_event_monitor(
-        &self,
-        rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
-        crate::time!("init_event_monitor");
-
-        let (mut event_monitor, event_receiver, monitor_tx) = EventMonitor::new(
-            self.config.id.clone(),
-            self.config.websocket_addr.clone(),
-            rt,
-        )
-        .map_err(Error::event_monitor)?;
-
-        event_monitor.subscribe().map_err(Error::event_monitor)?;
-
-        thread::spawn(move || event_monitor.run());
-
-        Ok((event_receiver, monitor_tx))
-    }
-
     fn shutdown(self) -> Result<(), Error> {
+        if let Some(monitor_tx) = self.tx_monitor_cmd {
+            monitor_tx.shutdown().map_err(Error::event_monitor)?;
+        }
+
         Ok(())
     }
 
@@ -681,6 +686,20 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn keybase_mut(&mut self) -> &mut KeyRing {
         &mut self.keybase
+    }
+
+    fn subscribe(&mut self) -> Result<Subscription, Error> {
+        let tx_monitor_cmd = match &self.tx_monitor_cmd {
+            Some(tx_monitor_cmd) => tx_monitor_cmd,
+            None => {
+                let tx_monitor_cmd = self.init_event_monitor()?;
+                self.tx_monitor_cmd = Some(tx_monitor_cmd);
+                self.tx_monitor_cmd.as_ref().unwrap()
+            }
+        };
+
+        let subscription = tx_monitor_cmd.subscribe().map_err(Error::event_monitor)?;
+        Ok(subscription)
     }
 
     /// Does multiple RPC calls to the full node, to check for

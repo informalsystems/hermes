@@ -12,6 +12,7 @@ members = [
     "tools/integration-test",
     "tools/test-framework",
     "tools/check-guide",
+    "tools/query-events",
 ]
 
 [patch.crates-io]

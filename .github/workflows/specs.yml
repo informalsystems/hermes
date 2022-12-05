@@ -8,6 +8,11 @@ on:
     paths:
       - docs/specs/tla/**
 
+# Cancel previous runs of this workflow when a new commit is added to the PR, branch or tag
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   typecheck-specs:
     runs-on: ubuntu-latest

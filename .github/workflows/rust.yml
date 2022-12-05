@@ -28,15 +28,12 @@ env:
   CARGO_NET_RETRY: 10
   RUSTUP_MAX_RETRIES: 10
 
-jobs:
-  cleanup-runs:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: rokroskar/workflow-run-cleanup-action@master
-      env:
-        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
+# Cancel previous runs of this workflow when a new commit is added to the PR, branch or tag
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
+jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +61,7 @@ jobs:
         with:
           name: clippy-all-features
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --all-targets
+          args: --all-features --all-targets -- -D warnings
 
   clippy-no-default-features:
     runs-on: ubuntu-latest
@@ -80,7 +77,7 @@ jobs:
         with:
           name: clippy-no-default-features
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --no-default-features --all-targets
+          args: --no-default-features --all-targets -- -D warnings
 
   test-stable:
     runs-on: ubuntu-latest
