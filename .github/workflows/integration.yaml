@@ -342,7 +342,7 @@ jobs:
           max_attempts: 3
           timeout_minutes: 45
           command: |
-            CHAIN_COMMAND_PATH=$(nix shell ${{ matrix.package1 }} -c which ${{ matrix.package_account1[0] }}),$(nix shell ${{ matrix.package2 }} -c which ${{ matrix.package_account2[0] }})" \
+            CHAIN_COMMAND_PATH=$(nix shell ${{ matrix.package1 }} -c which ${{ matrix.package_account1[0] }}),$(nix shell ${{ matrix.package2 }} -c which ${{ matrix.package_account2[0] }}) \
             nix shell .#python -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2
