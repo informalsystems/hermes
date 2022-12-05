@@ -126,7 +126,7 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
             IncentivizedPacket::try_from(&abci_event.attributes[..]).map_err(IbcEventError::fee)?,
         )),
         Ok(IbcEventType::CrossChainQuery) => Ok(IbcEvent::CrossChainQueryPacket(
-            CrossChainQueryPacket::try_from(&abci_event.attributes).map_err(IbcEventError::cross_chain_query)?,
+            CrossChainQueryPacket::try_from(&abci_event.attributes[..]).map_err(IbcEventError::cross_chain_query)?,
         )),
         _ => Err(IbcEventError::unsupported_abci_event(
             abci_event.kind.clone(),

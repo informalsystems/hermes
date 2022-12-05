@@ -3,7 +3,7 @@ use crate::signer::Signer;
 use std::prelude::v1::*;
 use std::vec;
 use ibc_proto::google::protobuf::Any;
-use tendermint::merkle::proof::Proof;
+use tendermint::merkle::proof::ProofOps as TendermintProofOps;
 use tendermint_proto::crypto::{ProofOp, ProofOps};
 use crate::applications::ics31_icq::proto::MsgSubmitQueryResponse;
 
@@ -13,11 +13,11 @@ pub struct CrossChainQueryResponse {
     pub query_id: String,
     pub result: Vec<u8>,
     pub height: i64,
-    pub proof: Proof,
+    pub proof: TendermintProofOps,
 }
 
 fn into_proof_ops(
-    merkle_proof: Proof,
+    merkle_proof: TendermintProofOps,
 ) -> ProofOps {
     ProofOps {
         ops: merkle_proof.ops
@@ -37,7 +37,7 @@ impl CrossChainQueryResponse {
         query_id: String,
         result: Vec<u8>,
         height: i64,
-        proof: Proof,
+        proof: TendermintProofOps,
     ) -> Self {
         Self {
             chain_id,

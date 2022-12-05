@@ -5,6 +5,8 @@ use crate::worker::WorkerCmd;
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::requests::{CrossChainQueryRequest, IncludeProof, QueryConnectionRequest, QueryHeight};
+use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 use crate::foreign_client::ForeignClient;
 
 use ibc_relayer_types::core::ics02_client::height::Height;
@@ -12,6 +14,25 @@ use crossbeam_channel::Receiver;
 use std::time::Duration;
 use uuid::Uuid;
 use tracing::{info, info_span};
+
+impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
+    type Error = Error;
+
+    fn try_from(ibc_event_with_height: &IbcEventWithHeight) -> Result<Self, Self::Error> {
+        match ibc_event_with_height.event.cross_chain_query_packet() {
+            Some(packet) => Ok(CrossChainQueryRequest {
+                chain_id: packet.chain_id.clone(),
+                query_id: packet.query_id.to_string(),
+                query_type: packet.query_type.clone(),
+                request: packet.request.clone(),
+                height: packet.height,
+            }),
+            None => Err(
+                Error::ics31(ibc_relayer_types::applications::ics31_icq::error::Error::parse())
+            )
+        }
+    }
+}
 
 pub fn spawn_cross_chain_query_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a_handle: ChainA,

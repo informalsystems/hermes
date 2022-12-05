@@ -8,6 +8,7 @@ use core::{
 };
 use num_bigint::BigInt;
 use std::{cmp::Ordering, thread};
+use futures::future::join_all;
 
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
@@ -40,6 +41,7 @@ use ibc_relayer_types::core::ics24_host::path::{
 use ibc_relayer_types::core::ics24_host::{
     ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
 };
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 
@@ -67,6 +69,7 @@ use crate::chain::cosmos::query::tx::{
     filter_matching_event, query_packets_from_block, query_packets_from_txs, query_txs,
 };
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
+use crate::chain::cosmos::query::custom::cross_chain_query_via_rpc;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{
@@ -1828,6 +1831,25 @@ impl ChainEndpoint for CosmosSdkChain {
             &address,
             counterparty_payee,
         ))
+    }
+
+    fn cross_chain_query(&self, requests: Vec<CrossChainQueryRequest>) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        let tasks = requests
+            .into_iter()
+            .map(|req| cross_chain_query_via_rpc(
+                &self.rpc_client,
+                req,
+            ))
+            .collect::<Vec<_>>();
+
+        let joined_tasks = join_all(tasks);
+        let results: Vec<Result<CrossChainQueryResponse, _>> = self.rt.block_on(joined_tasks);
+        let responses = results
+            .into_iter()
+            .filter_map(|req| req.ok())
+            .collect::<Vec<CrossChainQueryResponse>>();
+
+        Ok(responses)
     }
 }
 
