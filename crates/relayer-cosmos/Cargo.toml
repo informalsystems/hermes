@@ -19,7 +19,7 @@ all-features = true
 default   = ["flex-error/std", "flex-error/eyre_tracer"]
 
 [dependencies]
-ibc-proto          = { version = "0.22.0" }
+ibc-proto          = { version = "0.23.0" }
 ibc-relayer     = { version = "0.20.0", path = "../relayer" }
 ibc-relayer-types = { version = "0.20.0", path = "../relayer-types" }
 ibc-relayer-runtime = { version = "0.1.0", path = "../relayer-runtime" }
@@ -40,21 +40,21 @@ opentelemetry = { version = "0.17.0", features = ["metrics"] }
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 
 [dependencies.tendermint]
-version = "=0.26.0"
+version = "=0.27.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.26.0"
+version = "=0.27.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.26.0"
+version = "=0.27.0"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.26.0"
+version = "=0.27.0"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.26.0"
+version = "=0.27.0"

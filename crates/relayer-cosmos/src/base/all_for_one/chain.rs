@@ -6,7 +6,7 @@ use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
-use tendermint_rpc::abci::responses::Event;
+use tendermint::abci::Event;
 
 use crate::base::error::Error;
 use crate::base::types::message::CosmosIbcMessage;

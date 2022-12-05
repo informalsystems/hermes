@@ -17,24 +17,26 @@ Following notations are used:
 
 __Hermes vs other configuration parameters that may cause Hermes failures__
 
-| Hermes                                                                                          | Other                                                                                                            | Details                                                               |
-|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| `sequential_batch_tx = false`                                                                   | `tendermint.recheck = false`                                                                                     | [`Mismatch`<br/>`(expected < got)`](#recheck)                         |
-|                                                                                                 |                                                                                                                  |                                                                       |
-| `gas_price = x`                                                                                 | `app.minimum-gas-prices = y, `<br/>`with x < y`                                                                  | [`Insufficient fees`](#minimum-gas-price)                             |
-|                                                                                                 |                                                                                                                  |                                                                       |
-| `gas_price = x` <br/> `gas_multipler = 1.0`                                                     | `app.minimum-gas-prices = x`                                                                                     | [`Out of gas`](#out-of-gas)                                           |
-|                                                                                                 |                                                                                                                  |                                                                       |
-| `max_tx_size = x`                                                                               | `tendermint.max_tx_bytes = y,`<br/>`with x < y`                                                                  | [`Tx too large`](#maximum-tx-size)                                    |
-|                                                                                                 |                                                                                                                  |                                                                       |
-|                                                                                                 | `07-tendermint not in`<br/>`genesis.app_state`<br/>`.ibc.client_genesis.params`<br/>`.allowed_clients`           | [`Client not `<br/>`allowed`<br/>`(07-tendermint)`](#allowed-clients) |
-|                                                                                                 |                                                                                                                  |                                                                       |
-| `during connection creation`                                                                    | `genesis.app_state`<br/>`.staking.params`<br/>`.historical_entries  = 0`                                         | [`No historical info`](#historical-entries)                           |
-|                                                                                                 |                                                                                                                  |                                                                       |
-| `ref_chain.clock_drift +<br/>tgt_chain.clock_drift +`<br/>`tgt_chain.max_block_time`<br/> `= x` | `tendermint.consensus.* => y block time,`<br/>`with x < y`                                                       | [`Header in the future` ](#header-in-the-future)                      |
-|                                                                                                 |                                                                                                                  |                                                                       |
-| `max_block_delay = x`                                                                           | `genesis.app_state`<br/>`.ibc.connection_genesis.params`<br/>`.max_expected_time_per_block = y`<br/>`with x < y` | [`Block delay not reached`](#block-delay-not-reached)                 |
-|                                                                                                 |                                                                                                                  |                                                                       |
+| Hermes                                                                                                                                                                                                                                                                                                                     | Other                                                                                                            | Details                                                               |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| `sequential_batch_tx = false`                                                                                                                                                                                                                                                                                              | `tendermint.recheck = false`                                                                                     | [`Mismatch`<br/>`(expected < got)`](#recheck)                         |
+|                                                                                                                                                                                                                                                                                                                            |                                                                                                                  |                                                                       |
+| `gas_price = x`                                                                                                                                                                                                                                                                                                            | `app.minimum-gas-prices = y, `<br/>`with x < y`                                                                  | [`Insufficient fees`](#minimum-gas-price)                             |
+|                                                                                                                                                                                                                                                                                                                            |                                                                                                                  |                                                                       |
+| `gas_price = x` <br/> `gas_multipler = 1.0`                                                                                                                                                                                                                                                                                | `app.minimum-gas-prices = x`                                                                                     | [`Out of gas`](#out-of-gas)                                           |
+|                                                                                                                                                                                                                                                                                                                            |                                                                                                                  |                                                                       |
+| `max_tx_size = x`                                                                                                                                                                                                                                                                                                          | `tendermint.max_tx_bytes = y,`<br/>`with x < y`                                                                  | [`Tx too large`](#maximum-tx-size)                                    |
+|                                                                                                                                                                                                                                                                                                                            |                                                                                                                  |                                                                       |
+|                                                                                                                                                                                                                                                                                                                            | `07-tendermint not in`<br/>`genesis.app_state`<br/>`.ibc.client_genesis.params`<br/>`.allowed_clients`           | [`Client not `<br/>`allowed`<br/>`(07-tendermint)`](#allowed-clients) |
+|                                                                                                                                                                                                                                                                                                                            |                                                                                                                  |                                                                       |
+| `during connection creation`                                                                                                                                                                                                                                                                                               | `genesis.app_state`<br/>`.staking.params`<br/>`.historical_entries  = 0`                                         | [`No historical info`](#historical-entries)                           |
+|                                                                                                                                                                                                                                                                                                                            |                                                                                                                  |                                                                       |
+| `ref_chain.clock_drift +`<br/>`tgt_chain.clock_drift +`<br/>`tgt_chain.max_block_time`<br/>`= x`                                                                                                                                                                                                                           | `tendermint.consensus.* => y block time,`<br/>`with x < y`                                                       | [`Header in the future` ](#header-in-the-future)                      |
+|                                                                                                                                                                                                                                                                                                                            |                                                                                                                  |                                                                       |
+| `max_block_delay = x`                                                                                                                                                                                                                                                                                                      | `genesis.app_state`<br/>`.ibc.connection_genesis.params`<br/>`.max_expected_time_per_block = y`<br/>`with x < y` | [`Block delay not reached`](#block-delay-not-reached)                 |
+|                                                                                                                                                                                                                                                                                                                            |                                                                                                                  |                                                                       |
+| `key_name = <wallet_name>`                                                                                                                                                                                                                                                                                                 |                                                                                                                  | [`Insufficient funds`](#insufficient-funds) |
+|| `app.pruning = "custom",`<br/>`app.pruning-keep-recent= w,`<br/>`app.pruning-keep-every = x,`<br/>`app.pruning-interval = y,`<br/>`app.min-retain-blocks = z,`<br/>`genesis.consensus_params.evidence.max_age_num_blocks = e,`<br/>`genesis.consensus_params.evidence.max_age_duration = d` | [`Uncleared packets`](#uncleared-pending-packets)                                                                       |
 
 
 ## Recheck
@@ -164,4 +166,99 @@ genesis.app_state.ibc.connection_genesis.params.max_expected_time_per_block
        tendermint.consensus.timeout_commit
 ```
 
+## Insufficient Funds
+If the wallet configured in Hermes' `config.toml` is empty or doesn't have enough funds, any transfer will result in the following error:
 
+```
+ERROR ThreadId(11) send_messages_and_wait_commit{chain=ibc-0 tracking_id=ft-transfer}:send_tx_with_account_sequence_retry{chain=ibc-0 account.sequence=25}:estimate_gas: failed to simulate tx. propagating error to caller: gRPC call failed with status: status: Unknown, message: "failed to execute message; message index: 0: 20stake is smaller than 108stake: insufficient funds [cosmos/cosmos-sdk@v0.46.3/x/bank/keeper/send.go:191] With gas wanted: '18446744073709551615' and gas used: '52497' ", details: [], metadata: MetadataMap { headers: {"content-type": "application/grpc", "x-cosmos-block-height": "377"} }
+```
+
+### Fix
+In order to fix the error above, use one of the following two solutions:
+- add enough funds to the wallet configured by `key_name` in Hermes' `config.toml`.
+- change the wallet configured by `key_name` in Hermes' `config.toml` to a wallet which has enough funds.
+
+
+## Uncleared Pending Packets
+When Hermes starts, it retrieves the sequences for the unrelayed receive and acknowledgment packets from the application. Since only the packet commitments are stored in the application state, Hermes then queries tendermint for the IBC events with those sequence numbers and obtains the packet data from these events. The IBC events are retrieved from transaction and block indexes maintained by tendermint nodes.
+
+In some cases these queries fail to obtain the packet data due to the fact that the state that contained those events has been pruned from the tendermint node. In this case Hermes will not be able to relay the packet. One example can be seen below. Hermes queries the application and finds `222` unreceived acknowledgment packets. Then it queries tendermint for the packet data but fails to find it (`pulled packet data for 0 events`). In this case the command returns zero relayed packets (`SUCCESS []`):
+
+```
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: 222 unreceived acknowledgements found: 222
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=172
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=122
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=72
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=22
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=0
+SUCCESS []
+```
+
+### State Pruning Background
+In order to keep the disk storage low, Tendermint nodes may be configured to prune "old" data. 
+
+#### Application State Pruning
+The `app.toml` file defines a few parameters that control the application state pruning window:
+
+```
+pruning = <strategy>
+
+# These are applied if and only if the pruning strategy is custom.
+pruning-keep-recent = w
+pruning-keep-every = x
+pruning-interval = y
+```
+
+#### Tendermint State Pruning
+The `app.toml` file also defines parameters to control the tendermint block pruning window:
+
+```
+min-retain-blocks = z
+```
+
+The evidence genesis parameters that also influence the actual size of the tendermint block pruning window are:
+```
+{
+...
+  "consensus_params": {
+    "block": {
+     ...
+    },
+    "evidence": {
+      "max_age_num_blocks": b,
+      "max_age_duration": d,
+      ...
+    },
+```
+
+These parameters are used to determine if a block (and associated state) should be pruned:
+- a block with height `h` and time `t` is pruned if `h < max(z, b) && t < now - d`
+
+Additional tendermint state may be maintained for state-sync purposes.
+
+### Debug
+The unrelayed packet sequences can be retrieved using the following command:
+
+```
+hermes query packet pending --chain <CHAIN_ID> --channel <CHANNEL_ID> --port <PORT_ID>
+```
+There are two RPC endpoints, `tx_search` and `block_search`, that can be used to check if the full node still has the event information.
+
+For example, if a `send_packet` with sequence `6` has not been relayed and the packet was sent in a transaction, the `tx_search` RPC endpoint can be used:
+```
+http://localhost:26657/tx_search?query="send_packet.packet_sequence='6' AND send_packet.packet_src_channel='channel-0' AND send_packet.packet_src_port='transfer' AND send_packet.packet_dst_channel='channel-0' AND send_packet.packet_dst_port='transfer'"
+```
+If the packet was sent via begin or end blocker, the `block_search` RPC endpoint can be used:
+```
+http://localhost:26657/block_search?query="send_packet.packet_sequence='6' AND send_packet.packet_src_channel='channel-0' AND send_packet.packet_src_port='transfer' AND send_packet.packet_dst_channel='channel-0' AND send_packet.packet_dst_port='transfer'"
+```
+
+If these two queries return an empty result, the event information has been pruned from the full node.
+
+### Fix
+Depending on how old the missing events are:
+- use an archive node, or
+- adjust the pruning parameters of the full node to increase the pruning window and,
+  - if state-sync is used, specify an initial state with a height that is smaller than the height at which the event occurred.
+    - in order to find out the height of the missing events, use an archive node or a node with bigger pruning window and do the same queries as above
+  - restart the node

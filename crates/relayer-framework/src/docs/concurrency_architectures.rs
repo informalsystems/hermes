@@ -614,4 +614,145 @@ is less likely for the relayer to encounter concurrency errors caused by
 the nonce mismatch error arise from the use of multiple nonces.
 
 
+## Batching packets from both ordered channels and unordered channels
+
+In the previous sections, we discussed highly concurrent architectures that
+are designed to handle packets from unordered channels. However in IBC, ordered
+channels impose additional requirements that packets from that channel must be
+delivered in the same order. This introduce additional complexity when
+in our concurrent system, as tasks would need some ways to synchronize and
+wait for each others to complete.
+
+To understand why the ordering of packets require additional synchronization,
+consider the original design we have for running multiple packet workers in
+parallel, and batching the outgoing messages with a message batch worker. A
+naive attempt to enforce the packet ordering would be to spawn a packet worker
+for a packet with lower sequence before spawning a packet worker for another
+packet with the next sequence. However since each packet worker would perform
+multiple operations in parallel before they can produce the message to be sent,
+there is no guarantee that the first packet worker that is spawned will send its
+messages before the second packet worker.
+
+Furthermore, even if messages are sent in the same order, they would not ended
+up being sent as transactions in the same order. This is because between the
+time a message is sent and a transaction is sent, there are various other
+operations involved such as the message batching operations, building the
+`UpdateClient` messages, estimating the transaction fees, and encoding the
+transaction.
+
+A naive workaround for this is that we could remove the concurrency aspects and
+send the ordered packets in serial. However this would mean that only one
+ordered packet can be relayed in one transaction at a time. A better alternative
+is to keep the existing concurrency architecture, and introduce additional
+layers for relaying ordered packets:
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-8.svg)
+
+
+The above scenario describes a case where the relayer is using the same relay
+context to relay multiple channels. Between chain A and chain B, there is one
+ordered channel `channel-1` and one unordered channel `channel-2`. The source
+chain event listener listens to the events from the source chain, chain A, and
+found three packets to relay:
+
+1. `channel-1` with sequence 8.
+2. `channel-1` with sequence 9.
+3. `channel-2` with sequence 16.
+
+The first two packets are from the ordered channel `channel-1` with sequences 8
+and 9, and they must be sent in the same order. The third packet is from the
+unordered channel `channel-2`, and it can be sent without need for
+synchronization. The event listener spawns three packet worker tasks for each
+packet, but with the worker tasks for the ordered packets behaving differently.
+
+### Ordered Packet Worker
+
+In the packet worker task for the first packet, it tries to relay the packet
+with sequence 8 from `channel-1`. But since `channel-1` is an ordered channel,
+it performs a check on whether the packet with sequence 7 from the same channel
+has been relayed previously, or is currently being relayed by another packet
+worker. It finds that neither case is true, and thus it spawns an extra packet
+worker task to relay the packet with sequence 7. The packet then resumes
+immediately to relay the packet with sequence 8.
+
+Inside the extra packet worker, it also performs the same check for ordered
+packets, and found that the packet with sequence 6 has already been relayed,
+so it proceeds to relay the packet with sequence 7.
+
+In the packet worker task for the second packet, it tries to relay the packet
+with sequence 9 from `channel-1`. It performs the ordered packet checks, and
+found that the other packet worker has already been relaying the packet with
+sequence 8. So it continues its operation to relay sequence 9.
+
+In the packet worker task for the third packet, it tries to relay the packet
+with sequence 16 from the unordered channel `channel-2`. So it proceeds straight
+to the relaying operation, and send the constructed `RecvPacket` message to
+the message batch worker in the same way as described in previous sections.
+
+### Packet Sequencer
+
+For the packet workers relaying the ordered packets, instead of sending the
+constructed `RecvPacket` messages directly to the message batch worker, they
+would send the messages to a _packet sequencer_. The packet sequencer is a
+worker task that runs separately from the message batch worker. It is
+responsible for enforcing the ordering of sent packets before sending them to
+the message batch worker. The packet sequencer task is spawned
+_per ordered channel_. So if there are packets from multiple ordered channels,
+they will be sent to different packet sequencer tasks.
+
+In our scenario, the `RecvPacket` message for sequence 8 is the first one to be
+sent to the packet sequencer. The packet sequencer checks on whether the
+`RecvPacket` message for sequence 7 has already been sent before, and found that
+it has not. So the packet sequencer stores the `RecvPacket` message in the queue,
+and wait for the message with sequence 7 to arrive.
+
+While our packet sequencer is waiting for sequence 7, the `RecvPacket` message
+with sequence 9 has also been sent. The packet sequencer once again confirms
+that the `RecvPacket` with sequence 7 has not been sent by other tasks or by
+external relayers, so it continues to wait.
+
+Finally, the `RecvPacket` for sequence 7 is received by the packet worker. The
+packet sequencer also confirms that the packet for sequence 6 has already
+previously been relayed. So with that, it attempts to send all three `RecvPacket`
+messages for sequence 7, 8, 9. It first checks that the combined message size
+have not exceeded the batch size limit, and then sends the three messages
+in a single batch to the message batch worker.
+
+In case if the packet sequencer did not receive the `RecvPacket` message with
+sequence 7 within a time limit, it would instead return an error to signal to
+the packet workers that the ordered packets for earlier sequence was not
+received within the time limit. In reaction to that, the ordered packet workers
+may attempt to spawn new packet workers for the earlier sequence, in case the
+previous packet workers failed for some reason.
+
+### Batching messages from multiple channels
+
+The message batch worker runs in the same way as described in the earlier
+sections. In this scenario, it first receives the `RecvPacket` message from
+the unordered channel `channel-2`. It waits for a while, and then receives the 3
+messages from the packet sequencer. It then attempt to combine all 4 messages in
+a single batch. In this scenario, the total batch size are within the limit,
+and the message batch worker proceeds to send the 4 messages together.
+
+The 4 messages are then go through the `UpdateClient` message sender, which
+scans through the messages and prepend `UpdateClient` messages to the front
+of the message list. Finally, all messages are sent to the transaction sender,
+which sends the messages all in a single transaction.
+
+The above scenario demonstrates that messages from ordered channels can be
+processed in parallel by adding a packet sequence component to process
+the messages between the ordered packet workers and the message batch worker.
+The scenario also shows that ordered packet messages can be processed in
+parallel with unordered packet messages, and then be batched together in the
+same transaction.
+
+This concurrency architecture helps ensure that the relayer pays for the cost of
+relaying ordered packets only when necessary. If there is no ordered channels,
+the additional logic for relaying ordered packets wouldn't be triggered. If
+there are multiple ordered channels, they can be relayed in parallel, have
+the ordering enforced by multiple packet sequences, and then be batched into
+the same transaction.
+
+
+
 */

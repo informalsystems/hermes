@@ -8,13 +8,13 @@ use humantime::format_duration;
 use ibc_proto::protobuf::Error as TendermintProtoError;
 use prost::{DecodeError, EncodeError};
 use regex::Regex;
+use tendermint::abci;
 use tendermint::Error as TendermintError;
 use tendermint_light_client::components::io::IoError as LightClientIoError;
 use tendermint_light_client::errors::{
     Error as LightClientError, ErrorDetail as LightClientErrorDetail,
 };
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
-use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
 use tendermint_rpc::Error as TendermintRpcError;
 use tonic::{
@@ -65,7 +65,7 @@ define_error! {
         DeliverTx
             {
                 detail: SdkError,
-                tx: TxResult
+                tx: abci::response::DeliverTx,
             }
             |e| { format!("DeliverTx Commit returns error: {0}. RawResult: {1:?}", e.detail, e.tx) },
 
@@ -299,6 +299,10 @@ define_error! {
         ChannelReceive
             [ TraceError<crossbeam_channel::RecvError> ]
             |_| { "internal message-passing failure while receiving inter-thread request/response" },
+
+        ChannelReceiveTimeout
+            [ TraceError<crossbeam_channel::RecvTimeoutError> ]
+            |_| { "timeout when waiting for reponse over inter-thread channel" },
 
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },

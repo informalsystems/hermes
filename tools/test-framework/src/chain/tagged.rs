@@ -6,7 +6,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use serde_json as json;
-use tendermint_rpc::abci::responses::Event;
+use tendermint::abci::Event;
 
 use crate::chain::cli::query::query_recipient_transactions;
 use crate::chain::driver::ChainDriver;
