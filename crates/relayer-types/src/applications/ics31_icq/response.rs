@@ -7,7 +7,7 @@ use tendermint::merkle::proof::Proof;
 use tendermint_proto::crypto::{ProofOp, ProofOps};
 use crate::applications::ics31_icq::proto::MsgSubmitQueryResponse;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrossChainQueryResponse {
     pub chain_id: String,
     pub query_id: String,

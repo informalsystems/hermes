@@ -488,7 +488,7 @@ impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
                 query_id: packet.query_id.to_string(),
                 query_type: packet.query_type.clone(),
                 request: packet.request.clone(),
-                height: packet.height.clone()
+                height: packet.height,
             }),
             None => Err(
                 Error::ics31(ibc_relayer_types::applications::ics31_icq::error::Error::parse())

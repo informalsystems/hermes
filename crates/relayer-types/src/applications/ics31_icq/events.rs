@@ -69,14 +69,14 @@ impl<'a> TryFrom<&'a Vec<Tag>> for CrossChainQueryPacket {
     type Error = Error;
 
     fn try_from(entries: &'a Vec<Tag>) -> Result<Self, Self::Error> {
-        let module = find_value("module", &entries)?;
-        let action = find_value("action", &entries)?;
-        let query_id = find_value("query_id", &entries)?;
-        let chain_id_str = find_value("chain_id", &entries)?;
-        let connection_id_str = find_value("connection_id", &entries)?;
-        let query_type_str = find_value("type", &entries)?;
-        let request = find_value("request", &entries)?;
-        let height_str = find_value("height", &entries)?;
+        let module = find_value("module", entries)?;
+        let action = find_value("action", entries)?;
+        let query_id = find_value("query_id", entries)?;
+        let chain_id_str = find_value("chain_id", entries)?;
+        let connection_id_str = find_value("connection_id", entries)?;
+        let query_type_str = find_value("type", entries)?;
+        let request = find_value("request", entries)?;
+        let height_str = find_value("height", entries)?;
 
         let chain_id = ChainId::from_string(&chain_id_str);
         let connection_id = ConnectionId::from_str(&connection_id_str).map_err(|_| Error::ics24())?;
@@ -103,10 +103,10 @@ fn fetch_first_element_from_events(
     key: &str,
 ) -> Result<String, Error> {
     let res = block_events.get(key)
-        .ok_or_else(|| vec![])
+        .ok_or_else(Vec::new)
         .map_err(|_: Vec<&String>| Error::parse())?
         .get(0)
-        .ok_or_else(|| Err(()))
+        .ok_or(Err(()))
         .map_err(|_: Result<&String, ()>| Error::parse())?;
 
     Ok(res.clone())

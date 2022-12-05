@@ -425,7 +425,7 @@ impl IbcEvent {
 
     pub fn cross_chain_query_packet(&self) -> Option<&CrossChainQueryPacket> {
         match self {
-            IbcEvent::CrossChainQueryPacket(ev) => Some(&ev),
+            IbcEvent::CrossChainQueryPacket(ev) => Some(ev),
             _ => None,
         }
     }

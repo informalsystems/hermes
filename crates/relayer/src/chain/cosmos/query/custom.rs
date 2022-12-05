@@ -25,7 +25,7 @@ pub async fn cross_chain_query_via_rpc(
         return Err(Error::ics31(CrossChainQueryError::query()));
     }
 
-    if response.proof.clone().is_none() {
+    if response.proof.is_none() {
         return Err(Error::ics31(CrossChainQueryError::proof()));
     }
 

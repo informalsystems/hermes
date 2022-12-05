@@ -27,17 +27,7 @@ use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use ibc_relayer::chain::requests::{
-    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-    QueryPacketCommitmentsRequest, QueryPacketEventDataRequest, QueryPacketReceiptRequest,
-    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
-};
+use ibc_relayer::chain::requests::{CrossChainQueryRequest, IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketEventDataRequest, QueryPacketReceiptRequest, QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest};
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc_relayer::config::ChainConfig;
@@ -66,6 +56,7 @@ use ibc_relayer_types::{
     signer::Signer,
     Height,
 };
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 
 use crate::types::tagged::*;
 
@@ -423,5 +414,9 @@ where
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
         self.value().query_denom_trace(hash)
+    }
+
+    fn cross_chain_query(&self, request: Vec<CrossChainQueryRequest>) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        self.value().cross_chain_query(request)
     }
 }
