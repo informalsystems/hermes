@@ -123,194 +123,194 @@ jobs:
         package1: [.#gaia6, .#gaia7, .#gaia8, .#ibc-go-v2-simapp, .#ibc-go-v3-simapp, .#ibc-go-v4-simapp, .#ibc-go-v5-simapp, .#ibc-go-v6-simapp, .#wasmd, .#evmos, .#osmosis]
         package2: [.#gaia6, .#gaia7, .#gaia8, .#ibc-go-v2-simapp, .#ibc-go-v3-simapp, .#ibc-go-v4-simapp, .#ibc-go-v5-simapp, .#ibc-go-v6-simapp, .#wasmd, .#evmos, .#osmosis]
         package_account1:
-        - [gaiad, cosmos]
-        - [simd, cosmos]
-        - [wasmd, wasm]
-        - [evmosd, evmos]
-        - [osmosisd, osmo]
+        - ['gaiad', 'cosmos']
+        - ['simd', 'cosmos']
+        - ['wasmd', 'wasm']
+        - ['evmosd', 'evmos']
+        - ['osmosisd', 'osmo']
         package_account2:
-        - [gaiad, cosmos]
-        - [simd, cosmos]
-        - [wasmd, wasm]
-        - [evmosd, evmos]
-        - [osmosisd, osmo]
+        - ['gaiad', 'cosmos']
+        - ['simd', 'cosmos']
+        - ['wasmd', 'wasm']
+        - ['evmosd', 'evmos']
+        - ['osmosisd', 'osmo']
         exclude:
           - package1: .#gaia6
-            package_account1: [simd, cosmos]
+            package_account1: ['simd', 'cosmos']
           - package1: .#gaia6
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package1: .#gaia6
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#gaia6
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#gaia6
-            package_account2: [simd, cosmos]
+            package_account2: ['simd', 'cosmos']
           - package2: .#gaia6
-            package_account2: [wasmd, wasm]
+            package_account2: ['wasmd', 'wasm']
           - package2: .#gaia6
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#gaia6
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#gaia7
-            package_account1: [simd, cosmos]
+            package_account1: ['simd', 'cosmos']
           - package1: .#gaia7
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package1: .#gaia7
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#gaia7
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#gaia7
-            package_account2: [simd, cosmos]
+            package_account2: ['simd', 'cosmos']
           - package2: .#gaia7
-            package_account2: [wasmd, wasm]
+            package_account2: ['wasmd', 'wasm']
           - package2: .#gaia7
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#gaia7
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#gaia8
-            package_account1: [simd, cosmos]
+            package_account1: ['simd', 'cosmos']
           - package1: .#gaia8
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package1: .#gaia8
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#gaia8
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#gaia8
-            package_account2: [simd, cosmos]
+            package_account2: ['simd', 'cosmos']
           - package2: .#gaia8
-            package_account2: [wasmd, wasm]
+            package_account2: ['wasmd', 'wasm']
           - package2: .#gaia8
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#gaia8
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#ibc-go-v2-simapp
-            package_account1: [gaiad, cosmos]
+            package_account1: ['gaiad', 'cosmos']
           - package1: .#ibc-go-v2-simapp
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package1: .#ibc-go-v2-simapp
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#ibc-go-v2-simapp
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#ibc-go-v2-simapp
-            package_account2: [gaiad, cosmos]
+            package_account2: ['gaiad', 'cosmos']
           - package2: .#ibc-go-v2-simapp
-            package_account2: [wasmd, wasm]
+            package_account2: ['wasmd', 'wasm']
           - package2: .#ibc-go-v2-simapp
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#ibc-go-v2-simapp
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#ibc-go-v3-simapp
-            package_account1: [gaiad, cosmos]
+            package_account1: ['gaiad', 'cosmos']
           - package1: .#ibc-go-v3-simapp
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package1: .#ibc-go-v3-simapp
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#ibc-go-v3-simapp
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#ibc-go-v3-simapp
-            package_account2: [gaiad, cosmos]
+            package_account2: ['gaiad', 'cosmos']
           - package2: .#ibc-go-v3-simapp
-            package_account2: [wasmd, wasm]
+            package_account2: ['wasmd', 'wasm']
           - package2: .#ibc-go-v3-simapp
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#ibc-go-v3-simapp
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#ibc-go-v4-simapp
-            package_account1: [gaiad, cosmos]
+            package_account1: ['gaiad', 'cosmos']
           - package1: .#ibc-go-v4-simapp
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package1: .#ibc-go-v4-simapp
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#ibc-go-v4-simapp
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#ibc-go-v4-simapp
-            package_account2: [gaiad, cosmos]
+            package_account2: ['gaiad', 'cosmos']
           - package2: .#ibc-go-v4-simapp
-            package_account2: [wasmd, wasm]
+            package_account2: ['wasmd', 'wasm']
           - package2: .#ibc-go-v4-simapp
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#ibc-go-v4-simapp
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#ibc-go-v5-simapp
-            package_account1: [gaiad, cosmos]
+            package_account1: ['gaiad', 'cosmos']
           - package1: .#ibc-go-v5-simapp
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package1: .#ibc-go-v5-simapp
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#ibc-go-v5-simapp
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#ibc-go-v5-simapp
-            package_account2: [gaiad, cosmos]
+            package_account2: ['gaiad', 'cosmos']
           - package2: .#ibc-go-v5-simapp
-            package_account2: [wasmd, wasm]
+            package_account2: ['wasmd', 'wasm']
           - package2: .#ibc-go-v5-simapp
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#ibc-go-v5-simapp
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#ibc-go-v6-simapp
-            package_account1: [gaiad, cosmos]
+            package_account1: ['gaiad', 'cosmos']
           - package1: .#ibc-go-v6-simapp
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package1: .#ibc-go-v6-simapp
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#ibc-go-v6-simapp
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#ibc-go-v6-simapp
-            package_account2: [gaiad, cosmos]
+            package_account2: ['gaiad', 'cosmos']
           - package2: .#ibc-go-v6-simapp
-            package_account2: [wasmd, wasm]
+            package_account2: ['wasmd', 'wasm']
           - package2: .#ibc-go-v6-simapp
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#ibc-go-v6-simapp
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#wasmd
-            package_account1: [gaiad, cosmos]
+            package_account1: ['gaiad', 'cosmos']
           - package1: .#wasmd
-            package_account1: [simd, cosmos]
+            package_account1: ['simd', 'cosmos']
           - package1: .#wasmd
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#wasmd
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#wasmd
-            package_account2: [gaiad, cosmos]
+            package_account2: ['gaiad', 'cosmos']
           - package2: .#wasmd
-            package_account2: [simd, cosmos]
+            package_account2: ['simd', 'cosmos']
           - package2: .#wasmd
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#wasmd
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#evmos
-            package_account1: [gaiad, cosmos]
+            package_account1: ['gaiad', 'cosmos']
           - package1: .#evmos
-            package_account1: [simd, cosmos]
+            package_account1: ['simd', 'cosmos']
           - package1: .#evmos
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package1: .#evmos
-            package_account1: [osmosisd, osmo]
+            package_account1: ['osmosisd', 'osmo']
           - package2: .#evmos
-            package_account2: [gaiad, cosmos]
+            package_account2: ['gaiad', 'cosmos']
           - package2: .#evmos
-            package_account2: [simd, cosmos]
+            package_account2: ['simd', 'cosmos']
           - package2: .#evmos
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#evmos
-            package_account2: [osmosisd, osmo]
+            package_account2: ['osmosisd', 'osmo']
           - package1: .#evmos
-            package_account1: [gaiad, cosmos]
+            package_account1: ['gaiad', 'cosmos']
           - package1: .#osmosis
-            package_account1: [simd, cosmos]
+            package_account1: ['simd', 'cosmos']
           - package1: .#osmosis
-            package_account1: [evmosd, evmos]
+            package_account1: ['evmosd', 'evmos']
           - package1: .#osmosis
-            package_account1: [wasmd, wasm]
+            package_account1: ['wasmd', 'wasm']
           - package2: .#osmosis
-            package_account2: [gaiad, cosmos]
+            package_account2: ['gaiad', 'cosmos']
           - package2: .#osmosis
-            package_account2: [simd, cosmos]
+            package_account2: ['simd', 'cosmos']
           - package2: .#osmosis
-            package_account2: [evmosd, evmos]
+            package_account2: ['evmosd', 'evmos']
           - package2: .#osmosis
-            package_account2: [wasmd, wasm]
+            package_account2: ['wasmd', 'wasm']
 
     steps:
       - uses: actions/checkout@v2
