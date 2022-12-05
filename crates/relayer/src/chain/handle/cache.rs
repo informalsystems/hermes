@@ -8,6 +8,7 @@ use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
     core::ics03_connection::connection::ConnectionEnd,
     core::ics03_connection::version::Version,
     core::ics04_channel::channel::ChannelEnd,
@@ -15,7 +16,6 @@ use ibc_relayer_types::{
     core::ics24_host::identifier::{
         ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
     },
-    applications::ics31_icq::response::CrossChainQueryResponse,
     proofs::Proofs,
     signer::Signer,
     Height,

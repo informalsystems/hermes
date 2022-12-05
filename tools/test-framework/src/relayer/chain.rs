@@ -27,7 +27,18 @@ use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use ibc_relayer::chain::requests::{CrossChainQueryRequest, IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketEventDataRequest, QueryPacketReceiptRequest, QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest};
+use ibc_relayer::chain::requests::{
+    CrossChainQueryRequest, IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest,
+    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketEventDataRequest,
+    QueryPacketReceiptRequest, QueryTxRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+    QueryUpgradedConsensusStateRequest,
+};
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc_relayer::config::ChainConfig;
@@ -39,6 +50,7 @@ use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer::light_client::AnyHeader;
 use ibc_relayer::misbehaviour::MisbehaviourEvidence;
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
@@ -56,7 +68,6 @@ use ibc_relayer_types::{
     signer::Signer,
     Height,
 };
-use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 
 use crate::types::tagged::*;
 
@@ -416,7 +427,10 @@ where
         self.value().query_denom_trace(hash)
     }
 
-    fn cross_chain_query(&self, request: Vec<CrossChainQueryRequest>) -> Result<Vec<CrossChainQueryResponse>, Error> {
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
         self.value().cross_chain_query(request)
     }
 }

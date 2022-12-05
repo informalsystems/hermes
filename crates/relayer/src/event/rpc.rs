@@ -3,10 +3,10 @@ use core::convert::TryFrom;
 
 use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
 
+use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
 use ibc_relayer_types::core::ics02_client::{events as ClientEvents, height::Height};
 use ibc_relayer_types::core::ics04_channel::events as ChannelEvents;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
 use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::cosmos::types::events::channel::RawObject;
@@ -175,7 +175,8 @@ pub fn get_all_events(
 
                         events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
                     } else if query == queries::ibc_query().to_string()
-                        && event_is_type_cross_chain_query(&ibc_event) {
+                        && event_is_type_cross_chain_query(&ibc_event)
+                    {
                         tracing::trace!("extracted cross chain queries {}", ibc_event);
                         events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
                     }

@@ -164,7 +164,7 @@ pub enum Object {
     /// See [`Wallet`]
     Wallet(Wallet),
     /// See [`CrossChainQuery`]
-    CrossChainQuery(CrossChainQuery)
+    CrossChainQuery(CrossChainQuery),
 }
 
 define_error! {
@@ -521,6 +521,7 @@ impl Object {
             dst_chain_id,
             query_id: p.query_id.to_string(),
             connection_id: p.connection_id.clone(),
-        }.into())
+        }
+        .into())
     }
 }

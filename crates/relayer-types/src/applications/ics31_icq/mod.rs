@@ -1,4 +1,4 @@
-pub mod events;
 pub mod error;
-pub mod response;
+pub mod events;
 pub mod proto;
+pub mod response;

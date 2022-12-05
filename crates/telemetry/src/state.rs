@@ -74,7 +74,7 @@ impl Display for WorkerType {
             Self::Channel => write!(f, "channel"),
             Self::Packet => write!(f, "packet"),
             Self::Wallet => write!(f, "wallet"),
-            Self::CrossChainQuery => write!(f, "cross-chain-query")
+            Self::CrossChainQuery => write!(f, "cross-chain-query"),
         }
     }
 }

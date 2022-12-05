@@ -11,8 +11,8 @@ use tendermint::abci;
 
 use crate::applications::ics29_fee::error::Error as FeeError;
 use crate::applications::ics29_fee::events::IncentivizedPacket;
-use crate::applications::ics31_icq::events::CrossChainQueryPacket;
 use crate::applications::ics31_icq::error::Error as QueryPacketError;
+use crate::applications::ics31_icq::events::CrossChainQueryPacket;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;

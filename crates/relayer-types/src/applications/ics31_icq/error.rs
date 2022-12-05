@@ -1,7 +1,7 @@
 use crate::core::ics24_host::error::ValidationError as Ics24ValidationError;
 
-use std::prelude::v1::*;
 use flex_error::define_error;
+use std::prelude::v1::*;
 
 define_error! {
     Error {

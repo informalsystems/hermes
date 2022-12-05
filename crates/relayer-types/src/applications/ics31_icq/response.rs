@@ -1,11 +1,11 @@
 use crate::signer::Signer;
 
+use crate::applications::ics31_icq::proto::MsgSubmitQueryResponse;
+use ibc_proto::google::protobuf::Any;
 use std::prelude::v1::*;
 use std::vec;
-use ibc_proto::google::protobuf::Any;
 use tendermint::merkle::proof::ProofOps as TendermintProofOps;
 use tendermint_proto::crypto::{ProofOp, ProofOps};
-use crate::applications::ics31_icq::proto::MsgSubmitQueryResponse;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrossChainQueryResponse {
@@ -16,18 +16,17 @@ pub struct CrossChainQueryResponse {
     pub proof: TendermintProofOps,
 }
 
-fn into_proof_ops(
-    merkle_proof: TendermintProofOps,
-) -> ProofOps {
+fn into_proof_ops(merkle_proof: TendermintProofOps) -> ProofOps {
     ProofOps {
-        ops: merkle_proof.ops
+        ops: merkle_proof
+            .ops
             .into_iter()
             .map(|o| ProofOp {
                 r#type: o.field_type,
                 key: o.key,
                 data: o.data,
             })
-            .collect()
+            .collect(),
     }
 }
 

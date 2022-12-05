@@ -1,19 +1,21 @@
 use super::error::RunError;
-use crate::object::CrossChainQuery;
-use crate::util::task::{Next, spawn_background_task, TaskError, TaskHandle};
-use crate::worker::WorkerCmd;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::{
+    CrossChainQueryRequest, IncludeProof, QueryConnectionRequest, QueryHeight,
+};
 use crate::chain::tracking::TrackedMsgs;
-use crate::chain::requests::{CrossChainQueryRequest, IncludeProof, QueryConnectionRequest, QueryHeight};
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::foreign_client::ForeignClient;
+use crate::object::CrossChainQuery;
+use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
+use crate::worker::WorkerCmd;
 
-use ibc_relayer_types::core::ics02_client::height::Height;
 use crossbeam_channel::Receiver;
+use ibc_relayer_types::core::ics02_client::height::Height;
 use std::time::Duration;
-use uuid::Uuid;
 use tracing::{info, info_span};
+use uuid::Uuid;
 
 impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
     type Error = Error;
@@ -27,9 +29,9 @@ impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
                 request: packet.request.clone(),
                 height: packet.height,
             }),
-            None => Err(
-                Error::ics31(ibc_relayer_types::applications::ics31_icq::error::Error::parse())
-            )
+            None => Err(Error::ics31(
+                ibc_relayer_types::applications::ics31_icq::error::Error::parse(),
+            )),
         }
     }
 }
@@ -74,15 +76,15 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
         info!("request: {}", cross_chain_query.short_name());
         let response = chain_b_handle.cross_chain_query(queries);
         if let Ok(cross_chain_query_responses) = response {
-
             // Find connection between querying chain and queried chain
-            let connection_end = chain_a_handle.query_connection(
-                QueryConnectionRequest {
-                    connection_id: cross_chain_query.connection_id.clone(),
-                    height: QueryHeight::Latest,
-                },
-                IncludeProof::No,
-            )
+            let connection_end = chain_a_handle
+                .query_connection(
+                    QueryConnectionRequest {
+                        connection_id: cross_chain_query.connection_id.clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                )
                 .map_err(|_| TaskError::Fatal(RunError::query()))?
                 .0;
 
@@ -92,32 +94,34 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                 chain_a_handle.clone(),
                 connection_end.client_id(),
             )
-                .map_err(|_| TaskError::Fatal(RunError::query()))?;
+            .map_err(|_| TaskError::Fatal(RunError::query()))?;
 
             let target_height = Height::new(
                 chain_b_handle.id().version(),
                 cross_chain_query_responses.get(0).unwrap().height as u64,
             )
-                .map_err(|_| TaskError::Fatal(RunError::query()))?
-                .increment();
+            .map_err(|_| TaskError::Fatal(RunError::query()))?
+            .increment();
 
             // Push update client msg
             let mut chain_a_msgs = client_a
                 .wait_and_build_update_client(target_height)
                 .map_err(|_| TaskError::Fatal(RunError::query()))?;
 
-            cross_chain_query_responses.iter()
-                .for_each(|response| {
-                    info!("response arrived: query_id: {}", response.query_id);
-                    // After updating client, send response tx to querying chain
-                    chain_a_msgs.push(response.to_any(
-                        chain_a_handle.get_signer().unwrap(),
-                        ibc_relayer_types::applications::ics31_icq::proto::TYPE_URL,
-                    ));
-                });
+            cross_chain_query_responses.iter().for_each(|response| {
+                info!("response arrived: query_id: {}", response.query_id);
+                // After updating client, send response tx to querying chain
+                chain_a_msgs.push(response.to_any(
+                    chain_a_handle.get_signer().unwrap(),
+                    ibc_relayer_types::applications::ics31_icq::proto::TYPE_URL,
+                ));
+            });
 
             chain_a_handle
-                .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(chain_a_msgs, Uuid::new_v4()))
+                .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(
+                    chain_a_msgs,
+                    Uuid::new_v4(),
+                ))
                 .map_err(|_| TaskError::Ignore(RunError::query()))?;
         }
     }

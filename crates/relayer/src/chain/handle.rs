@@ -5,6 +5,7 @@ use crossbeam_channel as channel;
 use tracing::Span;
 
 use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
         ics02_client::events::UpdateClient,
         ics03_connection::{
@@ -18,7 +19,6 @@ use ibc_relayer_types::{
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
-    applications::ics31_icq::response::CrossChainQueryResponse,
     proofs::Proofs,
     signer::Signer,
     Height,

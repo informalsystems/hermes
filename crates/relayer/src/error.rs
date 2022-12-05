@@ -23,7 +23,9 @@ use tonic::{
 };
 
 use ibc_relayer_types::{
-    applications::{ics29_fee::error::Error as FeeError, ics31_icq::error::Error as CrossChainQueryError},
+    applications::{
+        ics29_fee::error::Error as FeeError, ics31_icq::error::Error as CrossChainQueryError,
+    },
     clients::ics07_tendermint::error as tendermint_error,
     core::{
         ics02_client::{client_type::ClientType, error as client_error},

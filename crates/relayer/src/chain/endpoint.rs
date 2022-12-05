@@ -3,6 +3,7 @@ use core::convert::TryFrom;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
@@ -24,7 +25,6 @@ use ibc_relayer_types::proofs::{ConsensusProof, Proofs};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height as ICSHeight;
-use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 

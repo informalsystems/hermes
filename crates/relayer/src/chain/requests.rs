@@ -22,7 +22,9 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryConnectionsRequest as RawQueryConnectionsRequest,
 };
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
 use ibc_relayer_types::events::WithBlockDataType;
 use ibc_relayer_types::Height;
 
