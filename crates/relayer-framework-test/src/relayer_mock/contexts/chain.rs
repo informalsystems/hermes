@@ -2,7 +2,6 @@ use alloc::string::String;
 use std::collections::hash_map::Entry;
 use std::sync::Mutex;
 use std::{collections::HashMap, sync::Arc};
-use tokio::runtime::Runtime;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
@@ -31,9 +30,7 @@ pub struct MockChainContext {
 
 impl MockChainContext {
     pub fn new(name: String) -> Self {
-        let runtime = OfaRuntimeContext::new(MockChainRuntimeContext::new(Arc::new(
-            Runtime::new().unwrap(),
-        )));
+        let runtime = OfaRuntimeContext::new(MockChainRuntimeContext::new());
         let initial_state: HashMap<Height, State> =
             HashMap::from([(Height::from(1), State::default())]);
         Self {

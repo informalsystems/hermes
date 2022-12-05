@@ -7,11 +7,9 @@ use crate::tests::util::context::build_mock_relay_context;
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
 use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 
-#[test]
-fn test_mock_chain_test() -> Result<(), Error> {
+#[tokio::test]
+async fn test_mock_chain_test() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
-
-    let runtime = relay_context.relay.runtime().runtime.runtime.as_ref();
 
     let src_client_id = relay_context.relay.src_client_id().clone();
 
@@ -33,7 +31,7 @@ fn test_mock_chain_test() -> Result<(), Error> {
 
     src_chain.chain.send_packet(packet.clone())?;
 
-    let events = runtime.block_on(async { relay_context.relay_packet(&packet).await });
+    let events = relay_context.relay_packet(&packet).await;
 
     assert!(events.is_ok());
 

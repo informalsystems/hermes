@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use async_trait::async_trait;
 use core::fmt::Debug;
 use core::{future::Future, time::Duration};
-use std::{marker::PhantomData, sync::Arc, time::Instant};
+use std::{marker::PhantomData, time::Instant};
 use tokio::{runtime::Runtime, time::sleep};
 
 use ibc_relayer_framework::base::{
@@ -17,14 +17,18 @@ use ibc_relayer_runtime::tokio::error::Error as TokioError;
 pub type MockRuntimeContext = MockChainRuntimeContext<Error>;
 
 pub struct MockChainRuntimeContext<Error> {
-    pub runtime: Arc<Runtime>,
     pub phantom: PhantomData<Error>,
 }
 
+impl Default for MockChainRuntimeContext<Error> {
+    fn default() -> Self {
+        Self { phantom: Default::default() }
+    }
+}
+
 impl<Error> MockChainRuntimeContext<Error> {
-    pub fn new(runtime: Arc<Runtime>) -> Self {
+    pub fn new() -> Self {
         Self {
-            runtime,
             phantom: PhantomData,
         }
     }
@@ -32,7 +36,7 @@ impl<Error> MockChainRuntimeContext<Error> {
 
 impl<Error> Clone for MockChainRuntimeContext<Error> {
     fn clone(&self) -> Self {
-        Self::new(self.runtime.clone())
+        Self::new()
     }
 }
 
@@ -72,6 +76,7 @@ where
         F: Future + Send + 'static,
         F::Output: Send + 'static,
     {
-        self.runtime.spawn(task);
+        let runtime = Runtime::new().unwrap();
+        runtime.spawn(task);
     }
 }
