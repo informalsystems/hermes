@@ -22,15 +22,14 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryConnectionsRequest as RawQueryConnectionsRequest,
 };
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::events::WithBlockDataType;
 use ibc_relayer_types::Height;
 
 use serde::{Deserialize, Serialize};
 use tendermint::block::Height as TMBlockHeight;
-use tendermint_rpc::abci::{transaction::Hash as TxHash, Path as TendermintABCIPath};
+use tendermint::Hash as TxHash;
 use tonic::metadata::AsciiMetadataValue;
-use crate::event::IbcEventWithHeight;
 
 /// Type to specify a height in a query. Specifically, this caters to the use
 /// case where the user wants to query at whatever the latest height is, as
@@ -465,34 +464,4 @@ pub struct QueryClientEventRequest {
     pub event_id: WithBlockDataType,
     pub client_id: ClientId,
     pub consensus_height: Height,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
-pub struct CrossChainQueryRequest {
-    pub chain_id: ChainId,
-    pub query_id: String,
-    pub query_type: TendermintABCIPath,
-    /// hex encoded query request
-    pub request: String,
-    pub height: TMBlockHeight,
-}
-
-/// Convert CrossChainQueryPacket into CrossChainQueryRequest
-impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
-    type Error = Error;
-
-    fn try_from(ibc_event_with_height: &IbcEventWithHeight) -> Result<Self, Self::Error> {
-        match ibc_event_with_height.event.cross_chain_query_packet() {
-            Some(packet) => Ok(CrossChainQueryRequest {
-                chain_id: packet.chain_id.clone(),
-                query_id: packet.query_id.to_string(),
-                query_type: packet.query_type.clone(),
-                request: packet.request.clone(),
-                height: packet.height,
-            }),
-            None => Err(
-                Error::ics31(ibc_relayer_types::applications::ics31_icq::error::Error::parse())
-            ),
-        }
-    }
 }

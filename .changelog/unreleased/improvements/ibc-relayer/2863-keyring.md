@@ -1,0 +1,5 @@
+- Clean up secp256k1 signing with other small changes
+  - The `k256` library is no longer used; instead, `secp256k1` is used for both Evmos (aka Ethermint) and Cosmos
+  - Move `sign_message` into `KeyEntry` and remove the duplicated functions in `KeyRing` and at the top level
+  - Move `from_seed_file` into `KeyEntry`
+  - Simplify the `get_address` implementation

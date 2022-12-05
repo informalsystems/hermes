@@ -5,7 +5,7 @@ use ibc_relayer_types::Height;
 use itertools::Itertools;
 use std::thread;
 use std::time::Instant;
-use tendermint_rpc::abci::transaction::Hash as TxHash;
+use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{HttpClient, Url};
 use tokio::time::sleep;
