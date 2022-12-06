@@ -198,17 +198,19 @@ where
         counterparty_port_id: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::PortId,
         sequence: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::Sequence,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
+        let chain_handle = self.chain.chain_handle();
         let status = self.query_chain_status().await?;
         let path_ident = PathIdentifiers {
-            port_id: *port_id,
-            channel_id: *channel_id,
-            counterparty_port_id: *counterparty_port_id,
-            counterparty_channel_id: *counterparty_channel_id,
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            counterparty_port_id: counterparty_port_id.clone(),
+            counterparty_channel_id: counterparty_channel_id.clone(),
         };
-        let sequences = vec![sequence];
-        let src_query_height = Qualified::Equal(*CosmosChainWrapper::chain_status_height(&status));
+        let src_query_height =
+            Qualified::Equal(*CosmosChainWrapper::<Chain>::chain_status_height(&status));
         // Call the `query_write_ack_events` method to fetch a Vec<IbcEventWithHeight>
-        let ibc_events = query_write_ack_events(self, &path_ident, &[*sequence], src_query_height);
+        let ibc_events =
+            query_write_ack_events(chain_handle, &path_ident, &[*sequence], src_query_height);
         // Search through the vec of events to find the `WriteAcknowledgement` event
         // Return the event if one is found
         todo!()
