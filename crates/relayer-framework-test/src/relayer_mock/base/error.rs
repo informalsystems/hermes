@@ -46,9 +46,9 @@ define_error! {
                 format_args!("No height for chain: {}", e.name)
             },
 
-        ConsensusDuplicate
+        ConsensusDivergence
             | _ | {
-                format_args!("Trying to insert duplicate consensus state")
+                format_args!("Trying to insert different consensus states at same height")
             },
 
         ReceiveWithoutSent
@@ -74,5 +74,11 @@ define_error! {
 impl From<TokioError> for Error {
     fn from(e: TokioError) -> Error {
         Error::tokio(e)
+    }
+}
+
+impl From<Report> for Error {
+    fn from(e: Report) -> Self {
+        Error::generic(e)
     }
 }

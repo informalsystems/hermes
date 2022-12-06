@@ -77,7 +77,7 @@ impl OfaBaseRelay for MockRelayContext {
     }
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId {
-        self.src_to_dst_client()
+        self.dst_to_src_client()
     }
 
     fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain> {
@@ -85,7 +85,7 @@ impl OfaBaseRelay for MockRelayContext {
     }
 
     fn dst_client_id(&self) -> &<Self::DstChain as OfaChainTypes>::ClientId {
-        self.dst_to_src_client()
+        self.src_to_dst_client()
     }
 
     fn dst_chain(&self) -> &OfaChainWrapper<Self::DstChain> {
@@ -96,7 +96,7 @@ impl OfaBaseRelay for MockRelayContext {
         &self,
         height: &<Self::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        let state = self.src_chain().chain.consensus_states();
+        let state = self.dst_chain().chain.query_state_at_height(height.clone());
         Ok(vec![MockMessage::UpdateClient(
             self.src_client_id().to_string(),
             height.clone(),
@@ -108,7 +108,7 @@ impl OfaBaseRelay for MockRelayContext {
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
-        let state = self.dst_chain().chain.consensus_states();
+        let state = self.src_chain().chain.query_state_at_height(height.clone());
         Ok(vec![MockMessage::UpdateClient(
             self.dst_client_id().to_string(),
             height.clone(),
@@ -121,9 +121,9 @@ impl OfaBaseRelay for MockRelayContext {
         height: &<Self::SrcChain as OfaChainTypes>::Height,
         packet: &Self::Packet,
     ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error> {
-        let h = self.dst_chain().chain.get_latest_height();
         // If the latest state of the source chain doesn't have the packet as sent, return an error.
-        if !self.src_chain().chain.get_current_state().state.check_sent(
+        let state = self.src_chain().chain.get_current_state();
+        if !state.check_sent(
             &packet.port_id,
             &packet.channel_id,
             &packet.sequence,
@@ -134,11 +134,11 @@ impl OfaBaseRelay for MockRelayContext {
             ));
         }
         Ok(MockMessage::RecvPacket(
-            packet.client_id.clone(),
+            self.dst_client_id().clone(),
             height.clone(),
-            h,
             packet.clone(),
-        ))
+            )
+        )
     }
 
     async fn build_ack_packet_message(
@@ -147,12 +147,9 @@ impl OfaBaseRelay for MockRelayContext {
         packet: &Self::Packet,
         _ack: &<Self::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
+        let state = self.dst_chain().chain.get_current_state();
         // If the latest state of the destination chain doesn't have the packet as received, return an error.
-        if !self
-            .dst_chain()
-            .chain
-            .get_current_state()
-            .state
+        if !state
             .check_received(&packet.port_id, &packet.channel_id, &packet.sequence)
         {
             return Err(Error::acknowledgment_without_received(
@@ -173,7 +170,7 @@ impl OfaBaseRelay for MockRelayContext {
         packet: &Self::Packet,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
         // If the latest state of the source chain doesn't have the packet as sent, return an error.
-        if !self.src_chain().chain.get_current_state().state.check_sent(
+        if !self.src_chain().chain.get_current_state().check_sent(
             &packet.port_id,
             &packet.channel_id,
             &packet.sequence,
@@ -183,6 +180,7 @@ impl OfaBaseRelay for MockRelayContext {
                 self.dst_chain().chain.name().to_string(),
             ));
         }
+        // Must be timed out. Current height > timeout height
         Ok(MockMessage::TimeoutPacket(
             self.src_client_id().clone(),
             destination_height.clone(),

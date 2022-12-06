@@ -1,13 +1,24 @@
+//! The following types are used for the OfaChainTypes implementation:
+//! * For the Height and Timestamp a wrapper around a u128 referred to
+//!   as MockHeight. The MockChain does not require a precise timestamp
+//!   such as Duration.
+//! * For the messages a simple enum MockMessage which allows to identify
+//!   RecvPacket, AckPacket, TimeoutPacket and UpdateClient messages.
+//! * The ConsensusState is a set of 3 HashSet used to store which messages
+//!   have been sent, received and acknowledged.
+//! * The ChainStatus is a ConsensusState with a Height and Timestamp.
+
 use alloc::boxed::Box;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use async_trait::async_trait;
+use eyre::eyre;
 use std::vec;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::chain::MockChainStatus;
 use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
-use crate::relayer_mock::base::types::height::Height;
+use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::base::types::state::State;
@@ -25,9 +36,9 @@ impl OfaChainTypes for MockChainContext {
 
     type Runtime = MockRuntimeContext;
 
-    type Height = Height;
+    type Height = MockHeight;
 
-    type Timestamp = Height;
+    type Timestamp = MockHeight;
 
     type Message = MockMessage;
 
@@ -84,7 +95,7 @@ impl OfaBaseChain for MockChainContext {
         event: Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         match event {
-            Event::WriteAcknowledgment(_) => Some(WriteAcknowledgementEvent {}),
+            Event::WriteAcknowledgment(h) => Some(WriteAcknowledgementEvent::new(h)),
             _ => None,
         }
     }
@@ -101,15 +112,26 @@ impl OfaBaseChain for MockChainContext {
         let mut res = vec![];
         for m in messages {
             match m {
-                MockMessage::RecvPacket(_, _, h, p) => {
+                MockMessage::RecvPacket(receiver, h, p) => {
+                    let client_consensus = self.query_client_state_at_height(receiver.clone(), h.clone())?;
+                    let state = client_consensus.get(&h).unwrap();
+                    if !state.check_sent(&p.port_id, &p.channel_id, &p.sequence) {
+                        return Err(Error::generic(eyre!("chain `{}` got a RecvPacket, but client `{}` state doesn't have the packet as sent", self.name(), receiver)));
+                    }
+                    // Check that the packet is not timed out. Current height < packet timeout height.
                     self.receive_packet(p)?;
                     res.push(Event::WriteAcknowledgment(h));
                 }
-                MockMessage::AckPacket(_, _, p) => {
+                MockMessage::AckPacket(receiver, h, p) => {
+                    let client_consensus = self.query_client_state_at_height(receiver.clone(), h.clone())?;
+                    let state = client_consensus.get(&h).unwrap();
+                    if !state.check_received(&p.port_id, &p.channel_id, &p.sequence) {
+                        return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
+                    }
                     self.acknowledge_packet(p)?;
                 }
-                MockMessage::UpdateClient(from, h, s) => {
-                    self.insert_consensus_state(from, h, s)?;
+                MockMessage::UpdateClient(receiver, h, s) => {
+                    self.insert_client_state(receiver, h, s)?;
                 }
                 _ => {}
             }
@@ -118,7 +140,12 @@ impl OfaBaseChain for MockChainContext {
     }
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
-        Ok(self.get_current_state())
+        let height = self.get_latest_height();
+        let state = self.get_current_state();
+        // Since the MockChain only updates manually, the Height is increased by
+        // 1 everytime the chain status is queried, without changing its state.
+        self.new_block()?;
+        Ok(MockChainStatus::from((height, state)))
     }
 }
 
@@ -126,7 +153,7 @@ impl OfaBaseChain for MockChainContext {
 impl OfaIbcChain<MockChainContext> for MockChainContext {
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
-            MockMessage::RecvPacket(_, _, h, _) => Some(h.clone()),
+            MockMessage::RecvPacket(_, h, _) => Some(h.clone()),
             MockMessage::AckPacket(_, h, _) => Some(h.clone()),
             MockMessage::TimeoutPacket(_, h, _) => Some(h.clone()),
             _ => None,
@@ -139,9 +166,8 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         height: &Self::Height,
     ) -> Result<Self::ConsensusState, Self::Error> {
         let client_consensus =
-            self.query_consensus_state_at_height(client_id.to_string(), height.clone())?;
-        let unlocked_client_consensus = client_consensus.lock().unwrap();
-        let state = unlocked_client_consensus.get(height);
+            self.query_client_state_at_height(client_id.to_string(), height.clone())?;
+        let state = client_consensus.get(height);
         if let Some(state) = state {
             return Ok(state.clone());
         }
@@ -154,7 +180,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         channel_id: &Self::ChannelId,
         sequence: &Self::Sequence,
     ) -> Result<bool, Self::Error> {
-        let state = self.get_current_state().state;
+        let state = self.get_current_state();
         Ok(state.check_received(port_id, channel_id, sequence))
     }
 }

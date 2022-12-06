@@ -22,8 +22,8 @@ pub fn build_mock_relay_context() -> (
     let mock_relay = MockRelayContext::new(
         src_chain.clone(),
         dst_chain.clone(),
-        String::from("client_a"),
-        String::from("client_b"),
+        String::from("client_src_to_dst"),
+        String::from("client_dst_to_src"),
         runtime,
     );
 

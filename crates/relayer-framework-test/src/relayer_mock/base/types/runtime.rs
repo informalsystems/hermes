@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use core::fmt::Debug;
 use core::{future::Future, time::Duration};
 use std::{marker::PhantomData, time::Instant};
-use tokio::{runtime::Runtime, time::sleep};
+use tokio::time::sleep;
 
 use ibc_relayer_framework::base::{
     core::traits::sync::Async,
@@ -76,7 +76,6 @@ where
         F: Future + Send + 'static,
         F::Output: Send + 'static,
     {
-        let runtime = Runtime::new().unwrap();
-        runtime.spawn(task);
+        tokio::spawn(task);
     }
 }
