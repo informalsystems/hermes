@@ -9,8 +9,8 @@ pub mod types;
 use alloc::collections::BTreeMap;
 use core::{
     cmp::Ordering,
-    convert::TryFrom,
     fmt::{Display, Error as FmtError, Formatter},
+    str::FromStr,
     time::Duration,
 };
 use std::{fs, fs::File, io::Write, path::Path};
@@ -53,12 +53,12 @@ impl Display for GasPrice {
     }
 }
 
-impl TryFrom<String> for GasPrice {
-    type Error = ConfigError;
+impl FromStr for GasPrice {
+    type Err = ConfigError;
 
-    fn try_from(price_in: String) -> Result<Self, Self::Error> {
+    fn from_str(price_in: &str) -> Result<Self, Self::Err> {
         // TODO: We split by `char::is_alphabetic` delimiter.
-        //      More robust parsing methods might be needed.
+        //       More robust parsing methods might be needed.
         let spos = price_in.find(char::is_alphabetic);
 
         match spos {
@@ -75,11 +75,13 @@ impl TryFrom<String> for GasPrice {
                 })
             }
 
-            None => Err(Error::invalid_gas_price(price_in)),
+            None => Err(Error::invalid_gas_price(price_in.to_string())),
         }
     }
 }
 
+// Note: Only `PartialOrd` is implemented for `GasPrice` because gas
+// prices must be of the same denomination in order to be compared.
 impl PartialOrd for GasPrice {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self.denom == other.denom {
@@ -97,7 +99,7 @@ impl PartialOrd for GasPrice {
 pub fn parse_gas_prices(prices: String) -> Vec<GasPrice> {
     prices
         .split(';')
-        .filter_map(|gp| GasPrice::try_from(String::from(gp)).ok())
+        .filter_map(|gp| GasPrice::from_str(gp).ok())
         .collect()
 }
 

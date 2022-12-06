@@ -333,7 +333,7 @@ impl CosmosSdkChain {
 
         // Helper function to diagnose if the node config query is unimplemented
         // by matching on the error details.
-        fn is_unimplemented_node_query(err_status: tonic::Status) -> bool {
+        fn is_unimplemented_node_query(err_status: &tonic::Status) -> bool {
             if err_status.code() != tonic::Code::Unimplemented {
                 return false;
             }
@@ -360,10 +360,10 @@ impl CosmosSdkChain {
                 Ok(Some(params))
             }
             Err(e) => {
-                if is_unimplemented_node_query(e.clone()) {
+                if is_unimplemented_node_query(&e) {
                     Ok(None)
                 } else {
-                    Err(e).map_err(Error::grpc_status)
+                    Err(Error::grpc_status(e))
                 }
             }
         }
@@ -1986,8 +1986,8 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let mut found_matching_denom = false;
 
     for price in node_min_gas_prices {
-        match price.partial_cmp(relayer_gas_price) {
-            Some(Ordering::Greater) => return Err(Error::gas_price_too_low(chain_id.clone())),
+        match relayer_gas_price.partial_cmp(&price) {
+            Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
             Some(_) => {
                 found_matching_denom = true;
                 break;
