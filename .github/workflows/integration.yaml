@@ -45,37 +45,37 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia6
+          - package: gaia6
             command: gaiad
             account_prefix: cosmos
-          - package: .#gaia7
+          - package: gaia7
             command: gaiad
             account_prefix: cosmos
-          - package: .#gaia8
+          - package: gaia8
             command: gaiad
             account_prefix: cosmos
-          - package: .#ibc-go-v2-simapp
+          - package: ibc-go-v2-simapp
             command: simd
             account_prefix: cosmos
-          - package: .#ibc-go-v3-simapp
+          - package: ibc-go-v3-simapp
             command: simd
             account_prefix: cosmos
-          - package: .#ibc-go-v4-simapp
+          - package: ibc-go-v4-simapp
             command: simd
             account_prefix: cosmos
-          - package: .#ibc-go-v5-simapp
+          - package: ibc-go-v5-simapp
             command: simd
             account_prefix: cosmos
-          - package: .#ibc-go-v6-simapp
+          - package: ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
-          - package: .#wasmd
+          - package: wasmd
             command: wasmd
             account_prefix: wasm
-          - package: .#evmos
+          - package: evmos
             command: evmosd
             account_prefix: evmos
-          - package: .#osmosis
+          - package: osmosis
             command: osmosisd
             account_prefix: osmo
 
@@ -110,208 +110,90 @@ jobs:
           max_attempts: 3
           timeout_minutes: 45
           command: |
-            nix shell .#python ${{ matrix.chain.package }} -c cargo \
+            nix shell .#python .#${{ matrix.chain.package }} -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2
 
   multi-chains-test:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        package1: [.#gaia6, .#gaia7, .#gaia8, .#ibc-go-v2-simapp, .#ibc-go-v3-simapp, .#ibc-go-v4-simapp, .#ibc-go-v5-simapp, .#ibc-go-v6-simapp, .#wasmd, .#evmos, .#osmosis]
-        package2: [.#gaia6, .#gaia7, .#gaia8, .#ibc-go-v2-simapp, .#ibc-go-v3-simapp, .#ibc-go-v4-simapp, .#ibc-go-v5-simapp, .#ibc-go-v6-simapp, .#wasmd, .#evmos, .#osmosis]
-        package_account1:
-        - ['gaiad', 'cosmos']
-        - ['simd', 'cosmos']
-        - ['wasmd', 'wasm']
-        - ['evmosd', 'evmos']
-        - ['osmosisd', 'osmo']
-        package_account2:
-        - ['gaiad', 'cosmos']
-        - ['simd', 'cosmos']
-        - ['wasmd', 'wasm']
-        - ['evmosd', 'evmos']
-        - ['osmosisd', 'osmo']
-        exclude:
-          - package1: .#gaia6
-            package_account1: ['simd', 'cosmos']
-          - package1: .#gaia6
-            package_account1: ['wasmd', 'wasm']
-          - package1: .#gaia6
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#gaia6
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#gaia6
-            package_account2: ['simd', 'cosmos']
-          - package2: .#gaia6
-            package_account2: ['wasmd', 'wasm']
-          - package2: .#gaia6
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#gaia6
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#gaia7
-            package_account1: ['simd', 'cosmos']
-          - package1: .#gaia7
-            package_account1: ['wasmd', 'wasm']
-          - package1: .#gaia7
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#gaia7
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#gaia7
-            package_account2: ['simd', 'cosmos']
-          - package2: .#gaia7
-            package_account2: ['wasmd', 'wasm']
-          - package2: .#gaia7
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#gaia7
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#gaia8
-            package_account1: ['simd', 'cosmos']
-          - package1: .#gaia8
-            package_account1: ['wasmd', 'wasm']
-          - package1: .#gaia8
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#gaia8
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#gaia8
-            package_account2: ['simd', 'cosmos']
-          - package2: .#gaia8
-            package_account2: ['wasmd', 'wasm']
-          - package2: .#gaia8
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#gaia8
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#ibc-go-v2-simapp
-            package_account1: ['gaiad', 'cosmos']
-          - package1: .#ibc-go-v2-simapp
-            package_account1: ['wasmd', 'wasm']
-          - package1: .#ibc-go-v2-simapp
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#ibc-go-v2-simapp
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#ibc-go-v2-simapp
-            package_account2: ['gaiad', 'cosmos']
-          - package2: .#ibc-go-v2-simapp
-            package_account2: ['wasmd', 'wasm']
-          - package2: .#ibc-go-v2-simapp
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#ibc-go-v2-simapp
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#ibc-go-v3-simapp
-            package_account1: ['gaiad', 'cosmos']
-          - package1: .#ibc-go-v3-simapp
-            package_account1: ['wasmd', 'wasm']
-          - package1: .#ibc-go-v3-simapp
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#ibc-go-v3-simapp
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#ibc-go-v3-simapp
-            package_account2: ['gaiad', 'cosmos']
-          - package2: .#ibc-go-v3-simapp
-            package_account2: ['wasmd', 'wasm']
-          - package2: .#ibc-go-v3-simapp
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#ibc-go-v3-simapp
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#ibc-go-v4-simapp
-            package_account1: ['gaiad', 'cosmos']
-          - package1: .#ibc-go-v4-simapp
-            package_account1: ['wasmd', 'wasm']
-          - package1: .#ibc-go-v4-simapp
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#ibc-go-v4-simapp
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#ibc-go-v4-simapp
-            package_account2: ['gaiad', 'cosmos']
-          - package2: .#ibc-go-v4-simapp
-            package_account2: ['wasmd', 'wasm']
-          - package2: .#ibc-go-v4-simapp
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#ibc-go-v4-simapp
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#ibc-go-v5-simapp
-            package_account1: ['gaiad', 'cosmos']
-          - package1: .#ibc-go-v5-simapp
-            package_account1: ['wasmd', 'wasm']
-          - package1: .#ibc-go-v5-simapp
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#ibc-go-v5-simapp
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#ibc-go-v5-simapp
-            package_account2: ['gaiad', 'cosmos']
-          - package2: .#ibc-go-v5-simapp
-            package_account2: ['wasmd', 'wasm']
-          - package2: .#ibc-go-v5-simapp
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#ibc-go-v5-simapp
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#ibc-go-v6-simapp
-            package_account1: ['gaiad', 'cosmos']
-          - package1: .#ibc-go-v6-simapp
-            package_account1: ['wasmd', 'wasm']
-          - package1: .#ibc-go-v6-simapp
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#ibc-go-v6-simapp
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#ibc-go-v6-simapp
-            package_account2: ['gaiad', 'cosmos']
-          - package2: .#ibc-go-v6-simapp
-            package_account2: ['wasmd', 'wasm']
-          - package2: .#ibc-go-v6-simapp
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#ibc-go-v6-simapp
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#wasmd
-            package_account1: ['gaiad', 'cosmos']
-          - package1: .#wasmd
-            package_account1: ['simd', 'cosmos']
-          - package1: .#wasmd
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#wasmd
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#wasmd
-            package_account2: ['gaiad', 'cosmos']
-          - package2: .#wasmd
-            package_account2: ['simd', 'cosmos']
-          - package2: .#wasmd
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#wasmd
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#evmos
-            package_account1: ['gaiad', 'cosmos']
-          - package1: .#evmos
-            package_account1: ['simd', 'cosmos']
-          - package1: .#evmos
-            package_account1: ['wasmd', 'wasm']
-          - package1: .#evmos
-            package_account1: ['osmosisd', 'osmo']
-          - package2: .#evmos
-            package_account2: ['gaiad', 'cosmos']
-          - package2: .#evmos
-            package_account2: ['simd', 'cosmos']
-          - package2: .#evmos
-            package_account2: ['wasmd', 'wasm']
-          - package2: .#evmos
-            package_account2: ['osmosisd', 'osmo']
-          - package1: .#osmosis
-            package_account1: ['gaiad', 'cosmos']
-          - package1: .#osmosis
-            package_account1: ['simd', 'cosmos']
-          - package1: .#osmosis
-            package_account1: ['evmosd', 'evmos']
-          - package1: .#osmosis
-            package_account1: ['wasmd', 'wasm']
-          - package2: .#osmosis
-            package_account2: ['gaiad', 'cosmos']
-          - package2: .#osmosis
-            package_account2: ['simd', 'cosmos']
-          - package2: .#osmosis
-            package_account2: ['evmosd', 'evmos']
-          - package2: .#osmosis
-            package_account2: ['wasmd', 'wasm']
+        first-package:
+          - package: gaia6
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: gaia7
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: gaia8
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: ibc-go-v2-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v3-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v4-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v5-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v6-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: wasmd
+            chain_command_path: wasmd
+            account_prefix: wasm
+          - package: evmos
+            chain_command_path: evmosd
+            account_prefix: evmos
+          - package: osmosis
+            chain_command_path: osmosisd
+            account_prefix: osmo
+          - package: osmosis
+            chain_command_path: osmosisd
+            account_prefix: osmo
+        second-package:
+          - package: gaia6
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: gaia7
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: gaia8
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: ibc-go-v2-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v3-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v4-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v5-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v6-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: wasmd
+            chain_command_path: wasmd
+            account_prefix: wasm
+          - package: evmos
+            chain_command_path: evmosd
+            account_prefix: evmos
+          - package: osmosis
+            chain_command_path: osmosisd
+            account_prefix: osmo
+          - package: osmosis
+            chain_command_path: osmosisd
+            account_prefix: osmo
 
     steps:
       - uses: actions/checkout@v2
@@ -338,12 +220,12 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          ACCOUNT_PREFIXES: ${{ matrix.package_account1[1] }},${{ matrix.package_account2[1] }}
+          ACCOUNT_PREFIXES: ${{ matrix.first_package.account_prefix }},${{ matrix.second_package.account_prefix }}
         with:
           max_attempts: 3
           timeout_minutes: 45
           command: |
-            CHAIN_COMMAND_PATHS=$(nix shell ${{ matrix.package1 }} -c which ${{ matrix.package_account1[0] }}),$(nix shell ${{ matrix.package2 }} -c which ${{ matrix.package_account2[0] }}) \
+            CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first_package.package }} -c which ${{ matrix.first_package.chain_command_path }}),$(nix shell .#${{ matrix.second_package.package }} -c which ${{ matrix.second_package.chain_command_path }}) \
               nix shell .#python -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2
@@ -418,10 +300,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#ibc-go-v5-simapp
+          - package: ibc-go-v5-simapp
             command: simd
             account_prefix: cosmos
-          - package: .#ibc-go-v6-simapp
+          - package: ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
     steps:
@@ -451,7 +333,7 @@ jobs:
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell ${{ matrix.chain.package }} -c cargo \
+          nix shell .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
             --nocapture --test-threads=1 fee::
 
@@ -461,10 +343,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia6
+          - package: gaia6
             command: gaiad
             account_prefix: cosmos
-          - package: .#gaia8
+          - package: gaia8
             command: gaiad
             account_prefix: cosmos
     steps:
@@ -494,7 +376,7 @@ jobs:
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell ${{ matrix.chain.package }} -c cargo \
+          nix shell .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features forward-packet --no-fail-fast -- \
             --nocapture --test-threads=1 forward::
 
