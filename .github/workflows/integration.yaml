@@ -116,6 +116,7 @@ jobs:
 
   multi-chains-test:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     timeout-minutes: 60
     strategy:
       fail-fast: false
