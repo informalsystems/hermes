@@ -120,7 +120,7 @@ impl OfaBaseChain for MockChainContext {
                     }
                     // Check that the packet is not timed out. Current height < packet timeout height.
                     self.receive_packet(p)?;
-                    res.push(Event::WriteAcknowledgment(h));
+                    res.push(vec![Event::WriteAcknowledgment(h)]);
                 }
                 MockMessage::AckPacket(receiver, h, p) => {
                     let client_consensus = self.query_client_state_at_height(receiver.clone(), h.clone())?;
@@ -129,14 +129,16 @@ impl OfaBaseChain for MockChainContext {
                         return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
                     }
                     self.acknowledge_packet(p)?;
+                    res.push(vec![]);
                 }
                 MockMessage::UpdateClient(receiver, h, s) => {
                     self.insert_client_state(receiver, h, s)?;
+                    res.push(vec![]);
                 }
                 _ => {}
             }
         }
-        Ok(vec![res])
+        Ok(res)
     }
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
