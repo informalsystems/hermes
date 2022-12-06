@@ -113,7 +113,8 @@ impl OfaBaseChain for MockChainContext {
         for m in messages {
             match m {
                 MockMessage::RecvPacket(receiver, h, p) => {
-                    let client_consensus = self.query_client_state_at_height(receiver.clone(), h.clone())?;
+                    let client_consensus =
+                        self.query_client_state_at_height(receiver.clone(), h.clone())?;
                     let state = client_consensus.get(&h).unwrap();
                     if !state.check_sent(&p.port_id, &p.channel_id, &p.sequence) {
                         return Err(Error::generic(eyre!("chain `{}` got a RecvPacket, but client `{}` state doesn't have the packet as sent", self.name(), receiver)));
@@ -123,7 +124,8 @@ impl OfaBaseChain for MockChainContext {
                     res.push(vec![Event::WriteAcknowledgment(h)]);
                 }
                 MockMessage::AckPacket(receiver, h, p) => {
-                    let client_consensus = self.query_client_state_at_height(receiver.clone(), h.clone())?;
+                    let client_consensus =
+                        self.query_client_state_at_height(receiver.clone(), h.clone())?;
                     let state = client_consensus.get(&h).unwrap();
                     if !state.check_received(&p.port_id, &p.channel_id, &p.sequence) {
                         return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));

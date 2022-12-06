@@ -22,7 +22,9 @@ pub struct MockChainRuntimeContext<Error> {
 
 impl Default for MockChainRuntimeContext<Error> {
     fn default() -> Self {
-        Self { phantom: Default::default() }
+        Self {
+            phantom: Default::default(),
+        }
     }
 }
 

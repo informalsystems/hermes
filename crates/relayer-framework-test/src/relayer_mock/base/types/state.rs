@@ -37,7 +37,8 @@ impl State {
 
     pub fn check_received(&self, port_id: &String, channel_id: &String, sequence: &u128) -> bool {
         self.recv_packets
-            .get(&(port_id.to_string(), channel_id.to_string(), *sequence)).is_some()
+            .get(&(port_id.to_string(), channel_id.to_string(), *sequence))
+            .is_some()
     }
 
     pub fn check_acknowledged(&self, port_id: String, channel_id: String, sequence: u128) -> bool {

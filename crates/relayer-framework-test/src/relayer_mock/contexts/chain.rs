@@ -19,10 +19,12 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
-    ChainState, ChannelId, ClientId, PortId, Sequence, ConsensusState,
+    ChainState, ChannelId, ClientId, ConsensusState, PortId, Sequence,
 };
 use crate::relayer_mock::base::types::runtime::{MockChainRuntimeContext, MockRuntimeContext};
-use crate::relayer_mock::base::types::{height::Height as MockHeight, packet::PacketKey, state::State};
+use crate::relayer_mock::base::types::{
+    height::Height as MockHeight, packet::PacketKey, state::State,
+};
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 
 pub struct MockChainContext {
@@ -37,7 +39,8 @@ pub struct MockChainContext {
 impl MockChainContext {
     pub fn new(name: String) -> Self {
         let runtime = OfaRuntimeContext::new(MockChainRuntimeContext::new());
-        let chain_state: HashMap<MockHeight, ConsensusState> = HashMap::from([(MockHeight::from(1), State::default())]);
+        let chain_state: HashMap<MockHeight, ConsensusState> =
+            HashMap::from([(MockHeight::from(1), State::default())]);
         let initial_state: HashMap<MockHeight, ChainState> =
             HashMap::from([(MockHeight::from(1), chain_state.clone())]);
         Self {
@@ -125,7 +128,7 @@ impl MockChainContext {
                     }
                     Entry::Vacant(_) => {
                         client_consensus_states.insert(height, state);
-                    },
+                    }
                 };
                 client_consensus_states
             }

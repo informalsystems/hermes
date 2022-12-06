@@ -123,11 +123,7 @@ impl OfaBaseRelay for MockRelayContext {
     ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error> {
         // If the latest state of the source chain doesn't have the packet as sent, return an error.
         let state = self.src_chain().chain.get_current_state();
-        if !state.check_sent(
-            &packet.port_id,
-            &packet.channel_id,
-            &packet.sequence,
-        ) {
+        if !state.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
             return Err(Error::receive_without_sent(
                 self.src_chain().chain.name().to_string(),
                 self.dst_chain().chain.name().to_string(),
@@ -137,8 +133,7 @@ impl OfaBaseRelay for MockRelayContext {
             self.dst_client_id().clone(),
             height.clone(),
             packet.clone(),
-            )
-        )
+        ))
     }
 
     async fn build_ack_packet_message(
@@ -149,9 +144,7 @@ impl OfaBaseRelay for MockRelayContext {
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
         let state = self.dst_chain().chain.get_current_state();
         // If the latest state of the destination chain doesn't have the packet as received, return an error.
-        if !state
-            .check_received(&packet.port_id, &packet.channel_id, &packet.sequence)
-        {
+        if !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence) {
             return Err(Error::acknowledgment_without_received(
                 self.src_chain().chain.name().to_string(),
                 self.dst_chain().chain.name().to_string(),

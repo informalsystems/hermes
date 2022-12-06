@@ -26,7 +26,10 @@ async fn test_mock_chain_test() -> Result<(), Error> {
 
         let state = dst_chain.chain.get_current_state();
 
-        assert!(!state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence), "Packet already received on destination chain before relaying it");
+        assert!(
+            !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
+            "Packet already received on destination chain before relaying it"
+        );
     }
 
     src_chain.chain.send_packet(packet.clone())?;
@@ -42,7 +45,10 @@ async fn test_mock_chain_test() -> Result<(), Error> {
 
         let state = dst_chain.chain.get_current_state();
 
-        assert!(state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence), "Packet not received on destination chain");
+        assert!(
+            state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
+            "Packet not received on destination chain"
+        );
     }
 
     {
@@ -50,7 +56,10 @@ async fn test_mock_chain_test() -> Result<(), Error> {
 
         let state = src_chain.chain.get_current_state();
 
-        assert!(state.check_acknowledged(packet.port_id, packet.channel_id, packet.sequence), "Acknowledgment not found on source chain");
+        assert!(
+            state.check_acknowledged(packet.port_id, packet.channel_id, packet.sequence),
+            "Acknowledgment not found on source chain"
+        );
     }
 
     Ok(())
