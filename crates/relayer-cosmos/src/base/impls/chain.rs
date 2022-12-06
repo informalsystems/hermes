@@ -17,7 +17,7 @@ use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusStat
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc_relayer_types::events::IbcEventType;
+use ibc_relayer_types::events::{IbcEvent, IbcEventType};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
@@ -198,21 +198,33 @@ where
         counterparty_port_id: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::PortId,
         sequence: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::Sequence,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
-        let chain_handle = self.chain.chain_handle();
         let status = self.query_chain_status().await?;
+        let chain_handle = self.chain.chain_handle();
+        let src_query_height =
+            Qualified::Equal(*CosmosChainWrapper::<Chain>::chain_status_height(&status));
         let path_ident = PathIdentifiers {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             counterparty_port_id: counterparty_port_id.clone(),
             counterparty_channel_id: counterparty_channel_id.clone(),
         };
-        let src_query_height =
-            Qualified::Equal(*CosmosChainWrapper::<Chain>::chain_status_height(&status));
-        // Call the `query_write_ack_events` method to fetch a Vec<IbcEventWithHeight>
+
         let ibc_events =
-            query_write_ack_events(chain_handle, &path_ident, &[*sequence], src_query_height);
-        // Search through the vec of events to find the `WriteAcknowledgement` event
-        // Return the event if one is found
-        todo!()
+            query_write_ack_events(chain_handle, &path_ident, &[*sequence], src_query_height)
+                .map_err(Error::relayer)?;
+
+        let write_ack = ibc_events.into_iter().find_map(|event_with_height| {
+            let event = event_with_height.event;
+
+            if let IbcEvent::WriteAcknowledgement(write_ack) = event {
+                Some(write_ack)
+            } else {
+                None
+            }
+        });
+
+        // Would we ever get more than one WriteAcknowledgement?
+        // If so, does it matter which one we return?
+        Ok(write_ack)
     }
 }
