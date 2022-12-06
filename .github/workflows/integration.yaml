@@ -292,10 +292,10 @@ jobs:
           - package2: .#evmos
             package_account2: ['simd', 'cosmos']
           - package2: .#evmos
-            package_account2: ['evmosd', 'evmos']
+            package_account2: ['wasmd', 'wasm']
           - package2: .#evmos
             package_account2: ['osmosisd', 'osmo']
-          - package1: .#evmos
+          - package1: .#osmosis
             package_account1: ['gaiad', 'cosmos']
           - package1: .#osmosis
             package_account1: ['simd', 'cosmos']
