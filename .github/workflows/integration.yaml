@@ -220,12 +220,12 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          ACCOUNT_PREFIXES: ${{ matrix.first_package.account_prefix }},${{ matrix.second_package.account_prefix }}
+          ACCOUNT_PREFIXES: ${{ matrix.first_package[account_prefix] }},${{ matrix.second_package[account_prefix] }}
         with:
           max_attempts: 3
           timeout_minutes: 45
           command: |
-            CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first_package.package }} -c which ${{ matrix.first_package.chain_command_path }}),$(nix shell .#${{ matrix.second_package.package }} -c which ${{ matrix.second_package.chain_command_path }}) \
+            CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first_package[package] }} -c which ${{ matrix.first_package[chain_command_path] }}),$(nix shell .#${{ matrix.second_package[package] }} -c which ${{ matrix.second_package[chain_command_path] }}) \
               nix shell .#python -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2
