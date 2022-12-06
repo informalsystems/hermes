@@ -535,6 +535,8 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 
 #[cfg(test)]
 mod tests {
+    use core::str::FromStr;
+
     use super::{load, parse_gas_prices, store_writer};
     use crate::config::GasPrice;
     use test_log::test;
@@ -565,13 +567,11 @@ mod tests {
     }
 
     #[test]
-    fn gas_price_try_from() {
+    fn gas_price_from_str() {
         let gp_original = GasPrice::new(10.0, "atom".to_owned());
 
         let gp_raw = gp_original.to_string();
-        let gp: GasPrice = gp_raw
-            .try_into()
-            .expect("could not parse String into GasPrice");
+        let gp = GasPrice::from_str(&gp_raw).expect("could not parse String into GasPrice");
 
         assert_eq!(gp, gp_original);
     }
@@ -601,5 +601,18 @@ mod tests {
         let parsed = parse_gas_prices(empty_price.to_string());
 
         assert_eq!(parsed, vec![]);
+    }
+
+    #[test]
+    fn malformed_gas_prices_do_not_get_parsed() {
+        let malformed_prices = "token1;.token2;0.25token3";
+        let parsed = parse_gas_prices(malformed_prices.to_string());
+
+        let expected = vec![GasPrice {
+            price: 0.25,
+            denom: "token3".to_owned(),
+        }];
+
+        assert_eq!(expected, parsed);
     }
 }
