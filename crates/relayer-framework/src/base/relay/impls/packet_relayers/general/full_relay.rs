@@ -52,6 +52,9 @@ where
                 )
                 .await?;
 
+            let destination_status = relay.destination_chain().query_chain_status().await?;
+            let destination_height = Relay::DstChain::chain_status_height(&destination_status);
+
             if let Some(ack) = write_ack {
                 relay
                     .relay_ack_packet(destination_height, packet, &ack)

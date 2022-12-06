@@ -30,7 +30,7 @@ time = "0.3"
 tokio = "1.19.2"
 toml = "0.5"
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }
-serde = "1.0.145"
+serde = "1.0.149"
 opentelemetry = { version = "0.17.0", features = ["metrics"] }
 
 [features]
