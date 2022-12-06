@@ -48,7 +48,7 @@ where
 
         let in_events = Sender::send_messages(context, in_messages).await?;
 
-        let events = in_events.into_iter().take(update_messages_count).collect();
+        let events = in_events.into_iter().skip(update_messages_count).collect();
 
         Ok(events)
     }
