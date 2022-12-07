@@ -116,6 +116,7 @@ where
             config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+            0,
         )?;
 
         let node_b = bootstrap_single_node(
@@ -124,6 +125,7 @@ where
             config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+            1,
         )?;
 
         let _node_process_a = node_a.process.clone();
@@ -148,6 +150,7 @@ where
             config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+            0,
         )?;
 
         let _node_process = node.process.clone();
