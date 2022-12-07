@@ -8,7 +8,7 @@ define_error! {
         Parse
             | _ | { "Failed to parse content" },
 
-        Attribute
+        Event
             { event: String }
             | e | { format_args!("Event attribute not found: {}", e.event) },
 

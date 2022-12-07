@@ -32,7 +32,7 @@ fn find_value<'a>(key: &str, entries: &'a [abci::EventAttribute]) -> Result<&'a 
                 None
             }
         })
-        .ok_or_else(|| Error::attribute(key.to_string()))
+        .ok_or_else(|| Error::event(format!("attribute not found for key: {}", key)))
 }
 
 fn new_attr(key: &str, value: &str) -> abci::EventAttribute {
@@ -100,11 +100,9 @@ fn fetch_first_element_from_events(
 ) -> Result<String, Error> {
     let res = block_events
         .get(key)
-        .ok_or_else(Vec::new)
-        .map_err(|_: Vec<&String>| Error::parse())?
+        .ok_or_else(|| Error::event(format!("key not found: {}", key)))?
         .get(0)
-        .ok_or(Err(()))
-        .map_err(|_: Result<&String, ()>| Error::parse())?;
+        .ok_or_else(|| Error::event(format!("attribute not found for key: {}", key)))?;
 
     Ok(res.clone())
 }
