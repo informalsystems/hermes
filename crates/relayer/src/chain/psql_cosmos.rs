@@ -332,7 +332,7 @@ impl PsqlChain {
 
     #[tracing::instrument(skip_all)]
     fn populate_channels_and_pending_packets(
-        &self,
+        &mut self,
         query_height: &QueryHeight,
         request: QueryChannelsRequest,
         snapshot: &mut IbcSnapshot,
@@ -393,7 +393,7 @@ impl PsqlChain {
 
     #[tracing::instrument(skip_all)]
     fn populate_packets(
-        &self,
+        &mut self,
         query_height: &QueryHeight,
         channel: &IdentifiedChannelEnd,
         snapshot: &mut IbcSnapshot,
@@ -491,7 +491,7 @@ impl PsqlChain {
     }
 
     #[tracing::instrument(skip(self))]
-    fn compute_ibc_snapshot(&self, query_height: &Height) -> Result<IbcSnapshot, Error> {
+    fn compute_ibc_snapshot(&mut self, query_height: &Height) -> Result<IbcSnapshot, Error> {
         let mut result = IbcSnapshot {
             height: query_height.revision_height(),
             data: IbcData {
@@ -1381,7 +1381,7 @@ impl ChainEndpoint for PsqlChain {
     }
 
     fn query_packet_events(
-        &self,
+        &mut self,
         request: QueryPacketEventDataRequest,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
         if self.is_synced() && request.event_id == WithBlockDataType::SendPacket {
@@ -1400,8 +1400,27 @@ impl ChainEndpoint for PsqlChain {
             crate::time!("query_packets_from_tendermint");
             crate::telemetry!(query, self.id(), "query_packets_from_tendermint");
 
-            // TODO(romac): Save in snapshot
-            self.chain.query_packet_events(request)
+            let events = self.chain.query_packet_events(request.clone())?;
+            let send_packets = events
+                .iter()
+                .filter_map(|e| {
+                    if let IbcEvent::SendPacket(ref e) = e.event {
+                        Some(e)
+                    } else {
+                        None
+                    }
+                })
+                .cloned()
+                .collect::<Vec<_>>();
+
+            self.rt
+                .block_on(query::update_send_packets_in_ibc_snapshot(
+                    self.snapshot_store.as_mut(),
+                    &request,
+                    send_packets.as_slice(),
+                ))?;
+
+            Ok(events)
         }
     }
 

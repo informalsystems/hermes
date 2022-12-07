@@ -362,7 +362,7 @@ pub trait ChainEndpoint: Sized {
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_packet_events(
-        &self,
+        &mut self,
         request: QueryPacketEventDataRequest,
     ) -> Result<Vec<IbcEventWithHeight>, Error>;
 

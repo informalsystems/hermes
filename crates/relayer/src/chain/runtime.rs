@@ -796,7 +796,7 @@ where
     }
 
     fn query_packet_events(
-        &self,
+        &mut self,
         request: QueryPacketEventDataRequest,
         reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     ) -> Result<(), Error> {

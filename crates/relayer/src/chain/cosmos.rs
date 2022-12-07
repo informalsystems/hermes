@@ -1668,7 +1668,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ///    Alternatively, a single query for all packets could be performed but it would return all
     ///    packets ever sent.
     fn query_packet_events(
-        &self,
+        &mut self,
         mut request: QueryPacketEventDataRequest,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("query_packet_events");
