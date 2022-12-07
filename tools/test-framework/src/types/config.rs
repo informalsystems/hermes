@@ -26,9 +26,9 @@ pub struct TestConfig {
        `["gaiad5"]` in `extra_chain_command_paths`, so that binary chain tests
        will use `gaiad5` for the second chain being spawned.
     */
-    pub chain_command_path: String,
+    pub chain_command_paths: Vec<String>,
 
-    pub account_prefix: String,
+    pub account_prefixes: Vec<String>,
 
     /**
        The directory path for storing the chain and relayer files.
