@@ -16,12 +16,14 @@ use eyre::eyre;
 use std::vec;
 
 use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::types::aliases::{
+    ChainStatus, ChannelId, ClientId, ConsensusState, PortId, Sequence,
+};
 use crate::relayer_mock::base::types::chain::MockChainStatus;
 use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
 use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
-use crate::relayer_mock::base::types::state::State;
 use crate::relayer_mock::contexts::chain::MockChainContext;
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
@@ -48,21 +50,21 @@ impl OfaChainTypes for MockChainContext {
 
     type Event = Event;
 
-    type ClientId = String;
+    type ClientId = ClientId;
 
     type ConnectionId = String;
 
-    type ChannelId = String;
+    type ChannelId = ChannelId;
 
-    type PortId = String;
+    type PortId = PortId;
 
-    type Sequence = u128;
+    type Sequence = Sequence;
 
     type WriteAcknowledgementEvent = WriteAcknowledgementEvent;
 
-    type ConsensusState = State;
+    type ConsensusState = ConsensusState;
 
-    type ChainStatus = MockChainStatus;
+    type ChainStatus = ChainStatus;
 }
 
 #[async_trait]
