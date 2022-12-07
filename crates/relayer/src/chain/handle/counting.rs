@@ -489,6 +489,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         &self,
         request: Vec<CrossChainQueryRequest>,
     ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        self.inc_metric("cross_chain_query");
         self.inner.cross_chain_query(request)
     }
 }
