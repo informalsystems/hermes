@@ -13,18 +13,23 @@
 //! Merkle Trees and Proofs.
 
 use alloc::string::String;
+use eyre::eyre;
 use std::collections::hash_map::Entry;
 use std::sync::Mutex;
+use std::vec;
 use std::{collections::HashMap, sync::Arc};
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
     ChainState, ChannelId, ClientId, ConsensusState, PortId, Sequence,
 };
+use crate::relayer_mock::base::types::events::Event;
+use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::runtime::{MockChainRuntimeContext, MockRuntimeContext};
 use crate::relayer_mock::base::types::{
     height::Height as MockHeight, packet::PacketKey, state::State,
 };
+
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 
 pub struct MockChainContext {
@@ -232,5 +237,47 @@ impl MockChainContext {
         let mut locked_consensus_states = self.consensus_states.lock().unwrap();
         locked_consensus_states.insert(new_height, locked_consensus_state.clone());
         Ok(())
+    }
+
+    /// If the message is a `SendPacket`, update the received packets,
+    /// and add a `RecvPacket` event to the returned array of events.
+    /// If the message is an `AckPacket`, update the received acknowledgment
+    /// packets.
+    /// If the message is an `UpdateClient` update the consensus state.
+    /// When a RecvPacket and AckPacket are received, verify that the client
+    /// state has respectively sent the message and received the message.
+    pub fn process_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
+        let mut res = vec![];
+        for m in messages {
+            match m {
+                MockMessage::RecvPacket(receiver, h, p) => {
+                    let client_consensus =
+                        self.query_client_state_at_height(receiver.clone(), h.clone())?;
+                    let state = client_consensus.get(&h).unwrap();
+                    if !state.check_sent(&p.port_id, &p.channel_id, &p.sequence) {
+                        return Err(Error::generic(eyre!("chain `{}` got a RecvPacket, but client `{}` state doesn't have the packet as sent", self.name(), receiver)));
+                    }
+                    // Check that the packet is not timed out. Current height < packet timeout height.
+                    self.receive_packet(p)?;
+                    res.push(vec![Event::WriteAcknowledgment(h)]);
+                }
+                MockMessage::AckPacket(receiver, h, p) => {
+                    let client_consensus =
+                        self.query_client_state_at_height(receiver.clone(), h.clone())?;
+                    let state = client_consensus.get(&h).unwrap();
+                    if !state.check_received(&p.port_id, &p.channel_id, &p.sequence) {
+                        return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
+                    }
+                    self.acknowledge_packet(p)?;
+                    res.push(vec![]);
+                }
+                MockMessage::UpdateClient(receiver, h, s) => {
+                    self.insert_client_state(receiver, h, s)?;
+                    res.push(vec![]);
+                }
+                _ => {}
+            }
+        }
+        Ok(res)
     }
 }

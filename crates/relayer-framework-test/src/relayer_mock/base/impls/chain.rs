@@ -12,8 +12,6 @@ use alloc::boxed::Box;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use async_trait::async_trait;
-use eyre::eyre;
-use std::vec;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
@@ -102,47 +100,11 @@ impl OfaBaseChain for MockChainContext {
         }
     }
 
-    /// If the message is a `SendPacket`, update the received packets,
-    /// and add a `RecvPacket` event to the returned array of events.
-    /// If the message is an `AckPacket`, update the received acknowledgment
-    /// packets.
-    /// If the message is an `UpdateClient` update the consensus state.
     async fn send_messages(
         &self,
         messages: Vec<Self::Message>,
     ) -> Result<Vec<Vec<Self::Event>>, Error> {
-        let mut res = vec![];
-        for m in messages {
-            match m {
-                MockMessage::RecvPacket(receiver, h, p) => {
-                    let client_consensus =
-                        self.query_client_state_at_height(receiver.clone(), h.clone())?;
-                    let state = client_consensus.get(&h).unwrap();
-                    if !state.check_sent(&p.port_id, &p.channel_id, &p.sequence) {
-                        return Err(Error::generic(eyre!("chain `{}` got a RecvPacket, but client `{}` state doesn't have the packet as sent", self.name(), receiver)));
-                    }
-                    // Check that the packet is not timed out. Current height < packet timeout height.
-                    self.receive_packet(p)?;
-                    res.push(vec![Event::WriteAcknowledgment(h)]);
-                }
-                MockMessage::AckPacket(receiver, h, p) => {
-                    let client_consensus =
-                        self.query_client_state_at_height(receiver.clone(), h.clone())?;
-                    let state = client_consensus.get(&h).unwrap();
-                    if !state.check_received(&p.port_id, &p.channel_id, &p.sequence) {
-                        return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
-                    }
-                    self.acknowledge_packet(p)?;
-                    res.push(vec![]);
-                }
-                MockMessage::UpdateClient(receiver, h, s) => {
-                    self.insert_client_state(receiver, h, s)?;
-                    res.push(vec![]);
-                }
-                _ => {}
-            }
-        }
-        Ok(res)
+        self.process_messages(messages)
     }
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
