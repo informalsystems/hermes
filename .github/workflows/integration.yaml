@@ -116,7 +116,7 @@ jobs:
 
   multi-chains-test:
     runs-on: ubuntu-latest
-    #if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -155,9 +155,6 @@ jobs:
           - package: osmosis
             chain_command_path: osmosisd
             account_prefix: osmo
-          - package: osmosis
-            chain_command_path: osmosisd
-            account_prefix: osmo
         second-package:
           - package: gaia6
             chain_command_path: gaiad
@@ -189,9 +186,6 @@ jobs:
           - package: evmos
             chain_command_path: evmosd
             account_prefix: evmos
-          - package: osmosis
-            chain_command_path: osmosisd
-            account_prefix: osmo
           - package: osmosis
             chain_command_path: osmosisd
             account_prefix: osmo
