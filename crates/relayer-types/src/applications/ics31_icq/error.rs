@@ -1,7 +1,8 @@
 use crate::core::ics24_host::error::ValidationError as Ics24ValidationError;
+use tendermint::error::Error as TendermintError;
 
+use crate::prelude::*;
 use flex_error::define_error;
-use std::prelude::v1::*;
 
 define_error! {
     Error {
@@ -10,13 +11,15 @@ define_error! {
 
         Event
             { event: String }
-            | e | { format_args!("Event attribute not found: {}", e.event) },
+            | e | { format!("Event attribute not found: {}", e.event) },
 
         Ics24
-            | _ | { "ics24 validation error" },
+            { error: Ics24ValidationError }
+            | e | { format!("ics24 validation error: {:?}", e.error) },
 
         Tendermint
-            | _ | { "Tendermint error" },
+            { error: TendermintError }
+            | e | { format!("Tendermint error: {:?}", e.error) },
 
         Query
             | _ | { "Failed to query data" },
@@ -27,7 +30,13 @@ define_error! {
 }
 
 impl From<Ics24ValidationError> for Error {
-    fn from(_: Ics24ValidationError) -> Self {
-        Self::ics24()
+    fn from(e: Ics24ValidationError) -> Self {
+        Self::ics24(e)
+    }
+}
+
+impl From<TendermintError> for Error {
+    fn from(e: TendermintError) -> Self {
+        Self::tendermint(e)
     }
 }

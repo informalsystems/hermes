@@ -77,9 +77,8 @@ impl<'a> TryFrom<&'a [abci::EventAttribute]> for CrossChainQueryPacket {
         let height_str = find_value("height", entries)?;
 
         let chain_id = ChainId::from_string(chain_id_str);
-        let connection_id =
-            ConnectionId::from_str(connection_id_str).map_err(|_| Error::ics24())?;
-        let height = Height::from_str(height_str).map_err(|_| Error::tendermint())?;
+        let connection_id = ConnectionId::from_str(connection_id_str)?;
+        let height = Height::from_str(height_str)?;
 
         Ok(Self {
             module,
@@ -142,10 +141,9 @@ impl CrossChainQueryPacket {
                 &format!("{}.{}", EVENT_TYPE_PREFIX, "query_id"),
             )?,
             chain_id: ChainId::from_string(&chain_id_str),
-            connection_id: ConnectionId::from_str(&connection_id_str)
-                .map_err(|_| Error::parse())?,
+            connection_id: ConnectionId::from_str(&connection_id_str)?,
             query_type,
-            height: Height::from_str(&height_str).map_err(|_| Error::parse())?,
+            height: Height::from_str(&height_str)?,
             request: fetch_first_element_from_events(
                 block_events,
                 &format!("{}.{}", EVENT_TYPE_PREFIX, "request"),
