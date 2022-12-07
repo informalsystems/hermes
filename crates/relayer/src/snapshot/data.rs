@@ -1,13 +1,14 @@
 use core::fmt;
 use std::collections::HashMap;
 
+use ibc_relayer_types::core::ics04_channel::events::SendPacket;
 use ibc_relayer_types::Height;
 use serde::de::{Deserializer, Error as _};
 use serde::{Deserialize, Serialize, Serializer};
 
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
 };
@@ -49,7 +50,7 @@ pub struct IbcData {
     pub client_states: HashMap<ClientId, IdentifiedAnyClientState>,
     pub consensus_states: HashMap<ClientId, Vec<AnyConsensusStateWithHeight>>,
 
-    pub pending_sent_packets: HashMap<PacketId, Packet>, // TODO - use IbcEvent val (??)
+    pub pending_sent_packets: HashMap<PacketId, SendPacket>,
 }
 
 impl Default for IbcData {

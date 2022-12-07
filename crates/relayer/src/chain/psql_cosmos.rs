@@ -59,6 +59,7 @@ use crate::{
 };
 
 pub mod events;
+pub mod query;
 
 flex_error::define_error! {
     PsqlError {
@@ -483,7 +484,7 @@ impl PsqlChain {
                 .data
                 .pending_sent_packets
                 .entry(packet_id)
-                .or_insert_with(|| send_packet.packet);
+                .or_insert(send_packet);
         }
 
         Ok(())
@@ -851,30 +852,30 @@ impl PsqlChain {
         trace!("try_update_with_packet_event {:?}", event);
 
         match event {
-            IbcEvent::SendPacket(sp) => {
+            IbcEvent::SendPacket(send_packet) => {
                 let packet_id = PacketId {
-                    port_id: sp.src_port_id().clone(),
-                    channel_id: sp.src_channel_id().clone(),
-                    sequence: sp.packet.sequence,
+                    port_id: send_packet.src_port_id().clone(),
+                    channel_id: send_packet.src_channel_id().clone(),
+                    sequence: send_packet.packet.sequence,
                 };
 
                 debug!(
                     "psql chain {} - inserting pending sent packet '{}' due to event SendPacket({})",
                     self.chain.id(),
                     packet_id,
-                    sp
+                    send_packet
                 );
 
                 snapshot
                     .data
                     .pending_sent_packets
-                    .insert(packet_id, sp.packet);
+                    .insert(packet_id, send_packet);
             }
-            IbcEvent::AcknowledgePacket(ap) => {
+            IbcEvent::AcknowledgePacket(ack_packet) => {
                 let packet_id = PacketId {
-                    port_id: ap.src_port_id().clone(),
-                    channel_id: ap.src_channel_id().clone(),
-                    sequence: ap.packet.sequence,
+                    port_id: ack_packet.src_port_id().clone(),
+                    channel_id: ack_packet.src_channel_id().clone(),
+                    sequence: ack_packet.packet.sequence,
                 };
 
                 let removed = snapshot.data.pending_sent_packets.remove(&packet_id);
@@ -882,11 +883,11 @@ impl PsqlChain {
                 match removed {
                     Some(_) => debug!(
                         "removed pending packet '{}' due to event AcknowledgePacket({})",
-                        packet_id, ap
+                        packet_id, ack_packet
                     ),
                     None => debug!(
                         "no pending send packet found by ack event for '{}' due to event AcknowledgePacket({})",
-                        packet_id, ap
+                        packet_id, ack_packet
                     ),
                 }
             }
@@ -1383,12 +1384,18 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryPacketEventDataRequest,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
-        if self.is_synced() {
+        if self.is_synced() && request.event_id == WithBlockDataType::SendPacket {
             crate::time!("query_packet_events_snapshot");
             crate::telemetry!(query, self.id(), "query_packet_events_snapshot");
 
-            // TODO(romac): Query snapshot instead
-            self.chain.query_packet_events(request)
+            let from_snapshot = self
+                .rt
+                .block_on(query::query_send_packets_from_ibc_snapshot(
+                    self.snapshot_store.as_ref(),
+                    &request,
+                ));
+
+            from_snapshot.or_else(|_| self.chain.query_packet_events(request))
         } else {
             crate::time!("query_packets_from_tendermint");
             crate::telemetry!(query, self.id(), "query_packets_from_tendermint");

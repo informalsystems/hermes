@@ -11,7 +11,7 @@ pub use data::*;
 
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics04_channel::events::SendPacket;
 use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
 use ibc_relayer_types::Height;
 
@@ -190,7 +190,7 @@ pub trait SnapshotStore: Send + Sync {
     async fn query_sent_packets(
         &self,
         query_height: QueryHeight,
-    ) -> Result<(Height, Vec<Packet>), Error> {
+    ) -> Result<(Height, Vec<SendPacket>), Error> {
         let result = self.fetch_snapshot(query_height).await?;
 
         Ok((
@@ -204,7 +204,7 @@ pub trait SnapshotStore: Send + Sync {
         &self,
         query_height: QueryHeight,
         packet_id: &PacketId,
-    ) -> Result<Option<Packet>, Error> {
+    ) -> Result<Option<SendPacket>, Error> {
         let result = self.fetch_snapshot(query_height).await?;
         let packet = result.data.pending_sent_packets.get(packet_id).cloned();
         Ok(packet)

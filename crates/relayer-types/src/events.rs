@@ -84,7 +84,7 @@ define_error! {
 
 /// Events whose data is not included in the app state and must be extracted using tendermint RPCs
 /// (i.e. /tx_search or /block_search)
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub enum WithBlockDataType {
     CreateClient,
     UpdateClient,
@@ -94,7 +94,7 @@ pub enum WithBlockDataType {
 
 impl WithBlockDataType {
     pub fn as_str(&self) -> &'static str {
-        match *self {
+        match self {
             WithBlockDataType::CreateClient => "create_client",
             WithBlockDataType::UpdateClient => "update_client",
             WithBlockDataType::SendPacket => "send_packet",

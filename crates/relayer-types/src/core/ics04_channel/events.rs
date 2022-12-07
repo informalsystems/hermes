@@ -12,6 +12,8 @@ use crate::events::{Error as EventError, IbcEvent, IbcEventType};
 use crate::prelude::*;
 use crate::utils::pretty::PrettySlice;
 
+use super::packet::Sequence;
+
 /// Channel event attribute keys
 pub const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
 pub const CHANNEL_ID_ATTRIBUTE_KEY: &str = "channel_id";
@@ -514,7 +516,7 @@ impl_from_ibc_to_abci_event!(
     CloseConfirm
 );
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SendPacket {
     pub packet: Packet,
 }
@@ -531,6 +533,9 @@ impl SendPacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
+    }
+    pub fn sequence(&self) -> Sequence {
+        self.packet.sequence
     }
 }
 

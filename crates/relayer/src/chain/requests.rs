@@ -416,6 +416,8 @@ pub struct QueryTxHash(pub TxHash);
 /// - with sequences in `sequences`
 /// - that occurred at a height either smaller or equal to `height` or exactly at `height`,
 ///   as specified by `event_height_qualifier`
+///
+///   TODO(romac): Rename `source` to `src` and `destination` to `dst` for consistency
 #[derive(Clone, Debug)]
 pub struct QueryPacketEventDataRequest {
     pub event_id: WithBlockDataType,
