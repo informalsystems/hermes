@@ -214,7 +214,7 @@ impl Object {
             Object::Channel(c) => &c.src_chain_id == src_chain_id,
             Object::Packet(p) => &p.src_chain_id == src_chain_id,
             Object::Wallet(_) => false,
-            Object::CrossChainQuery(_) => true,
+            Object::CrossChainQuery(c) => &c.src_chain_id == src_chain_id,
         }
     }
 
@@ -226,7 +226,9 @@ impl Object {
             Object::Channel(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
             Object::Packet(p) => &p.src_chain_id == chain_id || &p.dst_chain_id == chain_id,
             Object::Wallet(w) => &w.chain_id == chain_id,
-            Object::CrossChainQuery(_) => true,
+            Object::CrossChainQuery(c) => {
+                &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id
+            }
         }
     }
 
