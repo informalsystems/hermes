@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   integration-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-21.10
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -115,7 +115,7 @@ jobs:
               --nocapture --test-threads=2
 
   multi-chains-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-21.10
     if: github.ref == 'refs/heads/master'
     timeout-minutes: 60
     strategy:
@@ -226,7 +226,7 @@ jobs:
               --nocapture --test-threads=2
 
   ordered-channel-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-21.10
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v2
@@ -258,7 +258,7 @@ jobs:
             --nocapture --test-threads=1 test_ordered_channel
 
   ica-filter-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-21.10
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
@@ -290,7 +290,7 @@ jobs:
             --nocapture --test-threads=1 test_ica_filter
 
   ics29-fee-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-21.10
     strategy:
       fail-fast: false
       matrix:
@@ -333,7 +333,7 @@ jobs:
             --nocapture --test-threads=1 fee::
 
   forward-packet:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-21.10
     strategy:
       fail-fast: false
       matrix:
@@ -376,7 +376,7 @@ jobs:
             --nocapture --test-threads=1 forward::
 
   model-based-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-21.10
     timeout-minutes: 60
     strategy:
       matrix:
