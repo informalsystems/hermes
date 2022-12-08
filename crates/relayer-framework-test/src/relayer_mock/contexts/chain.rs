@@ -1,13 +1,10 @@
-//! The MockChainContext uses a ChainState alias for it's consensus_state.
-//! This type is a HashMap<Height, State>, used to represent the State of
-//! the chain at all Heights.
-//! The consensus_states is a HashMap<Height, ChainState> used to send the
-//! consensus_state of the chain at a specific Height inside a client upgrade
-//! message.
-//! The client_states is a HashMap<ClientId, HashMap<Height, ChainState>>.
+//! A HashMap<Height, ChainState> is used to represent the State of the
+//! chain at all Heights.
+//! The current_state is the ChainState at the latest height.
+//! The consensus_states is a HashMap<ClientId, HashMap<Height, ChainState>>.
 //! This is used to check the consensus_state for a specific client, at a
 //! specific height.
-//! Usually the client_states would use the root hashes of a Merle Tree,
+//! Usually the consensus_states would use the root hashes of a Merle Tree,
 //! but since the MockChain is used for testing and will have a small number
 //! of states, the whole state is used. This avoids needing to implement
 //! Merkle Trees and Proofs.
@@ -35,9 +32,9 @@ use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext
 
 pub struct MockChainContext {
     pub name: String,
-    pub consensus_states: Arc<Mutex<HashMap<MockHeight, ChainState>>>,
-    pub consensus_state: Arc<Mutex<ChainState>>,
-    pub client_states: Arc<Mutex<HashMap<ClientId, HashMap<MockHeight, ChainState>>>>,
+    pub past_chain_states: Arc<Mutex<HashMap<MockHeight, ChainState>>>,
+    pub current_state: Arc<Mutex<ChainState>>,
+    pub consensus_states: Arc<Mutex<HashMap<ClientId, HashMap<MockHeight, ChainState>>>>,
     pub runtime: OfaRuntimeContext<MockChainRuntimeContext<Error>>,
 }
 
@@ -50,9 +47,9 @@ impl MockChainContext {
             HashMap::from([(MockHeight::from(1), chain_state.clone())]);
         Self {
             name,
-            consensus_states: Arc::new(Mutex::new(initial_state)),
-            consensus_state: Arc::new(Mutex::new(chain_state)),
-            client_states: Arc::new(Mutex::new(HashMap::new())),
+            past_chain_states: Arc::new(Mutex::new(initial_state)),
+            current_state: Arc::new(Mutex::new(chain_state)),
+            consensus_states: Arc::new(Mutex::new(HashMap::new())),
             runtime,
         }
     }
@@ -65,47 +62,44 @@ impl MockChainContext {
         &self.runtime
     }
 
-    /// The MockChain has one and only one State at every height, so this method must return a MockHeight.
     pub fn get_latest_height(&self) -> Result<MockHeight, Error> {
-        let consensus_state = self.consensus_state.acquire_mutex()?;
-        let latest_height = consensus_state
+        let locked_current_state = self.current_state.acquire_mutex()?;
+        let latest_height = locked_current_state
             .keys()
             .max()
             .ok_or_else(Error::empty_iterator)?;
         Ok(latest_height.clone())
     }
 
-    /// Get the current state of the chain, which is the State at the latest height.
-    /// The MockChain has one and only one State at every height, so this method must return a State.
+    /// Get the current state of the chain, which is the ChainState at the latest height.
     pub fn get_current_state(&self) -> Result<State, Error> {
         let height = self.get_latest_height()?;
-        let locked_consensus_state = self.consensus_state.acquire_mutex()?;
-        let state = locked_consensus_state.get(&height).ok_or_else(|| {
-            Error::no_consensus_state_at_height(self.name().to_string(), height.0)
-        })?;
+        let locked_current_state = self.current_state.acquire_mutex()?;
+        let state = locked_current_state
+            .get(&height)
+            .ok_or_else(|| Error::no_chain_state(self.name().to_string(), height.0))?;
         Ok(state.clone())
     }
 
     /// Query the chain state at a given Height. This is used to see which receive and
     /// acknowledgment messages have been processed by the Mock Chain.
-    /// The MockChain has one and only one State at every height, so this method must return a ChainState.
     pub fn query_state_at_height(&self, height: MockHeight) -> Result<ChainState, Error> {
-        let locked_consensus_state = self.consensus_states.acquire_mutex()?;
-        let state = locked_consensus_state.get(&height).ok_or_else(|| {
-            Error::no_consensus_state_at_height(self.name().to_string(), height.0)
-        })?;
+        let locked_past_chain_states = self.past_chain_states.acquire_mutex()?;
+        let state = locked_past_chain_states
+            .get(&height)
+            .ok_or_else(|| Error::no_chain_state(self.name().to_string(), height.0))?;
         Ok(state.clone())
     }
 
     /// Query the consensus state of a Client at a given height.
     /// Refer to the `queryConsensusState` of ICS002.
-    pub fn query_client_state_at_height(
+    pub fn query_consensus_state_at_height(
         &self,
         client_id: ClientId,
         height: MockHeight,
     ) -> Result<ChainState, Error> {
-        let client_states = self.client_states.acquire_mutex()?;
-        let client_consensus_states = client_states
+        let locked_consensus_states = self.consensus_states.acquire_mutex()?;
+        let client_consensus_states = locked_consensus_states
             .get(&client_id)
             .ok_or_else(|| Error::no_consensus_state(client_id.clone()))?;
         let client_consensus_state = client_consensus_states
@@ -120,92 +114,91 @@ impl MockChainContext {
     /// States at the same Height.
     /// This is used for the `updateClient` of ICS002, with the misbehaviour being when trying to update
     /// an already existing Consensus State with a different value.
-    pub fn insert_client_state(
+    pub fn insert_consensus_state(
         &self,
         client_id: String,
         height: MockHeight,
         state: ChainState,
     ) -> Result<(), Error> {
-        let mut client_states = self.client_states.acquire_mutex()?;
-        let client_consensus_states = match client_states.get(&client_id) {
-            Some(client_consensus_states) => {
-                let mut client_consensus_states = client_consensus_states.clone();
-                match client_consensus_states.entry(height.clone()) {
+        let mut locked_consensus_states = self.consensus_states.acquire_mutex()?;
+        let client_consensus_states = match locked_consensus_states.get(&client_id) {
+            Some(ccs) => {
+                let mut new_client_consensus_states = ccs.clone();
+                match new_client_consensus_states.entry(height.clone()) {
                     Entry::Occupied(o) => {
                         // Check if the existing Consensus State at the given height differs
                         // from the one passed.
                         if o.get().clone() != state {
-                            return Err(Error::consensus_divergence());
+                            return Err(Error::consensus_divergence(client_id, height.0));
                         }
                     }
                     Entry::Vacant(_) => {
-                        client_consensus_states.insert(height, state);
+                        new_client_consensus_states.insert(height, state);
                     }
                 };
-                client_consensus_states
+                new_client_consensus_states
             }
             // If the Client doesn't have any Consensus State, create one with the given
             // state as initial Consensus State.
             None => HashMap::from([(height, state)]),
         };
-        // Update the Client States of the Chain.
-        client_states.insert(client_id, client_consensus_states);
+        // Update the Consensus States of the Chain.
+        locked_consensus_states.insert(client_id, client_consensus_states);
 
         Ok(())
     }
 
-    /// Insert the current state at Height + 1. This is used to advance the chain's Height by 1
+    /// Insert the current_state at Height + 1. This is used to advance the chain's Height by 1
     /// without changing its state.
     pub fn new_block(&self) -> Result<(), Error> {
         // Retrieve the current state
         let current_state = self.get_current_state()?;
 
-        // Update the Consensus States of the Chain, which will increase the Height by 1.
+        // Update the current_state of the Chain, which will increase the Height by 1.
         self.update_current_state(current_state)?;
 
         Ok(())
     }
 
-    /// Sending a packet adds a new Consensus State with the sent packet information
+    /// Sending a packet adds a new ChainState with the sent packet information
     /// at a Height + 1.
     pub fn send_packet(&self, packet: PacketKey) -> Result<(), Error> {
-        // Retrieve the current state and update it with the newly sent packet
+        // Retrieve the current_state and update it with the newly sent packet
         let mut new_state = self.get_current_state()?;
         new_state.update_sent(packet.port_id, packet.channel_id, packet.sequence);
 
-        // Update the Consensus States of the Chain
+        // Update the current_state of the Chain
         self.update_current_state(new_state)?;
 
         Ok(())
     }
 
-    /// Receiving a packet adds a new Consensus State with the received packet information
+    /// Receiving a packet adds a new ChainState with the received packet information
     /// at a Height + 1.
     pub fn receive_packet(&self, packet: PacketKey) -> Result<(), Error> {
-        // Retrieve the current state and update it with the newly received packet
+        // Retrieve the current_state and update it with the newly received packet
         let mut new_state = self.get_current_state()?;
         new_state.update_received(packet.port_id, packet.channel_id, packet.sequence);
 
-        // Update the current state of the Chain
+        // Update the current_state of the Chain
         self.update_current_state(new_state)?;
 
         Ok(())
     }
 
-    /// Receiving an acknowledgement adds a new Consensus State with the received acknowledgement
+    /// Receiving an acknowledgement adds a new ChainState with the received acknowledgement
     /// information at a Height + 1.
     pub fn acknowledge_packet(&self, packet: PacketKey) -> Result<(), Error> {
-        // Retrieve the current state and update it with the newly received acknowledgement
+        // Retrieve the current_state and update it with the newly received acknowledgement
         let mut new_state = self.get_current_state()?;
         new_state.update_acknowledged(packet.port_id, packet.channel_id, packet.sequence);
 
-        // Update the current state of the Chain
+        // Update the current_state of the Chain
         self.update_current_state(new_state)?;
 
         Ok(())
     }
 
-    /// Build a packet using the chain's Sequence information.
     pub fn build_send_packet(
         &self,
         client_id: ClientId,
@@ -225,19 +218,19 @@ impl MockChainContext {
         )
     }
 
-    /// Update the chain's Consensus State and Consensus States at the same time to insure
+    /// Update the chain's current_state and past_chain_states at the same time to insure
     /// they are always synchronized.
-    /// The MockChain must have a one and only one State at every height.
+    /// The MockChain must have a one and only one ChainState at every height.
     fn update_current_state(&self, state: State) -> Result<(), Error> {
         let latest_height = self.get_latest_height()?;
         let new_height = latest_height.increment();
-        let mut locked_consensus_state = self.consensus_state.acquire_mutex()?;
-        locked_consensus_state.insert(new_height.clone(), state);
+        let mut locked_current_state = self.current_state.acquire_mutex()?;
+        locked_current_state.insert(new_height.clone(), state);
 
-        // After inserting the new state to the consensus state, update the consensus states
+        // After inserting the new state in the current_state, update the past_chain_states
         // at the given height.
-        let mut locked_consensus_states = self.consensus_states.acquire_mutex()?;
-        locked_consensus_states.insert(new_height, locked_consensus_state.clone());
+        let mut locked_past_chain_states = self.past_chain_states.acquire_mutex()?;
+        locked_past_chain_states.insert(new_height, locked_current_state.clone());
 
         Ok(())
     }
@@ -255,7 +248,7 @@ impl MockChainContext {
             match m {
                 MockMessage::RecvPacket(receiver, h, p) => {
                     let client_consensus =
-                        self.query_client_state_at_height(receiver.clone(), h.clone())?;
+                        self.query_consensus_state_at_height(receiver.clone(), h.clone())?;
                     let state = client_consensus.get(&h).ok_or_else(|| {
                         Error::no_consensus_state_at_height(self.name().to_string(), h.0)
                     })?;
@@ -268,7 +261,7 @@ impl MockChainContext {
                 }
                 MockMessage::AckPacket(receiver, h, p) => {
                     let client_consensus =
-                        self.query_client_state_at_height(receiver.clone(), h.clone())?;
+                        self.query_consensus_state_at_height(receiver.clone(), h.clone())?;
                     let state = client_consensus.get(&h).ok_or_else(|| {
                         Error::no_consensus_state_at_height(self.name().to_string(), h.0)
                     })?;
@@ -279,7 +272,7 @@ impl MockChainContext {
                     res.push(vec![]);
                 }
                 MockMessage::UpdateClient(receiver, h, s) => {
-                    self.insert_client_state(receiver, h, s)?;
+                    self.insert_consensus_state(receiver, h, s)?;
                     res.push(vec![]);
                 }
                 _ => {}

@@ -134,7 +134,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         height: &Self::Height,
     ) -> Result<Self::ConsensusState, Self::Error> {
         let client_consensus =
-            self.query_client_state_at_height(client_id.to_string(), height.clone())?;
+            self.query_consensus_state_at_height(client_id.to_string(), height.clone())?;
         let state = client_consensus.get(height);
         if let Some(state) = state {
             return Ok(state.clone());

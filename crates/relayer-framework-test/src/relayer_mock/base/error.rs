@@ -25,16 +25,22 @@ define_error! {
                     e.expected, e.actual)
             },
 
+        NoChainState
+        { id: String, height: u128 }
+            | e | {
+                format_args!("no chain state found for chain: {} at height {}", e.id, e.height)
+            },
+
         NoConsensusState
         { id: String }
             | e | {
-                format_args!("no consensus state found for id: {}", e.id)
+                format_args!("no consensus state found for client: {}", e.id)
             },
 
         NoConsensusStateAtHeight
         { id: String, height: u128 }
             | e | {
-                format_args!("no consensus state found for {} at height {}", e.id, e.height)
+                format_args!("no consensus state found for client {} at height {}", e.id, e.height)
             },
 
         NoHeightState
@@ -55,8 +61,9 @@ define_error! {
             },
 
         ConsensusDivergence
-            | _ | {
-                format_args!("Trying to insert different consensus states at same height")
+        { id: String, height: u128 }
+            | e | {
+                format_args!("trying to insert different consensus states for client {} at height {}", e.id, e.height)
             },
 
         ReceiveWithoutSent
