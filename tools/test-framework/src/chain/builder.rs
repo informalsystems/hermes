@@ -30,14 +30,14 @@ pub struct ChainBuilder {
        may return [`ChainDriver`]s bound to different chain commands
        for testing with multiple chain implementations.
     */
-    pub command_path: String,
+    pub command_paths: Vec<String>,
 
     /**
        The filesystem path to store the data files used by the chain.
     */
     pub base_store_dir: String,
 
-    pub account_prefix: String,
+    pub account_prefixes: Vec<String>,
 
     pub runtime: Arc<Runtime>,
 }
@@ -47,15 +47,15 @@ impl ChainBuilder {
        Create a new `ChainBuilder`.
     */
     pub fn new(
-        command_path: &str,
+        command_paths: Vec<String>,
         base_store_dir: &str,
-        account_prefix: &str,
+        account_prefixes: Vec<String>,
         runtime: Arc<Runtime>,
     ) -> Self {
         Self {
-            command_path: command_path.to_string(),
+            command_paths,
             base_store_dir: base_store_dir.to_string(),
-            account_prefix: account_prefix.to_string(),
+            account_prefixes,
             runtime,
         }
     }
@@ -65,9 +65,9 @@ impl ChainBuilder {
     */
     pub fn new_with_config(config: &TestConfig, runtime: Arc<Runtime>) -> Self {
         Self::new(
-            &config.chain_command_path,
+            config.chain_command_paths.clone(),
             &format!("{}", config.chain_store_dir.display()),
-            &config.account_prefix,
+            config.account_prefixes.clone(),
             runtime,
         )
     }
@@ -86,8 +86,18 @@ impl ChainBuilder {
        a [`ChainDriver`] configured with a chain ID  like
        `"ibc-alpha-f5a2a988"`.
     */
-    pub fn new_chain(&self, prefix: &str, use_random_id: bool) -> Result<ChainDriver, Error> {
-        let chain_type = ChainType::from_str(&self.command_path[..])?;
+    pub fn new_chain(
+        &self,
+        prefix: &str,
+        use_random_id: bool,
+        chain_number: usize,
+    ) -> Result<ChainDriver, Error> {
+        // If there are more spawned chains than given chain binaries, take the N-th position modulo
+        // the number of chain binaries given. Same for account prefix.
+        let chain_number = chain_number % self.command_paths.len();
+        let account_number = chain_number % self.account_prefixes.len();
+
+        let chain_type = ChainType::from_str(&self.command_paths[chain_number])?;
 
         let chain_id = chain_type.chain_id(prefix, use_random_id);
 
@@ -100,10 +110,10 @@ impl ChainBuilder {
 
         let driver = ChainDriver::create(
             chain_type,
-            self.command_path.clone(),
+            self.command_paths[chain_number].clone(),
             chain_id,
             home_path,
-            self.account_prefix.clone(),
+            self.account_prefixes[account_number].clone(),
             rpc_port,
             grpc_port,
             grpc_web_port,
