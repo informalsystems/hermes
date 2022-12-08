@@ -32,6 +32,14 @@ impl<Relay: OfaBaseRelay> HasRelayTypes for OfaRelayWrapper<Relay> {
 
     type Packet = Relay::Packet;
 
+    fn src_chain_error(e: <Self::SrcChain as HasErrorType>::Error) -> Self::Error {
+        Relay::src_chain_error(e)
+    }
+
+    fn dst_chain_error(e: <Self::DstChain as HasErrorType>::Error) -> Self::Error {
+        Relay::dst_chain_error(e)
+    }
+
     fn packet_src_port(packet: &Self::Packet) -> &PortId<Self::SrcChain, Self::DstChain> {
         Relay::packet_src_port(packet)
     }

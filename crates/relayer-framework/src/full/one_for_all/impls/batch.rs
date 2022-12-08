@@ -10,7 +10,7 @@ use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::full::batch::context::{BatchChannel, BatchContext, HasBatchContext};
 use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
-use crate::full::one_for_all::traits::batch::{OfaBatch, OfaBatchContext};
+use crate::full::one_for_all::traits::batch::{OfaBatch, OfaBatchWrapper};
 use crate::full::one_for_all::traits::chain::OfaFullChain;
 use crate::std_prelude::*;
 
@@ -31,7 +31,7 @@ where
 }
 
 #[async_trait]
-impl<Chain, Batch> BatchContext for OfaBatchContext<Chain>
+impl<Chain, Batch> BatchContext for OfaBatchWrapper<Chain>
 where
     Chain: OfaFullChain<BatchContext = Batch>,
     Batch: OfaBatch<Chain>,
@@ -91,9 +91,11 @@ where
 impl<Relay> HasBatchContext<SourceTarget> for OfaRelayWrapper<Relay>
 where
     Relay: OfaBaseRelay,
-    Relay::SrcChain: OfaFullChain,
+    // TODO: do not require the chain error to be the same as relay error.
+    // this can be fixed in #2816.
+    Relay::SrcChain: OfaFullChain<Error = Relay::Error>,
 {
-    type BatchContext = OfaBatchContext<Relay::SrcChain>;
+    type BatchContext = OfaBatchWrapper<Relay::SrcChain>;
 
     fn batch_channel(
         &self,
@@ -108,9 +110,9 @@ where
 impl<Relay> HasBatchContext<DestinationTarget> for OfaRelayWrapper<Relay>
 where
     Relay: OfaBaseRelay,
-    Relay::DstChain: OfaFullChain,
+    Relay::DstChain: OfaFullChain<Error = Relay::Error>,
 {
-    type BatchContext = OfaBatchContext<Relay::DstChain>;
+    type BatchContext = OfaBatchWrapper<Relay::DstChain>;
 
     fn batch_channel(
         &self,

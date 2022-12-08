@@ -26,24 +26,18 @@ pub trait OfaRelayTypes: Async {
 
     type Packet: Async;
 
-    type SrcChain: OfaIbcChain<
-        Self::DstChain,
-        Error = Self::Error,
-        Runtime = Self::Runtime,
-        Preset = Self::Preset,
-    >;
+    type SrcChain: OfaIbcChain<Self::DstChain, Runtime = Self::Runtime, Preset = Self::Preset>;
 
-    type DstChain: OfaIbcChain<
-        Self::SrcChain,
-        Error = Self::Error,
-        Runtime = Self::Runtime,
-        Preset = Self::Preset,
-    >;
+    type DstChain: OfaIbcChain<Self::SrcChain, Runtime = Self::Runtime, Preset = Self::Preset>;
 }
 
 #[async_trait]
 pub trait OfaBaseRelay: OfaRelayTypes {
     fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+
+    fn src_chain_error(e: <Self::SrcChain as OfaChainTypes>::Error) -> Self::Error;
+
+    fn dst_chain_error(e: <Self::DstChain as OfaChainTypes>::Error) -> Self::Error;
 
     fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error;
 

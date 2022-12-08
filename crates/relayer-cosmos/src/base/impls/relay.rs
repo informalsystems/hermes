@@ -52,6 +52,14 @@ where
         Error::tokio(e)
     }
 
+    fn src_chain_error(e: Error) -> Error {
+        e
+    }
+
+    fn dst_chain_error(e: Error) -> Error {
+        e
+    }
+
     fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error {
         Error::mismatch_ibc_events_count(expected, actual)
     }

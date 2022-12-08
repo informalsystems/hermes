@@ -1,5 +1,6 @@
 use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::chain::types::aliases::ClientId;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::types::HasRelayTypes;
 
@@ -10,9 +11,15 @@ pub struct SourceTarget;
 pub struct DestinationTarget;
 
 pub trait ChainTarget<Relay: HasRelayTypes>: Async + Default + private::Sealed {
-    type TargetChain: HasIbcChainTypes<Self::CounterpartyChain, Error = Relay::Error>;
+    type TargetChain: HasIbcChainTypes<Self::CounterpartyChain>;
 
-    type CounterpartyChain: HasIbcChainTypes<Self::TargetChain, Error = Relay::Error>;
+    type CounterpartyChain: HasIbcChainTypes<Self::TargetChain>;
+
+    fn target_chain_error(e: <Self::TargetChain as HasErrorType>::Error) -> Relay::Error;
+
+    fn counterparty_chain_error(
+        e: <Self::CounterpartyChain as HasErrorType>::Error,
+    ) -> Relay::Error;
 
     fn target_chain(context: &Relay) -> &Self::TargetChain;
 
@@ -30,7 +37,18 @@ impl private::Sealed for DestinationTarget {}
 
 impl<Relay: HasRelayTypes> ChainTarget<Relay> for SourceTarget {
     type TargetChain = Relay::SrcChain;
+
     type CounterpartyChain = Relay::DstChain;
+
+    fn target_chain_error(e: <Self::TargetChain as HasErrorType>::Error) -> Relay::Error {
+        Relay::src_chain_error(e)
+    }
+
+    fn counterparty_chain_error(
+        e: <Self::CounterpartyChain as HasErrorType>::Error,
+    ) -> Relay::Error {
+        Relay::dst_chain_error(e)
+    }
 
     fn target_chain(context: &Relay) -> &Self::TargetChain {
         context.source_chain()
@@ -53,7 +71,18 @@ impl<Relay: HasRelayTypes> ChainTarget<Relay> for SourceTarget {
 
 impl<Relay: HasRelayTypes> ChainTarget<Relay> for DestinationTarget {
     type TargetChain = Relay::DstChain;
+
     type CounterpartyChain = Relay::SrcChain;
+
+    fn target_chain_error(e: <Self::TargetChain as HasErrorType>::Error) -> Relay::Error {
+        Relay::dst_chain_error(e)
+    }
+
+    fn counterparty_chain_error(
+        e: <Self::CounterpartyChain as HasErrorType>::Error,
+    ) -> Relay::Error {
+        Relay::src_chain_error(e)
+    }
 
     fn target_chain(context: &Relay) -> &Self::TargetChain {
         context.destination_chain()

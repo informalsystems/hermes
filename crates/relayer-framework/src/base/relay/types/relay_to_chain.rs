@@ -71,7 +71,7 @@ where
     type Timestamp = <Target::TargetChain as HasChainTypes>::Timestamp;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Target::TargetChain::estimate_message_len(message)
+        Target::TargetChain::estimate_message_len(message).map_err(Target::target_chain_error)
     }
 }
 
@@ -89,5 +89,6 @@ where
         Target::target_chain(&self.relay)
             .send_messages(messages)
             .await
+            .map_err(Target::target_chain_error)
     }
 }
