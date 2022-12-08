@@ -108,8 +108,8 @@ impl OfaBaseChain for MockChainContext {
     }
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
-        let height = self.get_latest_height();
-        let state = self.get_current_state();
+        let height = self.get_latest_height()?;
+        let state = self.get_current_state()?;
         // Since the MockChain only updates manually, the Height is increased by
         // 1 everytime the chain status is queried, without changing its state.
         self.new_block()?;
@@ -148,7 +148,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         channel_id: &Self::ChannelId,
         sequence: &Self::Sequence,
     ) -> Result<bool, Self::Error> {
-        let state = self.get_current_state();
+        let state = self.get_current_state()?;
         Ok(state.check_received(port_id, channel_id, sequence))
     }
 }

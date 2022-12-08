@@ -7,6 +7,9 @@ use ibc_relayer_runtime::tokio::error::Error as TokioError;
 define_error! {
     #[derive(Clone, Debug)]
     Error {
+        EmptyIterator
+            | _ | { "empty iterator error" },
+
         Generic
             [ TraceError<Report> ]
             | _ | { "generic error" },
@@ -23,15 +26,15 @@ define_error! {
             },
 
         NoConsensusState
-        { client_id: String }
+        { id: String }
             | e | {
-                format_args!("no consensus state found for client id: {}", e.client_id)
+                format_args!("no consensus state found for id: {}", e.id)
             },
 
         NoConsensusStateAtHeight
-        { client_id: String, height: u128 }
+        { id: String, height: u128 }
             | e | {
-                format_args!("no consensus state found for client {} at height {}", e.client_id, e.height)
+                format_args!("no consensus state found for {} at height {}", e.id, e.height)
             },
 
         NoHeightState
@@ -44,6 +47,11 @@ define_error! {
         { name: String }
             | e | {
                 format_args!("No height for chain: {}", e.name)
+            },
+
+        PoisonedMutex
+            | _ | {
+                "lock on mutex is poisoned"
             },
 
         ConsensusDivergence
