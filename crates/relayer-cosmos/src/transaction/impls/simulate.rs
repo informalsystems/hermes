@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::tx::v1beta1::{SimulateRequest, SimulateResponse, Tx};
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
-use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
+use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
 use prost::EncodeError;
 use tonic::transport::Error as TransportError;
 use tonic::Status as StatusError;
@@ -10,7 +10,7 @@ use tonic::Status as StatusError;
 use crate::transaction::traits::fields::HasGrpcAddress;
 
 #[async_trait]
-pub trait CanSendTxSimulate: HasError {
+pub trait CanSendTxSimulate: HasErrorType {
     async fn send_tx_simulate(&self, tx: SignedTx) -> Result<SimulateResponse, Self::Error>;
 }
 

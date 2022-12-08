@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer::chain::cosmos::query::tx_hash_query;
 use ibc_relayer::chain::requests::QueryTxHash;
-use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
+use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, Error as RpcError, Order};
@@ -9,7 +9,7 @@ use tendermint_rpc::{Client, Error as RpcError, Order};
 use crate::transaction::traits::fields::{HasRpcClient, HasWaitTimeout};
 
 #[async_trait]
-pub trait CanQueryTxResponse: HasError {
+pub trait CanQueryTxResponse: HasErrorType {
     async fn query_tx_response(&self, tx_hash: &TxHash) -> Result<Option<TxResponse>, Self::Error>;
 }
 

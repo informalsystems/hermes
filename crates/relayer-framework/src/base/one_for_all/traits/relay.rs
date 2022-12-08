@@ -22,7 +22,7 @@ pub trait OfaRelayTypes: Async {
 
     type Error: Async + Debug;
 
-    type Runtime: OfaRuntime<Error = Self::Error>;
+    type Runtime: OfaRuntime;
 
     type Packet: Async;
 
@@ -43,6 +43,8 @@ pub trait OfaRelayTypes: Async {
 
 #[async_trait]
 pub trait OfaBaseRelay: OfaRelayTypes {
+    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+
     fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error;
 
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::PortId;

@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
 use ibc_proto::cosmos::auth::v1beta1::QueryAccountRequest;
 use ibc_relayer::chain::cosmos::types::account::Account;
-use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
+use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
 use tonic::transport::Error as TransportError;
 use tonic::{Request, Status};
 
@@ -17,7 +17,7 @@ pub struct MaybeAccountQuerier;
 
 pub struct ReturnAccountFromContext;
 
-pub trait InjectQueryAccountError: HasError {
+pub trait InjectQueryAccountError: HasErrorType {
     fn address_not_found_error(address: &str) -> Self::Error;
 }
 
@@ -62,7 +62,7 @@ where
 #[async_trait]
 impl<Context> AccountQuerier<Context> for MaybeAccountQuerier
 where
-    Context: HasError,
+    Context: HasErrorType,
     Context: MaybeHasAccount,
     BaseAccountQuerier: AccountQuerier<Context>,
 {
@@ -83,7 +83,7 @@ where
 #[async_trait]
 impl<Context> AccountQuerier<Context> for ReturnAccountFromContext
 where
-    Context: HasError,
+    Context: HasErrorType,
     Context: HasAccount,
 {
     async fn query_account(context: &Context) -> Result<Account, Context::Error> {

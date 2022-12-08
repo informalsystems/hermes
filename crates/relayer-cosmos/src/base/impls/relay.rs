@@ -23,7 +23,8 @@ use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::message::CosmosIbcMessage;
 use crate::base::types::relay::CosmosRelayWrapper;
-use crate::base::types::runtime::CosmosRuntimeContext;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 impl<Relay> OfaRelayTypes for CosmosRelayWrapper<Relay>
 where
@@ -33,7 +34,7 @@ where
 
     type Error = Error;
 
-    type Runtime = CosmosRuntimeContext;
+    type Runtime = TokioRuntimeContext;
 
     type Packet = Packet;
 
@@ -47,6 +48,10 @@ impl<Relay> OfaBaseRelay for CosmosRelayWrapper<Relay>
 where
     Relay: CosmosRelay,
 {
+    fn runtime_error(e: TokioError) -> Error {
+        Error::tokio(e)
+    }
+
     fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error {
         Error::mismatch_ibc_events_count(expected, actual)
     }
@@ -90,7 +95,7 @@ where
         &packet.timeout_timestamp
     }
 
-    fn runtime(&self) -> &OfaRuntimeContext<CosmosRuntimeContext> {
+    fn runtime(&self) -> &OfaRuntimeContext<TokioRuntimeContext> {
         &self.runtime
     }
 

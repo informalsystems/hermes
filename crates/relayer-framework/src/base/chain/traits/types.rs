@@ -4,7 +4,7 @@
 //! These traits can be implemented over the default `OfaBaseChain` trait if the
 //! behavior exposed by that trait and the `AfoBaseChain` trait are not desired.
 
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
@@ -17,7 +17,7 @@ pub trait HasEventType: Async {
 }
 
 /// The minimal datatypes that any chain needs to expose.
-pub trait HasChainTypes: HasMessageType + HasEventType + HasError {
+pub trait HasChainTypes: HasMessageType + HasEventType + HasErrorType {
     type Height: Ord + Async;
 
     type Timestamp: Ord + Async;

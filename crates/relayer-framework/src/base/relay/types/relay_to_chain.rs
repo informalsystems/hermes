@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 
 use crate::base::chain::traits::message_sender::CanSendMessages;
 use crate::base::chain::traits::types::{HasChainTypes, HasEventType, HasMessageType};
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
@@ -37,7 +37,7 @@ pub struct RelayToChain<Relay, Target> {
     pub phantom: PhantomData<Target>,
 }
 
-impl<Relay, Target> HasError for RelayToChain<Relay, Target>
+impl<Relay, Target> HasErrorType for RelayToChain<Relay, Target>
 where
     Relay: HasRelayTypes,
     Target: ChainTarget<Relay>,

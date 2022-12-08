@@ -2,10 +2,10 @@ use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::chain::types::aliases::{
     ChannelId, ClientId, Height, PortId, Sequence, Timestamp,
 };
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 
-pub trait HasRelayTypes: HasError {
+pub trait HasRelayTypes: HasErrorType {
     type SrcChain: HasIbcChainTypes<Self::DstChain, Error = Self::Error>;
 
     type DstChain: HasIbcChainTypes<Self::SrcChain, Error = Self::Error>;

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_proto::cosmos::tx::v1beta1::TxRaw;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
-use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
+use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
 use prost::EncodeError;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::error::Error as RpcError;
@@ -10,7 +10,7 @@ use tendermint_rpc::Client;
 use crate::transaction::traits::fields::{HasRpcAddress, HasRpcClient};
 
 #[async_trait]
-pub trait CanBroadcastTxSync: HasError {
+pub trait CanBroadcastTxSync: HasErrorType {
     async fn broadcast_tx_sync(&self, tx: SignedTx) -> Result<Response, Self::Error>;
 }
 

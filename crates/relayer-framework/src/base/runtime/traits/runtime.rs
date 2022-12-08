@@ -1,7 +1,9 @@
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 
-pub trait HasRuntime: HasError {
-    type Runtime: HasError<Error = Self::Error>;
+pub trait HasRuntime: HasErrorType {
+    type Runtime: HasErrorType;
 
     fn runtime(&self) -> &Self::Runtime;
+
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Self::Error;
 }
