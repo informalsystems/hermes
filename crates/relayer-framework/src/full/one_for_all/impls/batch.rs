@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::{Event, Message};
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
@@ -30,14 +31,20 @@ where
     }
 }
 
+impl<Chain, Batch> HasErrorType for OfaBatchWrapper<Chain>
+where
+    Chain: OfaFullChain<BatchContext = Batch>,
+    Batch: OfaBatch<Chain>,
+{
+    type Error = Chain::Error;
+}
+
 #[async_trait]
 impl<Chain, Batch> BatchContext for OfaBatchWrapper<Chain>
 where
     Chain: OfaFullChain<BatchContext = Batch>,
     Batch: OfaBatch<Chain>,
 {
-    type Error = Chain::Error;
-
     type Message = Chain::Message;
 
     type Event = Chain::Event;

@@ -5,11 +5,11 @@ use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 pub trait HasChannelTypes: HasErrorType {
-    type Sender<T>
+    type Sender<T>: Async
     where
         T: Async;
 
-    type Receiver<T>
+    type Receiver<T>: Async
     where
         T: Async;
 }
@@ -22,7 +22,7 @@ pub trait CanCreateChannels: HasChannelTypes {
 
 #[async_trait]
 pub trait CanUseChannelsOnce: HasChannelTypes {
-    fn send_once<T>(sender: Self::Sender<T>, value: T)
+    fn send_once<T>(sender: Self::Sender<T>, value: T) -> Result<(), Self::Error>
     where
         T: Async;
 
@@ -33,7 +33,7 @@ pub trait CanUseChannelsOnce: HasChannelTypes {
 
 #[async_trait]
 pub trait CanUseChannels: HasChannelTypes {
-    fn send<T>(sender: Self::Sender<T>, value: T) -> Result<(), Self::Error>
+    fn send<T>(sender: &Self::Sender<T>, value: T) -> Result<(), Self::Error>
     where
         T: Async;
 

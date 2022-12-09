@@ -13,10 +13,10 @@ pub type Sender<Relay, Target, Payload> =
 pub type Receiver<Relay, Target, Payload> =
     <<TargetChain<Relay, Target> as HasRuntime>::Runtime as HasChannelTypes>::Receiver<Payload>;
 
-pub type EventResult<Relay, Target> = (
-    <TargetChain<Relay, Target> as HasEventType>::Event,
+pub type EventResult<Relay, Target> = Result<
+    Vec<Vec<<TargetChain<Relay, Target> as HasEventType>::Event>>,
     <Relay as HasErrorType>::Error,
-);
+>;
 
 pub type BatchSubmission<Relay, Target> = (
     Vec<<TargetChain<Relay, Target> as HasMessageType>::Message>,
@@ -25,7 +25,7 @@ pub type BatchSubmission<Relay, Target> = (
 
 pub type EventResultSender<Relay, Target> = Sender<Relay, Target, EventResult<Relay, Target>>;
 
-pub type EventResultResult<Relay, Target> = Receiver<Relay, Target, EventResult<Relay, Target>>;
+pub type EventResultReceiver<Relay, Target> = Receiver<Relay, Target, EventResult<Relay, Target>>;
 
 pub type MessageBatchSender<Relay, Target> = Sender<Relay, Target, BatchSubmission<Relay, Target>>;
 

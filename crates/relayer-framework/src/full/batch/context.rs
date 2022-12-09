@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::{Event, Message};
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -29,9 +30,7 @@ impl<Sender, Receiver> BatchChannel<Sender, Receiver> {
 }
 
 #[async_trait]
-pub trait BatchContext: Async {
-    type Error: Async;
-
+pub trait BatchContext: HasErrorType {
     type Message: Async;
     type Event: Async;
 
