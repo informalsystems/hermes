@@ -9,8 +9,8 @@ use crate::base::runtime::traits::channel::{
     CanCreateChannels, CanUseChannels, CanUseChannelsOnce,
 };
 use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::full::batch::traits::channel::HasBatchChannelTypes;
-use crate::full::batch::types::{
+use crate::full::batch::traits::types::HasBatchChannelTypes;
+use crate::full::batch::types::aliases::{
     EventResultReceiver, EventResultSender, MessageBatchReceiver, MessageBatchSender,
 };
 use crate::std_prelude::*;
