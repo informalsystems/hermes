@@ -21,7 +21,7 @@ pub trait CanCreateChannels: HasChannelTypes {
 }
 
 #[async_trait]
-pub trait CanUseChannelsOnce: CanCreateChannels {
+pub trait CanUseChannelsOnce: HasChannelTypes {
     fn send_once<T>(sender: Self::Sender<T>, value: T)
     where
         T: Async;
@@ -32,16 +32,16 @@ pub trait CanUseChannelsOnce: CanCreateChannels {
 }
 
 #[async_trait]
-pub trait CanUseChannels: CanCreateChannels {
+pub trait CanUseChannels: HasChannelTypes {
     fn send<T>(sender: Self::Sender<T>, value: T) -> Result<(), Self::Error>
     where
         T: Async;
 
-    async fn receive<T>(receiver: Self::Receiver<T>) -> Result<T, Self::Error>
+    async fn receive<T>(receiver: &Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async;
 
-    async fn try_receive<T>(receiver: Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    async fn try_receive<T>(receiver: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async;
 }

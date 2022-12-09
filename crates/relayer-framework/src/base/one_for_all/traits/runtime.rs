@@ -56,15 +56,15 @@ pub trait OfaRuntime: Clone + Async {
     where
         T: Async;
 
-    fn send<T>(sender: Self::Sender<T>, value: T) -> Result<(), Self::Error>
+    fn send<T>(sender: &Self::Sender<T>, value: T) -> Result<(), Self::Error>
     where
         T: Async;
 
-    async fn receive<T>(receiver: Self::Receiver<T>) -> Result<T, Self::Error>
+    async fn receive<T>(receiver: &Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async;
 
-    async fn try_receive<T>(receiver: Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    async fn try_receive<T>(receiver: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async;
 }

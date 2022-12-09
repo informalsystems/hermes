@@ -79,7 +79,7 @@ impl OfaRuntime for TokioRuntimeContext {
         (sender, Arc::new(Mutex::new(receiver)))
     }
 
-    fn send<T>(sender: Self::Sender<T>, value: T) -> Result<(), Self::Error>
+    fn send<T>(sender: &Self::Sender<T>, value: T) -> Result<(), Self::Error>
     where
         T: Async,
     {
@@ -88,7 +88,7 @@ impl OfaRuntime for TokioRuntimeContext {
             .map_err(|_| TokioError::channel_closed().into())
     }
 
-    async fn receive<T>(receiver_lock: Self::Receiver<T>) -> Result<T, Self::Error>
+    async fn receive<T>(receiver_lock: &Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async,
     {
@@ -100,7 +100,7 @@ impl OfaRuntime for TokioRuntimeContext {
             .ok_or_else(|| TokioError::channel_closed().into())
     }
 
-    async fn try_receive<T>(receiver_lock: Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    async fn try_receive<T>(receiver_lock: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async,
     {
