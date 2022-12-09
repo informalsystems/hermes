@@ -18,7 +18,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
-    ChainState, ChannelId, ClientId, ConsensusState, PortId, Sequence,
+    ChainState, ChannelId, ClientId, ConsensusState, MockTimestamp, PortId, Sequence,
 };
 use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
@@ -26,6 +26,7 @@ use crate::relayer_mock::base::types::runtime::{MockChainRuntimeContext, MockRun
 use crate::relayer_mock::base::types::{
     height::Height as MockHeight, packet::PacketKey, state::State,
 };
+use crate::relayer_mock::util::clock::MockClock;
 use crate::relayer_mock::util::mutex::MutexUtil;
 
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
@@ -39,8 +40,8 @@ pub struct MockChainContext {
 }
 
 impl MockChainContext {
-    pub fn new(name: String) -> Self {
-        let runtime = OfaRuntimeContext::new(MockChainRuntimeContext::new());
+    pub fn new(name: String, clock: Arc<Mutex<MockClock>>) -> Self {
+        let runtime = OfaRuntimeContext::new(MockChainRuntimeContext::new(clock));
         let chain_state: HashMap<MockHeight, ConsensusState> =
             HashMap::from([(MockHeight::from(1), State::default())]);
         let initial_state: HashMap<MockHeight, ChainState> =
@@ -199,13 +200,26 @@ impl MockChainContext {
         Ok(())
     }
 
+    /// Receiving a timed out packet adds a new ChainState with the timed out packet
+    /// information at a Height + 1.
+    pub fn timeout_packet(&self, packet: PacketKey) -> Result<(), Error> {
+        // Retrieve the current_state and update it with the newly received acknowledgement
+        let mut new_state = self.get_current_state()?;
+        new_state.update_timeout(packet.port_id, packet.channel_id, packet.sequence);
+
+        // Update the current_state of the Chain
+        self.update_current_state(new_state)?;
+
+        Ok(())
+    }
+
     pub fn build_send_packet(
         &self,
         client_id: ClientId,
         channel_id: ChannelId,
         port_id: PortId,
         timeout_height: MockHeight,
-        timeout_timestamp: MockHeight,
+        timeout_timestamp: MockTimestamp,
         sequence: Sequence,
     ) -> PacketKey {
         PacketKey::new(
@@ -275,7 +289,9 @@ impl MockChainContext {
                     self.insert_consensus_state(receiver, h, s)?;
                     res.push(vec![]);
                 }
-                _ => {}
+                MockMessage::TimeoutPacket(_, _, p) => {
+                    self.timeout_packet(p)?;
+                }
             }
         }
         Ok(res)

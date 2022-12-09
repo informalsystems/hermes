@@ -1,6 +1,7 @@
 use alloc::string::String;
 use std::fmt::Display;
 
+use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::base::types::height::Height;
 
 #[derive(Clone, Debug)]
@@ -10,7 +11,7 @@ pub struct PacketKey {
     pub port_id: String,
     pub sequence: u128,
     pub timeout_height: Height,
-    pub timeout_timestamp: Height,
+    pub timeout_timestamp: MockTimestamp,
 }
 
 impl Display for PacketKey {
@@ -27,7 +28,7 @@ impl PacketKey {
         port_id: String,
         sequence: u128,
         timeout_height: Height,
-        timeout_timestamp: Height,
+        timeout_timestamp: MockTimestamp,
     ) -> Self {
         Self {
             client_id,

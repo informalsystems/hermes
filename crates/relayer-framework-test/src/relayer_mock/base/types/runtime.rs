@@ -2,43 +2,49 @@ use alloc::boxed::Box;
 use async_trait::async_trait;
 use core::fmt::Debug;
 use core::{future::Future, time::Duration};
+use std::sync::{Arc, Mutex};
 use std::{marker::PhantomData, time::Instant};
-use tokio::time::sleep;
 
 use ibc_relayer_framework::base::{
     core::traits::sync::Async,
     one_for_all::traits::runtime::{LogLevel, OfaRuntime},
 };
-
-use crate::relayer_mock::base::error::Error;
-
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+
+use crate::relayer_mock;
+use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::types::aliases::MockTimestamp;
+use crate::relayer_mock::util::clock::MockClock;
+use crate::relayer_mock::util::mutex::MutexUtil;
 
 pub type MockRuntimeContext = MockChainRuntimeContext<Error>;
 
 pub struct MockChainRuntimeContext<Error> {
+    pub clock: Arc<Mutex<MockClock>>,
     pub phantom: PhantomData<Error>,
 }
 
-impl Default for MockChainRuntimeContext<Error> {
-    fn default() -> Self {
+impl<Error: std::convert::From<relayer_mock::base::error::Error>> MockChainRuntimeContext<Error> {
+    pub fn new(clock: Arc<Mutex<MockClock>>) -> Self {
         Self {
-            phantom: Default::default(),
-        }
-    }
-}
-
-impl<Error> MockChainRuntimeContext<Error> {
-    pub fn new() -> Self {
-        Self {
+            clock,
             phantom: PhantomData,
         }
     }
+
+    pub fn get_time(&self) -> Result<MockTimestamp, Error> {
+        let clock = self.clock.acquire_mutex()?;
+        let timestamp = clock.get_timestamp()?;
+        Ok(timestamp)
+    }
 }
 
-impl<Error> Clone for MockChainRuntimeContext<Error> {
+impl<Error: std::convert::From<relayer_mock::base::error::Error>> Clone
+    for MockChainRuntimeContext<Error>
+{
     fn clone(&self) -> Self {
-        Self::new()
+        let clock = self.clock.clone();
+        Self::new(clock)
     }
 }
 
@@ -62,7 +68,11 @@ where
     }
 
     async fn sleep(&self, duration: Duration) {
-        sleep(duration).await;
+        if let Ok(clock) = self.clock.acquire_mutex() {
+            if clock.increment_millis(duration.as_millis()).is_err() {
+                tracing::warn!("MockClock failed to sleep for {}ms", duration.as_millis());
+            }
+        }
     }
 
     fn now(&self) -> Instant {

@@ -15,7 +15,7 @@ use async_trait::async_trait;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
-    ChainStatus, ChannelId, ClientId, ConsensusState, PortId, Sequence,
+    ChainStatus, ChannelId, ClientId, ConsensusState, MockTimestamp, PortId, Sequence,
 };
 use crate::relayer_mock::base::types::chain::MockChainStatus;
 use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
@@ -38,7 +38,7 @@ impl OfaChainTypes for MockChainContext {
 
     type Height = MockHeight;
 
-    type Timestamp = MockHeight;
+    type Timestamp = MockTimestamp;
 
     type Message = MockMessage;
 
@@ -113,7 +113,8 @@ impl OfaBaseChain for MockChainContext {
         // Since the MockChain only updates manually, the Height is increased by
         // 1 everytime the chain status is queried, without changing its state.
         self.new_block()?;
-        Ok(MockChainStatus::from((height, state)))
+        let time = self.runtime().runtime.get_time()?;
+        Ok(MockChainStatus::from((height, time, state)))
     }
 }
 

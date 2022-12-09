@@ -12,3 +12,4 @@ pub type ChannelId = String;
 pub type PortId = String;
 pub type ChainStatus = MockChainStatus;
 pub type Sequence = u128;
+pub type MockTimestamp = u128;

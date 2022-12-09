@@ -1,15 +1,17 @@
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::state::State;
 
+use super::aliases::MockTimestamp;
+
 #[derive(Clone, Debug)]
 pub struct MockChainStatus {
     pub height: Height,
-    pub timestamp: Height,
+    pub timestamp: MockTimestamp,
     pub state: State,
 }
 
 impl MockChainStatus {
-    pub fn new(height: Height, timestamp: Height, state: State) -> Self {
+    pub fn new(height: Height, timestamp: MockTimestamp, state: State) -> Self {
         Self {
             height,
             timestamp,
@@ -18,12 +20,12 @@ impl MockChainStatus {
     }
 }
 
-impl From<(Height, State)> for MockChainStatus {
-    fn from(s: (Height, State)) -> Self {
+impl From<(Height, MockTimestamp, State)> for MockChainStatus {
+    fn from(s: (Height, MockTimestamp, State)) -> Self {
         MockChainStatus {
             height: s.0.clone(),
-            timestamp: s.0,
-            state: s.1,
+            timestamp: s.1,
+            state: s.2,
         }
     }
 }
