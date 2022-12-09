@@ -3,46 +3,45 @@ use core::marker::PhantomData;
 use core::mem;
 
 use crate::base::chain::traits::types::HasIbcChainTypes;
-use crate::base::chain::types::aliases::Message;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
+use crate::base::runtime::traits::channel::{CanUseChannels, CanUseChannelsOnce, HasChannelTypes};
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
 use crate::base::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::base::runtime::traits::time::{HasTime, Time};
 use crate::full::batch::config::BatchConfig;
-use crate::full::batch::context::{BatchContext, HasBatchContext};
 use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
+use crate::full::batch::traits::channel::HasBatchReceiver;
+use crate::full::batch::types::aliases::{BatchSubmission, EventResultSender};
 use crate::std_prelude::*;
 
 pub struct BatchMessageWorker<Relay, Target>
 where
     Relay: HasRelayTypes,
-    Relay: HasBatchContext<Target>,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Target: ChainTarget<Relay>,
+    Target::TargetChain: HasRuntime,
+    <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes,
 {
     pub relay: Relay,
-    pub pending_batches: VecDeque<(
-        Vec<Message<Target::TargetChain>>,
-        <Relay::BatchContext as BatchContext>::ResultSender,
-    )>,
+    pub pending_batches: VecDeque<BatchSubmission<Relay, Target>>,
     pub config: BatchConfig,
     pub phantom: PhantomData<Target>,
 }
 
-impl<Relay, Target, Batch, TargetChain, Message, Event, Runtime, Error>
-    BatchMessageWorker<Relay, Target>
+impl<Relay, Target, TargetChain, Message, Event, Runtime, Error> BatchMessageWorker<Relay, Target>
 where
     Relay: HasRelayTypes<Error = Error>,
+    Relay: HasBatchReceiver<Target>,
     Relay: HasRuntime<Runtime = Runtime>,
+    TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
-    Relay: HasBatchContext<Target, BatchContext = Batch>,
+    Runtime: CanUseChannelsOnce + CanUseChannels,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
-    Batch: BatchContext<Message = Message, Event = Event, Error = Error>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
     Event: Async,
     Error: Clone + Async,
@@ -67,7 +66,7 @@ where
         let mut last_sent_time = self.relay.runtime().now();
 
         loop {
-            match Batch::try_receive_batch(self.relay.batch_channel().receiver()).await {
+            match Runtime::try_receive(self.relay.get_batch_receiver()).await {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
                         self.relay
@@ -126,7 +125,9 @@ where
         }
     }
 
-    fn partition_message_batches(&mut self) -> VecDeque<(Vec<Message>, Batch::ResultSender)> {
+    fn partition_message_batches(
+        &mut self,
+    ) -> VecDeque<(Vec<Message>, EventResultSender<Relay, Target>)> {
         let batches = mem::take(&mut self.pending_batches);
 
         let mut total_message_count: usize = 0;
@@ -172,7 +173,7 @@ where
 
     async fn send_ready_batches(
         relay: &Relay,
-        ready_batches: VecDeque<(Vec<Message>, Batch::ResultSender)>,
+        ready_batches: VecDeque<BatchSubmission<Relay, Target>>,
     ) {
         let (messages, senders): (Vec<_>, Vec<_>) = ready_batches
             .into_iter()
@@ -194,14 +195,14 @@ where
         match send_result {
             Err(e) => {
                 for (_, sender) in senders.into_iter() {
-                    let _ = Batch::send_result(sender, Err(e.clone()));
+                    let _ = Runtime::send_once(sender, Err(e.clone()));
                 }
             }
             Ok(all_events) => {
                 let mut all_events = all_events.into_iter();
                 for (message_count, sender) in senders.into_iter() {
                     let events = take(&mut all_events, message_count);
-                    let _ = Batch::send_result(sender, Ok(events));
+                    let _ = Runtime::send_once(sender, Ok(events));
                 }
             }
         }

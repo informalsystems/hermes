@@ -19,5 +19,5 @@ where
     Target::TargetChain: HasRuntime,
     <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes,
 {
-    fn get_batch_sender(&self) -> &MessageBatchReceiver<Self, Target>;
+    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self, Target>;
 }
