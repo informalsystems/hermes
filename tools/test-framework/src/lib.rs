@@ -9,7 +9,7 @@
 //! This IBC test framework gives developers working on relayer software in Rust a robust
 //! yet flexible suite of functionality to test the correctness of their relayer implementations,
 //! as well as verify the expected state of chains in response to relayed messages and packets.
-//
+//!
 //! ## Running Tests
 //!
 //! By convention, tests are written to the [`tests`](ibc_test_framework::tests) module. We
