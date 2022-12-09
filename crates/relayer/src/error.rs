@@ -8,13 +8,13 @@ use humantime::format_duration;
 use ibc_proto::protobuf::Error as TendermintProtoError;
 use prost::{DecodeError, EncodeError};
 use regex::Regex;
+use tendermint::abci;
 use tendermint::Error as TendermintError;
 use tendermint_light_client::components::io::IoError as LightClientIoError;
 use tendermint_light_client::errors::{
     Error as LightClientError, ErrorDetail as LightClientErrorDetail,
 };
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
-use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
 use tendermint_rpc::Error as TendermintRpcError;
 use tonic::{
@@ -37,6 +37,7 @@ use ibc_relayer_types::{
 
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
+use crate::config::Error as ConfigError;
 use crate::event::monitor;
 use crate::keyring::errors::Error as KeyringError;
 use crate::sdk_error::SdkError;
@@ -56,6 +57,10 @@ define_error! {
             { query: AbciQuery }
             |e| { format!("ABCI query returned an error: {:?}", e.query) },
 
+        Config
+            [ ConfigError ]
+            |_| { "Configuration error" },
+
         CheckTx
             {
                 response: TxSyncResponse,
@@ -65,7 +70,7 @@ define_error! {
         DeliverTx
             {
                 detail: SdkError,
-                tx: TxResult
+                tx: abci::response::DeliverTx,
             }
             |e| { format!("DeliverTx Commit returns error: {0}. RawResult: {1:?}", e.detail, e.tx) },
 
@@ -300,6 +305,10 @@ define_error! {
             [ TraceError<crossbeam_channel::RecvError> ]
             |_| { "internal message-passing failure while receiving inter-thread request/response" },
 
+        ChannelReceiveTimeout
+            [ TraceError<crossbeam_channel::RecvTimeoutError> ]
+            |_| { "timeout when waiting for reponse over inter-thread channel" },
+
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },
 
@@ -519,6 +528,9 @@ define_error! {
                 )
             },
 
+        GasPriceTooLow
+            { chain_id: ChainId }
+            |e| { format!("Hermes gas price is lower than the minimum gas price set by node operator'{}'", e.chain_id) },
 
         TxIndexingDisabled
             { chain_id: ChainId }

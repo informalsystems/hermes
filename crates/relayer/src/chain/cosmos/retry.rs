@@ -4,7 +4,7 @@ use std::thread;
 use tracing::{debug, error, instrument, warn};
 
 use ibc_proto::google::protobuf::Any;
-use tendermint_rpc::abci::Code;
+use tendermint::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::chain::cosmos::query::account::refresh_account;
