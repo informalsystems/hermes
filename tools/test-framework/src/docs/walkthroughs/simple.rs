@@ -3,7 +3,7 @@
 //! Here's an example of a simple test that showcases some of the important features that the
 //! framework exposes:
 //!
-//! ```rust
+//! ```no_run
 //! use ibc_integration_test::prelude::*;
 //!
 //! pub struct ExampleTest;
