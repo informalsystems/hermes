@@ -1,6 +1,7 @@
 use ibc_relayer_framework::full::batch::context::BatchChannel;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tendermint::abci::Event;
+use tokio::sync::Mutex;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::base::error::Error;

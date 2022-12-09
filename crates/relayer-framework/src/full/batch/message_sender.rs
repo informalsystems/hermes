@@ -38,7 +38,7 @@ where
 
         let message_sender = context.batch_channel().sender();
 
-        Relay::BatchContext::send_batch(message_sender, messages, result_sender).await?;
+        Relay::BatchContext::send_batch(message_sender, messages, result_sender)?;
 
         let events = Relay::BatchContext::receive_result(result_receiver).await??;
 

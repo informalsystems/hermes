@@ -58,12 +58,12 @@ where
         Batch::new_result_channel()
     }
 
-    async fn send_batch(
+    fn send_batch(
         sender: &Self::BatchSender,
         messages: Vec<Self::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Self::Error> {
-        Batch::send_batch(sender, messages, result_sender).await
+        Batch::send_batch(sender, messages, result_sender)
     }
 
     async fn try_receive_batch(

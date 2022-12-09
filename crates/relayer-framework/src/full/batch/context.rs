@@ -45,7 +45,7 @@ pub trait BatchContext: Async {
 
     fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver);
 
-    async fn send_batch(
+    fn send_batch(
         sender: &Self::BatchSender,
         messages: Vec<Self::Message>,
         result_sender: Self::ResultSender,

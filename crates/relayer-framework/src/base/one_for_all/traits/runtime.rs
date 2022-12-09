@@ -31,6 +31,14 @@ pub trait OfaRuntime: Clone + Async {
 
     type Time: Async;
 
+    type Sender<T>
+    where
+        T: Async;
+
+    type Receiver<T>
+    where
+        T: Async;
+
     async fn log(&self, level: LogLevel, message: &str);
 
     async fn sleep(&self, duration: Duration);
@@ -43,4 +51,20 @@ pub trait OfaRuntime: Clone + Async {
     where
         F: Future + Send + 'static,
         F::Output: Send + 'static;
+
+    fn new_channel<T>() -> (Self::Sender<T>, Self::Receiver<T>)
+    where
+        T: Async;
+
+    fn send<T>(sender: Self::Sender<T>, value: T) -> Result<(), Self::Error>
+    where
+        T: Async;
+
+    async fn receive<T>(receiver: Self::Receiver<T>) -> Result<T, Self::Error>
+    where
+        T: Async;
+
+    async fn try_receive<T>(receiver: Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    where
+        T: Async;
 }

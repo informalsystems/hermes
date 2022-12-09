@@ -2,13 +2,14 @@ use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::future::Future;
 use core::time::Duration;
-use std::sync::Mutex;
 use std::time::Instant;
 use tokio::runtime::Runtime;
+use tokio::sync::Mutex;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
 use tracing;
 
+use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_framework::base::one_for_all::traits::chain::OfaBaseChain;
 use ibc_relayer_framework::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime};
 use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatch;
@@ -31,6 +32,14 @@ impl OfaRuntime for TokioRuntimeContext {
     type Error = TokioError;
 
     type Time = Instant;
+
+    type Sender<T> = mpsc::UnboundedSender<T>
+    where
+        T: Async;
+
+    type Receiver<T> = Arc<Mutex<mpsc::UnboundedReceiver<T>>>
+    where
+        T: Async;
 
     async fn log(&self, level: LogLevel, message: &str) {
         match level {
@@ -61,6 +70,50 @@ impl OfaRuntime for TokioRuntimeContext {
     {
         self.runtime.spawn(task);
     }
+
+    fn new_channel<T>() -> (Self::Sender<T>, Self::Receiver<T>)
+    where
+        T: Async,
+    {
+        let (sender, receiver) = mpsc::unbounded_channel();
+        (sender, Arc::new(Mutex::new(receiver)))
+    }
+
+    fn send<T>(sender: Self::Sender<T>, value: T) -> Result<(), Self::Error>
+    where
+        T: Async,
+    {
+        sender
+            .send(value)
+            .map_err(|_| TokioError::channel_closed().into())
+    }
+
+    async fn receive<T>(receiver_lock: Self::Receiver<T>) -> Result<T, Self::Error>
+    where
+        T: Async,
+    {
+        let mut receiver = receiver_lock.lock().await;
+
+        receiver
+            .recv()
+            .await
+            .ok_or_else(|| TokioError::channel_closed().into())
+    }
+
+    async fn try_receive<T>(receiver_lock: Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    where
+        T: Async,
+    {
+        let mut receiver = receiver_lock.lock().await;
+
+        match receiver.try_recv() {
+            Ok(batch) => Ok(Some(batch)),
+            Err(mpsc::error::TryRecvError::Empty) => Ok(None),
+            Err(mpsc::error::TryRecvError::Disconnected) => {
+                Err(TokioError::channel_closed().into())
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -85,7 +138,7 @@ where
         oneshot::channel()
     }
 
-    async fn send_batch(
+    fn send_batch(
         sender: &Self::BatchSender,
         messages: Vec<Chain::Message>,
         result_sender: Self::ResultSender,
@@ -98,9 +151,7 @@ where
     async fn try_receive_batch(
         receiver_lock: &Self::BatchReceiver,
     ) -> Result<Option<(Vec<Chain::Message>, Self::ResultSender)>, Chain::Error> {
-        let mut receiver = receiver_lock
-            .lock()
-            .map_err(|_| Chain::runtime_error(TokioError::poisoned_lock()))?;
+        let mut receiver = receiver_lock.lock().await;
 
         match receiver.try_recv() {
             Ok(batch) => Ok(Some(batch)),
