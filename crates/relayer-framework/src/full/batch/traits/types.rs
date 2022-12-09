@@ -9,32 +9,32 @@ use crate::std_prelude::*;
 pub trait HasBatchChannelTypes: HasErrorType + HasEventType + HasMessageType {
     type SendMessageError: Async;
 
-    type BatchSender: Async;
-    type BatchReceiver: Async;
+    type MessageBatchSender: Async;
+    type MessageBatchReceiver: Async;
 
-    type ResultSender: Async;
-    type ResultReceiver: Async;
+    type EventResultSender: Async;
+    type EventResultReceiver: Async;
 
-    fn new_batch_channel() -> (Self::BatchSender, Self::BatchReceiver);
+    fn new_batch_channel() -> (Self::MessageBatchSender, Self::MessageBatchReceiver);
 
-    fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver);
+    fn new_result_channel() -> (Self::EventResultSender, Self::EventResultReceiver);
 
     fn send_batch(
-        sender: &Self::BatchSender,
+        sender: &Self::MessageBatchSender,
         messages: Vec<Self::Message>,
-        result_sender: Self::ResultSender,
+        result_sender: Self::EventResultSender,
     ) -> Result<(), Self::Error>;
 
     async fn try_receive_batch(
-        receiver: &Self::BatchReceiver,
-    ) -> Result<Option<(Vec<Self::Message>, Self::ResultSender)>, Self::Error>;
+        receiver: &Self::MessageBatchReceiver,
+    ) -> Result<Option<(Vec<Self::Message>, Self::EventResultSender)>, Self::Error>;
 
     async fn receive_result(
-        result_receiver: Self::ResultReceiver,
+        result_receiver: Self::EventResultReceiver,
     ) -> Result<Result<Vec<Vec<Self::Event>>, Self::SendMessageError>, Self::Error>;
 
     fn send_result(
-        result_sender: Self::ResultSender,
+        result_sender: Self::EventResultSender,
         events: Result<Vec<Vec<Self::Event>>, Self::SendMessageError>,
     ) -> Result<(), Self::Error>;
 }

@@ -55,38 +55,38 @@ where
 {
     type SendMessageError = Relay::Error;
 
-    type BatchSender = MessageBatchSender<Relay, Target>;
-    type BatchReceiver = MessageBatchReceiver<Relay, Target>;
+    type MessageBatchSender = MessageBatchSender<Relay, Target>;
+    type MessageBatchReceiver = MessageBatchReceiver<Relay, Target>;
 
-    type ResultSender = EventResultSender<Relay, Target>;
-    type ResultReceiver = EventResultReceiver<Relay, Target>;
+    type EventResultSender = EventResultSender<Relay, Target>;
+    type EventResultReceiver = EventResultReceiver<Relay, Target>;
 
-    fn new_batch_channel() -> (Self::BatchSender, Self::BatchReceiver) {
+    fn new_batch_channel() -> (Self::MessageBatchSender, Self::MessageBatchReceiver) {
         Runtime::new_channel()
     }
 
-    fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver) {
+    fn new_result_channel() -> (Self::EventResultSender, Self::EventResultReceiver) {
         Runtime::new_channel()
     }
 
     fn send_batch(
-        sender: &Self::BatchSender,
+        sender: &Self::MessageBatchSender,
         messages: Vec<Self::Message>,
-        result_sender: Self::ResultSender,
+        result_sender: Self::EventResultSender,
     ) -> Result<(), Self::Error> {
         Runtime::send(sender, (messages, result_sender)).map_err(Chain::runtime_error)
     }
 
     async fn try_receive_batch(
-        receiver: &Self::BatchReceiver,
-    ) -> Result<Option<(Vec<Self::Message>, Self::ResultSender)>, Self::Error> {
+        receiver: &Self::MessageBatchReceiver,
+    ) -> Result<Option<(Vec<Self::Message>, Self::EventResultSender)>, Self::Error> {
         Runtime::try_receive(receiver)
             .await
             .map_err(Chain::runtime_error)
     }
 
     async fn receive_result(
-        result_receiver: Self::ResultReceiver,
+        result_receiver: Self::EventResultReceiver,
     ) -> Result<Result<Vec<Vec<Self::Event>>, Self::SendMessageError>, Self::Error> {
         Runtime::receive_once(result_receiver)
             .await
@@ -94,7 +94,7 @@ where
     }
 
     fn send_result(
-        result_sender: Self::ResultSender,
+        result_sender: Self::EventResultSender,
         events: Result<Vec<Vec<Self::Event>>, Self::SendMessageError>,
     ) -> Result<(), Self::Error> {
         Runtime::send_once(result_sender, events).map_err(Chain::runtime_error)

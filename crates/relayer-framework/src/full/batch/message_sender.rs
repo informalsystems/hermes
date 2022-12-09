@@ -1,11 +1,15 @@
 use async_trait::async_trait;
 
-use super::context::{BatchContext, HasBatchContext};
 use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::chain::types::aliases::{Event, Message};
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
+use crate::base::runtime::traits::channel::{
+    CanCreateChannels, CanUseChannels, CanUseChannelsOnce,
+};
+use crate::base::runtime::traits::runtime::HasRuntime;
+use crate::full::batch::traits::channel::HasBatchSender;
 use crate::std_prelude::*;
 
 pub struct SendMessagetoBatchWorker;
@@ -22,25 +26,33 @@ where
 }
 
 #[async_trait]
-impl<Relay, Target, TargetChain> IbcMessageSender<Relay, Target> for SendMessagetoBatchWorker
+impl<Relay, Target, TargetChain, Runtime> IbcMessageSender<Relay, Target>
+    for SendMessagetoBatchWorker
 where
     Relay: HasRelayTypes,
-    Relay: HasBatchContext<Target>,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain>,
+    TargetChain: HasRuntime<Runtime = Runtime>,
+    Runtime: CanCreateChannels + CanUseChannels + CanUseChannelsOnce,
+    Relay: HasBatchSender<Target>,
 {
     async fn send_messages(
         context: &Relay,
         messages: Vec<TargetChain::Message>,
     ) -> Result<Vec<Vec<TargetChain::Event>>, Relay::Error> {
-        let (result_sender, result_receiver) = Relay::BatchContext::new_result_channel();
+        let (result_sender, result_receiver) = Runtime::new_channel();
 
-        let message_sender = context.batch_channel().sender();
+        let message_sender = context.get_batch_sender();
 
-        Relay::BatchContext::send_batch(message_sender, messages, result_sender)?;
+        Runtime::send(message_sender, (messages, result_sender))
+            .map_err(TargetChain::runtime_error)
+            .map_err(Target::target_chain_error)?;
 
-        let events = Relay::BatchContext::receive_result(result_receiver).await??;
+        let events = Runtime::receive_once(result_receiver)
+            .await
+            .map_err(TargetChain::runtime_error)
+            .map_err(Target::target_chain_error)??;
 
         Ok(events)
     }
