@@ -5,7 +5,7 @@ use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::channel::{
-    CanCreateChannels, CanUseChannels, CanUseChannelsOnce,
+    CanCreateChannelsOnce, CanUseChannels, CanUseChannelsOnce,
 };
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::full::batch::traits::channel::HasMessageBatchSender;
@@ -23,14 +23,14 @@ where
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain>,
     TargetChain: HasRuntime<Runtime = Runtime>,
-    Runtime: CanCreateChannels + CanUseChannels + CanUseChannelsOnce,
+    Runtime: CanCreateChannelsOnce + CanUseChannels + CanUseChannelsOnce,
     Relay: HasMessageBatchSender<Target>,
 {
     async fn send_messages(
         context: &Relay,
         messages: Vec<TargetChain::Message>,
     ) -> Result<Vec<Vec<TargetChain::Event>>, Relay::Error> {
-        let (result_sender, result_receiver) = Runtime::new_channel();
+        let (result_sender, result_receiver) = Runtime::new_channel_once();
 
         let message_sender = context.get_batch_sender();
 

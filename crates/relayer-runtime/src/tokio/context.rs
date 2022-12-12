@@ -4,8 +4,7 @@ use core::future::Future;
 use core::time::Duration;
 use std::time::Instant;
 use tokio::runtime::Runtime;
-use tokio::sync::mpsc;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio::time::sleep;
 use tracing;
 
@@ -36,6 +35,14 @@ impl OfaRuntime for TokioRuntimeContext {
         T: Async;
 
     type Receiver<T> = Arc<Mutex<mpsc::UnboundedReceiver<T>>>
+    where
+        T: Async;
+
+    type SenderOnce<T> = oneshot::Sender<T>
+    where
+        T: Async;
+
+    type ReceiverOnce<T> = oneshot::Receiver<T>
     where
         T: Async;
 
@@ -111,5 +118,29 @@ impl OfaRuntime for TokioRuntimeContext {
                 Err(TokioError::channel_closed().into())
             }
         }
+    }
+
+    fn new_channel_once<T>() -> (Self::SenderOnce<T>, Self::ReceiverOnce<T>)
+    where
+        T: Async,
+    {
+        let (sender, receiver) = oneshot::channel();
+        (sender, receiver)
+    }
+
+    fn send_once<T>(sender: Self::SenderOnce<T>, value: T) -> Result<(), Self::Error>
+    where
+        T: Async,
+    {
+        sender
+            .send(value)
+            .map_err(|_| TokioError::channel_closed().into())
+    }
+
+    async fn receive_once<T>(receiver: Self::ReceiverOnce<T>) -> Result<T, Self::Error>
+    where
+        T: Async,
+    {
+        receiver.await.map_err(|_| TokioError::channel_closed())
     }
 }

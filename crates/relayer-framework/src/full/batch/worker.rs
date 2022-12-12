@@ -6,7 +6,9 @@ use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::channel::{CanUseChannels, CanUseChannelsOnce, HasChannelTypes};
+use crate::base::runtime::traits::channel::{
+    CanUseChannels, CanUseChannelsOnce, HasChannelOnceTypes, HasChannelTypes,
+};
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
@@ -24,7 +26,7 @@ where
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime,
-    <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes,
+    <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes + HasChannelOnceTypes,
 {
     pub relay: Relay,
     pub pending_batches: VecDeque<BatchSubmission<Target::TargetChain, Relay::Error>>,
