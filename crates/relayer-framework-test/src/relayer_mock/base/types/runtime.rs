@@ -1,34 +1,23 @@
 use alloc::boxed::Box;
 use async_trait::async_trait;
-use core::fmt::Debug;
 use core::{future::Future, time::Duration};
 use std::sync::Arc;
-use std::{marker::PhantomData, time::Instant};
+use std::time::Instant;
 
-use ibc_relayer_framework::base::{
-    core::traits::sync::Async,
-    one_for_all::traits::runtime::{LogLevel, OfaRuntime},
-};
-use ibc_relayer_runtime::tokio::error::Error as TokioError;
-
-use crate::relayer_mock;
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::util::clock::MockClock;
 
-pub type MockRuntimeContext = MockChainRuntimeContext<Error>;
+use ibc_relayer_framework::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime};
+use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
-pub struct MockChainRuntimeContext<Error> {
+pub struct MockRuntimeContext {
     pub clock: Arc<MockClock>,
-    pub phantom: PhantomData<Error>,
 }
 
-impl<Error: std::convert::From<relayer_mock::base::error::Error>> MockChainRuntimeContext<Error> {
+impl MockRuntimeContext {
     pub fn new(clock: Arc<MockClock>) -> Self {
-        Self {
-            clock,
-            phantom: PhantomData,
-        }
+        Self { clock }
     }
 
     pub fn get_time(&self) -> Result<MockTimestamp, Error> {
@@ -37,9 +26,7 @@ impl<Error: std::convert::From<relayer_mock::base::error::Error>> MockChainRunti
     }
 }
 
-impl<Error: std::convert::From<relayer_mock::base::error::Error>> Clone
-    for MockChainRuntimeContext<Error>
-{
+impl Clone for MockRuntimeContext {
     fn clone(&self) -> Self {
         let clock = self.clock.clone();
         Self::new(clock)
@@ -47,11 +34,8 @@ impl<Error: std::convert::From<relayer_mock::base::error::Error>> Clone
 }
 
 #[async_trait]
-impl OfaRuntime for MockRuntimeContext
-where
-    Error: From<TokioError> + Debug + Async,
-{
-    type Error = Error;
+impl OfaRuntime for MockRuntimeContext {
+    type Error = TokioError;
 
     type Time = Instant;
 

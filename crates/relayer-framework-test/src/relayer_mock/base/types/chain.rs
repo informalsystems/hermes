@@ -1,7 +1,6 @@
+use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::state::State;
-
-use super::aliases::MockTimestamp;
 
 #[derive(Clone, Debug)]
 pub struct MockChainStatus {

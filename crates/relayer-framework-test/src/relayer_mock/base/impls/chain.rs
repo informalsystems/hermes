@@ -27,8 +27,10 @@ use crate::relayer_mock::contexts::chain::MockChainContext;
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
+
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_framework::common::one_for_all::presets::MinimalPreset;
+use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 impl OfaChainTypes for MockChainContext {
     type Preset = MinimalPreset;
@@ -70,6 +72,10 @@ impl OfaChainTypes for MockChainContext {
 impl OfaBaseChain for MockChainContext {
     fn runtime(&self) -> &OfaRuntimeContext<MockRuntimeContext> {
         self.runtime()
+    }
+
+    fn runtime_error(e: TokioError) -> Self::Error {
+        Error::tokio(e)
     }
 
     fn encode_raw_message(

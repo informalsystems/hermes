@@ -22,7 +22,7 @@ use crate::relayer_mock::base::types::aliases::{
 };
 use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
-use crate::relayer_mock::base::types::runtime::{MockChainRuntimeContext, MockRuntimeContext};
+use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::base::types::{
     height::Height as MockHeight, packet::PacketKey, state::State,
 };
@@ -36,12 +36,12 @@ pub struct MockChainContext {
     pub past_chain_states: Arc<Mutex<HashMap<MockHeight, ChainState>>>,
     pub current_state: Arc<Mutex<ChainState>>,
     pub consensus_states: Arc<Mutex<HashMap<ClientId, HashMap<MockHeight, ChainState>>>>,
-    pub runtime: OfaRuntimeContext<MockChainRuntimeContext<Error>>,
+    pub runtime: OfaRuntimeContext<MockRuntimeContext>,
 }
 
 impl MockChainContext {
     pub fn new(name: String, clock: Arc<MockClock>) -> Self {
-        let runtime = OfaRuntimeContext::new(MockChainRuntimeContext::new(clock));
+        let runtime = OfaRuntimeContext::new(MockRuntimeContext::new(clock));
         let chain_state: HashMap<MockHeight, ConsensusState> =
             HashMap::from([(MockHeight::from(1), State::default())]);
         let initial_state: HashMap<MockHeight, ChainState> =

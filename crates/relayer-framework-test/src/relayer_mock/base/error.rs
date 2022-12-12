@@ -86,12 +86,6 @@ define_error! {
     }
 }
 
-impl From<TokioError> for Error {
-    fn from(e: TokioError) -> Error {
-        Error::tokio(e)
-    }
-}
-
 impl From<Report> for Error {
     fn from(e: Report) -> Self {
         Error::generic(e)
