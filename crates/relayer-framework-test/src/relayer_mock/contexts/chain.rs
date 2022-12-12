@@ -158,6 +158,9 @@ impl MockChainContext {
         // Update the current_state of the Chain, which will increase the Height by 1.
         self.update_current_state(current_state)?;
 
+        // Timestamp is increased by 1 second when the Height of a chain increases by 1.
+        self.runtime().runtime.clock.increment_millis(1000)?;
+
         Ok(())
     }
 
