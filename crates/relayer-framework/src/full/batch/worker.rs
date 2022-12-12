@@ -12,10 +12,10 @@ use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
 use crate::base::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::base::runtime::traits::time::HasTime;
-use crate::full::batch::config::BatchConfig;
-use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
 use crate::full::batch::traits::channel::HasMessageBatchReceiver;
+use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use crate::full::batch::types::aliases::{BatchSubmission, EventResultSender};
+use crate::full::batch::types::config::BatchConfig;
 use crate::std_prelude::*;
 
 pub struct BatchMessageWorker<Relay, Target>

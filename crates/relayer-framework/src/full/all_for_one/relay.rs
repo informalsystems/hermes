@@ -2,7 +2,7 @@ use crate::base::all_for_one::relay::AfoBaseRelay;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::full::all_for_one::chain::AfoFullChain;
-use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
+use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use crate::full::filter::traits::filter::HasPacketFilter;
 use crate::full::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 
