@@ -3,7 +3,7 @@ use core::time::Duration;
 
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
-use crate::base::runtime::traits::time::{HasTime, Time};
+use crate::base::runtime::traits::time::HasTime;
 use crate::base::transaction::traits::response::{CanQueryTxResponse, TxResponsePoller};
 use crate::base::transaction::traits::types::HasTxTypes;
 use crate::std_prelude::*;
@@ -41,7 +41,7 @@ where
 
             match response {
                 None => {
-                    let elapsed = start_time.duration_since(&runtime.now());
+                    let elapsed = Context::Runtime::duration_since(&start_time, &runtime.now());
                     if elapsed > wait_timeout {
                         return Err(Context::inject_tx_no_response_error(tx_hash));
                     } else {

@@ -11,7 +11,7 @@ use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
 use crate::base::runtime::traits::spawn::{HasSpawner, Spawner};
-use crate::base::runtime::traits::time::{HasTime, Time};
+use crate::base::runtime::traits::time::HasTime;
 use crate::full::batch::config::BatchConfig;
 use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
 use crate::full::batch::traits::channel::HasBatchReceiver;
@@ -106,7 +106,7 @@ where
         if ready_batches.is_empty() {
             // If there is nothing to send, return the remaining batches which should also be empty
         } else if self.pending_batches.is_empty()
-            && now.duration_since(last_sent_time) < self.config.max_delay
+            && Runtime::duration_since(&now, last_sent_time) < self.config.max_delay
         {
             // If the current batch is not full and there is still some time until max delay,
             // return everything and wait until the next batch is full
