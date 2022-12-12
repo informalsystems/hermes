@@ -14,7 +14,7 @@ use crate::base::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::base::runtime::traits::time::HasTime;
 use crate::full::batch::config::BatchConfig;
 use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
-use crate::full::batch::traits::channel::HasBatchReceiver;
+use crate::full::batch::traits::channel::HasMessageBatchReceiver;
 use crate::full::batch::types::aliases::{BatchSubmission, EventResultSender};
 use crate::std_prelude::*;
 
@@ -35,7 +35,7 @@ where
 impl<Relay, Target, TargetChain, Message, Event, Runtime, Error> BatchMessageWorker<Relay, Target>
 where
     Relay: HasRelayTypes<Error = Error>,
-    Relay: HasBatchReceiver<Target>,
+    Relay: HasMessageBatchReceiver<Target>,
     Relay: HasRuntime<Runtime = Runtime>,
     TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,

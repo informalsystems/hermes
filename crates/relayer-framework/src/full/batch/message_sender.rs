@@ -9,7 +9,7 @@ use crate::base::runtime::traits::channel::{
     CanCreateChannels, CanUseChannels, CanUseChannelsOnce,
 };
 use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::full::batch::traits::channel::HasBatchSender;
+use crate::full::batch::traits::channel::HasMessageBatchSender;
 use crate::std_prelude::*;
 
 pub struct SendMessagetoBatchWorker;
@@ -35,7 +35,7 @@ where
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain>,
     TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: CanCreateChannels + CanUseChannels + CanUseChannelsOnce,
-    Relay: HasBatchSender<Target>,
+    Relay: HasMessageBatchSender<Target>,
 {
     async fn send_messages(
         context: &Relay,

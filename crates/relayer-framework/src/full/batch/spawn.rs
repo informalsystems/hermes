@@ -9,7 +9,7 @@ use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
 use crate::base::runtime::traits::spawn::HasSpawner;
 use crate::base::runtime::traits::time::HasTime;
-use crate::full::batch::traits::channel::HasBatchReceiver;
+use crate::full::batch::traits::channel::HasMessageBatchReceiver;
 use crate::std_prelude::*;
 
 use super::config::BatchConfig;
@@ -35,7 +35,7 @@ where
     TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Runtime: CanUseChannelsOnce + CanUseChannels,
-    Relay: HasBatchReceiver<Target>,
+    Relay: HasMessageBatchReceiver<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain>,
     Relay::Error: Clone,

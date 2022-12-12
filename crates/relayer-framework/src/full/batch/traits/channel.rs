@@ -4,7 +4,7 @@ use crate::base::runtime::traits::channel::HasChannelTypes;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::full::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
 
-pub trait HasBatchSender<Target>: HasRelayTypes
+pub trait HasMessageBatchSender<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasRuntime,
@@ -13,7 +13,7 @@ where
     fn get_batch_sender(&self) -> &MessageBatchSender<Self, Target>;
 }
 
-pub trait HasBatchReceiver<Target>: HasRelayTypes
+pub trait HasMessageBatchReceiver<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasRuntime,

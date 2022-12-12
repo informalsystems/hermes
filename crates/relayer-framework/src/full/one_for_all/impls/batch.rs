@@ -6,8 +6,12 @@ use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToC
 use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
+use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
+use crate::full::batch::traits::channel::{HasMessageBatchReceiver, HasMessageBatchSender};
+use crate::full::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
+use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -23,5 +27,41 @@ where
     ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Self::Error> {
         <SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>::send_messages(self, messages)
             .await
+    }
+}
+
+impl<Relay> HasMessageBatchSender<SourceTarget> for OfaRelayWrapper<Relay>
+where
+    Relay: OfaFullRelay,
+{
+    fn get_batch_sender(&self) -> &MessageBatchSender<Self, SourceTarget> {
+        self.relay.src_chain_message_batch_sender()
+    }
+}
+
+impl<Relay> HasMessageBatchReceiver<SourceTarget> for OfaRelayWrapper<Relay>
+where
+    Relay: OfaFullRelay,
+{
+    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self, SourceTarget> {
+        self.relay.src_chain_message_batch_receiver()
+    }
+}
+
+impl<Relay> HasMessageBatchSender<DestinationTarget> for OfaRelayWrapper<Relay>
+where
+    Relay: OfaFullRelay,
+{
+    fn get_batch_sender(&self) -> &MessageBatchSender<Self, DestinationTarget> {
+        self.relay.dst_chain_message_batch_sender()
+    }
+}
+
+impl<Relay> HasMessageBatchReceiver<DestinationTarget> for OfaRelayWrapper<Relay>
+where
+    Relay: OfaFullRelay,
+{
+    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self, DestinationTarget> {
+        self.relay.dst_chain_message_batch_receiver()
     }
 }
