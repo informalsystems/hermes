@@ -4,9 +4,8 @@ use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::channel::{
-    CanCreateChannelsOnce, CanUseChannels, CanUseChannelsOnce,
-};
+use crate::base::runtime::traits::channel::CanUseChannels;
+use crate::base::runtime::traits::channel_once::{CanCreateChannelsOnce, CanUseChannelsOnce};
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::full::batch::traits::channel::HasMessageBatchSender;
 use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;

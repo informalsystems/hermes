@@ -1,5 +1,6 @@
 use crate::base::chain::traits::types::{HasEventType, HasMessageType};
-use crate::base::runtime::traits::channel::{HasChannelOnceTypes, HasChannelTypes};
+use crate::base::runtime::traits::channel::HasChannelTypes;
+use crate::base::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::std_prelude::*;
 

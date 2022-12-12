@@ -1,6 +1,7 @@
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::channel::{HasChannelOnceTypes, HasChannelTypes};
+use crate::base::runtime::traits::channel::HasChannelTypes;
+use crate::base::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::full::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
 

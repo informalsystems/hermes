@@ -6,9 +6,8 @@ use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::channel::{
-    CanUseChannels, CanUseChannelsOnce, HasChannelOnceTypes, HasChannelTypes,
-};
+use crate::base::runtime::traits::channel::{CanUseChannels, HasChannelTypes};
+use crate::base::runtime::traits::channel_once::{CanUseChannelsOnce, HasChannelOnceTypes};
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
