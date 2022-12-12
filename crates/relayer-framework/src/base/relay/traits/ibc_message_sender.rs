@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::chain::types::aliases::{Event, Message};
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -31,7 +31,7 @@ where
     ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Context::Error>;
 }
 
-pub trait InjectMismatchIbcEventsCountError: HasError {
+pub trait InjectMismatchIbcEventsCountError: HasErrorType {
     fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error;
 }
 

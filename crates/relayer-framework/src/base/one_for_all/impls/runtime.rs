@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use core::future::Future;
 use core::time::Duration;
 
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime, OfaRuntimeContext};
 use crate::base::runtime::traits::log::{
     HasLogger, LevelDebug, LevelError, LevelInfo, LevelTrace, LevelWarn,
@@ -16,7 +16,7 @@ pub struct OfaTime<Runtime: OfaRuntime> {
     pub time: Runtime::Time,
 }
 
-impl<Runtime: OfaRuntime> HasError for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> HasErrorType for OfaRuntimeContext<Runtime> {
     type Error = Runtime::Error;
 }
 

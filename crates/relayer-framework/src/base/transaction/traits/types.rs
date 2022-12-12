@@ -1,8 +1,8 @@
 use crate::base::chain::traits::types::{HasEventType, HasMessageType};
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 
-pub trait HasTxTypes: HasMessageType + HasEventType + HasError {
+pub trait HasTxTypes: HasMessageType + HasEventType + HasErrorType {
     type Transaction: Async;
 
     type Nonce: Async;

@@ -32,8 +32,8 @@ where
 impl<Relay> OfaRelayPreset<Relay> for FullPreset
 where
     Relay: OfaFullRelay<Preset = FullPreset>,
-    Relay::SrcChain: OfaFullChain,
-    Relay::DstChain: OfaFullChain,
+    Relay::SrcChain: OfaFullChain<Error = Relay::Error>,
+    Relay::DstChain: OfaFullChain<Error = Relay::Error>,
 {
     type PacketRelayer = FilterRelayer<RetryRelayer<FullRelayer>>;
 

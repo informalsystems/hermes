@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::relay::types::aliases::Packet;
@@ -12,7 +12,7 @@ pub struct RetryRelayer<InRelay> {
     pub phantom: PhantomData<InRelay>,
 }
 
-pub trait SupportsPacketRetry: HasError {
+pub trait SupportsPacketRetry: HasErrorType {
     const MAX_RETRY: usize;
 
     fn is_retryable_error(e: &Self::Error) -> bool;

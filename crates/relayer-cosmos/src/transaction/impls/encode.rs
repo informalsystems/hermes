@@ -6,7 +6,7 @@ use ibc_relayer::chain::cosmos::types::account::AccountSequence;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::AddressType;
 use ibc_relayer::keyring::errors::Error as KeyringError;
-use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
+use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
 use prost::EncodeError;
 
 use crate::transaction::traits::fields::{
@@ -14,7 +14,7 @@ use crate::transaction::traits::fields::{
 };
 
 #[async_trait]
-pub trait CanSignTx: HasError {
+pub trait CanSignTx: HasErrorType {
     async fn sign_tx(
         &self,
         fee: &Fee,
@@ -23,12 +23,12 @@ pub trait CanSignTx: HasError {
     ) -> Result<SignedTx, Self::Error>;
 }
 
-trait CanEncodeKeyBytes: HasError {
+trait CanEncodeKeyBytes: HasErrorType {
     fn encode_key_bytes(&self) -> Result<Vec<u8>, Self::Error>;
 }
 
 #[async_trait]
-trait CanEncodeSignerInfo: HasError {
+trait CanEncodeSignerInfo: HasErrorType {
     async fn encode_signer_info(
         &self,
         account_sequence: &AccountSequence,
@@ -36,23 +36,23 @@ trait CanEncodeSignerInfo: HasError {
     ) -> Result<SignerInfo, Self::Error>;
 }
 
-trait CanEncodeTxBodyAndBytes: HasError {
+trait CanEncodeTxBodyAndBytes: HasErrorType {
     fn encode_tx_body_and_bytes(&self, messages: &[Any]) -> Result<(TxBody, Vec<u8>), Self::Error>;
 }
 
-trait CanEncodeAuthInfoAndBytes: HasError {
+trait CanEncodeAuthInfoAndBytes: HasErrorType {
     fn encode_auth_info_and_bytes(
         signer_info: SignerInfo,
         fee: Fee,
     ) -> Result<(AuthInfo, Vec<u8>), Self::Error>;
 }
 
-trait CanSignMessage: HasError {
+trait CanSignMessage: HasErrorType {
     fn sign_message(&self, message: Vec<u8>) -> Result<Vec<u8>, Self::Error>;
 }
 
 #[async_trait]
-trait CanEncodeSignDoc: HasError {
+trait CanEncodeSignDoc: HasErrorType {
     async fn encode_sign_doc(
         &self,
         auth_info_bytes: Vec<u8>,
@@ -63,7 +63,7 @@ trait CanEncodeSignDoc: HasError {
 #[async_trait]
 impl<Context> CanSignTx for Context
 where
-    Context: HasError
+    Context: HasErrorType
         + CanEncodeKeyBytes
         + CanEncodeSignerInfo
         + CanEncodeTxBodyAndBytes
@@ -119,7 +119,7 @@ where
 #[async_trait]
 impl<Context> CanEncodeSignerInfo for Context
 where
-    Context: HasError + HasAddressType,
+    Context: HasErrorType + HasAddressType,
 {
     async fn encode_signer_info(
         &self,

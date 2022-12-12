@@ -17,7 +17,7 @@ pub trait OfaChainTypes: Async {
 
     type Error: Async + Debug;
 
-    type Runtime: OfaRuntime<Error = Self::Error>;
+    type Runtime: OfaRuntime;
 
     type Height: Ord + Async;
 
@@ -51,6 +51,8 @@ pub trait OfaChainTypes: Async {
 #[async_trait]
 pub trait OfaBaseChain: OfaChainTypes {
     fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
+
+    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
 
     fn encode_raw_message(
         message: &Self::Message,

@@ -6,7 +6,7 @@ use crate::base::one_for_all::traits::chain::OfaChainTypes;
 use crate::std_prelude::*;
 
 #[derive(Clone)]
-pub struct OfaBatchContext<Chain> {
+pub struct OfaBatchWrapper<Chain> {
     pub phantom: PhantomData<Chain>,
 }
 

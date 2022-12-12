@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_framework::base::core::traits::error::HasError;
+use ibc_relayer_framework::base::core::traits::error::HasErrorType;
 use std::time::Instant;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
@@ -10,14 +10,14 @@ use crate::transaction::impls::response::CanValidateRpcResponse;
 use crate::transaction::traits::fields::HasWaitTimeout;
 
 #[async_trait]
-pub trait CanWaitTxHash: HasError {
+pub trait CanWaitTxHash: HasErrorType {
     async fn wait_tx_hash(&self, tx_hash: &TxHash) -> Result<TxResponse, Self::Error>;
 }
 
 #[async_trait]
 pub trait TxHashWaiter<Context>
 where
-    Context: HasError,
+    Context: HasErrorType,
 {
     async fn wait_tx_hash(
         context: &Context,
@@ -25,7 +25,7 @@ where
     ) -> Result<TxResponse, Context::Error>;
 }
 
-pub trait InjectWaitTxError: HasError {
+pub trait InjectWaitTxError: HasErrorType {
     fn tx_no_confirmation_error() -> Self::Error;
 }
 
