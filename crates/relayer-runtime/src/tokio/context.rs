@@ -88,9 +88,7 @@ impl OfaRuntime for TokioRuntimeContext {
     where
         T: Async,
     {
-        sender
-            .send(value)
-            .map_err(|_| TokioError::channel_closed().into())
+        sender.send(value).map_err(|_| TokioError::channel_closed())
     }
 
     async fn receive<T>(receiver_lock: &Self::Receiver<T>) -> Result<T, Self::Error>
@@ -99,10 +97,7 @@ impl OfaRuntime for TokioRuntimeContext {
     {
         let mut receiver = receiver_lock.lock().await;
 
-        receiver
-            .recv()
-            .await
-            .ok_or_else(|| TokioError::channel_closed().into())
+        receiver.recv().await.ok_or_else(TokioError::channel_closed)
     }
 
     async fn try_receive<T>(receiver_lock: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
@@ -114,9 +109,7 @@ impl OfaRuntime for TokioRuntimeContext {
         match receiver.try_recv() {
             Ok(batch) => Ok(Some(batch)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),
-            Err(mpsc::error::TryRecvError::Disconnected) => {
-                Err(TokioError::channel_closed().into())
-            }
+            Err(mpsc::error::TryRecvError::Disconnected) => Err(TokioError::channel_closed()),
         }
     }
 
@@ -132,9 +125,7 @@ impl OfaRuntime for TokioRuntimeContext {
     where
         T: Async,
     {
-        sender
-            .send(value)
-            .map_err(|_| TokioError::channel_closed().into())
+        sender.send(value).map_err(|_| TokioError::channel_closed())
     }
 
     async fn receive_once<T>(receiver: Self::ReceiverOnce<T>) -> Result<T, Self::Error>

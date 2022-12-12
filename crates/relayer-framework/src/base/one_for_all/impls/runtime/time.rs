@@ -7,8 +7,7 @@ impl<Runtime: OfaRuntime> HasTime for OfaRuntimeWrapper<Runtime> {
     type Time = Runtime::Time;
 
     fn now(&self) -> Self::Time {
-        let time = self.runtime.now();
-        time
+        self.runtime.now()
     }
 
     fn duration_since(current_time: &Self::Time, other_time: &Self::Time) -> Duration {
