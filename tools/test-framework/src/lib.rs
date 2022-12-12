@@ -12,23 +12,22 @@
 //!
 //! ## Running Tests
 //!
-//! By convention, tests are written to the [`tests`](ibc_test_framework::tests) module. We
-//! can then run the test via the command line as follows:
+//! We can run tests via the command line as follows:
 //!
 //! ```bash
 //! RUST_LOG=info RUST_BACKTRACE=1 \
-//!     cargo test -p ibc-relayer-test --features example -- --test-threads=1 \
+//!     cargo test -p ibc-integration-test --features example -- --test-threads=1 \
 //!     example_test
 //! ```
 //!
 //! The environment variable RUST_LOG controls the log level. The RUST_BACKTRACE variable
 //! displays a backtrace when errors occur in a test. The test flag `--test-threads=1` is
 //! set so that tests are run serially (this makes it easier to follow what is going on
-//! via the log output). Take a look at the [`TestConfig`](ibc_test_framework::types::config::TestConfig)
+//! via the log output). Take a look at the [`TestConfig`](crate::types::config::TestConfig)
 //! type for more information about configuring how tests can be run.
 //!
 //! For this example, we disable the test from running by default, since it calls the
-//! [`suspend`] function and will thus never pass. We explicitly pass `--features example`
+//! `suspend` function and will thus never pass. We explicitly pass `--features example`
 //! so that the `example` feature is activated such that this test will run. Finally, we
 //! specify the name of the test so that _only_ our example test is run.
 //!
