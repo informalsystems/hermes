@@ -1,10 +1,10 @@
-//! ## Example Test
+//! ## Simple Test
 //!
 //! Here's an example of a simple test that showcases some of the important features that the
 //! framework exposes:
 //!
 //! ```no_run
-//! use ibc_integration_test::prelude::*;
+//! # use ibc_integration_test::prelude::*;
 //!
 //! pub struct ExampleTest;
 //!
@@ -38,8 +38,10 @@
 //! Note that the `run_binary_channel_test` (and indeed every `run_*` test function) takes as
 //! its single parameter an struct that represents the test case. While in this case, the struct
 //! is empty, fields can be added to the struct in the case that you want to run multiple tests
-//! to using it. In order to customize the behavior of a test, different traits need to
-//! implemented on the empty struct, depending on how you wish to modify the test.
+//! using it. See the [`MemoTest`](crate::docs::walkthroughs::memo::MemoTest) as an example
+//! of a test that utilizes a non-empty struct as input. In order to customize the behavior
+//! of a test, different traits need to implemented on the empty struct, depending on how you
+//! wish to modify the test.
 //!
 //! This example tests showcases implementing the `TestOverrides` trait, which is used to set
 //! configuration and initialization values for the relayer instance that is being tested (in

@@ -3,4 +3,5 @@
 //! as references for writing your own integration tests
 //! using the framework.
 
+pub mod memo;
 pub mod simple;
