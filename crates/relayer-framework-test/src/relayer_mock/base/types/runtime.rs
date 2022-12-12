@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use async_trait::async_trait;
 use core::fmt::Debug;
 use core::{future::Future, time::Duration};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::{marker::PhantomData, time::Instant};
 
 use ibc_relayer_framework::base::{
@@ -15,17 +15,16 @@ use crate::relayer_mock;
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::util::clock::MockClock;
-use crate::relayer_mock::util::mutex::MutexUtil;
 
 pub type MockRuntimeContext = MockChainRuntimeContext<Error>;
 
 pub struct MockChainRuntimeContext<Error> {
-    pub clock: Arc<Mutex<MockClock>>,
+    pub clock: Arc<MockClock>,
     pub phantom: PhantomData<Error>,
 }
 
 impl<Error: std::convert::From<relayer_mock::base::error::Error>> MockChainRuntimeContext<Error> {
-    pub fn new(clock: Arc<Mutex<MockClock>>) -> Self {
+    pub fn new(clock: Arc<MockClock>) -> Self {
         Self {
             clock,
             phantom: PhantomData,
@@ -33,8 +32,7 @@ impl<Error: std::convert::From<relayer_mock::base::error::Error>> MockChainRunti
     }
 
     pub fn get_time(&self) -> Result<MockTimestamp, Error> {
-        let clock = self.clock.acquire_mutex()?;
-        let timestamp = clock.get_timestamp()?;
+        let timestamp = self.clock.get_timestamp()?;
         Ok(timestamp)
     }
 }
@@ -67,11 +65,10 @@ where
         }
     }
 
+    // Increment the shared MockClock by the duration is milliseconds.
     async fn sleep(&self, duration: Duration) {
-        if let Ok(clock) = self.clock.acquire_mutex() {
-            if clock.increment_millis(duration.as_millis()).is_err() {
-                tracing::warn!("MockClock failed to sleep for {}ms", duration.as_millis());
-            }
+        if self.clock.increment_millis(duration.as_millis()).is_err() {
+            tracing::warn!("MockClock failed to sleep for {}ms", duration.as_millis());
         }
     }
 

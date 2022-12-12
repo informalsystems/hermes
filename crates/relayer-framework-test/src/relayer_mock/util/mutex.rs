@@ -1,3 +1,6 @@
+//! MutexUtil is a helper trait to simplify the error handling
+//! when locking a Mutex.
+
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::relayer_mock::base::error::Error;

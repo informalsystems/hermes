@@ -1,5 +1,5 @@
 use alloc::string::{String, ToString};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::contexts::chain::MockChainContext;
@@ -13,7 +13,7 @@ pub fn build_mock_relay_context() -> (
     Arc<OfaChainWrapper<MockChainContext>>,
     Arc<OfaChainWrapper<MockChainContext>>,
 ) {
-    let clock = Arc::new(Mutex::new(MockClock::default()));
+    let clock = Arc::new(MockClock::default());
     let runtime = MockRuntimeContext::new(clock.clone());
     let src_chain = Arc::new(OfaChainWrapper {
         chain: MockChainContext::new("chain1".to_string(), clock.clone()),

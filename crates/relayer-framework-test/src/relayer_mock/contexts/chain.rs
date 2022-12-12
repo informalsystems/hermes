@@ -1,8 +1,8 @@
 //! A HashMap<Height, ChainState> is used to represent the State of the
-//! chain at all Heights.
-//! The current_state is the ChainState at the latest height.
+//! chain.
+//! The current_state is the ChainState at all Heights, up to the latest Height.
 //! The consensus_states is a HashMap<ClientId, HashMap<Height, ChainState>>.
-//! This is used to check the consensus_state for a specific client, at a
+//! This is used to check the state of a specific client, at a
 //! specific height.
 //! Usually the consensus_states would use the root hashes of a Merle Tree,
 //! but since the MockChain is used for testing and will have a small number
@@ -40,7 +40,7 @@ pub struct MockChainContext {
 }
 
 impl MockChainContext {
-    pub fn new(name: String, clock: Arc<Mutex<MockClock>>) -> Self {
+    pub fn new(name: String, clock: Arc<MockClock>) -> Self {
         let runtime = OfaRuntimeContext::new(MockChainRuntimeContext::new(clock));
         let chain_state: HashMap<MockHeight, ConsensusState> =
             HashMap::from([(MockHeight::from(1), State::default())]);

@@ -1,11 +1,12 @@
 //! The following types are used for the OfaChainTypes implementation:
-//! * For the Height and Timestamp a wrapper around a u128 referred to
-//!   as MockHeight. The MockChain does not require a precise timestamp
-//!   such as Duration.
+//! * For the Height a wrapper around a u128 referred to
+//!   as MockHeight.
+//! * For the Timestamp is a simple u128 representing milliseconds and is
+//!   retrieved using a shared clock, MockClock.
 //! * For the messages a simple enum MockMessage which allows to identify
 //!   RecvPacket, AckPacket, TimeoutPacket and UpdateClient messages.
-//! * The ConsensusState is a set of 3 HashSet used to store which messages
-//!   have been sent, received and acknowledged.
+//! * The ConsensusState is a set of 4 HashSet used to store which messages
+//!   have been sent, received, acknowledged and timed out.
 //! * The ChainStatus is a ConsensusState with a Height and Timestamp.
 
 use alloc::boxed::Box;

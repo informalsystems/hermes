@@ -1,3 +1,7 @@
+//! MockClock is a simple structure which allows multiple
+//! entities to safely access a shared timestamp, represented by
+//! a u128. The timestamp needs to be manually incremented.
+
 use eyre::eyre;
 use std::sync::{Arc, Mutex};
 
@@ -28,21 +32,6 @@ impl MockClock {
                 millis
             ))
         })?;
-
-        Ok(())
-    }
-
-    pub fn increment_seconds(&self, seconds: u128) -> Result<(), Error> {
-        let mut locked_timestamp = self.timestamp.acquire_mutex()?;
-        *locked_timestamp = locked_timestamp
-            .checked_add(seconds * 1000)
-            .ok_or_else(|| {
-                Error::generic(eyre!(
-                    "overflow when adding {} to {}",
-                    locked_timestamp,
-                    seconds * 1000
-                ))
-            })?;
 
         Ok(())
     }
