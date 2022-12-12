@@ -3,7 +3,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::common::one_for_all::presets::FullPreset;
 use ibc_relayer_framework::full::batch::context::new_batch_channel;
-use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatchContext;
+use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatchWrapper;
 use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::signer::Signer;
 
@@ -31,7 +31,7 @@ impl<Handle: ChainHandle> CosmosChainContext<Handle> {
         key_entry: KeyEntry,
         telemetry: CosmosTelemetry,
     ) -> Self {
-        let batch_channel = new_batch_channel::<OfaBatchContext<CosmosChainWrapper<Self>>>();
+        let batch_channel = new_batch_channel::<OfaBatchWrapper<CosmosChainWrapper<Self>>>();
 
         let chain = Self {
             handle,

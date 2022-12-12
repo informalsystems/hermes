@@ -1,5 +1,5 @@
 use crate::base::chain::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::chain::OfaChainTypes;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
@@ -9,7 +9,7 @@ use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
-impl<Relay: OfaBaseRelay> HasError for OfaRelayWrapper<Relay> {
+impl<Relay: OfaBaseRelay> HasErrorType for OfaRelayWrapper<Relay> {
     type Error = Relay::Error;
 }
 
@@ -19,6 +19,10 @@ impl<Relay: OfaBaseRelay> HasRuntime for OfaRelayWrapper<Relay> {
     fn runtime(&self) -> &Self::Runtime {
         self.relay.runtime()
     }
+
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Relay::Error {
+        Relay::runtime_error(e)
+    }
 }
 
 impl<Relay: OfaBaseRelay> HasRelayTypes for OfaRelayWrapper<Relay> {
@@ -27,6 +31,14 @@ impl<Relay: OfaBaseRelay> HasRelayTypes for OfaRelayWrapper<Relay> {
     type DstChain = OfaChainWrapper<Relay::DstChain>;
 
     type Packet = Relay::Packet;
+
+    fn src_chain_error(e: <Self::SrcChain as HasErrorType>::Error) -> Self::Error {
+        Relay::src_chain_error(e)
+    }
+
+    fn dst_chain_error(e: <Self::DstChain as HasErrorType>::Error) -> Self::Error {
+        Relay::dst_chain_error(e)
+    }
 
     fn packet_src_port(packet: &Self::Packet) -> &PortId<Self::SrcChain, Self::DstChain> {
         Relay::packet_src_port(packet)

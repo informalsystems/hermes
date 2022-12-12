@@ -55,9 +55,3 @@ impl Clone for Error {
         Error(self.detail().clone(), ErrorMessageTracer::new_message(self))
     }
 }
-
-impl From<TokioError> for Error {
-    fn from(e: TokioError) -> Error {
-        Error::tokio(e)
-    }
-}
