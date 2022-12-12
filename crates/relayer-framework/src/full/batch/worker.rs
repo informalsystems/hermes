@@ -27,7 +27,7 @@ where
     <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes,
 {
     pub relay: Relay,
-    pub pending_batches: VecDeque<BatchSubmission<Relay, Target>>,
+    pub pending_batches: VecDeque<BatchSubmission<Target::TargetChain, Relay::Error>>,
     pub config: BatchConfig,
     pub phantom: PhantomData<Target>,
 }
@@ -127,7 +127,7 @@ where
 
     fn partition_message_batches(
         &mut self,
-    ) -> VecDeque<(Vec<Message>, EventResultSender<Relay, Target>)> {
+    ) -> VecDeque<(Vec<Message>, EventResultSender<TargetChain, Error>)> {
         let batches = mem::take(&mut self.pending_batches);
 
         let mut total_message_count: usize = 0;
@@ -173,7 +173,7 @@ where
 
     async fn send_ready_batches(
         relay: &Relay,
-        ready_batches: VecDeque<BatchSubmission<Relay, Target>>,
+        ready_batches: VecDeque<BatchSubmission<TargetChain, Error>>,
     ) {
         let (messages, senders): (Vec<_>, Vec<_>) = ready_batches
             .into_iter()

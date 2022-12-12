@@ -34,7 +34,7 @@ impl<Relay> HasMessageBatchSender<SourceTarget> for OfaRelayWrapper<Relay>
 where
     Relay: OfaFullRelay,
 {
-    fn get_batch_sender(&self) -> &MessageBatchSender<Self, SourceTarget> {
+    fn get_batch_sender(&self) -> &MessageBatchSender<Self::SrcChain, Self::Error> {
         self.relay.src_chain_message_batch_sender()
     }
 }
@@ -43,7 +43,7 @@ impl<Relay> HasMessageBatchReceiver<SourceTarget> for OfaRelayWrapper<Relay>
 where
     Relay: OfaFullRelay,
 {
-    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self, SourceTarget> {
+    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self::SrcChain, Self::Error> {
         self.relay.src_chain_message_batch_receiver()
     }
 }
@@ -52,7 +52,7 @@ impl<Relay> HasMessageBatchSender<DestinationTarget> for OfaRelayWrapper<Relay>
 where
     Relay: OfaFullRelay,
 {
-    fn get_batch_sender(&self) -> &MessageBatchSender<Self, DestinationTarget> {
+    fn get_batch_sender(&self) -> &MessageBatchSender<Self::DstChain, Self::Error> {
         self.relay.dst_chain_message_batch_sender()
     }
 }
@@ -61,7 +61,7 @@ impl<Relay> HasMessageBatchReceiver<DestinationTarget> for OfaRelayWrapper<Relay
 where
     Relay: OfaFullRelay,
 {
-    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self, DestinationTarget> {
+    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self::DstChain, Self::Error> {
         self.relay.dst_chain_message_batch_receiver()
     }
 }

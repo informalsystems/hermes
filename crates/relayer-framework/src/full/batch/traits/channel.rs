@@ -10,7 +10,7 @@ where
     Target::TargetChain: HasRuntime,
     <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes,
 {
-    fn get_batch_sender(&self) -> &MessageBatchSender<Self, Target>;
+    fn get_batch_sender(&self) -> &MessageBatchSender<Target::TargetChain, Self::Error>;
 }
 
 pub trait HasMessageBatchReceiver<Target>: HasRelayTypes
@@ -19,5 +19,5 @@ where
     Target::TargetChain: HasRuntime,
     <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes,
 {
-    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self, Target>;
+    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Target::TargetChain, Self::Error>;
 }
