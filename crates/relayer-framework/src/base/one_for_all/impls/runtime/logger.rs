@@ -1,0 +1,42 @@
+use async_trait::async_trait;
+
+use crate::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime, OfaRuntimeWrapper};
+use crate::base::runtime::traits::log::{
+    HasLogger, LevelDebug, LevelError, LevelInfo, LevelTrace, LevelWarn,
+};
+use crate::std_prelude::*;
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelError> for OfaRuntimeWrapper<Runtime> {
+    async fn log(&self, _level: LevelError, message: &str) {
+        self.runtime.log(LogLevel::Error, message).await;
+    }
+}
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelWarn> for OfaRuntimeWrapper<Runtime> {
+    async fn log(&self, _level: LevelWarn, message: &str) {
+        self.runtime.log(LogLevel::Warn, message).await;
+    }
+}
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelInfo> for OfaRuntimeWrapper<Runtime> {
+    async fn log(&self, _level: LevelInfo, message: &str) {
+        self.runtime.log(LogLevel::Info, message).await;
+    }
+}
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelDebug> for OfaRuntimeWrapper<Runtime> {
+    async fn log(&self, _level: LevelDebug, message: &str) {
+        self.runtime.log(LogLevel::Debug, message).await;
+    }
+}
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelTrace> for OfaRuntimeWrapper<Runtime> {
+    async fn log(&self, _level: LevelTrace, message: &str) {
+        self.runtime.log(LogLevel::Trace, message).await;
+    }
+}

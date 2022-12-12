@@ -14,7 +14,7 @@ use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainTypes;
 use ibc_relayer_framework::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
 use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
 
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeWrapper;
 
 use crate::base::error::Error;
 
@@ -103,7 +103,7 @@ where
         &packet.timeout_timestamp
     }
 
-    fn runtime(&self) -> &OfaRuntimeContext<TokioRuntimeContext> {
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
         &self.runtime
     }
 
