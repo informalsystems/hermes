@@ -31,11 +31,11 @@ pub trait OfaRuntime: Clone + Async {
 
     type Time: Async;
 
-    type Sender<T>
+    type Sender<T>: Async
     where
         T: Async;
 
-    type Receiver<T>
+    type Receiver<T>: Async
     where
         T: Async;
 
