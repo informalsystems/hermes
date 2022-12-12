@@ -3,7 +3,7 @@ use core::future::Future;
 use core::time::Duration;
 
 use crate::base::core::traits::error::HasErrorType;
-use crate::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime, OfaRuntimeContext};
+use crate::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime, OfaRuntimeWrapper};
 use crate::base::runtime::traits::log::{
     HasLogger, LevelDebug, LevelError, LevelInfo, LevelTrace, LevelWarn,
 };
@@ -16,18 +16,18 @@ pub struct OfaTime<Runtime: OfaRuntime> {
     pub time: Runtime::Time,
 }
 
-impl<Runtime: OfaRuntime> HasErrorType for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> HasErrorType for OfaRuntimeWrapper<Runtime> {
     type Error = Runtime::Error;
 }
 
 #[async_trait]
-impl<Runtime: OfaRuntime> CanSleep for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> CanSleep for OfaRuntimeWrapper<Runtime> {
     async fn sleep(&self, duration: Duration) {
         self.runtime.sleep(duration).await
     }
 }
 
-impl<Runtime: OfaRuntime> HasSpawner for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> HasSpawner for OfaRuntimeWrapper<Runtime> {
     type Spawner = Self;
 
     fn spawner(&self) -> Self::Spawner {
@@ -35,7 +35,7 @@ impl<Runtime: OfaRuntime> HasSpawner for OfaRuntimeContext<Runtime> {
     }
 }
 
-impl<Runtime: OfaRuntime> Spawner for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> Spawner for OfaRuntimeWrapper<Runtime> {
     fn spawn<F>(&self, task: F)
     where
         F: Future + Send + 'static,
@@ -45,7 +45,7 @@ impl<Runtime: OfaRuntime> Spawner for OfaRuntimeContext<Runtime> {
     }
 }
 
-impl<Runtime: OfaRuntime> HasTime for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> HasTime for OfaRuntimeWrapper<Runtime> {
     type Time = OfaTime<Runtime>;
 
     fn now(&self) -> Self::Time {
@@ -61,35 +61,35 @@ impl<Runtime: OfaRuntime> Time for OfaTime<Runtime> {
 }
 
 #[async_trait]
-impl<Runtime: OfaRuntime> HasLogger<LevelError> for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> HasLogger<LevelError> for OfaRuntimeWrapper<Runtime> {
     async fn log(&self, _level: LevelError, message: &str) {
         self.runtime.log(LogLevel::Error, message).await;
     }
 }
 
 #[async_trait]
-impl<Runtime: OfaRuntime> HasLogger<LevelWarn> for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> HasLogger<LevelWarn> for OfaRuntimeWrapper<Runtime> {
     async fn log(&self, _level: LevelWarn, message: &str) {
         self.runtime.log(LogLevel::Warn, message).await;
     }
 }
 
 #[async_trait]
-impl<Runtime: OfaRuntime> HasLogger<LevelInfo> for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> HasLogger<LevelInfo> for OfaRuntimeWrapper<Runtime> {
     async fn log(&self, _level: LevelInfo, message: &str) {
         self.runtime.log(LogLevel::Info, message).await;
     }
 }
 
 #[async_trait]
-impl<Runtime: OfaRuntime> HasLogger<LevelDebug> for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> HasLogger<LevelDebug> for OfaRuntimeWrapper<Runtime> {
     async fn log(&self, _level: LevelDebug, message: &str) {
         self.runtime.log(LogLevel::Debug, message).await;
     }
 }
 
 #[async_trait]
-impl<Runtime: OfaRuntime> HasLogger<LevelTrace> for OfaRuntimeContext<Runtime> {
+impl<Runtime: OfaRuntime> HasLogger<LevelTrace> for OfaRuntimeWrapper<Runtime> {
     async fn log(&self, _level: LevelTrace, message: &str) {
         self.runtime.log(LogLevel::Trace, message).await;
     }

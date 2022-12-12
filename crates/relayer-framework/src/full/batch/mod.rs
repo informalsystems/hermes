@@ -1,5 +1,4 @@
 pub mod config;
-pub mod context;
 pub mod impls;
 pub mod message_sender;
 pub mod spawn;

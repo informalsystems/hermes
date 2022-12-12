@@ -7,11 +7,11 @@ use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 #[derive(Clone)]
-pub struct OfaRuntimeContext<Runtime> {
+pub struct OfaRuntimeWrapper<Runtime> {
     pub runtime: Runtime,
 }
 
-impl<Runtime> OfaRuntimeContext<Runtime> {
+impl<Runtime> OfaRuntimeWrapper<Runtime> {
     pub fn new(runtime: Runtime) -> Self {
         Self { runtime }
     }

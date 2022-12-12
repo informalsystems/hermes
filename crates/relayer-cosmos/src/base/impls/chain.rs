@@ -11,7 +11,7 @@ use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -113,7 +113,7 @@ where
         }
     }
 
-    fn runtime(&self) -> &OfaRuntimeContext<TokioRuntimeContext> {
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
         &self.runtime
     }
 

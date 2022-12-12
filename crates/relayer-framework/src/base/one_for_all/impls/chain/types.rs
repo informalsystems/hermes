@@ -4,7 +4,7 @@ use crate::base::chain::traits::types::{
 };
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
-use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::base::one_for_all::traits::runtime::OfaRuntimeWrapper;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
@@ -14,7 +14,7 @@ impl<Chain: OfaBaseChain> HasErrorType for OfaChainWrapper<Chain> {
 }
 
 impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
-    type Runtime = OfaRuntimeContext<Chain::Runtime>;
+    type Runtime = OfaRuntimeWrapper<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
         self.chain.runtime()
