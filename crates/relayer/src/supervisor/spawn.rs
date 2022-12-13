@@ -2,7 +2,7 @@ use tracing::{error, info};
 
 use ibc_relayer_types::core::{
     ics02_client::client_state::ClientState, ics03_connection::connection::IdentifiedConnectionEnd,
-    ics04_channel::channel::State as ChannelState, ics24_host::identifier::ChainId,
+    ics04_channel::channel::State as ChannelState,
 };
 
 use crate::{
@@ -322,13 +322,6 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             Ok(true)
         } else {
             Ok(false)
-        }
-    }
-
-    pub fn shutdown_workers_for_chain(&mut self, chain_id: &ChainId) {
-        let affected_workers = self.workers.objects_for_chain(chain_id);
-        for object in affected_workers {
-            self.workers.shutdown_worker(&object);
         }
     }
 }
