@@ -1,21 +1,21 @@
 use alloc::sync::Arc;
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 
 use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::chain::CosmosChainWrapper;
-use crate::base::types::runtime::CosmosRuntimeContext;
 
 #[derive(Clone)]
 pub struct CosmosRelayWrapper<Relay: CosmosRelay> {
     pub relay: Arc<Relay>,
     pub src_chain: OfaChainWrapper<CosmosChainWrapper<Relay::SrcChain>>,
     pub dst_chain: OfaChainWrapper<CosmosChainWrapper<Relay::DstChain>>,
-    pub runtime: OfaRuntimeContext<CosmosRuntimeContext>,
+    pub runtime: OfaRuntimeContext<TokioRuntimeContext>,
 }
 
 impl<Relay: CosmosRelay> CosmosRelayWrapper<Relay> {
-    pub fn new(relay: Arc<Relay>, runtime: CosmosRuntimeContext) -> Self {
+    pub fn new(relay: Arc<Relay>, runtime: TokioRuntimeContext) -> Self {
         let src_chain = OfaChainWrapper::new(CosmosChainWrapper::new(
             relay.src_chain().clone(),
             runtime.clone(),

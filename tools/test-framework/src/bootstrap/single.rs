@@ -42,6 +42,7 @@ pub fn bootstrap_single_node(
     use_random_id: bool,
     config_modifier: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
     genesis_modifier: impl FnOnce(&mut serde_json::Value) -> Result<(), Error>,
+    chain_number: usize,
 ) -> Result<FullNode, Error> {
     let stake_denom = Denom::base("stake");
 
@@ -59,7 +60,7 @@ pub fn bootstrap_single_node(
     let initial_stake = Token::new(stake_denom, initial_amount);
     let initial_coin = Token::new(denom.clone(), initial_amount);
 
-    let chain_driver = builder.new_chain(prefix, use_random_id)?;
+    let chain_driver = builder.new_chain(prefix, use_random_id, chain_number)?;
 
     chain_driver.initialize()?;
 

@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_relayer::chain::cosmos::gas::gas_amount_to_fee;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
-use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
+use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tracing::{debug, error, warn};
 
@@ -12,7 +12,7 @@ use crate::transaction::impls::simulate::CanSendTxSimulate;
 use crate::transaction::traits::fields::{HasChainId, HasDefaultGas, HasGasConfig, HasMaxGas};
 
 #[async_trait]
-pub trait CanEstimateTxFees: HasError {
+pub trait CanEstimateTxFees: HasErrorType {
     async fn estimate_tx_fees(&self, tx: SignedTx) -> Result<Fee, Self::Error>;
 }
 
@@ -33,12 +33,12 @@ where
 }
 
 #[async_trait]
-pub trait TxGasEstimator<Context: HasError> {
+pub trait TxGasEstimator<Context: HasErrorType> {
     async fn estimate_gas_with_tx(context: &Context, tx: SignedTx) -> Result<u64, Context::Error>;
 }
 
 #[async_trait]
-pub trait CanEstimateTxGas: HasError {
+pub trait CanEstimateTxGas: HasErrorType {
     async fn estimate_gas_with_tx(&self, tx: SignedTx) -> Result<u64, Self::Error>;
 }
 
@@ -69,7 +69,7 @@ where
 
 pub struct RecoverableTxGasEstimator<InEstimator>(PhantomData<InEstimator>);
 
-pub trait HasRecoverableErrorForSimulation: HasError {
+pub trait HasRecoverableErrorForSimulation: HasErrorType {
     fn can_recover_from_simulation_failure(e: &Self::Error) -> bool;
 }
 

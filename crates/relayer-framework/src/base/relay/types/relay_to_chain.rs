@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 
 use crate::base::chain::traits::message_sender::CanSendMessages;
 use crate::base::chain::traits::types::{HasChainTypes, HasEventType, HasMessageType};
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
@@ -37,7 +37,7 @@ pub struct RelayToChain<Relay, Target> {
     pub phantom: PhantomData<Target>,
 }
 
-impl<Relay, Target> HasError for RelayToChain<Relay, Target>
+impl<Relay, Target> HasErrorType for RelayToChain<Relay, Target>
 where
     Relay: HasRelayTypes,
     Target: ChainTarget<Relay>,
@@ -53,7 +53,7 @@ where
     type Message = <Target::TargetChain as HasMessageType>::Message;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Target::TargetChain::estimate_message_len(message)
+        Target::TargetChain::estimate_message_len(message).map_err(Target::target_chain_error)
     }
 }
 
@@ -89,5 +89,6 @@ where
         Target::target_chain(&self.relay)
             .send_messages(messages)
             .await
+            .map_err(Target::target_chain_error)
     }
 }

@@ -5,7 +5,7 @@
    are defined in this module.
 */
 
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
@@ -20,7 +20,7 @@ use crate::std_prelude::*;
    we want to avoid defining multiple associated `Message` types so that
    they can never be ambiguous.
 */
-pub trait HasMessageType: HasError {
+pub trait HasMessageType: HasErrorType {
     /**
        The messages that can be assembled into transactions and be submitted to
        a blockchain.
@@ -126,7 +126,7 @@ pub trait HasEventType: Async {
 
    A chain context have the following abstract types:
 
-   -   [`Error`](HasError::Error) - the error type encapsulating errors occured
+   -   [`Error`](HasErrorType::Error) - the error type encapsulating errors occured
        during chain operations.
 
    -   [`Height`](Self::Height) - the height of a chain, which should behave like
@@ -152,7 +152,7 @@ pub trait HasEventType: Async {
     [`transaction`](crate::base::transaction) module for more information
     about the transaction context.
 */
-pub trait HasChainTypes: HasMessageType + HasEventType + HasError {
+pub trait HasChainTypes: HasMessageType + HasEventType + HasErrorType {
     /**
        The height of the chain, which should behave like natural numbers.
 

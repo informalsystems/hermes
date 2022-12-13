@@ -17,7 +17,7 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasError::Error`](crate::base::core::traits::error::HasError::Error).
+       [`HasErrorType::Error`](crate::base::core::traits::error::HasErrorType::Error).
     */
     type Error: Async + Debug;
 
@@ -25,7 +25,7 @@ pub trait OfaChainTypes: Async {
        Corresponds to
        [`HasRuntime::Runtime`](crate::base::runtime::traits::runtime::HasRuntime::Runtime).
     */
-    type Runtime: OfaRuntime<Error = Self::Error>;
+    type Runtime: OfaRuntime;
 
     /**
        Corresponds to
@@ -103,6 +103,8 @@ pub trait OfaChainTypes: Async {
 #[async_trait]
 pub trait OfaBaseChain: OfaChainTypes {
     fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
+
+    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
 

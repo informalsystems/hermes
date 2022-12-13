@@ -1,11 +1,11 @@
-use ibc_relayer_framework::base::core::traits::error::HasError;
+use ibc_relayer_framework::base::core::traits::error::HasErrorType;
 use tendermint::abci::Code;
 
-pub trait InjectRpcResponseError: HasError {
+pub trait InjectRpcResponseError: HasErrorType {
     fn rpc_response_error(code: Code) -> Self::Error;
 }
 
-pub trait CanValidateRpcResponse: HasError {
+pub trait CanValidateRpcResponse: HasErrorType {
     fn validate_rpc_response_code(code: Code) -> Result<(), Self::Error>;
 }
 

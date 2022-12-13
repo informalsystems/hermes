@@ -13,7 +13,7 @@ use crate::base::core::traits::sync::Async;
    parent traits, so that multiple traits can all refer to the same abstract
    `Self::Error` type.
 */
-pub trait HasError: Async {
+pub trait HasErrorType: Async {
     /**
        The `Error` associated type is also required to implement [`Debug`].
 
@@ -24,13 +24,13 @@ pub trait HasError: Async {
 }
 
 /**
-   Used for injecting external error types into [`Self::Error`](HasError::Error).
+   Used for injecting external error types into [`Self::Error`](HasErrorType::Error).
 
    As an example, if `Context: InjectError<ParseIntError>`, then we would be
    able to call `Context::inject_error(err)` for an error value
    [`err: ParseIntError`](core::num::ParseIntError) and get back
-   a [`Context::Error`](HasError::Error) value.
+   a [`Context::Error`](HasErrorType::Error) value.
 */
-pub trait InjectError<E>: HasError {
+pub trait InjectError<E>: HasErrorType {
     fn inject_error(err: E) -> Self::Error;
 }

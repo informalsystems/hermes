@@ -39,7 +39,11 @@ where
         let chain = context.destination_chain();
 
         loop {
-            let counterparty_status = chain.query_chain_status().await?;
+            let counterparty_status = chain
+                .query_chain_status()
+                .await
+                .map_err(Relay::dst_chain_error)?;
+
             let counterparty_height = Relay::DstChain::chain_status_height(&counterparty_status);
 
             if counterparty_height > destination_height {

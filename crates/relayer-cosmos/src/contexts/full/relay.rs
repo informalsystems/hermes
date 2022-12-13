@@ -8,11 +8,11 @@ use ibc_relayer_framework::full::batch::config::BatchConfig;
 use ibc_relayer_framework::full::batch::spawn::{
     BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,
 };
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 
 use crate::base::traits::chain::CosmosChain;
 use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::relay::CosmosRelayWrapper;
-use crate::base::types::runtime::CosmosRuntimeContext;
 use crate::contexts::full::chain::FullCosmosChainContext;
 use crate::full::traits::relay::CosmosFullRelay;
 
@@ -66,7 +66,7 @@ where
 }
 
 pub fn new_relay_context_with_batch<SrcChain, DstChain>(
-    runtime: CosmosRuntimeContext,
+    runtime: TokioRuntimeContext,
     src_chain: FullCosmosChainContext<SrcChain>,
     dst_chain: FullCosmosChainContext<DstChain>,
     src_to_dst_client: ForeignClient<DstChain, SrcChain>,

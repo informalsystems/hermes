@@ -1,13 +1,13 @@
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount};
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer_framework::base::core::traits::error::HasError;
+use ibc_relayer_framework::base::core::traits::error::HasErrorType;
 use prost::{DecodeError, Message};
 
 use crate::transaction::traits::decoders::account::AccountDecoder;
 
 pub struct DecodeCosmosOrEthAccount;
 
-pub trait InjectDecodeCosmosOrEthAccountError: HasError {
+pub trait InjectDecodeCosmosOrEthAccountError: HasErrorType {
     fn unknown_account_type_error(type_url: &str) -> Self::Error;
 
     fn empty_base_account_error() -> Self::Error;

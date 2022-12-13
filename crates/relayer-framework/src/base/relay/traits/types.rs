@@ -2,7 +2,7 @@ use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::chain::types::aliases::{
     ChannelId, ClientId, Height, PortId, Sequence, Timestamp,
 };
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 
 /**
@@ -33,23 +33,27 @@ use crate::base::core::traits::sync::Async;
    additional constraints such as restricting a relay context to handle
    only a single channel or connection.
 */
-pub trait HasRelayTypes: HasError {
+pub trait HasRelayTypes: HasErrorType {
     /**
        A source chain context that has the IBC chain types that are correspond
        to the destination chain.
     */
-    type SrcChain: HasIbcChainTypes<Self::DstChain, Error = Self::Error>;
+    type SrcChain: HasIbcChainTypes<Self::DstChain>;
 
     /**
        A destination chain context that has the IBC chain types that are correspond
        to the source chain.
     */
-    type DstChain: HasIbcChainTypes<Self::SrcChain, Error = Self::Error>;
+    type DstChain: HasIbcChainTypes<Self::SrcChain>;
 
     /**
        An IBC packet from the source chain to the destination chain.
     */
     type Packet: Async;
+
+    fn src_chain_error(e: <Self::SrcChain as HasErrorType>::Error) -> Self::Error;
+
+    fn dst_chain_error(e: <Self::DstChain as HasErrorType>::Error) -> Self::Error;
 
     /**
        The source port of a packet, which is a port ID on the source chain
