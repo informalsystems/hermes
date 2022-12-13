@@ -62,8 +62,8 @@ async fn broadcast_tx_sync(
 /**
  A simplified version of send_tx that does not depend on `ChainHandle`.
 
- This allows different wallet ([`KeyEntry`]) to be used for submitting
- transactions. The simple behavior as follows:
+ This allows different wallet ([`Secp256k1KeyPair`]) to be used for
+ submitting transactions. The simple behavior as follows:
 
  - Query the account information on the fly. This may introduce more
    overhead in production, but does not matter in testing.
