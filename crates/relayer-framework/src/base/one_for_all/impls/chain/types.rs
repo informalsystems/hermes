@@ -2,14 +2,14 @@ use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::traits::types::{
     HasChainTypes, HasEventType, HasIbcChainTypes, HasMessageType,
 };
-use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::std_prelude::*;
 
-impl<Chain: OfaBaseChain> HasError for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> HasErrorType for OfaChainWrapper<Chain> {
     type Error = Chain::Error;
 }
 
@@ -18,6 +18,10 @@ impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
 
     fn runtime(&self) -> &Self::Runtime {
         self.chain.runtime()
+    }
+
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Chain::Error {
+        Chain::runtime_error(e)
     }
 }
 

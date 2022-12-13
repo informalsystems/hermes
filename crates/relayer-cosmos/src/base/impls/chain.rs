@@ -13,6 +13,8 @@ use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -28,7 +30,6 @@ use crate::base::error::Error;
 use crate::base::traits::chain::CosmosChain;
 use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::message::CosmosIbcMessage;
-use crate::base::types::runtime::CosmosRuntimeContext;
 
 impl<Chain> OfaChainTypes for CosmosChainWrapper<Chain>
 where
@@ -38,7 +39,7 @@ where
 
     type Error = Error;
 
-    type Runtime = CosmosRuntimeContext;
+    type Runtime = TokioRuntimeContext;
 
     type Height = Height;
 
@@ -70,6 +71,10 @@ impl<Chain> OfaBaseChain for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChain,
 {
+    fn runtime_error(e: TokioError) -> Error {
+        Error::tokio(e)
+    }
+
     fn estimate_message_len(message: &CosmosIbcMessage) -> Result<usize, Error> {
         let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(Error::encode)?;
 
@@ -101,7 +106,7 @@ where
         }
     }
 
-    fn runtime(&self) -> &OfaRuntimeContext<CosmosRuntimeContext> {
+    fn runtime(&self) -> &OfaRuntimeContext<TokioRuntimeContext> {
         &self.runtime
     }
 
