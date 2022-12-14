@@ -1,2 +1,2 @@
-- Update to `ibc-proto` 0.24.0. ([#2944](https://github.com/informalsystems/ibc-rs/issues/2944))
+- Update to `ibc-proto` 0.24.0. ([#2944](https://github.com/informalsystems/hermes/issues/2944))
 
