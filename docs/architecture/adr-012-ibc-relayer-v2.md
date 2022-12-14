@@ -592,7 +592,7 @@ logic for the packet relayers themselves. From the perspective of the packet
 relayer implementation, the relay context appears to be exclusively owned by the
 packet relayer, and it is not aware of other concurrent tasks running.
 
-#### Optimizations
+#### Optimization Layers
 
 The relayer framework offers multiple layers of optimizations to improve the
 efficiency of relaying IBC packets. The first layer performs message
@@ -790,15 +790,19 @@ simple and have a smooth learning curve.
 It is worth noting that even though the relayer components defined using
 context-generic programming are fully modular, the all-in-one traits are
 designed to be _rigid_ and _specialized_. Observant readers may notice that
-the all-in-one traits are similar to the traditional god traits that are
+the all-in-one traits are similar to the monolithic traits that are
 commonly found in Rust code, such as
 [`ChainHandle`](ibc_relayer::chain::handle::ChainHandle) in relayer v1.
-At the expense of user convenience, the all-in-one traits suffer the same
-limitations as other
-god traits of being very complex and inflexible. However, the main difference is
-that the all-in-one traits are nothing but glue code around the actual
-components, hence their presence is optional and can be bypassed easily if
-needed.
+A common issue of such monolithic traits is that they often become the center
+of gravity during development, and grow to contain too many methods that become
+difficult to be decoupled and maintained separately.
+At the expense of user convenience, the all-in-one traits suffer similar
+limitations as the monolithic traits of being very complex and inflexible.
+However, the main difference is that the all-in-one traits are nothing but a
+thin layer of glue code around the actual components, which are defined as
+separate traits. Hence it is possible to opt out of using the all-in-one traits,
+and implement the components either directly using CGP, or using other
+approaches.
 
 If users want to mix and match specific features of the relayer, they can
 instead bypass the all-in-one traits and use the relayer components directly
