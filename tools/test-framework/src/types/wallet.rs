@@ -34,7 +34,7 @@ pub struct Wallet {
     pub address: WalletAddress,
 
     // TODO: Parameterize this type on `SigningKeyPair`
-    /// The wallet key information in the form of [`SigningKeyPair`]
+    /// The wallet key information in the form of `SigningKeyPair`
     /// that is used by the relayer.
     pub key: Secp256k1KeyPair,
 }
@@ -81,7 +81,7 @@ pub trait TaggedWallet<Chain> {
     /// Get the [`WalletAddress`] tagged with the given `Chain`.
     fn address(&self) -> MonoTagged<Chain, &WalletAddress>;
 
-    /// Get the [`SigningKeyPair`] tagged with the given `Chain`.
+    /// Get the `SigningKeyPair` tagged with the given `Chain`.
     fn key(&self) -> MonoTagged<Chain, &Secp256k1KeyPair>;
 }
 
