@@ -17,9 +17,8 @@ Additionally, IBC clients with a trust level between `1/3` and `2/3` inclusive a
 
 - Update minimum supported Rust version to 1.65.0
   ([#2817](https://github.com/informalsystems/hermes/pull/2817))
-- Update to `tendermint-rs` 0.27 and ibc-proto 0.23
-  ([#2855](https://github.com/informalsystems/ibc-rs/issues/2859))
-  ([#2893](https://github.com/informalsystems/ibc-rs/pull/2893))
+- Update to `tendermint-rs` 0.28 and ibc-proto 0.24
+  ([#2944](https://github.com/informalsystems/ibc-rs/issues/2944))
 
 #### IMPROVEMENTS
 
