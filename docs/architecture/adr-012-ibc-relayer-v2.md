@@ -456,7 +456,9 @@ The
 component is a _middleware_ component that wraps around
 an inner update client message builder, and skips calling the inner component
 if it finds that a client update at the given height had already been done
-before on the target chain.
+before on the target chain. In general, a middleware component is a component
+that wraps around another component implementing the same trait, and alters
+the input and output of the wrapped component.
 
 The trait also allows an update client message builder component to be
 implemented with a concrete relay context, such as a Cosmos-specific
@@ -590,7 +592,9 @@ logic for the packet relayers themselves. From the perspective of the packet
 relayer implementation, the relay context appears to be exclusively owned by the
 packet relayer, and it is not aware of other concurrent tasks running.
 
-The relayer framework uses multiple layers of optimizations to improve the
+#### Optimizations
+
+The relayer framework offers multiple layers of optimizations to improve the
 efficiency of relaying IBC packets. The first layer performs message
 batching per relay context, by collecting messages being sent over a relay
 context within a time frame and sending them all as a single batch if it does not
@@ -619,7 +623,9 @@ enough to refresh the cached nonce sequences so that the correct nonces can be
 allocated to the next messages.
 
 It is also worth noting that all optimization layers offered by the relayer
-framework are _optional_. For example, if the relayer is used to relay
+framework are _optional_. This means that it is possible to opt-out of the
+optimizations that we discussed earlier, or introduce different ways to optimize
+the relaying. For example, if the relayer is used to relay
 non-Cosmos chains, or if future Cosmos SDK chains allow parallel nonces to be
 used, then one can easily swap with a different nonce allocator that is better
 suited for the given nonce logic. The relayer framework also provides a _naive_
@@ -633,6 +639,10 @@ Adding such a layer would require transaction contexts that use it to provide
 a _list_ of signers, as compared to a single signer. On the other hand,
 transaction contexts that do not need such an optimization are not affected and
 would only have to provide a single signer.
+
+More information about the various optimization techniques are available in the
+relayer framework documentation for
+[concurrency architectures](ibc_relayer_framework::docs::concurrency_architectures).
 
 ### Error Handling
 
@@ -888,10 +898,7 @@ impl OfaBaseChain for MinCosmosChainContext
 ```
 
 For demonstration purposes, the above code is slightly simplified from the actual
-Cosmos chain implementation. Readers are encouraged to refer to the
-[`ibc-relayer-cosmos`](crate) itself to see the full implementation details.
-
-In the
+Cosmos chain implementation. In the
 [`OfaBaseChain`](ibc_relayer_framework::base::one_for_all::traits::chain::OfaBaseChain)
 implementation for
 [`MinCosmosChainContext`](crate::contexts::min::chain::MinCosmosChainContext),
@@ -911,7 +918,8 @@ as implementing
 [`OfaBaseRelay`](ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay)
 for [`MinCosmosRelayContext`](crate::contexts::min::relay::MinCosmosRelayContext),
 which would contain two
-[`MinCosmosChainContext`](crate::contexts::min::chain::MinCosmosChainContext)s.
+[`MinCosmosChainContext`](crate::contexts::min::chain::MinCosmosChainContext)s -
+one for the source Cosmos chain, and one for the destination Cosmos chain.
 Once the traits are implemented, the relayer
 methods would automatically be implemented by wrapping the relay context
 inside

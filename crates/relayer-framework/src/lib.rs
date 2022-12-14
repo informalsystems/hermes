@@ -110,7 +110,6 @@
 mod std_prelude;
 extern crate alloc;
 
-#[cfg(doc)]
 pub mod docs;
 
 pub mod base;

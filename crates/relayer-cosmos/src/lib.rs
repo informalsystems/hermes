@@ -14,5 +14,4 @@ pub mod transaction;
 #[cfg(test)]
 pub mod tests;
 
-#[cfg(doc)]
 pub mod docs;
