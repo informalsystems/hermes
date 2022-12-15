@@ -99,9 +99,9 @@ fn fetch_first_element_from_events(
 ) -> Result<String, Error> {
     let res = block_events
         .get(key)
-        .ok_or_else(|| Error::event(format!("key not found: {}", key)))?
+        .ok_or_else(|| Error::event(format!("attribute not found for key: {}", key)))?
         .get(0)
-        .ok_or_else(|| Error::event(format!("attribute not found for key: {}", key)))?;
+        .ok_or_else(|| Error::event(format!("element at position 0, of attribute with key `{}`, not found", key)))?;
 
     Ok(res.clone())
 }
