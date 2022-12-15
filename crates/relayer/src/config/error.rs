@@ -13,5 +13,9 @@ define_error! {
         Encode
             [ TraceError<toml::ser::Error> ]
             |_| { "invalid configuration" },
+
+        InvalidGasPrice
+            { price: String }
+            |e| { format!("invalid gas price: {}", e.price) },
     }
 }

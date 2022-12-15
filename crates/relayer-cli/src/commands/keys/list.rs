@@ -8,7 +8,7 @@ use crate::conclude::Output;
 use crate::{application::app_config, conclude::json};
 use ibc_relayer::{
     config::{ChainConfig, Config},
-    keyring::{KeyEntry, KeyRing, Store},
+    keyring::list_keys,
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
@@ -45,7 +45,7 @@ impl Runnable for KeysListCmd {
             Ok(result) => result,
         };
 
-        match list_keys(opts.chain_config) {
+        match list_keys(&opts.chain_config) {
             Ok(keys) if json() => {
                 let keys = keys.into_iter().collect::<HashMap<_, _>>();
                 Output::success(keys).exit()
@@ -53,7 +53,7 @@ impl Runnable for KeysListCmd {
             Ok(keys) => {
                 let mut msg = String::new();
                 for (name, key) in keys {
-                    let _ = write!(msg, "\n- {} ({})", name, key.account);
+                    let _ = write!(msg, "\n- {} ({})", name, key.account());
                 }
                 Output::success_msg(msg).exit()
             }
@@ -65,12 +65,6 @@ impl Runnable for KeysListCmd {
 #[derive(Clone, Debug)]
 pub struct KeysListOptions {
     pub chain_config: ChainConfig,
-}
-
-pub fn list_keys(config: ChainConfig) -> eyre::Result<Vec<(String, KeyEntry)>> {
-    let keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
-    let keys = keyring.keys()?;
-    Ok(keys)
 }
 
 #[cfg(test)]

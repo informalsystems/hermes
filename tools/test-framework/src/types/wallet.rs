@@ -3,7 +3,7 @@
 */
 
 use core::fmt::{self, Display};
-use ibc_relayer::keyring::KeyEntry;
+use ibc_relayer::keyring::Secp256k1KeyPair;
 
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::tagged::*;
@@ -23,7 +23,7 @@ pub struct WalletAddress(pub String);
 /**
    A wallet containing the information about the ID, address,
    and also the public/private key information in the form of
-   [KeyEntry](ibc_relayer::keyring::KeyEntry).
+   [SigningKeyPair](ibc_relayer::keyring::SigningKeyPair).
 */
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -33,9 +33,10 @@ pub struct Wallet {
     /// The address for receiving tokens for this wallet.
     pub address: WalletAddress,
 
-    /// The wallet key information in the form of [`KeyEntry`] that
-    /// is used by the relayer.
-    pub key: KeyEntry,
+    // TODO: Parameterize this type on `SigningKeyPair`
+    /// The wallet key information in the form of `SigningKeyPair`
+    /// that is used by the relayer.
+    pub key: Secp256k1KeyPair,
 }
 
 /**
@@ -80,8 +81,8 @@ pub trait TaggedWallet<Chain> {
     /// Get the [`WalletAddress`] tagged with the given `Chain`.
     fn address(&self) -> MonoTagged<Chain, &WalletAddress>;
 
-    /// Get the [`KeyEntry`] tagged with the given `Chain`.
-    fn key(&self) -> MonoTagged<Chain, &KeyEntry>;
+    /// Get the `SigningKeyPair` tagged with the given `Chain`.
+    fn key(&self) -> MonoTagged<Chain, &Secp256k1KeyPair>;
 }
 
 /**
@@ -106,7 +107,7 @@ pub trait TaggedTestWalletsExt<Chain> {
 
 impl Wallet {
     /// Create a new [`Wallet`]
-    pub fn new(id: String, address: String, key: KeyEntry) -> Self {
+    pub fn new(id: String, address: String, key: Secp256k1KeyPair) -> Self {
         Self {
             id: WalletId(id),
             address: WalletAddress(address),
@@ -130,7 +131,7 @@ impl<Chain> TaggedWallet<Chain> for MonoTagged<Chain, Wallet> {
         self.map_ref(|w| &w.address)
     }
 
-    fn key(&self) -> MonoTagged<Chain, &KeyEntry> {
+    fn key(&self) -> MonoTagged<Chain, &Secp256k1KeyPair> {
         self.map_ref(|w| &w.key)
     }
 }
@@ -144,7 +145,7 @@ impl<'a, Chain> TaggedWallet<Chain> for MonoTagged<Chain, &'a Wallet> {
         self.map_ref(|w| &w.address)
     }
 
-    fn key(&self) -> MonoTagged<Chain, &KeyEntry> {
+    fn key(&self) -> MonoTagged<Chain, &Secp256k1KeyPair> {
         self.map_ref(|w| &w.key)
     }
 }
