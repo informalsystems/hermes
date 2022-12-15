@@ -1,3 +1,10 @@
+/*!
+   TODO: the max transaction size may not be checked within the transaction
+   encoder. Doing so may interfer with the nonce allocator, as it would
+   invalidate subsequent nonces that are allocated, since the currently
+   allocated nonce is not used.
+*/
+
 use async_trait::async_trait;
 use core::marker::PhantomData;
 

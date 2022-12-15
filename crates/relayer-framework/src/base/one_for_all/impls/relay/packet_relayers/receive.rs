@@ -2,12 +2,12 @@ use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::chain::OfaChainTypes;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::impls::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
 use crate::base::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 use crate::base::relay::traits::packet_relayers::receive_packet::{
     CanRelayReceivePacket, ReceivePacketRelayer,
 };
-use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
