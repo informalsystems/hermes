@@ -28,8 +28,8 @@ use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
 
+use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use ibc_relayer_framework::common::one_for_all::presets::MinimalPreset;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 impl OfaChainTypes for MockChainContext {
@@ -44,10 +44,6 @@ impl OfaChainTypes for MockChainContext {
     type Timestamp = MockTimestamp;
 
     type Message = MockMessage;
-
-    type Signer = u128;
-
-    type RawMessage = String;
 
     type Event = Event;
 
@@ -76,13 +72,6 @@ impl OfaBaseChain for MockChainContext {
 
     fn runtime_error(e: TokioError) -> Self::Error {
         Error::tokio(e)
-    }
-
-    fn encode_raw_message(
-        message: &Self::Message,
-        _signer: &Self::Signer,
-    ) -> Result<Self::RawMessage, Self::Error> {
-        Ok(message.to_string())
     }
 
     // Only single messages are sent by the Mock Chain
