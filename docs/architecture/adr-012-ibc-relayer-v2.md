@@ -456,7 +456,9 @@ The
 component is a _middleware_ component that wraps around
 an inner update client message builder, and skips calling the inner component
 if it finds that a client update at the given height had already been done
-before on the target chain.
+before on the target chain. In general, a middleware component is a component
+that wraps around another component implementing the same trait, and alters
+the input and output of the wrapped component.
 
 The trait also allows an update client message builder component to be
 implemented with a concrete relay context, such as a Cosmos-specific
@@ -590,6 +592,8 @@ logic for the packet relayers themselves. From the perspective of the packet
 relayer implementation, the relay context appears to be exclusively owned by the
 packet relayer, and it is not aware of other concurrent tasks running.
 
+#### Optimization Layers
+
 The relayer framework uses multiple layers of optimizations to improve the
 efficiency of relaying IBC packets. The first layer performs message
 batching per relay context, by collecting messages being sent over a relay
@@ -619,7 +623,9 @@ enough to refresh the cached nonce sequences so that the correct nonces can be
 allocated to the next messages.
 
 It is also worth noting that all optimization layers offered by the relayer
-framework are _optional_. For example, if the relayer is used to relay
+framework are _optional_. This means that it is possible to opt-out of the
+optimizations that we discussed earlier, or introduce different ways to optimize
+the relaying. For example, if the relayer is used to relay
 non-Cosmos chains, or if future Cosmos SDK chains allow parallel nonces to be
 used, then one can easily swap with a different nonce allocator that is better
 suited for the given nonce logic. The relayer framework also provides a _naive_
@@ -633,6 +639,10 @@ Adding such a layer would require transaction contexts that use it to provide
 a _list_ of signers, as compared to a single signer. On the other hand,
 transaction contexts that do not need such an optimization are not affected and
 would only have to provide a single signer.
+
+More information about the various optimization techniques are available in the
+relayer framework documentation for
+[concurrency architectures](ibc_relayer_framework::docs::concurrency_architectures).
 
 ### Error Handling
 
@@ -780,15 +790,19 @@ simple and have a smooth learning curve.
 It is worth noting that even though the relayer components defined using
 context-generic programming are fully modular, the all-in-one traits are
 designed to be _rigid_ and _specialized_. Observant readers may notice that
-the all-in-one traits are similar to the traditional god traits that are
+the all-in-one traits are similar to the monolithic traits that are
 commonly found in Rust code, such as
 [`ChainHandle`](ibc_relayer::chain::handle::ChainHandle) in relayer v1.
-At the expense of user convenience, the all-in-one traits suffer the same
-limitations as other
-god traits of being very complex and inflexible. However, the main difference is
-that the all-in-one traits are nothing but glue code around the actual
-components, hence their presence is optional and can be bypassed easily if
-needed.
+A common issue of such monolithic traits is that they often become the center
+of gravity during development, and grow to contain too many methods that become
+difficult to be decoupled and maintained separately.
+At the expense of user convenience, the all-in-one traits suffer similar
+limitations as the monolithic traits of being very complex and inflexible.
+However, the main difference is that the all-in-one traits are nothing but a
+thin layer of glue code around the actual components, which are defined as
+separate traits. Hence it is possible to opt out of using the all-in-one traits,
+and implement the components either directly using CGP, or using other
+approaches.
 
 If users want to mix and match specific features of the relayer, they can
 instead bypass the all-in-one traits and use the relayer components directly
@@ -911,7 +925,8 @@ as implementing
 [`OfaBaseRelay`](ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay)
 for [`MinCosmosRelayContext`](crate::contexts::min::relay::MinCosmosRelayContext),
 which would contain two
-[`MinCosmosChainContext`](crate::contexts::min::chain::MinCosmosChainContext)s.
+[`MinCosmosChainContext`](crate::contexts::min::chain::MinCosmosChainContext)s -
+one for the source Cosmos chain, and one for the destination Cosmos chain.
 Once the traits are implemented, the relayer
 methods would automatically be implemented by wrapping the relay context
 inside

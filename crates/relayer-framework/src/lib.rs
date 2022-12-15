@@ -51,15 +51,15 @@
     [`OfaBaseRelay`](base::one_for_all::traits::relay::OfaBaseRelay).
 
     There are currently two all-in-one variants of the relayer. The
-    [`base`] or minimal variant exposes the minimal set of requirements
+    [`base`] or minimal variant expose the minimal set of requirements
     that a context needs to implement in order to construct a minimal
     relayer. The [`full`] variant requires the context to implement
     additional traits, such as
     [OfaFullChain](crate::full::one_for_all::traits::chain::OfaFullChain),
     in order to construct a full-featured relayer.
 
-    The all-in-one traits are provided by the relayer framework for convenience;
-    they are _not_ meant to cover all possible use cases of using the relayer.
+    The all-in-one traits provided by the relayer framework for convenience,
+    and they are _not_ meant to cover all possible use cases of using the relayer.
     If users want to customize further on how the relayer should
     behave, they can skip the all-in-one traits and make use
     of context-generic programming to implement their own all-in-one
@@ -71,7 +71,7 @@
 
     ## Relayer Framework Internals
 
-    For basic users who just want a quick and easy way to create custom relayers,
+    For basic users who just want quick and easy way to creat custom relayers,
     it is usually sufficient to learn how to use the all-in-one traits like
     [`OfaBaseRelay`](base::one_for_all::traits::relay::OfaBaseRelay).
     But for power users who want to have more customization, or developers
@@ -110,7 +110,6 @@
 mod std_prelude;
 extern crate alloc;
 
-#[cfg(doc)]
 pub mod docs;
 
 pub mod base;

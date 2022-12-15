@@ -145,10 +145,10 @@ pub trait HasEventType: Async {
     chain types that involve _two_ chains, the abstract types are defined
     in [`HasIbcChainTypes`].
 
-    Notice that a chain context does not contain a `Transaction` abstract
+    Notice that a chain context do not contain a `Transaction` abstract
     type. This is because we separate the concerns of normal chain operations
     from the special concerns of assembling chain messages into transactions
-    and broadcasting them to the blockchain. See the
+    and broadcasting it to the blockchain. See the
     [`transaction`](crate::base::transaction) module for more information
     about the transaction context.
 */
