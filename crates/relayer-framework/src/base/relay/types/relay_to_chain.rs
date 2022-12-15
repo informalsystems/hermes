@@ -51,6 +51,10 @@ where
     Target: ChainTarget<Relay>,
 {
     type Message = <Target::TargetChain as HasMessageType>::Message;
+
+    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
+        Target::TargetChain::estimate_message_len(message).map_err(Target::target_chain_error)
+    }
 }
 
 impl<Relay, Target> HasEventType for RelayToChain<Relay, Target>
@@ -69,10 +73,6 @@ where
     type Height = <Target::TargetChain as HasChainTypes>::Height;
 
     type Timestamp = <Target::TargetChain as HasChainTypes>::Timestamp;
-
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Target::TargetChain::estimate_message_len(message).map_err(Target::target_chain_error)
-    }
 }
 
 #[async_trait]

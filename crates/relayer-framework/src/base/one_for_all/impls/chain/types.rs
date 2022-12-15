@@ -5,8 +5,8 @@ use crate::base::chain::traits::types::{
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntimeWrapper;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 impl<Chain: OfaBaseChain> HasErrorType for OfaChainWrapper<Chain> {
@@ -27,6 +27,10 @@ impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
 
 impl<Chain: OfaBaseChain> HasMessageType for OfaChainWrapper<Chain> {
     type Message = Chain::Message;
+
+    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
+        Chain::estimate_message_len(message)
+    }
 }
 
 impl<Chain: OfaBaseChain> HasEventType for OfaChainWrapper<Chain> {
@@ -37,10 +41,6 @@ impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
 
     type Timestamp = Chain::Timestamp;
-
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Chain::estimate_message_len(message)
-    }
 }
 
 impl<Chain, Counterparty> HasIbcChainTypes<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>

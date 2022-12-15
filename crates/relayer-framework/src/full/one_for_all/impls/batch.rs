@@ -2,12 +2,12 @@ use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::{Event, Message};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::full::batch::traits::channel::{HasMessageBatchReceiver, HasMessageBatchSender};
 use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use crate::full::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};

@@ -9,7 +9,7 @@ pub trait PacketRelayer<Relay>: Async
 where
     Relay: HasRelayTypes,
 {
-    async fn relay_packet(context: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error>;
+    async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error>;
 }
 
 #[async_trait]

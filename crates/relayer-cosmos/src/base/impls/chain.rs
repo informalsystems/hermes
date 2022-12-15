@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -46,10 +45,6 @@ where
 
     type Message = CosmosIbcMessage;
 
-    type Signer = Signer;
-
-    type RawMessage = Any;
-
     type Event = Event;
 
     type ClientId = ClientId;
@@ -76,10 +71,6 @@ where
 {
     fn runtime_error(e: TokioError) -> Error {
         Error::tokio(e)
-    }
-
-    fn encode_raw_message(message: &CosmosIbcMessage, signer: &Signer) -> Result<Any, Error> {
-        (message.to_protobuf_fn)(signer).map_err(Error::encode)
     }
 
     fn estimate_message_len(message: &CosmosIbcMessage) -> Result<usize, Error> {
@@ -125,7 +116,7 @@ where
 
         let raw_messages = messages
             .into_iter()
-            .map(|message| Self::encode_raw_message(&message, signer))
+            .map(|message| (message.to_protobuf_fn)(signer).map_err(Error::encode))
             .collect::<Result<Vec<_>, _>>()?;
 
         let events = simple_send_tx(self.chain.tx_config(), self.chain.key_entry(), raw_messages)

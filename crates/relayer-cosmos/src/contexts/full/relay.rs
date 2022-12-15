@@ -2,8 +2,8 @@ use alloc::sync::Arc;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_framework::common::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::full::batch::impls::spawn::BatchMessageWorkerSpawner;
 use ibc_relayer_framework::full::batch::traits::spawn::CanSpawnBatchMessageWorker;
 use ibc_relayer_framework::full::batch::types::config::BatchConfig;
@@ -14,12 +14,12 @@ use tokio::sync::Mutex;
 use crate::base::traits::chain::CosmosChain;
 use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::relay::CosmosRelayWrapper;
-use crate::contexts::full::chain::CosmosChainContext;
+use crate::contexts::full::chain::FullCosmosChainContext;
 use crate::full::traits::relay::CosmosFullRelay;
 use crate::full::types::batch::{CosmosBatchReceiver, CosmosBatchSender};
 
 #[derive(Clone)]
-pub struct CosmosRelayContext<SrcChain, DstChain>
+pub struct FullCosmosRelay<SrcChain, DstChain>
 where
     SrcChain: CosmosChain,
     DstChain: CosmosChain,
@@ -41,7 +41,7 @@ where
     pub dst_chain_message_batch_receiver: CosmosBatchReceiver,
 }
 
-impl<SrcChain, DstChain> CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain> FullCosmosRelay<SrcChain, DstChain>
 where
     SrcChain: CosmosChain,
     DstChain: CosmosChain,
@@ -87,15 +87,15 @@ where
 
 pub fn new_relay_context_with_batch<SrcChain, DstChain>(
     runtime: TokioRuntimeContext,
-    src_chain: CosmosChainContext<SrcChain>,
-    dst_chain: CosmosChainContext<DstChain>,
+    src_chain: FullCosmosChainContext<SrcChain>,
+    dst_chain: FullCosmosChainContext<DstChain>,
     src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     packet_filter: PacketFilter,
     batch_config: BatchConfig,
 ) -> OfaRelayWrapper<
     CosmosRelayWrapper<
-        CosmosRelayContext<CosmosChainContext<SrcChain>, CosmosChainContext<DstChain>>,
+        FullCosmosRelay<FullCosmosChainContext<SrcChain>, FullCosmosChainContext<DstChain>>,
     >,
 >
 where
@@ -103,7 +103,7 @@ where
     DstChain: ChainHandle,
 {
     let relay = OfaRelayWrapper::new(CosmosRelayWrapper::new(
-        Arc::new(CosmosRelayContext::new(
+        Arc::new(FullCosmosRelay::new(
             Arc::new(src_chain),
             Arc::new(dst_chain),
             src_to_dst_client,
@@ -126,7 +126,7 @@ where
     relay
 }
 
-impl<SrcChain, DstChain, Preset> CosmosRelay for CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain, Preset> CosmosRelay for FullCosmosRelay<SrcChain, DstChain>
 where
     SrcChain: CosmosChain<Preset = Preset>,
     DstChain: CosmosChain<Preset = Preset>,
@@ -164,7 +164,7 @@ where
     }
 }
 
-impl<SrcChain, DstChain, Preset> CosmosFullRelay for CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain, Preset> CosmosFullRelay for FullCosmosRelay<SrcChain, DstChain>
 where
     SrcChain: CosmosChain<Preset = Preset>,
     DstChain: CosmosChain<Preset = Preset>,

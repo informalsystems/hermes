@@ -1,4 +1,6 @@
-//! The core traits, types, and impls of the relayer framework.
+/*!
+   The base relayer constructs for building a minimal relayer.
+*/
 
 pub mod all_for_one;
 pub mod chain;

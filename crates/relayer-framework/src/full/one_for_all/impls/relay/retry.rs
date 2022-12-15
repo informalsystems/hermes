@@ -1,4 +1,4 @@
-use crate::common::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::full::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 

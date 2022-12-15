@@ -37,10 +37,10 @@ where
         let start_time = runtime.now();
 
         loop {
-            let response = context.query_tx_response(tx_hash).await?;
+            let response = context.query_tx_response(tx_hash).await;
 
             match response {
-                None => {
+                Ok(None) => {
                     let elapsed = Context::Runtime::duration_since(&start_time, &runtime.now());
                     if elapsed > wait_timeout {
                         return Err(Context::inject_tx_no_response_error(tx_hash));
@@ -48,8 +48,26 @@ where
                         runtime.sleep(wait_backoff).await;
                     }
                 }
-                Some(response) => {
+                Ok(Some(response)) => {
                     return Ok(response);
+                }
+                Err(e) => {
+                    /*
+                        If querying the TX response returns failure, it might be a temporary network
+                        failure that can be recovered later on. Hence it would not be good if
+                        we return error immediately, as we may still have the chance to get a
+                        proper transaction response later on.
+
+                        However, if the query still returns error after the wait timeout exceeded,
+                        we return the error we get from the query.
+                    */
+
+                    let elapsed = Context::Runtime::duration_since(&start_time, &runtime.now());
+                    if elapsed > wait_timeout {
+                        return Err(e);
+                    } else {
+                        runtime.sleep(wait_backoff).await;
+                    }
                 }
             }
         }

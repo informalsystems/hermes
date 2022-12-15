@@ -9,8 +9,8 @@ use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::relay::OfaRelayPreset;
-use crate::common::one_for_all::types::chain::OfaChainWrapper;
-use crate::common::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 
 /// Given a relay context `Relay` that implements the `OfaBaseRelay` trait, returns a type
 /// that implements the `AfoBaseRelay`, meaning that this type exposes concrete APIs

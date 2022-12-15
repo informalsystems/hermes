@@ -1,7 +1,7 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
-use ibc_relayer_framework::common::one_for_all::presets::FullPreset;
+use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
 use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::signer::Signer;
 
@@ -10,7 +10,7 @@ use crate::full::traits::chain::CosmosFullChain;
 use crate::full::types::telemetry::CosmosTelemetry;
 
 #[derive(Clone)]
-pub struct CosmosChainContext<Handle: ChainHandle> {
+pub struct FullCosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,
     pub tx_config: TxConfig,
@@ -18,7 +18,7 @@ pub struct CosmosChainContext<Handle: ChainHandle> {
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 }
 
-impl<Handle: ChainHandle> CosmosChainContext<Handle> {
+impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
     pub fn new(
         handle: Handle,
         signer: Signer,
@@ -38,7 +38,7 @@ impl<Handle: ChainHandle> CosmosChainContext<Handle> {
     }
 }
 
-impl<Handle> CosmosChain for CosmosChainContext<Handle>
+impl<Handle> CosmosChain for FullCosmosChainContext<Handle>
 where
     Handle: ChainHandle,
 {
@@ -63,7 +63,7 @@ where
     }
 }
 
-impl<Handle> CosmosFullChain for CosmosChainContext<Handle>
+impl<Handle> CosmosFullChain for FullCosmosChainContext<Handle>
 where
     Handle: ChainHandle,
 {
