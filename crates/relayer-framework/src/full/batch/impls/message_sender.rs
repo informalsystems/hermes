@@ -11,11 +11,11 @@ use crate::full::batch::traits::channel::HasMessageBatchSender;
 use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use crate::std_prelude::*;
 
-pub struct SendMessagetoBatchWorker;
+pub struct SendMessagesToBatchWorker;
 
 #[async_trait]
 impl<Relay, Target, TargetChain, Runtime> IbcMessageSender<Relay, Target>
-    for SendMessagetoBatchWorker
+    for SendMessagesToBatchWorker
 where
     Relay: HasRelayTypes,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
