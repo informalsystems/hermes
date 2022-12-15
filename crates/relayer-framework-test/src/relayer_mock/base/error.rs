@@ -43,18 +43,6 @@ define_error! {
                 format_args!("no consensus state found for client {} at height {}", e.id, e.height)
             },
 
-        NoHeightState
-        { height: u128 }
-            | e | {
-                format_args!("No state at height: {}", e.height)
-            },
-
-        NoHeight
-        { name: String }
-            | e | {
-                format_args!("No height for chain: {}", e.name)
-            },
-
         ConsensusDivergence
         { id: String, height: u128 }
             | e | {
@@ -77,6 +65,12 @@ define_error! {
         { src_chain: String, dst_chain: String }
             | e | {
                 format_args!("error trying to build TimeoutPacket from chain `{}` to `{}`. Source chain Consensus State doesn't have the packet recorded as sent", e.dst_chain, e.src_chain)
+            },
+
+        TimeoutReceive
+        { chain: String, height: u128, chain_height: u128, timestamp: u128, current_timestamp: u128 }
+            | e | {
+                format_args!("error receiving RecvPacket for chain {}. Packet timeout height {}, chain height {}. Packet timeout timestamp {}, current timestamp {}", e.chain, e.height, e.chain_height, e.timestamp, e.current_timestamp)
             },
     }
 }

@@ -18,9 +18,10 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
-    ChainState, ChannelId, ClientId, ConsensusState, MockTimestamp, PortId, Sequence,
+    ChainState, ChannelId, ClientId, MockTimestamp, PortId, Sequence,
 };
 use crate::relayer_mock::base::types::events::Event;
+use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::base::types::{
@@ -34,6 +35,7 @@ use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext
 pub struct MockChainContext {
     pub name: String,
     pub past_chain_states: Arc<Mutex<HashMap<MockHeight, ChainState>>>,
+    pub current_height: Arc<Mutex<MockHeight>>,
     pub current_state: Arc<Mutex<ChainState>>,
     pub consensus_states: Arc<Mutex<HashMap<ClientId, HashMap<MockHeight, ChainState>>>>,
     pub runtime: OfaRuntimeContext<MockRuntimeContext>,
@@ -42,13 +44,13 @@ pub struct MockChainContext {
 impl MockChainContext {
     pub fn new(name: String, clock: Arc<MockClock>) -> Self {
         let runtime = OfaRuntimeContext::new(MockRuntimeContext::new(clock));
-        let chain_state: HashMap<MockHeight, ConsensusState> =
-            HashMap::from([(MockHeight::from(1), State::default())]);
+        let chain_state = State::default();
         let initial_state: HashMap<MockHeight, ChainState> =
             HashMap::from([(MockHeight::from(1), chain_state.clone())]);
         Self {
             name,
             past_chain_states: Arc::new(Mutex::new(initial_state)),
+            current_height: Arc::new(Mutex::new(Height(1))),
             current_state: Arc::new(Mutex::new(chain_state)),
             consensus_states: Arc::new(Mutex::new(HashMap::new())),
             runtime,
@@ -63,23 +65,17 @@ impl MockChainContext {
         &self.runtime
     }
 
-    pub fn get_latest_height(&self) -> Result<MockHeight, Error> {
-        let locked_current_state = self.current_state.acquire_mutex();
-        let latest_height = locked_current_state
-            .keys()
-            .max()
-            .ok_or_else(Error::empty_iterator)?;
-        Ok(latest_height.clone())
+    // Get the current height of the chain.
+    pub fn get_current_height(&self) -> MockHeight {
+        let locked_current_height = self.current_height.acquire_mutex();
+        locked_current_height.clone()
     }
 
-    /// Get the current state of the chain, which is the ChainState at the latest height.
-    pub fn get_current_state(&self) -> Result<State, Error> {
-        let height = self.get_latest_height()?;
+    /// Get the current state of the chain.
+    pub fn get_current_state(&self) -> State {
         let locked_current_state = self.current_state.acquire_mutex();
-        let state = locked_current_state
-            .get(&height)
-            .ok_or_else(|| Error::no_chain_state(self.name().to_string(), height.0))?;
-        Ok(state.clone())
+        let state = locked_current_state;
+        state.clone()
     }
 
     /// Query the chain state at a given Height. This is used to see which receive and
@@ -129,7 +125,7 @@ impl MockChainContext {
                     Entry::Occupied(o) => {
                         // Check if the existing Consensus State at the given height differs
                         // from the one passed.
-                        if o.get().clone() != state {
+                        if o.get() != &state {
                             return Err(Error::consensus_divergence(client_id, height.0));
                         }
                     }
@@ -153,7 +149,7 @@ impl MockChainContext {
     /// without changing its state.
     pub fn new_block(&self) -> Result<(), Error> {
         // Retrieve the current state
-        let current_state = self.get_current_state()?;
+        let current_state = self.get_current_state();
 
         // Update the current_state of the Chain, which will increase the Height by 1.
         self.update_current_state(current_state)?;
@@ -168,7 +164,7 @@ impl MockChainContext {
     /// at a Height + 1.
     pub fn send_packet(&self, packet: PacketKey) -> Result<(), Error> {
         // Retrieve the current_state and update it with the newly sent packet
-        let mut new_state = self.get_current_state()?;
+        let mut new_state = self.get_current_state();
         new_state.update_sent(packet.port_id, packet.channel_id, packet.sequence);
 
         // Update the current_state of the Chain
@@ -177,11 +173,37 @@ impl MockChainContext {
         Ok(())
     }
 
+    /// Before receiving a packet, the consensus state is used to verify that the packet
+    /// was sent by the source chain. And the packet timeout is verified.
     /// Receiving a packet adds a new ChainState with the received packet information
     /// at a Height + 1.
-    pub fn receive_packet(&self, packet: PacketKey) -> Result<(), Error> {
+    pub fn receive_packet(
+        &self,
+        receiver: String,
+        height: Height,
+        packet: PacketKey,
+    ) -> Result<(), Error> {
+        // Verify that with the consensus state that the packet was sent by the source chain.
+        let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
+        if !client_consensus.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
+            return Err(Error::generic(eyre!("chain `{}` got a RecvPacket, but client `{}` state doesn't have the packet as sent", self.name(), receiver)));
+        }
+
+        // Check that the packet is not timed out. Current height < packet timeout height.
+        let current_height = self.get_current_height();
+        let current_time = self.runtime().runtime.get_time()?;
+        if packet.timeout_height < current_height || packet.timeout_timestamp < current_time {
+            return Err(Error::timeout_receive(
+                self.name().to_string(),
+                packet.timeout_height.0,
+                current_height.0,
+                packet.timeout_timestamp,
+                current_time,
+            ));
+        }
+
         // Retrieve the current_state and update it with the newly received packet
-        let mut new_state = self.get_current_state()?;
+        let mut new_state = self.get_current_state();
         new_state.update_received(packet.port_id, packet.channel_id, packet.sequence);
 
         // Update the current_state of the Chain
@@ -192,9 +214,20 @@ impl MockChainContext {
 
     /// Receiving an acknowledgement adds a new ChainState with the received acknowledgement
     /// information at a Height + 1.
-    pub fn acknowledge_packet(&self, packet: PacketKey) -> Result<(), Error> {
+    pub fn acknowledge_packet(
+        &self,
+        receiver: String,
+        height: Height,
+        packet: PacketKey,
+    ) -> Result<(), Error> {
+        // Verify that with the consensus state that the packet was received by the destination chain.
+        let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
+        if !client_consensus.check_received(&packet.port_id, &packet.channel_id, &packet.sequence) {
+            return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
+        }
+
         // Retrieve the current_state and update it with the newly received acknowledgement
-        let mut new_state = self.get_current_state()?;
+        let mut new_state = self.get_current_state();
         new_state.update_acknowledged(packet.port_id, packet.channel_id, packet.sequence);
 
         // Update the current_state of the Chain
@@ -205,9 +238,20 @@ impl MockChainContext {
 
     /// Receiving a timed out packet adds a new ChainState with the timed out packet
     /// information at a Height + 1.
-    pub fn timeout_packet(&self, packet: PacketKey) -> Result<(), Error> {
+    pub fn timeout_packet(
+        &self,
+        receiver: String,
+        height: Height,
+        packet: PacketKey,
+    ) -> Result<(), Error> {
+        // Verify that with the consensus state that the packet was not received by the destination chain.
+        let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
+        if client_consensus.check_received(&packet.port_id, &packet.channel_id, &packet.sequence) {
+            return Err(Error::generic(eyre!("chain `{}` got a TimeoutPacket, but client `{}` state received the packet as received", self.name(), receiver)));
+        }
+
         // Retrieve the current_state and update it with the newly received acknowledgement
-        let mut new_state = self.get_current_state()?;
+        let mut new_state = self.get_current_state();
         new_state.update_timeout(packet.port_id, packet.channel_id, packet.sequence);
 
         // Update the current_state of the Chain
@@ -239,10 +283,16 @@ impl MockChainContext {
     /// they are always synchronized.
     /// The MockChain must have a one and only one ChainState at every height.
     fn update_current_state(&self, state: State) -> Result<(), Error> {
-        let latest_height = self.get_latest_height()?;
+        let latest_height = self.get_current_height();
         let new_height = latest_height.increment();
+
+        // Update current state
         let mut locked_current_state = self.current_state.acquire_mutex();
-        locked_current_state.insert(new_height.clone(), state);
+        *locked_current_state = state;
+
+        // Update current height.
+        let mut locked_current_height = self.current_height.acquire_mutex();
+        *locked_current_height = new_height.clone();
 
         // After inserting the new state in the current_state, update the past_chain_states
         // at the given height.
@@ -264,36 +314,19 @@ impl MockChainContext {
         for m in messages {
             match m {
                 MockMessage::RecvPacket(receiver, h, p) => {
-                    let client_consensus =
-                        self.query_consensus_state_at_height(receiver.clone(), h.clone())?;
-                    let state = client_consensus.get(&h).ok_or_else(|| {
-                        Error::no_consensus_state_at_height(self.name().to_string(), h.0)
-                    })?;
-                    if !state.check_sent(&p.port_id, &p.channel_id, &p.sequence) {
-                        return Err(Error::generic(eyre!("chain `{}` got a RecvPacket, but client `{}` state doesn't have the packet as sent", self.name(), receiver)));
-                    }
-                    // Check that the packet is not timed out. Current height < packet timeout height.
-                    self.receive_packet(p)?;
+                    self.receive_packet(receiver, h.clone(), p)?;
                     res.push(vec![Event::WriteAcknowledgment(h)]);
                 }
                 MockMessage::AckPacket(receiver, h, p) => {
-                    let client_consensus =
-                        self.query_consensus_state_at_height(receiver.clone(), h.clone())?;
-                    let state = client_consensus.get(&h).ok_or_else(|| {
-                        Error::no_consensus_state_at_height(self.name().to_string(), h.0)
-                    })?;
-                    if !state.check_received(&p.port_id, &p.channel_id, &p.sequence) {
-                        return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
-                    }
-                    self.acknowledge_packet(p)?;
+                    self.acknowledge_packet(receiver, h, p)?;
                     res.push(vec![]);
                 }
                 MockMessage::UpdateClient(receiver, h, s) => {
                     self.insert_consensus_state(receiver, h, s)?;
                     res.push(vec![]);
                 }
-                MockMessage::TimeoutPacket(_, _, p) => {
-                    self.timeout_packet(p)?;
+                MockMessage::TimeoutPacket(receiver, h, s) => {
+                    self.timeout_packet(receiver, h, s)?;
                 }
             }
         }

@@ -28,7 +28,7 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
     {
         info!("Check that the packet has not yet been received");
 
-        let state = dst_chain.chain.get_current_state()?;
+        let state = dst_chain.chain.get_current_state();
 
         assert!(
             !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
@@ -45,7 +45,7 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
     {
         info!("Check that the packet has been received by the destination chain");
 
-        let state = dst_chain.chain.get_current_state()?;
+        let state = dst_chain.chain.get_current_state();
 
         assert!(
             state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
@@ -56,7 +56,7 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
     {
         info!("Check that the acknowledgment has been received by the source chain");
 
-        let state = src_chain.chain.get_current_state()?;
+        let state = src_chain.chain.get_current_state();
 
         assert!(
             state.check_acknowledged(packet.port_id, packet.channel_id, packet.sequence),
@@ -85,7 +85,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     {
         info!("Check that the packet has not yet been received");
 
-        let state = dst_chain.chain.get_current_state()?;
+        let state = dst_chain.chain.get_current_state();
 
         assert!(
             !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
@@ -109,7 +109,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     {
         info!("Check that the packet has been received by the destination chain");
 
-        let state = dst_chain.chain.get_current_state()?;
+        let state = dst_chain.chain.get_current_state();
 
         assert!(
             !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
@@ -120,7 +120,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     {
         info!("Check that the acknowledgment has been received by the source chain");
 
-        let state = src_chain.chain.get_current_state()?;
+        let state = src_chain.chain.get_current_state();
 
         assert!(
             state.check_timeout(packet.port_id, packet.channel_id, packet.sequence),
@@ -148,7 +148,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
     {
         info!("Check that the packet has not yet been received");
 
-        let state = dst_chain.chain.get_current_state()?;
+        let state = dst_chain.chain.get_current_state();
 
         assert!(
             !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
@@ -170,7 +170,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
     {
         info!("Check that the packet has been received by the destination chain");
 
-        let state = dst_chain.chain.get_current_state()?;
+        let state = dst_chain.chain.get_current_state();
 
         assert!(
             !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
@@ -181,7 +181,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
     {
         info!("Check that the acknowledgment has been received by the source chain");
 
-        let state = src_chain.chain.get_current_state()?;
+        let state = src_chain.chain.get_current_state();
 
         assert!(
             state.check_timeout(packet.port_id, packet.channel_id, packet.sequence),
