@@ -4,26 +4,8 @@ use core::future::Future;
 use core::time::Duration;
 
 use crate::base::core::traits::sync::Async;
+use crate::base::one_for_all::types::runtime::LogLevel;
 use crate::std_prelude::*;
-
-#[derive(Clone)]
-pub struct OfaRuntimeWrapper<Runtime> {
-    pub runtime: Runtime,
-}
-
-impl<Runtime> OfaRuntimeWrapper<Runtime> {
-    pub fn new(runtime: Runtime) -> Self {
-        Self { runtime }
-    }
-}
-
-pub enum LogLevel {
-    Error,
-    Warn,
-    Info,
-    Debug,
-    Trace,
-}
 
 #[async_trait]
 pub trait OfaRuntime: Clone + Async {

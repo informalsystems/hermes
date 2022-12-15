@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 
 use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeWrapper};
+use crate::base::one_for_all::traits::runtime::OfaRuntime;
+use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::base::runtime::traits::channel::{CanCreateChannels, CanUseChannels, HasChannelTypes};
 use crate::base::runtime::traits::channel_once::{
     CanCreateChannelsOnce, CanUseChannelsOnce, HasChannelOnceTypes,

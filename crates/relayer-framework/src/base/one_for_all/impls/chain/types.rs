@@ -4,8 +4,8 @@ use crate::base::chain::traits::types::{
 };
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
-use crate::base::one_for_all::traits::runtime::OfaRuntimeWrapper;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::std_prelude::*;
 

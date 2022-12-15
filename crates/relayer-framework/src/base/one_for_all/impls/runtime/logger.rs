@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime, OfaRuntimeWrapper};
+use crate::base::one_for_all::traits::runtime::OfaRuntime;
+use crate::base::one_for_all::types::runtime::{LogLevel, OfaRuntimeWrapper};
 use crate::base::runtime::traits::log::{
     HasLogger, LevelDebug, LevelError, LevelInfo, LevelTrace, LevelWarn,
 };
