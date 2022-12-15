@@ -8,7 +8,6 @@ members = [
     "crates/relayer-cli",
     "crates/relayer-rest",
     "crates/relayer-framework",
-    "crates/relayer-framework-guide",
     "crates/relayer-runtime",
     "crates/relayer-cosmos",
     "crates/telemetry",

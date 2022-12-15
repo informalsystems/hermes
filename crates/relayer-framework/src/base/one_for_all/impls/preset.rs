@@ -1,18 +1,14 @@
-use crate::base::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
-use crate::base::one_for_all::impls::chain::queries::status::SendChainStatusQueryToOfa;
+use crate::base::one_for_all::presets::min as preset;
+use crate::base::one_for_all::presets::min::MinimalPreset;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
 use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
-use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
-use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use crate::base::relay::impls::packet_relayers::general::full_relay::FullRelayer;
-use crate::common::one_for_all::presets::MinimalPreset;
 
 impl<Chain> OfaChainPreset<Chain> for MinimalPreset
 where
     Chain: OfaBaseChain,
 {
-    type ChainStatusQuerier = SendChainStatusQueryToOfa;
+    type ChainStatusQuerier = preset::ChainStatusQuerier;
 }
 
 impl<Chain, Counterparty> OfaIbcChainPreset<Chain, Counterparty> for MinimalPreset
@@ -20,14 +16,14 @@ where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
-    type ConsensusStateQuerier = SendConsensusStateQueryToOfa;
+    type ConsensusStateQuerier = preset::ConsensusStateQuerier;
 }
 
 impl<Relay> OfaRelayPreset<Relay> for MinimalPreset
 where
     Relay: OfaBaseRelay<Preset = MinimalPreset>,
 {
-    type PacketRelayer = FullRelayer;
+    type PacketRelayer = preset::PacketRelayer;
 
-    type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
+    type IbcMessageSender = preset::IbcMessageSender;
 }

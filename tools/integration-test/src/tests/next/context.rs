@@ -1,6 +1,6 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
-use ibc_relayer_cosmos::contexts::full::chain::CosmosChainContext;
+use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
 use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelay;
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
@@ -28,7 +28,7 @@ where
 
     let runtime = TokioRuntimeContext::new(chains.node_a.value().chain_driver.runtime.clone());
 
-    let chain_a = CosmosChainContext::new(
+    let chain_a = FullCosmosChainContext::new(
         chains.handle_a.clone(),
         chains
             .node_a
@@ -44,7 +44,7 @@ where
         telemetry.clone(),
     );
 
-    let chain_b = CosmosChainContext::new(
+    let chain_b = FullCosmosChainContext::new(
         chains.handle_b.clone(),
         chains
             .node_b

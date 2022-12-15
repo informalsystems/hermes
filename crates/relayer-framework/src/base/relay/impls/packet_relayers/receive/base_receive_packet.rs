@@ -3,9 +3,7 @@ use async_trait::async_trait;
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::ibc_message_sender::{
-    CanSendIbcMessages, IbcMessageSenderExt, InjectMismatchIbcEventsCountError,
-};
+use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
 use crate::base::relay::traits::messages::receive_packet::CanBuildReceivePacketMessage;
 use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::base::relay::traits::target::DestinationTarget;
@@ -22,7 +20,6 @@ where
     Context: CanBuildReceivePacketMessage,
     Context: CanSendIbcMessages<DestinationTarget>,
     Context: HasRelayTypes<DstChain = DstChain>,
-    Context: InjectMismatchIbcEventsCountError,
     DstChain: HasIbcEvents<
         Context::SrcChain,
         WriteAcknowledgementEvent = AckEvent,

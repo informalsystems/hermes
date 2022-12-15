@@ -8,7 +8,7 @@ use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
-pub struct SendMessagetoBatchWorker;
+pub struct SendMessagesToBatchWorker;
 
 #[async_trait]
 pub trait CanSendIbcMessagesFromBatchWorker<Target>: HasRelayTypes
@@ -22,7 +22,7 @@ where
 }
 
 #[async_trait]
-impl<Relay, Target, TargetChain> IbcMessageSender<Relay, Target> for SendMessagetoBatchWorker
+impl<Relay, Target, TargetChain> IbcMessageSender<Relay, Target> for SendMessagesToBatchWorker
 where
     Relay: HasRelayTypes,
     Relay: HasBatchContext<Target>,

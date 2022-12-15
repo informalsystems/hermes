@@ -1,8 +1,12 @@
+/*!
+   The one-for-all provider constructs for the minimal relayer.
+*/
+
 //! An abstract trait which stipulates all of dependencies that an application
 //! needs to provide in order to make use of the functionality the framework
 //! exposes.
 //!
-//! There is a duality between the `one_for_all` trait and the [`all_for_one`]
+//! There is a duality between the `one_for_all` trait and the `all_for_one`
 //! trait such that types that implement the `one_for_all` trait gain access to
 //! the APIs exposed by the `all_for_one` trait. The `one_for_all` trait
 //! encapsulates what functionality applications need to provide. The
@@ -15,4 +19,6 @@
 
 pub mod impls;
 pub mod instances;
+pub mod presets;
 pub mod traits;
+pub mod types;
