@@ -8,10 +8,10 @@ use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWi
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::full::batch::context::{BatchChannel, BatchContext, HasBatchContext};
-use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
-use crate::full::one_for_all::traits::batch::{OfaBatch, OfaBatchWrapper};
-use crate::full::one_for_all::traits::chain::OfaFullChain;
+use crate::full::batch::traits::channel::{HasMessageBatchReceiver, HasMessageBatchSender};
+use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
+use crate::full::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
+use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -30,96 +30,38 @@ where
     }
 }
 
-#[async_trait]
-impl<Chain, Batch> BatchContext for OfaBatchWrapper<Chain>
+impl<Relay> HasMessageBatchSender<SourceTarget> for OfaRelayWrapper<Relay>
 where
-    Chain: OfaFullChain<BatchContext = Batch>,
-    Batch: OfaBatch<Chain>,
+    Relay: OfaFullRelay,
 {
-    type Error = Chain::Error;
-
-    type Message = Chain::Message;
-
-    type Event = Chain::Event;
-
-    type BatchSender = Batch::BatchSender;
-
-    type BatchReceiver = Batch::BatchReceiver;
-
-    type ResultSender = Batch::ResultSender;
-
-    type ResultReceiver = Batch::ResultReceiver;
-
-    fn new_batch_channel() -> (Self::BatchSender, Self::BatchReceiver) {
-        Batch::new_batch_channel()
-    }
-
-    fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver) {
-        Batch::new_result_channel()
-    }
-
-    async fn send_batch(
-        sender: &Self::BatchSender,
-        messages: Vec<Self::Message>,
-        result_sender: Self::ResultSender,
-    ) -> Result<(), Self::Error> {
-        Batch::send_batch(sender, messages, result_sender).await
-    }
-
-    async fn try_receive_batch(
-        receiver: &Self::BatchReceiver,
-    ) -> Result<Option<(Vec<Self::Message>, Self::ResultSender)>, Self::Error> {
-        let result = Batch::try_receive_batch(receiver).await?;
-
-        Ok(result)
-    }
-
-    async fn receive_result(
-        result_receiver: Self::ResultReceiver,
-    ) -> Result<Result<Vec<Vec<Self::Event>>, Self::Error>, Self::Error> {
-        Batch::receive_result(result_receiver).await
-    }
-
-    fn send_result(
-        result_sender: Self::ResultSender,
-        result: Result<Vec<Vec<Chain::Event>>, Self::Error>,
-    ) -> Result<(), Self::Error> {
-        Batch::send_result(result_sender, result)
+    fn get_batch_sender(&self) -> &MessageBatchSender<Self::SrcChain, Self::Error> {
+        self.relay.src_chain_message_batch_sender()
     }
 }
 
-impl<Relay> HasBatchContext<SourceTarget> for OfaRelayWrapper<Relay>
+impl<Relay> HasMessageBatchReceiver<SourceTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay,
-    // TODO: do not require the chain error to be the same as relay error.
-    // this can be fixed in #2816.
-    Relay::SrcChain: OfaFullChain<Error = Relay::Error>,
+    Relay: OfaFullRelay,
 {
-    type BatchContext = OfaBatchWrapper<Relay::SrcChain>;
-
-    fn batch_channel(
-        &self,
-    ) -> &BatchChannel<
-        <Self::BatchContext as BatchContext>::BatchSender,
-        <Self::BatchContext as BatchContext>::BatchReceiver,
-    > {
-        self.relay.src_chain().chain.batch_channel()
+    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self::SrcChain, Self::Error> {
+        self.relay.src_chain_message_batch_receiver()
     }
 }
 
-impl<Relay> HasBatchContext<DestinationTarget> for OfaRelayWrapper<Relay>
+impl<Relay> HasMessageBatchSender<DestinationTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay,
-    Relay::DstChain: OfaFullChain<Error = Relay::Error>,
+    Relay: OfaFullRelay,
 {
-    type BatchContext = OfaBatchWrapper<Relay::DstChain>;
+    fn get_batch_sender(&self) -> &MessageBatchSender<Self::DstChain, Self::Error> {
+        self.relay.dst_chain_message_batch_sender()
+    }
+}
 
-    fn batch_channel(
-        &self,
-    ) -> &BatchChannel<
-        <Self::BatchContext as BatchContext>::BatchSender,
-        <Self::BatchContext as BatchContext>::BatchReceiver,
-    > {
-        self.relay.dst_chain().chain.batch_channel()
+impl<Relay> HasMessageBatchReceiver<DestinationTarget> for OfaRelayWrapper<Relay>
+where
+    Relay: OfaFullRelay,
+{
+    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self::DstChain, Self::Error> {
+        self.relay.dst_chain_message_batch_receiver()
     }
 }

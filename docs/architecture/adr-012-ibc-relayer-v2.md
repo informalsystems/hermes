@@ -537,7 +537,7 @@ type IbcMessageSenderForBatchWorker =
 ```
 
 In the above declaration, the relay context would use
-[`SendMessagesToBatchWorker`](ibc_relayer_framework::full::batch::message_sender::SendMessagesToBatchWorker)
+[`SendMessagesToBatchWorker`](ibc_relayer_framework::full::batch::impls::message_sender::SendMessagesToBatchWorker)
 to send the IBC messages to the batch worker using an MPSC channel. Inside
 the batch worker, it would then bundle multiple batches of messages and
 send them together using
@@ -551,7 +551,7 @@ to easily customize on different strategies of sending IBC messages,
 as well as building update client messages. CGP also helps propagate the
 additional constraints of components to the concrete context implementer.
 For instance, if
-[`SendMessagesToBatchWorker`](ibc_relayer_framework::full::batch::message_sender::SendMessagesToBatchWorker)
+[`SendMessagesToBatchWorker`](ibc_relayer_framework::full::batch::impls::message_sender::SendMessagesToBatchWorker)
 is used, the relay context is
 required to provide MPSC channels that can be used for sending messages to the
 batch worker. On the other hand, if only `MinimalIbcMessageSender` is used,

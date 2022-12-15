@@ -1,8 +1,7 @@
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
 use crate::base::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
 use crate::base::one_for_all::traits::relay::OfaRelayPreset;
-use crate::full::one_for_all::presets::full as preset;
-use crate::full::one_for_all::presets::full::FullPreset;
+use crate::full::one_for_all::presets::full::{self as preset, FullPreset};
 use crate::full::one_for_all::traits::chain::OfaFullChain;
 use crate::full::one_for_all::traits::relay::OfaFullRelay;
 

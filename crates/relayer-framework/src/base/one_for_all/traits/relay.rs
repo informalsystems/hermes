@@ -9,9 +9,9 @@ use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntime;
-use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
@@ -64,7 +64,7 @@ pub trait OfaBaseRelay: OfaRelayTypes {
         packet: &Self::Packet,
     ) -> &<Self::DstChain as OfaChainTypes>::Timestamp;
 
-    fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
+    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId;
 

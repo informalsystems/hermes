@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 
 use crate::base::traits::relay::CosmosRelay;
@@ -11,7 +11,7 @@ pub struct CosmosRelayWrapper<Relay: CosmosRelay> {
     pub relay: Arc<Relay>,
     pub src_chain: OfaChainWrapper<CosmosChainWrapper<Relay::SrcChain>>,
     pub dst_chain: OfaChainWrapper<CosmosChainWrapper<Relay::DstChain>>,
-    pub runtime: OfaRuntimeContext<TokioRuntimeContext>,
+    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
 }
 
 impl<Relay: CosmosRelay> CosmosRelayWrapper<Relay> {
@@ -26,7 +26,7 @@ impl<Relay: CosmosRelay> CosmosRelayWrapper<Relay> {
             runtime.clone(),
         ));
 
-        let runtime = OfaRuntimeContext::new(runtime);
+        let runtime = OfaRuntimeWrapper::new(runtime);
 
         Self {
             relay,

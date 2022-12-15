@@ -1,18 +1,17 @@
-use ibc_relayer_framework::full::batch::context::BatchChannel;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tendermint::abci::Event;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::oneshot::Sender as SenderOnce;
+use tokio::sync::Mutex;
 
 use crate::base::error::Error;
 use crate::base::types::message::CosmosIbcMessage;
 
 pub type CosmosBatchPayload = (
     Vec<CosmosIbcMessage>,
-    oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
+    SenderOnce<Result<Vec<Vec<Event>>, Error>>,
 );
 
-pub type CosmosBatchSender = mpsc::UnboundedSender<CosmosBatchPayload>;
+pub type CosmosBatchSender = UnboundedSender<CosmosBatchPayload>;
 
-pub type CosmosBatchReceiver = Arc<Mutex<mpsc::UnboundedReceiver<CosmosBatchPayload>>>;
-
-pub type CosmosBatchChannel = BatchChannel<CosmosBatchSender, CosmosBatchReceiver>;
+pub type CosmosBatchReceiver = Arc<Mutex<UnboundedReceiver<CosmosBatchPayload>>>;

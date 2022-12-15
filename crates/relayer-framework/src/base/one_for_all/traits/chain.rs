@@ -8,8 +8,9 @@ use core::fmt::Debug;
 use crate::base::chain::traits::queries::consensus_state::ConsensusStateQuerier;
 use crate::base::chain::traits::queries::status::ChainStatusQuerier;
 use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
+use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
 pub trait OfaChainTypes: Async {
@@ -102,7 +103,7 @@ pub trait OfaChainTypes: Async {
 
 #[async_trait]
 pub trait OfaBaseChain: OfaChainTypes {
-    fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
+    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
 
