@@ -223,6 +223,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
     },
 
+    QueryConsensusStateHeights {
+        request: QueryConsensusStateHeightsRequest,
+        reply_to: ReplyTo<Vec<Height>>,
+    },
+
     QueryUpgradedClientState {
         request: QueryUpgradedClientStateRequest,
         reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
@@ -446,20 +451,24 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error>;
 
-    /// Performs a query to retrieve the consensus state for a specified height
-    /// `consensus_height` that the specified light client stores.
+    /// Query the consensus state at the specified height for a given client.
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error>;
 
-    /// Performs a query to retrieve all the consensus states that the specified
-    /// light client stores.
+    /// Query all the consensus states for a given client.
     fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
+
+    /// Query the heights of every consensus state for a given client.
+    fn query_consensus_state_heights(
+        &self,
+        request: QueryConsensusStateHeightsRequest,
+    ) -> Result<Vec<Height>, Error>;
 
     fn query_upgraded_client_state(
         &self,

@@ -31,11 +31,7 @@ use ibc_relayer_types::Height;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{
-    IncludeProof, PageRequest, QueryClientEventRequest, QueryClientStateRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight, QueryTxRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
-};
+use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::AnyClientState;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
@@ -1353,12 +1349,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .dst_chain
             .query_consensus_states(QueryConsensusStatesRequest {
                 client_id: self.id.clone(),
-                pagination: Some(PageRequest::all()),
+                pagination: Some(PageRequest::all().reversed()),
             })
             .map_err(|e| {
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
             })?;
 
+        // TODO: Check that this is unnecessary
         consensus_states.sort_by_key(|a| core::cmp::Reverse(a.height));
 
         Ok(consensus_states)
@@ -1405,15 +1402,20 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         fields(client = %self)
     )]
     fn fetch_consensus_state_heights(&self) -> Result<Vec<Height>, ForeignClientError> {
-        // [TODO] Utilize query that only fetches consensus state heights
-        // https://github.com/cosmos/ibc-go/issues/798
-        let consensus_state_heights: Vec<Height> = self
-            .fetch_consensus_states()?
-            .iter()
-            .map(|cs| cs.height)
-            .collect();
+        let mut heights = self
+            .dst_chain
+            .query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+                client_id: self.id.clone(),
+                pagination: Some(PageRequest::all().reversed()),
+            })
+            .map_err(|e| {
+                ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
+            })?;
 
-        Ok(consensus_state_heights)
+        // TODO: Check that this is unnecessary
+        heights.sort_by_key(|&h| core::cmp::Reverse(h));
+
+        Ok(heights)
     }
 
     /// Checks for evidence of misbehaviour.

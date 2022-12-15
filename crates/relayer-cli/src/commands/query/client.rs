@@ -4,8 +4,8 @@ use abscissa_core::{Command, Runnable};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryClientConnectionsRequest, QueryClientEventRequest,
-    QueryClientStateRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
-    QueryTxRequest,
+    QueryClientStateRequest, QueryConsensusStateHeightsRequest, QueryConsensusStateRequest,
+    QueryConsensusStatesRequest, QueryHeight, QueryTxRequest,
 };
 
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
@@ -69,7 +69,7 @@ impl Runnable for QueryClientStateCmd {
             IncludeProof::No,
         ) {
             Ok((cs, _)) => Output::success(cs).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
@@ -137,52 +137,49 @@ impl Runnable for QueryClientConsensusCmd {
             .exit(),
         };
 
-        match self.consensus_height {
-            Some(cs_height) => {
-                let consensus_height = Height::new(counterparty_chain.version(), cs_height)
-                    .unwrap_or_else(exit_with_unrecoverable_error);
+        if let Some(cs_height) = self.consensus_height {
+            let consensus_height = Height::new(counterparty_chain.version(), cs_height)
+                .unwrap_or_else(exit_with_unrecoverable_error);
 
-                let res = chain
-                    .query_consensus_state(
-                        QueryConsensusStateRequest {
-                            client_id: self.client_id.clone(),
-                            consensus_height,
-                            query_height: self.height.map_or(
-                                QueryHeight::Latest,
-                                |revision_height| {
-                                    QueryHeight::Specific(
-                                        Height::new(chain.id().version(), revision_height)
-                                            .unwrap_or_else(exit_with_unrecoverable_error),
-                                    )
-                                },
-                            ),
-                        },
-                        IncludeProof::No,
-                    )
-                    .map(|(consensus_state, _)| consensus_state);
+            let res = chain
+                .query_consensus_state(
+                    QueryConsensusStateRequest {
+                        client_id: self.client_id.clone(),
+                        consensus_height,
+                        query_height: self.height.map_or(QueryHeight::Latest, |revision_height| {
+                            QueryHeight::Specific(
+                                Height::new(chain.id().version(), revision_height)
+                                    .unwrap_or_else(exit_with_unrecoverable_error),
+                            )
+                        }),
+                    },
+                    IncludeProof::No,
+                )
+                .map(|(consensus_state, _)| consensus_state);
 
-                match res {
-                    Ok(cs) => Output::success(cs).exit(),
-                    Err(e) => Output::error(format!("{}", e)).exit(),
-                }
+            match res {
+                Ok(cs) => Output::success(cs).exit(),
+                Err(e) => Output::error(e).exit(),
             }
-            None => {
-                let res = chain.query_consensus_states(QueryConsensusStatesRequest {
-                    client_id: self.client_id.clone(),
-                    pagination: Some(PageRequest::all()),
-                });
+        } else if self.heights_only {
+            let res = chain.query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+                client_id: self.client_id.clone(),
+                pagination: Some(PageRequest::all()),
+            });
 
-                match res {
-                    Ok(states) => {
-                        if self.heights_only {
-                            let heights: Vec<Height> = states.iter().map(|cs| cs.height).collect();
-                            Output::success(heights).exit()
-                        } else {
-                            Output::success(states).exit()
-                        }
-                    }
-                    Err(e) => Output::error(format!("{}", e)).exit(),
-                }
+            match res {
+                Ok(heights) => Output::success(heights).exit(),
+                Err(e) => Output::error(e).exit(),
+            }
+        } else {
+            let res = chain.query_consensus_states(QueryConsensusStatesRequest {
+                client_id: self.client_id.clone(),
+                pagination: Some(PageRequest::all()),
+            });
+
+            match res {
+                Ok(states) => Output::success(states).exit(),
+                Err(e) => Output::error(e).exit(),
             }
         }
     }
@@ -269,7 +266,7 @@ impl Runnable for QueryClientHeaderCmd {
 
         match res {
             Ok(header) => Output::success(header).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
@@ -317,7 +314,7 @@ impl Runnable for QueryClientConnectionsCmd {
 
         match res {
             Ok(ce) => Output::success(ce).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }

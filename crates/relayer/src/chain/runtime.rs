@@ -239,6 +239,10 @@ where
                             self.query_client_state(request, include_proof, reply_to)?
                         },
 
+                        ChainRequest::QueryConsensusStateHeights { request, reply_to } => {
+                            self.query_consensus_state_heights(request, reply_to)?
+                        },
+
                         ChainRequest::QueryConsensusStates { request, reply_to } => {
                             self.query_consensus_states(request, reply_to)?
                         },
@@ -562,6 +566,15 @@ where
         let result = self.chain.query_upgraded_client_state(request);
 
         reply_to.send(result).map_err(Error::send)
+    }
+
+    fn query_consensus_state_heights(
+        &self,
+        request: QueryConsensusStateHeightsRequest,
+        reply_to: ReplyTo<Vec<Height>>,
+    ) -> Result<(), Error> {
+        let heights = self.chain.query_consensus_state_heights(request);
+        reply_to.send(heights).map_err(Error::send)
     }
 
     fn query_consensus_states(

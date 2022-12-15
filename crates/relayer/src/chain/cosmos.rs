@@ -92,8 +92,8 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::pretty::{
-    PrettyConsensusStateWithHeight, PrettyIdentifiedChannel, PrettyIdentifiedClientState,
-    PrettyIdentifiedConnection,
+    PrettyConsensusStateWithHeight, PrettyHeight, PrettyIdentifiedChannel,
+    PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
 
 pub mod batch;
@@ -1076,7 +1076,49 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((consensus_state, proof))
     }
 
-    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_consensus_state_heights(
+        &self,
+        request: QueryConsensusStateHeightsRequest,
+    ) -> Result<Vec<ICSHeight>, Error> {
+        crate::time!("query_consensus_state_heights");
+        crate::telemetry!(query, self.id(), "query_consensus_state_heights");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let request = tonic::Request::new(request.into());
+        let response = self
+            .block_on(client.consensus_state_heights(request))
+            .map_err(Error::grpc_status)?
+            .into_inner();
+
+        let mut heights: Vec<_> = response
+            .consensus_state_heights
+            .into_iter()
+            .filter_map(|h| {
+                ICSHeight::try_from(h.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "failed to parse consensus state height {}. Error: {}",
+                            PrettyHeight(&h),
+                            e
+                        )
+                    })
+                    .ok()
+            })
+            .collect();
+
+        // FIXME: This should be left up to the caller, via the pagination parameter
+        heights.sort_by_key(|&h| core::cmp::Reverse(h));
+
+        Ok(heights)
+    }
+
     fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
@@ -1098,11 +1140,11 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let mut consensus_states: Vec<AnyConsensusStateWithHeight> = response
+        let mut consensus_states: Vec<_> = response
             .consensus_states
             .into_iter()
             .filter_map(|cs| {
-                TryFrom::try_from(cs.clone())
+                AnyConsensusStateWithHeight::try_from(cs.clone())
                     .map_err(|e| {
                         warn!(
                             "failed to parse consensus state {}. Error: {}",
@@ -1113,8 +1155,10 @@ impl ChainEndpoint for CosmosSdkChain {
                     .ok()
             })
             .collect();
-        consensus_states.sort_by(|a, b| a.height.cmp(&b.height));
-        consensus_states.reverse();
+
+        // FIXME: This should be left up to the caller, via the pagination parameter
+        consensus_states.sort_by_key(|cs| core::cmp::Reverse(cs.height));
+
         Ok(consensus_states)
     }
 

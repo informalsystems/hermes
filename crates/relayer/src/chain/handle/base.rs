@@ -196,6 +196,13 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryClientConnections { request, reply_to })
     }
 
+    fn query_consensus_state_heights(
+        &self,
+        request: QueryConsensusStateHeightsRequest,
+    ) -> Result<Vec<Height>, Error> {
+        self.send(|reply_to| ChainRequest::QueryConsensusStateHeights { request, reply_to })
+    }
+
     fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
