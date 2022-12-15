@@ -1,5 +1,101 @@
 # CHANGELOG
 
+## v1.2.0
+
+*December 13th, 2022*
+
+Hermes v1.2.0 brings a bunch of new features and other improvements, such as
+support for Ed25519 keys, more robust health check which takes into account
+the Tendermint `min_gas_price` setting, and various bug fixes related to
+the handling of begin- and end-block events in the Tendermint indexer.
+
+Additionally, IBC clients with a trust level between `1/3` and `2/3` inclusive are now allowed.
+
+### General
+
+#### BREAKING CHANGES
+
+- Update minimum supported Rust version to 1.65.0
+  ([#2817](https://github.com/informalsystems/hermes/pull/2817))
+- Update to `tendermint-rs` 0.28 and ibc-proto 0.24
+  ([#2944](https://github.com/informalsystems/ibc-rs/issues/2944))
+
+#### IMPROVEMENTS
+
+- Test against Gaia v8 in CI
+  ([#2820](https://github.com/informalsystems/hermes/issues/2820))
+- Use rolling Ubuntu as base image in Hermes Docker image to
+  reduce fix several vulnerabilities found in previous base image
+  ([#2810](https://github.com/informalsystems/ibc-rs/issues/2810))
+
+### Hermes - `ibc-relayer-cli` (v1.2.0)
+
+#### IMPROVEMENTS
+
+- Collate consecutive heights and sequence numbers shown in logs
+  ([#2847](https://github.com/informalsystems/ibc-rs/issues/2847))
+
+### Relayer Library - `ibc-relayer` (v0.21.0)
+
+### FEATURES
+
+- Add support for Ed25519 keys
+  ([#2851](https://github.com/informalsystems/ibc-rs/issues/2851))
+
+### BUG FIXES
+
+- Ensure Hermes uses Rustls instead of OpenSSL for TLS on all platforms
+  ([#2799](https://github.com/informalsystems/ibc-rs/issues/2799))
+- Fix an issue where Hermes would sometimes fails to retrieve the
+  begin/end block events because of a quirk of the Tendermint event indexer
+  ([#2867](https://github.com/informalsystems/ibc-rs/issues/2867))
+- Hermes tx CLIs that use the `packet_data_query_height` option now also clear
+  begin/end block events ([#2868](https://github.com/informalsystems/ibc-
+  rs/issues/2868))
+
+#### IMPROVEMENTS
+
+- The health check process now compares the configured `gas_price` config
+  setting against the full node's `min_gas_price` setting, ensuring that
+  the former is at least equal to the latter
+  ([#2776](https://github.com/informalsystems/hermes/issues/2776))
+- IBC clients with trust thresholds in the range [1/3, 2/3] (inclusive) are now allowed
+  ([#2798](https://github.com/informalsystems/hermes/issues/2798))
+- Move default implementations of `init_event_monitor`, `id`, `get_key`,
+  and `add_key` from CosmosSdkChain to ChainEndpoint, and change
+  `ChainEndpoint::config()` to return a `&ChainConfig` instead of
+  a `ChainConfig`
+  ([#2806](https://github.com/informalsystems/ibc-rs/issues/2806))
+- Remove `init_event_monitor` from `ChainEndpoint` in favor of `subscribe` method
+  ([#1456](https://github.com/informalsystems/ibc-rs/issues/1456))
+- Added the possibility to specify multiple chains for integration tests
+  ([#2003](https://github.com/informalsystems/ibc-rs/issues/2003))
+- Clean up secp256k1 signing with other small changes
+  - The `k256` library is no longer used; instead, `secp256k1` is used for both Evmos (aka Ethermint) and Cosmos
+  - Move `sign_message` into `KeyEntry` and remove the duplicated functions in `KeyRing` and at the top level
+  - Move `from_seed_file` into `KeyEntry`
+  - Simplify the `get_address` implementation
+
+
+### Integration Test Framework - [`ibc-test-framework`](tools/test-framework) (v0.21.0)
+
+#### FEATURES
+
+- Added integration tests and guide entry for packet forwarding.
+  ([#1983](https://github.com/informalsystems/ibc-rs/issues/1983))
+- Improved error logs when the height given to upgrade a client is too low.
+  ([#2781](https://github.com/informalsystems/hermes/issues/2781))
+- Added integration tests for client upgrade.
+  ([#2312](https://github.com/informalsystems/ibc-rs/issues/2312))
+
+
+### Telemetry & Metrics - [`ibc-telemetry`](crates/telemetry) (v0.21.0)
+
+#### IMPROVEMENTS
+
+- Add support for dumping Prometheus metrics to JSON
+  ([#2890](https://github.com/informalsystems/ibc-rs/issues/2890))
+
 ## v1.1.0
 
 *October 28th, 2022*

@@ -18,7 +18,7 @@ use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-use crate::keyring::KeyEntry;
+use crate::keyring::Secp256k1KeyPair;
 
 /**
    Broadcast messages as multiple batched transactions to the chain all at once,
@@ -31,7 +31,7 @@ pub async fn send_batched_messages_and_wait_commit(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
     max_tx_size: MaxTxSize,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -44,7 +44,7 @@ pub async fn send_batched_messages_and_wait_commit(
         config,
         max_msg_num,
         max_tx_size,
-        key_entry,
+        key_pair,
         account,
         tx_memo,
         messages,
@@ -77,7 +77,7 @@ pub async fn sequential_send_batched_messages_and_wait_commit(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
     max_tx_size: MaxTxSize,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -90,7 +90,7 @@ pub async fn sequential_send_batched_messages_and_wait_commit(
         config,
         max_msg_num,
         max_tx_size,
-        key_entry,
+        key_pair,
         account,
         tx_memo,
         messages,
@@ -109,7 +109,7 @@ pub async fn send_batched_messages_and_wait_check_tx(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
     max_tx_size: MaxTxSize,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -122,7 +122,7 @@ pub async fn send_batched_messages_and_wait_check_tx(
         config,
         max_msg_num,
         max_tx_size,
-        key_entry,
+        key_pair,
         account,
         tx_memo,
         messages,
@@ -132,8 +132,7 @@ pub async fn send_batched_messages_and_wait_check_tx(
 
     for batch in batches {
         let response =
-            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, &batch)
-                .await?;
+            send_tx_with_account_sequence_retry(config, key_pair, account, tx_memo, &batch).await?;
 
         responses.push(response);
     }
@@ -145,7 +144,7 @@ async fn send_messages_as_batches(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
     max_tx_size: MaxTxSize,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -160,7 +159,7 @@ async fn send_messages_as_batches(
         config,
         max_msg_num,
         max_tx_size,
-        key_entry,
+        key_pair,
         account,
         tx_memo,
         messages,
@@ -179,8 +178,7 @@ async fn send_messages_as_batches(
         let message_count = batch.len();
 
         let response =
-            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, &batch)
-                .await?;
+            send_tx_with_account_sequence_retry(config, key_pair, account, tx_memo, &batch).await?;
 
         let tx_sync_result = response_to_tx_sync_result(&config.chain_id, message_count, response);
 
@@ -194,7 +192,7 @@ async fn sequential_send_messages_as_batches(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
     max_tx_size: MaxTxSize,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -209,7 +207,7 @@ async fn sequential_send_messages_as_batches(
         config,
         max_msg_num,
         max_tx_size,
-        key_entry,
+        key_pair,
         account,
         tx_memo,
         messages,
@@ -228,8 +226,7 @@ async fn sequential_send_messages_as_batches(
         let message_count = batch.len();
 
         let response =
-            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, &batch)
-                .await?;
+            send_tx_with_account_sequence_retry(config, key_pair, account, tx_memo, &batch).await?;
 
         let tx_sync_result = response_to_tx_sync_result(&config.chain_id, message_count, response);
 
@@ -281,7 +278,7 @@ fn batch_messages(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
     max_tx_size: MaxTxSize,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -295,7 +292,7 @@ fn batch_messages(
     // by taking the encoded length of an empty tx with the same auth info and signatures.
     // Use the maximum possible fee to get an upper bound for varint encoding.
     let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
-    let tx_metrics = encoded_tx_metrics(config, key_entry, account, tx_memo, &[], &max_fee)?;
+    let tx_metrics = encoded_tx_metrics(config, key_pair, account, tx_memo, &[], &max_fee)?;
     let tx_envelope_len = tx_metrics.envelope_len;
     let empty_body_len = tx_metrics.body_bytes_len;
 
@@ -357,14 +354,14 @@ mod tests {
     use crate::chain::cosmos::types::config::TxConfig;
     use crate::config;
     use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
-    use crate::keyring::{self, KeyEntry, KeyRing};
+    use crate::keyring::{self, KeyRing, Secp256k1KeyPair, SigningKeyPair};
     use ibc_proto::google::protobuf::Any;
     use ibc_relayer_types::core::ics24_host::identifier::ChainId;
     use std::fs;
 
     const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
-    fn test_fixture() -> (TxConfig, KeyEntry, Account) {
+    fn test_fixture() -> (TxConfig, Secp256k1KeyPair, Account) {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests/config/fixtures/relayer_conf_example.toml"
@@ -380,9 +377,9 @@ mod tests {
             "/tests/config/fixtures/relayer-seed.json"
         );
         let seed_file_content = fs::read_to_string(path).unwrap();
-        let _keyring = KeyRing::new(keyring::Store::Memory, "cosmos", &chain_id).unwrap();
+        let _keyring = KeyRing::new_secp256k1(keyring::Store::Memory, "cosmos", &chain_id).unwrap();
         let hd_path = COSMOS_HD_PATH.parse().unwrap();
-        let key_entry = KeyEntry::from_seed_file(&seed_file_content, &hd_path).unwrap();
+        let key_pair = Secp256k1KeyPair::from_seed_file(&seed_file_content, &hd_path).unwrap();
 
         let account = Account {
             address: AccountAddress::new("".to_owned()),
@@ -390,12 +387,12 @@ mod tests {
             sequence: AccountSequence::new(0),
         };
 
-        (tx_config, key_entry, account)
+        (tx_config, key_pair, account)
     }
 
     #[test]
     fn batch_does_not_exceed_max_tx_size() {
-        let (config, key_entry, account) = test_fixture();
+        let (config, key_pair, account) = test_fixture();
         let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
         let mut messages = vec![Any {
             type_url: "/example.Baz".into(),
@@ -413,7 +410,7 @@ mod tests {
             let expected_batch_len = messages.len() - 1;
             let tx_bytes = sign_and_encode_tx(
                 &config,
-                &key_entry,
+                &key_pair,
                 &account,
                 &memo,
                 &messages[..expected_batch_len],
@@ -426,7 +423,7 @@ mod tests {
                 &config,
                 MaxMsgNum::new(100).unwrap(),
                 max_tx_size,
-                &key_entry,
+                &key_pair,
                 &account,
                 &memo,
                 messages.clone(),
@@ -437,7 +434,7 @@ mod tests {
             assert_eq!(batches[0].len(), expected_batch_len);
 
             let tx_bytes =
-                sign_and_encode_tx(&config, &key_entry, &account, &memo, &batches[0], &max_fee)
+                sign_and_encode_tx(&config, &key_pair, &account, &memo, &batches[0], &max_fee)
                     .unwrap();
             assert_eq!(tx_bytes.len(), max_tx_size.to_usize());
 
@@ -451,7 +448,7 @@ mod tests {
     fn batch_error_on_oversized_message() {
         const MAX_TX_SIZE: usize = 203;
 
-        let (config, key_entry, account) = test_fixture();
+        let (config, key_pair, account) = test_fixture();
         let messages = vec![Any {
             type_url: "/example.Foo".into(),
             value: vec![0; 6],
@@ -462,7 +459,7 @@ mod tests {
             &config,
             MaxMsgNum::default(),
             MaxTxSize::new(MAX_TX_SIZE).unwrap(),
-            &key_entry,
+            &key_pair,
             &account,
             &memo,
             messages.clone(),
@@ -474,15 +471,14 @@ mod tests {
 
         let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
         let tx_bytes =
-            sign_and_encode_tx(&config, &key_entry, &account, &memo, &batches[0], &max_fee)
-                .unwrap();
+            sign_and_encode_tx(&config, &key_pair, &account, &memo, &batches[0], &max_fee).unwrap();
         assert_eq!(tx_bytes.len(), MAX_TX_SIZE);
 
         let res = batch_messages(
             &config,
             MaxMsgNum::default(),
             MaxTxSize::new(MAX_TX_SIZE - 1).unwrap(),
-            &key_entry,
+            &key_pair,
             &account,
             &memo,
             messages,
@@ -493,7 +489,7 @@ mod tests {
 
     #[test]
     fn test_batches_are_structured_appropriately_per_max_msg_num() {
-        let (config, key_entry, account) = test_fixture();
+        let (config, key_pair, account) = test_fixture();
         // Ensure that when MaxMsgNum is 1, the resulting batch
         // consists of 5 smaller batches, each with a single message
         let messages = vec![
@@ -523,7 +519,7 @@ mod tests {
             &config,
             MaxMsgNum::new(1).unwrap(),
             MaxTxSize::default(),
-            &key_entry,
+            &key_pair,
             &account,
             &Memo::new("").unwrap(),
             messages.clone(),
@@ -542,7 +538,7 @@ mod tests {
             &config,
             MaxMsgNum::new(100).unwrap(),
             MaxTxSize::default(),
-            &key_entry,
+            &key_pair,
             &account,
             &Memo::new("").unwrap(),
             messages,
@@ -557,7 +553,7 @@ mod tests {
     fn test_batches_are_structured_appropriately_per_max_tx_size() {
         const MAX_TX_SIZE: usize = 198;
 
-        let (config, key_entry, account) = test_fixture();
+        let (config, key_pair, account) = test_fixture();
         // Ensure that when MaxTxSize is only enough to fit each one of the messages,
         // the resulting batch consists of 5 smaller batches, each with a single message.
         let messages = vec![
@@ -588,7 +584,7 @@ mod tests {
             &config,
             MaxMsgNum::default(),
             MaxTxSize::new(MAX_TX_SIZE).unwrap(),
-            &key_entry,
+            &key_pair,
             &account,
             &memo,
             messages.clone(),
@@ -602,7 +598,7 @@ mod tests {
         for batch in batches {
             assert_eq!(batch.len(), 1);
             let tx_bytes =
-                sign_and_encode_tx(&config, &key_entry, &account, &memo, &batch, &max_fee).unwrap();
+                sign_and_encode_tx(&config, &key_pair, &account, &memo, &batch, &max_fee).unwrap();
             assert_eq!(tx_bytes.len(), MAX_TX_SIZE);
         }
 
@@ -613,7 +609,7 @@ mod tests {
             &config,
             MaxMsgNum::default(),
             MaxTxSize::max(),
-            &key_entry,
+            &key_pair,
             &account,
             &Memo::new("").unwrap(),
             messages,
@@ -627,12 +623,12 @@ mod tests {
     #[test]
     #[should_panic(expected = "`max_msg_num` must be greater than or equal to 1, found 0")]
     fn test_max_msg_num_of_zero_panics() {
-        let (config, key_entry, account) = test_fixture();
+        let (config, key_pair, account) = test_fixture();
         let _batches = batch_messages(
             &config,
             MaxMsgNum::new(0).unwrap(),
             MaxTxSize::default(),
-            &key_entry,
+            &key_pair,
             &account,
             &Memo::new("").unwrap(),
             vec![],

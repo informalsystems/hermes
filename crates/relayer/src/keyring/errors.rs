@@ -1,15 +1,14 @@
 use flex_error::{define_error, DisplayOnly, TraceError};
 use std::io::Error as IoError;
 
+use super::KeyType;
+use crate::config::AddressType;
+
 define_error! {
     Error {
-        InvalidKey
+        InvalidPublicKey
             [ TraceError<signature::Error> ]
-            |_| { "invalid key: could not build signing key from private key bytes" },
-
-        InvalidKeyRaw
-            [ TraceError<bitcoin::secp256k1::Error> ]
-            |_| { "invalid key: could not build signing key from private key bytes" },
+            |_| { "invalid key: could not build public key from public key bytes" },
 
         KeyNotFound
             |_| { "key not found" },
@@ -21,11 +20,12 @@ define_error! {
             [ DisplayOnly<anyhow::Error> ]
             |_| { "invalid mnemonic" },
 
-        PrivateKey
-            [ TraceError<bitcoin::util::bip32::Error> ]
-            |_| { "cannot generate private key" },
+        Bip32KeyGenerationFailed
+            { key_type: KeyType }
+            [ TraceError<anyhow::Error> ]
+            |e| { format!("cannot generate {} private key from BIP-32 seed", e.key_type) },
 
-        UnsupportedPublicKey
+        OnlySecp256k1PublicKeySupported
             { key_type: String }
             |e| {
                 format!("unsupported public key: {}. only secp256k1 pub keys are currently supported",
@@ -112,5 +112,41 @@ define_error! {
             |e| {
                 format!("invalid HD path: {0}", e.path)
             },
+
+        AddressTypeNotFound
+            {
+                address: Vec<u8>,
+                public_key: Vec<u8>,
+            }
+            |e| {
+                format!("No address type found for address {:?} that matches the public key {:?}",
+                        e.address,
+                        e.public_key)
+            },
+
+        InvalidAddressLength
+            {
+                address: Vec<u8>,
+                expected_length: usize,
+            }
+            |e| {
+                format!("Length of address {:?} did not match expected length {}",
+                        e.address,
+                        e.expected_length)
+            },
+
+
+        Bs58Decode
+            [ TraceError<bs58::decode::Error> ]
+            |_| { "bs58 decode error" },
+
+        UnsupportedAddressType
+          {
+              address_type: AddressType,
+              key_type: KeyType,
+          }
+          |e| {
+              format!("Unsupported address type {} for key type {}", e.address_type, e.key_type)
+          }
     }
 }
