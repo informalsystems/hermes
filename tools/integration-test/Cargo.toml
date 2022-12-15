@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-integration-test"
-version    = "0.20.0"
+version    = "0.21.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"

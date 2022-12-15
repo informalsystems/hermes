@@ -39,7 +39,7 @@ use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
 use crate::config::Error as ConfigError;
 use crate::event::monitor;
-use crate::keyring::errors::Error as KeyringError;
+use crate::keyring::{errors::Error as KeyringError, KeyType};
 use crate::sdk_error::SdkError;
 
 define_error! {
@@ -553,6 +553,12 @@ define_error! {
             |e| {
                 format_args!("message with length {} is too large for a transaction", e.len)
             },
+
+        InvalidKeyType
+            { key_type: KeyType }
+            |e| {
+                format!("Invalid key type {} for the current chain", e.key_type)
+            }
     }
 }
 

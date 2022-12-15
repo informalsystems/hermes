@@ -1,6 +1,6 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::keyring::KeyEntry;
+use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_framework::full::batch::context::new_batch_channel;
 use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
 use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatchWrapper;
@@ -18,7 +18,7 @@ pub struct FullCosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,
     pub tx_config: TxConfig,
-    pub key_entry: KeyEntry,
+    pub key_entry: Secp256k1KeyPair,
     pub batch_channel: CosmosBatchChannel,
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 }
@@ -28,7 +28,7 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
         handle: Handle,
         signer: Signer,
         tx_config: TxConfig,
-        key_entry: KeyEntry,
+        key_entry: Secp256k1KeyPair,
         telemetry: CosmosTelemetry,
     ) -> Self {
         let batch_channel = new_batch_channel::<OfaBatchWrapper<CosmosChainWrapper<Self>>>();
@@ -66,7 +66,7 @@ where
         &self.tx_config
     }
 
-    fn key_entry(&self) -> &KeyEntry {
+    fn key_entry(&self) -> &Secp256k1KeyPair {
         &self.key_entry
     }
 }

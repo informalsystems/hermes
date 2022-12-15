@@ -8,16 +8,15 @@ use crate::conclude::Output;
 
 use ibc_relayer::{
     config::{store, ChainConfig, Config},
-    keyring::{KeyRing, Store::Test},
+    keyring::list_keys,
 };
 
 use std::path::PathBuf;
 use tracing::{info, warn};
 
 fn find_key(chain_config: &ChainConfig) -> Option<String> {
-    let keyring = KeyRing::new(Test, &chain_config.account_prefix, &chain_config.id).ok()?;
-    let keys = keyring.keys().ok()?;
-    keys.first().map(|(name, _)| name.to_string())
+    let keys = list_keys(chain_config).ok()?;
+    keys.into_iter().next().map(|(name, _)| name)
 }
 
 /// The data structure that represents the arguments when invoking the `config auto` CLI command.

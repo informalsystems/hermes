@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-chain-registry"
-version      = "0.1.0"
+version      = "0.2.0"
 edition      = "2021"
 license      = "Apache-2.0"
 keywords     = ["cosmos", "ibc", "relayer", "chain", "registry"]
@@ -12,8 +12,9 @@ description  = """
 """
 
 [dependencies]
-ibc-proto         = { version = "0.23.0" }
-ibc-relayer-types = { version = "0.20.0", path = "../relayer-types", features = ["std"] }
+ibc-proto         = { version = "0.24.0" }
+ibc-relayer-types = { version = "0.21.0", path = "../relayer-types", features = ["std"] }
+tendermint-rpc    = { version = "0.28.0", features = ["http-client", "websocket-client"] }
 
 async-trait = "0.1.57"
 flex-error  = { version = "0.4.4", default-features = false }
@@ -24,7 +25,3 @@ serde       = "1.0.149"
 serde_json  = "1"
 tokio       = "1.17.0"
 tracing     = "0.1.36"
-
-[dependencies.tendermint-rpc]
-version = "0.27"
-features = ["http-client", "websocket-client"]

@@ -8,9 +8,13 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
 use eyre::eyre;
+use hdpath::StandardHDPath;
 use ibc_relayer::{
+    chain::ChainType,
     config::{ChainConfig, Config},
-    keyring::{HDPath, KeyEntry, KeyRing, Store},
+    keyring::{
+        AnySigningKeyPair, KeyRing, Secp256k1KeyPair, SigningKeyPair, SigningKeyPairSized, Store,
+    },
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tracing::warn;
@@ -100,7 +104,7 @@ impl KeysAddCmd {
             .clone()
             .unwrap_or_else(|| chain_config.key_name.clone());
 
-        let hd_path = HDPath::from_str(&self.hd_path)
+        let hd_path = StandardHDPath::from_str(&self.hd_path)
             .map_err(|_| eyre!("invalid derivation path: {}", self.hd_path))?;
 
         Ok(KeysAddOptions {
@@ -115,7 +119,7 @@ impl KeysAddCmd {
 pub struct KeysAddOptions {
     pub name: String,
     pub config: ChainConfig,
-    pub hd_path: HDPath,
+    pub hd_path: StandardHDPath,
 }
 
 impl Runnable for KeysAddCmd {
@@ -140,7 +144,9 @@ impl Runnable for KeysAddCmd {
                 match key {
                     Ok(key) => Output::success_msg(format!(
                         "Added key '{}' ({}) on chain {}",
-                        opts.name, key.account, opts.config.id
+                        opts.name,
+                        key.account(),
+                        opts.config.id
                     ))
                     .exit(),
                     Err(e) => Output::error(format!(
@@ -162,7 +168,9 @@ impl Runnable for KeysAddCmd {
                 match key {
                     Ok(key) => Output::success_msg(format!(
                         "Restored key '{}' ({}) on chain {}",
-                        opts.name, key.account, opts.config.id
+                        opts.name,
+                        key.account(),
+                        opts.config.id
                     ))
                     .exit(),
                     Err(e) => Output::error(format!(
@@ -187,44 +195,64 @@ pub fn add_key(
     config: &ChainConfig,
     key_name: &str,
     file: &Path,
-    hd_path: &HDPath,
+    hd_path: &StandardHDPath,
     overwrite: bool,
-) -> eyre::Result<KeyEntry> {
-    let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
+) -> eyre::Result<AnySigningKeyPair> {
+    let key_pair = match config.r#type {
+        ChainType::CosmosSdk => {
+            let mut keyring =
+                KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
 
-    check_key_exists(&keyring, key_name, overwrite);
+            check_key_exists(&keyring, key_name, overwrite);
 
-    let key_contents = fs::read_to_string(file).map_err(|_| eyre!("error reading the key file"))?;
-    let key = KeyEntry::from_seed_file(&key_contents, hd_path)?;
+            let key_contents =
+                fs::read_to_string(file).map_err(|_| eyre!("error reading the key file"))?;
+            let key_pair = Secp256k1KeyPair::from_seed_file(&key_contents, hd_path)?;
 
-    keyring.add_key(key_name, key.clone())?;
-    Ok(key)
+            keyring.add_key(key_name, key_pair.clone())?;
+            key_pair.into()
+        }
+    };
+
+    Ok(key_pair)
 }
 
 pub fn restore_key(
     mnemonic: &Path,
     key_name: &str,
-    hdpath: &HDPath,
+    hdpath: &StandardHDPath,
     config: &ChainConfig,
     overwrite: bool,
-) -> eyre::Result<KeyEntry> {
+) -> eyre::Result<AnySigningKeyPair> {
     let mnemonic_content =
         fs::read_to_string(mnemonic).map_err(|_| eyre!("error reading the mnemonic file"))?;
 
-    let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
+    let key_pair = match config.r#type {
+        ChainType::CosmosSdk => {
+            let mut keyring =
+                KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
 
-    check_key_exists(&keyring, key_name, overwrite);
+            check_key_exists(&keyring, key_name, overwrite);
 
-    let key_entry = keyring.key_from_mnemonic(&mnemonic_content, hdpath, &config.address_type)?;
+            let key_pair = Secp256k1KeyPair::from_mnemonic(
+                &mnemonic_content,
+                hdpath,
+                &config.address_type,
+                keyring.account_prefix(),
+            )?;
 
-    keyring.add_key(key_name, key_entry.clone())?;
-    Ok(key_entry)
+            keyring.add_key(key_name, key_pair.clone())?;
+            key_pair.into()
+        }
+    };
+
+    Ok(key_pair)
 }
 
 /// Check if the key with the given key name already exists.
 /// If it already exists and overwrite is false, abort the command with an error.
 /// If overwrite is true, output a warning message informing the key will be overwritten.
-fn check_key_exists(keyring: &KeyRing, key_name: &str, overwrite: bool) {
+fn check_key_exists<S: SigningKeyPairSized>(keyring: &KeyRing<S>, key_name: &str, overwrite: bool) {
     if keyring.get_key(key_name).is_ok() {
         if overwrite {
             warn!("key {} will be overwritten", key_name);
