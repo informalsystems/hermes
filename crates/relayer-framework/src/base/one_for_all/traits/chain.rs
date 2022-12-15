@@ -143,6 +143,15 @@ where
         channel_id: &Self::ChannelId,
         sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
+
+    async fn query_write_ack_event(
+        &self,
+        channel_id: &Self::ChannelId,
+        port_id: &Self::PortId,
+        counterparty_channel_id: &Counterparty::ChannelId,
+        counterparty_port_id: &Counterparty::PortId,
+        sequence: &Counterparty::Sequence,
+    ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
 }
 
 pub trait OfaChainPreset<Chain>

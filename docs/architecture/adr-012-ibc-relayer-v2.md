@@ -594,7 +594,7 @@ packet relayer, and it is not aware of other concurrent tasks running.
 
 #### Optimization Layers
 
-The relayer framework offers multiple layers of optimizations to improve the
+The relayer framework uses multiple layers of optimizations to improve the
 efficiency of relaying IBC packets. The first layer performs message
 batching per relay context, by collecting messages being sent over a relay
 context within a time frame and sending them all as a single batch if it does not
@@ -902,7 +902,10 @@ impl OfaBaseChain for MinCosmosChainContext
 ```
 
 For demonstration purposes, the above code is slightly simplified from the actual
-Cosmos chain implementation. In the
+Cosmos chain implementation. Readers are encouraged to refer to the
+[`ibc-relayer-cosmos`](crate) itself to see the full implementation details.
+
+In the
 [`OfaBaseChain`](ibc_relayer_framework::base::one_for_all::traits::chain::OfaBaseChain)
 implementation for
 [`MinCosmosChainContext`](crate::contexts::min::chain::MinCosmosChainContext),
