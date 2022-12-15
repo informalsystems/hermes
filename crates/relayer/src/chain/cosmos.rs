@@ -57,7 +57,7 @@ use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
     sequential_send_batched_messages_and_wait_commit,
 };
-use crate::chain::cosmos::encode::key_entry_to_signer;
+use crate::chain::cosmos::encode::key_pair_to_signer;
 use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::abci::{abci_query, QueryResponse};
@@ -86,7 +86,7 @@ use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, TxMonitorCmd};
 use crate::event::IbcEventWithHeight;
-use crate::keyring::{KeyEntry, KeyRing};
+use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
@@ -133,7 +133,7 @@ pub struct CosmosSdkChain {
     grpc_addr: Uri,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
-    keybase: KeyRing,
+    keybase: KeyRing<Secp256k1KeyPair>,
 
     /// A cached copy of the account information
     account: Option<Account>,
@@ -152,7 +152,7 @@ impl CosmosSdkChain {
         self.config.max_tx_size.into()
     }
 
-    fn key(&self) -> Result<KeyEntry, Error> {
+    fn key(&self) -> Result<Secp256k1KeyPair, Error> {
         self.keybase()
             .get_key(&self.config.key_name)
             .map_err(Error::key_base)
@@ -534,17 +534,18 @@ impl CosmosSdkChain {
 
         let proto_msgs = tracked_msgs.msgs;
 
-        let key_entry = self.key()?;
+        let key_pair = self.key()?;
+        let key_account = key_pair.account();
 
         let account =
-            get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
+            get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
         if self.config.sequential_batch_tx {
             sequential_send_batched_messages_and_wait_commit(
                 &self.tx_config,
                 self.config.max_msg_num,
                 self.config.max_tx_size,
-                &key_entry,
+                &key_pair,
                 account,
                 &self.config.memo_prefix,
                 proto_msgs,
@@ -555,7 +556,7 @@ impl CosmosSdkChain {
                 &self.tx_config,
                 self.config.max_msg_num,
                 self.config.max_tx_size,
-                &key_entry,
+                &key_pair,
                 account,
                 &self.config.memo_prefix,
                 proto_msgs,
@@ -581,16 +582,17 @@ impl CosmosSdkChain {
 
         let proto_msgs = tracked_msgs.msgs;
 
-        let key_entry = self.key()?;
+        let key_pair = self.key()?;
+        let key_account = key_pair.account();
 
         let account =
-            get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
+            get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
         send_batched_messages_and_wait_check_tx(
             &self.tx_config,
             self.config.max_msg_num,
             self.config.max_tx_size,
-            &key_entry,
+            &key_pair,
             account,
             &self.config.memo_prefix,
             proto_msgs,
@@ -705,6 +707,7 @@ impl ChainEndpoint for CosmosSdkChain {
     type Header = TmHeader;
     type ConsensusState = TMConsensusState;
     type ClientState = TmClientState;
+    type SigningKeyPair = Secp256k1KeyPair;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
@@ -713,8 +716,9 @@ impl ChainEndpoint for CosmosSdkChain {
         let light_client = rt.block_on(init_light_client(&rpc_client, &config))?;
 
         // Initialize key store and load key
-        let keybase = KeyRing::new(config.key_store_type, &config.account_prefix, &config.id)
-            .map_err(Error::key_base)?;
+        let keybase =
+            KeyRing::new_secp256k1(config.key_store_type, &config.account_prefix, &config.id)
+                .map_err(Error::key_base)?;
 
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
@@ -746,11 +750,11 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(())
     }
 
-    fn keybase(&self) -> &KeyRing {
+    fn keybase(&self) -> &KeyRing<Self::SigningKeyPair> {
         &self.keybase
     }
 
-    fn keybase_mut(&mut self) -> &mut KeyRing {
+    fn keybase_mut(&mut self) -> &mut KeyRing<Self::SigningKeyPair> {
         &mut self.keybase
     }
 
@@ -854,9 +858,9 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("get_signer");
 
         // Get the key from key seed file
-        let key_entry = self.key()?;
+        let key_pair = self.key()?;
 
-        let signer = key_entry_to_signer(&key_entry, &self.config.account_prefix)?;
+        let signer = key_pair_to_signer(&key_pair)?;
 
         Ok(signer)
     }
@@ -874,13 +878,11 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
-        let account = match key_name {
-            Some(key_name) => {
-                let key = self.keybase().get_key(key_name).map_err(Error::key_base)?;
-                key.account
-            }
-            _ => self.key()?.account,
+        let key = match key_name {
+            Some(key_name) => self.keybase().get_key(key_name).map_err(Error::key_base)?,
+            None => self.key()?,
         };
+        let account = key.account();
 
         let denom = denom.unwrap_or(&self.config.gas_price.denom);
         let balance = self.block_on(query_balance(&self.grpc_addr, &account, denom))?;
@@ -891,13 +893,11 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
-        let account = match key_name {
-            Some(key_name) => {
-                let key = self.keybase().get_key(key_name).map_err(Error::key_base)?;
-                key.account
-            }
-            _ => self.key()?.account,
+        let key = match key_name {
+            Some(key_name) => self.keybase().get_key(key_name).map_err(Error::key_base)?,
+            None => self.key()?,
         };
+        let account = key.account();
 
         let balance = self.block_on(query_all_balances(&self.grpc_addr, &account))?;
 
@@ -1882,11 +1882,11 @@ impl ChainEndpoint for CosmosSdkChain {
         counterparty_payee: &Signer,
     ) -> Result<(), Error> {
         let address = self.get_signer()?;
-        let key_entry = self.key()?;
+        let key_pair = self.key()?;
 
         self.rt.block_on(maybe_register_counterparty_payee(
             &self.tx_config,
-            &key_entry,
+            &key_pair,
             &mut self.account,
             &self.config.memo_prefix,
             channel_id,

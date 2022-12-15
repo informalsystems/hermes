@@ -4,7 +4,7 @@
 # entries directly from the CLI. Right now we only support GitHub, but if
 # anyone wants GitLab support please let us know and we'll try implement it
 # too.
-project_url = "https://github.com/informalsystems/ibc-rs"
+project_url = "https://github.com/informalsystems/hermes"
 
 # The file to use as a Handlebars template for changes added directly through
 # the CLI.

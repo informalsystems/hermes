@@ -6,6 +6,7 @@ use ibc_relayer::chain::cosmos::types::account::AccountSequence;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::AddressType;
 use ibc_relayer::keyring::errors::Error as KeyringError;
+use ibc_relayer::keyring::SigningKeyPair;
 use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
 use prost::EncodeError;
 
@@ -106,7 +107,7 @@ where
     fn encode_key_bytes(&self) -> Result<Vec<u8>, Self::Error> {
         let key_entry = self.key_entry();
 
-        let public_key_bytes = key_entry.public_key.to_pub().to_bytes();
+        let public_key_bytes = key_entry.public_key.serialize().to_vec();
 
         let mut pk_buf = Vec::new();
 
@@ -233,14 +234,11 @@ where
 
 impl<Context> CanSignMessage for Context
 where
-    Context: HasAddressType + HasKeyEntry + InjectError<KeyringError>,
+    Context: HasKeyEntry + InjectError<KeyringError>,
 {
     fn sign_message(&self, message: Vec<u8>) -> Result<Vec<u8>, Self::Error> {
-        let address_type = self.address_type();
         let key_entry = self.key_entry();
 
-        key_entry
-            .sign_message(&message, address_type)
-            .map_err(Context::inject_error)
+        key_entry.sign(&message).map_err(Context::inject_error)
     }
 }

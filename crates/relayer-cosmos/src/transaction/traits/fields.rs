@@ -6,12 +6,12 @@ use ibc_relayer::chain::cosmos::types::account::AccountNumber;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
 use ibc_relayer::config::types::Memo;
 use ibc_relayer::config::AddressType;
-use ibc_relayer::keyring::KeyEntry;
+use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_rpc::{HttpClient, Url};
 
 pub trait HasKeyEntry {
-    fn key_entry(&self) -> &KeyEntry;
+    fn key_entry(&self) -> &Secp256k1KeyPair;
 }
 
 pub trait HasAccountNumber {

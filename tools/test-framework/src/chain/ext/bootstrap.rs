@@ -1,6 +1,7 @@
 use core::str::FromStr;
 
 use eyre::eyre;
+use hdpath::StandardHDPath;
 use serde_json as json;
 use std::fs;
 use std::path::PathBuf;
@@ -8,7 +9,7 @@ use std::str;
 use toml;
 use tracing::debug;
 
-use ibc_relayer::keyring::{HDPath, KeyEntry};
+use ibc_relayer::keyring::{Secp256k1KeyPair, SigningKeyPair};
 
 use crate::chain::cli::bootstrap::{
     add_genesis_account, add_genesis_validator, add_wallet, collect_gen_txs, initialize,
@@ -171,11 +172,11 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         let seed_path = format!("{}-seed.json", wallet_id);
         self.write_file(&seed_path, &seed_content)?;
 
-        let hd_path = HDPath::from_str(self.chain_type.hd_path())
-            .map_err(|e| eyre!("failed to create HDPath: {:?}", e))?;
+        let hd_path = StandardHDPath::from_str(self.chain_type.hd_path())
+            .map_err(|e| eyre!("failed to create StandardHDPath: {:?}", e))?;
 
-        let key =
-            KeyEntry::from_seed_file(&seed_content, &hd_path).map_err(handle_generic_error)?;
+        let key = Secp256k1KeyPair::from_seed_file(&seed_content, &hd_path)
+            .map_err(handle_generic_error)?;
 
         Ok(Wallet::new(wallet_id.to_string(), wallet_address, key))
     }
