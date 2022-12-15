@@ -14,8 +14,8 @@ use crate::relayer_mock::contexts::relay::MockRelayContext;
 use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
 use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainTypes;
 use ibc_relayer_framework::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 impl OfaRelayTypes for MockRelayContext {
@@ -82,7 +82,7 @@ impl OfaBaseRelay for MockRelayContext {
         &packet.timeout_timestamp
     }
 
-    fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime> {
+    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
         &self.runtime
     }
 

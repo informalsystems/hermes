@@ -1,6 +1,6 @@
 use alloc::string::String;
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use std::sync::Arc;
 
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
@@ -11,7 +11,7 @@ pub struct MockRelayContext {
     pub dst_chain: Arc<OfaChainWrapper<MockChainContext>>,
     pub src_to_dst_client: String,
     pub dst_to_src_client: String,
-    pub runtime: OfaRuntimeContext<MockRuntimeContext>,
+    pub runtime: OfaRuntimeWrapper<MockRuntimeContext>,
 }
 
 impl MockRelayContext {
@@ -22,7 +22,7 @@ impl MockRelayContext {
         dst_to_src_client: String,
         runtime: MockRuntimeContext,
     ) -> Self {
-        let runtime = OfaRuntimeContext::new(runtime);
+        let runtime = OfaRuntimeWrapper::new(runtime);
         Self {
             src_chain,
             dst_chain,

@@ -29,7 +29,7 @@ use ibc_relayer_framework::base::one_for_all::traits::chain::{
 };
 
 use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 impl OfaChainTypes for MockChainContext {
@@ -66,7 +66,7 @@ impl OfaChainTypes for MockChainContext {
 
 #[async_trait]
 impl OfaBaseChain for MockChainContext {
-    fn runtime(&self) -> &OfaRuntimeContext<MockRuntimeContext> {
+    fn runtime(&self) -> &OfaRuntimeWrapper<MockRuntimeContext> {
         self.runtime()
     }
 

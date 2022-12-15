@@ -30,7 +30,7 @@ use crate::relayer_mock::base::types::{
 use crate::relayer_mock::util::clock::MockClock;
 use crate::relayer_mock::util::mutex::MutexUtil;
 
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 pub struct MockChainContext {
     pub name: String,
@@ -38,12 +38,12 @@ pub struct MockChainContext {
     pub current_height: Arc<Mutex<MockHeight>>,
     pub current_state: Arc<Mutex<ChainState>>,
     pub consensus_states: Arc<Mutex<HashMap<ClientId, HashMap<MockHeight, ChainState>>>>,
-    pub runtime: OfaRuntimeContext<MockRuntimeContext>,
+    pub runtime: OfaRuntimeWrapper<MockRuntimeContext>,
 }
 
 impl MockChainContext {
     pub fn new(name: String, clock: Arc<MockClock>) -> Self {
-        let runtime = OfaRuntimeContext::new(MockRuntimeContext::new(clock));
+        let runtime = OfaRuntimeWrapper::new(MockRuntimeContext::new(clock));
         let chain_state = State::default();
         let initial_state: HashMap<MockHeight, ChainState> =
             HashMap::from([(MockHeight::from(1), chain_state.clone())]);
@@ -61,7 +61,7 @@ impl MockChainContext {
         &self.name
     }
 
-    pub fn runtime(&self) -> &OfaRuntimeContext<MockRuntimeContext> {
+    pub fn runtime(&self) -> &OfaRuntimeWrapper<MockRuntimeContext> {
         &self.runtime
     }
 
