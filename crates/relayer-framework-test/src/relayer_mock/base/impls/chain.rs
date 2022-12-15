@@ -144,4 +144,15 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         let state = self.get_current_state();
         Ok(state.check_received(port_id, channel_id, sequence))
     }
+
+    async fn query_write_ack_event(
+        &self,
+        _channel_id: &ChannelId,
+        _port_id: &PortId,
+        _counterparty_channel_id: &ChannelId,
+        _counterparty_port_id: &PortId,
+        _sequence: &Sequence,
+    ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
+        todo!()
+    }
 }
