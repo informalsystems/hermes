@@ -34,7 +34,7 @@ use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-use crate::keyring::KeyEntry;
+use crate::keyring::AnySigningKeyPair;
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
@@ -113,11 +113,11 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().config()
     }
 
-    fn get_key(&self) -> Result<KeyEntry, Error> {
+    fn get_key(&self) -> Result<AnySigningKeyPair, Error> {
         self.inner().get_key()
     }
 
-    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
+    fn add_key(&self, key_name: String, key: AnySigningKeyPair) -> Result<(), Error> {
         self.inner().add_key(key_name, key)
     }
 

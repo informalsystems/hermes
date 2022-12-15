@@ -1,5 +1,4 @@
 use bech32::{ToBase32, Variant};
-use bitcoin::hashes::hex::ToHex;
 use core::str::FromStr;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
@@ -16,17 +15,17 @@ use crate::chain::cosmos::types::tx::SignedTx;
 use crate::config::types::Memo;
 use crate::config::AddressType;
 use crate::error::Error;
-use crate::keyring::KeyEntry;
+use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
 
 pub fn sign_and_encode_tx(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
     fee: &Fee,
 ) -> Result<Vec<u8>, Error> {
-    let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
+    let signed_tx = sign_tx(config, key_pair, account, tx_memo, messages, fee)?;
     encode_tx_raw(signed_tx)
 }
 
@@ -40,13 +39,13 @@ pub struct EncodedTxMetrics {
 
 pub fn encoded_tx_metrics(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
     fee: &Fee,
 ) -> Result<EncodedTxMetrics, Error> {
-    let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
+    let signed_tx = sign_tx(config, key_pair, account, tx_memo, messages, fee)?;
 
     let tx_raw = TxRaw {
         body_bytes: signed_tx.body_bytes,
@@ -70,13 +69,13 @@ pub fn encoded_tx_metrics(
 
 pub fn sign_tx(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
     fee: &Fee,
 ) -> Result<SignedTx, Error> {
-    let key_bytes = encode_key_bytes(key_entry)?;
+    let key_bytes = encode_key_bytes(key_pair)?;
 
     let signer = encode_signer_info(&config.address_type, account.sequence, key_bytes)?;
 
@@ -87,8 +86,7 @@ pub fn sign_tx(
 
     let signed_doc = encode_sign_doc(
         &config.chain_id,
-        key_entry,
-        &config.address_type,
+        key_pair,
         account.number,
         auth_info_bytes.clone(),
         body_bytes.clone(),
@@ -103,10 +101,10 @@ pub fn sign_tx(
     })
 }
 
-fn encode_key_bytes(key: &KeyEntry) -> Result<Vec<u8>, Error> {
+fn encode_key_bytes(key_pair: &Secp256k1KeyPair) -> Result<Vec<u8>, Error> {
     let mut pk_buf = Vec::new();
 
-    prost::Message::encode(&key.public_key.to_pub().to_bytes(), &mut pk_buf)
+    prost::Message::encode(&key_pair.public_key.serialize().to_vec(), &mut pk_buf)
         .map_err(|e| Error::protobuf_encode("PublicKey".into(), e))?;
 
     Ok(pk_buf)
@@ -114,8 +112,7 @@ fn encode_key_bytes(key: &KeyEntry) -> Result<Vec<u8>, Error> {
 
 fn encode_sign_doc(
     chain_id: &ChainId,
-    key: &KeyEntry,
-    address_type: &AddressType,
+    key_pair: &Secp256k1KeyPair,
     account_number: AccountNumber,
     auth_info_bytes: Vec<u8>,
     body_bytes: Vec<u8>,
@@ -131,9 +128,7 @@ fn encode_sign_doc(
     let mut signdoc_buf = Vec::new();
     prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
-    let signed = key
-        .sign_message(&signdoc_buf, address_type)
-        .map_err(Error::key_base)?;
+    let signed = key_pair.sign(&signdoc_buf).map_err(Error::key_base)?;
 
     Ok(signed)
 }
@@ -229,9 +224,9 @@ fn tx_body_and_bytes(
     Ok((body, body_buf))
 }
 
-pub fn key_entry_to_signer(key_entry: &KeyEntry, account_prefix: &str) -> Result<Signer, Error> {
-    let bech32 = encode_to_bech32(&key_entry.address.to_hex(), account_prefix)?;
-    let signer = bech32
+pub fn key_pair_to_signer(key_pair: &Secp256k1KeyPair) -> Result<Signer, Error> {
+    let signer = key_pair
+        .account()
         .parse()
         .map_err(|e| Error::ics02(ClientError::signer(e)))?;
 

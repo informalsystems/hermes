@@ -10,11 +10,11 @@ use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::wait::wait_tx_succeed;
 use crate::config::types::Memo;
 use crate::error::Error;
-use crate::keyring::KeyEntry;
+use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
 
 pub async fn maybe_register_counterparty_payee(
     tx_config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     m_account: &mut Option<Account>,
     tx_memo: &Memo,
     channel_id: &ChannelId,
@@ -22,8 +22,8 @@ pub async fn maybe_register_counterparty_payee(
     address: &Signer,
     counterparty_payee: &Signer,
 ) -> Result<(), Error> {
-    let account =
-        get_or_fetch_account(&tx_config.grpc_address, &key_entry.account, m_account).await?;
+    let key_account = key_pair.account();
+    let account = get_or_fetch_account(&tx_config.grpc_address, &key_account, m_account).await?;
 
     let current_counterparty_payee =
         query_counterparty_payee(&tx_config.grpc_address, channel_id, address).await?;
@@ -45,7 +45,7 @@ pub async fn maybe_register_counterparty_payee(
 
             let response = send_tx_with_account_sequence_retry(
                 tx_config,
-                key_entry,
+                key_pair,
                 account,
                 tx_memo,
                 &[message],

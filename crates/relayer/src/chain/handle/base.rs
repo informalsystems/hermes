@@ -30,7 +30,7 @@ use crate::{
     denom::DenomTrace,
     error::Error,
     event::IbcEventWithHeight,
-    keyring::KeyEntry,
+    keyring::AnySigningKeyPair,
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
@@ -129,11 +129,11 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::Config { reply_to })
     }
 
-    fn get_key(&self) -> Result<KeyEntry, Error> {
+    fn get_key(&self) -> Result<AnySigningKeyPair, Error> {
         self.send(|reply_to| ChainRequest::GetKey { reply_to })
     }
 
-    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
+    fn add_key(&self, key_name: String, key: AnySigningKeyPair) -> Result<(), Error> {
         self.send(|reply_to| ChainRequest::AddKey {
             key_name,
             key,

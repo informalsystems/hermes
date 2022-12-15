@@ -1,6 +1,6 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::keyring::KeyEntry;
+use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
 use ibc_relayer_types::signer::Signer;
 
@@ -11,11 +11,16 @@ pub struct MinCosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,
     pub tx_config: TxConfig,
-    pub key_entry: KeyEntry,
+    pub key_entry: Secp256k1KeyPair,
 }
 
 impl<Handle: ChainHandle> MinCosmosChainContext<Handle> {
-    pub fn new(handle: Handle, signer: Signer, tx_config: TxConfig, key_entry: KeyEntry) -> Self {
+    pub fn new(
+        handle: Handle,
+        signer: Signer,
+        tx_config: TxConfig,
+        key_entry: Secp256k1KeyPair,
+    ) -> Self {
         Self {
             handle,
             signer,
@@ -45,7 +50,7 @@ where
         &self.tx_config
     }
 
-    fn key_entry(&self) -> &KeyEntry {
+    fn key_entry(&self) -> &Secp256k1KeyPair {
         &self.key_entry
     }
 }

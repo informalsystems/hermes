@@ -207,7 +207,7 @@ pub fn add_key_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallet: &Wallet,
 ) -> Result<(), Error> {
-    let res = chain.add_key(wallet.id.0.clone(), wallet.key.clone());
+    let res = chain.add_key(wallet.id.0.clone(), wallet.key.clone().into());
 
     // Ignore error if chain handle already have the given key
     match res {
