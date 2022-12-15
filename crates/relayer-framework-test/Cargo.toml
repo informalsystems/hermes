@@ -1,0 +1,24 @@
+[package]
+name = "relayer-framework-test"
+version = "0.1.0"
+edition = "2021"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.65"
+description  = """
+    TBD
+"""
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1.56"
+eyre = "0.6.8"
+flex-error = "0.4.4"
+ibc-relayer-framework = { path = "../relayer-framework" }
+ibc-relayer-runtime = { path = "../relayer-runtime" }
+tokio = { version = "1.0", features = ["full"] }
+tracing = "0.1.36"
