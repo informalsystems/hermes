@@ -55,11 +55,6 @@ define_error! {
                 format_args!("No height for chain: {}", e.name)
             },
 
-        PoisonedMutex
-            | _ | {
-                "lock on mutex is poisoned"
-            },
-
         ConsensusDivergence
         { id: String, height: u128 }
             | e | {

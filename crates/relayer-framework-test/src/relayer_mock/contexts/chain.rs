@@ -64,7 +64,7 @@ impl MockChainContext {
     }
 
     pub fn get_latest_height(&self) -> Result<MockHeight, Error> {
-        let locked_current_state = self.current_state.acquire_mutex()?;
+        let locked_current_state = self.current_state.acquire_mutex();
         let latest_height = locked_current_state
             .keys()
             .max()
@@ -75,7 +75,7 @@ impl MockChainContext {
     /// Get the current state of the chain, which is the ChainState at the latest height.
     pub fn get_current_state(&self) -> Result<State, Error> {
         let height = self.get_latest_height()?;
-        let locked_current_state = self.current_state.acquire_mutex()?;
+        let locked_current_state = self.current_state.acquire_mutex();
         let state = locked_current_state
             .get(&height)
             .ok_or_else(|| Error::no_chain_state(self.name().to_string(), height.0))?;
@@ -85,7 +85,7 @@ impl MockChainContext {
     /// Query the chain state at a given Height. This is used to see which receive and
     /// acknowledgment messages have been processed by the Mock Chain.
     pub fn query_state_at_height(&self, height: MockHeight) -> Result<ChainState, Error> {
-        let locked_past_chain_states = self.past_chain_states.acquire_mutex()?;
+        let locked_past_chain_states = self.past_chain_states.acquire_mutex();
         let state = locked_past_chain_states
             .get(&height)
             .ok_or_else(|| Error::no_chain_state(self.name().to_string(), height.0))?;
@@ -99,7 +99,7 @@ impl MockChainContext {
         client_id: ClientId,
         height: MockHeight,
     ) -> Result<ChainState, Error> {
-        let locked_consensus_states = self.consensus_states.acquire_mutex()?;
+        let locked_consensus_states = self.consensus_states.acquire_mutex();
         let client_consensus_states = locked_consensus_states
             .get(&client_id)
             .ok_or_else(|| Error::no_consensus_state(client_id.clone()))?;
@@ -121,7 +121,7 @@ impl MockChainContext {
         height: MockHeight,
         state: ChainState,
     ) -> Result<(), Error> {
-        let mut locked_consensus_states = self.consensus_states.acquire_mutex()?;
+        let mut locked_consensus_states = self.consensus_states.acquire_mutex();
         let client_consensus_states = match locked_consensus_states.get(&client_id) {
             Some(ccs) => {
                 let mut new_client_consensus_states = ccs.clone();
@@ -241,12 +241,12 @@ impl MockChainContext {
     fn update_current_state(&self, state: State) -> Result<(), Error> {
         let latest_height = self.get_latest_height()?;
         let new_height = latest_height.increment();
-        let mut locked_current_state = self.current_state.acquire_mutex()?;
+        let mut locked_current_state = self.current_state.acquire_mutex();
         locked_current_state.insert(new_height.clone(), state);
 
         // After inserting the new state in the current_state, update the past_chain_states
         // at the given height.
-        let mut locked_past_chain_states = self.past_chain_states.acquire_mutex()?;
+        let mut locked_past_chain_states = self.past_chain_states.acquire_mutex();
         locked_past_chain_states.insert(new_height, locked_current_state.clone());
 
         Ok(())

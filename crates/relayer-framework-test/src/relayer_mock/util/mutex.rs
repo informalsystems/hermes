@@ -3,17 +3,15 @@
 
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use crate::relayer_mock::base::error::Error;
-
 pub trait MutexUtil<T> {
-    fn acquire_mutex(&self) -> Result<MutexGuard<T>, Error>;
+    fn acquire_mutex(&self) -> MutexGuard<T>;
 }
 
 impl<T> MutexUtil<T> for Arc<Mutex<T>> {
-    fn acquire_mutex(&self) -> Result<MutexGuard<T>, Error> {
+    fn acquire_mutex(&self) -> MutexGuard<T> {
         match self.lock() {
-            Ok(locked_mutex) => Ok(locked_mutex),
-            Err(_) => Err(Error::poisoned_mutex()),
+            Ok(locked_mutex) => locked_mutex,
+            Err(e) => panic!("poisoned mutex: {}", e),
         }
     }
 }
