@@ -36,9 +36,9 @@ impl MockClock {
         Ok(())
     }
 
-    pub fn get_timestamp(&self) -> Result<MockTimestamp, Error> {
+    pub fn get_timestamp(&self) -> MockTimestamp {
         let locked_timestamp = self.timestamp.acquire_mutex();
 
-        Ok(*locked_timestamp)
+        *locked_timestamp
     }
 }

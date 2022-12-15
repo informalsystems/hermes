@@ -191,7 +191,7 @@ impl MockChainContext {
 
         // Check that the packet is not timed out. Current height < packet timeout height.
         let current_height = self.get_current_height();
-        let current_time = self.runtime().runtime.get_time()?;
+        let current_time = self.runtime().runtime.get_time();
         if packet.timeout_height < current_height || packet.timeout_timestamp < current_time {
             return Err(Error::timeout_receive(
                 self.name().to_string(),
@@ -293,6 +293,9 @@ impl MockChainContext {
         // Update current height.
         let mut locked_current_height = self.current_height.acquire_mutex();
         *locked_current_height = new_height.clone();
+
+        // Timestamp is increased by 1 second when the Height of a chain increases by 1.
+        self.runtime().runtime.clock.increment_millis(1000)?;
 
         // After inserting the new state in the current_state, update the past_chain_states
         // at the given height.

@@ -120,7 +120,7 @@ impl OfaBaseChain for MockChainContext {
         // Since the MockChain only updates manually, the Height is increased by
         // 1 everytime the chain status is queried, without changing its state.
         self.new_block()?;
-        let time = self.runtime().runtime.get_time()?;
+        let time = self.runtime().runtime.get_time();
         Ok(MockChainStatus::from((height, time, state)))
     }
 }

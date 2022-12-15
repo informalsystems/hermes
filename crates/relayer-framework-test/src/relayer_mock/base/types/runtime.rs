@@ -2,9 +2,7 @@ use alloc::boxed::Box;
 use async_trait::async_trait;
 use core::{future::Future, time::Duration};
 use std::sync::Arc;
-use std::time::Instant;
 
-use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::util::clock::MockClock;
 
@@ -20,9 +18,8 @@ impl MockRuntimeContext {
         Self { clock }
     }
 
-    pub fn get_time(&self) -> Result<MockTimestamp, Error> {
-        let timestamp = self.clock.get_timestamp()?;
-        Ok(timestamp)
+    pub fn get_time(&self) -> MockTimestamp {
+        self.clock.get_timestamp()
     }
 }
 
@@ -37,7 +34,7 @@ impl Clone for MockRuntimeContext {
 impl OfaRuntime for MockRuntimeContext {
     type Error = TokioError;
 
-    type Time = Instant;
+    type Time = MockTimestamp;
 
     async fn log(&self, level: LogLevel, message: &str) {
         match level {
@@ -56,12 +53,12 @@ impl OfaRuntime for MockRuntimeContext {
         }
     }
 
-    fn now(&self) -> Instant {
-        Instant::now()
+    fn now(&self) -> Self::Time {
+        self.get_time()
     }
 
-    fn duration_since(time: &Instant, other: &Instant) -> Duration {
-        time.duration_since(*other)
+    fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration {
+        Duration::from_millis((time - other) as u64)
     }
 
     fn spawn<F>(&self, task: F)
