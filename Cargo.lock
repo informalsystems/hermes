@@ -3338,6 +3338,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "456c603be3e8d448b072f410900c09faf164fbce2d480456f50eea6e25f9c848"
 
 [[package]]
+name = "relayer-framework-test"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "eyre",
+ "flex-error",
+ "ibc-relayer-framework",
+ "ibc-relayer-runtime",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "remove_dir_all"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

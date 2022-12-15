@@ -195,15 +195,15 @@ pub trait HasChainTypes: HasMessageType + HasEventType + HasErrorType {
 }
 
 /**
-   The abstract types for a chain context, when it is used for IBC
-   communication wit a `Counterparty` chain context.
+   The abstract types for a chain context when it is used for IBC
+   communication with a `Counterparty` chain context.
 
    In contrast to [`HasChainTypes`], this trait is parameterized by a
    `Counterparty` chain context, which is also required to implement
    [`HasChainTypes`].
 
    Because of the `Counterparty` parameter, the associated types
-   in this trait is going to be different when used with different
+   in this trait are going to be different when used with different
    counterparty chain contexts. In other words, the type
    `<ChainA as HasIbcChainTypes<ChainB>>::ClientId` is different from
    `<ChainA as HasIbcChainTypes<ChainC>>::ClientId` if `ChainB` and `ChainC`
@@ -222,7 +222,7 @@ pub trait HasChainTypes: HasMessageType + HasEventType + HasErrorType {
    `ClientId` type, as compared to connecting to a Cosmos chain.
 
    Note that even when a chain context implements `HasIbcChainTypes`, it is
-   _not_ expected to has access to resources on the counterparty chain. That
+   _not_ expected to have access to resources on the counterparty chain. That
    would require access to the counterparty chain context, which is implemented
    separately from the self chain context. Instead, operations that require
    access to two chain contexts are handled by the
