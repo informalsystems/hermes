@@ -15,3 +15,4 @@ pub use self::chain::HasChainTypes;
 pub use self::event::HasEventType;
 pub use self::ibc::HasIbcChainTypes;
 pub use self::message::{CanEstimateMessageSize, HasMessageType};
+pub use self::packet::HasIbcPacketTypes;

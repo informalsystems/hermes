@@ -125,6 +125,51 @@ pub trait OfaBaseChain: OfaChainTypes {
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
 }
 
+pub trait OfaIbcChainTypes<Counterparty>: OfaChainTypes
+where
+    Counterparty: OfaIbcChainTypes<
+        Self,
+        IncomingPacket = Self::OutgoingPacket,
+        OutgoingPacket = Self::IncomingPacket,
+    >,
+{
+    type IncomingPacket: Async;
+
+    type OutgoingPacket: Async;
+
+    fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
+
+    fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId;
+
+    fn incoming_packet_src_port(packet: &Self::IncomingPacket) -> &Counterparty::PortId;
+
+    fn incoming_packet_dst_port(packet: &Self::IncomingPacket) -> &Self::PortId;
+
+    fn incoming_packet_sequence(packet: &Self::IncomingPacket) -> &Counterparty::Sequence;
+
+    fn incoming_packet_timeout_height(packet: &Self::IncomingPacket) -> Option<&Self::Height>;
+
+    fn incoming_packet_timeout_timestamp(packet: &Self::IncomingPacket) -> &Self::Timestamp;
+
+    fn outgoing_packet_src_channel_id(packet: &Self::OutgoingPacket) -> &Self::ChannelId;
+
+    fn outgoing_packet_dst_channel_id(packet: &Self::OutgoingPacket) -> &Counterparty::ChannelId;
+
+    fn outgoing_packet_src_port(packet: &Self::OutgoingPacket) -> &Self::PortId;
+
+    fn outgoing_packet_dst_port(packet: &Self::OutgoingPacket) -> &Counterparty::PortId;
+
+    fn outgoing_packet_sequence(packet: &Self::OutgoingPacket) -> &Self::Sequence;
+
+    fn outcoming_packet_timeout_height(
+        packet: &Self::IncomingPacket,
+    ) -> Option<&Counterparty::Height>;
+
+    fn outcoming_packet_timeout_timestamp(
+        packet: &Self::IncomingPacket,
+    ) -> &Counterparty::Timestamp;
+}
+
 #[async_trait]
 pub trait OfaIbcChain<Counterparty>: OfaBaseChain
 where
