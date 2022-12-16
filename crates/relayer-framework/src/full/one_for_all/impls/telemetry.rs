@@ -1,4 +1,5 @@
-use crate::full::one_for_all::traits::telemetry::{OfaTelemetry, OfaTelemetryWrapper};
+use crate::full::one_for_all::traits::telemetry::OfaTelemetry;
+use crate::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use crate::full::telemetry::traits::metrics::{
     HasLabel, HasMetric, TelemetryCounter, TelemetryUpDownCounter, TelemetryValueRecorder,
 };

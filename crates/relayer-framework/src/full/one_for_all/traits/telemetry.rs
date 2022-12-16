@@ -34,14 +34,3 @@ pub trait OfaTelemetry: HasLabel {
         unit: Option<Self::Unit>,
     );
 }
-
-#[derive(Clone)]
-pub struct OfaTelemetryWrapper<Telemetry> {
-    pub telemetry: Telemetry,
-}
-
-impl<Telemetry> OfaTelemetryWrapper<Telemetry> {
-    pub fn new(telemetry: Telemetry) -> Self {
-        Self { telemetry }
-    }
-}

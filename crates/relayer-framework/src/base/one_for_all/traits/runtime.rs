@@ -7,7 +7,7 @@ use crate::base::one_for_all::types::runtime::LogLevel;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait OfaBaseRuntime: Clone + Async {
+pub trait OfaBaseRuntime: Async {
     type Error: Async + Debug;
 
     type Time: Async;
