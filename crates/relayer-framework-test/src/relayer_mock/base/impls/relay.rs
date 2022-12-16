@@ -145,11 +145,7 @@ impl OfaBaseRelay for MockRelayContext {
                 self.dst_chain().chain.name().to_string(),
             ));
         }
-        Ok(MockMessage::RecvPacket(
-            self.dst_client_id().clone(),
-            height.clone(),
-            packet.clone(),
-        ))
+        Ok(MockMessage::RecvPacket(height.clone(), packet.clone()))
     }
 
     async fn build_ack_packet_message(

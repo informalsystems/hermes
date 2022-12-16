@@ -179,7 +179,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
-            MockMessage::RecvPacket(_, h, _) => Some(h.clone()),
+            MockMessage::RecvPacket(h, _) => Some(h.clone()),
             MockMessage::AckPacket(_, h, _) => Some(h.clone()),
             MockMessage::TimeoutPacket(_, h, _) => Some(h.clone()),
             _ => None,
@@ -215,5 +215,21 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         _sequence: &Sequence,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
         todo!()
+    }
+
+    async fn build_receive_packet_message(
+        &self,
+        height: &MockHeight,
+        packet: &PacketKey,
+    ) -> Result<MockMessage, Error> {
+        // If the latest state of the source chain doesn't have the packet as sent, return an error.
+        let state = self.get_current_state();
+        if !state.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
+            return Err(Error::receive_without_sent(
+                self.name().to_string(),
+                self.name().to_string(),
+            ));
+        }
+        Ok(MockMessage::RecvPacket(height.clone(), packet.clone()))
     }
 }

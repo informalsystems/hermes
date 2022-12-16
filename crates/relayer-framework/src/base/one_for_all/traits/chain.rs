@@ -192,6 +192,12 @@ where
         counterparty_port_id: &Counterparty::PortId,
         sequence: &Counterparty::Sequence,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
+
+    async fn build_receive_packet_message(
+        &self,
+        height: &Self::Height,
+        packet: &Self::OutgoingPacket,
+    ) -> Result<Counterparty::Message, Self::Error>;
 }
 
 pub trait OfaChainPreset<Chain>

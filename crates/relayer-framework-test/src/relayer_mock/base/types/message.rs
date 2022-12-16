@@ -6,7 +6,7 @@ use crate::relayer_mock::base::types::{height::Height, packet::PacketKey};
 
 #[derive(Debug)]
 pub enum Message {
-    RecvPacket(ClientId, Height, PacketKey),
+    RecvPacket(Height, PacketKey),
     AckPacket(ClientId, Height, PacketKey),
     TimeoutPacket(ClientId, Height, PacketKey),
     UpdateClient(ClientId, Height, ChainState),
@@ -15,8 +15,8 @@ pub enum Message {
 impl Display for Message {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::RecvPacket(from, h, p) => {
-                write!(f, "{}|RecvPacket:{}: {}", from, h, p)
+            Self::RecvPacket(h, p) => {
+                write!(f, "RecvPacket:{}: {}", h, p)
             }
             Self::AckPacket(from, h, p) => write!(f, "{}|AckPacket:{}: {}", from, h, p),
             Self::TimeoutPacket(from, h, p) => write!(f, "{}|TimeoutPacket:{}: {}", from, h, p),
