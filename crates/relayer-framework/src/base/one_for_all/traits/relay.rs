@@ -95,12 +95,6 @@ pub trait OfaBaseRelay: OfaRelayTypes {
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error>;
 
-    async fn build_receive_packet_message(
-        &self,
-        height: &<Self::SrcChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
-    ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error>;
-
     async fn build_ack_packet_message(
         &self,
         destination_height: &<Self::DstChain as OfaChainTypes>::Height,
