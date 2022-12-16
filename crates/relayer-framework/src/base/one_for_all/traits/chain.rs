@@ -125,9 +125,10 @@ pub trait OfaBaseChain: OfaChainTypes {
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
 }
 
-pub trait OfaIbcChainTypes<Counterparty>: OfaChainTypes
+#[async_trait]
+pub trait OfaIbcChain<Counterparty>: OfaBaseChain
 where
-    Counterparty: OfaIbcChainTypes<
+    Counterparty: OfaIbcChain<
         Self,
         IncomingPacket = Self::OutgoingPacket,
         OutgoingPacket = Self::IncomingPacket,
@@ -161,20 +162,13 @@ where
 
     fn outgoing_packet_sequence(packet: &Self::OutgoingPacket) -> &Self::Sequence;
 
-    fn outcoming_packet_timeout_height(
+    fn outgoing_packet_timeout_height(
         packet: &Self::IncomingPacket,
     ) -> Option<&Counterparty::Height>;
 
-    fn outcoming_packet_timeout_timestamp(
-        packet: &Self::IncomingPacket,
-    ) -> &Counterparty::Timestamp;
-}
+    fn outgoing_packet_timeout_timestamp(packet: &Self::IncomingPacket)
+        -> &Counterparty::Timestamp;
 
-#[async_trait]
-pub trait OfaIbcChain<Counterparty>: OfaBaseChain
-where
-    Counterparty: OfaChainTypes,
-{
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 
     async fn query_consensus_state(
@@ -210,7 +204,11 @@ where
 pub trait OfaIbcChainPreset<Chain, Counterparty>: OfaChainPreset<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     type ConsensusStateQuerier: ConsensusStateQuerier<
         OfaChainWrapper<Chain>,

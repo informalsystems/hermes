@@ -22,6 +22,7 @@ use crate::relayer_mock::base::types::chain::MockChainStatus;
 use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
 use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
+use crate::relayer_mock::base::types::packet::PacketKey;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::contexts::chain::MockChainContext;
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
@@ -116,6 +117,66 @@ impl OfaBaseChain for MockChainContext {
 
 #[async_trait]
 impl OfaIbcChain<MockChainContext> for MockChainContext {
+    type IncomingPacket = PacketKey;
+
+    type OutgoingPacket = PacketKey;
+
+    fn incoming_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
+        &packet.channel_id
+    }
+
+    fn incoming_packet_src_port(packet: &PacketKey) -> &PortId {
+        &packet.channel_id
+    }
+
+    fn incoming_packet_dst_port(packet: &PacketKey) -> &PortId {
+        &packet.port_id
+    }
+
+    fn incoming_packet_dst_channel_id(packet: &PacketKey) -> &ChannelId {
+        &packet.channel_id
+    }
+
+    fn incoming_packet_sequence(packet: &PacketKey) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn incoming_packet_timeout_height(packet: &PacketKey) -> Option<&MockHeight> {
+        Some(&packet.timeout_height)
+    }
+
+    fn incoming_packet_timeout_timestamp(packet: &PacketKey) -> &MockTimestamp {
+        &packet.timeout_timestamp
+    }
+
+    fn outgoing_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
+        &packet.channel_id
+    }
+
+    fn outgoing_packet_src_port(packet: &PacketKey) -> &PortId {
+        &packet.channel_id
+    }
+
+    fn outgoing_packet_dst_port(packet: &PacketKey) -> &PortId {
+        &packet.port_id
+    }
+
+    fn outgoing_packet_dst_channel_id(packet: &PacketKey) -> &ChannelId {
+        &packet.channel_id
+    }
+
+    fn outgoing_packet_sequence(packet: &PacketKey) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn outgoing_packet_timeout_height(packet: &PacketKey) -> Option<&MockHeight> {
+        Some(&packet.timeout_height)
+    }
+
+    fn outgoing_packet_timeout_timestamp(packet: &PacketKey) -> &MockTimestamp {
+        &packet.timeout_timestamp
+    }
+
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
             MockMessage::RecvPacket(_, h, _) => Some(h.clone()),

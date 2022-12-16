@@ -4,7 +4,7 @@ use crate::base::chain::traits::types::{
     HasMessageType,
 };
 use crate::base::core::traits::error::HasErrorType;
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain, OfaIbcChainTypes};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::base::runtime::traits::runtime::HasRuntime;
@@ -49,7 +49,11 @@ impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
 impl<Chain, Counterparty> HasIbcChainTypes<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaBaseChain,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     type ClientId = Chain::ClientId;
 
@@ -70,9 +74,7 @@ impl<Chain, Counterparty> HasIbcPacketTypes<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
-    Chain: OfaIbcChainTypes<Counterparty>,
-    Counterparty: OfaIbcChainTypes<
+    Counterparty: OfaIbcChain<
         Chain,
         IncomingPacket = Chain::OutgoingPacket,
         OutgoingPacket = Chain::IncomingPacket,
@@ -130,23 +132,27 @@ where
         Chain::outgoing_packet_sequence(packet)
     }
 
-    fn outcoming_packet_timeout_height(
+    fn outgoing_packet_timeout_height(
         packet: &Self::IncomingPacket,
     ) -> Option<&Counterparty::Height> {
-        Chain::outcoming_packet_timeout_height(packet)
+        Chain::outgoing_packet_timeout_height(packet)
     }
 
-    fn outcoming_packet_timeout_timestamp(
+    fn outgoing_packet_timeout_timestamp(
         packet: &Self::IncomingPacket,
     ) -> &Counterparty::Timestamp {
-        Chain::outcoming_packet_timeout_timestamp(packet)
+        Chain::outgoing_packet_timeout_timestamp(packet)
     }
 }
 
 impl<Chain, Counterparty> HasIbcEvents<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaBaseChain,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 

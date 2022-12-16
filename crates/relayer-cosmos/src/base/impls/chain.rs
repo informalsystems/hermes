@@ -17,7 +17,9 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
 use ibc_relayer_types::signer::Signer;
@@ -146,6 +148,72 @@ where
     Chain: CosmosChain,
     Counterparty: CosmosChain,
 {
+    type IncomingPacket = Packet;
+
+    type OutgoingPacket = Packet;
+
+    fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.source_channel
+    }
+
+    fn incoming_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.destination_channel
+    }
+
+    fn incoming_packet_src_port(packet: &Packet) -> &PortId {
+        &packet.source_port
+    }
+
+    fn incoming_packet_dst_port(packet: &Packet) -> &PortId {
+        &packet.destination_port
+    }
+
+    fn incoming_packet_sequence(packet: &Packet) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn incoming_packet_timeout_height(packet: &Packet) -> Option<&Height> {
+        match &packet.timeout_height {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(h) => Some(h),
+        }
+    }
+
+    fn incoming_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
+        &packet.timeout_timestamp
+    }
+
+    fn outgoing_packet_src_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.source_channel
+    }
+
+    fn outgoing_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.destination_channel
+    }
+
+    fn outgoing_packet_src_port(packet: &Packet) -> &PortId {
+        &packet.source_port
+    }
+
+    fn outgoing_packet_dst_port(packet: &Packet) -> &PortId {
+        &packet.destination_port
+    }
+
+    fn outgoing_packet_sequence(packet: &Packet) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn outgoing_packet_timeout_height(packet: &Packet) -> Option<&Height> {
+        match &packet.timeout_height {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(h) => Some(h),
+        }
+    }
+
+    fn outgoing_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
+        &packet.timeout_timestamp
+    }
+
     fn counterparty_message_height(message: &CosmosIbcMessage) -> Option<Height> {
         message.source_height
     }

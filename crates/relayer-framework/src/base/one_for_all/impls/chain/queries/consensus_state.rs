@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use crate::base::chain::traits::queries::consensus_state::{
     CanQueryConsensusState, ConsensusStateQuerier, HasConsensusState,
 };
-use crate::base::one_for_all::traits::chain::OfaBaseChain;
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
 use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
@@ -17,7 +16,11 @@ impl<Chain, Counterparty>
     for SendConsensusStateQueryToOfa
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     async fn query_consensus_state(
         chain: &OfaChainWrapper<Chain>,
@@ -34,7 +37,11 @@ impl<Chain, Counterparty> HasConsensusState<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaBaseChain,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     type ConsensusState = Chain::ConsensusState;
 }
@@ -44,7 +51,11 @@ impl<Chain, Counterparty, Preset> CanQueryConsensusState<OfaChainWrapper<Counter
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty, Preset = Preset>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
     Preset: OfaIbcChainPreset<Chain, Counterparty>,
 {
     async fn query_consensus_state(
