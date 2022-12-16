@@ -8,11 +8,22 @@ use crate::base::one_for_all::types::runtime::LogLevel;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait OfaRuntime: Clone + Async {
+pub trait OfaBaseRuntime: Clone + Async {
     type Error: Async + Debug;
 
     type Time: Async;
 
+    async fn log(&self, level: LogLevel, message: &str);
+
+    async fn sleep(&self, duration: Duration);
+
+    fn now(&self) -> Self::Time;
+
+    fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration;
+}
+
+#[async_trait]
+pub trait OfaFullRuntime: OfaBaseRuntime {
     type Sender<T>: Async
     where
         T: Async;
@@ -28,14 +39,6 @@ pub trait OfaRuntime: Clone + Async {
     type ReceiverOnce<T>: Async
     where
         T: Async;
-
-    async fn log(&self, level: LogLevel, message: &str);
-
-    async fn sleep(&self, duration: Duration);
-
-    fn now(&self) -> Self::Time;
-
-    fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration;
 
     fn spawn<F>(&self, task: F)
     where
