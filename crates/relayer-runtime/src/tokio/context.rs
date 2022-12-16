@@ -15,7 +15,6 @@ use ibc_relayer_framework::full::one_for_all::traits::runtime::OfaFullRuntime;
 
 use super::error::Error as TokioError;
 
-#[derive(Clone)]
 pub struct TokioRuntimeContext {
     pub runtime: Arc<Runtime>,
 }

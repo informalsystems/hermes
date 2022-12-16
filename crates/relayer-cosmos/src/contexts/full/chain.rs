@@ -23,14 +23,14 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
         signer: Signer,
         tx_config: TxConfig,
         key_entry: Secp256k1KeyPair,
-        telemetry: CosmosTelemetry,
+        telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     ) -> Self {
         let chain = Self {
             handle,
             signer,
             tx_config,
             key_entry,
-            telemetry: OfaTelemetryWrapper::new(telemetry),
+            telemetry,
         };
 
         chain
