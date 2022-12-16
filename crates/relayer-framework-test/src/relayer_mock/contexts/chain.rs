@@ -182,7 +182,8 @@ impl MockChainContext {
         receiver: String,
         height: Height,
         packet: PacketKey,
-    ) -> Result<(), Error> {
+        mut current_state: State,
+    ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was sent by the source chain.
         let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
         if !client_consensus.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
@@ -202,14 +203,11 @@ impl MockChainContext {
             ));
         }
 
-        // Retrieve the current_state and update it with the newly received packet
-        let mut new_state = self.get_current_state();
-        new_state.update_received(packet.port_id, packet.channel_id, packet.sequence);
+        // Update the state with the newly received packet
+        // This will not commit the updated state to the chain
+        current_state.update_received(packet.port_id, packet.channel_id, packet.sequence);
 
-        // Update the current_state of the Chain
-        self.update_current_state(new_state)?;
-
-        Ok(())
+        Ok(current_state)
     }
 
     /// Receiving an acknowledgement adds a new ChainState with the received acknowledgement
@@ -219,21 +217,18 @@ impl MockChainContext {
         receiver: String,
         height: Height,
         packet: PacketKey,
-    ) -> Result<(), Error> {
+        mut current_state: State,
+    ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was received by the destination chain.
         let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
         if !client_consensus.check_received(&packet.port_id, &packet.channel_id, &packet.sequence) {
             return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
         }
 
-        // Retrieve the current_state and update it with the newly received acknowledgement
-        let mut new_state = self.get_current_state();
-        new_state.update_acknowledged(packet.port_id, packet.channel_id, packet.sequence);
+        // Update the current state with the newly received acknowledgement
+        current_state.update_acknowledged(packet.port_id, packet.channel_id, packet.sequence);
 
-        // Update the current_state of the Chain
-        self.update_current_state(new_state)?;
-
-        Ok(())
+        Ok(current_state)
     }
 
     /// Receiving a timed out packet adds a new ChainState with the timed out packet
@@ -243,21 +238,18 @@ impl MockChainContext {
         receiver: String,
         height: Height,
         packet: PacketKey,
-    ) -> Result<(), Error> {
+        mut current_state: State,
+    ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was not received by the destination chain.
         let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
         if client_consensus.check_received(&packet.port_id, &packet.channel_id, &packet.sequence) {
             return Err(Error::generic(eyre!("chain `{}` got a TimeoutPacket, but client `{}` state received the packet as received", self.name(), receiver)));
         }
 
-        // Retrieve the current_state and update it with the newly received acknowledgement
-        let mut new_state = self.get_current_state();
-        new_state.update_timeout(packet.port_id, packet.channel_id, packet.sequence);
+        // Update the current state with the newly received timeout
+        current_state.update_timeout(packet.port_id, packet.channel_id, packet.sequence);
 
-        // Update the current_state of the Chain
-        self.update_current_state(new_state)?;
-
-        Ok(())
+        Ok(current_state)
     }
 
     pub fn build_send_packet(
@@ -312,16 +304,19 @@ impl MockChainContext {
     /// If the message is an `UpdateClient` update the consensus state.
     /// When a RecvPacket and AckPacket are received, verify that the client
     /// state has respectively sent the message and received the message.
+    /// The chain state will only be updated if all messages are processed
+    /// successfully.
     pub fn process_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
         let mut res = vec![];
+        let mut current_state = self.get_current_state();
         for m in messages {
             match m {
                 MockMessage::RecvPacket(receiver, h, p) => {
-                    self.receive_packet(receiver, h.clone(), p)?;
+                    current_state = self.receive_packet(receiver, h.clone(), p, current_state)?;
                     res.push(vec![Event::WriteAcknowledgment(h)]);
                 }
                 MockMessage::AckPacket(receiver, h, p) => {
-                    self.acknowledge_packet(receiver, h, p)?;
+                    current_state = self.acknowledge_packet(receiver, h, p, current_state)?;
                     res.push(vec![]);
                 }
                 MockMessage::UpdateClient(receiver, h, s) => {
@@ -329,10 +324,11 @@ impl MockChainContext {
                     res.push(vec![]);
                 }
                 MockMessage::TimeoutPacket(receiver, h, s) => {
-                    self.timeout_packet(receiver, h, s)?;
+                    current_state = self.timeout_packet(receiver, h, s, current_state)?;
                 }
             }
         }
+        self.update_current_state(current_state)?;
         Ok(res)
     }
 }
