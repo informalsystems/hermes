@@ -14,25 +14,27 @@ use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 async fn test_mock_chain_relay() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
-    let channel_id = "channel-0".to_owned();
+    let src_channel_id = "channel-0".to_owned();
+    let dst_channel_id = "channel-1".to_owned();
 
     let src_client_id = relay_context.relay.src_client_id().clone();
     let dst_client_id = relay_context.relay.dst_client_id().clone();
 
     src_chain
         .chain
-        .map_channel_to_client(channel_id.clone(), src_client_id.clone());
+        .map_channel_to_client(src_channel_id.clone(), src_client_id);
     dst_chain
         .chain
-        .map_channel_to_client(channel_id.clone(), dst_client_id.clone());
+        .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
 
     let packet = src_chain.chain.build_send_packet(
-        src_client_id,
-        channel_id,
+        src_channel_id,
         String::from("transfer"),
+        dst_channel_id,
+        String::from("transfer"),
+        1,
         MockHeight(10),
         60000,
-        1,
     );
 
     {
@@ -41,7 +43,11 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
         let state = dst_chain.chain.get_current_state();
 
         assert!(
-            !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
+            !state.check_received(
+                &packet.dst_port_id,
+                &packet.dst_channel_id,
+                &packet.sequence
+            ),
             "Packet already received on destination chain before relaying it"
         );
     }
@@ -58,7 +64,11 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
         let state = dst_chain.chain.get_current_state();
 
         assert!(
-            state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
+            state.check_received(
+                &packet.dst_port_id,
+                &packet.dst_channel_id,
+                &packet.sequence
+            ),
             "Packet not received on destination chain"
         );
     }
@@ -69,7 +79,7 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
         let state = src_chain.chain.get_current_state();
 
         assert!(
-            state.check_acknowledged(packet.port_id, packet.channel_id, packet.sequence),
+            state.check_acknowledged(packet.src_port_id, packet.src_channel_id, packet.sequence),
             "Acknowledgment not found on source chain"
         );
     }
@@ -81,25 +91,27 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
 async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
-    let channel_id = "channel-0".to_owned();
+    let src_channel_id = "channel-0".to_owned();
+    let dst_channel_id = "channel-1".to_owned();
 
     let src_client_id = relay_context.relay.src_client_id().clone();
     let dst_client_id = relay_context.relay.dst_client_id().clone();
 
     src_chain
         .chain
-        .map_channel_to_client(channel_id.clone(), src_client_id.clone());
+        .map_channel_to_client(src_channel_id.clone(), src_client_id);
     dst_chain
         .chain
-        .map_channel_to_client(channel_id.clone(), dst_client_id.clone());
+        .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
 
     let packet = src_chain.chain.build_send_packet(
-        src_client_id,
-        String::from("channel-0"),
+        src_channel_id,
         String::from("transfer"),
+        dst_channel_id,
+        String::from("transfer"),
+        1,
         MockHeight(10),
         60000,
-        1,
     );
 
     {
@@ -108,7 +120,11 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
         let state = dst_chain.chain.get_current_state();
 
         assert!(
-            !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
+            !state.check_received(
+                &packet.dst_port_id,
+                &packet.dst_channel_id,
+                &packet.sequence
+            ),
             "Packet already received on destination chain before relaying it"
         );
     }
@@ -132,7 +148,11 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
         let state = dst_chain.chain.get_current_state();
 
         assert!(
-            !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
+            !state.check_received(
+                &packet.dst_port_id,
+                &packet.dst_channel_id,
+                &packet.sequence
+            ),
             "Packet received on destination chain, but should have timed out"
         );
     }
@@ -143,7 +163,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
         let state = src_chain.chain.get_current_state();
 
         assert!(
-            state.check_timeout(packet.port_id, packet.channel_id, packet.sequence),
+            state.check_timeout(packet.src_port_id, packet.src_channel_id, packet.sequence),
             "Packet should be registered as timed out"
         );
     }
@@ -154,25 +174,27 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
 async fn test_mock_chain_timeout_height() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
-    let channel_id = "channel-0".to_owned();
+    let src_channel_id = "channel-0".to_owned();
+    let dst_channel_id = "channel-1".to_owned();
 
     let src_client_id = relay_context.relay.src_client_id().clone();
     let dst_client_id = relay_context.relay.dst_client_id().clone();
 
     src_chain
         .chain
-        .map_channel_to_client(channel_id.clone(), src_client_id.clone());
+        .map_channel_to_client(src_channel_id.clone(), src_client_id);
     dst_chain
         .chain
-        .map_channel_to_client(channel_id.clone(), dst_client_id.clone());
+        .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
 
     let packet = src_chain.chain.build_send_packet(
-        src_client_id,
-        String::from("channel-0"),
+        src_channel_id,
         String::from("transfer"),
+        dst_channel_id,
+        String::from("transfer"),
+        1,
         MockHeight(3),
         60000,
-        1,
     );
 
     {
@@ -181,7 +203,11 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
         let state = dst_chain.chain.get_current_state();
 
         assert!(
-            !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
+            !state.check_received(
+                &packet.dst_port_id,
+                &packet.dst_channel_id,
+                &packet.sequence
+            ),
             "Packet already received on destination chain before relaying it"
         );
     }
@@ -203,7 +229,11 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
         let state = dst_chain.chain.get_current_state();
 
         assert!(
-            !state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence),
+            !state.check_received(
+                &packet.dst_port_id,
+                &packet.dst_channel_id,
+                &packet.sequence
+            ),
             "Packet received on destination chain, but should have timed out"
         );
     }
@@ -214,7 +244,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
         let state = src_chain.chain.get_current_state();
 
         assert!(
-            state.check_timeout(packet.port_id, packet.channel_id, packet.sequence),
+            state.check_timeout(packet.src_port_id, packet.src_channel_id, packet.sequence),
             "Packet should be registered as timed out"
         );
     }

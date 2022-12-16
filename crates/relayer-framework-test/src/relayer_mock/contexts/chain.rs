@@ -17,9 +17,7 @@ use std::vec;
 use std::{collections::HashMap, sync::Arc};
 
 use crate::relayer_mock::base::error::Error;
-use crate::relayer_mock::base::types::aliases::{
-    ChainState, ChannelId, ClientId, MockTimestamp, PortId, Sequence,
-};
+use crate::relayer_mock::base::types::aliases::{ChainState, ChannelId, ClientId, MockTimestamp};
 use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
@@ -179,7 +177,7 @@ impl MockChainContext {
     pub fn send_packet(&self, packet: PacketKey) -> Result<(), Error> {
         // Retrieve the current_state and update it with the newly sent packet
         let mut new_state = self.get_current_state();
-        new_state.update_sent(packet.port_id, packet.channel_id, packet.sequence);
+        new_state.update_sent(packet.src_port_id, packet.src_channel_id, packet.sequence);
 
         // Update the current_state of the Chain
         self.update_current_state(new_state)?;
@@ -200,7 +198,11 @@ impl MockChainContext {
     ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was sent by the source chain.
         let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
-        if !client_consensus.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
+        if !client_consensus.check_sent(
+            &packet.src_port_id,
+            &packet.src_channel_id,
+            &packet.sequence,
+        ) {
             return Err(Error::generic(eyre!("chain `{}` got a RecvPacket, but client `{}` state doesn't have the packet as sent", self.name(), receiver)));
         }
 
@@ -219,7 +221,7 @@ impl MockChainContext {
 
         // Update the state with the newly received packet
         // This will not commit the updated state to the chain
-        current_state.update_received(packet.port_id, packet.channel_id, packet.sequence);
+        current_state.update_received(packet.dst_port_id, packet.dst_channel_id, packet.sequence);
 
         Ok(current_state)
     }
@@ -235,12 +237,20 @@ impl MockChainContext {
     ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was received by the destination chain.
         let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
-        if !client_consensus.check_received(&packet.port_id, &packet.channel_id, &packet.sequence) {
+        if !client_consensus.check_received(
+            &packet.dst_port_id,
+            &packet.dst_channel_id,
+            &packet.sequence,
+        ) {
             return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
         }
 
         // Update the current state with the newly received acknowledgement
-        current_state.update_acknowledged(packet.port_id, packet.channel_id, packet.sequence);
+        current_state.update_acknowledged(
+            packet.src_port_id,
+            packet.src_channel_id,
+            packet.sequence,
+        );
 
         Ok(current_state)
     }
@@ -256,29 +266,36 @@ impl MockChainContext {
     ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was not received by the destination chain.
         let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
-        if client_consensus.check_received(&packet.port_id, &packet.channel_id, &packet.sequence) {
+        if client_consensus.check_received(
+            &packet.dst_port_id,
+            &packet.dst_channel_id,
+            &packet.sequence,
+        ) {
             return Err(Error::generic(eyre!("chain `{}` got a TimeoutPacket, but client `{}` state received the packet as received", self.name(), receiver)));
         }
 
         // Update the current state with the newly received timeout
-        current_state.update_timeout(packet.port_id, packet.channel_id, packet.sequence);
+        current_state.update_timeout(packet.src_port_id, packet.src_channel_id, packet.sequence);
 
         Ok(current_state)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn build_send_packet(
         &self,
-        client_id: ClientId,
-        channel_id: ChannelId,
-        port_id: PortId,
-        timeout_height: MockHeight,
+        src_channel_id: String,
+        src_port_id: String,
+        dst_channel_id: String,
+        dst_port_id: String,
+        sequence: u128,
+        timeout_height: Height,
         timeout_timestamp: MockTimestamp,
-        sequence: Sequence,
     ) -> PacketKey {
         PacketKey::new(
-            client_id,
-            channel_id,
-            port_id,
+            src_channel_id,
+            src_port_id,
+            dst_channel_id,
+            dst_port_id,
             sequence,
             timeout_height,
             timeout_timestamp,
@@ -327,10 +344,10 @@ impl MockChainContext {
             match m {
                 MockMessage::RecvPacket(height, packet) => {
                     let receiver = self
-                        .get_client_from_channel(&packet.channel_id)
+                        .get_client_from_channel(&packet.dst_channel_id)
                         .ok_or_else(|| {
                             Error::no_client_for_channel(
-                                packet.channel_id.clone(),
+                                packet.dst_channel_id.clone(),
                                 self.name().to_string(),
                             )
                         })?;
@@ -340,10 +357,10 @@ impl MockChainContext {
                 }
                 MockMessage::AckPacket(height, packet) => {
                     let receiver = self
-                        .get_client_from_channel(&packet.channel_id)
+                        .get_client_from_channel(&packet.src_channel_id)
                         .ok_or_else(|| {
                             Error::no_client_for_channel(
-                                packet.channel_id.clone(),
+                                packet.src_channel_id.clone(),
                                 self.name().to_string(),
                             )
                         })?;
@@ -357,10 +374,10 @@ impl MockChainContext {
                 }
                 MockMessage::TimeoutPacket(height, packet) => {
                     let receiver = self
-                        .get_client_from_channel(&packet.channel_id)
+                        .get_client_from_channel(&packet.src_channel_id)
                         .ok_or_else(|| {
                             Error::no_client_for_channel(
-                                packet.channel_id.clone(),
+                                packet.src_channel_id.clone(),
                                 self.name().to_string(),
                             )
                         })?;
