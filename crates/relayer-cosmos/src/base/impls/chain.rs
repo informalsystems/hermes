@@ -75,7 +75,7 @@ where
         Error::tokio(e)
     }
 
-    fn estimate_message_len(message: &CosmosIbcMessage) -> Result<usize, Error> {
+    fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
         let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(Error::encode)?;
 
         Ok(raw.encoded_len())

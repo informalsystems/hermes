@@ -75,7 +75,7 @@ impl OfaBaseChain for MockChainContext {
     }
 
     // Only single messages are sent by the Mock Chain
-    fn estimate_message_len(_message: &Self::Message) -> Result<usize, Self::Error> {
+    fn estimate_message_size(_message: &Self::Message) -> Result<usize, Self::Error> {
         Ok(1)
     }
 

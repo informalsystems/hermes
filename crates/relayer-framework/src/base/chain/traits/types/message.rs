@@ -54,7 +54,9 @@ pub trait HasMessageType: HasErrorType {
        [`counterparty_message_height`](HasIbcChainTypes::counterparty_message_height).
     */
     type Message: Async;
+}
 
+pub trait CanEstimateMessageSize: HasMessageType {
     /**
        Estimate the size of a message after it is encoded into raw bytes
        inside a transaction.
@@ -71,5 +73,5 @@ pub trait HasMessageType: HasErrorType {
        moving this method into a separate crate if it is not being used
        elsewhere.
     */
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
+    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
 }

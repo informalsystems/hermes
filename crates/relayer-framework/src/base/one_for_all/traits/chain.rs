@@ -107,7 +107,7 @@ pub trait OfaBaseChain: OfaChainTypes {
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
 
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
+    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
 
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
 

@@ -14,4 +14,4 @@ pub mod packet;
 pub use self::chain::HasChainTypes;
 pub use self::event::HasEventType;
 pub use self::ibc::HasIbcChainTypes;
-pub use self::message::HasMessageType;
+pub use self::message::{CanEstimateMessageSize, HasMessageType};

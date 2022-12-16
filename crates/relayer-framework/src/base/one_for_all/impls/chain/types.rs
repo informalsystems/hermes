@@ -1,6 +1,6 @@
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::traits::types::{
-    HasChainTypes, HasEventType, HasIbcChainTypes, HasMessageType,
+    CanEstimateMessageSize, HasChainTypes, HasEventType, HasIbcChainTypes, HasMessageType,
 };
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
@@ -27,9 +27,11 @@ impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
 
 impl<Chain: OfaBaseChain> HasMessageType for OfaChainWrapper<Chain> {
     type Message = Chain::Message;
+}
 
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Chain::estimate_message_len(message)
+impl<Chain: OfaBaseChain> CanEstimateMessageSize for OfaChainWrapper<Chain> {
+    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error> {
+        Chain::estimate_message_size(message)
     }
 }
 

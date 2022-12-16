@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::base::chain::traits::types::HasIbcChainTypes;
+use crate::base::chain::traits::types::{CanEstimateMessageSize, HasIbcChainTypes};
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
@@ -25,12 +25,13 @@ where
     Relay: HasRelayTypes,
     Relay: HasRuntime<Runtime = Runtime>,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
+    TargetChain: CanEstimateMessageSize,
     TargetChain: HasRuntime<Runtime = Runtime>,
+    TargetChain: HasIbcChainTypes<Target::CounterpartyChain>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Runtime: CanUseChannelsOnce + CanUseChannels,
     Relay: HasMessageBatchReceiver<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
-    TargetChain: HasIbcChainTypes<Target::CounterpartyChain>,
     Relay::Error: Clone,
 {
     fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
