@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
-use crate::full::one_for_all::types::runtime::aliases::{MessageBatchReceiver, MessageBatchSender};
+use crate::full::one_for_all::types::batch::aliases::{MessageBatchReceiver, MessageBatchSender};
 use crate::std_prelude::*;
 
 #[async_trait]

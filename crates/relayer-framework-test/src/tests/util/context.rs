@@ -16,12 +16,14 @@ pub fn build_mock_relay_context() -> (
 ) {
     let clock = Arc::new(MockClock::default());
     let runtime = MockRuntimeContext::new(clock.clone());
-    let src_chain = Arc::new(OfaChainWrapper {
-        chain: MockChainContext::new("chain1".to_string(), clock.clone()),
-    });
-    let dst_chain = Arc::new(OfaChainWrapper {
-        chain: MockChainContext::new("chain2".to_string(), clock),
-    });
+    let src_chain = Arc::new(OfaChainWrapper::new(MockChainContext::new(
+        "chain1".to_string(),
+        clock.clone(),
+    )));
+    let dst_chain = Arc::new(OfaChainWrapper::new(MockChainContext::new(
+        "chain2".to_string(),
+        clock,
+    )));
     let mock_relay = MockRelayContext::new(
         src_chain.clone(),
         dst_chain.clone(),

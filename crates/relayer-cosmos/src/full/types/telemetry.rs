@@ -16,14 +16,15 @@ pub struct TelemetryState {
     pub updown_counters: HashMap<String, UpDownCounter<i64>>,
 }
 
-#[derive(Clone)]
 pub struct CosmosTelemetry {
     pub telemetry_state: Arc<Mutex<TelemetryState>>,
 }
 
 impl CosmosTelemetry {
-    pub fn new(telemetry_state: Arc<Mutex<TelemetryState>>) -> Self {
-        Self { telemetry_state }
+    pub fn new(telemetry_state: TelemetryState) -> Self {
+        Self {
+            telemetry_state: Arc::new(Mutex::new(telemetry_state)),
+        }
     }
 }
 

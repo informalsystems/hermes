@@ -2,14 +2,13 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
-use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::signer::Signer;
 
 use crate::base::traits::chain::CosmosChain;
 use crate::full::traits::chain::CosmosFullChain;
 use crate::full::types::telemetry::CosmosTelemetry;
 
-#[derive(Clone)]
 pub struct FullCosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,
@@ -24,14 +23,14 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
         signer: Signer,
         tx_config: TxConfig,
         key_entry: Secp256k1KeyPair,
-        telemetry: CosmosTelemetry,
+        telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     ) -> Self {
         let chain = Self {
             handle,
             signer,
             tx_config,
             key_entry,
-            telemetry: OfaTelemetryWrapper::new(telemetry),
+            telemetry,
         };
 
         chain

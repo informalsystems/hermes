@@ -4,12 +4,13 @@ use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
 use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelay;
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 
 use opentelemetry::global;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 
 pub fn build_cosmos_relay_context<ChainA, ChainB>(
     chains: &ConnectedChains<ChainA, ChainB>,
@@ -19,14 +20,16 @@ where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
 {
-    let telemetry = CosmosTelemetry::new(Arc::new(Mutex::new(TelemetryState {
+    let telemetry = OfaTelemetryWrapper::new(CosmosTelemetry::new(TelemetryState {
         meter: global::meter("hermes"),
         counters: HashMap::new(),
         value_recorders: HashMap::new(),
         updown_counters: HashMap::new(),
-    })));
+    }));
 
-    let runtime = TokioRuntimeContext::new(chains.node_a.value().chain_driver.runtime.clone());
+    let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(
+        chains.node_a.value().chain_driver.runtime.clone(),
+    ));
 
     let chain_a = FullCosmosChainContext::new(
         chains.handle_a.clone(),
