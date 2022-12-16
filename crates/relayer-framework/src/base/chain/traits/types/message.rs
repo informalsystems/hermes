@@ -47,11 +47,6 @@ pub trait HasMessageType: HasErrorType {
        operations at once. As a result, there is rarely a need for the relayer
        framework to know about specific message variants, such as
        `UpdateCientMesssage`.
-
-       The relayer framework currently requires two operations to be supported
-       by the abstract `Message` type:
-       [`estimate_message_len`](Self::estimate_message_len) and
-       [`counterparty_message_height`](HasIbcChainTypes::counterparty_message_height).
     */
     type Message: Async;
 }

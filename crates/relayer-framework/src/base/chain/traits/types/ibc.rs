@@ -7,7 +7,8 @@ use crate::std_prelude::*;
    communication with a `Counterparty` chain context.
 
    In contrast to [`HasChainTypes`], this trait is parameterized by a
-   `Counterparty` chain context, which is also required to implement
+   `Counterparty` chain context. Additionally, the `Counterparty` chain context
+   is arequired to implement
    [`HasChainTypes`].
 
    Because of the `Counterparty` parameter, the associated types

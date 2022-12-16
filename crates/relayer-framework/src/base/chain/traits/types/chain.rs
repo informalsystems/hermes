@@ -27,7 +27,7 @@ use crate::base::chain::traits::types::message::HasMessageType;
 
     This trait only covers chain types that involve a single chain. For IBC
     chain types that involve _two_ chains, the abstract types are defined
-    in [`HasIbcChainTypes`].
+    in [`HasIbcChainTypes`](super::ibc::HasIbcChainTypes).
 
     Notice that a chain context do not contain a `Transaction` abstract
     type. This is because we separate the concerns of normal chain operations

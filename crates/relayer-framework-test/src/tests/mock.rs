@@ -12,6 +12,7 @@ use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 
 // FIXME: Fix the mock chain building of receive packet message
 // #[tokio::test]
+#[allow(dead_code)]
 async fn test_mock_chain_relay() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
