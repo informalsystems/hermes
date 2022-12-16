@@ -133,13 +133,13 @@ where
     }
 
     fn outgoing_packet_timeout_height(
-        packet: &Self::IncomingPacket,
+        packet: &Self::OutgoingPacket,
     ) -> Option<&Counterparty::Height> {
         Chain::outgoing_packet_timeout_height(packet)
     }
 
     fn outgoing_packet_timeout_timestamp(
-        packet: &Self::IncomingPacket,
+        packet: &Self::OutgoingPacket,
     ) -> &Counterparty::Timestamp {
         Chain::outgoing_packet_timeout_timestamp(packet)
     }

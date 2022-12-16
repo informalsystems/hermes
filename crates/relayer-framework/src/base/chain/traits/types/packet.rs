@@ -50,9 +50,9 @@ where
     fn outgoing_packet_sequence(packet: &Self::OutgoingPacket) -> &Self::Sequence;
 
     fn outgoing_packet_timeout_height(
-        packet: &Self::IncomingPacket,
+        packet: &Self::OutgoingPacket,
     ) -> Option<&Counterparty::Height>;
 
-    fn outgoing_packet_timeout_timestamp(packet: &Self::IncomingPacket)
+    fn outgoing_packet_timeout_timestamp(packet: &Self::OutgoingPacket)
         -> &Counterparty::Timestamp;
 }
