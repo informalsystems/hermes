@@ -1,7 +1,7 @@
 use crate::base::chain::traits::types::{HasEventType, HasMessageType};
-use crate::base::runtime::traits::channel::HasChannelTypes;
-use crate::base::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::base::runtime::traits::runtime::HasRuntime;
+use crate::full::runtime::traits::channel::HasChannelTypes;
+use crate::full::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::std_prelude::*;
 
 pub type Sender<Chain, Payload> =

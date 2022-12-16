@@ -1,5 +1,5 @@
 use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::runtime::OfaFullRuntime;
+use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
 use crate::std_prelude::*;
 
 pub type Sender<Chain, Payload> =

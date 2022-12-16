@@ -9,8 +9,9 @@ use tokio::time::sleep;
 use tracing;
 
 use ibc_relayer_framework::base::core::traits::sync::Async;
-use ibc_relayer_framework::base::one_for_all::traits::runtime::{OfaBaseRuntime, OfaFullRuntime};
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use ibc_relayer_framework::base::one_for_all::types::runtime::LogLevel;
+use ibc_relayer_framework::full::one_for_all::traits::runtime::OfaFullRuntime;
 
 use super::error::Error as TokioError;
 
