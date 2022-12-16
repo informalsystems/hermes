@@ -118,9 +118,9 @@ impl OfaBaseChain for MockChainContext {
 impl OfaIbcChain<MockChainContext> for MockChainContext {
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
-            MockMessage::RecvPacket(_, h, _) => Some(h.clone()),
-            MockMessage::AckPacket(_, h, _) => Some(h.clone()),
-            MockMessage::TimeoutPacket(_, h, _) => Some(h.clone()),
+            MockMessage::RecvPacket(h, _) => Some(h.clone()),
+            MockMessage::AckPacket(h, _) => Some(h.clone()),
+            MockMessage::TimeoutPacket(h, _) => Some(h.clone()),
             _ => None,
         }
     }

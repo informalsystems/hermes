@@ -14,11 +14,21 @@ use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 async fn test_mock_chain_relay() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
+    let channel_id = "channel-0".to_owned();
+
     let src_client_id = relay_context.relay.src_client_id().clone();
+    let dst_client_id = relay_context.relay.dst_client_id().clone();
+
+    src_chain
+        .chain
+        .map_channel_to_client(channel_id.clone(), src_client_id.clone());
+    dst_chain
+        .chain
+        .map_channel_to_client(channel_id.clone(), dst_client_id.clone());
 
     let packet = src_chain.chain.build_send_packet(
         src_client_id,
-        String::from("channel-0"),
+        channel_id,
         String::from("transfer"),
         MockHeight(10),
         60000,
@@ -71,7 +81,17 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
 async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
+    let channel_id = "channel-0".to_owned();
+
     let src_client_id = relay_context.relay.src_client_id().clone();
+    let dst_client_id = relay_context.relay.dst_client_id().clone();
+
+    src_chain
+        .chain
+        .map_channel_to_client(channel_id.clone(), src_client_id.clone());
+    dst_chain
+        .chain
+        .map_channel_to_client(channel_id.clone(), dst_client_id.clone());
 
     let packet = src_chain.chain.build_send_packet(
         src_client_id,
@@ -134,7 +154,17 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
 async fn test_mock_chain_timeout_height() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
+    let channel_id = "channel-0".to_owned();
+
     let src_client_id = relay_context.relay.src_client_id().clone();
+    let dst_client_id = relay_context.relay.dst_client_id().clone();
+
+    src_chain
+        .chain
+        .map_channel_to_client(channel_id.clone(), src_client_id.clone());
+    dst_chain
+        .chain
+        .map_channel_to_client(channel_id.clone(), dst_client_id.clone());
 
     let packet = src_chain.chain.build_send_packet(
         src_client_id,

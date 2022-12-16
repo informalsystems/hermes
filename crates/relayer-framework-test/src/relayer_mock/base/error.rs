@@ -72,6 +72,10 @@ define_error! {
             | e | {
                 format_args!("error receiving RecvPacket for chain {}. Packet timeout height {}, chain height {}. Packet timeout timestamp {}, current timestamp {}", e.chain, e.height, e.chain_height, e.timestamp, e.current_timestamp)
             },
+
+        NoClientForChannel
+        { channel_id: String, chain: String }
+            | e | { format_args!("error no client mapped to the channel `{}` for chain `{}`", e.channel_id, e.chain) },
     }
 }
 

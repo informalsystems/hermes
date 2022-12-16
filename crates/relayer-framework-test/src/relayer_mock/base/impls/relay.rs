@@ -145,11 +145,7 @@ impl OfaBaseRelay for MockRelayContext {
                 self.dst_chain().chain.name().to_string(),
             ));
         }
-        Ok(MockMessage::RecvPacket(
-            self.dst_client_id().clone(),
-            height.clone(),
-            packet.clone(),
-        ))
+        Ok(MockMessage::RecvPacket(height.clone(), packet.clone()))
     }
 
     async fn build_ack_packet_message(
@@ -167,7 +163,6 @@ impl OfaBaseRelay for MockRelayContext {
             ));
         }
         Ok(MockMessage::AckPacket(
-            self.src_client_id().clone(),
             destination_height.clone(),
             packet.clone(),
         ))
@@ -191,7 +186,6 @@ impl OfaBaseRelay for MockRelayContext {
         }
         // Must be timed out. Current height > timeout height
         Ok(MockMessage::TimeoutPacket(
-            self.src_client_id().clone(),
             destination_height.clone(),
             packet.clone(),
         ))

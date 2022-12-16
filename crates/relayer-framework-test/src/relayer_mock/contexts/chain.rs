@@ -38,6 +38,7 @@ pub struct MockChainContext {
     pub current_height: Arc<Mutex<MockHeight>>,
     pub current_state: Arc<Mutex<ChainState>>,
     pub consensus_states: Arc<Mutex<HashMap<ClientId, HashMap<MockHeight, ChainState>>>>,
+    pub channel_to_client: Arc<Mutex<HashMap<ChannelId, ClientId>>>,
     pub runtime: OfaRuntimeWrapper<MockRuntimeContext>,
 }
 
@@ -53,6 +54,7 @@ impl MockChainContext {
             current_height: Arc::new(Mutex::new(Height(1))),
             current_state: Arc::new(Mutex::new(chain_state)),
             consensus_states: Arc::new(Mutex::new(HashMap::new())),
+            channel_to_client: Arc::new(Mutex::new(HashMap::new())),
             runtime,
         }
     }
@@ -76,6 +78,12 @@ impl MockChainContext {
         let locked_current_state = self.current_state.acquire_mutex();
         let state = locked_current_state;
         state.clone()
+    }
+
+    /// Get the client ID from a channel ID.
+    pub fn get_client_from_channel(&self, channel_id: &ChannelId) -> Option<ClientId> {
+        let locked_channel_to_client = self.channel_to_client.acquire_mutex();
+        locked_channel_to_client.get(channel_id).cloned()
     }
 
     /// Query the chain state at a given Height. This is used to see which receive and
@@ -105,6 +113,13 @@ impl MockChainContext {
         Ok(client_consensus_state.clone())
     }
 
+    /// In order to get a client ID from a channel ID, the mapping must be manually
+    /// registered for the MockChain.
+    pub fn map_channel_to_client(&self, channel_id: ChannelId, client_id: ClientId) {
+        let mut locked_channel_to_client = self.channel_to_client.acquire_mutex();
+        locked_channel_to_client.insert(channel_id, client_id);
+    }
+
     /// Insert a new Consensus State for a given Client at a given Height.
     /// If there already is a Consensus State for the Client at the given Height, which is different
     /// from the given State, return an error as a Chain is not allowed to have two different Consensus
@@ -113,7 +128,7 @@ impl MockChainContext {
     /// an already existing Consensus State with a different value.
     pub fn insert_consensus_state(
         &self,
-        client_id: String,
+        client_id: ClientId,
         height: MockHeight,
         state: ChainState,
     ) -> Result<(), Error> {
@@ -141,7 +156,6 @@ impl MockChainContext {
         };
         // Update the Consensus States of the Chain.
         locked_consensus_states.insert(client_id, client_consensus_states);
-
         Ok(())
     }
 
@@ -311,20 +325,46 @@ impl MockChainContext {
         let mut current_state = self.get_current_state();
         for m in messages {
             match m {
-                MockMessage::RecvPacket(receiver, h, p) => {
-                    current_state = self.receive_packet(receiver, h.clone(), p, current_state)?;
-                    res.push(vec![Event::WriteAcknowledgment(h)]);
+                MockMessage::RecvPacket(height, packet) => {
+                    let receiver = self
+                        .get_client_from_channel(&packet.channel_id)
+                        .ok_or_else(|| {
+                            Error::no_client_for_channel(
+                                packet.channel_id.clone(),
+                                self.name().to_string(),
+                            )
+                        })?;
+                    current_state =
+                        self.receive_packet(receiver, height.clone(), packet, current_state)?;
+                    res.push(vec![Event::WriteAcknowledgment(height)]);
                 }
-                MockMessage::AckPacket(receiver, h, p) => {
-                    current_state = self.acknowledge_packet(receiver, h, p, current_state)?;
+                MockMessage::AckPacket(height, packet) => {
+                    let receiver = self
+                        .get_client_from_channel(&packet.channel_id)
+                        .ok_or_else(|| {
+                            Error::no_client_for_channel(
+                                packet.channel_id.clone(),
+                                self.name().to_string(),
+                            )
+                        })?;
+                    current_state =
+                        self.acknowledge_packet(receiver, height, packet, current_state)?;
                     res.push(vec![]);
                 }
-                MockMessage::UpdateClient(receiver, h, s) => {
-                    self.insert_consensus_state(receiver, h, s)?;
+                MockMessage::UpdateClient(client_id, height, state) => {
+                    self.insert_consensus_state(client_id, height, state)?;
                     res.push(vec![]);
                 }
-                MockMessage::TimeoutPacket(receiver, h, s) => {
-                    current_state = self.timeout_packet(receiver, h, s, current_state)?;
+                MockMessage::TimeoutPacket(height, packet) => {
+                    let receiver = self
+                        .get_client_from_channel(&packet.channel_id)
+                        .ok_or_else(|| {
+                            Error::no_client_for_channel(
+                                packet.channel_id.clone(),
+                                self.name().to_string(),
+                            )
+                        })?;
+                    current_state = self.timeout_packet(receiver, height, packet, current_state)?;
                 }
             }
         }
