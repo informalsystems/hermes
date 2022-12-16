@@ -177,16 +177,14 @@ impl MockChainContext {
     /// was sent by the source chain. And the packet timeout is verified.
     /// Receiving a packet adds a new ChainState with the received packet information
     /// at a Height + 1.
-    pub fn receive_packet(
-        &self,
-        receiver: String,
-        height: Height,
-        packet: PacketKey,
-    ) -> Result<(), Error> {
+    pub fn receive_packet(&self, height: Height, packet: PacketKey) -> Result<(), Error> {
         // Verify that with the consensus state that the packet was sent by the source chain.
-        let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
+        let client_consensus = self.query_consensus_state_at_height(packet.client_id, height)?;
         if !client_consensus.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
-            return Err(Error::generic(eyre!("chain `{}` got a RecvPacket, but client `{}` state doesn't have the packet as sent", self.name(), receiver)));
+            return Err(Error::generic(eyre!(
+                "chain `{}` got a RecvPacket, but client state doesn't have the packet as sent",
+                self.name()
+            )));
         }
 
         // Check that the packet is not timed out. Current height < packet timeout height.
@@ -316,8 +314,8 @@ impl MockChainContext {
         let mut res = vec![];
         for m in messages {
             match m {
-                MockMessage::RecvPacket(receiver, h, p) => {
-                    self.receive_packet(receiver, h.clone(), p)?;
+                MockMessage::RecvPacket(h, p) => {
+                    self.receive_packet(h.clone(), p)?;
                     res.push(vec![Event::WriteAcknowledgment(h)]);
                 }
                 MockMessage::AckPacket(receiver, h, p) => {

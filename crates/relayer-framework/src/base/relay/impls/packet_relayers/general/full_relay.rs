@@ -6,7 +6,7 @@ use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
 use crate::base::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
-use crate::base::relay::traits::types::HasRelayTypes;
+use crate::base::relay::traits::types::{HasRelayPacketFields, HasRelayTypes};
 use crate::base::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 

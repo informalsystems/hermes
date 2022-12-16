@@ -17,11 +17,16 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event;
@@ -75,7 +80,7 @@ where
         Error::tokio(e)
     }
 
-    fn estimate_message_len(message: &CosmosIbcMessage) -> Result<usize, Error> {
+    fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
         let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(Error::encode)?;
 
         Ok(raw.encoded_len())
@@ -146,6 +151,72 @@ where
     Chain: CosmosChain,
     Counterparty: CosmosChain,
 {
+    type IncomingPacket = Packet;
+
+    type OutgoingPacket = Packet;
+
+    fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.source_channel
+    }
+
+    fn incoming_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.destination_channel
+    }
+
+    fn incoming_packet_src_port(packet: &Packet) -> &PortId {
+        &packet.source_port
+    }
+
+    fn incoming_packet_dst_port(packet: &Packet) -> &PortId {
+        &packet.destination_port
+    }
+
+    fn incoming_packet_sequence(packet: &Packet) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn incoming_packet_timeout_height(packet: &Packet) -> Option<&Height> {
+        match &packet.timeout_height {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(h) => Some(h),
+        }
+    }
+
+    fn incoming_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
+        &packet.timeout_timestamp
+    }
+
+    fn outgoing_packet_src_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.source_channel
+    }
+
+    fn outgoing_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.destination_channel
+    }
+
+    fn outgoing_packet_src_port(packet: &Packet) -> &PortId {
+        &packet.source_port
+    }
+
+    fn outgoing_packet_dst_port(packet: &Packet) -> &PortId {
+        &packet.destination_port
+    }
+
+    fn outgoing_packet_sequence(packet: &Packet) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn outgoing_packet_timeout_height(packet: &Packet) -> Option<&Height> {
+        match &packet.timeout_height {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(h) => Some(h),
+        }
+    }
+
+    fn outgoing_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
+        &packet.timeout_timestamp
+    }
+
     fn counterparty_message_height(message: &CosmosIbcMessage) -> Option<Height> {
         message.source_height
     }
@@ -231,5 +302,31 @@ where
         // Would we ever get more than one WriteAcknowledgement?
         // If so, does it matter which one we return?
         Ok(write_ack)
+    }
+
+    async fn build_receive_packet_message(
+        &self,
+        height: &Height,
+        packet: &Packet,
+    ) -> Result<CosmosIbcMessage, Self::Error> {
+        let proofs = self
+            .chain
+            .chain_handle()
+            .build_packet_proofs(
+                PacketMsgType::Recv,
+                &packet.source_port,
+                &packet.source_channel,
+                packet.sequence,
+                *height,
+            )
+            .map_err(Error::relayer)?;
+
+        let packet = packet.clone();
+
+        let message = CosmosIbcMessage::new(Some(*height), move |signer| {
+            Ok(MsgRecvPacket::new(packet.clone(), proofs.clone(), signer.clone()).to_any())
+        });
+
+        Ok(message)
     }
 }

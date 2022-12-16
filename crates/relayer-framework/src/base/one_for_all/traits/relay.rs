@@ -29,9 +29,20 @@ pub trait OfaRelayTypes: Async {
 
     type Packet: Async;
 
-    type SrcChain: OfaIbcChain<Self::DstChain, Runtime = Self::Runtime, Preset = Self::Preset>;
+    type SrcChain: OfaIbcChain<
+        Self::DstChain,
+        Runtime = Self::Runtime,
+        Preset = Self::Preset,
+        OutgoingPacket = Self::Packet,
+    >;
 
-    type DstChain: OfaIbcChain<Self::SrcChain, Runtime = Self::Runtime, Preset = Self::Preset>;
+    type DstChain: OfaIbcChain<
+        Self::SrcChain,
+        Runtime = Self::Runtime,
+        Preset = Self::Preset,
+        IncomingPacket = Self::Packet,
+        OutgoingPacket = <Self::SrcChain as OfaIbcChain<Self::DstChain>>::IncomingPacket,
+    >;
 }
 
 #[async_trait]
@@ -83,12 +94,6 @@ pub trait OfaBaseRelay: OfaRelayTypes {
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error>;
-
-    async fn build_receive_packet_message(
-        &self,
-        height: &<Self::SrcChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
-    ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error>;
 
     async fn build_ack_packet_message(
         &self,

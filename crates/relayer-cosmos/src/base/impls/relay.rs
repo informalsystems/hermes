@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
@@ -131,34 +130,6 @@ where
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
         build_update_client_messages(self.relay.src_to_dst_client(), height)
-    }
-
-    async fn build_receive_packet_message(
-        &self,
-        height: &<Self::SrcChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
-    ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error> {
-        let proofs = self
-            .src_chain
-            .chain
-            .chain
-            .chain_handle()
-            .build_packet_proofs(
-                PacketMsgType::Recv,
-                &packet.source_port,
-                &packet.source_channel,
-                packet.sequence,
-                *height,
-            )
-            .map_err(Error::relayer)?;
-
-        let packet = packet.clone();
-
-        let message = CosmosIbcMessage::new(Some(*height), move |signer| {
-            Ok(MsgRecvPacket::new(packet.clone(), proofs.clone(), signer.clone()).to_any())
-        });
-
-        Ok(message)
     }
 
     async fn build_ack_packet_message(

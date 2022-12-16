@@ -16,7 +16,11 @@ impl<Chain, Counterparty> OfaIbcChainPreset<Chain, Counterparty> for FullPreset
 where
     Chain: OfaFullChain,
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     type ConsensusStateQuerier = preset::ConsensusStateQuerier;
 }

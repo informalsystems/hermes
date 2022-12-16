@@ -107,7 +107,7 @@ pub trait OfaBaseChain: OfaChainTypes {
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
 
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
+    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
 
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
 
@@ -128,8 +128,47 @@ pub trait OfaBaseChain: OfaChainTypes {
 #[async_trait]
 pub trait OfaIbcChain<Counterparty>: OfaBaseChain
 where
-    Counterparty: OfaChainTypes,
+    Counterparty: OfaIbcChain<
+        Self,
+        IncomingPacket = Self::OutgoingPacket,
+        OutgoingPacket = Self::IncomingPacket,
+    >,
 {
+    type IncomingPacket: Async;
+
+    type OutgoingPacket: Async;
+
+    fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
+
+    fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId;
+
+    fn incoming_packet_src_port(packet: &Self::IncomingPacket) -> &Counterparty::PortId;
+
+    fn incoming_packet_dst_port(packet: &Self::IncomingPacket) -> &Self::PortId;
+
+    fn incoming_packet_sequence(packet: &Self::IncomingPacket) -> &Counterparty::Sequence;
+
+    fn incoming_packet_timeout_height(packet: &Self::IncomingPacket) -> Option<&Self::Height>;
+
+    fn incoming_packet_timeout_timestamp(packet: &Self::IncomingPacket) -> &Self::Timestamp;
+
+    fn outgoing_packet_src_channel_id(packet: &Self::OutgoingPacket) -> &Self::ChannelId;
+
+    fn outgoing_packet_dst_channel_id(packet: &Self::OutgoingPacket) -> &Counterparty::ChannelId;
+
+    fn outgoing_packet_src_port(packet: &Self::OutgoingPacket) -> &Self::PortId;
+
+    fn outgoing_packet_dst_port(packet: &Self::OutgoingPacket) -> &Counterparty::PortId;
+
+    fn outgoing_packet_sequence(packet: &Self::OutgoingPacket) -> &Self::Sequence;
+
+    fn outgoing_packet_timeout_height(
+        packet: &Self::OutgoingPacket,
+    ) -> Option<&Counterparty::Height>;
+
+    fn outgoing_packet_timeout_timestamp(packet: &Self::OutgoingPacket)
+        -> &Counterparty::Timestamp;
+
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 
     async fn query_consensus_state(
@@ -153,6 +192,12 @@ where
         counterparty_port_id: &Counterparty::PortId,
         sequence: &Counterparty::Sequence,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
+
+    async fn build_receive_packet_message(
+        &self,
+        height: &Self::Height,
+        packet: &Self::OutgoingPacket,
+    ) -> Result<Counterparty::Message, Self::Error>;
 }
 
 pub trait OfaChainPreset<Chain>
@@ -165,7 +210,11 @@ where
 pub trait OfaIbcChainPreset<Chain, Counterparty>: OfaChainPreset<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     type ConsensusStateQuerier: ConsensusStateQuerier<
         OfaChainWrapper<Chain>,

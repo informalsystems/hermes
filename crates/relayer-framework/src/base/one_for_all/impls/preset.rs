@@ -14,7 +14,11 @@ where
 impl<Chain, Counterparty> OfaIbcChainPreset<Chain, Counterparty> for MinimalPreset
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     type ConsensusStateQuerier = preset::ConsensusStateQuerier;
 }

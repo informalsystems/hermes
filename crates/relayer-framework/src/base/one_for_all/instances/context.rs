@@ -18,7 +18,11 @@ pub fn ibc_chain_context<Chain, Counterparty>(
 ) -> impl HasIbcChainTypes<OfaChainWrapper<Counterparty>>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaBaseChain,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     OfaChainWrapper::new(chain)
 }

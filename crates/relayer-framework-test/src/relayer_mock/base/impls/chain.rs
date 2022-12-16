@@ -22,6 +22,7 @@ use crate::relayer_mock::base::types::chain::MockChainStatus;
 use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
 use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
+use crate::relayer_mock::base::types::packet::PacketKey;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::contexts::chain::MockChainContext;
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
@@ -75,7 +76,7 @@ impl OfaBaseChain for MockChainContext {
     }
 
     // Only single messages are sent by the Mock Chain
-    fn estimate_message_len(_message: &Self::Message) -> Result<usize, Self::Error> {
+    fn estimate_message_size(_message: &Self::Message) -> Result<usize, Self::Error> {
         Ok(1)
     }
 
@@ -116,9 +117,69 @@ impl OfaBaseChain for MockChainContext {
 
 #[async_trait]
 impl OfaIbcChain<MockChainContext> for MockChainContext {
+    type IncomingPacket = PacketKey;
+
+    type OutgoingPacket = PacketKey;
+
+    fn incoming_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
+        &packet.channel_id
+    }
+
+    fn incoming_packet_src_port(packet: &PacketKey) -> &PortId {
+        &packet.channel_id
+    }
+
+    fn incoming_packet_dst_port(packet: &PacketKey) -> &PortId {
+        &packet.port_id
+    }
+
+    fn incoming_packet_dst_channel_id(packet: &PacketKey) -> &ChannelId {
+        &packet.channel_id
+    }
+
+    fn incoming_packet_sequence(packet: &PacketKey) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn incoming_packet_timeout_height(packet: &PacketKey) -> Option<&MockHeight> {
+        Some(&packet.timeout_height)
+    }
+
+    fn incoming_packet_timeout_timestamp(packet: &PacketKey) -> &MockTimestamp {
+        &packet.timeout_timestamp
+    }
+
+    fn outgoing_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
+        &packet.channel_id
+    }
+
+    fn outgoing_packet_src_port(packet: &PacketKey) -> &PortId {
+        &packet.channel_id
+    }
+
+    fn outgoing_packet_dst_port(packet: &PacketKey) -> &PortId {
+        &packet.port_id
+    }
+
+    fn outgoing_packet_dst_channel_id(packet: &PacketKey) -> &ChannelId {
+        &packet.channel_id
+    }
+
+    fn outgoing_packet_sequence(packet: &PacketKey) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn outgoing_packet_timeout_height(packet: &PacketKey) -> Option<&MockHeight> {
+        Some(&packet.timeout_height)
+    }
+
+    fn outgoing_packet_timeout_timestamp(packet: &PacketKey) -> &MockTimestamp {
+        &packet.timeout_timestamp
+    }
+
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
-            MockMessage::RecvPacket(_, h, _) => Some(h.clone()),
+            MockMessage::RecvPacket(h, _) => Some(h.clone()),
             MockMessage::AckPacket(_, h, _) => Some(h.clone()),
             MockMessage::TimeoutPacket(_, h, _) => Some(h.clone()),
             _ => None,
@@ -154,5 +215,21 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         _sequence: &Sequence,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
         todo!()
+    }
+
+    async fn build_receive_packet_message(
+        &self,
+        height: &MockHeight,
+        packet: &PacketKey,
+    ) -> Result<MockMessage, Error> {
+        // If the latest state of the source chain doesn't have the packet as sent, return an error.
+        let state = self.get_current_state();
+        if !state.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
+            return Err(Error::receive_without_sent(
+                self.name().to_string(),
+                self.name().to_string(),
+            ));
+        }
+        Ok(MockMessage::RecvPacket(height.clone(), packet.clone()))
     }
 }
