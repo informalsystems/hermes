@@ -9,6 +9,7 @@ pub mod chain;
 pub mod event;
 pub mod ibc;
 pub mod message;
+pub mod packet;
 
 pub use self::chain::HasChainTypes;
 pub use self::event::HasEventType;
