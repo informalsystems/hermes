@@ -1,17 +1,17 @@
 use async_trait::async_trait;
 
 use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use crate::base::runtime::traits::channel::{CanCreateChannels, CanUseChannels, HasChannelTypes};
-use crate::base::runtime::traits::channel_once::{
+use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
+use crate::full::runtime::traits::channel::{CanCreateChannels, CanUseChannels, HasChannelTypes};
+use crate::full::runtime::traits::channel_once::{
     CanCreateChannelsOnce, CanUseChannelsOnce, HasChannelOnceTypes,
 };
 use crate::std_prelude::*;
 
 impl<Runtime> HasChannelTypes for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaRuntime,
+    Runtime: OfaFullRuntime,
 {
     type Sender<T> = Runtime::Sender<T>
     where
@@ -24,7 +24,7 @@ where
 
 impl<Runtime> HasChannelOnceTypes for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaRuntime,
+    Runtime: OfaFullRuntime,
 {
     type SenderOnce<T> = Runtime::SenderOnce<T>
     where
@@ -37,7 +37,7 @@ where
 
 impl<Runtime> CanCreateChannels for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaRuntime,
+    Runtime: OfaFullRuntime,
 {
     fn new_channel<T>() -> (Self::Sender<T>, Self::Receiver<T>)
     where
@@ -49,7 +49,7 @@ where
 
 impl<Runtime> CanCreateChannelsOnce for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaRuntime,
+    Runtime: OfaFullRuntime,
 {
     fn new_channel_once<T>() -> (Self::SenderOnce<T>, Self::ReceiverOnce<T>)
     where
@@ -62,7 +62,7 @@ where
 #[async_trait]
 impl<Runtime> CanUseChannelsOnce for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaRuntime,
+    Runtime: OfaFullRuntime,
 {
     fn send_once<T>(sender: Self::SenderOnce<T>, value: T) -> Result<(), Self::Error>
     where
@@ -82,7 +82,7 @@ where
 #[async_trait]
 impl<Runtime> CanUseChannels for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaRuntime,
+    Runtime: OfaFullRuntime,
 {
     fn send<T>(sender: &Self::Sender<T>, value: T) -> Result<(), Self::Error>
     where
