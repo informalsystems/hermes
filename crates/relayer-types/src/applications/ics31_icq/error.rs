@@ -26,6 +26,9 @@ define_error! {
 
         Proof
             | _ | { "Proof not found" },
+
+        ProtoEncode
+            | _ | { "Failed to encode " },
     }
 }
 

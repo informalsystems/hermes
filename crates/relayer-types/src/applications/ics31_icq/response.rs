@@ -1,11 +1,15 @@
+use crate::applications::ics31_icq::error::Error;
 use crate::signer::Signer;
 
-use crate::applications::ics31_icq::proto::MsgSubmitQueryResponse;
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::stride::interchainquery::v1::MsgSubmitQueryResponse;
+use prost::Message;
 use std::prelude::v1::*;
 use std::vec;
 use tendermint::merkle::proof::ProofOps as TendermintProofOps;
 use tendermint_proto::crypto::{ProofOp, ProofOps};
+
+pub const TYPE_URL: &str = "/stride.interchainquery.v1.MsgSubmitQueryResponse";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrossChainQueryResponse {
@@ -47,7 +51,7 @@ impl CrossChainQueryResponse {
         }
     }
 
-    pub fn to_any(&self, signer: Signer, type_url: &str) -> Any {
+    pub fn try_to_any(&self, signer: Signer) -> Result<Any, Error> {
         let mut encoded = vec![];
 
         let msg_submit_cross_chain_query_result = MsgSubmitQueryResponse {
@@ -59,10 +63,13 @@ impl CrossChainQueryResponse {
             from_address: signer.as_ref().to_string(),
         };
 
-        prost::Message::encode(&msg_submit_cross_chain_query_result, &mut encoded).unwrap();
-        Any {
-            type_url: type_url.to_string(),
+        msg_submit_cross_chain_query_result
+            .encode(&mut encoded)
+            .map_err(|_| Error::proto_encode())?;
+
+        Ok(Any {
+            type_url: TYPE_URL.to_string(),
             value: encoded,
-        }
+        })
     }
 }

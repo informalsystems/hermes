@@ -110,18 +110,23 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                     .wait_and_build_update_client(target_height)
                     .map_err(|_| TaskError::Fatal(RunError::query()))?;
 
-                cross_chain_query_responses.iter().for_each(|response| {
+                for response in cross_chain_query_responses {
                     info!("response arrived: query_id: {}", response.query_id);
                     // After updating client, send response tx to querying chain
-                    chain_a_msgs.push(response.to_any(
-                        chain_a_handle.get_signer().unwrap(),
-                        ibc_relayer_types::applications::ics31_icq::proto::TYPE_URL,
-                    ));
-                });
+                    chain_a_msgs.push(
+                        response
+                            .try_to_any(
+                                chain_a_handle
+                                    .get_signer()
+                                    .map_err(|_| TaskError::Fatal(RunError::query()))?,
+                            )
+                            .map_err(|_| TaskError::Fatal(RunError::query()))?,
+                    );
+                }
 
                 chain_a_handle
                     .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(
-                        chain_a_msgs,
+                        chain_a_msgs.clone(),
                         Uuid::new_v4(),
                     ))
                     .map_err(|_| TaskError::Ignore(RunError::query()))?;
