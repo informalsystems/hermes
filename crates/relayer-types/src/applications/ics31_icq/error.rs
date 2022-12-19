@@ -28,7 +28,7 @@ define_error! {
             | _ | { "Proof not found" },
 
         ProtoEncode
-            | _ | { "Failed to encode " },
+            | _ | { "Failed to encode interchain query Protobuf" },
     }
 }
 
