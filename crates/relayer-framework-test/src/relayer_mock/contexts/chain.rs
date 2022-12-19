@@ -254,7 +254,10 @@ impl MockChainContext {
             &packet.dst_channel_id,
             &packet.sequence,
         ) {
-            return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
+            return Err(Error::generic(eyre!(
+                "chain `{}` got a AckPacket, but client state doesn't have the packet as received",
+                self.name()
+            )));
         }
 
         // Update the current state with the newly received acknowledgement
@@ -271,7 +274,6 @@ impl MockChainContext {
     /// information at a Height + 1.
     pub fn timeout_packet(
         &self,
-        receiver: String,
         height: Height,
         packet: PacketKey,
         mut current_state: State,
@@ -288,7 +290,10 @@ impl MockChainContext {
             &packet.dst_channel_id,
             &packet.sequence,
         ) {
-            return Err(Error::generic(eyre!("chain `{}` got a TimeoutPacket, but client `{}` state received the packet as received", self.name(), receiver)));
+            return Err(Error::generic(eyre!(
+                "chain `{}` got a TimeoutPacket, but client state received the packet as received",
+                self.name()
+            )));
         }
 
         // Update the current state with the newly received timeout
