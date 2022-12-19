@@ -10,7 +10,7 @@
 //! * The ChainStatus is a ConsensusState with a Height and Timestamp.
 
 use alloc::boxed::Box;
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
 use async_trait::async_trait;
 
@@ -122,19 +122,19 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
     type OutgoingPacket = PacketKey;
 
     fn incoming_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
-        &packet.channel_id
+        &packet.src_channel_id
     }
 
     fn incoming_packet_src_port(packet: &PacketKey) -> &PortId {
-        &packet.channel_id
+        &packet.src_port_id
     }
 
     fn incoming_packet_dst_port(packet: &PacketKey) -> &PortId {
-        &packet.port_id
+        &packet.dst_port_id
     }
 
     fn incoming_packet_dst_channel_id(packet: &PacketKey) -> &ChannelId {
-        &packet.channel_id
+        &packet.dst_channel_id
     }
 
     fn incoming_packet_sequence(packet: &PacketKey) -> &Sequence {
@@ -150,19 +150,19 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
     }
 
     fn outgoing_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
-        &packet.channel_id
+        &packet.src_channel_id
     }
 
     fn outgoing_packet_src_port(packet: &PacketKey) -> &PortId {
-        &packet.channel_id
+        &packet.src_port_id
     }
 
     fn outgoing_packet_dst_port(packet: &PacketKey) -> &PortId {
-        &packet.port_id
+        &packet.dst_port_id
     }
 
     fn outgoing_packet_dst_channel_id(packet: &PacketKey) -> &ChannelId {
-        &packet.channel_id
+        &packet.dst_channel_id
     }
 
     fn outgoing_packet_sequence(packet: &PacketKey) -> &Sequence {
@@ -224,7 +224,11 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
     ) -> Result<MockMessage, Error> {
         // If the latest state of the source chain doesn't have the packet as sent, return an error.
         let state = self.get_current_state();
-        if !state.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
+        if !state.check_sent(
+            &packet.src_port_id,
+            &packet.src_channel_id,
+            &packet.sequence,
+        ) {
             return Err(Error::receive_without_sent(
                 self.name().to_string(),
                 self.name().to_string(),

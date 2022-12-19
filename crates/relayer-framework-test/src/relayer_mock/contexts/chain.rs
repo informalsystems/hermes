@@ -17,9 +17,7 @@ use std::vec;
 use std::{collections::HashMap, sync::Arc};
 
 use crate::relayer_mock::base::error::Error;
-use crate::relayer_mock::base::types::aliases::{
-    ChainState, ChannelId, ClientId, MockTimestamp, PortId, Sequence,
-};
+use crate::relayer_mock::base::types::aliases::{ChainState, ChannelId, ClientId, MockTimestamp};
 use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
@@ -199,7 +197,12 @@ impl MockChainContext {
         mut current_state: State,
     ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was sent by the source chain.
-        let client_consensus = self.query_consensus_state_at_height(packet.client_id, height)?;
+        let client_id = self
+            .get_client_from_channel(&packet.dst_channel_id)
+            .ok_or_else(|| {
+                Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
+            })?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
         if !client_consensus.check_sent(
             &packet.src_port_id,
             &packet.src_channel_id,
@@ -235,13 +238,17 @@ impl MockChainContext {
     /// information at a Height + 1.
     pub fn acknowledge_packet(
         &self,
-        receiver: String,
         height: Height,
         packet: PacketKey,
         mut current_state: State,
     ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was received by the destination chain.
-        let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
+        let client_id = self
+            .get_client_from_channel(&packet.src_channel_id)
+            .ok_or_else(|| {
+                Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
+            })?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
         if !client_consensus.check_received(
             &packet.dst_port_id,
             &packet.dst_channel_id,
@@ -270,7 +277,12 @@ impl MockChainContext {
         mut current_state: State,
     ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was not received by the destination chain.
-        let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
+        let client_id = self
+            .get_client_from_channel(&packet.src_channel_id)
+            .ok_or_else(|| {
+                Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
+            })?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
         if client_consensus.check_received(
             &packet.dst_port_id,
             &packet.dst_channel_id,
@@ -348,29 +360,11 @@ impl MockChainContext {
         for m in messages {
             match m {
                 MockMessage::RecvPacket(height, packet) => {
-                    let receiver = self
-                        .get_client_from_channel(&packet.dst_channel_id)
-                        .ok_or_else(|| {
-                            Error::no_client_for_channel(
-                                packet.dst_channel_id.clone(),
-                                self.name().to_string(),
-                            )
-                        })?;
-                    current_state =
-                        self.receive_packet(receiver, height.clone(), packet, current_state)?;
+                    current_state = self.receive_packet(height.clone(), packet, current_state)?;
                     res.push(vec![Event::WriteAcknowledgment(height)]);
                 }
                 MockMessage::AckPacket(height, packet) => {
-                    let receiver = self
-                        .get_client_from_channel(&packet.src_channel_id)
-                        .ok_or_else(|| {
-                            Error::no_client_for_channel(
-                                packet.src_channel_id.clone(),
-                                self.name().to_string(),
-                            )
-                        })?;
-                    current_state =
-                        self.acknowledge_packet(receiver, height, packet, current_state)?;
+                    current_state = self.acknowledge_packet(height, packet, current_state)?;
                     res.push(vec![]);
                 }
                 MockMessage::UpdateClient(client_id, height, state) => {
@@ -378,15 +372,7 @@ impl MockChainContext {
                     res.push(vec![]);
                 }
                 MockMessage::TimeoutPacket(height, packet) => {
-                    let receiver = self
-                        .get_client_from_channel(&packet.src_channel_id)
-                        .ok_or_else(|| {
-                            Error::no_client_for_channel(
-                                packet.src_channel_id.clone(),
-                                self.name().to_string(),
-                            )
-                        })?;
-                    current_state = self.timeout_packet(receiver, height, packet, current_state)?;
+                    current_state = self.timeout_packet(height, packet, current_state)?;
                 }
             }
         }
