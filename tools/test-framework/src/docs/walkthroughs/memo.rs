@@ -20,7 +20,7 @@
 //!     memo: Memo,
 //! }
 //!
-//! impl:TestOverrides for MemoTest {
+//! impl TestOverrides for MemoTest {
 //!     fn modify_relayer_config(&self, config: &mut Config) {
 //!         for mut chain in config.chains.iter_mut() {
 //!             chain.memo_prefix = self.memo.clone();
