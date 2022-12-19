@@ -6,7 +6,6 @@ use ibc_relayer_types::signer::Signer;
 
 use crate::base::traits::chain::CosmosChain;
 
-#[derive(Clone)]
 pub struct MinCosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,

@@ -9,12 +9,12 @@ use tokio::time::sleep;
 use tracing;
 
 use ibc_relayer_framework::base::core::traits::sync::Async;
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntime;
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use ibc_relayer_framework::base::one_for_all::types::runtime::LogLevel;
+use ibc_relayer_framework::full::one_for_all::traits::runtime::OfaFullRuntime;
 
 use super::error::Error as TokioError;
 
-#[derive(Clone)]
 pub struct TokioRuntimeContext {
     pub runtime: Arc<Runtime>,
 }
@@ -26,26 +26,10 @@ impl TokioRuntimeContext {
 }
 
 #[async_trait]
-impl OfaRuntime for TokioRuntimeContext {
+impl OfaBaseRuntime for TokioRuntimeContext {
     type Error = TokioError;
 
     type Time = Instant;
-
-    type Sender<T> = mpsc::UnboundedSender<T>
-    where
-        T: Async;
-
-    type Receiver<T> = Arc<Mutex<mpsc::UnboundedReceiver<T>>>
-    where
-        T: Async;
-
-    type SenderOnce<T> = oneshot::Sender<T>
-    where
-        T: Async;
-
-    type ReceiverOnce<T> = oneshot::Receiver<T>
-    where
-        T: Async;
 
     async fn log(&self, level: LogLevel, message: &str) {
         match level {
@@ -68,6 +52,25 @@ impl OfaRuntime for TokioRuntimeContext {
     fn duration_since(time: &Instant, other: &Instant) -> Duration {
         time.duration_since(*other)
     }
+}
+
+#[async_trait]
+impl OfaFullRuntime for TokioRuntimeContext {
+    type Sender<T> = mpsc::UnboundedSender<T>
+    where
+        T: Async;
+
+    type Receiver<T> = Arc<Mutex<mpsc::UnboundedReceiver<T>>>
+    where
+        T: Async;
+
+    type SenderOnce<T> = oneshot::Sender<T>
+    where
+        T: Async;
+
+    type ReceiverOnce<T> = oneshot::Receiver<T>
+    where
+        T: Async;
 
     fn spawn<F>(&self, task: F)
     where

@@ -2,21 +2,21 @@ use alloc::collections::VecDeque;
 use core::marker::PhantomData;
 use core::mem;
 
-use crate::base::chain::traits::types::HasIbcChainTypes;
+use crate::base::chain::traits::types::{CanEstimateMessageSize, HasIbcChainTypes};
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::channel::{CanUseChannels, HasChannelTypes};
-use crate::base::runtime::traits::channel_once::{CanUseChannelsOnce, HasChannelOnceTypes};
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
-use crate::base::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::base::runtime::traits::time::HasTime;
 use crate::full::batch::traits::channel::HasMessageBatchReceiver;
 use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use crate::full::batch::types::aliases::{BatchSubmission, EventResultSender};
 use crate::full::batch::types::config::BatchConfig;
+use crate::full::runtime::traits::channel::{CanUseChannels, HasChannelTypes};
+use crate::full::runtime::traits::channel_once::{CanUseChannelsOnce, HasChannelOnceTypes};
+use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
 pub struct BatchMessageWorker<Relay, Target>
@@ -38,12 +38,13 @@ where
     Relay: HasRelayTypes<Error = Error>,
     Relay: HasMessageBatchReceiver<Target>,
     Relay: HasRuntime<Runtime = Runtime>,
+    TargetChain: CanEstimateMessageSize,
     TargetChain: HasRuntime<Runtime = Runtime>,
+    TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Runtime: CanUseChannelsOnce + CanUseChannels,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
-    TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
     Event: Async,
     Error: Clone + Async,
     Message: Async,
@@ -215,7 +216,7 @@ where
             .map(|message| {
                 // return 0 on encoding error, as we don't want
                 // the batching operation to error out.
-                TargetChain::estimate_message_len(message).unwrap_or(0)
+                TargetChain::estimate_message_size(message).unwrap_or(0)
             })
             .sum()
     }

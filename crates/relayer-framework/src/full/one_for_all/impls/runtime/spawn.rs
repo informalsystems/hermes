@@ -1,11 +1,11 @@
 use core::future::Future;
 
-use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use crate::base::runtime::traits::spawn::{HasSpawner, Spawner};
+use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
+use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
-impl<Runtime: OfaRuntime> HasSpawner for OfaRuntimeWrapper<Runtime> {
+impl<Runtime: OfaFullRuntime> HasSpawner for OfaRuntimeWrapper<Runtime> {
     type Spawner = Self;
 
     fn spawner(&self) -> Self::Spawner {
@@ -13,7 +13,7 @@ impl<Runtime: OfaRuntime> HasSpawner for OfaRuntimeWrapper<Runtime> {
     }
 }
 
-impl<Runtime: OfaRuntime> Spawner for OfaRuntimeWrapper<Runtime> {
+impl<Runtime: OfaFullRuntime> Spawner for OfaRuntimeWrapper<Runtime> {
     fn spawn<F>(&self, task: F)
     where
         F: Future + Send + 'static,

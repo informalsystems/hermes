@@ -4,7 +4,6 @@ use crate::base::traits::relay::CosmosRelay;
 use alloc::sync::Arc;
 use ibc_relayer::foreign_client::ForeignClient;
 
-#[derive(Clone)]
 pub struct MinCosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: CosmosChain,

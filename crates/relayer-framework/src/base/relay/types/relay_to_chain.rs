@@ -2,7 +2,9 @@ use async_trait::async_trait;
 use core::marker::PhantomData;
 
 use crate::base::chain::traits::message_sender::CanSendMessages;
-use crate::base::chain::traits::types::{HasChainTypes, HasEventType, HasMessageType};
+use crate::base::chain::traits::types::{
+    CanEstimateMessageSize, HasChainTypes, HasEventType, HasMessageType,
+};
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -51,9 +53,16 @@ where
     Target: ChainTarget<Relay>,
 {
     type Message = <Target::TargetChain as HasMessageType>::Message;
+}
 
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Target::TargetChain::estimate_message_len(message).map_err(Target::target_chain_error)
+impl<Relay, Target> CanEstimateMessageSize for RelayToChain<Relay, Target>
+where
+    Relay: HasRelayTypes,
+    Target: ChainTarget<Relay>,
+    Target::TargetChain: CanEstimateMessageSize,
+{
+    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error> {
+        Target::TargetChain::estimate_message_size(message).map_err(Target::target_chain_error)
     }
 }
 

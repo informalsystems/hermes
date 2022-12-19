@@ -6,7 +6,6 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::chain::CosmosChainWrapper;
 
-#[derive(Clone)]
 pub struct CosmosRelayWrapper<Relay: CosmosRelay> {
     pub relay: Arc<Relay>,
     pub src_chain: OfaChainWrapper<CosmosChainWrapper<Relay::SrcChain>>,
@@ -15,7 +14,7 @@ pub struct CosmosRelayWrapper<Relay: CosmosRelay> {
 }
 
 impl<Relay: CosmosRelay> CosmosRelayWrapper<Relay> {
-    pub fn new(relay: Arc<Relay>, runtime: TokioRuntimeContext) -> Self {
+    pub fn new(relay: Arc<Relay>, runtime: OfaRuntimeWrapper<TokioRuntimeContext>) -> Self {
         let src_chain = OfaChainWrapper::new(CosmosChainWrapper::new(
             relay.src_chain().clone(),
             runtime.clone(),
@@ -25,8 +24,6 @@ impl<Relay: CosmosRelay> CosmosRelayWrapper<Relay> {
             relay.dst_chain().clone(),
             runtime.clone(),
         ));
-
-        let runtime = OfaRuntimeWrapper::new(runtime);
 
         Self {
             relay,

@@ -5,8 +5,8 @@
 
 use crate::base::all_for_one::chain::AfoBaseChain;
 use crate::base::all_for_one::relay::AfoBaseRelay;
+use crate::base::one_for_all::traits::chain::OfaIbcChain;
 use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::relay::OfaRelayPreset;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
@@ -31,9 +31,12 @@ pub fn afo_chain_context<Chain, Counterparty, Preset>(
     chain: OfaChainWrapper<Chain>,
 ) -> impl AfoBaseChain<OfaChainWrapper<Counterparty>>
 where
-    Chain: OfaBaseChain<Preset = Preset>,
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaIbcChain<Counterparty, Preset = Preset>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
     Preset: OfaIbcChainPreset<Chain, Counterparty>,
 {
     chain

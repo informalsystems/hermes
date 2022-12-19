@@ -3,6 +3,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_framework::full::batch::impls::spawn::BatchMessageWorkerSpawner;
 use ibc_relayer_framework::full::batch::traits::spawn::CanSpawnBatchMessageWorker;
@@ -18,7 +19,6 @@ use crate::contexts::full::chain::FullCosmosChainContext;
 use crate::full::traits::relay::CosmosFullRelay;
 use crate::full::types::batch::{CosmosBatchReceiver, CosmosBatchSender};
 
-#[derive(Clone)]
 pub struct FullCosmosRelay<SrcChain, DstChain>
 where
     SrcChain: CosmosChain,
@@ -86,7 +86,7 @@ where
 }
 
 pub fn new_relay_context_with_batch<SrcChain, DstChain>(
-    runtime: TokioRuntimeContext,
+    runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
     src_chain: FullCosmosChainContext<SrcChain>,
     dst_chain: FullCosmosChainContext<DstChain>,
     src_to_dst_client: ForeignClient<DstChain, SrcChain>,

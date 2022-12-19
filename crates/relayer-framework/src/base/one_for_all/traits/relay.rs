@@ -8,7 +8,7 @@ use core::fmt::Debug;
 use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
-use crate::base::one_for_all::traits::runtime::OfaRuntime;
+use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -25,18 +25,29 @@ pub trait OfaRelayTypes: Async {
     */
     type Error: Async + Debug;
 
-    type Runtime: OfaRuntime;
+    type Runtime: OfaBaseRuntime;
 
     type Packet: Async;
 
-    type SrcChain: OfaIbcChain<Self::DstChain, Runtime = Self::Runtime, Preset = Self::Preset>;
+    type SrcChain: OfaIbcChain<
+        Self::DstChain,
+        Runtime = Self::Runtime,
+        Preset = Self::Preset,
+        OutgoingPacket = Self::Packet,
+    >;
 
-    type DstChain: OfaIbcChain<Self::SrcChain, Runtime = Self::Runtime, Preset = Self::Preset>;
+    type DstChain: OfaIbcChain<
+        Self::SrcChain,
+        Runtime = Self::Runtime,
+        Preset = Self::Preset,
+        IncomingPacket = Self::Packet,
+        OutgoingPacket = <Self::SrcChain as OfaIbcChain<Self::DstChain>>::IncomingPacket,
+    >;
 }
 
 #[async_trait]
 pub trait OfaBaseRelay: OfaRelayTypes {
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+    fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
 
     fn src_chain_error(e: <Self::SrcChain as OfaChainTypes>::Error) -> Self::Error;
 
@@ -83,12 +94,6 @@ pub trait OfaBaseRelay: OfaRelayTypes {
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error>;
-
-    async fn build_receive_packet_message(
-        &self,
-        height: &<Self::SrcChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
-    ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error>;
 
     async fn build_ack_packet_message(
         &self,

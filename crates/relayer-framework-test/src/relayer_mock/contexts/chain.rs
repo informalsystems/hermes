@@ -17,7 +17,9 @@ use std::vec;
 use std::{collections::HashMap, sync::Arc};
 
 use crate::relayer_mock::base::error::Error;
-use crate::relayer_mock::base::types::aliases::{ChainState, ChannelId, ClientId, MockTimestamp};
+use crate::relayer_mock::base::types::aliases::{
+    ChainState, ChannelId, ClientId, MockTimestamp, PortId, Sequence,
+};
 use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
@@ -154,6 +156,7 @@ impl MockChainContext {
         };
         // Update the Consensus States of the Chain.
         locked_consensus_states.insert(client_id, client_consensus_states);
+
         Ok(())
     }
 
@@ -191,19 +194,21 @@ impl MockChainContext {
     /// at a Height + 1.
     pub fn receive_packet(
         &self,
-        receiver: String,
         height: Height,
         packet: PacketKey,
         mut current_state: State,
     ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was sent by the source chain.
-        let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
+        let client_consensus = self.query_consensus_state_at_height(packet.client_id, height)?;
         if !client_consensus.check_sent(
             &packet.src_port_id,
             &packet.src_channel_id,
             &packet.sequence,
         ) {
-            return Err(Error::generic(eyre!("chain `{}` got a RecvPacket, but client `{}` state doesn't have the packet as sent", self.name(), receiver)));
+            return Err(Error::generic(eyre!(
+                "chain `{}` got a RecvPacket, but client state doesn't have the packet as sent",
+                self.name()
+            )));
         }
 
         // Check that the packet is not timed out. Current height < packet timeout height.

@@ -1,10 +1,10 @@
 use core::time::Duration;
 
-use crate::base::one_for_all::traits::runtime::OfaRuntime;
+use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::base::runtime::traits::time::HasTime;
 
-impl<Runtime: OfaRuntime> HasTime for OfaRuntimeWrapper<Runtime> {
+impl<Runtime: OfaBaseRuntime> HasTime for OfaRuntimeWrapper<Runtime> {
     type Time = Runtime::Time;
 
     fn now(&self) -> Self::Time {

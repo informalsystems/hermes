@@ -1,6 +1,7 @@
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::traits::types::{
-    HasChainTypes, HasEventType, HasIbcChainTypes, HasMessageType,
+    CanEstimateMessageSize, HasChainTypes, HasEventType, HasIbcChainTypes, HasIbcPacketTypes,
+    HasMessageType,
 };
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
@@ -27,9 +28,11 @@ impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
 
 impl<Chain: OfaBaseChain> HasMessageType for OfaChainWrapper<Chain> {
     type Message = Chain::Message;
+}
 
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Chain::estimate_message_len(message)
+impl<Chain: OfaBaseChain> CanEstimateMessageSize for OfaChainWrapper<Chain> {
+    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error> {
+        Chain::estimate_message_size(message)
     }
 }
 
@@ -46,7 +49,11 @@ impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
 impl<Chain, Counterparty> HasIbcChainTypes<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaBaseChain,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     type ClientId = Chain::ClientId;
 
@@ -63,10 +70,89 @@ where
     }
 }
 
+impl<Chain, Counterparty> HasIbcPacketTypes<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
+{
+    type IncomingPacket = Chain::IncomingPacket;
+
+    type OutgoingPacket = Chain::OutgoingPacket;
+
+    fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId {
+        Chain::incoming_packet_src_channel_id(packet)
+    }
+
+    fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId {
+        Chain::incoming_packet_dst_channel_id(packet)
+    }
+
+    fn incoming_packet_src_port(packet: &Self::IncomingPacket) -> &Counterparty::PortId {
+        Chain::incoming_packet_src_port(packet)
+    }
+
+    fn incoming_packet_dst_port(packet: &Self::IncomingPacket) -> &Self::PortId {
+        Chain::incoming_packet_dst_port(packet)
+    }
+
+    fn incoming_packet_sequence(packet: &Self::IncomingPacket) -> &Counterparty::Sequence {
+        Chain::incoming_packet_sequence(packet)
+    }
+
+    fn incoming_packet_timeout_height(packet: &Self::IncomingPacket) -> Option<&Self::Height> {
+        Chain::incoming_packet_timeout_height(packet)
+    }
+
+    fn incoming_packet_timeout_timestamp(packet: &Self::IncomingPacket) -> &Self::Timestamp {
+        Chain::incoming_packet_timeout_timestamp(packet)
+    }
+
+    fn outgoing_packet_src_channel_id(packet: &Self::OutgoingPacket) -> &Self::ChannelId {
+        Chain::outgoing_packet_src_channel_id(packet)
+    }
+
+    fn outgoing_packet_dst_channel_id(packet: &Self::OutgoingPacket) -> &Counterparty::ChannelId {
+        Chain::outgoing_packet_dst_channel_id(packet)
+    }
+
+    fn outgoing_packet_src_port(packet: &Self::OutgoingPacket) -> &Self::PortId {
+        Chain::outgoing_packet_src_port(packet)
+    }
+
+    fn outgoing_packet_dst_port(packet: &Self::OutgoingPacket) -> &Counterparty::PortId {
+        Chain::outgoing_packet_dst_port(packet)
+    }
+
+    fn outgoing_packet_sequence(packet: &Self::OutgoingPacket) -> &Self::Sequence {
+        Chain::outgoing_packet_sequence(packet)
+    }
+
+    fn outgoing_packet_timeout_height(
+        packet: &Self::OutgoingPacket,
+    ) -> Option<&Counterparty::Height> {
+        Chain::outgoing_packet_timeout_height(packet)
+    }
+
+    fn outgoing_packet_timeout_timestamp(
+        packet: &Self::OutgoingPacket,
+    ) -> &Counterparty::Timestamp {
+        Chain::outgoing_packet_timeout_timestamp(packet)
+    }
+}
+
 impl<Chain, Counterparty> HasIbcEvents<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaBaseChain,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
 {
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 
