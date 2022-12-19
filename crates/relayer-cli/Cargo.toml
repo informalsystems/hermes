@@ -69,10 +69,10 @@ features = ["http-client", "websocket-client"]
 version = "0.28.0"
 
 [dependencies.abscissa_core]
-version = "=0.6.0"
+version = "=0.7.0"
 features = ["options"]
 
 [dev-dependencies]
-abscissa_core = { version = "=0.6.0", features = ["testing"] }
+abscissa_core = { version = "=0.7.0", features = ["testing"] }
 once_cell = "1.16"
 regex = "1.5"
