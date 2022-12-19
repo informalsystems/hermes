@@ -30,6 +30,6 @@ ____
 
 #### For Admin Use
 
-- [ ] 'tracking' or 'okr' label (as well as any other appropriate labels) applied
+- [ ] https://github.com/informalsystems/hermes/labels/tracking or https://github.com/informalsystems/hermes/labels/okr label (as well as any other appropriate labels) applied
 - [ ] Appropriate milestone (priority) applied
 - [ ] Appropriate contributors tagged
