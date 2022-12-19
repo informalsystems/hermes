@@ -126,7 +126,7 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                 chain_a_handle
                     .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(
-                        chain_a_msgs.clone(),
+                        chain_a_msgs,
                         Uuid::new_v4(),
                     ))
                     .map_err(|_| TaskError::Ignore(RunError::query()))?;
