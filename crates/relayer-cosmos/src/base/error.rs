@@ -43,7 +43,10 @@ define_error! {
 
         TxNoResponse
             { tx_hash: TxHash }
-            | e | { format_args!("failed to receive tx response for tx hash: {}", e.tx_hash) }
+            | e | { format_args!("failed to receive tx response for tx hash: {}", e.tx_hash) },
+
+        MissingSimulateGasInfo
+            | _ | { "missing gas info returned from send_tx_simulate" },
     }
 }
 

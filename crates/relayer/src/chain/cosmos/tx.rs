@@ -48,7 +48,7 @@ async fn send_tx_with_fee(
 }
 
 /// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
-async fn broadcast_tx_sync(
+pub async fn broadcast_tx_sync(
     rpc_client: &HttpClient,
     rpc_address: &Url,
     tx: SignedTx,

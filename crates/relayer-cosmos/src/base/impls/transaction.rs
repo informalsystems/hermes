@@ -1,8 +1,14 @@
 use async_trait::async_trait;
 use core::time::Duration;
-use ibc_proto::cosmos::tx::v1beta1::{Fee, SignerInfo, TxRaw};
-use ibc_relayer::chain::cosmos::types::account::AccountSequence;
+use ibc_proto::cosmos::tx::v1beta1::{Fee, TxRaw};
+use ibc_relayer::chain::cosmos::encode::{key_pair_to_signer, sign_tx};
+use ibc_relayer::chain::cosmos::gas::gas_amount_to_fee;
+use ibc_relayer::chain::cosmos::simulate::send_tx_simulate;
+use ibc_relayer::chain::cosmos::tx::broadcast_tx_sync;
+use ibc_relayer::chain::cosmos::types::account::Account;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
+use ibc_relayer::config::types::Memo;
+use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_framework::base::one_for_all::traits::transaction::{OfaTxContext, OfaTxTypes};
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
@@ -32,11 +38,11 @@ where
 
     type Transaction = SignedTx;
 
-    type Nonce = AccountSequence;
+    type Nonce = Account;
 
     type Fee = Fee;
 
-    type Signer = SignerInfo;
+    type Signer = Secp256k1KeyPair;
 
     type TxHash = TxHash;
 
@@ -71,7 +77,7 @@ where
     }
 
     fn get_signer(&self) -> &Self::Signer {
-        todo!()
+        self.chain.key_entry()
     }
 
     fn fee_for_simulation(&self) -> &Self::Fee {
@@ -88,20 +94,50 @@ where
 
     async fn encode_tx(
         &self,
-        signer: &Self::Signer,
-        nonce: &Self::Nonce,
-        fee: &Self::Fee,
-        messages: &[Self::Message],
-    ) -> Result<Self::Transaction, Error> {
-        todo!()
+        key_pair: &Secp256k1KeyPair,
+        account: &Account,
+        fee: &Fee,
+        messages: &[CosmosIbcMessage],
+    ) -> Result<SignedTx, Error> {
+        let tx_config = self.chain.tx_config();
+        let memo = Memo::default();
+        let signer = key_pair_to_signer(key_pair).map_err(Error::relayer)?;
+
+        let raw_messages = messages
+            .into_iter()
+            .map(|message| (message.to_protobuf_fn)(&signer).map_err(Error::encode))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let signed_tx = sign_tx(tx_config, key_pair, account, &memo, &raw_messages, fee)
+            .map_err(Error::relayer)?;
+
+        Ok(signed_tx)
     }
 
-    async fn submit_tx(&self, tx: &Self::Transaction) -> Result<TxHash, Error> {
-        todo!()
+    async fn submit_tx(&self, tx: &SignedTx) -> Result<TxHash, Error> {
+        let tx_config = self.chain.tx_config();
+
+        let response = broadcast_tx_sync(&tx_config.rpc_client, &tx_config.rpc_address, tx.clone())
+            .await
+            .map_err(Error::relayer)?;
+
+        Ok(response.hash)
     }
 
-    async fn estimate_tx_fee(&self, tx: &Self::Transaction) -> Result<Fee, Error> {
-        todo!()
+    async fn estimate_tx_fee(&self, tx: &SignedTx) -> Result<Fee, Error> {
+        let tx_config = self.chain.tx_config();
+
+        let response = send_tx_simulate(&tx_config.grpc_address, tx.clone())
+            .await
+            .map_err(Error::relayer)?;
+
+        let gas_info = response
+            .gas_info
+            .ok_or_else(Error::missing_simulate_gas_info)?;
+
+        let fee = gas_amount_to_fee(&tx_config.gas_config, gas_info.gas_used);
+
+        Ok(fee)
     }
 
     async fn query_tx_response(&self, tx_hash: &TxHash) -> Result<Option<TxResponse>, Error> {
