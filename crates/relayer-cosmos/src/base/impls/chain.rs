@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
@@ -9,6 +8,7 @@ use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
+use ibc_relayer_framework::base::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
@@ -119,18 +119,7 @@ where
         &self,
         messages: Vec<CosmosIbcMessage>,
     ) -> Result<Vec<Vec<Event>>, Error> {
-        let signer = self.chain.signer();
-
-        let raw_messages = messages
-            .into_iter()
-            .map(|message| (message.to_protobuf_fn)(signer).map_err(Error::encode))
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let events = simple_send_tx(self.chain.tx_config(), self.chain.key_entry(), raw_messages)
-            .await
-            .map_err(Error::relayer)?;
-
-        Ok(events)
+        self.tx_context.send_messages(messages).await
     }
 
     async fn query_chain_status(&self) -> Result<ChainStatus, Self::Error> {
