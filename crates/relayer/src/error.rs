@@ -23,7 +23,9 @@ use tonic::{
 };
 
 use ibc_relayer_types::{
-    applications::ics29_fee::error::Error as FeeError,
+    applications::{
+        ics29_fee::error::Error as FeeError, ics31_icq::error::Error as CrossChainQueryError,
+    },
     clients::ics07_tendermint::error as tendermint_error,
     core::{
         ics02_client::{client_type::ClientType, error as client_error},
@@ -285,6 +287,10 @@ define_error! {
         Ics29
             [ FeeError ]
             | _ | { "ICS 29 error" },
+
+        Ics31
+            [ CrossChainQueryError ]
+            | _ | {"ICS 31 error"},
 
         InvalidUri
             { uri: String }
