@@ -2,13 +2,16 @@ use async_trait::async_trait;
 use core::time::Duration;
 use ibc_proto::cosmos::tx::v1beta1::{Fee, TxRaw};
 use ibc_relayer::chain::cosmos::encode::{key_pair_to_signer, sign_tx};
+use ibc_relayer::chain::cosmos::event::split_events_by_messages;
 use ibc_relayer::chain::cosmos::gas::gas_amount_to_fee;
+use ibc_relayer::chain::cosmos::query::account::query_account;
+use ibc_relayer::chain::cosmos::query::tx::query_tx_response;
 use ibc_relayer::chain::cosmos::simulate::send_tx_simulate;
 use ibc_relayer::chain::cosmos::tx::broadcast_tx_sync;
 use ibc_relayer::chain::cosmos::types::account::Account;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::types::Memo;
-use ibc_relayer::keyring::Secp256k1KeyPair;
+use ibc_relayer::keyring::{Secp256k1KeyPair, SigningKeyPair};
 use ibc_relayer_framework::base::one_for_all::traits::transaction::{OfaTxContext, OfaTxTypes};
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
@@ -141,18 +144,33 @@ where
     }
 
     async fn query_tx_response(&self, tx_hash: &TxHash) -> Result<Option<TxResponse>, Error> {
-        todo!()
+        let tx_config = self.chain.tx_config();
+
+        let response = query_tx_response(&tx_config.rpc_client, &tx_config.rpc_address, tx_hash)
+            .await
+            .map_err(Error::relayer)?;
+
+        Ok(response)
     }
 
-    async fn query_nonce(&self, signer: &Self::Signer) -> Result<Self::Nonce, Error> {
-        todo!()
+    async fn query_nonce(&self, key_pair: &Secp256k1KeyPair) -> Result<Account, Error> {
+        let tx_config = self.chain.tx_config();
+        let address = key_pair.account();
+
+        let account = query_account(&tx_config.grpc_address, &address)
+            .await
+            .map_err(Error::relayer)?;
+
+        Ok(account.into())
     }
 
-    fn mutex_for_nonce_allocation(&self, signer: &Self::Signer) -> &Mutex<()> {
+    fn mutex_for_nonce_allocation(&self, _signer: &Self::Signer) -> &Mutex<()> {
         todo!()
     }
 
     fn parse_tx_response_as_events(response: TxResponse) -> Result<Vec<Vec<Event>>, Error> {
-        todo!()
+        let events = split_events_by_messages(response.tx_result.events);
+
+        Ok(events)
     }
 }
