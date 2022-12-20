@@ -1,15 +1,14 @@
-use crate::base::core::traits::sync::Async;
 use async_trait::async_trait;
+use core::ops::DerefMut;
 
+use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
-pub trait HasMutexGuard<'a>: Async {
-    type MutexGuard: Send + Sync + 'a;
-}
-
 #[async_trait]
-pub trait HasMutex: for<'a> HasMutexGuard<'a> {
-    type Mutex: Async;
+pub trait HasMutex {
+    type Mutex<T: Async>: Async;
 
-    async fn acquire_mutex<'a>(mutex: &'a Self::Mutex) -> <Self as HasMutexGuard<'a>>::MutexGuard;
+    type MutexGuard<'a, T: Async>: 'a + Send + Sync + DerefMut<Target = T>;
+
+    async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T>;
 }

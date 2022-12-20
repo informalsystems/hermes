@@ -9,7 +9,7 @@ use crate::base::transaction::traits::types::HasTxTypes;
 use crate::std_prelude::*;
 
 pub trait InjectNoTxResponseError: HasTxTypes {
-    fn inject_tx_no_response_error(tx_hash: &Self::TxHash) -> Self::Error;
+    fn tx_no_response_error(tx_hash: &Self::TxHash) -> Self::Error;
 }
 
 pub trait HasPollTimeout {
@@ -43,7 +43,7 @@ where
                 Ok(None) => {
                     let elapsed = Context::Runtime::duration_since(&start_time, &runtime.now());
                     if elapsed > wait_timeout {
-                        return Err(Context::inject_tx_no_response_error(tx_hash));
+                        return Err(Context::tx_no_response_error(tx_hash));
                     } else {
                         runtime.sleep(wait_backoff).await;
                     }

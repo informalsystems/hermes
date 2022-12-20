@@ -2,13 +2,14 @@ use alloc::boxed::Box;
 use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::time::Duration;
-
-use crate::relayer_mock::base::types::aliases::MockTimestamp;
-use crate::relayer_mock::util::clock::MockClock;
-
+use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use ibc_relayer_framework::base::one_for_all::types::runtime::LogLevel;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use tokio::sync::{Mutex, MutexGuard};
+
+use crate::relayer_mock::base::types::aliases::MockTimestamp;
+use crate::relayer_mock::util::clock::MockClock;
 
 pub struct MockRuntimeContext {
     pub clock: Arc<MockClock>,
@@ -37,6 +38,10 @@ impl OfaBaseRuntime for MockRuntimeContext {
 
     type Time = MockTimestamp;
 
+    type Mutex<T: Async> = Mutex<T>;
+
+    type MutexGuard<'a, T: Async> = MutexGuard<'a, T>;
+
     async fn log(&self, level: LogLevel, message: &str) {
         match level {
             LogLevel::Error => tracing::error!(message),
@@ -60,5 +65,9 @@ impl OfaBaseRuntime for MockRuntimeContext {
 
     fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration {
         Duration::from_millis((time - other) as u64)
+    }
+
+    async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T> {
+        mutex.lock().await
     }
 }

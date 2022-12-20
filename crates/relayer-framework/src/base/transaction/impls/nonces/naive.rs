@@ -25,7 +25,7 @@ where
     fn mutex_for_nonce_allocation(
         &self,
         signer: &Self::Signer,
-    ) -> &<Self::Runtime as HasMutex>::Mutex;
+    ) -> &<Self::Runtime as HasMutex>::Mutex<()>;
 }
 
 pub struct NaiveNonceAllocator;
