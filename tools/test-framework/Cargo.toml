@@ -37,7 +37,7 @@ toml = "0.5"
 subtle-encoding = "0.5.1"
 sha2 = "0.10.6"
 crossbeam-channel = "0.5.5"
-semver = "1.0.14"
+semver = "1.0.16"
 flex-error = "0.4.4"
 prost = { version = "0.11" }
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }

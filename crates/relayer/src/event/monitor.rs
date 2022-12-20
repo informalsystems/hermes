@@ -136,6 +136,7 @@ pub mod queries {
             ibc_client(),
             ibc_connection(),
             ibc_channel(),
+            ibc_query(),
             // This will be needed when we send misbehavior evidence to full node
             // Query::eq("message.module", "evidence"),
         ]
@@ -155,6 +156,10 @@ pub mod queries {
 
     pub fn ibc_channel() -> Query {
         Query::eq("message.module", "ibc_channel")
+    }
+
+    pub fn ibc_query() -> Query {
+        Query::eq("message.module", "interchainquery")
     }
 }
 

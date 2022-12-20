@@ -8,6 +8,7 @@ use crate::chain::requests::{QueryClientEventRequest, QueryPacketEventDataReques
 pub mod abci;
 pub mod account;
 pub mod balance;
+pub mod custom;
 pub mod denom_trace;
 pub mod fee;
 pub mod status;
