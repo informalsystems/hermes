@@ -6,6 +6,7 @@ use core::{
     str::FromStr,
     time::Duration,
 };
+use futures::future::join_all;
 use num_bigint::BigInt;
 use std::{cmp::Ordering, thread};
 
@@ -16,6 +17,7 @@ use tracing::{error, instrument, trace, warn};
 use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::protobuf::Protobuf;
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
@@ -62,6 +64,7 @@ use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
+use crate::chain::cosmos::query::custom::cross_chain_query_via_rpc;
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::{
@@ -1891,6 +1894,25 @@ impl ChainEndpoint for CosmosSdkChain {
             &address,
             counterparty_payee,
         ))
+    }
+
+    fn cross_chain_query(
+        &self,
+        requests: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        let tasks = requests
+            .into_iter()
+            .map(|req| cross_chain_query_via_rpc(&self.rpc_client, req))
+            .collect::<Vec<_>>();
+
+        let joined_tasks = join_all(tasks);
+        let results: Vec<Result<CrossChainQueryResponse, _>> = self.rt.block_on(joined_tasks);
+        let responses = results
+            .into_iter()
+            .filter_map(|req| req.ok())
+            .collect::<Vec<CrossChainQueryResponse>>();
+
+        Ok(responses)
     }
 }
 

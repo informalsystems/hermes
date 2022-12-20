@@ -4,6 +4,7 @@ use crossbeam_channel as channel;
 use tracing::Span;
 
 use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
         ics02_client::events::UpdateClient,
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
@@ -496,5 +497,12 @@ impl ChainHandle for BaseChainHandle {
             counterparty_payee,
             reply_to,
         })
+    }
+
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        self.send(|reply_to| ChainRequest::CrossChainQuery { request, reply_to })
     }
 }
