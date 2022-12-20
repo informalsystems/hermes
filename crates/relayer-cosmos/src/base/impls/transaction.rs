@@ -24,10 +24,10 @@ use tokio::sync::Mutex;
 
 use crate::base::error::Error;
 use crate::base::traits::chain::CosmosChain;
-use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::message::CosmosIbcMessage;
+use crate::base::types::transaction::CosmosTxWrapper;
 
-impl<Chain> OfaTxTypes for CosmosChainWrapper<Chain>
+impl<Chain> OfaTxTypes for CosmosTxWrapper<Chain>
 where
     Chain: CosmosChain,
 {
@@ -53,7 +53,7 @@ where
 }
 
 #[async_trait]
-impl<Chain> OfaTxContext for CosmosChainWrapper<Chain>
+impl<Chain> OfaTxContext for CosmosTxWrapper<Chain>
 where
     Chain: CosmosChain,
 {
@@ -165,7 +165,7 @@ where
     }
 
     fn mutex_for_nonce_allocation(&self, _signer: &Self::Signer) -> &Mutex<()> {
-        todo!()
+        &self.nonce_mutex
     }
 
     fn parse_tx_response_as_events(response: TxResponse) -> Result<Vec<Vec<Event>>, Error> {
