@@ -4,7 +4,7 @@ use std::fmt::Display;
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::base::types::height::Height;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PacketKey {
     pub src_channel_id: String,
     pub src_port_id: String,
