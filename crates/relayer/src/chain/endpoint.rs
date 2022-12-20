@@ -3,6 +3,7 @@ use core::convert::TryFrom;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
@@ -621,4 +622,9 @@ pub trait ChainEndpoint: Sized {
         port_id: &PortId,
         counterparty_payee: &Signer,
     ) -> Result<(), Error>;
+
+    fn cross_chain_query(
+        &self,
+        requests: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error>;
 }

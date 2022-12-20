@@ -5,6 +5,7 @@ use crossbeam_channel as channel;
 use tracing::Span;
 
 use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
         ics02_client::events::UpdateClient,
         ics03_connection::{
@@ -353,6 +354,11 @@ pub enum ChainRequest {
         counterparty_payee: Signer,
         reply_to: ReplyTo<()>,
     },
+
+    CrossChainQuery {
+        request: Vec<CrossChainQueryRequest>,
+        reply_to: ReplyTo<Vec<CrossChainQueryResponse>>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -656,4 +662,9 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         port_id: PortId,
         counterparty_payee: Signer,
     ) -> Result<(), Error>;
+
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error>;
 }

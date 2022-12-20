@@ -130,6 +130,20 @@ impl Wallet {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct CrossChainQuery {
+    pub src_chain_id: ChainId,
+    pub dst_chain_id: ChainId,
+    pub query_id: String,
+    pub connection_id: ConnectionId,
+}
+
+impl CrossChainQuery {
+    pub fn short_name(&self) -> String {
+        format!("cross_chain_query::{}/{}", self.dst_chain_id, self.query_id)
+    }
+}
+
 /// An object determines the amount of parallelism that can
 /// be exercised when processing [`IbcEvent`](ibc_relayer_types::events::IbcEvent)
 /// between two chains. For each [`Object`], a corresponding
@@ -149,6 +163,8 @@ pub enum Object {
     Packet(Packet),
     /// See [`Wallet`]
     Wallet(Wallet),
+    /// See [`CrossChainQuery`]
+    CrossChainQuery(CrossChainQuery),
 }
 
 define_error! {
@@ -198,6 +214,7 @@ impl Object {
             Object::Channel(c) => &c.src_chain_id == src_chain_id,
             Object::Packet(p) => &p.src_chain_id == src_chain_id,
             Object::Wallet(_) => false,
+            Object::CrossChainQuery(c) => &c.src_chain_id == src_chain_id,
         }
     }
 
@@ -209,6 +226,9 @@ impl Object {
             Object::Channel(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
             Object::Packet(p) => &p.src_chain_id == chain_id || &p.dst_chain_id == chain_id,
             Object::Wallet(w) => &w.chain_id == chain_id,
+            Object::CrossChainQuery(c) => {
+                &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id
+            }
         }
     }
 
@@ -220,6 +240,7 @@ impl Object {
             Object::Connection(_) => ObjectType::Connection,
             Object::Packet(_) => ObjectType::Packet,
             Object::Wallet(_) => ObjectType::Wallet,
+            Object::CrossChainQuery(_) => ObjectType::CrossChainQuery,
         }
     }
 }
@@ -232,6 +253,7 @@ pub enum ObjectType {
     Connection,
     Packet,
     Wallet,
+    CrossChainQuery,
 }
 
 impl From<Client> for Object {
@@ -264,6 +286,12 @@ impl From<Wallet> for Object {
     }
 }
 
+impl From<CrossChainQuery> for Object {
+    fn from(c: CrossChainQuery) -> Self {
+        Self::CrossChainQuery(c)
+    }
+}
+
 impl Object {
     pub fn src_chain_id(&self) -> &ChainId {
         match self {
@@ -272,6 +300,7 @@ impl Object {
             Self::Channel(ref channel) => &channel.src_chain_id,
             Self::Packet(ref path) => &path.src_chain_id,
             Self::Wallet(ref wallet) => &wallet.chain_id,
+            Self::CrossChainQuery(ref query) => &query.src_chain_id,
         }
     }
 
@@ -282,6 +311,7 @@ impl Object {
             Self::Channel(ref channel) => &channel.dst_chain_id,
             Self::Packet(ref path) => &path.dst_chain_id,
             Self::Wallet(ref wallet) => &wallet.chain_id,
+            Self::CrossChainQuery(ref query) => &query.dst_chain_id,
         }
     }
 
@@ -292,6 +322,7 @@ impl Object {
             Self::Channel(ref channel) => channel.short_name(),
             Self::Packet(ref path) => path.short_name(),
             Self::Wallet(ref wallet) => wallet.short_name(),
+            Self::CrossChainQuery(ref query) => query.short_name(),
         }
     }
 
@@ -476,6 +507,22 @@ impl Object {
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone(),
             src_port_id: e.port_id().clone(),
+        }
+        .into())
+    }
+
+    /// Build the object associated with the given [`CrossChainQuery`] event.
+    pub fn for_cross_chain_query_packet(
+        p: &ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket,
+        src_chain: &impl ChainHandle,
+    ) -> Result<Self, ObjectError> {
+        let dst_chain_id = counterparty_chain_from_connection(&src_chain.clone(), &p.connection_id)
+            .map_err(ObjectError::supervisor)?;
+        Ok(CrossChainQuery {
+            src_chain_id: src_chain.clone().id(),
+            dst_chain_id,
+            query_id: p.query_id.to_string(),
+            connection_id: p.connection_id.clone(),
         }
         .into())
     }
