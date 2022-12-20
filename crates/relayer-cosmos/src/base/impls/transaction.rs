@@ -66,7 +66,7 @@ where
     }
 
     fn tx_no_response_error(tx_hash: &TxHash) -> Self::Error {
-        Error::tx_no_response(tx_hash.clone())
+        Error::tx_no_response(*tx_hash)
     }
 
     fn tx_size(signed_tx: &Self::Transaction) -> usize {
@@ -107,7 +107,7 @@ where
         let signer = key_pair_to_signer(key_pair).map_err(Error::relayer)?;
 
         let raw_messages = messages
-            .into_iter()
+            .iter()
             .map(|message| (message.to_protobuf_fn)(&signer).map_err(Error::encode))
             .collect::<Result<Vec<_>, _>>()?;
 
