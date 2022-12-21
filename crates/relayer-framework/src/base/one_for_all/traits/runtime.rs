@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use core::fmt::Debug;
+use core::ops::DerefMut;
 use core::time::Duration;
 
 use crate::base::core::traits::sync::Async;
@@ -12,6 +13,10 @@ pub trait OfaBaseRuntime: Async {
 
     type Time: Async;
 
+    type Mutex<T: Async>: Async;
+
+    type MutexGuard<'a, T: Async>: 'a + Send + Sync + DerefMut<Target = T>;
+
     async fn log(&self, level: LogLevel, message: &str);
 
     async fn sleep(&self, duration: Duration);
@@ -19,4 +24,6 @@ pub trait OfaBaseRuntime: Async {
     fn now(&self) -> Self::Time;
 
     fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration;
+
+    async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T>;
 }

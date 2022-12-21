@@ -4,7 +4,7 @@ use core::future::Future;
 use core::time::Duration;
 use std::time::Instant;
 use tokio::runtime::Runtime;
-use tokio::sync::{mpsc, oneshot, Mutex};
+use tokio::sync::{mpsc, oneshot, Mutex, MutexGuard};
 use tokio::time::sleep;
 use tracing;
 
@@ -31,6 +31,10 @@ impl OfaBaseRuntime for TokioRuntimeContext {
 
     type Time = Instant;
 
+    type Mutex<T: Async> = Mutex<T>;
+
+    type MutexGuard<'a, T: Async> = MutexGuard<'a, T>;
+
     async fn log(&self, level: LogLevel, message: &str) {
         match level {
             LogLevel::Error => tracing::error!(message),
@@ -51,6 +55,10 @@ impl OfaBaseRuntime for TokioRuntimeContext {
 
     fn duration_since(time: &Instant, other: &Instant) -> Duration {
         time.duration_since(*other)
+    }
+
+    async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T> {
+        mutex.lock().await
     }
 }
 

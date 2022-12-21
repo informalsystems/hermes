@@ -3,6 +3,7 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::event::IbcEventWithHeight;
 
+#[derive(Clone)]
 pub struct SignedTx {
     pub body: TxBody,
     pub body_bytes: Vec<u8>,

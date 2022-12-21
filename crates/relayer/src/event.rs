@@ -1,6 +1,7 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use ibc_relayer_types::{
     applications::ics29_fee::events::IncentivizedPacket,
+    applications::ics31_icq::events::CrossChainQueryPacket,
     core::ics02_client::{
         error::Error as ClientError,
         events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
@@ -123,6 +124,10 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
         )),
         Ok(IbcEventType::IncentivizedPacket) => Ok(IbcEvent::IncentivizedPacket(
             IncentivizedPacket::try_from(&abci_event.attributes[..]).map_err(IbcEventError::fee)?,
+        )),
+        Ok(IbcEventType::CrossChainQuery) => Ok(IbcEvent::CrossChainQueryPacket(
+            CrossChainQueryPacket::try_from(&abci_event.attributes[..])
+                .map_err(IbcEventError::cross_chain_query)?,
         )),
         _ => Err(IbcEventError::unsupported_abci_event(
             abci_event.kind.clone(),

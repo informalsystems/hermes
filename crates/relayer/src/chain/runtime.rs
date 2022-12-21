@@ -6,6 +6,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, Span};
 
 use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
         ics02_client::events::UpdateClient,
         ics03_connection::{
@@ -336,6 +337,10 @@ where
 
                         ChainRequest::MaybeRegisterCounterpartyPayee { channel_id, port_id, counterparty_payee, reply_to } => {
                             self.maybe_register_counterparty_payee(&channel_id, &port_id, &counterparty_payee, reply_to)?
+                        }
+
+                        ChainRequest::CrossChainQuery { request, reply_to } => {
+                            self.cross_chain_query(request, reply_to)?
                         }
                     }
                 },
@@ -812,6 +817,17 @@ where
             self.chain
                 .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee);
 
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+        reply_to: ReplyTo<Vec<CrossChainQueryResponse>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.cross_chain_query(request);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())

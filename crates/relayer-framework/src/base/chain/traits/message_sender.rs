@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::HasChainTypes;
+use crate::base::chain::traits::types::{HasEventType, HasMessageType};
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanSendMessages: HasChainTypes {
+pub trait CanSendMessages: HasMessageType + HasEventType {
     async fn send_messages(
         &self,
         messages: Vec<Self::Message>,
@@ -15,7 +15,7 @@ pub trait CanSendMessages: HasChainTypes {
 #[async_trait]
 pub trait MessageSender<Chain>: Async
 where
-    Chain: HasChainTypes,
+    Chain: HasMessageType + HasEventType,
 {
     async fn send_messages(
         chain: &Chain,

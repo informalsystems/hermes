@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 
 use crate::base::chain::traits::message_sender::MessageSender;
-use crate::base::chain::traits::types::HasChainTypes;
 use crate::base::transaction::traits::encode::CanEncodeTx;
 use crate::base::transaction::traits::estimate::CanEstimateTxFee;
 use crate::base::transaction::traits::event::CanParseTxResponseAsEvents;
@@ -19,8 +18,7 @@ pub struct SendMessagesAsTx;
 #[async_trait]
 impl<Chain> MessageSender<Chain> for SendMessagesAsTx
 where
-    Chain: HasChainTypes
-        + HasTxTypes
+    Chain: HasTxTypes
         + HasSigner
         + CanAllocateNonce
         + CanSendMessagesAsTx
