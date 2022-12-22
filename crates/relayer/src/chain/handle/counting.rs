@@ -18,7 +18,7 @@ use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-use crate::keyring::KeyEntry;
+use crate::keyring::AnySigningKeyPair;
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::lock::LockExt;
@@ -28,6 +28,7 @@ use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
     core::ics03_connection::connection::ConnectionEnd,
     core::ics03_connection::version::Version,
     core::ics04_channel::channel::ChannelEnd,
@@ -135,12 +136,12 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().config()
     }
 
-    fn get_key(&self) -> Result<KeyEntry, Error> {
+    fn get_key(&self) -> Result<AnySigningKeyPair, Error> {
         self.inc_metric("get_key");
         self.inner().get_key()
     }
 
-    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
+    fn add_key(&self, key_name: String, key: AnySigningKeyPair) -> Result<(), Error> {
         self.inc_metric("add_key");
         self.inner().add_key(key_name, key)
     }
@@ -482,5 +483,13 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inc_metric("maybe_register_counterparty_payee");
         self.inner
             .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
+    }
+
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        self.inc_metric("cross_chain_query");
+        self.inner.cross_chain_query(request)
     }
 }

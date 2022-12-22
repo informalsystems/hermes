@@ -25,15 +25,15 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
                 telemetry!(
                     wallet_balance,
                     &chain.id(),
-                    &key.account,
+                    &key.account(),
                     amount,
                     &balance.denom,
                 );
-                trace!(%amount, denom = %balance.denom, account = %key.account, "wallet balance");
+                trace!(%amount, denom = %balance.denom, account = %key.account(), "wallet balance");
             }
             Err(e) => {
                 warn!(
-                    %balance.amount, denom = %balance.denom, account = %key.account,
+                    %balance.amount, denom = %balance.denom, account = %key.account(),
                     "unable to parse the wallet balance into a f64, the balance will therefore not be reported to telemetry. Reason: {}", e
                 );
             }

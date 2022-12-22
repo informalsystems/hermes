@@ -13,7 +13,7 @@ use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
-use crate::keyring::KeyEntry;
+use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::{telemetry, time};
 
@@ -46,7 +46,7 @@ const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
 )]
 pub async fn send_tx_with_account_sequence_retry(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
     messages: &[Any],
@@ -56,7 +56,7 @@ pub async fn send_tx_with_account_sequence_retry(
     let _message_count = messages.len() as u64;
 
     let response =
-        do_send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, messages).await;
+        do_send_tx_with_account_sequence_retry(config, key_pair, account, tx_memo, messages).await;
 
     if response.is_ok() {
         telemetry!(total_messages_submitted, &config.chain_id, _message_count);
@@ -67,12 +67,12 @@ pub async fn send_tx_with_account_sequence_retry(
 
 async fn do_send_tx_with_account_sequence_retry(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
     messages: &[Any],
 ) -> Result<Response, Error> {
-    match estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages).await {
+    match estimate_fee_and_send_tx(config, key_pair, account, tx_memo, messages).await {
         // Gas estimation failed with account sequence mismatch during gas estimation.
         // It indicates that the account sequence cached by hermes is stale (got < expected).
         // This can happen when the same account is used by another agent.
@@ -84,7 +84,7 @@ async fn do_send_tx_with_account_sequence_retry(
             );
 
             refresh_account_and_retry_send_tx_with_account_sequence(
-                config, key_entry, account, tx_memo, messages,
+                config, key_pair, account, tx_memo, messages,
             )
             .await
         }
@@ -98,7 +98,7 @@ async fn do_send_tx_with_account_sequence_retry(
             );
 
             refresh_account_and_retry_send_tx_with_account_sequence(
-                config, key_entry, account, tx_memo, messages,
+                config, key_pair, account, tx_memo, messages,
             )
             .await
         }
@@ -153,18 +153,19 @@ async fn do_send_tx_with_account_sequence_retry(
 
 async fn refresh_account_and_retry_send_tx_with_account_sequence(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
     messages: &[Any],
 ) -> Result<Response, Error> {
+    let key_account = key_pair.account();
     // Re-fetch the account sequence number
-    refresh_account(&config.grpc_address, &key_entry.account, account).await?;
+    refresh_account(&config.grpc_address, &key_account, account).await?;
 
     // Retry after delay
     thread::sleep(Duration::from_millis(ACCOUNT_SEQUENCE_RETRY_DELAY));
 
-    estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages).await
+    estimate_fee_and_send_tx(config, key_pair, account, tx_memo, messages).await
 }
 
 /// Determine whether the given error yielded by `tx_simulate`

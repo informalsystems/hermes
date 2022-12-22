@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "1.1.0"
+version    = "1.2.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -26,11 +26,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc-relayer-types  = { version = "0.20.0", path = "../relayer-types", features = ["std", "clock"] }
-ibc-relayer        = { version = "0.20.0", path = "../relayer" }
-ibc-telemetry      = { version = "0.20.0", path = "../telemetry", optional = true }
-ibc-relayer-rest   = { version = "0.20.0", path = "../relayer-rest", optional = true }
-ibc-chain-registry = { version = "0.1.0" , path = "../chain-registry" }
+ibc-relayer-types  = { version = "0.21.0", path = "../relayer-types", features = ["std", "clock"] }
+ibc-relayer        = { version = "0.21.0", path = "../relayer" }
+ibc-telemetry      = { version = "0.21.0", path = "../telemetry", optional = true }
+ibc-relayer-rest   = { version = "0.21.0", path = "../relayer-rest", optional = true }
+ibc-chain-registry = { version = "0.2.0" , path = "../chain-registry" }
 
 atty                     = "0.2.14"
 clap                     = { version = "3.2", features = ["cargo"] }
@@ -43,6 +43,7 @@ dirs-next                = "2.0.0"
 eyre                     = "0.6.8"
 flex-error               = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
 futures                  = "0.3.25"
+hdpath                   = "0.6.1"
 http                     = "0.2"
 humantime                = "2.1"
 itertools                = "0.10.5"
@@ -57,15 +58,15 @@ tracing                  = "0.1.36"
 tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
 
 [dependencies.tendermint]
-version = "0.27.0"
+version = "0.28.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "0.27.0"
+version = "0.28.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.27.0"
+version = "0.28.0"
 
 [dependencies.abscissa_core]
 version = "=0.6.0"

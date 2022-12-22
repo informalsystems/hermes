@@ -3,30 +3,10 @@
 
 version: 2
 updates:
-  # Enable version updates for npm
+  # Enable version updates for cargo
   - package-ecosystem: "cargo"
     # Look for Cargo `.toml` and `.lock` files in the `root` directory
     directory: "/"
-    # Check the cargo registry for updates every day (weekdays)
-    schedule:
-      interval: "weekly"
-
-  - package-ecosystem: "cargo"
-    directory: "crates/modules"
-    schedule:
-      interval: "weekly"
-
-  - package-ecosystem: "cargo"
-    directory: "crates/relayer"
-    schedule:
-      interval: "weekly"
-
-  - package-ecosystem: "cargo"
-    directory: "crates/relayer-cli"
-    schedule:
-      interval: "weekly"
-
-  - package-ecosystem: "cargo"
-    directory: "ci/no-std-check"
+    # Check the cargo registry for updates every week
     schedule:
       interval: "weekly"
