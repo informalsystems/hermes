@@ -23,7 +23,9 @@ use tonic::{
 };
 
 use ibc_relayer_types::{
-    applications::ics29_fee::error::Error as FeeError,
+    applications::{
+        ics29_fee::error::Error as FeeError, ics31_icq::error::Error as CrossChainQueryError,
+    },
     clients::ics07_tendermint::error as tendermint_error,
     core::{
         ics02_client::{client_type::ClientType, error as client_error},
@@ -39,7 +41,7 @@ use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
 use crate::config::Error as ConfigError;
 use crate::event::monitor;
-use crate::keyring::errors::Error as KeyringError;
+use crate::keyring::{errors::Error as KeyringError, KeyType};
 use crate::sdk_error::SdkError;
 
 define_error! {
@@ -285,6 +287,10 @@ define_error! {
         Ics29
             [ FeeError ]
             | _ | { "ICS 29 error" },
+
+        Ics31
+            [ CrossChainQueryError ]
+            | _ | {"ICS 31 error"},
 
         InvalidUri
             { uri: String }
@@ -553,6 +559,12 @@ define_error! {
             |e| {
                 format_args!("message with length {} is too large for a transaction", e.len)
             },
+
+        InvalidKeyType
+            { key_type: KeyType }
+            |e| {
+                format!("Invalid key type {} for the current chain", e.key_type)
+            }
     }
 }
 

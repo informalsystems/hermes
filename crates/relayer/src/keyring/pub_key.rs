@@ -4,8 +4,7 @@ use serde::{Deserialize, Deserializer};
 use subtle_encoding::base64;
 use tracing::{error, trace};
 
-use super::decode_bech32;
-use super::errors::Error;
+use super::{errors::Error, key_utils::decode_bech32};
 
 #[derive(Debug)]
 pub enum EncodedPubKey {
@@ -16,8 +15,8 @@ pub enum EncodedPubKey {
 impl EncodedPubKey {
     pub fn into_bytes(self) -> Vec<u8> {
         match self {
-            EncodedPubKey::Bech32(vec) => vec,
-            EncodedPubKey::Proto(proto) => proto.key,
+            Self::Bech32(vec) => vec,
+            Self::Proto(proto) => proto.key,
         }
     }
 }
@@ -72,16 +71,16 @@ impl FromStr for EncodedPubKey {
                 if proto.tpe != "/cosmos.crypto.secp256k1.PubKey"
                     && !proto.tpe.ends_with(".ethsecp256k1.PubKey")
                 {
-                    Err(Error::unsupported_public_key(proto.tpe))
+                    Err(Error::only_secp256k1_public_key_supported(proto.tpe))
                 } else {
-                    Ok(EncodedPubKey::Proto(proto))
+                    Ok(Self::Proto(proto))
                 }
             }
             Err(e) if e.classify() == serde_json::error::Category::Syntax => {
                 // Input is not syntactically-correct JSON.
                 // Attempt to decode via Bech32, for backwards compatibility with the old format.
                 trace!("using Bech32 to interpret the encoded pub key '{}'", s);
-                Ok(EncodedPubKey::Bech32(decode_bech32(s)?))
+                Ok(Self::Bech32(decode_bech32(s)?))
             }
             Err(e) => {
                 error!(
