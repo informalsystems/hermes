@@ -38,7 +38,7 @@
 //! Note that the `run_binary_channel_test` (and indeed every `run_*` test function) takes as
 //! its single parameter an struct that represents the test case. While in this case, the struct
 //! is empty, fields can be added to the struct in the case that you want to run multiple tests
-//! using it. See the [`MemoTest`](crate::docs::walkthroughs::memo::MemoTest) as an example
+//! using it. See `tools/test-framework/src/docs/walkthroughs/memo.rs` as an example
 //! of a test that utilizes a non-empty struct as input. In order to customize the behavior
 //! of a test, different traits need to implemented on the empty struct, depending on how you
 //! wish to modify the test.
