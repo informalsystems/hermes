@@ -12,7 +12,16 @@ use crate::base::core::traits::sync::Async;
    will be added into this trait when it is necessary to define
    abstract components that make use of these events.
 */
-pub trait HasIbcEvents<Counterparty>: HasIbcChainTypes<Counterparty>
+
+pub trait HasSendPacketEvent<Counterparty>: HasIbcChainTypes<Counterparty>
+where
+    Counterparty: HasChainTypes,
+{
+    type SendPacketEvent: Async;
+
+    fn try_extract_send_packet_event(event: Self::Event) -> Option<Self::SendPacketEvent>;
+}
+pub trait HasWriteAcknowledgementEvent<Counterparty>: HasIbcChainTypes<Counterparty>
 where
     Counterparty: HasChainTypes,
 {

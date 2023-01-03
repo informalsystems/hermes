@@ -36,9 +36,9 @@ pub trait HasEventType: Async {
 
        Using dependency injection, we can impose additional constraints on what
        properties the `Event` type should have at the use site. An example use
-       of this is the [`HasIbcEvent`](crate::base::chain::traits::ibc_event::HasIbcEvents)
+       of this is the [`HasIbcEvent`](crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent)
        trait, which contains the IBC event variant types like
-       [`WriteAcknowledgementEvent`](crate::base::chain::traits::ibc_event::HasIbcEvents::WriteAcknowledgementEvent),
+       [`WriteAcknowledgementEvent`](crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent),
        and _extraction_ methods to parse the variant information from the event.
     */
     type Event: Async;

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::message::receive_packet::CanBuildReceivePacketMessage;
 use crate::base::chain::types::aliases::Height;
 use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
@@ -18,7 +18,8 @@ where
     Relay::SrcChain: CanBuildReceivePacketMessage<Relay::DstChain>,
     Relay: CanSendIbcMessages<DestinationTarget>,
     Relay: HasRelayTypes,
-    Relay::DstChain: HasIbcEvents<Relay::SrcChain, WriteAcknowledgementEvent = AckEvent>,
+    Relay::DstChain:
+        HasWriteAcknowledgementEvent<Relay::SrcChain, WriteAcknowledgementEvent = AckEvent>,
 {
     async fn relay_receive_packet(
         relay: &Relay,

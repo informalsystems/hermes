@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::queries::status::{CanQueryChainStatus, HasChainStatus};
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
@@ -19,7 +19,7 @@ where
     Relay: CanRelayAckPacket,
     Relay: CanRelayReceivePacket,
     Relay: CanRelayTimeoutUnorderedPacket,
-    Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
+    Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
     Relay::SrcChain: CanQueryChainStatus,
     Relay::DstChain: CanQueryChainStatus,
 {

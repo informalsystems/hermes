@@ -1,4 +1,4 @@
-use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::types::{
     CanEstimateMessageSize, HasChainTypes, HasEventType, HasIbcChainTypes, HasIbcPacketTypes,
     HasMessageType,
@@ -145,7 +145,8 @@ where
     }
 }
 
-impl<Chain, Counterparty> HasIbcEvents<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
+impl<Chain, Counterparty> HasWriteAcknowledgementEvent<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<

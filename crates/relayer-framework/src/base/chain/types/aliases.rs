@@ -1,4 +1,4 @@
-use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::types::{
     HasChainTypes, HasEventType, HasIbcChainTypes, HasMessageType,
 };
@@ -23,4 +23,4 @@ pub type Height<Chain> = <Chain as HasChainTypes>::Height;
 pub type Timestamp<Chain> = <Chain as HasChainTypes>::Timestamp;
 
 pub type WriteAcknowledgementEvent<Chain, Counterparty> =
-    <Chain as HasIbcEvents<Counterparty>>::WriteAcknowledgementEvent;
+    <Chain as HasWriteAcknowledgementEvent<Counterparty>>::WriteAcknowledgementEvent;
