@@ -1,4 +1,8 @@
+use async_trait::async_trait;
+
+use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
+use crate::std_prelude::*;
 
 /**
    This is used for the chain context and the transaction context to declare
@@ -38,4 +42,14 @@ pub trait HasEventType: Async {
        and _extraction_ methods to parse the variant information from the event.
     */
     type Event: Async;
+}
+
+#[async_trait]
+pub trait HasEventSource: HasEventType + HasErrorType {
+    type EventSource: Async;
+
+    /*
+        The event source can be used to receive events from a chain.
+    */
+    async fn receive_event(event_source: &Self::EventSource) -> Result<Self::Event, Self::Error>;
 }
