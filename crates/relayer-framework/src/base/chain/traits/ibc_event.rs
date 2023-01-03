@@ -30,6 +30,7 @@ where
         event: &Self::SendPacketEvent,
     ) -> &Self::OutgoingPacket;
 }
+
 pub trait HasWriteAcknowledgementEvent<Counterparty>: HasIbcChainTypes<Counterparty>
 where
     Counterparty: HasChainTypes,
