@@ -10,9 +10,10 @@
 //! * The ChainStatus is a ConsensusState with a Height and Timestamp.
 
 use alloc::boxed::Box;
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
 use async_trait::async_trait;
+use eyre::eyre;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
@@ -122,19 +123,19 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
     type OutgoingPacket = PacketKey;
 
     fn incoming_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
-        &packet.channel_id
+        &packet.src_channel_id
     }
 
     fn incoming_packet_src_port(packet: &PacketKey) -> &PortId {
-        &packet.channel_id
+        &packet.src_port_id
     }
 
     fn incoming_packet_dst_port(packet: &PacketKey) -> &PortId {
-        &packet.port_id
+        &packet.dst_port_id
     }
 
     fn incoming_packet_dst_channel_id(packet: &PacketKey) -> &ChannelId {
-        &packet.channel_id
+        &packet.dst_channel_id
     }
 
     fn incoming_packet_sequence(packet: &PacketKey) -> &Sequence {
@@ -150,19 +151,19 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
     }
 
     fn outgoing_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
-        &packet.channel_id
+        &packet.src_channel_id
     }
 
     fn outgoing_packet_src_port(packet: &PacketKey) -> &PortId {
-        &packet.channel_id
+        &packet.src_port_id
     }
 
     fn outgoing_packet_dst_port(packet: &PacketKey) -> &PortId {
-        &packet.port_id
+        &packet.dst_port_id
     }
 
     fn outgoing_packet_dst_channel_id(packet: &PacketKey) -> &ChannelId {
-        &packet.channel_id
+        &packet.dst_channel_id
     }
 
     fn outgoing_packet_sequence(packet: &PacketKey) -> &Sequence {
@@ -180,8 +181,8 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
             MockMessage::RecvPacket(h, _) => Some(h.clone()),
-            MockMessage::AckPacket(_, h, _) => Some(h.clone()),
-            MockMessage::TimeoutPacket(_, h, _) => Some(h.clone()),
+            MockMessage::AckPacket(h, _) => Some(h.clone()),
+            MockMessage::TimeoutPacket(h, _) => Some(h.clone()),
             _ => None,
         }
     }
@@ -203,18 +204,36 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         sequence: &Self::Sequence,
     ) -> Result<bool, Self::Error> {
         let state = self.get_current_state();
-        Ok(state.check_received(port_id, channel_id, sequence))
+        Ok(state.check_received((port_id.clone(), channel_id.clone(), *sequence)))
     }
 
     async fn query_write_ack_event(
         &self,
-        _channel_id: &ChannelId,
-        _port_id: &PortId,
-        _counterparty_channel_id: &ChannelId,
-        _counterparty_port_id: &PortId,
-        _sequence: &Sequence,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_channel_id: &ChannelId,
+        counterparty_port_id: &PortId,
+        sequence: &Sequence,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
-        todo!()
+        let received = self.get_received_packet_information(
+            counterparty_port_id.clone(),
+            counterparty_channel_id.clone(),
+            *sequence,
+        );
+        if let Some((packet, height)) = received {
+            if &packet.src_channel_id == channel_id
+                && &packet.src_port_id == port_id
+                && &packet.dst_channel_id == counterparty_channel_id
+                && &packet.dst_port_id == port_id
+                && &packet.sequence == sequence
+            {
+                Ok(Some(WriteAcknowledgementEvent::new(height)))
+            } else {
+                Err(Error::generic(eyre!("mismatch between packet in state {} and query parameters: channel_id: {}, port_id: {}, counterparty_channel_id: {}, counterparty_port_id: {}, sequence: {}", packet, channel_id, port_id, counterparty_channel_id, counterparty_port_id, sequence)))
+            }
+        } else {
+            Ok(None)
+        }
     }
 
     async fn build_receive_packet_message(
@@ -224,7 +243,11 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
     ) -> Result<MockMessage, Error> {
         // If the latest state of the source chain doesn't have the packet as sent, return an error.
         let state = self.get_current_state();
-        if !state.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
+        if !state.check_sent((
+            packet.src_port_id.clone(),
+            packet.src_channel_id.clone(),
+            packet.sequence,
+        )) {
             return Err(Error::receive_without_sent(
                 self.name().to_string(),
                 self.name().to_string(),

@@ -38,6 +38,7 @@ pub struct MockChainContext {
     pub current_height: Arc<Mutex<MockHeight>>,
     pub current_state: Arc<Mutex<ChainState>>,
     pub consensus_states: Arc<Mutex<HashMap<ClientId, HashMap<MockHeight, ChainState>>>>,
+    pub channel_to_client: Arc<Mutex<HashMap<ChannelId, ClientId>>>,
     pub runtime: OfaRuntimeWrapper<MockRuntimeContext>,
 }
 
@@ -53,6 +54,7 @@ impl MockChainContext {
             current_height: Arc::new(Mutex::new(Height(1))),
             current_state: Arc::new(Mutex::new(chain_state)),
             consensus_states: Arc::new(Mutex::new(HashMap::new())),
+            channel_to_client: Arc::new(Mutex::new(HashMap::new())),
             runtime,
         }
     }
@@ -76,6 +78,12 @@ impl MockChainContext {
         let locked_current_state = self.current_state.acquire_mutex();
         let state = locked_current_state;
         state.clone()
+    }
+
+    /// Get the client ID from a channel ID.
+    pub fn get_client_from_channel(&self, channel_id: &ChannelId) -> Option<ClientId> {
+        let locked_channel_to_client = self.channel_to_client.acquire_mutex();
+        locked_channel_to_client.get(channel_id).cloned()
     }
 
     /// Query the chain state at a given Height. This is used to see which receive and
@@ -105,6 +113,13 @@ impl MockChainContext {
         Ok(client_consensus_state.clone())
     }
 
+    /// In order to get a client ID from a channel ID, the mapping must be manually
+    /// registered for the MockChain.
+    pub fn map_channel_to_client(&self, channel_id: ChannelId, client_id: ClientId) {
+        let mut locked_channel_to_client = self.channel_to_client.acquire_mutex();
+        locked_channel_to_client.insert(channel_id, client_id);
+    }
+
     /// Insert a new Consensus State for a given Client at a given Height.
     /// If there already is a Consensus State for the Client at the given Height, which is different
     /// from the given State, return an error as a Chain is not allowed to have two different Consensus
@@ -113,7 +128,7 @@ impl MockChainContext {
     /// an already existing Consensus State with a different value.
     pub fn insert_consensus_state(
         &self,
-        client_id: String,
+        client_id: ClientId,
         height: MockHeight,
         state: ChainState,
     ) -> Result<(), Error> {
@@ -162,10 +177,18 @@ impl MockChainContext {
 
     /// Sending a packet adds a new ChainState with the sent packet information
     /// at a Height + 1.
-    pub fn send_packet(&self, packet: PacketKey) -> Result<(), Error> {
+    pub fn send_packet(&self, height: Height, packet: PacketKey) -> Result<(), Error> {
         // Retrieve the current_state and update it with the newly sent packet
         let mut new_state = self.get_current_state();
-        new_state.update_sent(packet.port_id, packet.channel_id, packet.sequence);
+        new_state.update_sent(
+            (
+                packet.src_port_id.clone(),
+                packet.src_channel_id.clone(),
+                packet.sequence,
+            ),
+            packet,
+            height,
+        );
 
         // Update the current_state of the Chain
         self.update_current_state(new_state)?;
@@ -177,10 +200,24 @@ impl MockChainContext {
     /// was sent by the source chain. And the packet timeout is verified.
     /// Receiving a packet adds a new ChainState with the received packet information
     /// at a Height + 1.
-    pub fn receive_packet(&self, height: Height, packet: PacketKey) -> Result<(), Error> {
+    pub fn receive_packet(
+        &self,
+        height: Height,
+        packet: PacketKey,
+        mut current_state: State,
+    ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was sent by the source chain.
-        let client_consensus = self.query_consensus_state_at_height(packet.client_id, height)?;
-        if !client_consensus.check_sent(&packet.port_id, &packet.channel_id, &packet.sequence) {
+        let client_id = self
+            .get_client_from_channel(&packet.dst_channel_id)
+            .ok_or_else(|| {
+                Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
+            })?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
+        if !client_consensus.check_sent((
+            packet.src_port_id.clone(),
+            packet.src_channel_id.clone(),
+            packet.sequence,
+        )) {
             return Err(Error::generic(eyre!(
                 "chain `{}` got a RecvPacket, but client state doesn't have the packet as sent",
                 self.name()
@@ -200,77 +237,127 @@ impl MockChainContext {
             ));
         }
 
-        // Retrieve the current_state and update it with the newly received packet
-        let mut new_state = self.get_current_state();
-        new_state.update_received(packet.port_id, packet.channel_id, packet.sequence);
+        // Update the state with the newly received packet
+        // This will not commit the updated state to the chain
+        current_state.update_received(
+            (
+                packet.dst_port_id.clone(),
+                packet.dst_channel_id.clone(),
+                packet.sequence,
+            ),
+            packet,
+            height,
+        );
 
-        // Update the current_state of the Chain
-        self.update_current_state(new_state)?;
-
-        Ok(())
+        Ok(current_state)
     }
 
     /// Receiving an acknowledgement adds a new ChainState with the received acknowledgement
     /// information at a Height + 1.
     pub fn acknowledge_packet(
         &self,
-        receiver: String,
         height: Height,
         packet: PacketKey,
-    ) -> Result<(), Error> {
+        mut current_state: State,
+    ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was received by the destination chain.
-        let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
-        if !client_consensus.check_received(&packet.port_id, &packet.channel_id, &packet.sequence) {
-            return Err(Error::generic(eyre!("chain `{}` got a AckPacket, but client `{}` state doesn't have the packet as received", self.name(), receiver)));
+        let client_id = self
+            .get_client_from_channel(&packet.src_channel_id)
+            .ok_or_else(|| {
+                Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
+            })?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
+        if !client_consensus.check_received((
+            packet.dst_port_id.clone(),
+            packet.dst_channel_id.clone(),
+            packet.sequence,
+        )) {
+            return Err(Error::generic(eyre!(
+                "chain `{}` got a AckPacket, but client state doesn't have the packet as received",
+                self.name()
+            )));
         }
 
-        // Retrieve the current_state and update it with the newly received acknowledgement
-        let mut new_state = self.get_current_state();
-        new_state.update_acknowledged(packet.port_id, packet.channel_id, packet.sequence);
+        // Update the current state with the newly received acknowledgement
+        current_state.update_acknowledged(
+            (
+                packet.src_port_id.clone(),
+                packet.src_channel_id.clone(),
+                packet.sequence,
+            ),
+            packet,
+            height,
+        );
 
-        // Update the current_state of the Chain
-        self.update_current_state(new_state)?;
-
-        Ok(())
+        Ok(current_state)
     }
 
     /// Receiving a timed out packet adds a new ChainState with the timed out packet
     /// information at a Height + 1.
     pub fn timeout_packet(
         &self,
-        receiver: String,
         height: Height,
         packet: PacketKey,
-    ) -> Result<(), Error> {
+        mut current_state: State,
+    ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was not received by the destination chain.
-        let client_consensus = self.query_consensus_state_at_height(receiver.clone(), height)?;
-        if client_consensus.check_received(&packet.port_id, &packet.channel_id, &packet.sequence) {
-            return Err(Error::generic(eyre!("chain `{}` got a TimeoutPacket, but client `{}` state received the packet as received", self.name(), receiver)));
+        let client_id = self
+            .get_client_from_channel(&packet.src_channel_id)
+            .ok_or_else(|| {
+                Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
+            })?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
+        if client_consensus.check_received((
+            packet.dst_port_id.clone(),
+            packet.dst_channel_id.clone(),
+            packet.sequence,
+        )) {
+            return Err(Error::generic(eyre!(
+                "chain `{}` got a TimeoutPacket, but client state received the packet as received",
+                self.name()
+            )));
         }
 
-        // Retrieve the current_state and update it with the newly received acknowledgement
-        let mut new_state = self.get_current_state();
-        new_state.update_timeout(packet.port_id, packet.channel_id, packet.sequence);
+        // Update the current state with the newly received timeout
+        current_state.update_timeout(
+            (
+                packet.src_port_id.clone(),
+                packet.src_channel_id.clone(),
+                packet.sequence,
+            ),
+            packet,
+            height,
+        );
 
-        // Update the current_state of the Chain
-        self.update_current_state(new_state)?;
-
-        Ok(())
+        Ok(current_state)
     }
 
+    pub fn get_received_packet_information(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+    ) -> Option<(PacketKey, Height)> {
+        let state = self.get_current_state();
+        state.get_received((port_id, channel_id, sequence)).cloned()
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub fn build_send_packet(
         &self,
-        client_id: ClientId,
-        channel_id: ChannelId,
-        port_id: PortId,
-        timeout_height: MockHeight,
+        src_channel_id: String,
+        src_port_id: String,
+        dst_channel_id: String,
+        dst_port_id: String,
+        sequence: u128,
+        timeout_height: Height,
         timeout_timestamp: MockTimestamp,
-        sequence: Sequence,
     ) -> PacketKey {
         PacketKey::new(
-            client_id,
-            channel_id,
-            port_id,
+            src_channel_id,
+            src_port_id,
+            dst_channel_id,
+            dst_port_id,
             sequence,
             timeout_height,
             timeout_timestamp,
@@ -310,27 +397,31 @@ impl MockChainContext {
     /// If the message is an `UpdateClient` update the consensus state.
     /// When a RecvPacket and AckPacket are received, verify that the client
     /// state has respectively sent the message and received the message.
+    /// The chain state will only be updated if all messages are processed
+    /// successfully.
     pub fn process_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
         let mut res = vec![];
+        let mut current_state = self.get_current_state();
         for m in messages {
             match m {
-                MockMessage::RecvPacket(h, p) => {
-                    self.receive_packet(h.clone(), p)?;
-                    res.push(vec![Event::WriteAcknowledgment(h)]);
+                MockMessage::RecvPacket(height, packet) => {
+                    current_state = self.receive_packet(height.clone(), packet, current_state)?;
+                    res.push(vec![Event::WriteAcknowledgment(height)]);
                 }
-                MockMessage::AckPacket(receiver, h, p) => {
-                    self.acknowledge_packet(receiver, h, p)?;
+                MockMessage::AckPacket(height, packet) => {
+                    current_state = self.acknowledge_packet(height, packet, current_state)?;
                     res.push(vec![]);
                 }
-                MockMessage::UpdateClient(receiver, h, s) => {
-                    self.insert_consensus_state(receiver, h, s)?;
+                MockMessage::UpdateClient(client_id, height, state) => {
+                    self.insert_consensus_state(client_id, height, state)?;
                     res.push(vec![]);
                 }
-                MockMessage::TimeoutPacket(receiver, h, s) => {
-                    self.timeout_packet(receiver, h, s)?;
+                MockMessage::TimeoutPacket(height, packet) => {
+                    current_state = self.timeout_packet(height, packet, current_state)?;
                 }
             }
         }
+        self.update_current_state(current_state)?;
         Ok(res)
     }
 }
