@@ -94,19 +94,6 @@ pub trait OfaBaseRelay: OfaRelayTypes {
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error>;
-
-    async fn build_ack_packet_message(
-        &self,
-        destination_height: &<Self::DstChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
-        ack: &<Self::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
-    ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error>;
-
-    async fn build_timeout_unordered_packet_message(
-        &self,
-        destination_height: &<Self::DstChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
-    ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error>;
 }
 
 pub trait OfaRelayPreset<Relay>:
