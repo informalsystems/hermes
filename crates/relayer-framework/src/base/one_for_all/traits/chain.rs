@@ -201,15 +201,15 @@ where
 
     async fn build_ack_packet_message(
         &self,
-        height: &Counterparty::Height,
+        height: &Self::Height,
         packet: &Self::IncomingPacket,
         ack: &Self::WriteAcknowledgementEvent,
     ) -> Result<Counterparty::Message, Self::Error>;
 
     async fn build_timeout_unordered_packet_message(
         &self,
-        height: &Counterparty::Height,
-        packet: &Self::OutgoingPacket,
+        height: &Self::Height,
+        packet: &Self::IncomingPacket,
     ) -> Result<Counterparty::Message, Self::Error>;
 }
 
