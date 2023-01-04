@@ -16,7 +16,7 @@ use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
-use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
@@ -69,6 +69,8 @@ where
     type ConsensusState = ConsensusState;
 
     type ChainStatus = ChainStatus;
+
+    type SendPacketEvent = SendPacket;
 }
 
 #[async_trait]
@@ -208,6 +210,24 @@ where
 
     fn counterparty_message_height(message: &CosmosIbcMessage) -> Option<Height> {
         message.source_height
+    }
+
+    fn try_extract_send_packet_event(event: Self::Event) -> Option<Self::SendPacketEvent> {
+        if let IbcEventType::SendPacket = event.kind.parse().ok()? {
+            let (packet, _) = extract_packet_and_write_ack_from_tx(&event).ok()?;
+
+            let send_packet_event = SendPacket { packet };
+
+            Some(send_packet_event)
+        } else {
+            None
+        }
+    }
+
+    fn extract_packet_from_send_packet_event(
+        event: &Self::SendPacketEvent,
+    ) -> Self::OutgoingPacket {
+        event.packet.clone()
     }
 
     async fn query_consensus_state(

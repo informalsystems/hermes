@@ -26,9 +26,8 @@ where
 
     fn try_extract_send_packet_event(event: Self::Event) -> Option<Self::SendPacketEvent>;
 
-    fn extract_packet_from_send_packet_event(
-        event: &Self::SendPacketEvent,
-    ) -> &Self::OutgoingPacket;
+    fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
+        -> Self::OutgoingPacket;
 }
 
 pub trait HasWriteAcknowledgementEvent<Counterparty>: HasIbcChainTypes<Counterparty>

@@ -43,7 +43,7 @@ where
                 let packet =
                     Relay::SrcChain::extract_packet_from_send_packet_event(&send_packet_event);
 
-                relayer.relay_packet(packet).await?;
+                relayer.relay_packet(&packet).await?;
             }
         }
     }

@@ -20,7 +20,7 @@ use crate::relayer_mock::base::types::aliases::{
     ChainStatus, ChannelId, ClientId, ConsensusState, MockTimestamp, PortId, Sequence,
 };
 use crate::relayer_mock::base::types::chain::MockChainStatus;
-use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
+use crate::relayer_mock::base::types::events::{Event, SendPacketEvent, WriteAcknowledgementEvent};
 use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::packet::PacketKey;
@@ -64,6 +64,8 @@ impl OfaChainTypes for MockChainContext {
     type ConsensusState = ConsensusState;
 
     type ChainStatus = ChainStatus;
+
+    type SendPacketEvent = SendPacketEvent;
 }
 
 #[async_trait]
@@ -185,6 +187,19 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
             MockMessage::TimeoutPacket(h, _) => Some(h.clone()),
             _ => None,
         }
+    }
+
+    fn try_extract_send_packet_event(event: Self::Event) -> Option<Self::SendPacketEvent> {
+        match event {
+            Event::SendPacket(send_packet_event) => Some(send_packet_event),
+            _ => None,
+        }
+    }
+
+    fn extract_packet_from_send_packet_event(
+        event: &Self::SendPacketEvent,
+    ) -> Self::OutgoingPacket {
+        PacketKey::from(event.clone())
     }
 
     async fn query_consensus_state(

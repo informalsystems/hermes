@@ -1,4 +1,4 @@
-use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
+use crate::base::chain::traits::ibc_event::{HasSendPacketEvent, HasWriteAcknowledgementEvent};
 use crate::base::chain::traits::types::{
     CanEstimateMessageSize, HasChainTypes, HasEventType, HasIbcChainTypes, HasIbcPacketTypes,
     HasMessageType,
@@ -161,5 +161,28 @@ where
         event: Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         Chain::try_extract_write_acknowledgement_event(event)
+    }
+}
+
+impl<Chain, Counterparty> HasSendPacketEvent<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
+{
+    type SendPacketEvent = Chain::SendPacketEvent;
+
+    fn try_extract_send_packet_event(event: Self::Event) -> Option<Self::SendPacketEvent> {
+        Chain::try_extract_send_packet_event(event)
+    }
+
+    fn extract_packet_from_send_packet_event(
+        event: &Self::SendPacketEvent,
+    ) -> Self::OutgoingPacket {
+        Chain::extract_packet_from_send_packet_event(event)
     }
 }
