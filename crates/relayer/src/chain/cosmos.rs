@@ -1083,6 +1083,18 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_consensus_state_heights");
         crate::telemetry!(query, self.id(), "query_consensus_state_heights");
 
+        // Helper function to diagnose if the QueryConsensusStateHeightsRequest is unsupported
+        // by matching on the error details.
+        fn is_unsupported(status: &tonic::Status) -> bool {
+            if status.code() != tonic::Code::Unimplemented {
+                return false;
+            }
+
+            status
+                .message()
+                .contains("unknown method ConsensusStateHeights")
+        }
+
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
@@ -1091,11 +1103,23 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request.into());
-        let response = self
-            .block_on(client.consensus_state_heights(request))
-            .map_err(Error::grpc_status)?
-            .into_inner();
+        let grpc_request = tonic::Request::new(request.clone().into());
+        let grpc_response = self.block_on(client.consensus_state_heights(grpc_request));
+
+        if let Err(ref e) = grpc_response {
+            if is_unsupported(e) {
+                warn!("QueryConsensusStateHeights is not supported by the chain, falling back on QueryConsensusStates");
+
+                let states = self.query_consensus_states(QueryConsensusStatesRequest {
+                    client_id: request.client_id,
+                    pagination: request.pagination,
+                })?;
+
+                return Ok(states.into_iter().map(|cs| cs.height).collect());
+            }
+        }
+
+        let response = grpc_response.map_err(Error::grpc_status)?.into_inner();
 
         let mut heights: Vec<_> = response
             .consensus_state_heights
