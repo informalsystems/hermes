@@ -164,7 +164,7 @@ impl Runnable for QueryClientConsensusCmd {
         } else if self.heights_only {
             let res = chain.query_consensus_state_heights(QueryConsensusStateHeightsRequest {
                 client_id: self.client_id.clone(),
-                pagination: Some(PageRequest::all()),
+                pagination: Some(PageRequest::all().reversed()),
             });
 
             match res {
@@ -174,7 +174,7 @@ impl Runnable for QueryClientConsensusCmd {
         } else {
             let res = chain.query_consensus_states(QueryConsensusStatesRequest {
                 client_id: self.client_id.clone(),
-                pagination: Some(PageRequest::all()),
+                pagination: Some(PageRequest::all().reversed()),
             });
 
             match res {

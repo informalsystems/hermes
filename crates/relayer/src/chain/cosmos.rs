@@ -1121,7 +1121,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let response = grpc_response.map_err(Error::grpc_status)?.into_inner();
 
-        let mut heights: Vec<_> = response
+        let heights: Vec<_> = response
             .consensus_state_heights
             .into_iter()
             .filter_map(|h| {
@@ -1136,9 +1136,6 @@ impl ChainEndpoint for CosmosSdkChain {
                     .ok()
             })
             .collect();
-
-        // FIXME: This should be left up to the caller, via the pagination parameter
-        heights.sort_by_key(|&h| core::cmp::Reverse(h));
 
         Ok(heights)
     }
@@ -1164,7 +1161,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let mut consensus_states: Vec<_> = response
+        let consensus_states: Vec<_> = response
             .consensus_states
             .into_iter()
             .filter_map(|cs| {
@@ -1179,9 +1176,6 @@ impl ChainEndpoint for CosmosSdkChain {
                     .ok()
             })
             .collect();
-
-        // FIXME: This should be left up to the caller, via the pagination parameter
-        consensus_states.sort_by_key(|cs| core::cmp::Reverse(cs.height));
 
         Ok(consensus_states)
     }
