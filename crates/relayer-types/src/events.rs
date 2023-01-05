@@ -11,6 +11,8 @@ use tendermint::abci;
 
 use crate::applications::ics29_fee::error::Error as FeeError;
 use crate::applications::ics29_fee::events::IncentivizedPacket;
+use crate::applications::ics31_icq::error::Error as QueryPacketError;
+use crate::applications::ics31_icq::events::CrossChainQueryPacket;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;
@@ -48,6 +50,10 @@ define_error! {
         Fee
             [ FeeError ]
             | _ | { "fee error" },
+
+        CrossChainQuery
+            [ QueryPacketError ]
+            | _ | { "cross chain query error" },
 
         Timestamp
             [ ParseTimestampError ]
@@ -132,6 +138,8 @@ const ACK_PACKET_EVENT: &str = "acknowledge_packet";
 const TIMEOUT_EVENT: &str = "timeout_packet";
 const TIMEOUT_ON_CLOSE_EVENT: &str = "timeout_packet_on_close";
 const INCENTIVIZED_PACKET_EVENT: &str = "incentivized_ibc_packet";
+/// CrossChainQuery event type
+const CROSS_CHAIN_QUERY_PACKET_EVENT: &str = "cross_chain_query";
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -158,6 +166,7 @@ pub enum IbcEventType {
     Timeout,
     TimeoutOnClose,
     IncentivizedPacket,
+    CrossChainQuery,
     AppModule,
     Empty,
     ChainError,
@@ -188,6 +197,7 @@ impl IbcEventType {
             IbcEventType::Timeout => TIMEOUT_EVENT,
             IbcEventType::TimeoutOnClose => TIMEOUT_ON_CLOSE_EVENT,
             IbcEventType::IncentivizedPacket => INCENTIVIZED_PACKET_EVENT,
+            IbcEventType::CrossChainQuery => CROSS_CHAIN_QUERY_PACKET_EVENT,
             IbcEventType::AppModule => APP_MODULE_EVENT,
             IbcEventType::Empty => EMPTY_EVENT,
             IbcEventType::ChainError => CHAIN_ERROR_EVENT,
@@ -222,6 +232,7 @@ impl FromStr for IbcEventType {
             TIMEOUT_EVENT => Ok(IbcEventType::Timeout),
             TIMEOUT_ON_CLOSE_EVENT => Ok(IbcEventType::TimeoutOnClose),
             INCENTIVIZED_PACKET_EVENT => Ok(IbcEventType::IncentivizedPacket),
+            CROSS_CHAIN_QUERY_PACKET_EVENT => Ok(IbcEventType::CrossChainQuery),
             EMPTY_EVENT => Ok(IbcEventType::Empty),
             CHAIN_ERROR_EVENT => Ok(IbcEventType::ChainError),
             // from_str() for `APP_MODULE_EVENT` MUST fail because a `ModuleEvent`'s type isn't constant
@@ -260,6 +271,7 @@ pub enum IbcEvent {
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
     IncentivizedPacket(IncentivizedPacket),
+    CrossChainQueryPacket(CrossChainQueryPacket),
 
     AppModule(ModuleEvent),
 
@@ -296,6 +308,7 @@ impl Display for IbcEvent {
             IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacket({})", ev),
 
             IbcEvent::IncentivizedPacket(ev) => write!(f, "IncenvitizedPacket({:?}", ev),
+            IbcEvent::CrossChainQueryPacket(ev) => write!(f, "CrosschainPacket({:?})", ev),
 
             IbcEvent::AppModule(ev) => write!(f, "AppModule({})", ev),
 
@@ -330,9 +343,10 @@ impl TryFrom<IbcEvent> for abci::Event {
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::IncentivizedPacket(event) => event.into(),
+            IbcEvent::CrossChainQueryPacket(event) => event.into(),
             IbcEvent::AppModule(event) => event.try_into()?,
             IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
-                return Err(Error::incorrect_event_type(event.to_string()))
+                return Err(Error::incorrect_event_type(event.to_string()));
             }
         })
     }
@@ -370,6 +384,7 @@ impl IbcEvent {
             IbcEvent::TimeoutPacket(_) => IbcEventType::Timeout,
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
             IbcEvent::IncentivizedPacket(_) => IbcEventType::IncentivizedPacket,
+            IbcEvent::CrossChainQueryPacket(_) => IbcEventType::CrossChainQuery,
             IbcEvent::AppModule(_) => IbcEventType::AppModule,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
         }
@@ -403,6 +418,13 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(ev) => Some(&ev.packet),
             IbcEvent::TimeoutPacket(ev) => Some(&ev.packet),
             IbcEvent::TimeoutOnClosePacket(ev) => Some(&ev.packet),
+            _ => None,
+        }
+    }
+
+    pub fn cross_chain_query_packet(&self) -> Option<&CrossChainQueryPacket> {
+        match self {
+            IbcEvent::CrossChainQueryPacket(ev) => Some(ev),
             _ => None,
         }
     }

@@ -62,6 +62,7 @@ where
                 config.bootstrap_with_random_ids,
                 |config| self.test.get_overrides().modify_node_config(config),
                 |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+                i,
             )?;
 
             node_processes.push(node.process.clone());

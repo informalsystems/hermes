@@ -22,7 +22,9 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryConnectionsRequest as RawQueryConnectionsRequest,
 };
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
 use ibc_relayer_types::events::WithBlockDataType;
 use ibc_relayer_types::Height;
 
@@ -464,4 +466,14 @@ pub struct QueryClientEventRequest {
     pub event_id: WithBlockDataType,
     pub client_id: ClientId,
     pub consensus_height: Height,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub struct CrossChainQueryRequest {
+    pub chain_id: ChainId,
+    pub query_id: String,
+    pub query_type: String,
+    /// hex encoded query request
+    pub request: String,
+    pub height: TMBlockHeight,
 }

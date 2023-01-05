@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.20.0"
+version      = "0.21.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -21,9 +21,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc-proto         = { version = "0.23.0" }
-ibc-telemetry     = { version = "0.20.0", path = "../telemetry", optional = true }
-ibc-relayer-types = { version = "0.20.0", path = "../relayer-types", features = ["mocks"] }
+ibc-proto         = { version = "0.24.0" }
+ibc-telemetry     = { version = "0.21.0", path = "../telemetry", optional = true }
+ibc-relayer-types = { version = "0.21.0", path = "../relayer-types", features = ["mocks"] }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
@@ -42,7 +42,7 @@ crossbeam-channel = "0.5.5"
 hex = "0.4"
 bitcoin = { version = "0.29.1", features = ["serde"] }
 tiny-bip39 = "1.0.0"
-hdpath = { version = "0.6.1" }
+hdpath = "0.6.1"
 sha2 = "0.10.6"
 tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = false }
 ripemd = "0.1.3"
@@ -60,9 +60,14 @@ humantime = "2.1.0"
 regex = "1.5.5"
 moka = "0.9.4"
 uuid = { version = "1.2.1", features = ["v4"] }
+bs58 = "0.4.0"
 digest = "0.10.6"
+ed25519 = "1.5.2"
+ed25519-dalek = { version = "1.0.1", features = ["serde"] }
+ed25519-dalek-bip32 = "0.2.0"
 generic-array = "0.14.6"
-secp256k1 = { version = "0.24.1", features = ["rand-std"] }
+secp256k1 = { version = "0.24.2", features = ["rand-std"] }
+strum = { version = "0.24.1", features = ["derive"] }
 
 [dependencies.num-bigint]
 version = "0.4"
@@ -73,28 +78,28 @@ version = "0.4.1"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "0.27.0"
+version = "0.28.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "0.27.0"
+version = "0.28.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "0.27.0"
+version = "0.28.0"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.27.0"
+version = "0.28.0"
 default-features = false
 
 [dev-dependencies]
-ibc-relayer-types = { version = "0.20.0", path = "../relayer-types", features = ["mocks"] }
-serial_test = "0.9.0"
+ibc-relayer-types = { version = "0.21.0", path = "../relayer-types", features = ["mocks"] }
+serial_test = "0.10.0"
 env_logger = "0.10.0"
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
 test-log = { version = "0.2.10", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "0.27.0" }
+tendermint-testgen = { version = "0.28.0" }

@@ -5,6 +5,7 @@ use crossbeam_channel as channel;
 use tracing::Span;
 
 use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
         ics02_client::events::UpdateClient,
         ics03_connection::{
@@ -35,7 +36,7 @@ use crate::{
         monitor::{EventBatch, Result as MonitorResult},
         IbcEventWithHeight,
     },
-    keyring::KeyEntry,
+    keyring::AnySigningKeyPair,
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
@@ -128,12 +129,12 @@ pub enum ChainRequest {
     },
 
     GetKey {
-        reply_to: ReplyTo<KeyEntry>,
+        reply_to: ReplyTo<AnySigningKeyPair>,
     },
 
     AddKey {
         key_name: String,
-        key: KeyEntry,
+        key: AnySigningKeyPair,
         reply_to: ReplyTo<()>,
     },
 
@@ -353,6 +354,11 @@ pub enum ChainRequest {
         counterparty_payee: Signer,
         reply_to: ReplyTo<()>,
     },
+
+    CrossChainQuery {
+        request: Vec<CrossChainQueryRequest>,
+        reply_to: ReplyTo<Vec<CrossChainQueryResponse>>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -390,9 +396,9 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
 
     fn config(&self) -> Result<ChainConfig, Error>;
 
-    fn get_key(&self) -> Result<KeyEntry, Error>;
+    fn get_key(&self) -> Result<AnySigningKeyPair, Error>;
 
-    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
+    fn add_key(&self, key_name: String, key: AnySigningKeyPair) -> Result<(), Error>;
 
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
@@ -656,4 +662,9 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         port_id: PortId,
         counterparty_payee: Signer,
     ) -> Result<(), Error>;
+
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error>;
 }
