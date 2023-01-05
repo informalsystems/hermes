@@ -380,7 +380,7 @@ where
     }
 
     fn query_packet_events(
-        &mut self,
+        &self,
         request: QueryPacketEventDataRequest,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.value().query_packet_events(request)
