@@ -1355,7 +1355,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
             })?;
 
-        // This is necessary because specifiying `.reversed()` on `PageRequest` results in a empty response.
+        // This is necessary because the results are sorted in lexicographic order instead of
+        // numeric order, and we cannot therefore rely on setting the `reverse = true` in the
+        // `PageRequest` setting. Since we are asking for all states anyway, we can sort them
+        // by height ourselves.
+        //
+        // For more context, see:
+        // - https://github.com/informalsystems/hermes/pull/2950#issuecomment-1373733744
+        // - https://github.com/cosmos/ibc-go/issues/1399
         consensus_states.sort_by_key(|a| core::cmp::Reverse(a.height));
 
         Ok(consensus_states)
@@ -1412,7 +1419,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
             })?;
 
-        // This is necessary because specifiying `.reversed()` on `PageRequest` results in a empty response.
+        // This is necessary because the results are sorted in lexicographic order instead of
+        // numeric order, and we cannot therefore rely on setting the `reverse = true` in the
+        // `PageRequest` setting. Since we are asking for all heights anyway, we can sort them
+        // ourselves.
+        //
+        // For more context, see:
+        // - https://github.com/informalsystems/hermes/pull/2950#issuecomment-1373733744
+        // - https://github.com/cosmos/ibc-go/issues/1399
         heights.sort_by_key(|&h| core::cmp::Reverse(h));
 
         Ok(heights)
