@@ -3,6 +3,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
+use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainTypes;
