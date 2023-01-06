@@ -17,7 +17,9 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -326,7 +328,7 @@ where
         &self,
         height: &Height,
         packet: &Packet,
-        ack: &WriteAcknowledgementEvent,
+        ack: &Self::WriteAcknowledgementEvent,
     ) -> Result<CosmosIbcMessage, Self::Error> {
         let proofs = self
             .chain
@@ -341,7 +343,6 @@ where
             .map_err(Error::relayer)?;
 
         let packet = packet.clone();
-        let ack = ack.clone;
 
         let message = CosmosIbcMessage::new(Some(*height), move |signer| {
             Ok(MsgAcknowledgement::new(

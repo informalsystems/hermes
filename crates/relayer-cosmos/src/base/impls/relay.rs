@@ -1,12 +1,8 @@
 use async_trait::async_trait;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
-use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
-use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainTypes;
@@ -17,7 +13,6 @@ use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 use crate::base::error::Error;
 
-use crate::base::traits::chain::CosmosChain;
 use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::message::CosmosIbcMessage;
