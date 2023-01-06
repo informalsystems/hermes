@@ -357,7 +357,7 @@ where
     }
 
     /// Construct a timeout packet message to be sent between Cosmos chains
-    /// over an unordered Cosmos channel in the event that a packet orginating
+    /// over an unordered channel in the event that a packet that originated
     /// from a source chain was not received.
     async fn build_timeout_unordered_packet_message(
         &self,
