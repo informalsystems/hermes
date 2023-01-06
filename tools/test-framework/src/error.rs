@@ -1,15 +1,19 @@
 //! Error type used for the tests.
 
 use core::convert::{From, Into};
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
+
 use eyre::Report;
 use flex_error::{define_error, TraceError};
+
+use ibc_relayer::channel::error::ChannelError;
 use ibc_relayer::connection::ConnectionError;
 use ibc_relayer::error::Error as RelayerError;
+use ibc_relayer::foreign_client::ForeignClientError;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::supervisor::error::Error as SupervisorError;
 use ibc_relayer::transfer::TransferError;
-use ibc_relayer::{channel::error::ChannelError, upgrade_chain::UpgradeChainError};
-use std::io::{Error as IoError, ErrorKind as IoErrorKind};
+use ibc_relayer::upgrade_chain::UpgradeChainError;
 
 define_error! {
     Error {
@@ -70,6 +74,10 @@ define_error! {
         UpgradeChain
             [ UpgradeChainError ]
             | _ | { "upgrade chain error" },
+
+        ForeignClient
+            [ ForeignClientError ]
+            | _ | { "foreign client error" },
 
         QueryClient
             | _ | { "error querying client" },
