@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::fmt::{self, Debug, Display};
+use tendermint::abci::Event;
 
 use crossbeam_channel as channel;
 use tracing::Span;
@@ -86,6 +87,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Debug for ChainHandlePair<ChainA,
 }
 
 pub type Subscription = channel::Receiver<Arc<MonitorResult<EventBatch>>>;
+pub type SubscriptionAbci = channel::Receiver<Arc<MonitorResult<Event>>>;
 
 pub type ReplyTo<T> = channel::Sender<Result<T, Error>>;
 pub type Reply<T> = channel::Receiver<Result<T, Error>>;

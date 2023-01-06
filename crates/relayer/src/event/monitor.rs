@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::cmp::Ordering;
+use tendermint::abci::Event;
 
 use crossbeam_channel as channel;
 use futures::{
@@ -12,8 +13,8 @@ use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
 use tendermint_rpc::{
-    event::Event as RpcEvent, query::Query, Error as RpcError, SubscriptionClient, Url,
-    WebSocketClient, WebSocketClientDriver,
+    event::Event as RpcEvent, event::EventData as RpcEventData, query::Query, Error as RpcError,
+    SubscriptionClient, Url, WebSocketClient, WebSocketClientDriver,
 };
 
 use ibc_relayer_types::{
@@ -21,7 +22,10 @@ use ibc_relayer_types::{
 };
 
 use crate::{
-    chain::{handle::Subscription, tracking::TrackingId},
+    chain::{
+        handle::{Subscription, SubscriptionAbci},
+        tracking::TrackingId,
+    },
     telemetry,
     util::{
         retry::{retry_with_index, RetryResult},
@@ -92,6 +96,7 @@ impl TxMonitorCmd {
 pub enum MonitorCmd {
     Shutdown,
     Subscribe(channel::Sender<Subscription>),
+    SubscribeAbci(channel::Sender<SubscriptionAbci>),
 }
 
 /// Connect to a Tendermint node, subscribe to a set of queries,
@@ -109,6 +114,8 @@ pub struct EventMonitor {
     driver_handle: JoinHandle<()>,
     /// Event bus for broadcasting events
     event_bus: EventBus<Arc<Result<EventBatch>>>,
+    /// Event bus for broadcasting ABCI events
+    abci_event_bus: EventBus<Arc<Result<Event>>>,
     /// Channel where to receive client driver errors
     rx_err: mpsc::UnboundedReceiver<tendermint_rpc::Error>,
     /// Channel where to send client driver errors
@@ -177,6 +184,7 @@ impl EventMonitor {
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, TxMonitorCmd)> {
         let event_bus = EventBus::new();
+        let abci_event_bus = EventBus::new();
         let (tx_cmd, rx_cmd) = channel::unbounded();
 
         let ws_addr = node_addr.clone();
@@ -197,6 +205,7 @@ impl EventMonitor {
             driver_handle,
             event_queries,
             event_bus,
+            abci_event_bus,
             rx_err,
             tx_err,
             rx_cmd,
@@ -365,11 +374,8 @@ impl EventMonitor {
         let subscriptions =
             core::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
 
-        // Convert the stream of RPC events into a stream of event batches.
-        let batches = stream_batches(subscriptions, self.chain_id.clone());
-
         // Needed to be able to poll the stream
-        pin_mut!(batches);
+        pin_mut!(subscriptions);
 
         // Work around double borrow
         let rt = self.rt.clone();
@@ -379,12 +385,15 @@ impl EventMonitor {
                 match cmd {
                     MonitorCmd::Shutdown => return Next::Abort,
                     MonitorCmd::Subscribe(tx) => tx.send(self.event_bus.subscribe()).unwrap(),
+                    MonitorCmd::SubscribeAbci(tx) => {
+                        tx.send(self.abci_event_bus.subscribe()).unwrap()
+                    }
                 }
             }
 
             let result = rt.block_on(async {
                 tokio::select! {
-                    Some(batch) = batches.next() => batch,
+                    Some(batch) = subscriptions.next() => batch.map_err(Error::canceled_or_generic),
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
                 }
             });
@@ -395,8 +404,83 @@ impl EventMonitor {
                 return Next::Abort;
             }
 
+            let chain_id = self.chain_id.clone();
+
             match result {
-                Ok(batch) => self.process_batch(batch),
+                // If there is an RPC Event, first extract the ABCI Event and broadcast it.
+                // Afterwards convert into batches of IBC Event and process them
+                Ok(rpc_event) => {
+                    // Extract the ABCI Event
+                    if let RpcEventData::Tx { tx_result } = rpc_event.clone().data {
+                        let abci_events = tx_result.result.events;
+                        for abci_event in abci_events {
+                            self.abci_event_bus.broadcast(Arc::new(Ok(abci_event)));
+                        }
+                    }
+
+                    // Collect the IBC Events
+                    let ibc_batches = collect_events(&self.chain_id, rpc_event);
+
+                    // Group the IBC Events by height
+                    let grouped = try_group_while(ibc_batches, |ev0, ev1| ev0.height == ev1.height);
+                    // Convert each group to a batch
+                    let grouped_ibc_batches = grouped.map_ok(move |mut events_with_heights| {
+                        let height = events_with_heights
+                            .first()
+                            .map(|ev_with_height| ev_with_height.height)
+                            .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
+
+                        sort_events(&mut events_with_heights);
+
+                        EventBatch {
+                            height,
+                            events: events_with_heights,
+                            chain_id: chain_id.clone(),
+                            tracking_id: TrackingId::new_uuid(),
+                        }
+                    });
+                    pin_mut!(grouped_ibc_batches);
+
+                    // Iterate through the IBC Events and process them
+                    while let Some(ibc_batch) =
+                        rt.block_on(async { grouped_ibc_batches.next().await })
+                    {
+                        match ibc_batch {
+                            Ok(b) => self.process_batch(b),
+                            Err(e) => {
+                                if let ErrorDetail::SubscriptionCancelled(reason) = e.detail() {
+                                    error!("subscription cancelled, reason: {}", reason);
+
+                                    self.propagate_error(e);
+
+                                    telemetry!(ws_reconnect, &self.chain_id);
+
+                                    // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                                    self.reconnect();
+
+                                    // Abort this event loop, the `run` method will start a new one.
+                                    // We can't just write `return self.run()` here because Rust
+                                    // does not perform tail call optimization, and we would
+                                    // thus potentially blow up the stack after many restarts.
+                                    return Next::Continue;
+                                } else {
+                                    error!("failed to collect events: {}", e);
+
+                                    telemetry!(ws_reconnect, &self.chain_id);
+
+                                    // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                                    self.reconnect();
+
+                                    // Abort this event loop, the `run` method will start a new one.
+                                    // We can't just write `return self.run()` here because Rust
+                                    // does not perform tail call optimization, and we would
+                                    // thus potentially blow up the stack after many restarts.
+                                    return Next::Continue;
+                                };
+                            }
+                        }
+                    }
+                }
                 Err(e) => {
                     if let ErrorDetail::SubscriptionCancelled(reason) = e.detail() {
                         error!("subscription cancelled, reason: {}", reason);
@@ -416,7 +500,7 @@ impl EventMonitor {
                     } else {
                         error!("failed to collect events: {}", e);
 
-                        telemetry!(ws_reconnect, &self.chain_id);
+                        telemetry!(ws_reconnect, &chain_id);
 
                         // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
                         self.reconnect();
@@ -458,40 +542,6 @@ fn collect_events(
 ) -> impl Stream<Item = Result<IbcEventWithHeight>> {
     let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
     stream::iter(events).map(Ok)
-}
-
-/// Convert a stream of RPC event into a stream of event batches
-fn stream_batches(
-    subscriptions: Box<SubscriptionStream>,
-    chain_id: ChainId,
-) -> impl Stream<Item = Result<EventBatch>> {
-    let id = chain_id.clone();
-
-    // Collect IBC events from each RPC event
-    let events = subscriptions
-        .map_ok(move |rpc_event| collect_events(&id, rpc_event))
-        .map_err(Error::canceled_or_generic)
-        .try_flatten();
-
-    // Group events by height
-    let grouped = try_group_while(events, |ev0, ev1| ev0.height == ev1.height);
-
-    // Convert each group to a batch
-    grouped.map_ok(move |mut events_with_heights| {
-        let height = events_with_heights
-            .first()
-            .map(|ev_with_height| ev_with_height.height)
-            .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
-
-        sort_events(&mut events_with_heights);
-
-        EventBatch {
-            height,
-            events: events_with_heights,
-            chain_id: chain_id.clone(),
-            tracking_id: TrackingId::new_uuid(),
-        }
-    })
 }
 
 /// Sort the given events by putting the NewBlock event first,
