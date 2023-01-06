@@ -115,11 +115,6 @@ impl PageRequest {
             ..Default::default()
         }
     }
-
-    pub fn reversed(mut self) -> Self {
-        self.reverse = true;
-        self
-    }
 }
 
 impl From<PageRequest> for RawPageRequest {
