@@ -1349,13 +1349,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .dst_chain
             .query_consensus_states(QueryConsensusStatesRequest {
                 client_id: self.id.clone(),
-                pagination: Some(PageRequest::all().reversed()),
+                pagination: Some(PageRequest::all()),
             })
             .map_err(|e| {
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
             })?;
 
-        // TODO: Check that this is unnecessary
+        // This is necessary because specifiying `.reversed()` on `PageRequest` results in a empty response.
         consensus_states.sort_by_key(|a| core::cmp::Reverse(a.height));
 
         Ok(consensus_states)
@@ -1406,13 +1406,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .dst_chain
             .query_consensus_state_heights(QueryConsensusStateHeightsRequest {
                 client_id: self.id.clone(),
-                pagination: Some(PageRequest::all().reversed()),
+                pagination: Some(PageRequest::all()),
             })
             .map_err(|e| {
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
             })?;
 
-        // TODO: Check that this is unnecessary
+        // This is necessary because specifiying `.reversed()` on `PageRequest` results in a empty response.
         heights.sort_by_key(|&h| core::cmp::Reverse(h));
 
         Ok(heights)
