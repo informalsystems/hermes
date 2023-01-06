@@ -343,6 +343,7 @@ where
             .map_err(Error::relayer)?;
 
         let packet = packet.clone();
+        let ack = ack.ack.clone();
 
         let message = CosmosIbcMessage::new(Some(*height), move |signer| {
             Ok(MsgAcknowledgement::new(
