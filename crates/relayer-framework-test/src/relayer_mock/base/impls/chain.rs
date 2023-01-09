@@ -249,7 +249,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         )) {
             return Err(Error::receive_without_sent(
                 self.name().to_string(),
-                self.name().to_string(),
+                packet.src_channel_id.to_string(),
             ));
         }
         Ok(MockMessage::RecvPacket(height.clone(), packet.clone()))
@@ -271,7 +271,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         )) {
             return Err(Error::acknowledgment_without_received(
                 self.name().to_string(),
-                self.name().to_string(),
+                packet.dst_channel_id.to_string(),
             ));
         }
 
@@ -284,18 +284,18 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         packet: &PacketKey,
     ) -> Result<MockMessage, Error> {
         // If the latest state of the source chain doesn't have the packet as sent, return an error.
-        let state = self.get_current_state();
+        // let state = self.get_current_state();
 
-        if !state.check_sent((
-            packet.src_port_id.clone(),
-            packet.src_channel_id.clone(),
-            packet.sequence,
-        )) {
-            return Err(Error::timeout_without_sent(
-                self.name().to_string(),
-                self.name().to_string(),
-            ));
-        }
+        // if !state.check_timeout((
+        //     packet.src_port_id.clone(),
+        //     packet.src_channel_id.clone(),
+        //     packet.sequence,
+        // )) {
+        //     return Err(Error::timeout_without_sent(
+        //         self.name().to_string(),
+        //         packet.src_channel_id.to_string(),
+        //     ));
+        // }
 
         // Must be timed out; current height > timeout height
         Ok(MockMessage::TimeoutPacket(height.clone(), packet.clone()))

@@ -50,21 +50,21 @@ define_error! {
             },
 
         ReceiveWithoutSent
-        { src_chain: String, dst_chain: String }
+        { chain: String, channel_id: String }
             | e | {
-                format_args!("error trying to build RecvPacket from chain `{}` to `{}`. Source chain Consensus State doesn't have the packet recorded as sent", e.src_chain, e.dst_chain)
+                format_args!("error trying to build RecvPacket from chain `{}` with channel ID `{}`. Source chain Consensus State doesn't have the packet recorded as sent", e.chain, e.channel_id)
             },
 
         AcknowledgmentWithoutReceived
-        { src_chain: String, dst_chain: String }
+        { chain: String, channel_id: String }
             | e | {
-                format_args!("error trying to build AckPacket from chain `{}` to `{}`. Destination chain Consensus State doesn't have the packet recorded as received", e.dst_chain, e.src_chain)
+                format_args!("error trying to build AckPacket from chain `{}` with channel ID `{}`. Destination chain Consensus State doesn't have the packet recorded as received", e.chain, e.channel_id)
             },
 
         TimeoutWithoutSent
-        { src_chain: String, dst_chain: String }
+        { chain: String, channel_id: String }
             | e | {
-                format_args!("error trying to build TimeoutPacket from chain `{}` to `{}`. Source chain Consensus State doesn't have the packet recorded as sent", e.dst_chain, e.src_chain)
+                format_args!("error trying to build TimeoutPacket from chain `{}` with channel ID `{}`. Source chain Consensus State doesn't have the packet recorded as sent", e.chain, e.channel_id)
             },
 
         TimeoutReceive

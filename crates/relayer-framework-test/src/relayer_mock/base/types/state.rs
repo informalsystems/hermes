@@ -79,8 +79,13 @@ impl State {
         self.ack_packets.get(&packet_uid).is_some()
     }
 
+    // TODO: Fix this so that it actually checks whether the packet timed out
     pub fn check_timeout(&self, packet_uid: PacketUID) -> bool {
         self.timeout_packets.get(&packet_uid).is_some()
+
+        // check the current timestamp > packet timeout timestamp
+        // or the current height > the packet timeout height
+        // also check that the packet has not been previously received
     }
 
     pub fn update_sent(&mut self, packet_uid: PacketUID, packet: PacketKey, height: Height) {
