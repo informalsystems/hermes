@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use ibc_relayer::chain::requests::{
-    PageRequest, QueryConsensusStateHeightsRequest, QueryConsensusStatesRequest,
+    PageRequest,
+    QueryConsensusStateHeightsRequest, // QueryConsensusStatesRequest,
 };
 
 use ibc_test_framework::prelude::*;
@@ -37,14 +38,14 @@ impl BinaryChainTest for ConsensusStateHeights {
             }
         }
 
-        let states = chains
-            .handle_b()
-            .query_consensus_states(QueryConsensusStatesRequest {
-                client_id: (*chains.client_id_b().value()).clone(),
-                pagination: Some(PageRequest::all()),
-            })?;
+        // let states = chains
+        //     .handle_b()
+        //     .query_consensus_states(QueryConsensusStatesRequest {
+        //         client_id: (*chains.client_id_b().value()).clone(),
+        //         pagination: Some(PageRequest::all()),
+        //     })?;
 
-        assert_eq!(states.len(), CONSENSUS_STATES_COUNT);
+        // assert_eq!(states.len(), CONSENSUS_STATES_COUNT);
 
         let heights =
             chains
@@ -56,12 +57,12 @@ impl BinaryChainTest for ConsensusStateHeights {
 
         assert_eq!(heights.len(), CONSENSUS_STATES_COUNT);
 
-        states
-            .into_iter()
-            .zip(heights.into_iter())
-            .for_each(|(state, height)| {
-                assert_eq!(state.height, height);
-            });
+        // states
+        //     .into_iter()
+        //     .zip(heights.into_iter())
+        //     .for_each(|(state, height)| {
+        //         assert_eq!(state.height, height);
+        //     });
 
         Ok(())
     }

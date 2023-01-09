@@ -34,7 +34,7 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::AnyClientState;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
+use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
@@ -1331,41 +1331,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         })?;
 
         Ok(Some(update))
-    }
-
-    /// Retrieves all consensus states for this client and sorts them in descending height
-    /// order. If consensus states are not pruned on chain, then last consensus state is the one
-    /// installed by the `CreateClient` operation.
-    #[instrument(
-        name = "foreign_client.fetch_consensus_states",
-        level = "error",
-        skip_all,
-        fields(client = %self)
-    )]
-    fn fetch_consensus_states(
-        &self,
-    ) -> Result<Vec<AnyConsensusStateWithHeight>, ForeignClientError> {
-        let mut consensus_states = self
-            .dst_chain
-            .query_consensus_states(QueryConsensusStatesRequest {
-                client_id: self.id.clone(),
-                pagination: Some(PageRequest::all()),
-            })
-            .map_err(|e| {
-                ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
-            })?;
-
-        // This is necessary because the results are sorted in lexicographic order instead of
-        // numeric order, and we cannot therefore rely on setting the `reverse = true` in the
-        // `PageRequest` setting. Since we are asking for all states anyway, we can sort them
-        // by height ourselves.
-        //
-        // For more context, see:
-        // - https://github.com/informalsystems/hermes/pull/2950#issuecomment-1373733744
-        // - https://github.com/cosmos/ibc-go/issues/1399
-        consensus_states.sort_by_key(|a| core::cmp::Reverse(a.height));
-
-        Ok(consensus_states)
     }
 
     /// Returns the consensus state at `height` or error if not found.

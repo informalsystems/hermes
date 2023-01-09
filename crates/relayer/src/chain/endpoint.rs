@@ -36,7 +36,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
+use crate::consensus_state::AnyConsensusState;
 use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::IbcEventWithHeight;
@@ -209,12 +209,6 @@ pub trait ChainEndpoint: Sized {
         request: QueryConsensusStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error>;
-
-    /// Query all the consensus states for a given client.
-    fn query_consensus_states(
-        &self,
-        request: QueryConsensusStatesRequest,
-    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
 
     /// Query the heights of every consensus state for a given client.
     fn query_consensus_state_heights(

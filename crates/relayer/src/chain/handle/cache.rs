@@ -29,7 +29,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
+use crate::consensus_state::AnyConsensusState;
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
@@ -208,13 +208,6 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: QueryConsensusStateHeightsRequest,
     ) -> Result<Vec<Height>, Error> {
         self.inner().query_consensus_state_heights(request)
-    }
-
-    fn query_consensus_states(
-        &self,
-        request: QueryConsensusStatesRequest,
-    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        self.inner().query_consensus_states(request)
     }
 
     fn query_consensus_state(

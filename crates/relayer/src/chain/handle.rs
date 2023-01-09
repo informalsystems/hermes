@@ -29,7 +29,7 @@ use crate::{
     client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
     connection::ConnectionMsgType,
-    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
+    consensus_state::AnyConsensusState,
     denom::DenomTrace,
     error::Error,
     event::{
@@ -216,11 +216,6 @@ pub enum ChainRequest {
         request: QueryConsensusStateRequest,
         include_proof: IncludeProof,
         reply_to: ReplyTo<(AnyConsensusState, Option<MerkleProof>)>,
-    },
-
-    QueryConsensusStates {
-        request: QueryConsensusStatesRequest,
-        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
     },
 
     QueryConsensusStateHeights {
@@ -457,12 +452,6 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         request: QueryConsensusStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error>;
-
-    /// Query all the consensus states for a given client.
-    fn query_consensus_states(
-        &self,
-        request: QueryConsensusStatesRequest,
-    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
 
     /// Query the heights of every consensus state for a given client.
     fn query_consensus_state_heights(

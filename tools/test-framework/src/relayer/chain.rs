@@ -32,7 +32,7 @@ use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::connection::ConnectionMsgType;
-use ibc_relayer::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::denom::DenomTrace;
 use ibc_relayer::error::Error;
 use ibc_relayer::event::IbcEventWithHeight;
@@ -157,13 +157,6 @@ where
         request: QueryConsensusStateHeightsRequest,
     ) -> Result<Vec<Height>, Error> {
         self.value().query_consensus_state_heights(request)
-    }
-
-    fn query_consensus_states(
-        &self,
-        request: QueryConsensusStatesRequest,
-    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        self.value().query_consensus_states(request)
     }
 
     fn query_consensus_state(
