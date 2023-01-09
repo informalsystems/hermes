@@ -5,7 +5,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryClientConnectionsRequest, QueryClientEventRequest,
     QueryClientStateRequest, QueryConsensusStateHeightsRequest, QueryConsensusStateRequest,
-    QueryConsensusStatesRequest, QueryHeight, QueryTxRequest,
+    QueryHeight, QueryTxRequest,
 };
 
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
@@ -102,9 +102,6 @@ pub struct QueryClientConsensusCmd {
     )]
     consensus_height: Option<u64>,
 
-    #[clap(long = "heights-only", help = "Show only consensus heights")]
-    heights_only: bool,
-
     #[clap(
         long = "height",
         value_name = "HEIGHT",
@@ -161,7 +158,7 @@ impl Runnable for QueryClientConsensusCmd {
                 Ok(cs) => Output::success(cs).exit(),
                 Err(e) => Output::error(e).exit(),
             }
-        } else if self.heights_only {
+        } else {
             let res = chain.query_consensus_state_heights(QueryConsensusStateHeightsRequest {
                 client_id: self.client_id.clone(),
                 pagination: Some(PageRequest::all()),
@@ -169,16 +166,6 @@ impl Runnable for QueryClientConsensusCmd {
 
             match res {
                 Ok(heights) => Output::success(heights).exit(),
-                Err(e) => Output::error(e).exit(),
-            }
-        } else {
-            let res = chain.query_consensus_states(QueryConsensusStatesRequest {
-                client_id: self.client_id.clone(),
-                pagination: Some(PageRequest::all()),
-            });
-
-            match res {
-                Ok(states) => Output::success(states).exit(),
                 Err(e) => Output::error(e).exit(),
             }
         }
@@ -388,7 +375,6 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 client_id: ClientId::from_str("client_id").unwrap(),
                 consensus_height: None,
-                heights_only: false,
                 height: None
             },
             QueryClientConsensusCmd::parse_from([
@@ -408,7 +394,6 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 client_id: ClientId::from_str("client_id").unwrap(),
                 consensus_height: Some(42),
-                heights_only: false,
                 height: None
             },
             QueryClientConsensusCmd::parse_from([
@@ -430,7 +415,6 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 client_id: ClientId::from_str("client_id").unwrap(),
                 consensus_height: None,
-                heights_only: false,
                 height: Some(42)
             },
             QueryClientConsensusCmd::parse_from([
@@ -441,27 +425,6 @@ mod tests {
                 "client_id",
                 "--height",
                 "42"
-            ])
-        )
-    }
-
-    #[test]
-    fn test_query_client_consensus_heights_only() {
-        assert_eq!(
-            QueryClientConsensusCmd {
-                chain_id: ChainId::from_string("chain_id"),
-                client_id: ClientId::from_str("client_id").unwrap(),
-                consensus_height: None,
-                heights_only: true,
-                height: None
-            },
-            QueryClientConsensusCmd::parse_from([
-                "test",
-                "--chain",
-                "chain_id",
-                "--client",
-                "client_id",
-                "--heights-only"
             ])
         )
     }
