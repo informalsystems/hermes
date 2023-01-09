@@ -121,11 +121,13 @@ impl MockChainContext {
     }
 
     /// Insert a new Consensus State for a given Client at a given Height.
-    /// If there already is a Consensus State for the Client at the given Height, which is different
-    /// from the given State, return an error as a Chain is not allowed to have two different Consensus
-    /// States at the same Height.
-    /// This is used for the `updateClient` of ICS002, with the misbehaviour being when trying to update
-    /// an already existing Consensus State with a different value.
+    ///
+    /// Returns an error if there is already a consensus state for the client at the given height
+    /// which is different from the given state; a chain is not allowed to have two different
+    /// consensus states at the same height.
+    ///
+    /// This is used for the `updateClient` of ICS002. It is considered an act of misbehaviour
+    /// when a chain attempts to update an already-existing consensus state with a different value.
     pub fn insert_consensus_state(
         &self,
         client_id: ClientId,
@@ -326,7 +328,6 @@ impl MockChainContext {
                 packet.sequence,
             ),
             packet,
-            height,
         );
 
         Ok(current_state)

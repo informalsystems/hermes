@@ -283,19 +283,24 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         height: &MockHeight,
         packet: &PacketKey,
     ) -> Result<MockMessage, Error> {
-        // If the latest state of the source chain doesn't have the packet as sent, return an error.
-        // let state = self.get_current_state();
+        let state = self.get_current_state();
+        let runtime = self.runtime();
+        let current_timestamp = runtime.runtime.get_time();
 
-        // if !state.check_timeout((
-        //     packet.src_port_id.clone(),
-        //     packet.src_channel_id.clone(),
-        //     packet.sequence,
-        // )) {
-        //     return Err(Error::timeout_without_sent(
-        //         self.name().to_string(),
-        //         packet.src_channel_id.to_string(),
-        //     ));
-        // }
+        if !state.check_timeout(
+            (
+                packet.src_port_id.clone(),
+                packet.src_channel_id.clone(),
+                packet.sequence,
+            ),
+            height.clone(),
+            current_timestamp.clone(),
+        ) {
+            return Err(Error::timeout_without_sent(
+                self.name().to_string(),
+                packet.src_channel_id.to_string(),
+            ));
+        }
 
         // Must be timed out; current height > timeout height
         Ok(MockMessage::TimeoutPacket(height.clone(), packet.clone()))

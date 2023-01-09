@@ -4,12 +4,14 @@ use crate::relayer_mock::base::types::aliases::PacketUID;
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::packet::PacketKey;
 
+use super::aliases::MockTimestamp;
+
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct State {
     sent_packets: HashMap<PacketUID, (PacketKey, Height)>,
     recv_packets: HashMap<PacketUID, (PacketKey, Height)>,
     ack_packets: HashMap<PacketUID, (PacketKey, Height)>,
-    timeout_packets: HashMap<PacketUID, (PacketKey, Height)>,
+    timeout_packets: HashMap<PacketUID, PacketKey>,
 }
 
 impl Display for State {
@@ -58,8 +60,8 @@ impl Display for State {
                 .expect("error retrieving packet and height from timeout_packets");
             writeln!(
                 f,
-                "\tPacket({}, {}, {}) with sequence {} and height {}",
-                key.0, key.1, key.2, packet.0.sequence, packet.1
+                "\tPacket({}, {}, {}) with sequence {}",
+                key.0, key.1, key.2, packet.sequence
             )?;
         }
         Ok(())
@@ -79,13 +81,26 @@ impl State {
         self.ack_packets.get(&packet_uid).is_some()
     }
 
-    // TODO: Fix this so that it actually checks whether the packet timed out
-    pub fn check_timeout(&self, packet_uid: PacketUID) -> bool {
-        self.timeout_packets.get(&packet_uid).is_some()
+    pub fn check_timeout(
+        &self,
+        packet_uid: PacketUID,
+        current_height: Height,
+        current_timestamp: MockTimestamp,
+    ) -> bool {
+        let Some(timeout_packet) = self.timeout_packets.get(&packet_uid) else {
+            return false;
+        };
 
-        // check the current timestamp > packet timeout timestamp
+        // Check the current timestamp > packet timeout timestamp
         // or the current height > the packet timeout height
+        if current_height <= timeout_packet.timeout_height
+            || current_timestamp <= timeout_packet.timeout_timestamp
+        {
+            return false;
+        }
+
         // also check that the packet has not been previously received
+        !self.check_received(packet_uid)
     }
 
     pub fn update_sent(&mut self, packet_uid: PacketUID, packet: PacketKey, height: Height) {
@@ -105,8 +120,8 @@ impl State {
         self.ack_packets.insert(packet_uid, (packet, height));
     }
 
-    pub fn update_timeout(&mut self, packet_uid: PacketUID, packet: PacketKey, height: Height) {
-        self.timeout_packets.insert(packet_uid, (packet, height));
+    pub fn update_timeout(&mut self, packet_uid: PacketUID, packet: PacketKey) {
+        self.timeout_packets.insert(packet_uid, packet);
     }
 
     pub fn get_received(&self, packet_uid: PacketUID) -> Option<&(PacketKey, Height)> {
