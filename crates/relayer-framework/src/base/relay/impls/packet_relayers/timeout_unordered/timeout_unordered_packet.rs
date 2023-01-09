@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::traits::message::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
 use crate::base::chain::types::aliases::Height;
 use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
@@ -16,11 +15,10 @@ use crate::std_prelude::*;
 pub struct BaseTimeoutUnorderedPacketRelayer;
 
 #[async_trait]
-impl<Relay, TimeoutEvent> TimeoutUnorderedPacketRelayer<Relay> for BaseTimeoutUnorderedPacketRelayer
+impl<Relay> TimeoutUnorderedPacketRelayer<Relay> for BaseTimeoutUnorderedPacketRelayer
 where
     Relay: HasRelayTypes,
     Relay: CanSendIbcMessages<SourceTarget>,
-    Relay::SrcChain: HasIbcEvents<Relay::DstChain, WriteAcknowledgementEvent = TimeoutEvent>,
     Relay::DstChain: CanBuildTimeoutUnorderedPacketMessage<Relay::SrcChain>,
 {
     async fn relay_timeout_unordered_packet(

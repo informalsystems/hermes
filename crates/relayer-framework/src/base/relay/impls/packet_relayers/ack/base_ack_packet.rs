@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::traits::message::ack_packet::CanBuildAckPacketMessage;
 use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
@@ -16,11 +15,10 @@ use crate::std_prelude::*;
 pub struct BaseAckPacketRelayer;
 
 #[async_trait]
-impl<Relay, RecvEvent> AckPacketRelayer<Relay> for BaseAckPacketRelayer
+impl<Relay> AckPacketRelayer<Relay> for BaseAckPacketRelayer
 where
     Relay: HasRelayTypes,
     Relay: CanSendIbcMessages<SourceTarget>,
-    Relay::SrcChain: HasIbcEvents<Relay::DstChain, WriteAcknowledgementEvent = RecvEvent>,
     Relay::DstChain: CanBuildAckPacketMessage<Relay::SrcChain>,
 {
     async fn relay_ack_packet(
