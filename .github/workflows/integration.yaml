@@ -40,7 +40,7 @@ concurrency:
 jobs:
   integration-test:
     runs-on: ubuntu-20.04
-    timeout-minutes: 120
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -108,7 +108,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         with:
           max_attempts: 3
-          timeout_minutes: 120
+          timeout_minutes: 45
           command: |
             nix shell .#python .#${{ matrix.chain.package }} -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
