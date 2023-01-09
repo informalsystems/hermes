@@ -31,7 +31,7 @@ use crate::{
     client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
     connection::ConnectionMsgType,
-    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
+    consensus_state::AnyConsensusState,
     denom::DenomTrace,
     error::Error,
     event::IbcEventWithHeight,
@@ -241,10 +241,6 @@ where
 
                         ChainRequest::QueryConsensusStateHeights { request, reply_to } => {
                             self.query_consensus_state_heights(request, reply_to)?
-                        },
-
-                        ChainRequest::QueryConsensusStates { request, reply_to } => {
-                            self.query_consensus_states(request, reply_to)?
                         },
 
                         ChainRequest::QueryConsensusState { request, include_proof, reply_to } => {
@@ -575,15 +571,6 @@ where
     ) -> Result<(), Error> {
         let heights = self.chain.query_consensus_state_heights(request);
         reply_to.send(heights).map_err(Error::send)
-    }
-
-    fn query_consensus_states(
-        &self,
-        request: QueryConsensusStatesRequest,
-        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
-    ) -> Result<(), Error> {
-        let consensus_states = self.chain.query_consensus_states(request);
-        reply_to.send(consensus_states).map_err(Error::send)
     }
 
     fn query_consensus_state(

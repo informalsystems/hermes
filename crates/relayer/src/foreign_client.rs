@@ -34,7 +34,7 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::AnyClientState;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
+use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
