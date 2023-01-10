@@ -300,7 +300,7 @@ impl MockChainContext {
         &self,
         height: Height,
         packet: PacketKey,
-        mut current_state: State,
+        current_state: State,
     ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was not received by the destination chain.
         let client_id = self
@@ -319,16 +319,6 @@ impl MockChainContext {
                 self.name()
             )));
         }
-
-        // Update the current state with the newly received timeout
-        current_state.update_timeout(
-            (
-                packet.src_port_id.clone(),
-                packet.src_channel_id.clone(),
-                packet.sequence,
-            ),
-            packet,
-        );
 
         Ok(current_state)
     }

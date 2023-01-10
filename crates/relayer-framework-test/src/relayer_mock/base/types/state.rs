@@ -4,6 +4,8 @@ use crate::relayer_mock::base::types::aliases::PacketUID;
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::packet::PacketKey;
 
+use super::aliases::MockTimestamp;
+
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct State {
     sent_packets: HashMap<PacketUID, (PacketKey, Height)>,
@@ -66,27 +68,29 @@ impl State {
         self.ack_packets.get(&packet_uid).is_some()
     }
 
-    // pub fn check_timeout(
-    //     &self,
-    //     packet_uid: PacketUID,
-    //     current_height: Height,
-    //     current_timestamp: MockTimestamp,
-    // ) -> bool {
-    //     let Some(timeout_packet) = self.timeout_packets.get(&packet_uid) else {
-    //         return false;
-    //     };
+    /// Checks that the given packet has timed out by comparing whether
+    /// the packet's timeout timestamp has exceeded the chain's current
+    /// timestamp or the packet's timeout height has exceeded the chain's
+    /// height.
+    pub fn check_timeout(
+        &self,
+        packet: PacketKey,
+        current_height: Height,
+        current_timestamp: MockTimestamp,
+    ) -> bool {
+        // Check the current timestamp > packet timeout timestamp
+        // or the current height > the packet timeout height
+        if current_height > packet.timeout_height || current_timestamp > packet.timeout_timestamp {
+            return true;
+        }
 
-    //     // Check the current timestamp > packet timeout timestamp
-    //     // or the current height > the packet timeout height
-    //     if current_height <= timeout_packet.timeout_height
-    //         || current_timestamp <= timeout_packet.timeout_timestamp
-    //     {
-    //         return false;
-    //     }
-
-    //     // also check that the packet has not been previously received
-    //     !self.check_received(packet_uid)
-    // }
+        // also check that the packet has not been previously received
+        !self.check_received((
+            packet.dst_port_id.clone(),
+            packet.dst_channel_id.clone(),
+            packet.sequence,
+        ))
+    }
 
     pub fn update_sent(&mut self, packet_uid: PacketUID, packet: PacketKey, height: Height) {
         self.sent_packets.insert(packet_uid, (packet, height));
