@@ -294,7 +294,6 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
             ));
         }
 
-        // Must be timed out; current height > timeout height
         Ok(MockMessage::TimeoutPacket(height.clone(), packet.clone()))
     }
 }
