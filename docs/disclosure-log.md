@@ -29,7 +29,7 @@ The TLA+ spec we have for depicting this liveness problem is for the ICS3 protoc
 ##### Problem statement
 
 Related issues: [#71](https://github.com/informalsystems/hermes/issues/71) and [#61](https://github.com/informalsystems/hermes/issues/61).
-The problem is more thoroughly described in #61, but for the sake of completenes we restated it here in a compact form.
+The problem is more thoroughly described in #61, but for the sake of completeness we restated it here in a compact form.
 
 The liveness property that a correct relayer should provide is eventual delivery.
 Assuming some source chain `A`, destination chain `B`, and an IBC item `X` (e.g., connection, channel, or packet) on chain `A`, we can define this property as follows:
@@ -46,11 +46,11 @@ Given an item `X` and a commitment proof for `X` constructed at height `h-1`, th
 Suppose a relayer `r1` wants to submit a consensus state at height `h`.
 In the meantime, however, another relayer `r2` may update this same light client to height `h'`.
 Assume `h'` is bigger than `h`.
-If the light client disallows updates with heights smaller than the current height `h'` then `r1`'s update fails .
+If the light client disallows updates with heights smaller than the current height `h'` then `r1`'s update fails.
 Consequently, the relayer will be unable to submit consensus state at height `h`.
 
 To ensure eventual delivery, relayer `r1` would need to retry submitting item `X`, that is: resubmit the consensus state at a larger height (e.g., at `h'`) followed by the message that includes the proof for `X` (e.g., at `h'-1`).
-This retry mechanism was adoped as a solution for the [current relayer implementation](https://github.com/informalsystems/hermes/blob/master/docs/architecture/adr-002-ibc-relayer.md#ibc-client-consensus-state-vs-relayer-light-client-states-vs-chain-states).
+This retry mechanism was adopted as a solution for the [current relayer implementation](https://github.com/informalsystems/hermes/blob/master/docs/architecture/adr-002-ibc-relayer.md#ibc-client-consensus-state-vs-relayer-light-client-states-vs-chain-states).
 Note that it is also possible for relayer `r2` to have submitted the same item `X` successfully; in this case, the liveness problem does not actually surface.
 
 
@@ -89,7 +89,7 @@ The proof in this message is for height `2`.
 6. __Concurrency:__ The environment triggers the `UpdateClient` action on chain `B`: the light client on this chain is updated with height `4` (that is, the latest height of chain `A`), and chain `B` also transitions from height `2` to height `3`.
 
 7. The environment passes (i.e., relays) the `ICS3MsgTry` message to chain `B`.
-Recall that this message has proofs for height `2`; consenquently, the environment also attempts to trigger `UpdateClient` action on chain `B` for consensus state at height `2`.
+Recall that this message has proofs for height `2`; consequently, the environment also attempts to trigger `UpdateClient` action on chain `B` for consensus state at height `2`.
 This action does not enable because the light client on `B` has a more recent consensus state for height `4`.
 
 8. Chain `B` attempts to process the `ICS3MsgTry` but is unable to verify its authenticity, since the light client on this chain does not have the required consensus state at height `2`.

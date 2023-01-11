@@ -12,6 +12,7 @@ pub mod client_refresh;
 pub mod client_settings;
 pub mod client_upgrade;
 pub mod connection_delay;
+pub mod consensus_states;
 pub mod denom_trace;
 pub mod error_events;
 pub mod events;

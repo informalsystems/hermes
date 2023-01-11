@@ -31,14 +31,10 @@ use ibc_relayer_types::Height;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{
-    IncludeProof, PageRequest, QueryClientEventRequest, QueryClientStateRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight, QueryTxRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
-};
+use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::AnyClientState;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
+use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
@@ -1337,33 +1333,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         Ok(Some(update))
     }
 
-    /// Retrieves all consensus states for this client and sorts them in descending height
-    /// order. If consensus states are not pruned on chain, then last consensus state is the one
-    /// installed by the `CreateClient` operation.
-    #[instrument(
-        name = "foreign_client.fetch_consensus_states",
-        level = "error",
-        skip_all,
-        fields(client = %self)
-    )]
-    fn fetch_consensus_states(
-        &self,
-    ) -> Result<Vec<AnyConsensusStateWithHeight>, ForeignClientError> {
-        let mut consensus_states = self
-            .dst_chain
-            .query_consensus_states(QueryConsensusStatesRequest {
-                client_id: self.id.clone(),
-                pagination: Some(PageRequest::all()),
-            })
-            .map_err(|e| {
-                ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
-            })?;
-
-        consensus_states.sort_by_key(|a| core::cmp::Reverse(a.height));
-
-        Ok(consensus_states)
-    }
-
     /// Returns the consensus state at `height` or error if not found.
     #[instrument(
         name = "foreign_client.fetch_consensus_state",
@@ -1405,15 +1374,27 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         fields(client = %self)
     )]
     fn fetch_consensus_state_heights(&self) -> Result<Vec<Height>, ForeignClientError> {
-        // [TODO] Utilize query that only fetches consensus state heights
-        // https://github.com/cosmos/ibc-go/issues/798
-        let consensus_state_heights: Vec<Height> = self
-            .fetch_consensus_states()?
-            .iter()
-            .map(|cs| cs.height)
-            .collect();
+        let mut heights = self
+            .dst_chain
+            .query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+                client_id: self.id.clone(),
+                pagination: Some(PageRequest::all()),
+            })
+            .map_err(|e| {
+                ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
+            })?;
 
-        Ok(consensus_state_heights)
+        // This is necessary because the results are sorted in lexicographic order instead of
+        // numeric order, and we cannot therefore rely on setting the `reverse = true` in the
+        // `PageRequest` setting. Since we are asking for all heights anyway, we can sort them
+        // ourselves.
+        //
+        // For more context, see:
+        // - https://github.com/informalsystems/hermes/pull/2950#issuecomment-1373733744
+        // - https://github.com/cosmos/ibc-go/issues/1399
+        heights.sort_by_key(|&h| core::cmp::Reverse(h));
+
+        Ok(heights)
     }
 
     /// Checks for evidence of misbehaviour.
