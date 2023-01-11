@@ -1,13 +1,12 @@
 //! The following types are used for the OfaChainTypes implementation:
-//! * For the Height a wrapper around a u128 referred to
-//!   as MockHeight.
-//! * For the Timestamp is a simple u128 representing milliseconds and is
-//!   retrieved using a shared clock, MockClock.
-//! * For the messages a simple enum MockMessage which allows to identify
-//!   RecvPacket, AckPacket, TimeoutPacket and UpdateClient messages.
-//! * The ConsensusState is a set of 4 HashSet used to store which messages
-//!   have been sent, received, acknowledged and timed out.
-//! * The ChainStatus is a ConsensusState with a Height and Timestamp.
+//! * For the Height, a wrapper around a u128, referred to as MockHeight.
+//! * For the Timestamp, a u128 representing milliseconds is retrieved
+//!   using a shared clock, MockClock.
+//! * For messages, an enum, MockMessage, which identifies
+//!   RecvPacket, AckPacket, TimeoutPacket, and UpdateClient messages.
+//! * The ConsensusState is a set of 4 HashSets used to store which messages
+//!   have been sent, received, acknowledged, and timed out.
+//! * The ChainStatus is a ConsensusState with a Height and a Timestamp.
 
 use alloc::boxed::Box;
 use alloc::string::String;
@@ -250,9 +249,51 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         )) {
             return Err(Error::receive_without_sent(
                 self.name().to_string(),
-                self.name().to_string(),
+                packet.src_channel_id.to_string(),
             ));
         }
         Ok(MockMessage::RecvPacket(height.clone(), packet.clone()))
+    }
+
+    async fn build_ack_packet_message(
+        &self,
+        height: &MockHeight,
+        packet: &PacketKey,
+        _ack: &WriteAcknowledgementEvent,
+    ) -> Result<MockMessage, Error> {
+        // If the latest state of the destination chain doesn't have the packet as received, return an error.
+        let state = self.get_current_state();
+
+        if !state.check_received((
+            packet.dst_port_id.clone(),
+            packet.dst_channel_id.clone(),
+            packet.sequence,
+        )) {
+            return Err(Error::acknowledgment_without_received(
+                self.name().to_string(),
+                packet.dst_channel_id.to_string(),
+            ));
+        }
+
+        Ok(MockMessage::AckPacket(height.clone(), packet.clone()))
+    }
+
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        height: &MockHeight,
+        packet: &PacketKey,
+    ) -> Result<MockMessage, Error> {
+        let state = self.get_current_state();
+        let runtime = self.runtime();
+        let current_timestamp = runtime.runtime.get_time();
+
+        if !state.check_timeout(packet.clone(), height.clone(), current_timestamp.clone()) {
+            return Err(Error::timeout_without_sent(
+                self.name().to_string(),
+                packet.src_channel_id.to_string(),
+            ));
+        }
+
+        Ok(MockMessage::TimeoutPacket(height.clone(), packet.clone()))
     }
 }

@@ -198,6 +198,19 @@ where
         height: &Self::Height,
         packet: &Self::OutgoingPacket,
     ) -> Result<Counterparty::Message, Self::Error>;
+
+    async fn build_ack_packet_message(
+        &self,
+        height: &Self::Height,
+        packet: &Self::IncomingPacket,
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> Result<Counterparty::Message, Self::Error>;
+
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        height: &Self::Height,
+        packet: &Self::IncomingPacket,
+    ) -> Result<Counterparty::Message, Self::Error>;
 }
 
 pub trait OfaChainPreset<Chain>
