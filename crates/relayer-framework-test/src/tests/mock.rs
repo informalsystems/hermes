@@ -134,7 +134,9 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
 
     let height = src_chain.chain.get_current_height();
 
-    src_chain.chain.send_packet(height, packet.clone())?;
+    src_chain
+        .chain
+        .send_packet(height.clone(), packet.clone())?;
 
     // Sleep enough to trigger timeout from timestamp timeout
     relay_context
@@ -144,6 +146,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
         .await;
 
     let events = relay_context.relay_packet(&packet).await;
+    let current_timestamp = relay_context.relay.runtime().runtime.get_time();
 
     assert!(events.is_ok(), "{}", events.err().unwrap());
 
@@ -168,7 +171,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
         let state = src_chain.chain.get_current_state();
 
         assert!(
-            state.check_timeout((packet.src_port_id, packet.src_channel_id, packet.sequence)),
+            state.check_timeout(packet, height, current_timestamp),
             "Packet should be registered as timed out"
         );
     }
@@ -219,7 +222,9 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
 
     let height = src_chain.chain.get_current_height();
 
-    src_chain.chain.send_packet(height, packet.clone())?;
+    src_chain
+        .chain
+        .send_packet(height.clone(), packet.clone())?;
 
     // Increase height of destination chain to trigger Height timeout
     dst_chain.chain.new_block()?;
@@ -227,6 +232,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
     dst_chain.chain.new_block()?;
 
     let events = relay_context.relay_packet(&packet).await;
+    let current_timestamp = relay_context.relay.runtime().runtime.get_time();
 
     assert!(events.is_ok(), "{}", events.err().unwrap());
 
@@ -251,7 +257,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
         let state = src_chain.chain.get_current_state();
 
         assert!(
-            state.check_timeout((packet.src_port_id, packet.src_channel_id, packet.sequence)),
+            state.check_timeout(packet, height, current_timestamp),
             "Packet should be registered as timed out"
         );
     }

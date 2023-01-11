@@ -1,3 +1,9 @@
+//! This test asserts that transactions preserve the value of
+//! the `memo_prefix` field of the receiving chain.
+//!
+//! You can find a more thorough walkthrough of this test at
+//! `tools/test-framework/src/docs/walkthroughs/memo.rs`.
+
 use ibc_relayer::config::{types::Memo, Config};
 use serde_json as json;
 

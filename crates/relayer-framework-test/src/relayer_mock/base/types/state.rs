@@ -4,12 +4,13 @@ use crate::relayer_mock::base::types::aliases::PacketUID;
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::packet::PacketKey;
 
+use super::aliases::MockTimestamp;
+
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct State {
     sent_packets: HashMap<PacketUID, (PacketKey, Height)>,
     recv_packets: HashMap<PacketUID, (PacketKey, Height)>,
     ack_packets: HashMap<PacketUID, (PacketKey, Height)>,
-    timeout_packets: HashMap<PacketUID, (PacketKey, Height)>,
 }
 
 impl Display for State {
@@ -50,18 +51,6 @@ impl Display for State {
                 key.0, key.1, key.2, packet.0.sequence, packet.1
             )?;
         }
-        writeln!(f, "Timeout packets:")?;
-        for key in self.timeout_packets.keys() {
-            let packet = self
-                .timeout_packets
-                .get(key)
-                .expect("error retrieving packet and height from timeout_packets");
-            writeln!(
-                f,
-                "\tPacket({}, {}, {}) with sequence {} and height {}",
-                key.0, key.1, key.2, packet.0.sequence, packet.1
-            )?;
-        }
         Ok(())
     }
 }
@@ -79,8 +68,28 @@ impl State {
         self.ack_packets.get(&packet_uid).is_some()
     }
 
-    pub fn check_timeout(&self, packet_uid: PacketUID) -> bool {
-        self.timeout_packets.get(&packet_uid).is_some()
+    /// Checks that the given packet has timed out by comparing whether
+    /// the packet's timeout timestamp has exceeded the chain's current
+    /// timestamp or the packet's timeout height has exceeded the chain's
+    /// height.
+    pub fn check_timeout(
+        &self,
+        packet: PacketKey,
+        current_height: Height,
+        current_timestamp: MockTimestamp,
+    ) -> bool {
+        // Check the current timestamp > packet timeout timestamp
+        // or the current height > the packet timeout height
+        if current_height > packet.timeout_height || current_timestamp > packet.timeout_timestamp {
+            return true;
+        }
+
+        // also check that the packet has not been previously received
+        !self.check_received((
+            packet.dst_port_id.clone(),
+            packet.dst_channel_id.clone(),
+            packet.sequence,
+        ))
     }
 
     pub fn update_sent(&mut self, packet_uid: PacketUID, packet: PacketKey, height: Height) {
@@ -98,10 +107,6 @@ impl State {
         height: Height,
     ) {
         self.ack_packets.insert(packet_uid, (packet, height));
-    }
-
-    pub fn update_timeout(&mut self, packet_uid: PacketUID, packet: PacketKey, height: Height) {
-        self.timeout_packets.insert(packet_uid, (packet, height));
     }
 
     pub fn get_received(&self, packet_uid: PacketUID) -> Option<&(PacketKey, Height)> {

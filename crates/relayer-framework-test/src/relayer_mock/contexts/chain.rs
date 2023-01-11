@@ -121,11 +121,13 @@ impl MockChainContext {
     }
 
     /// Insert a new Consensus State for a given Client at a given Height.
-    /// If there already is a Consensus State for the Client at the given Height, which is different
-    /// from the given State, return an error as a Chain is not allowed to have two different Consensus
-    /// States at the same Height.
-    /// This is used for the `updateClient` of ICS002, with the misbehaviour being when trying to update
-    /// an already existing Consensus State with a different value.
+    ///
+    /// Returns an error if there is already a consensus state for the client at the given height
+    /// which is different from the given state; a chain is not allowed to have two different
+    /// consensus states at the same height.
+    ///
+    /// This is used for the `updateClient` of ICS002. It is considered an act of misbehaviour
+    /// when a chain attempts to update an already-existing consensus state with a different value.
     pub fn insert_consensus_state(
         &self,
         client_id: ClientId,
@@ -298,7 +300,7 @@ impl MockChainContext {
         &self,
         height: Height,
         packet: PacketKey,
-        mut current_state: State,
+        current_state: State,
     ) -> Result<State, Error> {
         // Verify that with the consensus state that the packet was not received by the destination chain.
         let client_id = self
@@ -306,7 +308,7 @@ impl MockChainContext {
             .ok_or_else(|| {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
-        let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
         if client_consensus.check_received((
             packet.dst_port_id.clone(),
             packet.dst_channel_id.clone(),
@@ -317,17 +319,6 @@ impl MockChainContext {
                 self.name()
             )));
         }
-
-        // Update the current state with the newly received timeout
-        current_state.update_timeout(
-            (
-                packet.src_port_id.clone(),
-                packet.src_channel_id.clone(),
-                packet.sequence,
-            ),
-            packet,
-            height,
-        );
 
         Ok(current_state)
     }

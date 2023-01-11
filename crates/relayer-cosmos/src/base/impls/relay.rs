@@ -1,10 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
-use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
@@ -17,7 +14,6 @@ use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 use crate::base::error::Error;
 
-use crate::base::traits::chain::CosmosChain;
 use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::message::CosmosIbcMessage;
@@ -130,78 +126,6 @@ where
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
         build_update_client_messages(self.relay.src_to_dst_client(), height)
-    }
-
-    async fn build_ack_packet_message(
-        &self,
-        destination_height: &<Self::DstChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
-        ack: &<Self::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
-    ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
-        let proofs = self
-            .dst_chain
-            .chain
-            .chain
-            .chain_handle()
-            .build_packet_proofs(
-                PacketMsgType::Ack,
-                &packet.destination_port,
-                &packet.destination_channel,
-                packet.sequence,
-                *destination_height,
-            )
-            .map_err(Error::relayer)?;
-
-        let packet = packet.clone();
-        let ack = ack.ack.clone();
-
-        let message = CosmosIbcMessage::new(Some(*destination_height), move |signer| {
-            Ok(MsgAcknowledgement::new(
-                packet.clone(),
-                ack.clone().into(),
-                proofs.clone(),
-                signer.clone(),
-            )
-            .to_any())
-        });
-
-        Ok(message)
-    }
-
-    /// Construct a timeout packet message to be sent between Cosmos chains
-    /// over an unordered Cosmos channel.
-    async fn build_timeout_unordered_packet_message(
-        &self,
-        destination_height: &<Self::DstChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
-    ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
-        let proofs = self
-            .dst_chain
-            .chain
-            .chain
-            .chain_handle()
-            .build_packet_proofs(
-                PacketMsgType::TimeoutUnordered,
-                &packet.destination_port,
-                &packet.destination_channel,
-                packet.sequence,
-                *destination_height,
-            )
-            .map_err(Error::relayer)?;
-
-        let packet = packet.clone();
-
-        let message = CosmosIbcMessage::new(Some(*destination_height), move |signer| {
-            Ok(MsgTimeout::new(
-                packet.clone(),
-                packet.sequence,
-                proofs.clone(),
-                signer.clone(),
-            )
-            .to_any())
-        });
-
-        Ok(message)
     }
 }
 

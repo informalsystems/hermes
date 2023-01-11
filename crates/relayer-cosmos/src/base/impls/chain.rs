@@ -17,7 +17,9 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
+use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -308,11 +310,11 @@ where
             }
         });
 
-        // Would we ever get more than one WriteAcknowledgement?
-        // If so, does it matter which one we return?
         Ok(write_ack)
     }
 
+    /// Construct a receive packet to be sent to a destination Cosmos
+    /// chain from a source Cosmos chain.
     async fn build_receive_packet_message(
         &self,
         height: &Height,
@@ -334,6 +336,78 @@ where
 
         let message = CosmosIbcMessage::new(Some(*height), move |signer| {
             Ok(MsgRecvPacket::new(packet.clone(), proofs.clone(), signer.clone()).to_any())
+        });
+
+        Ok(message)
+    }
+
+    /// Construct an acknowledgement packet to be sent from a Cosmos
+    /// chain that successfully received a packet from another Cosmos
+    /// chain.
+    async fn build_ack_packet_message(
+        &self,
+        height: &Height,
+        packet: &Packet,
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> Result<CosmosIbcMessage, Self::Error> {
+        let proofs = self
+            .chain
+            .chain_handle()
+            .build_packet_proofs(
+                PacketMsgType::Ack,
+                &packet.destination_port,
+                &packet.destination_channel,
+                packet.sequence,
+                *height,
+            )
+            .map_err(Error::relayer)?;
+
+        let packet = packet.clone();
+        let ack = ack.ack.clone();
+
+        let message = CosmosIbcMessage::new(Some(*height), move |signer| {
+            Ok(MsgAcknowledgement::new(
+                packet.clone(),
+                ack.clone().into(),
+                proofs.clone(),
+                signer.clone(),
+            )
+            .to_any())
+        });
+
+        Ok(message)
+    }
+
+    /// Construct a timeout packet message to be sent between Cosmos chains
+    /// over an unordered channel in the event that a packet that originated
+    /// from a source chain was not received.
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        height: &Height,
+        packet: &Packet,
+    ) -> Result<CosmosIbcMessage, Self::Error> {
+        let proofs = self
+            .chain
+            .chain_handle()
+            .build_packet_proofs(
+                PacketMsgType::TimeoutUnordered,
+                &packet.destination_port,
+                &packet.destination_channel,
+                packet.sequence,
+                *height,
+            )
+            .map_err(Error::relayer)?;
+
+        let packet = packet.clone();
+
+        let message = CosmosIbcMessage::new(Some(*height), move |signer| {
+            Ok(MsgTimeout::new(
+                packet.clone(),
+                packet.sequence,
+                proofs.clone(),
+                signer.clone(),
+            )
+            .to_any())
         });
 
         Ok(message)
