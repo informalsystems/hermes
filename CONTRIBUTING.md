@@ -15,9 +15,10 @@ The rest of this document outlines the best practices for contributing to this
 repository:
 
 - [Decision Making](#decision-making) - process for agreeing to changes
+- [Issues](#issues) - what makes a good issue
+- [Pull Requests](#pull-requests) - what makes a good pull request
 - [Forking](#forking) - fork the repo to make pull requests
 - [Changelog](#changelog) - changes must be recorded in the changelog
-- [Pull Requests](#pull-requests) - what makes a good pull request
 - [Releases](#releases) - how to release new version of the crates
 
 ## Decision Making
@@ -63,6 +64,81 @@ contributors and maintainers in order to ensure that:
 - Contributors don’t waste their time implementing/proposing features which won’t land in `master`
 - Maintainers have the necessary context in order to support and review contributions
 
+## Issues
+
+We welcome bug reports, feature requests, and other contributions to our project.
+To open an issue, please follow these guidelines:
+
+1. **Search existing issues**: Before opening a new issue, please search existing issues to ensure that is not a duplicates.
+
+2. **Provide a clear and descriptive title**: This helps others understand the nature of the issue at a glance.
+
+3. **Provide detailed information**: In the issue description, clearly state the **purpose** of the issue
+   include as much information as possible, such as:
+    - Steps to reproduce the issue
+    - Expected behavior
+    - Actual behavior
+    - The version of the operating system and the software you are using
+    - Error messages or logs (if applicable)
+
+4. **Use appropriate labels**: Assign relevant labels to indicate:
+    - (WHY) The purpose or objective of this issue with Objective-level "O" labels
+      like `O: security`, `O: new-feature`, etc.
+    - (WHICH) The part of the system this issue relates to using:
+      - External-level "E" labels if the issue fall outside the current scope of the system
+        and is related to external dependencies or projects like `E: non-cosmos`, `E: no-std` etc.
+      - or "Internal-level "I" labels for anything related to the current scope of the product
+        like `I: logic`, `I: documentation`, `I: rpc`, etc.
+    - (HOW) If any administrative considerations should be taken into account
+      use Administrative-level "A" labels like `A: critical`, `A: help-wanted`, `A: risky`, etc.
+
+This assist us prioritize and categorize your issue more effectively and help
+others and reviewers understand the type and severity of the issue.
+If the issue you worked on was tagged `A: low-priority`, we'll do our best to
+review it in a timely manner, but please expect longer wait times for a review
+in general. If a low priority issue is important to you, please leave a comment
+explaining why, and we will reprioritize it!
+
+## Pull Requests
+
+If you have write access to the ibc-rs repo, you can directly branch off of `master`.
+This makes it easier for project maintainers to directly make changes to your
+branch should the need arise. Otherwise, check [Forking](#forking) section for instructions.
+
+Branch names should be prefixed with the author's name followed by a short description
+of the feature, eg. `name/feature-x`.
+
+Pull requests are made against `master` and are squash-merged into master.
+
+PRs must:
+
+- make reference to an issue outlining the context
+- update any relevant documentation and include tests
+- add a corresponding entry in the `.changelog` directory using `unclog`,
+  see the [Changelog](#changelog) section for more details.
+
+Pull requests should aim to be small and self-contained to facilitate quick
+review and merging. Larger change sets should be broken up across multiple PRs.
+Commits should be concise but informative, and moderately clean. Commits will be squashed into a
+single commit for the PR with all the commit messages.
+
+In order to help facilitate the PR review process, tag *one* person as the
+reviewer of the PR. If you are unsure of who to tag, your point of contact on
+the ibc-rs team is always a natural candidate; they'll make sure that the PR gets
+reviewed by whomever is most appropriate to review it. It also helps to notify
+the person whom you tagged as reviewer through direct means, such as through
+Slack or Discord, as it is easy for GitHub notifications to get lost or buried.
+
+## Responsibilities of a PR Reviewer
+
+If you're tagged as the reviewer of a PR, you are responsible for shepherding it
+through to completion. This includes fixing issues with the PR and taking the
+lead on decisions that need to be resolved in order to get the PR merged.
+
+If you're tagged as a reviewer on a PR that affects a part of the code base that
+you are unfamiliar with, you can hand it off to someone (with their
+consent) who is more appropriate to shepherd the PR through to completion.
+
 ## Forking
 
 If you do not have write access to the repository, your contribution should be
@@ -75,7 +151,7 @@ repo. For instance, to create a fork and work on a branch of it:
 - Create the fork on GitHub, using the fork button.
 - `cd` to the original clone of the repo on your machine
 - `git remote rename origin upstream`
-- `git remote add origin git@github.com:<location of fork>
+- `git remote add origin git@github.com:<location of fork>`
 
 Now `origin` refers to your fork and `upstream` refers to the original version.
 Now `git push -u origin master` to update the fork, and make pull requests
@@ -104,14 +180,14 @@ Add a `.changelog` entry to signal that a bug was fixed, without mentioning any
 component.
 
 ```bash
-$ unclog add -i update-unclog-instructions -s bug -n 1634 -m "Update CONTRIBUTING.md for latest version of unclog" --editor vim
+unclog add -i update-unclog-instructions -s bug -n 1634 -m "Update CONTRIBUTING.md for latest version of unclog" --editor vim
 ```
 
 Add a .changelog entry for the `ibc-relayer-cli` crate (the component in the `relayer-cli`
 directory) under the `FEATURES` section in CHANGELOG.md.
 
 ```bash
-$ unclog add -c ibc-relayer-cli -s features --id a-new-feature --issue-no 1235 -m "msg about this new-feature" --editor vim
+unclog add -c ibc-relayer-cli -s features --id a-new-feature --issue-no 1235 -m "msg about this new-feature" --editor vim
 ```
 
 ### Preview unreleased changes
@@ -150,12 +226,12 @@ specific release number in Changelog.
 
 Changelog entries should be formatted as follows:
 
-```
+```md
 - [pkg] Some description about the change ([#xxx](https://github.com/informalsystems/hermes/issues/xxx)) (optional @contributor)
 ```
 
 Here, `pkg` is the part of the code that changed (typically a
-top-level crate, but could be <crate>/<module>), `xxx` is the issue number, and `contributor`
+top-level crate, but could be `<crate>/<module>`), `xxx` is the issue number, and `contributor`
 is the author/s of the change.
 
 It's also acceptable for `xxx` to refer to the relevant pull request, but issue
@@ -174,45 +250,6 @@ Any change that effects multiple APIs/users should be recorded multiply - for
 instance, a change to some core protocol data structure might need to be
 reflected both as breaking the core protocol but also breaking any APIs where core data structures are
 exposed.
-
-## Pull Requests
-
-If you have write access to the ibc-rs repo, you can directly branch off of `master`.
-This makes it easier for project maintainers to directly make changes to your
-branch should the need arise.
-
-Branch names should be prefixed with the author's name followed by a short description
-of the feature, eg. `name/feature-x`.
-
-Pull requests are made against `master` and are squash-merged into master.
-
-PRs must:
-- make reference to an issue outlining the context
-- update any relevant documentation and include tests
-- add a corresponding entry in the `.changelog` directory using `unclog`,
-  see the section above for more details.
-
-Pull requests should aim to be small and self-contained to facilitate quick
-review and merging. Larger change sets should be broken up across multiple PRs.
-Commits should be concise but informative, and moderately clean. Commits will be squashed into a
-single commit for the PR with all the commit messages.
-
-In order to help facilitate the PR review process, tag *one* person as the
-reviewer of the PR. If you are unsure of who to tag, your point of contact on
-the ibc-rs team is always a natural candidate; they'll make sure that the PR gets
-reviewed by whomever is most appropriate to review it. It also helps to notify
-the person whom you tagged as reviewer through direct means, such as through
-Slack or Discord, as it is easy for GitHub notifications to get lost or buried.
-
-## Responsibilities of a PR Reviewer
-
-If you're tagged as the reviewer of a PR, you are responsible for shepherding it
-through to completion. This includes fixing issues with the PR and taking the
-lead on decisions that need to be resolved in order to get the PR merged.
-
-If you're tagged as a reviewer on a PR that affects a part of the code base that
-you are unfamiliar with, you can hand it off to someone (with their
-consent) who is more appropriate to shepherd the PR through to completion.
 
 ## Releases
 
