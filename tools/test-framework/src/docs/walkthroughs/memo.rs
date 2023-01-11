@@ -8,7 +8,7 @@
 //!
 //! The test in most of its entirety (some parts omitted for brevity) looks like this:
 //!
-//! ```no_run
+//! ```nocompile
 //! #[test]
 //! fn test_memo() -> Result<(), Error> {
 //!     let memo = Memo::new(random_string()).unwrap();
