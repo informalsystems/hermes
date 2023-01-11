@@ -308,7 +308,7 @@ impl MockChainContext {
             .ok_or_else(|| {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
-        let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
         if client_consensus.check_received((
             packet.dst_port_id.clone(),
             packet.dst_channel_id.clone(),
