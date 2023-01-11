@@ -449,7 +449,12 @@ pub fn collect_events(
                             .clone()
                             .channel_attributes()
                             .and_then(|attr| {
-                                Object::channel_from_chan_open_events(&attr, src_chain).ok()
+                                Object::channel_from_chan_open_events(
+                                    &attr,
+                                    src_chain,
+                                    mode.connections.enabled,
+                                )
+                                .ok()
                             })
                     },
                 );
@@ -469,7 +474,14 @@ pub fn collect_events(
                     &mut collected,
                     event_with_height.clone(),
                     mode.channels.enabled,
-                    || Object::channel_from_chan_open_events(&attributes, src_chain).ok(),
+                    || {
+                        Object::channel_from_chan_open_events(
+                            &attributes,
+                            src_chain,
+                            mode.connections.enabled,
+                        )
+                        .ok()
+                    },
                 );
             }
             IbcEvent::OpenConfirmChannel(open_confirm) => {
