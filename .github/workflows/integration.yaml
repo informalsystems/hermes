@@ -1,4 +1,4 @@
-name: Rust
+name: Integration
 on:
   pull_request:
     paths:

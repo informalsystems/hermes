@@ -5,6 +5,23 @@ use std::sync::{Arc, RwLock, RwLockReadGuard};
 use crossbeam_channel as channel;
 use tracing::{debug, Span};
 
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
+use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_relayer_types::core::ics03_connection::version::Version;
+use ibc_relayer_types::core::ics04_channel::channel::ChannelEnd;
+use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
+use ibc_relayer_types::proofs::Proofs;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::Height;
+
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
@@ -14,7 +31,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
+use crate::consensus_state::AnyConsensusState;
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
@@ -22,22 +39,6 @@ use crate::keyring::AnySigningKeyPair;
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::lock::LockExt;
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_relayer_types::{
-    applications::ics31_icq::response::CrossChainQueryResponse,
-    core::ics03_connection::connection::ConnectionEnd,
-    core::ics03_connection::version::Version,
-    core::ics04_channel::channel::ChannelEnd,
-    core::ics23_commitment::commitment::CommitmentPrefix,
-    core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
-    proofs::Proofs,
-    signer::Signer,
-    Height,
-};
 
 #[derive(Debug, Clone)]
 pub struct CountingChainHandle<Handle> {
@@ -208,12 +209,11 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().query_client_connections(request)
     }
 
-    fn query_consensus_states(
+    fn query_consensus_state_heights(
         &self,
-        request: QueryConsensusStatesRequest,
-    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        self.inc_metric("query_consensus_states");
-        self.inner().query_consensus_states(request)
+        request: QueryConsensusStateHeightsRequest,
+    ) -> Result<Vec<Height>, Error> {
+        self.inner().query_consensus_state_heights(request)
     }
 
     fn query_consensus_state(

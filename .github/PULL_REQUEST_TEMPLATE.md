@@ -9,7 +9,12 @@ Closes: #XXX
 ## Description
 
 <!-- Add a description of the changes that this PR introduces and the files that
-are the most critical to review.
+are the most critical to review. -->
+<!-- Apply relevant labels to indicate:
+    - (WHY) The purpose or objective of this PR with "O" labels
+    - (WHICH) The part of the system this PR relates to (use "E" for external or "I" for internal levels)
+    - (HOW) If any administrative considerations should be taken into account (use "A" labels)
+    This will help us prioritize and categorize your pull request more effectively 
 -->
 
 

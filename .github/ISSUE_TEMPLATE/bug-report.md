@@ -5,7 +5,7 @@ about: Create a report to help us squash bugs!
 ---
 
 <!-- < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < ☺ 
-v                            ✰  Thanks for opening an issue! ✰    
+v               ✰  Thanks for opening an issue! ✰
 v    Before smashing the submit button please review the template.
 v    Please also ensure that this is not a duplicate issue :)  
 ☺ > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > >  -->
@@ -13,6 +13,12 @@ v    Please also ensure that this is not a duplicate issue :)
 ## Summary of Bug
 
 <!-- Describe the issue you're encountering -->
+<!-- Apply relevant labels to indicate:
+    - (WHY) The purpose or objective of this issue with "O" labels
+    - (WHICH) The part of the system this issue relates to (use "E" for external or "I" for internal levels)
+    - (HOW) If any administrative considerations should be taken into account (use "A" labels)
+    This will help us prioritize and categorize your issue more effectively 
+-->
 
 ## Version
 
