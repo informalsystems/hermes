@@ -1,18 +1,22 @@
 //! ## Ordered Channel Test
 //!
-//! This walkthrough illustrates the behavior or an integration test that makes 
+//! This walkthrough illustrates the behavior or an integration test that makes
 //! use of the `BinaryChannelTest` trait. This trait is used for test cases that
 //! require two running full nodes connected via IBC channels with completed
 //! handshakes. The relayer is initialized with chain handles and foreign clients
 //! for interfacing with the running full nodes.
-//! 
-//! The test itself checks that transactions sent over an ordered channel are 
+//!
+//! The test itself checks that transactions sent over an ordered channel are
 //! successfully relayed and received by the intended recipient, even when the
 //! transaction was queued up to be sent before the relayer was started.  
 //!
 //! The test in most of its entirety (some parts omitted for brevity) looks like this:
 //!
 //! ```no_run
+//! # use ibc_test_framework::ibc::denom::derive_ibc_denom;
+//! # use ibc_test_framework::prelude::*;
+//! # use ibc_test_framework::util::random::random_u128_range;
+//!
 //! #[test]
 //! fn test_ordered_channel() -> Result<(), Error> {
 //!     run_binary_channel_test(&OrderedChannelTest)
@@ -111,5 +115,5 @@
 //!     }
 //! }     
 //! ```
-//! 
-//! Like we've seen in other integration tests, the test is set up 
+//!
+//! Like we've seen in other integration tests, the test is set up
