@@ -179,7 +179,7 @@ where
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 
-    fn try_extract_send_packet_event(event: Self::Event) -> Option<Self::SendPacketEvent>;
+    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent>;
 
     fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
         -> Self::OutgoingPacket;

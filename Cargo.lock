@@ -1944,6 +1944,7 @@ name = "ibc-relayer-framework"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "futures",
 ]
 
 [[package]]

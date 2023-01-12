@@ -1,4 +1,5 @@
 use crate::base::chain::traits::ibc_event::{HasSendPacketEvent, HasWriteAcknowledgementEvent};
+use crate::base::chain::traits::types::height::HasHeightType;
 use crate::base::chain::traits::types::{
     CanEstimateMessageSize, HasChainTypes, HasEventType, HasIbcChainTypes, HasIbcPacketTypes,
     HasMessageType,
@@ -40,9 +41,11 @@ impl<Chain: OfaBaseChain> HasEventType for OfaChainWrapper<Chain> {
     type Event = Chain::Event;
 }
 
-impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> HasHeightType for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
+}
 
+impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
     type Timestamp = Chain::Timestamp;
 }
 
@@ -176,7 +179,7 @@ where
 {
     type SendPacketEvent = Chain::SendPacketEvent;
 
-    fn try_extract_send_packet_event(event: Self::Event) -> Option<Self::SendPacketEvent> {
+    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
         Chain::try_extract_send_packet_event(event)
     }
 

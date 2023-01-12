@@ -7,6 +7,7 @@
 
 pub mod chain;
 pub mod event;
+pub mod height;
 pub mod ibc;
 pub mod message;
 pub mod packet;

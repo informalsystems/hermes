@@ -188,9 +188,9 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         }
     }
 
-    fn try_extract_send_packet_event(event: Self::Event) -> Option<Self::SendPacketEvent> {
+    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
         match event {
-            Event::SendPacket(send_packet_event) => Some(send_packet_event),
+            Event::SendPacket(send_packet_event) => Some(send_packet_event.clone()),
             _ => None,
         }
     }
