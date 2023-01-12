@@ -1,10 +1,14 @@
 //! ## Ordered Channel Test
 //!
-//! This walkthrough breaks down the behavior or an integration test that
-//! checks that the behavior of ordered channels exhibits the expected behavior.
-//! In particular, transactions sent over ordered channels should be received in
-//! the order in which they were sent. The purpose of this walkthrough is to
-//! showcase an example of a `BinaryChannelTest`.
+//! This walkthrough illustrates the behavior or an integration test that makes 
+//! use of the `BinaryChannelTest` trait. This trait is used for test cases that
+//! require two running full nodes connected via IBC channels with completed
+//! handshakes. The relayer is initialized with chain handles and foreign clients
+//! for interfacing with the running full nodes.
+//! 
+//! The test itself checks that transactions sent over an ordered channel are 
+//! successfully relayed and received by the intended recipient, even when the
+//! transaction was queued up to be sent before the relayer was started.  
 //!
 //! The test in most of its entirety (some parts omitted for brevity) looks like this:
 //!
@@ -107,3 +111,5 @@
 //!     }
 //! }     
 //! ```
+//! 
+//! Like we've seen in other integration tests, the test is set up 
