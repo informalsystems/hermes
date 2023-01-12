@@ -116,4 +116,37 @@
 //! }     
 //! ```
 //!
-//! Like we've seen in other integration tests, the test is set up
+//! The test is run by calling the `run_binary_channel_test` function, passing it
+//! a struct, `OrderdChannelTest`, upon which we implement the `TestOverrides`
+//! trait in order to configure the behavior of the test. We define the
+//! `should_spawn_supervisor` function to have it return false in order to not
+//! automatically spawn a supervisor when the relayer is initialized; this is
+//! necessary in order to queue up an IBC transaction such that it is pending
+//! until the relayer is initialized, not before that. We also define the
+//! `channel_order` function in order to set the initialized channels to the
+//! ordered variant; by default, the test will initialize unordered channels.
+//! Lastly, we define the `modify_relayer_config` function in order to toggle off
+//! the `clear_on_start` option, as well as set the `clear_interval` option to 0.
+//! Setting these options means the relayer itself will not relay any packets
+//! that were pending before the relayer started; we want to ensure that the
+//! behavior of the ordered channel is what is causing the pending transaction
+//! to be relayed.
+//!
+//! The logic of the test itself is defined in the `run` function of the
+//! `BinaryChannelTest` trait. In this function, we first set up the two wallets,
+//! the sending wallet, `wallet_a`, which is associated with chain A, and the
+//! receiving wallet, `wallet_b`, which is associated iwth chain B. The balance
+//! of `wallet_a` is also saved. An IBC transfer is then made from chain A to chain
+//! B. At this point, because no relayer has been initialized yet, the transaction
+//! is in a pending state.
+//!
+//! At this point, a relayer instance is initialized. The first thing it does is
+//! perform another IBC transfer from chain A to chain B. The test then asserts
+//! that `wallet_a` was indeed debited appropriately, that both transactions went
+//! through due to the behavior of the ordered channel. It then checks `wallet_b`'s
+//! balance to ensure that it was credited with the expected amount. If the assertions
+//! pass, we can confident that the ordered channel is indeed exhibiting the expected
+//! behavior of picking up pending transactions that were queued up before the relayer
+//! was started.
+//!
+//! You can find the file containing this test at `tools/integration-test/src/tests/ordered_channel.rs`.
