@@ -6,6 +6,7 @@ use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
 use prost::EncodeError;
 use tendermint::Hash as TxHash;
+use tendermint_rpc::Error as TendermintRpcError;
 
 define_error! {
     #[derive(Clone, Debug)]
@@ -33,6 +34,10 @@ define_error! {
         Encode
             [ TraceError<EncodeError> ]
             | _ | { "protobuf encode error" },
+
+        TendermintRpc
+            [ TendermintRpcError ]
+            | _ | { "tendermint rpc error" },
 
         MismatchConsensusState
             | _ | { "consensus state of a cosmos chain on the counterparty chain must be a tendermint consensus state" },

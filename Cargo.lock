@@ -1916,6 +1916,7 @@ dependencies = [
  "async-trait",
  "eyre",
  "flex-error",
+ "futures",
  "http",
  "ibc-proto 0.24.0",
  "ibc-relayer",

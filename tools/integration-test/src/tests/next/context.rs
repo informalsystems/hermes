@@ -43,6 +43,7 @@ where
             .parse()
             .unwrap(),
         chains.node_a.value().chain_driver.tx_config.clone(),
+        chains.node_a.value().chain_driver.websocket_address(),
         chains.node_a.value().wallets.relayer.key.clone(),
         telemetry.clone(),
     );
@@ -59,6 +60,7 @@ where
             .parse()
             .unwrap(),
         chains.node_b.value().chain_driver.tx_config.clone(),
+        chains.node_b.value().chain_driver.websocket_address(),
         chains.node_b.value().wallets.relayer.key.clone(),
         telemetry,
     );

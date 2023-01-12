@@ -101,6 +101,8 @@ pub trait OfaChainTypes: Async {
     type WriteAcknowledgementEvent: Async;
 
     type SendPacketEvent: Async;
+
+    // type EventSource: Async;
 }
 
 #[async_trait]
@@ -125,6 +127,10 @@ pub trait OfaBaseChain: OfaChainTypes {
     ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
+
+    // async fn new_event_source(&self) -> Result<Self::EventSource, Self::Error>;
+
+    // async fn receive_event(event_source: &Self::EventSource) -> Result<Self::Event, Self::Error>;
 }
 
 #[async_trait]

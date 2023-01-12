@@ -10,6 +10,7 @@ pub struct MinCosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,
     pub tx_config: TxConfig,
+    pub websocket_url: String,
     pub key_entry: Secp256k1KeyPair,
 }
 
@@ -18,12 +19,14 @@ impl<Handle: ChainHandle> MinCosmosChainContext<Handle> {
         handle: Handle,
         signer: Signer,
         tx_config: TxConfig,
+        websocket_url: String,
         key_entry: Secp256k1KeyPair,
     ) -> Self {
         Self {
             handle,
             signer,
             tx_config,
+            websocket_url,
             key_entry,
         }
     }
@@ -47,6 +50,10 @@ where
 
     fn tx_config(&self) -> &TxConfig {
         &self.tx_config
+    }
+
+    fn websocket_url(&self) -> &str {
+        &self.websocket_url
     }
 
     fn key_entry(&self) -> &Secp256k1KeyPair {

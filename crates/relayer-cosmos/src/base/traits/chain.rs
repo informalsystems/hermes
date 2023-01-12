@@ -15,5 +15,7 @@ pub trait CosmosChain: Async {
 
     fn tx_config(&self) -> &TxConfig;
 
+    fn websocket_url(&self) -> &str;
+
     fn key_entry(&self) -> &Secp256k1KeyPair;
 }

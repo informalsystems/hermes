@@ -14,6 +14,7 @@ pub struct FullCosmosChainContext<Handle: ChainHandle> {
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub key_entry: Secp256k1KeyPair,
+    pub websocket_url: String,
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 }
 
@@ -22,6 +23,7 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
         handle: Handle,
         signer: Signer,
         tx_config: TxConfig,
+        websocket_url: String,
         key_entry: Secp256k1KeyPair,
         telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     ) -> Self {
@@ -29,6 +31,7 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
             handle,
             signer,
             tx_config,
+            websocket_url,
             key_entry,
             telemetry,
         };
@@ -55,6 +58,10 @@ where
 
     fn tx_config(&self) -> &TxConfig {
         &self.tx_config
+    }
+
+    fn websocket_url(&self) -> &str {
+        &self.websocket_url
     }
 
     fn key_entry(&self) -> &Secp256k1KeyPair {
