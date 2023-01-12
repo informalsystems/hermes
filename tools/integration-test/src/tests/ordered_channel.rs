@@ -9,8 +9,8 @@
 //! its balance reflects both transactions, the one that was sent
 //! before the relayer was started, and the one that was sent
 //! after the relayer was started.
-//! 
-//! A more thorough walkthrough of this test can be found at 
+//!
+//! A more thorough walkthrough of this test can be found at
 //! `tools/test-framework/src/docs/walkthroughs/ordered_channel.rs`.
 
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
