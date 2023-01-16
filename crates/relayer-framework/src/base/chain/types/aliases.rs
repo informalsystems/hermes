@@ -1,3 +1,4 @@
+use alloc::sync::Arc;
 use core::pin::Pin;
 use futures::stream::Stream;
 
@@ -36,7 +37,7 @@ pub type WriteAcknowledgementEvent<Chain, Counterparty> =
     <Chain as HasWriteAcknowledgementEvent<Counterparty>>::WriteAcknowledgementEvent;
 
 pub type EventStream<Chain> =
-    Pin<Box<dyn Stream<Item = (Height<Chain>, Event<Chain>)> + Send + 'static>>;
+    Pin<Box<dyn Stream<Item = Arc<(Height<Chain>, Event<Chain>)>> + Send + 'static>>;
 
 pub type EventSubscription<Chain> =
     <Runtime<Chain> as HasSubscriptionType>::Subscription<(Height<Chain>, Event<Chain>)>;

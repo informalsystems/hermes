@@ -42,7 +42,8 @@ where
         loop {
             if let Some(event_stream) = Runtime::subscribe(&event_subscription) {
                 event_stream
-                    .for_each(|(height, event)| async move {
+                    .for_each(|item| async move {
+                        let (height, event) = item.as_ref();
                         let _ = relay.relay_chain_event(&height, &event).await;
                     })
                     .await;
@@ -71,7 +72,8 @@ where
         loop {
             if let Some(event_stream) = Runtime::subscribe(&event_subscription) {
                 event_stream
-                    .for_each_concurrent(None, |(height, event)| async move {
+                    .for_each_concurrent(None, |item| async move {
+                        let (height, event) = item.as_ref();
                         let _ = relay.relay_chain_event(&height, &event).await;
                     })
                     .await;
