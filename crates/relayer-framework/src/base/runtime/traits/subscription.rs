@@ -1,5 +1,3 @@
-use core::future::Future;
-use core::marker::Unpin;
 use core::pin::Pin;
 use futures::stream::Stream;
 
@@ -19,13 +17,9 @@ pub trait CanSubscribe: HasSubscriptionType {
 }
 
 pub trait CanCreateSubscription: HasSubscriptionType {
-    fn new_subscription<T, S>(
-        stream: S,
-    ) -> (
-        Self::Subscription<T>,
-        Pin<Box<dyn Future<Output = ()> + Send + 'static>>,
-    )
+    fn new_subscription<T>(
+        stream: impl Fn() -> Pin<Box<dyn Stream<Item = T> + Send + 'static>>,
+    ) -> Self::Subscription<T>
     where
-        T: Async,
-        S: Stream<Item = T> + Unpin + 'static;
+        T: Async;
 }
