@@ -24,11 +24,11 @@ where
     ) -> Result<(), Relay::Error>;
 }
 
-struct SequentialSendPacketEventRelayer;
+struct SequentialEventSubscriptionRelayer;
 
 #[async_trait]
 impl<Relay, Target, Runtime> EventSubscriptionRelayer<Relay, Target>
-    for SequentialSendPacketEventRelayer
+    for SequentialEventSubscriptionRelayer
 where
     Relay: CanRelayEvent<Target>,
     Target: ChainTarget<Relay>,
@@ -43,6 +43,35 @@ where
             if let Some(event_stream) = Runtime::subscribe(&event_subscription) {
                 event_stream
                     .for_each(|(height, event)| async move {
+                        let _ = relay.relay_chain_event(&height, &event).await;
+                    })
+                    .await;
+            } else {
+                return Ok(());
+            }
+        }
+    }
+}
+
+struct ConcurrentEventSubscriptionRelayer;
+
+#[async_trait]
+impl<Relay, Target, Runtime> EventSubscriptionRelayer<Relay, Target>
+    for ConcurrentEventSubscriptionRelayer
+where
+    Relay: CanRelayEvent<Target>,
+    Target: ChainTarget<Relay>,
+    Target::TargetChain: HasRuntime<Runtime = Runtime>,
+    Runtime: CanSubscribe,
+{
+    async fn relay_chain_event_subscription(
+        relay: &Relay,
+        event_subscription: EventSubscription<Target::TargetChain>,
+    ) -> Result<(), Relay::Error> {
+        loop {
+            if let Some(event_stream) = Runtime::subscribe(&event_subscription) {
+                event_stream
+                    .for_each_concurrent(None, |(height, event)| async move {
                         let _ = relay.relay_chain_event(&height, &event).await;
                     })
                     .await;
