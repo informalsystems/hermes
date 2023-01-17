@@ -71,7 +71,7 @@ impl OfaFullRuntime for TokioRuntimeContext {
     where
         T: Async;
 
-    type Receiver<T> = Arc<Mutex<mpsc::UnboundedReceiver<T>>>
+    type Receiver<T> = mpsc::UnboundedReceiver<T>
     where
         T: Async;
 
@@ -95,8 +95,7 @@ impl OfaFullRuntime for TokioRuntimeContext {
     where
         T: Async,
     {
-        let (sender, receiver) = mpsc::unbounded_channel();
-        (sender, Arc::new(Mutex::new(receiver)))
+        mpsc::unbounded_channel()
     }
 
     fn send<T>(sender: &Self::Sender<T>, value: T) -> Result<(), Self::Error>
@@ -106,21 +105,17 @@ impl OfaFullRuntime for TokioRuntimeContext {
         sender.send(value).map_err(|_| TokioError::channel_closed())
     }
 
-    async fn receive<T>(receiver_lock: &Self::Receiver<T>) -> Result<T, Self::Error>
+    async fn receive<T>(receiver: &mut Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async,
     {
-        let mut receiver = receiver_lock.lock().await;
-
         receiver.recv().await.ok_or_else(TokioError::channel_closed)
     }
 
-    async fn try_receive<T>(receiver_lock: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    async fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async,
     {
-        let mut receiver = receiver_lock.lock().await;
-
         match receiver.try_recv() {
             Ok(batch) => Ok(Some(batch)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),

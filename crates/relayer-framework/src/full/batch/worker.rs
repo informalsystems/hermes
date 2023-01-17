@@ -7,6 +7,7 @@ use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
+use crate::base::runtime::traits::mutex::HasMutex;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
 use crate::base::runtime::traits::time::HasTime;
@@ -41,7 +42,7 @@ where
     TargetChain: CanEstimateMessageSize,
     TargetChain: HasRuntime<Runtime = Runtime>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
-    Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
+    Runtime: HasTime + CanSleep + HasMutex + HasSpawner + HasLogger<LevelDebug>,
     Runtime: CanUseChannelsOnce + CanUseChannels,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
@@ -68,7 +69,13 @@ where
         let mut last_sent_time = self.relay.runtime().now();
 
         loop {
-            match Runtime::try_receive(self.relay.get_batch_receiver()).await {
+            let payload = {
+                let receiver_mutex = self.relay.get_batch_receiver();
+                let mut receiver = Runtime::acquire_mutex(receiver_mutex).await;
+                Runtime::try_receive(&mut receiver).await
+            };
+
+            match payload {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
                         self.relay

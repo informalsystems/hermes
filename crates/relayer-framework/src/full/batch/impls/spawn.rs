@@ -4,6 +4,7 @@ use crate::base::chain::traits::types::{CanEstimateMessageSize, HasIbcChainTypes
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
+use crate::base::runtime::traits::mutex::HasMutex;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
 use crate::base::runtime::traits::time::HasTime;
@@ -29,7 +30,7 @@ where
     TargetChain: HasRuntime<Runtime = Runtime>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
-    Runtime: CanUseChannelsOnce + CanUseChannels,
+    Runtime: HasMutex + CanUseChannelsOnce + CanUseChannels,
     Relay: HasMessageBatchReceiver<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Relay::Error: Clone,

@@ -91,14 +91,14 @@ where
         Runtime::send(sender, value)
     }
 
-    async fn receive<T>(receiver: &Self::Receiver<T>) -> Result<T, Self::Error>
+    async fn receive<T>(receiver: &mut Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async,
     {
         Runtime::receive(receiver).await
     }
 
-    async fn try_receive<T>(receiver: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    async fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async,
     {

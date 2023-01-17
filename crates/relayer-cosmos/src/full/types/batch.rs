@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use tendermint::abci::Event;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot::Sender as SenderOnce;
@@ -14,4 +13,4 @@ pub type CosmosBatchPayload = (
 
 pub type CosmosBatchSender = UnboundedSender<CosmosBatchPayload>;
 
-pub type CosmosBatchReceiver = Arc<Mutex<UnboundedReceiver<CosmosBatchPayload>>>;
+pub type CosmosBatchReceiver = Mutex<UnboundedReceiver<CosmosBatchPayload>>;
