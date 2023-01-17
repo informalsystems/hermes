@@ -62,8 +62,8 @@ pub trait CanSubscribe: HasSubscriptionType {
        infinite, they can call `subscribe` again to get a new stream that
        correspond to a new incoming stream that replace the original stream.
     */
-    fn subscribe<'a, T>(
-        subscription: &'a Self::Subscription<T>,
+    fn subscribe<T>(
+        subscription: &Self::Subscription<T>,
     ) -> Option<Pin<Box<dyn Stream<Item = Arc<T>> + Send + 'static>>>
     where
         T: Async;
@@ -108,7 +108,10 @@ pub trait CanCreateSubscription: HasSubscriptionType {
        called.
     */
     fn new_subscription<T>(
-        new_stream: impl Fn() -> Option<Pin<Box<dyn Stream<Item = Arc<T>> + Send + 'static>>>,
+        new_stream: impl Fn() -> Option<Pin<Box<dyn Stream<Item = Arc<T>> + Send + 'static>>>
+            + Send
+            + Sync
+            + 'static,
     ) -> Self::Subscription<T>
     where
         T: Async;

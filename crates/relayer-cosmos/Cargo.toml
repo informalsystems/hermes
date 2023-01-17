@@ -32,7 +32,7 @@ async-trait = "0.1.56"
 flex-error = { version = "0.4.4", default-features = false }
 prost = { version = "0.11" }
 eyre = "0.6.8"
-tokio = "1.19.2"
+tokio = "1.24"
 itertools = "0.10.3"
 futures = "0.3"
 tracing = "0.1.36"

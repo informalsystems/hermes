@@ -8,6 +8,8 @@
 */
 
 use async_trait::async_trait;
+use core::pin::Pin;
+use futures::stream::Stream;
 
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
@@ -137,6 +139,14 @@ pub trait CanUseChannels: HasChannelTypes {
         T: Async;
 
     async fn try_receive<T>(receiver: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    where
+        T: Async;
+}
+
+pub trait HasReceiverStream: HasChannelTypes {
+    fn receiver_to_stream<T>(
+        receiver: Self::Receiver<T>,
+    ) -> Pin<Box<dyn Stream<Item = T> + Send + 'static>>
     where
         T: Async;
 }

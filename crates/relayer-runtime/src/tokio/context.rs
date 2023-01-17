@@ -1,11 +1,14 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::future::Future;
+use core::pin::Pin;
 use core::time::Duration;
+use futures::stream::Stream;
 use std::time::Instant;
 use tokio::runtime::Runtime;
 use tokio::sync::{mpsc, oneshot, Mutex, MutexGuard};
 use tokio::time::sleep;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use tracing;
 
 use ibc_relayer_framework::base::core::traits::sync::Async;
@@ -124,6 +127,14 @@ impl OfaFullRuntime for TokioRuntimeContext {
             Err(mpsc::error::TryRecvError::Disconnected) => Err(TokioError::channel_closed()),
         }
     }
+
+    // fn receiver_to_stream<T>(receiver: Self::Receiver<T>) ->
+    //     Pin<Box<dyn Stream<Item=T> + Send + 'static>>
+    // where
+    //     T: Async,
+    // {
+
+    // }
 
     fn new_channel_once<T>() -> (Self::SenderOnce<T>, Self::ReceiverOnce<T>)
     where
