@@ -1,23 +1,22 @@
 use async_trait::async_trait;
-use core::marker::PhantomData;
 use futures::stream::StreamExt;
 
 use crate::base::chain::traits::event_subscription::HasEventSubscription;
-use crate::base::relay::traits::auto_relayer::AutoRelayer;
+use crate::base::relay::traits::auto_relayer::AutoRelayerWithTarget;
 use crate::base::relay::traits::event_relayer::CanRelayEvent;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
-pub struct SequentialEventSubscriptionRelayer<Target>(pub PhantomData<Target>);
+pub struct SequentialEventSubscriptionRelayer;
 
 #[async_trait]
-impl<Relay, Target> AutoRelayer<Relay> for SequentialEventSubscriptionRelayer<Target>
+impl<Relay, Target> AutoRelayerWithTarget<Relay, Target> for SequentialEventSubscriptionRelayer
 where
     Relay: CanRelayEvent<Target>,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasEventSubscription,
 {
-    async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error> {
+    async fn auto_relay_with_target(relay: &Relay) -> Result<(), Relay::Error> {
         let subscription = Target::target_chain(relay).event_subscription();
 
         loop {
