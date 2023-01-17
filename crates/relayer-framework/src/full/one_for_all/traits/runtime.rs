@@ -46,11 +46,11 @@ pub trait OfaFullRuntime: OfaBaseRuntime {
     where
         T: Async;
 
-    // fn receiver_to_stream<T>(receiver: Self::Receiver<T>) ->
-    //     Pin<Box<dyn Stream<Item=T> + Send + 'static>>
-    // where
-    //     T: Async,
-    // ;
+    fn receiver_to_stream<T>(
+        receiver: Self::Receiver<T>,
+    ) -> Pin<Box<dyn Stream<Item = T> + Send + 'static>>
+    where
+        T: Async;
 
     fn new_channel_once<T>() -> (Self::SenderOnce<T>, Self::ReceiverOnce<T>)
     where

@@ -123,13 +123,14 @@ impl OfaFullRuntime for TokioRuntimeContext {
         }
     }
 
-    // fn receiver_to_stream<T>(receiver: Self::Receiver<T>) ->
-    //     Pin<Box<dyn Stream<Item=T> + Send + 'static>>
-    // where
-    //     T: Async,
-    // {
-
-    // }
+    fn receiver_to_stream<T>(
+        receiver: Self::Receiver<T>,
+    ) -> Pin<Box<dyn Stream<Item = T> + Send + 'static>>
+    where
+        T: Async,
+    {
+        Box::pin(UnboundedReceiverStream::new(receiver))
+    }
 
     fn new_channel_once<T>() -> (Self::SenderOnce<T>, Self::ReceiverOnce<T>)
     where
