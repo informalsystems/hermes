@@ -70,10 +70,10 @@ where
 
 pub async fn multiplex_subscription<Runtime, T>(
     runtime: &Runtime,
-    in_subscription: Arc<dyn Subscription<Item = T> + Send + Sync + 'static>,
-) -> Arc<dyn Subscription<Item = T> + Send + Sync + 'static>
+    in_subscription: Arc<dyn Subscription<Item = T>>,
+) -> Arc<dyn Subscription<Item = T>>
 where
-    T: Async + Clone + 'static,
+    T: Async + Clone,
     Runtime: HasSpawner + HasMutex + CanCreateChannels + CanUseChannels + CanStreamReceiver,
 {
     let stream_senders = Arc::new(Runtime::new_mutex(Some(Vec::new())));

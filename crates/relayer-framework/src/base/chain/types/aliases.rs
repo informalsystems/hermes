@@ -9,7 +9,7 @@ use crate::base::chain::traits::types::height::HasHeightType;
 use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::chain::traits::types::message::HasMessageType;
 use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::base::runtime::traits::subscription::HasSubscriptionType;
+use crate::base::runtime::traits::subscription::Subscription;
 use crate::std_prelude::*;
 
 pub type Runtime<Chain> = <Chain as HasRuntime>::Runtime;
@@ -39,5 +39,4 @@ pub type WriteAcknowledgementEvent<Chain, Counterparty> =
 pub type EventStream<Chain> =
     Pin<Box<dyn Stream<Item = Arc<(Height<Chain>, Event<Chain>)>> + Send + 'static>>;
 
-pub type EventSubscription<Chain> =
-    <Runtime<Chain> as HasSubscriptionType>::Subscription<(Height<Chain>, Event<Chain>)>;
+pub type EventSubscription<Chain> = Arc<dyn Subscription<Item = (Height<Chain>, Event<Chain>)>>;
