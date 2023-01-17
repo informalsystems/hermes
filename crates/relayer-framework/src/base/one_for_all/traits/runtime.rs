@@ -25,5 +25,7 @@ pub trait OfaBaseRuntime: Async {
 
     fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration;
 
+    fn new_mutex<T: Async>(item: T) -> Self::Mutex<T>;
+
     async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T>;
 }

@@ -60,6 +60,10 @@ impl OfaBaseRuntime for TokioRuntimeContext {
         time.duration_since(*other)
     }
 
+    fn new_mutex<T: Async>(item: T) -> Self::Mutex<T> {
+        Mutex::new(item)
+    }
+
     async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T> {
         mutex.lock().await
     }

@@ -46,6 +46,7 @@ impl CanSubscribe for NaiveSubscriptionRuntime {
 
 impl CanCreateSubscription for NaiveSubscriptionRuntime {
     fn new_subscription<T>(
+        &self,
         new_stream: impl Fn() -> Option<Pin<Box<dyn Stream<Item = Arc<T>> + Send + 'static>>>
             + Send
             + Sync

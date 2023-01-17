@@ -10,5 +10,7 @@ pub trait HasMutex {
 
     type MutexGuard<'a, T: Async>: 'a + Send + Sync + DerefMut<Target = T>;
 
+    fn new_mutex<T: Async>(item: T) -> Self::Mutex<T>;
+
     async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T>;
 }
