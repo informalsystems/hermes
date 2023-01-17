@@ -112,7 +112,7 @@ impl OfaFullRuntime for TokioRuntimeContext {
         receiver.recv().await.ok_or_else(TokioError::channel_closed)
     }
 
-    async fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async,
     {

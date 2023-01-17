@@ -1,4 +1,5 @@
 use alloc::sync::Arc;
+use async_trait::async_trait;
 use core::pin::Pin;
 use futures::stream::Stream;
 
@@ -31,8 +32,9 @@ impl HasSubscriptionType for NaiveSubscriptionRuntime {
     type Subscription<T: Async> = NaiveSubscription<T>;
 }
 
+#[async_trait]
 impl CanSubscribe for NaiveSubscriptionRuntime {
-    fn subscribe<T>(
+    async fn subscribe<T>(
         subscription: &Self::Subscription<T>,
     ) -> Option<Pin<Box<dyn Stream<Item = Arc<T>> + Send + 'static>>>
     where

@@ -42,7 +42,7 @@ pub trait OfaFullRuntime: OfaBaseRuntime {
     where
         T: Async;
 
-    async fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async;
 

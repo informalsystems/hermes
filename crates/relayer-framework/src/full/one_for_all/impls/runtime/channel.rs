@@ -102,11 +102,11 @@ where
         Runtime::receive(receiver).await
     }
 
-    async fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async,
     {
-        Runtime::try_receive(receiver).await
+        Runtime::try_receive(receiver)
     }
 }
 

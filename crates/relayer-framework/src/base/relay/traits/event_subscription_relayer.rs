@@ -64,7 +64,7 @@ where
         event_subscription: EventSubscription<Target::TargetChain>,
     ) -> Result<(), Relay::Error> {
         loop {
-            if let Some(event_stream) = Runtime::subscribe(&event_subscription) {
+            if let Some(event_stream) = Runtime::subscribe(&event_subscription).await {
                 // Use [`StreamExt::foreach`] to process the events sequentially.
                 event_stream
                     .for_each(|item| async move {
@@ -118,7 +118,7 @@ where
         event_subscription: EventSubscription<Target::TargetChain>,
     ) -> Result<(), Relay::Error> {
         loop {
-            if let Some(event_stream) = Runtime::subscribe(&event_subscription) {
+            if let Some(event_stream) = Runtime::subscribe(&event_subscription).await {
                 event_stream
                     .for_each_concurrent(None, |item| async move {
                         let (height, event) = item.as_ref();
@@ -164,7 +164,7 @@ where
         let runtime = Target::target_chain(relay).runtime();
 
         loop {
-            if let Some(event_stream) = Runtime::subscribe(&event_subscription) {
+            if let Some(event_stream) = Runtime::subscribe(&event_subscription).await {
                 event_stream
                     .for_each_concurrent(None, |item| async move {
                         let relay = relay.clone();

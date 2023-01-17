@@ -1,4 +1,5 @@
 use alloc::sync::Arc;
+use async_trait::async_trait;
 use core::pin::Pin;
 use futures::stream::Stream;
 
@@ -44,6 +45,7 @@ pub trait HasSubscriptionType {
    Provides the consumer interface of [`HasSubscriptionType`] for subscribing
    to a stream.
 */
+#[async_trait]
 pub trait CanSubscribe: HasSubscriptionType {
     /**
        Given a reference to a [`Subscription<T>`](HasSubscriptionType::Subscription),
@@ -62,7 +64,7 @@ pub trait CanSubscribe: HasSubscriptionType {
        infinite, they can call `subscribe` again to get a new stream that
        correspond to a new incoming stream that replace the original stream.
     */
-    fn subscribe<T>(
+    async fn subscribe<T>(
         subscription: &Self::Subscription<T>,
     ) -> Option<Pin<Box<dyn Stream<Item = Arc<T>> + Send + 'static>>>
     where

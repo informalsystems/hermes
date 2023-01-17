@@ -72,7 +72,7 @@ where
             let payload = {
                 let receiver_mutex = self.relay.get_batch_receiver();
                 let mut receiver = Runtime::acquire_mutex(receiver_mutex).await;
-                Runtime::try_receive(&mut receiver).await
+                Runtime::try_receive(&mut receiver)
             };
 
             match payload {
