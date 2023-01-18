@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
+use core::ops::DerefMut;
 use core::pin::Pin;
 use futures::stream::{Stream, StreamExt};
 
@@ -68,12 +69,14 @@ where
     }
 }
 
-pub async fn multiplex_subscription<Runtime, T>(
+pub async fn multiplex_subscription<Runtime, T, U>(
     runtime: &Runtime,
-    in_subscription: Arc<dyn Subscription<Item = T>>,
-) -> Arc<dyn Subscription<Item = T>>
+    in_subscription: impl Subscription<Item = T>,
+    map_item: impl Fn(T) -> U + Send + Sync + 'static,
+) -> impl Subscription<Item = U>
 where
     T: Async + Clone,
+    U: Async + Clone,
     Runtime: HasSpawner + HasMutex + CanCreateChannels + CanUseChannels + CanStreamReceiver,
 {
     let stream_senders = Arc::new(Runtime::new_mutex(Some(Vec::new())));
@@ -85,22 +88,20 @@ where
         loop {
             let m_stream = in_subscription.subscribe().await;
 
-            {
-                let mut senders = Runtime::acquire_mutex(&task_senders).await;
-                *senders = Some(Vec::new());
-            }
-
             match m_stream {
                 Some(stream) => {
                     let task_senders = &task_senders;
+                    let map_item = &map_item;
+
                     stream
                         .for_each(|item| async move {
-                            let item = item.clone();
-                            let m_senders = Runtime::acquire_mutex(&task_senders).await;
-                            if let Some(senders) = m_senders.as_ref() {
-                                for sender in senders.iter() {
-                                    let _ = Runtime::send(sender, item.clone());
-                                }
+                            let mapped = map_item(item);
+                            let mut m_senders = Runtime::acquire_mutex(&task_senders).await;
+
+                            if let Some(senders) = m_senders.deref_mut() {
+                                // Remove senders where the receiver side has been dropped
+                                senders
+                                    .retain(|sender| Runtime::send(sender, mapped.clone()).is_ok());
                             }
                         })
                         .await;
@@ -114,8 +115,8 @@ where
         }
     });
 
-    let subscription: MultiplexingSubscription<Runtime, T> =
+    let subscription: MultiplexingSubscription<Runtime, U> =
         MultiplexingSubscription { stream_senders };
 
-    Arc::new(subscription)
+    subscription
 }

@@ -1,3 +1,4 @@
+use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::future::Future;
 use core::pin::Pin;
@@ -51,5 +52,23 @@ pub fn closure_subscription<T: Async>(
 
     SubscriptionClosure {
         subscribe: Box::new(subscribe),
+    }
+}
+
+#[async_trait]
+impl<T: Async> Subscription for Box<dyn Subscription<Item = T>> {
+    type Item = T;
+
+    async fn subscribe(&self) -> Option<Pin<Box<dyn Stream<Item = Self::Item> + Send + 'static>>> {
+        self.as_ref().subscribe().await
+    }
+}
+
+#[async_trait]
+impl<T: Async> Subscription for Arc<dyn Subscription<Item = T>> {
+    type Item = T;
+
+    async fn subscribe(&self) -> Option<Pin<Box<dyn Stream<Item = Self::Item> + Send + 'static>>> {
+        self.as_ref().subscribe().await
     }
 }
