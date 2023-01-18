@@ -22,7 +22,7 @@ impl MockChainStatus {
 impl From<(Height, MockTimestamp, State)> for MockChainStatus {
     fn from(s: (Height, MockTimestamp, State)) -> Self {
         MockChainStatus {
-            height: s.0.clone(),
+            height: s.0,
             timestamp: s.1,
             state: s.2,
         }

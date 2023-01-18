@@ -30,7 +30,7 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasChainTypes::Height`](crate::base::chain::traits::types::HasChainTypes::Height).
+       [`HasChainTypes::Height`](crate::base::chain::traits::types::height::HasHeightType::Height).
     */
     type Height: Ord + Async;
 
@@ -118,7 +118,7 @@ pub trait OfaBaseChain: OfaChainTypes {
     fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
 
     fn try_extract_write_acknowledgement_event(
-        event: Self::Event,
+        event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
 
     async fn send_messages(

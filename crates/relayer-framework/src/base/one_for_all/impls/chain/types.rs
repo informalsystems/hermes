@@ -161,7 +161,7 @@ where
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 
     fn try_extract_write_acknowledgement_event(
-        event: Self::Event,
+        event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         Chain::try_extract_write_acknowledgement_event(event)
     }

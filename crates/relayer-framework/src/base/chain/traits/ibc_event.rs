@@ -5,15 +5,8 @@ use crate::base::core::traits::sync::Async;
 /**
    Indicates that a chain context's
    [`Event`](crate::base::chain::traits::types::HasEventType::Event)
-   type contains event variants that are relevant to IBC events.
-
-   Currently there is only one event variant,
-   [`WriteAcknowledgementEvent`](Self::WriteAcknowledgementEvent),
-   that is needed by the relayer framework. More IBC event variants
-   will be added into this trait when it is necessary to define
-   abstract components that make use of these events.
+   type contains a [`SendPacketEvent`](Self::SendPacketEvent) variant.
 */
-
 pub trait HasSendPacketEvent<Counterparty>: HasIbcPacketTypes<Counterparty>
 where
     Counterparty: HasIbcPacketTypes<
@@ -29,7 +22,11 @@ where
     fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
         -> Self::OutgoingPacket;
 }
-
+/**
+   Indicates that a chain context's
+   [`Event`](crate::base::chain::traits::types::HasEventType::Event)
+   type contains a [`WriteAcknowledgementEvent`](Self::WriteAcknowledgementEvent) variant.
+*/
 pub trait HasWriteAcknowledgementEvent<Counterparty>: HasIbcChainTypes<Counterparty>
 where
     Counterparty: HasChainTypes,
@@ -60,12 +57,8 @@ where
        that the event extraction would be successful. If the concrete
        `Event` is dynamic-typed, then the extraction may also fail due to
        parse errors.
-
-       For simplicity, the method requires an ownership transfer of the
-       event value, and returns an `Option` instead of `Result`. This
-       may be changed in the future as different needs arise.
     */
     fn try_extract_write_acknowledgement_event(
-        event: Self::Event,
+        event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
 }

@@ -91,10 +91,10 @@ impl OfaBaseChain for MockChainContext {
     }
 
     fn try_extract_write_acknowledgement_event(
-        event: Self::Event,
+        event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         match event {
-            Event::WriteAcknowledgment(h) => Some(WriteAcknowledgementEvent::new(h)),
+            Event::WriteAcknowledgment(h) => Some(WriteAcknowledgementEvent::new(*h)),
             _ => None,
         }
     }
@@ -181,9 +181,9 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
-            MockMessage::RecvPacket(h, _) => Some(h.clone()),
-            MockMessage::AckPacket(h, _) => Some(h.clone()),
-            MockMessage::TimeoutPacket(h, _) => Some(h.clone()),
+            MockMessage::RecvPacket(h, _) => Some(*h),
+            MockMessage::AckPacket(h, _) => Some(*h),
+            MockMessage::TimeoutPacket(h, _) => Some(*h),
             _ => None,
         }
     }
@@ -207,7 +207,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         height: &Self::Height,
     ) -> Result<Self::ConsensusState, Self::Error> {
         let client_consensus =
-            self.query_consensus_state_at_height(client_id.to_string(), height.clone())?;
+            self.query_consensus_state_at_height(client_id.to_string(), *height)?;
         Ok(client_consensus)
     }
 
@@ -267,7 +267,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
                 packet.src_channel_id.to_string(),
             ));
         }
-        Ok(MockMessage::RecvPacket(height.clone(), packet.clone()))
+        Ok(MockMessage::RecvPacket(*height, packet.clone()))
     }
 
     async fn build_ack_packet_message(
@@ -290,7 +290,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
             ));
         }
 
-        Ok(MockMessage::AckPacket(height.clone(), packet.clone()))
+        Ok(MockMessage::AckPacket(*height, packet.clone()))
     }
 
     async fn build_timeout_unordered_packet_message(
@@ -302,13 +302,13 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         let runtime = self.runtime();
         let current_timestamp = runtime.runtime.get_time();
 
-        if !state.check_timeout(packet.clone(), height.clone(), current_timestamp) {
+        if !state.check_timeout(packet.clone(), *height, current_timestamp) {
             return Err(Error::timeout_without_sent(
                 self.name().to_string(),
                 packet.src_channel_id.to_string(),
             ));
         }
 
-        Ok(MockMessage::TimeoutPacket(height.clone(), packet.clone()))
+        Ok(MockMessage::TimeoutPacket(*height, packet.clone()))
     }
 }

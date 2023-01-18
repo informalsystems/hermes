@@ -71,8 +71,8 @@ pub trait Subscription: Send + Sync + 'static {
 
        If the subscription is terminated, the method would return `None`.
        Callers that receive `None` should expect all subsequent calls to
-       [`subscribe`] to also return `None`, and perform appropriate actions
-       for termination.
+       [`subscribe`](Self::subscribe) to also return `None`, and perform
+       appropriate actions for termination.
     */
     async fn subscribe(&self) -> Option<Pin<Box<dyn Stream<Item = Self::Item> + Send + 'static>>>;
 }

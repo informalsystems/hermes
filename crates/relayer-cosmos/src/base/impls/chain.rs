@@ -99,10 +99,10 @@ where
     }
 
     fn try_extract_write_acknowledgement_event(
-        event: Self::Event,
+        event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         if let IbcEventType::WriteAck = event.kind.parse().ok()? {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(&event).ok()?;
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event).ok()?;
 
             let ack = WriteAcknowledgement {
                 packet,

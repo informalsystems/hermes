@@ -14,8 +14,8 @@ use crate::base::chain::traits::types::message::HasMessageType;
    -   [`Error`](HasErrorType::Error) - the error type encapsulating errors occured
        during chain operations.
 
-   -   [`Height`](Self::Height) - the height of a chain, which should behave like
-       natural numbers.
+   -   [`Height`](HasHeightType::Height) - the height of a chain, which should
+        behave like natural numbers.
 
    -   [`Timestamp`](Self::Timestamp) - the timestamp of a chain, which should
        increment monotonically.

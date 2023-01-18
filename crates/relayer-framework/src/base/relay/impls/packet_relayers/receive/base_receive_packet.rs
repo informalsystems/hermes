@@ -35,7 +35,7 @@ where
         let events = relay.send_message(message).await?;
 
         let ack_event = events
-            .into_iter()
+            .iter()
             .find_map(Relay::DstChain::try_extract_write_acknowledgement_event);
 
         Ok(ack_event)
