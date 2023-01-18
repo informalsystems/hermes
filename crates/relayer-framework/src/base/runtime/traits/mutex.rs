@@ -5,7 +5,7 @@ use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait HasMutex {
+pub trait HasMutex: Async {
     type Mutex<T: Async>: Async;
 
     type MutexGuard<'a, T: Async>: 'a + Send + Sync + DerefMut<Target = T>;

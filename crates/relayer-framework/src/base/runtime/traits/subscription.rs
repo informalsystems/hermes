@@ -1,6 +1,5 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
-use core::future::Future;
 use core::pin::Pin;
 use futures::stream::Stream;
 
@@ -24,15 +23,16 @@ use crate::std_prelude::*;
     [`subscribe`](Self::subscribe) is called. This may be inefficient as each
     stream would have to open new network connections, but it is simpler and
     more resilient to error conditions such as network disconnections. A simple
-    way to implement a naive subscription is to use [`closure_subscription`]
+    way to implement a naive subscription is to use
+    [`CanCreateClosureSubscription`](crate::base::runtime::impls::subscription::closure::CanCreateClosureSubscription)
     to turn a closure into a [`Subscription`].
 
     A [`Subscription`] implementation could be made efficient by sharing one
     incoming [`Stream`] with multiple consumers, by multiplexing them to multiple
     outgoing [`Stream`]s inside a background task. An example implementation of
-    this is the
-    [`multiplex_subscription`](crate::full::runtime::impls::subscription::multiplex::multiplex_subscription)
-    function, which wraps around a naive [`Subscription`] and perform
+    this is
+    [`CanMultiplexSubscription`](crate::full::runtime::impls::subscription::multiplex::CanMultiplexSubscription),
+    which wraps around a naive [`Subscription`] and perform
     multiplexing and recovery from a background task.
 
     A [`Subscription`] do not guarantee whether the returned [`Stream`] is
@@ -75,47 +75,6 @@ pub trait Subscription: Send + Sync + 'static {
        appropriate actions for termination.
     */
     async fn subscribe(&self) -> Option<Pin<Box<dyn Stream<Item = Self::Item> + Send + 'static>>>;
-}
-
-pub fn closure_subscription<T: Async>(
-    subscribe: impl Fn() -> Pin<
-            Box<
-                dyn Future<Output = Option<Pin<Box<dyn Stream<Item = T> + Send + 'static>>>>
-                    + Send
-                    + 'static,
-            >,
-        > + Send
-        + Sync
-        + 'static,
-) -> impl Subscription<Item = T> {
-    pub struct SubscriptionClosure<T> {
-        pub subscribe: Box<
-            dyn Fn() -> Pin<
-                    Box<
-                        dyn Future<Output = Option<Pin<Box<dyn Stream<Item = T> + Send + 'static>>>>
-                            + Send
-                            + 'static,
-                    >,
-                > + Send
-                + Sync
-                + 'static,
-        >,
-    }
-
-    #[async_trait]
-    impl<T: Async> Subscription for SubscriptionClosure<T> {
-        type Item = T;
-
-        async fn subscribe(
-            &self,
-        ) -> Option<Pin<Box<dyn Stream<Item = Self::Item> + Send + 'static>>> {
-            (self.subscribe)().await
-        }
-    }
-
-    SubscriptionClosure {
-        subscribe: Box::new(subscribe),
-    }
 }
 
 #[async_trait]
