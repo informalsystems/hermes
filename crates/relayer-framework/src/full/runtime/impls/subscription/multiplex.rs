@@ -13,11 +13,45 @@ use crate::full::runtime::traits::channel::{
 use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
+/**
+   Multiplex the incoming [`Stream`] provided by an underlying [`Subscription`]
+   into multiple outgoing [`Stream`]s through a background task. This is
+   an auto trait implemented by all runtime contexts that implement
+   [`HasSpawner`], [`HasMutex`], [`CanCreateChannels`], [`CanUseChannels`],
+   and [`CanStreamReceiver`].
+
+   This can be used to improve the efficiency of naive subscriptions created from
+   [`CanCreateClosureSubscription`](crate::base::runtime::impls::subscription::closure::CanCreateClosureSubscription).
+   For example, one can first create a subscription closure that establishes
+   new network connection each time `subscribe` is called. The subscription
+   closure is then passed to [`multiplex_subscription`](Self::multiplex_subscription),
+   which would return a wrapped subscription which would only create one
+   network connection at a time.
+
+   The multiplexed subscription also attempts to recover by calling the
+   [`subscribe`](Subscription::subscribe) method of the underlying subsciption
+   again, if a given [`Stream`] terminates. This would allow for auto recovery
+   from underlying errors such as network disconnection. The multiplexed
+   subscription would only terminate if the underlying
+   [`subscribe`](Subscription::subscribe) returns `None`.
+
+   The streams returned from the [`subscribe`](Subscription::subscribe) of
+   the multiplexed subscription will automatically resume streaming from
+   a new underlying stream, if the original underlying stream is terminated.
+   However, since a consumer cannot know if a [`Subscription`] implementation
+   is multiplexed or not, it should always retry calling
+   [`subscribe`](Subscription::subscribe) in case a [`Stream`] ends.
+*/
 #[async_trait]
 pub trait CanMultiplexSubscription {
+    /**
+       Multiplex a given subscription, with a mapper function that maps the
+       item coming from the underlying subscription from `T` to `U`. Returns
+       a new multiplexed subscription that shares the same underlying [`Stream`].
+    */
     async fn multiplex_subscription<T, U>(
         &self,
-        in_subscription: impl Subscription<Item = T>,
+        subscription: impl Subscription<Item = T>,
         map_item: impl Fn(T) -> U + Send + Sync + 'static,
     ) -> Arc<dyn Subscription<Item = U>>
     where
@@ -68,6 +102,9 @@ where
                             .await;
                     }
                     None => {
+                        // If the underlying subscription returns `None` from `subscribe`, clears the senders
+                        // queue inside the mutex and set it to `None` and return. This will cause subsequent
+                        // calls to `subscribe` for the multiplexed subscription to also return `None`.
                         let mut senders = Runtime::acquire_mutex(&task_senders).await;
                         *senders = None;
                         return;
