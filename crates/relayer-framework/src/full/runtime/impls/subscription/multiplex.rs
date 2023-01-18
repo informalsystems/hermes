@@ -13,62 +13,6 @@ use crate::full::runtime::traits::channel::{
 use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
-pub type StreamSender<Runtime, T> = <Runtime as HasChannelTypes>::Sender<T>;
-
-pub type StreamSenders<Runtime, T> =
-    Arc<<Runtime as HasMutex>::Mutex<Option<Vec<StreamSender<Runtime, T>>>>>;
-
-pub struct MultiplexingSubscriptionRuntime<Runtime> {
-    pub runtime: Runtime,
-}
-
-pub struct MultiplexingSubscription<Runtime, T>
-where
-    T: Async,
-    Runtime: HasChannelTypes + HasMutex,
-{
-    pub stream_senders: StreamSenders<Runtime, T>,
-}
-
-impl<Runtime, T> Clone for MultiplexingSubscription<Runtime, T>
-where
-    T: Async,
-    Runtime: HasChannelTypes + HasMutex,
-{
-    fn clone(&self) -> Self {
-        Self {
-            stream_senders: self.stream_senders.clone(),
-        }
-    }
-}
-
-#[async_trait]
-impl<Runtime, T> Subscription for MultiplexingSubscription<Runtime, T>
-where
-    T: Async,
-    Runtime: HasMutex + CanCreateChannels + CanStreamReceiver,
-{
-    type Item = T;
-
-    async fn subscribe(&self) -> Option<Pin<Box<dyn Stream<Item = T> + Send + 'static>>>
-    where
-        T: Async,
-    {
-        let mut m_senders = Runtime::acquire_mutex(&self.stream_senders).await;
-
-        match m_senders.as_mut() {
-            Some(senders) => {
-                let (sender, receiver) = Runtime::new_channel();
-                senders.push(sender);
-
-                let stream = Runtime::receiver_to_stream(receiver);
-                Some(stream)
-            }
-            None => None,
-        }
-    }
-}
-
 pub async fn multiplex_subscription<Runtime, T, U>(
     runtime: &Runtime,
     in_subscription: impl Subscription<Item = T>,
@@ -119,4 +63,56 @@ where
         MultiplexingSubscription { stream_senders };
 
     subscription
+}
+
+type StreamSender<Runtime, T> = <Runtime as HasChannelTypes>::Sender<T>;
+
+type StreamSenders<Runtime, T> =
+    Arc<<Runtime as HasMutex>::Mutex<Option<Vec<StreamSender<Runtime, T>>>>>;
+
+struct MultiplexingSubscription<Runtime, T>
+where
+    T: Async,
+    Runtime: HasChannelTypes + HasMutex,
+{
+    pub stream_senders: StreamSenders<Runtime, T>,
+}
+
+impl<Runtime, T> Clone for MultiplexingSubscription<Runtime, T>
+where
+    T: Async,
+    Runtime: HasChannelTypes + HasMutex,
+{
+    fn clone(&self) -> Self {
+        Self {
+            stream_senders: self.stream_senders.clone(),
+        }
+    }
+}
+
+#[async_trait]
+impl<Runtime, T> Subscription for MultiplexingSubscription<Runtime, T>
+where
+    T: Async,
+    Runtime: HasMutex + CanCreateChannels + CanStreamReceiver,
+{
+    type Item = T;
+
+    async fn subscribe(&self) -> Option<Pin<Box<dyn Stream<Item = T> + Send + 'static>>>
+    where
+        T: Async,
+    {
+        let mut m_senders = Runtime::acquire_mutex(&self.stream_senders).await;
+
+        match m_senders.as_mut() {
+            Some(senders) => {
+                let (sender, receiver) = Runtime::new_channel();
+                senders.push(sender);
+
+                let stream = Runtime::receiver_to_stream(receiver);
+                Some(stream)
+            }
+            None => None,
+        }
+    }
 }
