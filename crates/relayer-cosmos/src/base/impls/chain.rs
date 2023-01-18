@@ -216,7 +216,7 @@ where
 
     fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
         if let IbcEventType::SendPacket = event.kind.parse().ok()? {
-            let (packet, _) = extract_packet_and_write_ack_from_tx(&event).ok()?;
+            let (packet, _) = extract_packet_and_write_ack_from_tx(event).ok()?;
 
             let send_packet_event = SendPacket { packet };
 

@@ -26,9 +26,7 @@ where
             let _ = <InRelayer as AutoRelayerWithTarget<Relay, DestinationTarget>>::auto_relay_with_target(&dst_relay).await;
         });
 
-        <InRelayer as AutoRelayerWithTarget<Relay, SourceTarget>>::auto_relay_with_target(
-            &src_relay,
-        )
-        .await
+        <InRelayer as AutoRelayerWithTarget<Relay, SourceTarget>>::auto_relay_with_target(src_relay)
+            .await
     }
 }
