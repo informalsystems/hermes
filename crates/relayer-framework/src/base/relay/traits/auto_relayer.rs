@@ -10,7 +10,7 @@ pub trait AutoRelayer<Relay>: Async
 where
     Relay: HasRelayTypes,
 {
-    async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error>;
+    async fn auto_relay(relay: &Relay);
 }
 
 #[async_trait]
@@ -19,5 +19,5 @@ where
     Relay: HasRelayTypes,
     Target: ChainTarget<Relay>,
 {
-    async fn auto_relay_with_target(relay: &Relay) -> Result<(), Relay::Error>;
+    async fn auto_relay_with_target(relay: &Relay);
 }

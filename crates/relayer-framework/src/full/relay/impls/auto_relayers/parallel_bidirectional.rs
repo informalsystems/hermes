@@ -18,7 +18,7 @@ where
     InRelayer: AutoRelayerWithTarget<Relay, DestinationTarget>,
     Runtime: HasSpawner,
 {
-    async fn auto_relay(src_relay: &Relay) -> Result<(), Relay::Error> {
+    async fn auto_relay(src_relay: &Relay) {
         let dst_relay = src_relay.clone();
         let spawner = src_relay.runtime().spawner();
 
