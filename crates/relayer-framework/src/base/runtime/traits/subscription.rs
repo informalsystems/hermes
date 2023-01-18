@@ -31,9 +31,13 @@ use crate::std_prelude::*;
     incoming [`Stream`] with multiple consumers, by multiplexing them to multiple
     outgoing [`Stream`]s inside a background task. An example implementation of
     this is
+    [`CanStreamSubscription`](crate::full::runtime::impls::subscription::stream::CanStreamSubscription),
+    which multiplexes a single stream into a [`Subscription`].
+    A more advanced version of wrapping is provided by
     [`CanMultiplexSubscription`](crate::full::runtime::impls::subscription::multiplex::CanMultiplexSubscription),
     which wraps around a naive [`Subscription`] and perform
-    multiplexing and recovery from a background task.
+    both stream multiplexing and auto recovery from a background task by
+    calling the underlying `subscribe` function.
 
     A [`Subscription`] do not guarantee whether the returned [`Stream`] is
     finite or infinite (long-running). As a result, the [`Stream`] returned

@@ -125,7 +125,7 @@ type StreamSender<Runtime, T> = <Runtime as HasChannelTypes>::Sender<T>;
 type StreamSenders<Runtime, T> =
     Arc<<Runtime as HasMutex>::Mutex<Option<Vec<StreamSender<Runtime, T>>>>>;
 
-struct MultiplexingSubscription<Runtime, T>
+pub struct MultiplexingSubscription<Runtime, T>
 where
     T: Async,
     Runtime: HasChannelTypes + HasMutex,
