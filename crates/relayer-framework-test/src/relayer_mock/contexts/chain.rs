@@ -47,7 +47,7 @@ impl MockChainContext {
         let runtime = OfaRuntimeWrapper::new(MockRuntimeContext::new(clock));
         let chain_state = State::default();
         let initial_state: HashMap<MockHeight, ChainState> =
-            HashMap::from([(MockHeight::from(1), chain_state.clone())]);
+            HashMap::from([(MockHeight::default(), chain_state.clone())]);
         Self {
             name,
             past_chain_states: Arc::new(Mutex::new(initial_state)),
