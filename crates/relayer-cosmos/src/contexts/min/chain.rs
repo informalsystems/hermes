@@ -3,6 +3,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
 use ibc_relayer_types::signer::Signer;
+use tendermint_rpc::Url;
 
 use crate::base::traits::chain::CosmosChain;
 
@@ -10,7 +11,7 @@ pub struct MinCosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,
     pub tx_config: TxConfig,
-    pub websocket_url: String,
+    pub websocket_url: Url,
     pub key_entry: Secp256k1KeyPair,
 }
 
@@ -19,7 +20,7 @@ impl<Handle: ChainHandle> MinCosmosChainContext<Handle> {
         handle: Handle,
         signer: Signer,
         tx_config: TxConfig,
-        websocket_url: String,
+        websocket_url: Url,
         key_entry: Secp256k1KeyPair,
     ) -> Self {
         Self {
@@ -52,7 +53,7 @@ where
         &self.tx_config
     }
 
-    fn websocket_url(&self) -> &str {
+    fn websocket_url(&self) -> &Url {
         &self.websocket_url
     }
 

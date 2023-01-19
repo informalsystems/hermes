@@ -16,9 +16,8 @@ use tendermint_rpc::{SubscriptionClient, WebSocketClient};
 
 use crate::base::error::Error;
 
-#[async_trait]
 pub trait CanCreateAbciEventSubscription: Async {
-    async fn new_abci_event_subscription(
+    fn new_abci_event_subscription(
         &self,
         chain_version: u64,
         websocket_url: Url,
@@ -26,13 +25,12 @@ pub trait CanCreateAbciEventSubscription: Async {
     ) -> Arc<dyn Subscription<Item = (Height, AbciEvent)>>;
 }
 
-#[async_trait]
 impl<Runtime> CanCreateAbciEventSubscription for Runtime
 where
     Runtime:
         CanCreateRpcEventStream + CanCreateClosureSubscription + CanMultiplexSubscription + Clone,
 {
-    async fn new_abci_event_subscription(
+    fn new_abci_event_subscription(
         &self,
         chain_version: u64,
         websocket_url: Url,

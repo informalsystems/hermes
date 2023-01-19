@@ -3,6 +3,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_types::signer::Signer;
+use tendermint_rpc::Url;
 
 pub trait CosmosChain: Async {
     type Preset;
@@ -15,7 +16,7 @@ pub trait CosmosChain: Async {
 
     fn tx_config(&self) -> &TxConfig;
 
-    fn websocket_url(&self) -> &str;
+    fn websocket_url(&self) -> &Url;
 
     fn key_entry(&self) -> &Secp256k1KeyPair;
 }

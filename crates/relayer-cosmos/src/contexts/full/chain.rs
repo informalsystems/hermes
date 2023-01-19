@@ -4,6 +4,7 @@ use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::signer::Signer;
+use tendermint_rpc::Url;
 
 use crate::base::traits::chain::CosmosChain;
 use crate::full::traits::chain::CosmosFullChain;
@@ -14,7 +15,7 @@ pub struct FullCosmosChainContext<Handle: ChainHandle> {
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub key_entry: Secp256k1KeyPair,
-    pub websocket_url: String,
+    pub websocket_url: Url,
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 }
 
@@ -23,7 +24,7 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
         handle: Handle,
         signer: Signer,
         tx_config: TxConfig,
-        websocket_url: String,
+        websocket_url: Url,
         key_entry: Secp256k1KeyPair,
         telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     ) -> Self {
@@ -60,7 +61,7 @@ where
         &self.tx_config
     }
 
-    fn websocket_url(&self) -> &str {
+    fn websocket_url(&self) -> &Url {
         &self.websocket_url
     }
 
