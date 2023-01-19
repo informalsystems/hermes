@@ -47,9 +47,12 @@ jobs:
   multi-chains-test:
     runs-on: ubuntu-20.04
     if: |
-      github.ref == 'refs/heads/master' ||
-      contains(github.event.pull_request.labels.*.name, 'CI: multi-chains') ||
-      github.event.action == 'labeled' && github.event.label.name == 'CI: multi-chains'
+      github.ref == 'refs/heads/master' || (
+        (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize') &&
+          contains(github.event.pull_request.labels.*.name, 'CI: multi-chains')
+      ) || (
+        github.event.action == 'labeled' && github.event.label.name == 'CI: multi-chains'
+      )
     timeout-minutes: 60
     strategy:
       fail-fast: false
