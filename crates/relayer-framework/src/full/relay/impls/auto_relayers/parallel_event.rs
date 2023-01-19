@@ -9,7 +9,7 @@ use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
-struct ParallelEventSubscriptionRelayer;
+pub struct ParallelEventSubscriptionRelayer;
 
 #[async_trait]
 impl<Relay, Target, Runtime> AutoRelayerWithTarget<Relay, Target>
