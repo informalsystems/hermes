@@ -1,9 +1,10 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
+use ibc_relayer_cosmos::base::types::relay::CosmosRelayWrapper;
 use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
-use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
-use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelay;
+use ibc_relayer_cosmos::contexts::full::relay::{new_relay_context_with_batch, FullCosmosRelay};
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
+use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
@@ -15,7 +16,15 @@ use std::collections::HashMap;
 pub fn build_cosmos_relay_context<ChainA, ChainB>(
     chains: &ConnectedChains<ChainA, ChainB>,
     filter: PacketFilter,
-) -> Result<impl AfoCosmosFullRelay, Error>
+    // ) -> Result<impl AfoCosmosFullRelay, Error>
+) -> Result<
+    OfaRelayWrapper<
+        CosmosRelayWrapper<
+            FullCosmosRelay<FullCosmosChainContext<ChainA>, FullCosmosChainContext<ChainB>>,
+        >,
+    >,
+    Error,
+>
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,

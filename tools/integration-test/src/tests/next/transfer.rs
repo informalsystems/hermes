@@ -1,6 +1,6 @@
 use ibc_relayer::config::PacketFilter;
 
-use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
+use ibc_relayer_framework::base::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
@@ -34,6 +34,10 @@ impl BinaryChannelTest for IbcTransferTest {
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
+        runtime.spawn(async move {
+            relay_context.auto_relay().await;
+        });
+
         let denom_a = chains.node_a.denom();
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
@@ -54,7 +58,7 @@ impl BinaryChannelTest for IbcTransferTest {
             denom_a
         );
 
-        let packet = chains.node_a.chain_driver().ibc_transfer_token(
+        chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
@@ -62,12 +66,6 @@ impl BinaryChannelTest for IbcTransferTest {
             &denom_a.with_amount(a_to_b_amount).as_ref(),
             None,
         )?;
-
-        info!("running relayer");
-
-        runtime.block_on(async { relay_context.relay_packet(&packet).await.unwrap() });
-
-        info!("finished running relayer");
 
         let denom_b = derive_ibc_denom(
             &channel.port_b.as_ref(),
