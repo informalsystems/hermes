@@ -23,7 +23,7 @@ pub trait CanCreateAbciEventSubscription: Async {
         chain_version: u64,
         websocket_url: Url,
         queries: Vec<Query>,
-    ) -> Result<Arc<dyn Subscription<Item = AbciEvent>>, Error>;
+    ) -> Arc<dyn Subscription<Item = (Height, AbciEvent)>>;
 }
 
 #[async_trait]
@@ -37,7 +37,7 @@ where
         chain_version: u64,
         websocket_url: Url,
         queries: Vec<Query>,
-    ) -> Result<Arc<dyn Subscription<Item = AbciEvent>>, Error> {
+    ) -> Arc<dyn Subscription<Item = (Height, AbciEvent)>> {
         let base_subscription = {
             let runtime = self.clone();
 
@@ -47,6 +47,7 @@ where
                 let queries = queries.clone();
 
                 Box::pin(async move {
+                    // TODO: log error
                     let rpc_event_stream = runtime
                         .new_rpc_event_stream(&websocket_url, &queries)
                         .await
@@ -62,22 +63,34 @@ where
 
         let subscription = self.multiplex_subscription(base_subscription, |e| e);
 
-        Ok(subscription)
+        subscription
     }
 }
 
 pub fn rpc_event_to_abci_event_stream(
     chain_version: u64,
     rpc_event_stream: Pin<Box<dyn Stream<Item = RpcEvent> + Send + 'static>>,
-) -> Pin<Box<dyn Stream<Item = AbciEvent> + Send + 'static>> {
-    let abci_event_stream = rpc_event_stream.flat_map(move |rpc_event| match rpc_event.data {
-        RpcEventData::Tx { tx_result } => {
-            let height = Height::new(chain_version, tx_result.height as u64);
+) -> Pin<Box<dyn Stream<Item = (Height, AbciEvent)> + Send + 'static>> {
+    let abci_event_stream = rpc_event_stream
+        .filter_map(move |rpc_event| async move {
+            match rpc_event.data {
+                RpcEventData::Tx { tx_result } => {
+                    // TODO: log error
+                    let height = Height::new(chain_version, tx_result.height as u64).ok()?;
 
-            stream::iter(tx_result.result.events)
-        }
-        _ => stream::iter(Vec::new()),
-    });
+                    let events_with_height = tx_result
+                        .result
+                        .events
+                        .into_iter()
+                        .map(|event| (height, event))
+                        .collect::<Vec<_>>();
+
+                    Some(stream::iter(events_with_height))
+                }
+                _ => None,
+            }
+        })
+        .flatten();
 
     Box::pin(abci_event_stream)
 }
