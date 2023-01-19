@@ -42,14 +42,13 @@ use crate::std_prelude::*;
    is multiplexed or not, it should always retry calling
    [`subscribe`](Subscription::subscribe) in case a [`Stream`] ends.
 */
-#[async_trait]
 pub trait CanMultiplexSubscription {
     /**
        Multiplex a given subscription, with a mapper function that maps the
        item coming from the underlying subscription from `T` to `U`. Returns
        a new multiplexed subscription that shares the same underlying [`Stream`].
     */
-    async fn multiplex_subscription<T, U>(
+    fn multiplex_subscription<T, U>(
         &self,
         subscription: impl Subscription<Item = T>,
         map_item: impl Fn(T) -> U + Send + Sync + 'static,
@@ -59,12 +58,11 @@ pub trait CanMultiplexSubscription {
         U: Async + Clone;
 }
 
-#[async_trait]
 impl<Runtime> CanMultiplexSubscription for Runtime
 where
     Runtime: HasSpawner + HasMutex + CanCreateChannels + CanUseChannels + CanStreamReceiver,
 {
-    async fn multiplex_subscription<T, U>(
+    fn multiplex_subscription<T, U>(
         &self,
         in_subscription: impl Subscription<Item = T>,
         map_item: impl Fn(T) -> U + Send + Sync + 'static,

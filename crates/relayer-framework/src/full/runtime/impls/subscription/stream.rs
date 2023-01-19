@@ -1,5 +1,4 @@
 use alloc::sync::Arc;
-use async_trait::async_trait;
 use core::ops::DerefMut;
 use futures::stream::{Stream, StreamExt};
 
@@ -19,9 +18,8 @@ use crate::std_prelude::*;
 
    When the stream terminates, the subscription also terminates.
 */
-#[async_trait]
 pub trait CanStreamSubscription {
-    async fn stream_subscription<T>(
+    fn stream_subscription<T>(
         &self,
         stream: impl Stream<Item = T> + Send + 'static,
     ) -> Arc<dyn Subscription<Item = T>>
@@ -29,12 +27,11 @@ pub trait CanStreamSubscription {
         T: Async + Clone;
 }
 
-#[async_trait]
 impl<Runtime> CanStreamSubscription for Runtime
 where
     Runtime: HasSpawner + HasMutex + CanCreateChannels + CanUseChannels + CanStreamReceiver,
 {
-    async fn stream_subscription<T>(
+    fn stream_subscription<T>(
         &self,
         stream: impl Stream<Item = T> + Send + 'static,
     ) -> Arc<dyn Subscription<Item = T>>
