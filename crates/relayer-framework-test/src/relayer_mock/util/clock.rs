@@ -17,7 +17,7 @@ pub struct MockClock {
 impl Default for MockClock {
     fn default() -> Self {
         Self {
-            timestamp: Arc::new(Mutex::new(1)),
+            timestamp: Arc::new(Mutex::new(MockTimestamp(1))),
         }
     }
 }
@@ -25,13 +25,17 @@ impl Default for MockClock {
 impl MockClock {
     pub fn increment_millis(&self, millis: u128) -> Result<(), Error> {
         let mut locked_timestamp = self.timestamp.acquire_mutex();
-        *locked_timestamp = locked_timestamp.checked_add(millis).ok_or_else(|| {
-            Error::generic(eyre!(
-                "overflow when adding {} to {}",
-                locked_timestamp,
-                millis
-            ))
-        })?;
+        *locked_timestamp = locked_timestamp
+            .0
+            .checked_add(millis)
+            .ok_or_else(|| {
+                Error::generic(eyre!(
+                    "overflow when adding {} to {}",
+                    locked_timestamp,
+                    millis
+                ))
+            })?
+            .into();
 
         Ok(())
     }
@@ -39,6 +43,6 @@ impl MockClock {
     pub fn get_timestamp(&self) -> MockTimestamp {
         let locked_timestamp = self.timestamp.acquire_mutex();
 
-        *locked_timestamp
+        (*locked_timestamp).clone()
     }
 }

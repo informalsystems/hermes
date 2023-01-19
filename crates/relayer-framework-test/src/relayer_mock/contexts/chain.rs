@@ -169,10 +169,7 @@ impl MockChainContext {
         let current_state = self.get_current_state();
 
         // Update the current_state of the Chain, which will increase the Height by 1.
-        self.update_current_state(current_state)?;
-
-        // Timestamp is increased by 1 second when the Height of a chain increases by 1.
-        self.runtime().runtime.clock.increment_millis(1000)?;
+        self.update_current_state(current_state, MockTimestamp::default())?;
 
         Ok(())
     }
@@ -193,7 +190,7 @@ impl MockChainContext {
         );
 
         // Update the current_state of the Chain
-        self.update_current_state(new_state)?;
+        self.update_current_state(new_state, MockTimestamp::default())?;
 
         Ok(())
     }
@@ -234,8 +231,8 @@ impl MockChainContext {
                 self.name().to_string(),
                 packet.timeout_height.0,
                 current_height.0,
-                packet.timeout_timestamp,
-                current_time,
+                packet.timeout_timestamp.0,
+                current_time.0,
             ));
         }
 
@@ -355,10 +352,13 @@ impl MockChainContext {
         )
     }
 
-    /// Update the chain's current_state and past_chain_states at the same time to insure
-    /// they are always synchronized.
+    /// Update the chain's current_state and past_chain_states at the same time to ensure
+    /// they are always synchronized. Accepts an optional `duration` parameter that is
+    /// used to increment the state's timestamp. If no duration is given, both the state
+    /// and runtime clock are incremented by 1000.
+    ///
     /// The MockChain must have a one and only one ChainState at every height.
-    fn update_current_state(&self, state: State) -> Result<(), Error> {
+    fn update_current_state(&self, state: State, duration: MockTimestamp) -> Result<(), Error> {
         let latest_height = self.get_current_height();
         let new_height = latest_height.increment();
 
@@ -370,8 +370,7 @@ impl MockChainContext {
         let mut locked_current_height = self.current_height.acquire_mutex();
         *locked_current_height = new_height.clone();
 
-        // Timestamp is increased by 1 second when the Height of a chain increases by 1.
-        self.runtime().runtime.clock.increment_millis(1000)?;
+        self.runtime().runtime.clock.increment_millis(duration.0)?;
 
         // After inserting the new state in the current_state, update the past_chain_states
         // at the given height.
@@ -412,7 +411,7 @@ impl MockChainContext {
                 }
             }
         }
-        self.update_current_state(current_state)?;
+        self.update_current_state(current_state, MockTimestamp::default())?;
         Ok(res)
     }
 }

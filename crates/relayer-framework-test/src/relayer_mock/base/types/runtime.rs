@@ -64,7 +64,7 @@ impl OfaBaseRuntime for MockRuntimeContext {
     }
 
     fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration {
-        Duration::from_millis((time - other) as u64)
+        Duration::from_millis((time.0 - other.0) as u64)
     }
 
     async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T> {

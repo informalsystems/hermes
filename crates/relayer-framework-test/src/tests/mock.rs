@@ -5,6 +5,7 @@ use std::time::Duration;
 use tracing::info;
 
 use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::tests::util::context::build_mock_relay_context;
 
@@ -35,7 +36,7 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
         String::from("transfer"),
         1,
         MockHeight(10),
-        60000,
+        MockTimestamp(60000),
     );
 
     {
@@ -55,6 +56,7 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
 
     let height = src_chain.chain.get_current_height();
 
+    // Chain submits the transaction to be relayed
     src_chain.chain.send_packet(height, packet.clone())?;
 
     let events = relay_context.relay_packet(&packet).await;
@@ -114,7 +116,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
         String::from("transfer"),
         1,
         MockHeight(10),
-        60000,
+        MockTimestamp(60000),
     );
 
     {
@@ -133,24 +135,21 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     }
 
     let src_height = src_chain.chain.get_current_height();
+    let runtime = relay_context.relay.runtime();
 
     src_chain
         .chain
         .send_packet(src_height.clone(), packet.clone())?;
 
     // Sleep enough to trigger timeout from timestamp timeout
-    relay_context
-        .relay
-        .runtime()
-        .sleep(Duration::from_millis(70000))
-        .await;
+    runtime.sleep(Duration::from_millis(70000)).await;
 
     let events = relay_context.relay_packet(&packet).await;
 
     assert!(events.is_ok(), "{}", events.err().unwrap());
 
     {
-        info!("Check that the packet has been received by the destination chain");
+        info!("Check that the packet has not been received by the destination chain");
 
         let state = dst_chain.chain.get_current_state();
 
@@ -165,12 +164,13 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     }
 
     {
-        info!("Check that the acknowledgment has been received by the source chain");
+        info!("Check that the timeout packet been received by the source chain");
 
         let state = src_chain.chain.get_current_state();
+        let elapsed_time = runtime.runtime.get_time();
 
         assert!(
-            state.check_timeout(packet, src_height),
+            state.check_timeout(packet, src_height, elapsed_time),
             "Packet should be registered as timed out"
         );
     }
@@ -202,7 +202,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
         String::from("transfer"),
         1,
         MockHeight(3),
-        60000,
+        MockTimestamp(60000),
     );
 
     {
@@ -251,13 +251,15 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
     }
 
     {
-        info!("Check that the acknowledgment has been received by the source chain");
+        info!("Check that the timeout packet has been received by the source chain");
 
         let state = src_chain.chain.get_current_state();
         let dst_height = dst_chain.chain.get_current_height();
+        let runtime = &relay_context.relay.runtime().runtime;
+        let elapsed_time = runtime.get_time();
 
         assert!(
-            state.check_timeout(packet, dst_height),
+            state.check_timeout(packet, dst_height, elapsed_time),
             "Packet should be registered as timed out"
         );
     }
@@ -291,7 +293,7 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
         dst_port_id.clone(),
         1,
         MockHeight(10),
-        60000,
+        MockTimestamp(60000),
     );
 
     {
@@ -361,6 +363,7 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
                 &1,
             )
             .await;
+
         assert!(write_ack.is_ok(), "query_write_ack_event returned an error");
         assert!(write_ack.unwrap().is_some(), "A WriteAcknowlegmentEvent should be returned by query_write_ack_event since the chain received the packet");
     }

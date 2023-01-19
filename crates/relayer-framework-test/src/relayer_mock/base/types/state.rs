@@ -9,8 +9,6 @@ use super::aliases::MockTimestamp;
 /// A snapshot of the mock chain's state at a point in time.
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct State {
-    /// The mock chain's current timestamp.
-    timestamp: MockTimestamp,
     /// The packets that the mock chain has sent.
     sent_packets: HashMap<PacketUID, (PacketKey, Height)>,
     /// The packets that the mock chain has received.
@@ -21,7 +19,6 @@ pub struct State {
 
 impl Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Current timestamp: {}", self.timestamp)?;
         writeln!(f, "Sent packets:")?;
         for key in self.sent_packets.keys() {
             let packet = self
@@ -79,10 +76,15 @@ impl State {
     /// the packet's timeout timestamp has exceeded the chain's current
     /// timestamp or the packet's timeout height has exceeded the chain's
     /// height.
-    pub fn check_timeout(&self, packet: PacketKey, current_height: Height) -> bool {
+    pub fn check_timeout(&self, packet: PacketKey, current_height: Height, current_timestamp: MockTimestamp) -> bool {
         // A packet has not timed out if its timeout height has not exceeded the chain's
         // height AND its timeout timestamp has not exceeded the chain's timestamp.
-        if current_height <= packet.timeout_height && self.timestamp <= packet.timeout_timestamp {
+        dbg!(&current_height);
+        dbg!(&packet.timeout_height);
+        dbg!(&current_timestamp);
+        dbg!(&packet.timeout_timestamp);
+
+        if current_height <= packet.timeout_height && current_timestamp <= packet.timeout_timestamp {
             return false;
         }
 
