@@ -2,6 +2,7 @@
 //! in order to gain access to the APIs provided by the `AfoBaseChain`
 //! trait.
 
+use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::fmt::Debug;
 
@@ -11,6 +12,7 @@ use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::base::runtime::traits::subscription::Subscription;
 use crate::std_prelude::*;
 
 pub trait OfaChainTypes: Async {
@@ -128,9 +130,7 @@ pub trait OfaBaseChain: OfaChainTypes {
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
 
-    // async fn new_event_source(&self) -> Result<Self::EventSource, Self::Error>;
-
-    // async fn receive_event(event_source: &Self::EventSource) -> Result<Self::Event, Self::Error>;
+    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>>;
 }
 
 #[async_trait]

@@ -1,3 +1,4 @@
+use alloc::sync::Arc;
 use async_trait::async_trait;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -13,6 +14,7 @@ use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_framework::base::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -134,6 +136,10 @@ where
             .map_err(Error::relayer)?;
 
         Ok(status)
+    }
+
+    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>> {
+        &self.subscription
     }
 }
 

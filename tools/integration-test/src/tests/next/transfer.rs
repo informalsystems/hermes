@@ -30,7 +30,7 @@ impl BinaryChannelTest for IbcTransferTest {
     ) -> Result<(), Error> {
         let pf: PacketFilter = PacketFilter::AllowAll;
 
-        let relay_context = build_cosmos_relay_context(&chains, pf);
+        let relay_context = build_cosmos_relay_context(&chains, pf)?;
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 

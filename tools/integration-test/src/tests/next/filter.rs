@@ -35,7 +35,7 @@ impl BinaryChannelTest for ChannelFilterTest {
             "#;
         let pf: PacketFilter = toml::from_str(toml_content).expect("could not parse filter policy");
 
-        let relay_context = build_cosmos_relay_context(&chains, pf);
+        let relay_context = build_cosmos_relay_context(&chains, pf)?;
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 

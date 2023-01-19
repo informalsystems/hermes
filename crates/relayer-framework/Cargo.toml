@@ -19,4 +19,4 @@ all-features = true
 
 [dependencies]
 async-trait = "0.1.56"
-futures = "0.3"
+futures = { version = "0.3", default-features = false }
