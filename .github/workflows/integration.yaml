@@ -116,12 +116,10 @@ jobs:
 
   multi-chains-test:
     runs-on: ubuntu-20.04
-    env:
-      LABEL_NAME: 'CI: multi-chains'
     if: |
       github.ref == 'refs/heads/master' ||
-      contains(github.event.pull_request.labels.*.name, '$LABEL_NAME') ||
-      github.event.action == 'labeled' && github.event.label.name == '$LABEL_NAME'
+      contains(github.event.pull_request.labels.*.name, 'CI: multi-chains') ||
+      github.event.action == 'labeled' && github.event.label.name == 'CI: multi-chains'
     timeout-minutes: 60
     strategy:
       fail-fast: false
