@@ -155,7 +155,7 @@ impl ChannelConnectionClient {
 
 /// Returns the [`ChannelConnectionClient`] associated with the
 /// provided port and channel id.
-pub fn channel_connection_client(
+pub fn channel_connection_client_no_checks(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
@@ -194,14 +194,6 @@ pub fn channel_connection_client(
         )
         .map_err(Error::relayer)?;
 
-    if !connection_end.is_open() {
-        return Err(Error::connection_not_open(
-            connection_id.clone(),
-            channel_id.clone(),
-            chain.id(),
-        ));
-    }
-
     let client_id = connection_end.client_id();
     let (client_state, _) = chain
         .query_client_state(
@@ -218,6 +210,31 @@ pub fn channel_connection_client(
     let channel = IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end);
 
     Ok(ChannelConnectionClient::new(channel, connection, client))
+}
+
+/// Returns the [`ChannelConnectionClient`] associated with the
+/// provided port and channel id.
+/// It checks that the connection is open.
+pub fn channel_connection_client(
+    chain: &impl ChainHandle,
+    port_id: &PortId,
+    channel_id: &ChannelId,
+) -> Result<ChannelConnectionClient, Error> {
+    let channel_connection_client =
+        channel_connection_client_no_checks(chain, port_id, channel_id)?;
+
+    if !channel_connection_client
+        .connection
+        .connection_end
+        .is_open()
+    {
+        return Err(Error::connection_not_open(
+            channel_connection_client.connection.connection_id,
+            channel_id.clone(),
+            chain.id(),
+        ));
+    }
+    Ok(channel_connection_client)
 }
 
 pub fn counterparty_chain_from_channel(
