@@ -7,7 +7,7 @@ use crate::base::relay::traits::event_relayer::CanRelayEvent;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
-struct ConcurrentEventSubscriptionRelayer;
+pub struct ConcurrentEventSubscriptionRelayer;
 
 #[async_trait]
 impl<Relay, Target> AutoRelayerWithTarget<Relay, Target> for ConcurrentEventSubscriptionRelayer
