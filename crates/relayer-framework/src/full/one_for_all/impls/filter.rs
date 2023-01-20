@@ -1,14 +1,14 @@
 use async_trait::async_trait;
 
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::relay::traits::packet_filter::{HasPacketFilter, PacketFilter};
+use crate::base::relay::traits::packet_filter::{CanFilterPackets, PacketFilter};
 use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::std_prelude::*;
 
-pub struct OfaPacketFilter;
+pub struct FilterPacketFromOfa;
 
 #[async_trait]
-impl<Relay> PacketFilter<OfaRelayWrapper<Relay>> for OfaPacketFilter
+impl<Relay> PacketFilter<OfaRelayWrapper<Relay>> for FilterPacketFromOfa
 where
     Relay: OfaFullRelay,
 {
@@ -20,9 +20,12 @@ where
     }
 }
 
-impl<Relay> HasPacketFilter for OfaRelayWrapper<Relay>
+#[async_trait]
+impl<Relay> CanFilterPackets for OfaRelayWrapper<Relay>
 where
     Relay: OfaFullRelay,
 {
-    type PacketFilter = OfaPacketFilter;
+    async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {
+        FilterPacketFromOfa::should_relay_packet(self, packet).await
+    }
 }
