@@ -42,6 +42,7 @@
               ibc-go-v4-simapp
               ibc-go-v5-simapp
               ibc-go-v6-simapp
+              ibc-go-v7-simapp
               apalache
               evmos
             ;
