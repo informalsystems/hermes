@@ -4,10 +4,10 @@ use crate::base::relay::traits::packet_filter::PacketFilter;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
-pub struct NoPacketFilter;
+pub struct AllowAll;
 
 #[async_trait]
-impl<Relay> PacketFilter<Relay> for NoPacketFilter
+impl<Relay> PacketFilter<Relay> for AllowAll
 where
     Relay: HasRelayTypes,
 {

@@ -4,7 +4,7 @@ use crate::base::relay::impls::auto_relayers::concurrent_bidirectional::Concurre
 use crate::base::relay::impls::auto_relayers::concurrent_event::ConcurrentEventSubscriptionRelayer;
 use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use crate::base::relay::impls::packet_filters::no_filter::NoPacketFilter;
+use crate::base::relay::impls::packet_filters::allow_all::AllowAll;
 use crate::base::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
 
 pub struct MinimalPreset;
@@ -17,6 +17,6 @@ pub type AutoRelayer = ConcurrentBidirectionalRelayer<ConcurrentEventSubscriptio
 
 pub type PacketRelayer = FullCycleRelayer;
 
-pub type PacketFilter = NoPacketFilter;
+pub type PacketFilter = AllowAll;
 
 pub type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
