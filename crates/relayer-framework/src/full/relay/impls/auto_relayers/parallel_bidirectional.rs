@@ -18,15 +18,25 @@ where
     InRelayer: AutoRelayerWithTarget<Relay, DestinationTarget>,
     Runtime: HasSpawner,
 {
-    async fn auto_relay(src_relay: &Relay) {
-        let dst_relay = src_relay.clone();
+    async fn auto_relay(relay: &Relay) {
+        let src_relay = relay.clone();
+        let dst_relay = relay.clone();
         let spawner = src_relay.runtime().spawner();
 
         spawner.spawn(async move {
-            let _ = <InRelayer as AutoRelayerWithTarget<Relay, DestinationTarget>>::auto_relay_with_target(&dst_relay).await;
+            <InRelayer as AutoRelayerWithTarget<Relay, DestinationTarget>>::auto_relay_with_target(
+                &dst_relay,
+            )
+            .await;
         });
 
-        <InRelayer as AutoRelayerWithTarget<Relay, SourceTarget>>::auto_relay_with_target(src_relay)
+        spawner.spawn(async move {
+            <InRelayer as AutoRelayerWithTarget<Relay, SourceTarget>>::auto_relay_with_target(
+                &src_relay,
+            )
             .await
+        });
+
+        // TODO: implement JoinHandle in HasSpawner
     }
 }
