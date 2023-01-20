@@ -48,6 +48,8 @@ impl OfaChainTypes for MockChainContext {
 
     type Event = Event;
 
+    type ChainId = String;
+
     type ClientId = ClientId;
 
     type ConnectionId = String;
@@ -97,6 +99,10 @@ impl OfaBaseChain for MockChainContext {
             Event::WriteAcknowledgment(h) => Some(WriteAcknowledgementEvent::new(*h)),
             _ => None,
         }
+    }
+
+    fn chain_id(&self) -> &Self::ChainId {
+        &self.name
     }
 
     async fn send_messages(

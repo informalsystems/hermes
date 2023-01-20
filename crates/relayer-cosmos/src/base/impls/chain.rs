@@ -26,7 +26,9 @@ use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
@@ -57,6 +59,8 @@ where
     type Message = CosmosIbcMessage;
 
     type Event = Event;
+
+    type ChainId = ChainId;
 
     type ClientId = ClientId;
 
@@ -119,6 +123,10 @@ where
 
     fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
         &self.runtime
+    }
+
+    fn chain_id(&self) -> &Self::ChainId {
+        &self.chain.tx_config().chain_id
     }
 
     async fn send_messages(

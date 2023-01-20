@@ -88,6 +88,8 @@ where
     Relay: HasRelayTypes,
     Target: ChainTarget<Relay>,
 {
+    type ChainId = <Target::TargetChain as HasChainTypes>::ChainId;
+
     type Timestamp = <Target::TargetChain as HasChainTypes>::Timestamp;
 }
 

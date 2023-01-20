@@ -38,6 +38,8 @@ use crate::base::chain::traits::types::message::HasMessageType;
     about the transaction context.
 */
 pub trait HasChainTypes: HasHeightType + HasMessageType + HasEventType + HasErrorType {
+    type ChainId: Eq + Async;
+
     /**
        The timestamp of a chain, which should increment monotonically.
 

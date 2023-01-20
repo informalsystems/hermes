@@ -54,6 +54,8 @@ pub trait OfaChainTypes: Async {
     */
     type Event: Async;
 
+    type ChainId: Eq + Async;
+
     /**
        Corresponds to
        [`HasIbcChainTypes::ClientId`](crate::base::chain::traits::types::HasIbcChainTypes::ClientId).
@@ -103,8 +105,6 @@ pub trait OfaChainTypes: Async {
     type WriteAcknowledgementEvent: Async;
 
     type SendPacketEvent: Async;
-
-    // type EventSource: Async;
 }
 
 #[async_trait]
@@ -127,6 +127,8 @@ pub trait OfaBaseChain: OfaChainTypes {
         &self,
         messages: Vec<Self::Message>,
     ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
+
+    fn chain_id(&self) -> &Self::ChainId;
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
 
