@@ -1,6 +1,6 @@
 use crate::relayer_mock::base::types::height::Height;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Event {
     RecvPacket(Height),
     WriteAcknowledgment(Height),

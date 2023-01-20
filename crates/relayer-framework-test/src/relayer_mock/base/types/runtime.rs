@@ -54,7 +54,11 @@ impl OfaBaseRuntime for MockRuntimeContext {
 
     // Increment the shared MockClock by the duration is milliseconds.
     async fn sleep(&self, duration: Duration) {
-        if self.clock.increment_millis(duration.as_millis()).is_err() {
+        if self
+            .clock
+            .increment_timestamp(MockTimestamp(duration.as_millis()))
+            .is_err()
+        {
             tracing::warn!("MockClock failed to sleep for {}ms", duration.as_millis());
         }
     }

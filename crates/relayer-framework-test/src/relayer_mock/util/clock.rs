@@ -23,16 +23,16 @@ impl Default for MockClock {
 }
 
 impl MockClock {
-    pub fn increment_millis(&self, millis: u128) -> Result<(), Error> {
+    pub fn increment_timestamp(&self, duration: MockTimestamp) -> Result<(), Error> {
         let mut locked_timestamp = self.timestamp.acquire_mutex();
         *locked_timestamp = locked_timestamp
             .0
-            .checked_add(millis)
+            .checked_add(duration.0)
             .ok_or_else(|| {
                 Error::generic(eyre!(
                     "overflow when adding {} to {}",
                     locked_timestamp,
-                    millis
+                    duration,
                 ))
             })?
             .into();

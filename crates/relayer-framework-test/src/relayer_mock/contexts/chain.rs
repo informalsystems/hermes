@@ -169,7 +169,7 @@ impl MockChainContext {
         let current_state = self.get_current_state();
 
         // Update the current_state of the Chain, which will increase the Height by 1.
-        self.update_current_state(current_state, MockTimestamp::default())?;
+        self.update_current_state(current_state)?;
 
         Ok(())
     }
@@ -179,6 +179,7 @@ impl MockChainContext {
     pub fn send_packet(&self, height: Height, packet: PacketKey) -> Result<(), Error> {
         // Retrieve the current_state and update it with the newly sent packet
         let mut new_state = self.get_current_state();
+
         new_state.update_sent(
             (
                 packet.src_port_id.clone(),
@@ -190,7 +191,7 @@ impl MockChainContext {
         );
 
         // Update the current_state of the Chain
-        self.update_current_state(new_state, MockTimestamp::default())?;
+        self.update_current_state(new_state)?;
 
         Ok(())
     }
@@ -211,7 +212,9 @@ impl MockChainContext {
             .ok_or_else(|| {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
+
         let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
+
         if !client_consensus.check_sent((
             packet.src_port_id.clone(),
             packet.src_channel_id.clone(),
@@ -226,7 +229,9 @@ impl MockChainContext {
         // Check that the packet is not timed out. Current height < packet timeout height.
         let current_height = self.get_current_height();
         let current_time = self.runtime().runtime.get_time();
-        if packet.timeout_height < current_height || packet.timeout_timestamp < current_time {
+
+        if current_state.check_timeout(packet.clone(), current_height.clone(), current_time.clone())
+        {
             return Err(Error::timeout_receive(
                 self.name().to_string(),
                 packet.timeout_height.0,
@@ -265,7 +270,9 @@ impl MockChainContext {
             .ok_or_else(|| {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
+
         let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
+
         if !client_consensus.check_received((
             packet.dst_port_id.clone(),
             packet.dst_channel_id.clone(),
@@ -305,7 +312,9 @@ impl MockChainContext {
             .ok_or_else(|| {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
+
         let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
+
         if client_consensus.check_received((
             packet.dst_port_id.clone(),
             packet.dst_channel_id.clone(),
@@ -358,7 +367,7 @@ impl MockChainContext {
     /// and runtime clock are incremented by 1000.
     ///
     /// The MockChain must have a one and only one ChainState at every height.
-    fn update_current_state(&self, state: State, duration: MockTimestamp) -> Result<(), Error> {
+    fn update_current_state(&self, state: State) -> Result<(), Error> {
         let latest_height = self.get_current_height();
         let new_height = latest_height.increment();
 
@@ -370,7 +379,10 @@ impl MockChainContext {
         let mut locked_current_height = self.current_height.acquire_mutex();
         *locked_current_height = new_height.clone();
 
-        self.runtime().runtime.clock.increment_millis(duration.0)?;
+        self.runtime()
+            .runtime
+            .clock
+            .increment_timestamp(MockTimestamp::default())?;
 
         // After inserting the new state in the current_state, update the past_chain_states
         // at the given height.
@@ -392,6 +404,7 @@ impl MockChainContext {
     pub fn process_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
         let mut res = vec![];
         let mut current_state = self.get_current_state();
+
         for m in messages {
             match m {
                 MockMessage::RecvPacket(height, packet) => {
@@ -411,7 +424,9 @@ impl MockChainContext {
                 }
             }
         }
-        self.update_current_state(current_state, MockTimestamp::default())?;
+
+        self.update_current_state(current_state)?;
+
         Ok(res)
     }
 }

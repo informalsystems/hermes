@@ -76,15 +76,16 @@ impl State {
     /// the packet's timeout timestamp has exceeded the chain's current
     /// timestamp or the packet's timeout height has exceeded the chain's
     /// height.
-    pub fn check_timeout(&self, packet: PacketKey, current_height: Height, current_timestamp: MockTimestamp) -> bool {
+    pub fn check_timeout(
+        &self,
+        packet: PacketKey,
+        current_height: Height,
+        current_timestamp: MockTimestamp,
+    ) -> bool {
         // A packet has not timed out if its timeout height has not exceeded the chain's
         // height AND its timeout timestamp has not exceeded the chain's timestamp.
-        dbg!(&current_height);
-        dbg!(&packet.timeout_height);
-        dbg!(&current_timestamp);
-        dbg!(&packet.timeout_timestamp);
-
-        if current_height <= packet.timeout_height && current_timestamp <= packet.timeout_timestamp {
+        if current_height <= packet.timeout_height && current_timestamp <= packet.timeout_timestamp
+        {
             return false;
         }
 

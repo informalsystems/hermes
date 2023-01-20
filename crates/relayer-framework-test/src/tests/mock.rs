@@ -6,7 +6,10 @@ use tracing::info;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
+use crate::relayer_mock::base::types::events::Event as MockEvent;
 use crate::relayer_mock::base::types::height::Height as MockHeight;
+use crate::relayer_mock::base::types::message::Message as MockMessage;
+use crate::relayer_mock::base::types::state::State;
 use crate::tests::util::context::build_mock_relay_context;
 
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
@@ -227,9 +230,9 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
         .send_packet(src_height.clone(), packet.clone())?;
 
     // Increase height of destination chain to trigger Height timeout
-    dst_chain.chain.new_block()?;
-    dst_chain.chain.new_block()?;
-    dst_chain.chain.new_block()?;
+    for _ in 0..3 {
+        dst_chain.chain.new_block()?;
+    }
 
     let events = relay_context.relay_packet(&packet).await;
 
@@ -322,7 +325,9 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
                 &1,
             )
             .await;
+
         assert!(write_ack.is_ok(), "query_write_ack_event returned an error");
+
         assert!(
             write_ack.unwrap().is_none(),
             "WriteAcknowlegmentEvent should be None as the chain hasn't received the packet yet"
@@ -378,6 +383,90 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
             "Acknowledgment not found on source chain"
         );
     }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_mock_chain_process_messages() -> Result<(), Error> {
+    let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
+
+    let src_channel_id = "channel-0".to_owned();
+    let dst_channel_id = "channel-1".to_owned();
+
+    let src_client_id = relay_context.relay.src_client_id().clone();
+    let dst_client_id = relay_context.relay.dst_client_id().clone();
+
+    src_chain
+        .chain
+        .map_channel_to_client(src_channel_id.clone(), src_client_id.clone());
+    dst_chain
+        .chain
+        .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
+
+    let hts = vec![
+        (MockHeight(101), MockTimestamp(60000)),
+        (MockHeight(1), MockTimestamp(10000)),
+        (MockHeight(99), MockTimestamp(70000)),
+        (MockHeight(96), MockTimestamp(20000)),
+    ];
+
+    let packets = vec![
+        src_chain.chain.build_send_packet(
+            src_channel_id.clone(),
+            String::from("transfer"),
+            dst_channel_id.clone(),
+            String::from("transfer"),
+            1,
+            hts[0].0.clone(),
+            hts[0].1.clone(),
+        ),
+        src_chain.chain.build_send_packet(
+            src_channel_id.clone(),
+            String::from("transfer"),
+            dst_channel_id.clone(),
+            String::from("transfer"),
+            2,
+            hts[1].0.clone(),
+            hts[1].1.clone(),
+        ),
+        src_chain.chain.build_send_packet(
+            src_channel_id.clone(),
+            String::from("transfer"),
+            dst_channel_id.clone(),
+            String::from("transfer"),
+            3,
+            hts[2].0.clone(),
+            hts[2].1.clone(),
+        ),
+        src_chain.chain.build_send_packet(
+            src_channel_id.clone(),
+            String::from("transfer"),
+            dst_channel_id.clone(),
+            String::from("transfer"),
+            4,
+            hts[3].0.clone(),
+            hts[3].1.clone(),
+        ),
+    ];
+
+    let messages = vec![
+        MockMessage::UpdateClient(src_client_id, hts[0].0.clone(), State::default()),
+        MockMessage::TimeoutPacket(hts[1].0.clone(), packets[1].clone()),
+        MockMessage::RecvPacket(hts[2].0.clone(), packets[2].clone()),
+        MockMessage::AckPacket(hts[3].0.clone(), packets[3].clone()),
+    ];
+
+    let events = src_chain.chain.process_messages(messages)?;
+
+    assert_eq!(
+        events,
+        vec![
+            vec![],
+            vec![MockEvent::WriteAcknowledgment(MockHeight(99))],
+            vec![],
+        ]
+    );
 
     Ok(())
 }
