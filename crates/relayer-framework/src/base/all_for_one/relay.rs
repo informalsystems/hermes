@@ -1,4 +1,6 @@
 use crate::base::all_for_one::chain::AfoBaseChain;
+use crate::base::relay::traits::auto_relayer::CanAutoRelay;
+use crate::base::relay::traits::event_relayer::CanRelayEvent;
 use crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages;
 use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::base::relay::traits::packet_relayer::CanRelayPacket;
@@ -16,9 +18,12 @@ pub trait AfoBaseRelay:
     + CanBuildUpdateClientMessage<DestinationTarget>
     + CanSendIbcMessages<SourceTarget>
     + CanSendIbcMessages<DestinationTarget>
+    + CanRelayEvent<SourceTarget>
+    + CanRelayEvent<DestinationTarget>
     + CanRelayReceivePacket
     + CanRelayPacket
     + CanRelayAckPacket
+    + CanAutoRelay
     + CanRelayTimeoutUnorderedPacket
 {
     type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
@@ -35,6 +40,9 @@ where
         + CanBuildUpdateClientMessage<DestinationTarget>
         + CanSendIbcMessages<SourceTarget>
         + CanSendIbcMessages<DestinationTarget>
+        + CanRelayEvent<SourceTarget>
+        + CanRelayEvent<DestinationTarget>
+        + CanAutoRelay
         + CanRelayReceivePacket
         + CanRelayPacket
         + CanRelayAckPacket

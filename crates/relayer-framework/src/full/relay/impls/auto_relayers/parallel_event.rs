@@ -37,6 +37,7 @@ where
 
                             // Ignore any relaying errors, as the relayer still needs to proceed
                             // relaying the next event regardless.
+                            // TODO: log errors inside EventRelayer
                             let _ = relay.relay_chain_event(&height, &event).await;
                         });
                     })
