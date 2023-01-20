@@ -31,5 +31,7 @@ where
 
     type PacketRelayer = preset::PacketRelayer;
 
+    type PacketFilter = preset::PacketFilter;
+
     type IbcMessageSender = preset::IbcMessageSender;
 }

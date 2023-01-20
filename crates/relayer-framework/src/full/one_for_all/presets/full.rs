@@ -3,6 +3,7 @@ use crate::base::one_for_all::impls::chain::queries::status::SendChainStatusQuer
 use crate::base::relay::impls::packet_relayers::general::filter_relayer::FilterRelayer;
 use crate::base::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
 use crate::full::batch::impls::message_sender::SendMessagesToBatchWorker;
+use crate::full::one_for_all::impls::packet_filter::FilterPacketFromOfa;
 use crate::full::relay::impls::auto_relayers::parallel_bidirectional::ParallelBidirectionalRelayer;
 use crate::full::relay::impls::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
 use crate::full::relay::impls::packet_relayers::retry::RetryRelayer;
@@ -18,5 +19,7 @@ pub type ConsensusStateQuerier = ConsensusStateTelemetryQuerier<SendConsensusSta
 pub type AutoRelayer = ParallelBidirectionalRelayer<ParallelEventSubscriptionRelayer>;
 
 pub type PacketRelayer = FilterRelayer<RetryRelayer<FullCycleRelayer>>;
+
+pub type PacketFilter = FilterPacketFromOfa;
 
 pub type IbcMessageSender = SendMessagesToBatchWorker;
