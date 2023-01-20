@@ -18,7 +18,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
-    ChainState, ChannelId, ClientId, MockTimestamp, PortId, Sequence,
+    ChainState, ChannelId, ClientId, MockTimestamp, PortId, Sequence, StateStore,
 };
 use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::height::Height;
@@ -34,10 +34,10 @@ use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 pub struct MockChainContext {
     pub name: String,
-    pub past_chain_states: Arc<Mutex<HashMap<MockHeight, ChainState>>>,
+    pub past_chain_states: Arc<Mutex<StateStore>>,
     pub current_height: Arc<Mutex<MockHeight>>,
     pub current_state: Arc<Mutex<ChainState>>,
-    pub consensus_states: Arc<Mutex<HashMap<ClientId, HashMap<MockHeight, ChainState>>>>,
+    pub consensus_states: Arc<Mutex<HashMap<ClientId, StateStore>>>,
     pub channel_to_client: Arc<Mutex<HashMap<ChannelId, ClientId>>>,
     pub runtime: OfaRuntimeWrapper<MockRuntimeContext>,
 }
@@ -46,7 +46,7 @@ impl MockChainContext {
     pub fn new(name: String, clock: Arc<MockClock>) -> Self {
         let runtime = OfaRuntimeWrapper::new(MockRuntimeContext::new(clock));
         let chain_state = State::default();
-        let initial_state: HashMap<MockHeight, ChainState> =
+        let initial_state: StateStore =
             HashMap::from([(MockHeight::default(), chain_state.clone())]);
         Self {
             name,
@@ -206,7 +206,7 @@ impl MockChainContext {
         packet: PacketKey,
         mut current_state: State,
     ) -> Result<State, Error> {
-        // Verify that with the consensus state that the packet was sent by the source chain.
+        // Verify via the consensus state that the packet was sent by the source chain.
         let client_id = self
             .get_client_from_channel(&packet.dst_channel_id)
             .ok_or_else(|| {
@@ -396,9 +396,11 @@ impl MockChainContext {
     /// and add a `RecvPacket` event to the returned array of events.
     /// If the message is an `AckPacket`, update the received acknowledgment
     /// packets.
-    /// If the message is an `UpdateClient` update the consensus state.
+    /// If the message is an `UpdateClient`, update the consensus state.
+    ///
     /// When a RecvPacket and AckPacket are received, verify that the client
     /// state has respectively sent the message and received the message.
+    ///
     /// The chain state will only be updated if all messages are processed
     /// successfully.
     pub fn process_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {

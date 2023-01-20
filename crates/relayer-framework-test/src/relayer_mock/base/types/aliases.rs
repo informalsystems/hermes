@@ -1,8 +1,11 @@
+use std::collections::HashMap;
 use std::convert::From;
 use std::fmt::{self, Display};
 
 use crate::relayer_mock::base::types::chain::MockChainStatus;
 use crate::relayer_mock::base::types::state::State;
+
+use super::height::Height;
 
 pub type PacketUID = (PortId, ChannelId, Sequence);
 pub type ConsensusState = State;
@@ -12,6 +15,7 @@ pub type ChannelId = String;
 pub type PortId = String;
 pub type ChainStatus = MockChainStatus;
 pub type Sequence = u128;
+pub type StateStore = HashMap<Height, ChainState>;
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub struct MockTimestamp(pub u128);

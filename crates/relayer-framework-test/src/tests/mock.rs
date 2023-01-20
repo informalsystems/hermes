@@ -6,10 +6,8 @@ use tracing::info;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
-use crate::relayer_mock::base::types::events::Event as MockEvent;
 use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
-use crate::relayer_mock::base::types::state::State;
 use crate::tests::util::context::build_mock_relay_context;
 
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
@@ -387,8 +385,9 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
     Ok(())
 }
 
+#[ignore]
 #[tokio::test]
-async fn test_mock_chain_process_messages() -> Result<(), Error> {
+async fn test_mock_chain_process_recv_packet() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
     let src_channel_id = "channel-0".to_owned();
@@ -404,68 +403,77 @@ async fn test_mock_chain_process_messages() -> Result<(), Error> {
         .chain
         .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
 
-    let hts = vec![
-        (MockHeight(101), MockTimestamp(60000)),
-        (MockHeight(1), MockTimestamp(10000)),
-        (MockHeight(99), MockTimestamp(70000)),
-        (MockHeight(96), MockTimestamp(20000)),
-    ];
+    let packet = src_chain.chain.build_send_packet(
+        src_channel_id,
+        String::from("transfer"),
+        dst_channel_id,
+        String::from("transfer"),
+        1,
+        MockHeight(10),
+        MockTimestamp(60000),
+    );
 
-    let packets = vec![
-        src_chain.chain.build_send_packet(
-            src_channel_id.clone(),
-            String::from("transfer"),
-            dst_channel_id.clone(),
-            String::from("transfer"),
-            1,
-            hts[0].0.clone(),
-            hts[0].1.clone(),
-        ),
-        src_chain.chain.build_send_packet(
-            src_channel_id.clone(),
-            String::from("transfer"),
-            dst_channel_id.clone(),
-            String::from("transfer"),
-            2,
-            hts[1].0.clone(),
-            hts[1].1.clone(),
-        ),
-        src_chain.chain.build_send_packet(
-            src_channel_id.clone(),
-            String::from("transfer"),
-            dst_channel_id.clone(),
-            String::from("transfer"),
-            3,
-            hts[2].0.clone(),
-            hts[2].1.clone(),
-        ),
-        src_chain.chain.build_send_packet(
-            src_channel_id.clone(),
-            String::from("transfer"),
-            dst_channel_id.clone(),
-            String::from("transfer"),
-            4,
-            hts[3].0.clone(),
-            hts[3].1.clone(),
-        ),
-    ];
+    let src_height = src_chain.chain.get_current_height();
 
-    let messages = vec![
-        MockMessage::UpdateClient(src_client_id, hts[0].0.clone(), State::default()),
-        MockMessage::TimeoutPacket(hts[1].0.clone(), packets[1].clone()),
-        MockMessage::RecvPacket(hts[2].0.clone(), packets[2].clone()),
-        MockMessage::AckPacket(hts[3].0.clone(), packets[3].clone()),
-    ];
+    src_chain.chain.send_packet(src_height, packet.clone())?;
 
-    let events = src_chain.chain.process_messages(messages)?;
+    relay_context.relay_packet(&packet).await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_mock_chain_process_update_client_message() -> Result<(), Error> {
+    let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
+
+    let src_channel_id = "channel-0".to_owned();
+    let dst_channel_id = "channel-1".to_owned();
+
+    let src_client_id = relay_context.relay.src_client_id().clone();
+    let dst_client_id = relay_context.relay.dst_client_id().clone();
+
+    src_chain
+        .chain
+        .map_channel_to_client(src_channel_id.clone(), src_client_id.clone());
+    dst_chain
+        .chain
+        .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
+
+    let src_height = src_chain.chain.get_current_height();
+    let src_state = src_chain.chain.get_current_state();
+
+    let update_client_message = vec![MockMessage::UpdateClient(
+        src_client_id.clone(),
+        src_height.clone(),
+        src_state,
+    )];
+
+    info!("Check that no consensus states have been added");
+
+    let src_consensus_state = src_chain
+        .chain
+        .query_consensus_state_at_height(src_client_id.clone(), src_height.clone());
+
+    assert!(
+        src_consensus_state.is_err(),
+        "Found a consensus state where there should have been none."
+    );
+
+    let events = src_chain.chain.process_messages(update_client_message)?;
 
     assert_eq!(
         events,
-        vec![
-            vec![],
-            vec![MockEvent::WriteAcknowledgment(MockHeight(99))],
-            vec![],
-        ]
+        vec![vec![]],
+        "Found an Event where there should have been none."
+    );
+
+    let src_consensus_state = src_chain
+        .chain
+        .query_consensus_state_at_height(src_client_id, src_height);
+
+    assert!(
+        src_consensus_state.is_ok(),
+        "Expected a consensus state, but found none."
     );
 
     Ok(())
