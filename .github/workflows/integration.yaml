@@ -69,6 +69,9 @@ jobs:
           - package: ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
+          - package: ibc-go-v7-simapp
+            command: simd
+            account_prefix: cosmos
           - package: wasmd
             command: wasmd
             account_prefix: wasm
@@ -146,6 +149,9 @@ jobs:
           - package: ibc-go-v6-simapp
             chain_command_path: simd
             account_prefix: cosmos
+          - package: ibc-go-v7-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
           - package: wasmd
             chain_command_path: wasmd
             account_prefix: wasm
@@ -178,6 +184,9 @@ jobs:
             chain_command_path: simd
             account_prefix: cosmos
           - package: ibc-go-v6-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v7-simapp
             chain_command_path: simd
             account_prefix: cosmos
           - package: wasmd
@@ -299,6 +308,9 @@ jobs:
             command: simd
             account_prefix: cosmos
           - package: ibc-go-v6-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
     steps:
