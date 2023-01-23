@@ -13,7 +13,7 @@ where
     Relay: CosmosFullRelay,
 {
     fn from_shared_error(e: Arc<Error>) -> Error {
-        Error::shared(e)
+        e.as_ref().clone()
     }
 
     fn is_retryable_error(_: &Error) -> bool {

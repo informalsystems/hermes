@@ -1,6 +1,5 @@
-use alloc::sync::Arc;
 use eyre::Report;
-use flex_error::{define_error, TraceError};
+use flex_error::{define_error, DisplayOnly, ErrorMessageTracer, TraceError};
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
 use ibc_relayer::supervisor::error::Error as SupervisorError;
@@ -11,36 +10,30 @@ use tendermint::Hash as TxHash;
 use tendermint_rpc::Error as TendermintRpcError;
 
 define_error! {
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     Error {
         Generic
             [ TraceError<Report> ]
             | _ | { "generic error" },
-
-        Shared
-            {
-                error: Arc<Error>,
-            }
-            | e | { format!("{}", e) },
 
         Tokio
             [ TokioError ]
             | _ | { "tokio runtime error" },
 
         Channel
-            [ ChannelError ]
+            [ DisplayOnly<ChannelError> ]
             | _ | { "channel error" },
 
         Relayer
-            [ RelayerError ]
+            [ DisplayOnly<RelayerError> ]
             | _ | { "ibc-relayer error" },
 
         ForeignClient
-            [ ForeignClientError ]
+            [ DisplayOnly<ForeignClientError> ]
             | _ | { "foreign client error" },
 
         Supervisor
-            [ SupervisorError ]
+            [ DisplayOnly<SupervisorError> ]
             | _ | { "supervisor error" },
 
         Encode
@@ -64,5 +57,11 @@ define_error! {
 
         MissingSimulateGasInfo
             | _ | { "missing gas info returned from send_tx_simulate" },
+    }
+}
+
+impl Clone for Error {
+    fn clone(&self) -> Self {
+        Error(self.detail().clone(), ErrorMessageTracer::new_message(self))
     }
 }
