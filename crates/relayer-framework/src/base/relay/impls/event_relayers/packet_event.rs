@@ -2,10 +2,13 @@ use async_trait::async_trait;
 
 use crate::base::chain::traits::ibc_event::{HasSendPacketEvent, HasWriteAcknowledgementEvent};
 use crate::base::chain::types::aliases::{Event, Height};
-use crate::base::relay::impls::packet_filters::chain::MatchPacketDestinationChain;
+use crate::base::relay::impls::packet_filters::chain::{
+    MatchPacketDestinationChain, MatchPacketSourceChain,
+};
 use crate::base::relay::traits::event_relayer::EventRelayer;
-use crate::base::relay::traits::packet_filter::PacketFilter;
+use crate::base::relay::traits::packet_filter::{CanFilterPackets, PacketFilter};
 use crate::base::relay::traits::packet_relayer::CanRelayPacket;
+use crate::base::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
@@ -55,14 +58,33 @@ where
 #[async_trait]
 impl<Relay> EventRelayer<Relay, DestinationTarget> for PacketEventRelayer
 where
-    Relay: CanRelayPacket,
-    Relay::SrcChain: HasWriteAcknowledgementEvent<Relay::DstChain>,
+    Relay: CanRelayAckPacket + CanFilterPackets,
+    Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
+    MatchPacketSourceChain: PacketFilter<Relay>,
 {
     async fn relay_chain_event(
-        _relayer: &Relay,
-        _height: &Height<Relay::DstChain>,
-        _event: &Event<Relay::DstChain>,
+        relay: &Relay,
+        height: &Height<Relay::DstChain>,
+        event: &Event<Relay::DstChain>,
     ) -> Result<(), Relay::Error> {
+        let m_ack_event = Relay::DstChain::try_extract_write_acknowledgement_event(event);
+
+        if let Some(ack_event) = m_ack_event {
+            let packet =
+                Relay::DstChain::extract_packet_from_write_acknowledgement_event(&ack_event);
+
+            // First check whether the packet is targetted for the destination chain,
+            // then use the packet filter in the relay context, as we skip `CanRelayPacket`
+            // which would have done the packet filtering.
+            if MatchPacketSourceChain::should_relay_packet(relay, packet).await?
+                && relay.should_relay_packet(packet).await?
+            {
+                // TODO: Add a middleware for Ack relayer so that it does not
+                // relay ack twice. (another time inside `FullCycleRelayer`)
+                relay.relay_ack_packet(height, packet, &ack_event).await?;
+            }
+        }
+
         // TODO: implementing the logic for extracting write acknowledgement
         // and relaying Ack packets.
 
