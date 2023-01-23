@@ -175,6 +175,12 @@ where
     ) -> Option<Self::WriteAcknowledgementEvent> {
         Chain::try_extract_write_acknowledgement_event(event)
     }
+
+    fn extract_packet_from_write_acknowledgement_event(
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket {
+        Chain::extract_packet_from_write_acknowledgement_event(ack)
+    }
 }
 
 impl<Chain, Counterparty> HasSendPacketEvent<OfaChainWrapper<Counterparty>>

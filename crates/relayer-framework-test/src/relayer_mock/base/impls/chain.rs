@@ -211,6 +211,12 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         PacketKey::from(event.clone())
     }
 
+    fn extract_packet_from_write_acknowledgement_event(
+        _ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket {
+        todo!()
+    }
+
     async fn query_chain_id_from_channel_id(
         &self,
         _channel_id: &ChannelId,

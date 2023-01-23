@@ -186,6 +186,10 @@ where
     fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
         -> Self::OutgoingPacket;
 
+    fn extract_packet_from_write_acknowledgement_event(
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket;
+
     async fn query_chain_id_from_channel_id(
         &self,
         channel_id: &Self::ChannelId,

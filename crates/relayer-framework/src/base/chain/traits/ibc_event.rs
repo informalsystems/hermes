@@ -1,5 +1,4 @@
 use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
-use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
 use crate::base::core::traits::sync::Async;
 
 /**
@@ -27,9 +26,13 @@ where
    [`Event`](crate::base::chain::traits::types::HasEventType::Event)
    type contains a [`WriteAcknowledgementEvent`](Self::WriteAcknowledgementEvent) variant.
 */
-pub trait HasWriteAcknowledgementEvent<Counterparty>: HasIbcChainTypes<Counterparty>
+pub trait HasWriteAcknowledgementEvent<Counterparty>: HasIbcPacketTypes<Counterparty>
 where
-    Counterparty: HasChainTypes,
+    Counterparty: HasIbcPacketTypes<
+        Self,
+        IncomingPacket = Self::OutgoingPacket,
+        OutgoingPacket = Self::IncomingPacket,
+    >,
 {
     /**
        The write acknowledgement event that is emitted when a `RecvPacket`
@@ -61,4 +64,8 @@ where
     fn try_extract_write_acknowledgement_event(
         event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
+
+    fn extract_packet_from_write_acknowledgement_event(
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket;
 }

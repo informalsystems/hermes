@@ -247,6 +247,12 @@ where
         event.packet.clone()
     }
 
+    fn extract_packet_from_write_acknowledgement_event(
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket {
+        &ack.packet
+    }
+
     async fn query_chain_id_from_channel_id(
         &self,
         channel_id: &ChannelId,
