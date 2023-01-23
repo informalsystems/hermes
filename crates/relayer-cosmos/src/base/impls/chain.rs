@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
+use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
@@ -244,6 +245,15 @@ where
         event: &Self::SendPacketEvent,
     ) -> Self::OutgoingPacket {
         event.packet.clone()
+    }
+
+    async fn query_chain_id_from_channel_id(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+    ) -> Result<ChainId, Error> {
+        counterparty_chain_from_channel(self.chain.chain_handle(), channel_id, port_id)
+            .map_err(Error::supervisor)
     }
 
     async fn query_consensus_state(

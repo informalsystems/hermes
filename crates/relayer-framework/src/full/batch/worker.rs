@@ -1,8 +1,10 @@
 use alloc::collections::VecDeque;
+use alloc::sync::Arc;
 use core::marker::PhantomData;
 use core::mem;
 
 use crate::base::chain::traits::types::{CanEstimateMessageSize, HasIbcChainTypes};
+use crate::base::core::traits::error::CanShareError;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -39,6 +41,7 @@ where
     Relay: HasRelayTypes<Error = Error>,
     Relay: HasMessageBatchReceiver<Target>,
     Relay: HasRuntime<Runtime = Runtime>,
+    Relay: CanShareError,
     TargetChain: CanEstimateMessageSize,
     TargetChain: HasRuntime<Runtime = Runtime>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
@@ -47,7 +50,7 @@ where
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Event: Async,
-    Error: Clone + Async,
+    Error: Async,
     Message: Async,
 {
     pub fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
@@ -203,8 +206,10 @@ where
 
         match send_result {
             Err(e) => {
+                let error = Arc::new(e);
                 for (_, sender) in senders.into_iter() {
-                    let _ = Runtime::send_once(sender, Err(e.clone()));
+                    let _ =
+                        Runtime::send_once(sender, Err(Relay::from_shared_error(error.clone())));
                 }
             }
             Ok(all_events) => {

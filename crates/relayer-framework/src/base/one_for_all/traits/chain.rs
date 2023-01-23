@@ -186,6 +186,12 @@ where
     fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
         -> Self::OutgoingPacket;
 
+    async fn query_chain_id_from_channel_id(
+        &self,
+        channel_id: &Self::ChannelId,
+        port_id: &Self::PortId,
+    ) -> Result<Counterparty::ChainId, Self::Error>;
+
     async fn query_consensus_state(
         &self,
         client_id: &Self::ClientId,

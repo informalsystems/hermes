@@ -211,6 +211,14 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         PacketKey::from(event.clone())
     }
 
+    async fn query_chain_id_from_channel_id(
+        &self,
+        _channel_id: &ChannelId,
+        _port_id: &PortId,
+    ) -> Result<String, Self::Error> {
+        todo!()
+    }
+
     async fn query_consensus_state(
         &self,
         client_id: &Self::ClientId,

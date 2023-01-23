@@ -1,7 +1,9 @@
+use alloc::sync::Arc;
 use eyre::Report;
-use flex_error::{define_error, DisplayOnly, ErrorMessageTracer, TraceError};
+use flex_error::{define_error, TraceError};
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
+use ibc_relayer::supervisor::error::Error as SupervisorError;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
 use prost::EncodeError;
@@ -9,27 +11,37 @@ use tendermint::Hash as TxHash;
 use tendermint_rpc::Error as TendermintRpcError;
 
 define_error! {
-    #[derive(Clone, Debug)]
+    #[derive(Debug)]
     Error {
         Generic
             [ TraceError<Report> ]
             | _ | { "generic error" },
+
+        Shared
+            {
+                error: Arc<Error>,
+            }
+            | e | { format!("{}", e) },
 
         Tokio
             [ TokioError ]
             | _ | { "tokio runtime error" },
 
         Channel
-            [ DisplayOnly<ChannelError> ]
+            [ ChannelError ]
             | _ | { "channel error" },
 
         Relayer
-            [ DisplayOnly<RelayerError> ]
+            [ RelayerError ]
             | _ | { "ibc-relayer error" },
 
         ForeignClient
-            [ DisplayOnly<ForeignClientError> ]
+            [ ForeignClientError ]
             | _ | { "foreign client error" },
+
+        Supervisor
+            [ SupervisorError ]
+            | _ | { "supervisor error" },
 
         Encode
             [ TraceError<EncodeError> ]
@@ -52,11 +64,5 @@ define_error! {
 
         MissingSimulateGasInfo
             | _ | { "missing gas info returned from send_tx_simulate" },
-    }
-}
-
-impl Clone for Error {
-    fn clone(&self) -> Self {
-        Error(self.detail().clone(), ErrorMessageTracer::new_message(self))
     }
 }

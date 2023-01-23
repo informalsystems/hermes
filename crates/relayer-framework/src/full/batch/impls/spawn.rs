@@ -1,6 +1,7 @@
 use core::marker::PhantomData;
 
 use crate::base::chain::traits::types::{CanEstimateMessageSize, HasIbcChainTypes};
+use crate::base::core::traits::error::CanShareError;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
@@ -16,7 +17,6 @@ use crate::full::batch::worker::BatchMessageWorker;
 use crate::full::runtime::traits::channel::CanUseChannels;
 use crate::full::runtime::traits::channel_once::CanUseChannelsOnce;
 use crate::full::runtime::traits::spawn::HasSpawner;
-use crate::std_prelude::*;
 
 pub struct BatchMessageWorkerSpawner<Target>(PhantomData<Target>);
 
@@ -26,14 +26,14 @@ where
     Relay: HasRelayTypes,
     Relay: HasRuntime<Runtime = Runtime>,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
+    Relay: HasMessageBatchReceiver<Target>,
+    Relay: CanShareError,
     TargetChain: CanEstimateMessageSize,
     TargetChain: HasRuntime<Runtime = Runtime>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Runtime: HasMutex + CanUseChannelsOnce + CanUseChannels,
-    Relay: HasMessageBatchReceiver<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
-    Relay::Error: Clone,
 {
     fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
         <BatchMessageWorker<Relay, Target>>::spawn_batch_message_worker(relay, config)
