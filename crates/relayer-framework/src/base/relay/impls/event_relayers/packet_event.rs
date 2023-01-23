@@ -2,7 +2,9 @@ use async_trait::async_trait;
 
 use crate::base::chain::traits::ibc_event::{HasSendPacketEvent, HasWriteAcknowledgementEvent};
 use crate::base::chain::types::aliases::{Event, Height};
+use crate::base::relay::impls::packet_filters::chain::MatchPacketDestinationChain;
 use crate::base::relay::traits::event_relayer::EventRelayer;
+use crate::base::relay::traits::packet_filter::PacketFilter;
 use crate::base::relay::traits::packet_relayer::CanRelayPacket;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
@@ -31,16 +33,19 @@ impl<Relay> EventRelayer<Relay, SourceTarget> for PacketEventRelayer
 where
     Relay: CanRelayPacket,
     Relay::SrcChain: HasSendPacketEvent<Relay::DstChain>,
+    MatchPacketDestinationChain: PacketFilter<Relay>,
 {
     async fn relay_chain_event(
-        relayer: &Relay,
+        relay: &Relay,
         _height: &Height<Relay::SrcChain>,
         event: &Event<Relay::SrcChain>,
     ) -> Result<(), Relay::Error> {
         if let Some(send_packet_event) = Relay::SrcChain::try_extract_send_packet_event(event) {
             let packet = Relay::SrcChain::extract_packet_from_send_packet_event(&send_packet_event);
 
-            relayer.relay_packet(&packet).await?;
+            if MatchPacketDestinationChain::should_relay_packet(relay, &packet).await? {
+                relay.relay_packet(&packet).await?;
+            }
         }
 
         Ok(())
