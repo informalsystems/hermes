@@ -1,7 +1,10 @@
 use ibc_test_framework::{
     prelude::*,
     relayer::{
-        channel::{ack_channel, assert_eventually_channel_established, init_channel, try_channel},
+        channel::{
+            ack_channel, assert_eventually_channel_established, init_channel,
+            init_channel_optimistic, try_channel,
+        },
         connection::{
             ack_connection, assert_eventually_connection_established, init_connection,
             try_connection,
@@ -91,6 +94,11 @@ fn test_channel_ack_handshake_no_worker() -> Result<(), Error> {
     run_binary_connection_test(&ChannelAckHandshake {
         enable_worker: false,
     })
+}
+
+#[test]
+fn test_channel_optimistic_handshake() -> Result<(), Error> {
+    run_binary_chain_test(&OptimisticChannelOpenHandshake {})
 }
 
 pub struct ConnectionOpenHandshake {
@@ -472,6 +480,68 @@ impl BinaryConnectionTest for ChannelAckHandshake {
                     result,
                 )?;
             }
+
+            Ok(())
+        })
+    }
+}
+
+pub struct OptimisticChannelOpenHandshake {}
+
+impl TestOverrides for OptimisticChannelOpenHandshake {
+    fn modify_test_config(&self, config: &mut TestConfig) {
+        config.bootstrap_with_random_ids = false;
+    }
+
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.connections.enabled = true;
+        config.mode.channels.enabled = true;
+        config.mode.packets.enabled = false;
+        config.mode.clients.enabled = false;
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
+
+impl BinaryChainTest for OptimisticChannelOpenHandshake {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let port_a = tagged_transfer_port();
+        let port_b = tagged_transfer_port();
+
+        // Send conn-open-init to B
+        let (connection_id_b, _) = init_connection(
+            &chains.handle_a,
+            &chains.handle_b,
+            &chains.foreign_clients.client_id_a(),
+            &chains.foreign_clients.client_id_b(),
+        )?;
+
+        // Optimistically send chan-open-init to B, without a connection available yet on A
+        let channel_id_b = init_channel_optimistic(
+            &chains.handle_a,
+            &chains.handle_b,
+            &chains.client_id_a(),
+            &chains.client_id_b(),
+            &connection_id_b.as_ref(),
+            &port_a.as_ref(),
+            &port_b.as_ref(),
+        )?;
+
+        // The channel should eventually be in OPEN state
+        relayer.with_supervisor(|| {
+            assert_eventually_channel_established(
+                &chains.handle_b,
+                &chains.handle_a,
+                &channel_id_b.as_ref(),
+                &port_b.as_ref(),
+            )?;
 
             Ok(())
         })

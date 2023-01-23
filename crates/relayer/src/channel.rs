@@ -42,7 +42,7 @@ pub mod error;
 pub mod version;
 use version::Version;
 
-mod handshake_retry {
+pub mod channel_handshake_retry {
     //! Provides utility methods and constants to configure the retry behavior
     //! for the channel handshake algorithm.
 
@@ -702,21 +702,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     fn handshake(&mut self) -> Result<(), ChannelError> {
         let max_block_times = self.max_block_times()?;
 
-        retry_with_index(handshake_retry::default_strategy(max_block_times), |_| {
-            if let Err(e) = self.do_chan_open_handshake() {
-                if e.is_expired_or_frozen_error() {
-                    RetryResult::Err(e)
+        retry_with_index(
+            channel_handshake_retry::default_strategy(max_block_times),
+            |_| {
+                if let Err(e) = self.do_chan_open_handshake() {
+                    if e.is_expired_or_frozen_error() {
+                        RetryResult::Err(e)
+                    } else {
+                        RetryResult::Retry(e)
+                    }
                 } else {
-                    RetryResult::Retry(e)
+                    RetryResult::Ok(())
                 }
-            } else {
-                RetryResult::Ok(())
-            }
-        })
+            },
+        )
         .map_err(|err| {
             error!("failed to open channel after {} retries", err.tries);
 
-            handshake_retry::from_retry_error(
+            channel_handshake_retry::from_retry_error(
                 err,
                 format!("failed to finish channel handshake for {:?}", self),
             )

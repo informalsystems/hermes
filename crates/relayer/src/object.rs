@@ -12,8 +12,8 @@ use ibc_relayer_types::core::{
 
 use crate::chain::{
     counterparty::{
-        channel_connection_client, counterparty_chain_from_channel,
-        counterparty_chain_from_connection,
+        channel_connection_client, channel_connection_client_no_checks,
+        counterparty_chain_from_channel, counterparty_chain_from_connection,
     },
     handle::ChainHandle,
     requests::{IncludeProof, QueryClientStateRequest, QueryHeight},
@@ -413,20 +413,33 @@ impl Object {
     pub fn channel_from_chan_open_events(
         attributes: &Attributes,
         src_chain: &impl ChainHandle,
+        allow_non_open_connection: bool,
     ) -> Result<Self, ObjectError> {
         let channel_id = attributes
             .channel_id()
             .ok_or_else(|| ObjectError::missing_channel_id(attributes.clone()))?;
 
-        let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, channel_id, attributes.port_id())
-                .map_err(ObjectError::supervisor)?;
+        let port_id = attributes.port_id();
+
+        let dst_chain_id = if allow_non_open_connection {
+            // Get the destination chain allowing for the possibility that the connection is not yet open.
+            // This is to support the optimistic channel handshake by allowing the channel worker to get
+            // the channel events while the connection is being established.
+            // The channel worker will eventually finish the channel handshake via the retry mechanism.
+            channel_connection_client_no_checks(src_chain, port_id, channel_id)
+                .map(|c| c.client.client_state.chain_id())
+                .map_err(ObjectError::supervisor)?
+        } else {
+            channel_connection_client(src_chain, port_id, channel_id)
+                .map(|c| c.client.client_state.chain_id())
+                .map_err(ObjectError::supervisor)?
+        };
 
         Ok(Channel {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: channel_id.clone(),
-            src_port_id: attributes.port_id().clone(),
+            src_port_id: port_id.clone(),
         }
         .into())
     }
