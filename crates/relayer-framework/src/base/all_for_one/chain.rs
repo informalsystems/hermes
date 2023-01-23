@@ -4,10 +4,10 @@ use crate::base::chain::traits::queries::consensus_state::{
 };
 use crate::base::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use crate::base::chain::traits::queries::status::CanQueryChainStatus;
-use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
+use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 
 pub trait AfoBaseChain<Counterparty>:
-    HasIbcChainTypes<Counterparty>
+    HasIbcPacketTypes<Counterparty>
     + HasWriteAcknowledgementEvent<Counterparty>
     + HasConsensusState<Counterparty>
     + CanQueryConsensusState<Counterparty>
@@ -18,16 +18,22 @@ where
 {
 }
 
-pub trait AfoCounterpartyChain<Chain>: HasChainTypes + HasConsensusState<Chain>
+pub trait AfoCounterpartyChain<Chain>:
+    HasConsensusState<Chain>
+    + HasIbcPacketTypes<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >
 where
-    Chain: HasChainTypes,
+    Chain: HasIbcPacketTypes<Self>,
 {
 }
 
 impl<Chain, Counterparty> AfoBaseChain<Counterparty> for Chain
 where
-    Counterparty: HasChainTypes + HasConsensusState<Self>,
-    Chain: HasIbcChainTypes<Counterparty>
+    Counterparty: AfoCounterpartyChain<Self>,
+    Chain: HasIbcPacketTypes<Counterparty>
         + HasWriteAcknowledgementEvent<Counterparty>
         + HasConsensusState<Counterparty>
         + CanQueryConsensusState<Counterparty>
@@ -38,7 +44,12 @@ where
 
 impl<Chain, Counterparty> AfoCounterpartyChain<Chain> for Counterparty
 where
-    Chain: HasChainTypes,
-    Counterparty: HasChainTypes + HasConsensusState<Chain>,
+    Chain: HasIbcPacketTypes<Counterparty>,
+    Counterparty: HasConsensusState<Chain>
+        + HasIbcPacketTypes<
+            Chain,
+            IncomingPacket = Chain::OutgoingPacket,
+            OutgoingPacket = Chain::IncomingPacket,
+        >,
 {
 }

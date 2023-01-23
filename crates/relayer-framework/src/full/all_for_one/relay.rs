@@ -11,8 +11,16 @@ pub trait AfoFullRelay:
     + CanSendIbcMessagesFromBatchWorker<SourceTarget>
     + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
 {
-    type AfoSrcFullChain: AfoFullChain<Self::AfoDstFullChain>;
-    type AfoDstFullChain: AfoFullChain<Self::AfoSrcFullChain>;
+    type AfoSrcFullChain: AfoFullChain<
+        Self::AfoDstFullChain,
+        IncomingPacket = Self::AfoReversePacket,
+        OutgoingPacket = Self::AfoPacket,
+    >;
+    type AfoDstFullChain: AfoFullChain<
+        Self::AfoSrcFullChain,
+        IncomingPacket = Self::AfoPacket,
+        OutgoingPacket = Self::AfoReversePacket,
+    >;
 }
 
 impl<Relay, SrcChain, DstChain> AfoFullRelay for Relay
@@ -22,8 +30,16 @@ where
         + CanSendIbcMessagesFromBatchWorker<SourceTarget>
         + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
         + SupportsPacketRetry,
-    SrcChain: AfoFullChain<DstChain>,
-    DstChain: AfoFullChain<SrcChain>,
+    SrcChain: AfoFullChain<
+        DstChain,
+        IncomingPacket = Relay::AfoReversePacket,
+        OutgoingPacket = Relay::AfoPacket,
+    >,
+    DstChain: AfoFullChain<
+        SrcChain,
+        IncomingPacket = Relay::AfoPacket,
+        OutgoingPacket = Relay::AfoReversePacket,
+    >,
 {
     type AfoSrcFullChain = SrcChain;
     type AfoDstFullChain = DstChain;

@@ -28,15 +28,27 @@ pub trait AfoBaseRelay:
     + CanRelayAckPacket
     + CanRelayTimeoutUnorderedPacket
 {
-    type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
+    type AfoSrcChain: AfoBaseChain<
+        Self::AfoDstChain,
+        IncomingPacket = Self::AfoReversePacket,
+        OutgoingPacket = Self::AfoPacket,
+    >;
 
-    type AfoDstChain: AfoBaseChain<Self::AfoSrcChain>;
+    type AfoDstChain: AfoBaseChain<
+        Self::AfoSrcChain,
+        IncomingPacket = Self::AfoPacket,
+        OutgoingPacket = Self::AfoReversePacket,
+    >;
+
+    type AfoPacket;
+
+    type AfoReversePacket;
 }
 
-impl<Relay, SrcChain, DstChain> AfoBaseRelay for Relay
+impl<Relay, SrcChain, DstChain, Packet, ReversePacket> AfoBaseRelay for Relay
 where
-    SrcChain: AfoBaseChain<DstChain>,
-    DstChain: AfoBaseChain<SrcChain>,
+    SrcChain: AfoBaseChain<DstChain, IncomingPacket = ReversePacket, OutgoingPacket = Packet>,
+    DstChain: AfoBaseChain<SrcChain, IncomingPacket = Packet, OutgoingPacket = ReversePacket>,
     Relay: HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain>
         + CanBuildUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>
@@ -54,4 +66,8 @@ where
     type AfoSrcChain = SrcChain;
 
     type AfoDstChain = DstChain;
+
+    type AfoPacket = Packet;
+
+    type AfoReversePacket = ReversePacket;
 }
