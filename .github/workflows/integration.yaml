@@ -227,12 +227,12 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-            account_prefix: cosmos
           - package: ibc-go-v5-simapp
             command: simd
             account_prefix: cosmos
           - package: ibc-go-v6-simapp
             command: simd
+            account_prefix: cosmos
           - package: gaia8
             command: gaiad
             account_prefix: cosmos
