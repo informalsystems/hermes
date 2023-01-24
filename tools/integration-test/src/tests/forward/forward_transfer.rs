@@ -101,6 +101,12 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
             &denom_a,
         )?;
 
+        let denom_a_to_b = derive_ibc_denom(
+            &channel_a_to_b.port_b.as_ref(),
+            &channel_a_to_b.channel_id_b.as_ref(),
+            &denom_a,
+        )?;
+
         let denom_a_to_c = derive_ibc_denom(
             &channel_b_to_c.port_b.as_ref(),
             &channel_b_to_c.channel_id_b.as_ref(),
@@ -119,10 +125,6 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
         let balance_a = node_a
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
-
-        let balance_b = node_b
-            .chain_driver()
-            .query_balance(&wallet_b.address(), &denom_b.as_ref())?;
 
         let a_to_c_amount = 4000_u128;
 
@@ -170,9 +172,10 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
             &(balance_a - a_to_c_amount).as_ref(),
         )?;
 
-        node_b
-            .chain_driver()
-            .assert_eventual_wallet_amount(&wallet_b.address(), &(balance_b).as_ref())?;
+        node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            &denom_a_to_b.with_amount(0_u128).as_ref(),
+        )?;
 
         info!(
             "successfully performed IBC transfer from chain {} to chain {}",

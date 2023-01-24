@@ -101,3 +101,117 @@ impl HasForwardMemoInfo for MisspelledChannelMemoInfo {
         }
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct HopMemoField {
+    forward: HopMemoInfo,
+}
+
+impl HopMemoField {
+    pub fn new(
+        intermediary_receiver: String,
+        intermediary_port: String,
+        intermediary_channel: String,
+        intermediary_timeout: String,
+        intermediary_retries: u64,
+        final_receiver: String,
+        final_port: String,
+        final_channel: String,
+        final_timeout: String,
+        final_retries: u64,
+    ) -> Self {
+        let hop_field = HopField::new(
+            final_receiver,
+            final_port,
+            final_channel,
+            final_timeout,
+            final_retries,
+        );
+        let memo_content = HopMemoInfo::new(
+            intermediary_receiver,
+            intermediary_port,
+            intermediary_channel,
+            intermediary_timeout,
+            intermediary_retries,
+            hop_field,
+        );
+        Self {
+            forward: memo_content,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct HopMemoInfo {
+    receiver: String,
+    port: String,
+    channel: String,
+    timeout: String,
+    retries: u64,
+    next: HopField,
+}
+
+impl HopMemoInfo {
+    pub fn new(
+        receiver: String,
+        port: String,
+        channel: String,
+        timeout: String,
+        retries: u64,
+        next: HopField,
+    ) -> Self {
+        Self {
+            receiver,
+            port,
+            channel,
+            timeout,
+            retries,
+            next,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct HopField {
+    forward: Hop,
+}
+
+impl HopField {
+    pub fn new(
+        receiver: String,
+        port: String,
+        channel: String,
+        timeout: String,
+        retries: u64,
+    ) -> Self {
+        let hop = Hop::new(receiver, port, channel, timeout, retries);
+        Self { forward: hop }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Hop {
+    receiver: String,
+    port: String,
+    channel: String,
+    timeout: String,
+    retries: u64,
+}
+
+impl Hop {
+    pub fn new(
+        receiver: String,
+        port: String,
+        channel: String,
+        timeout: String,
+        retries: u64,
+    ) -> Self {
+        Self {
+            receiver,
+            port,
+            channel,
+            timeout,
+            retries,
+        }
+    }
+}
