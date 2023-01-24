@@ -1,4 +1,6 @@
+use alloc::sync::Arc;
 use async_trait::async_trait;
+use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
@@ -13,10 +15,11 @@ use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_framework::base::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
-use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
@@ -24,7 +27,9 @@ use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
@@ -33,7 +38,7 @@ use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event;
 
-use crate::base::error::Error;
+use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;
 use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::message::CosmosIbcMessage;
@@ -56,6 +61,8 @@ where
 
     type Event = Event;
 
+    type ChainId = ChainId;
+
     type ClientId = ClientId;
 
     type ConnectionId = ConnectionId;
@@ -71,6 +78,8 @@ where
     type ConsensusState = ConsensusState;
 
     type ChainStatus = ChainStatus;
+
+    type SendPacketEvent = SendPacket;
 }
 
 #[async_trait]
@@ -79,11 +88,11 @@ where
     Chain: CosmosChain,
 {
     fn runtime_error(e: TokioError) -> Error {
-        Error::tokio(e)
+        BaseError::tokio(e).into()
     }
 
     fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
-        let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(Error::encode)?;
+        let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(BaseError::encode)?;
 
         Ok(raw.encoded_len())
     }
@@ -97,10 +106,10 @@ where
     }
 
     fn try_extract_write_acknowledgement_event(
-        event: Self::Event,
+        event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         if let IbcEventType::WriteAck = event.kind.parse().ok()? {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(&event).ok()?;
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event).ok()?;
 
             let ack = WriteAcknowledgement {
                 packet,
@@ -117,6 +126,10 @@ where
         &self.runtime
     }
 
+    fn chain_id(&self) -> &Self::ChainId {
+        &self.chain.tx_config().chain_id
+    }
+
     async fn send_messages(
         &self,
         messages: Vec<CosmosIbcMessage>,
@@ -129,9 +142,13 @@ where
             .chain
             .chain_handle()
             .query_application_status()
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         Ok(status)
+    }
+
+    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>> {
+        &self.subscription
     }
 }
 
@@ -212,6 +229,42 @@ where
         message.source_height
     }
 
+    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
+        if let IbcEventType::SendPacket = event.kind.parse().ok()? {
+            let (packet, _) = extract_packet_and_write_ack_from_tx(event).ok()?;
+
+            let send_packet_event = SendPacket { packet };
+
+            Some(send_packet_event)
+        } else {
+            None
+        }
+    }
+
+    fn extract_packet_from_send_packet_event(
+        event: &Self::SendPacketEvent,
+    ) -> Self::OutgoingPacket {
+        event.packet.clone()
+    }
+
+    fn extract_packet_from_write_acknowledgement_event(
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket {
+        &ack.packet
+    }
+
+    async fn query_chain_id_from_channel_id(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+    ) -> Result<ChainId, Error> {
+        let channel_id =
+            counterparty_chain_from_channel(self.chain.chain_handle(), channel_id, port_id)
+                .map_err(BaseError::supervisor)?;
+
+        Ok(channel_id)
+    }
+
     async fn query_consensus_state(
         &self,
         client_id: &ClientId,
@@ -228,11 +281,11 @@ where
                 },
                 IncludeProof::No,
             )
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         match any_consensus_state {
             AnyConsensusState::Tendermint(consensus_state) => Ok(consensus_state),
-            _ => Err(Error::mismatch_consensus_state()),
+            _ => Err(BaseError::mismatch_consensus_state().into()),
         }
     }
 
@@ -250,7 +303,7 @@ where
                 channel_id: channel_id.clone(),
                 packet_commitment_sequences: vec![*sequence],
             })
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         let is_packet_received = unreceived_packet.is_empty();
 
@@ -278,7 +331,7 @@ where
 
         let ibc_events =
             query_write_ack_events(chain_handle, &path_ident, &[*sequence], src_query_height)
-                .map_err(Error::relayer)?;
+                .map_err(BaseError::relayer)?;
 
         let write_ack = ibc_events.into_iter().find_map(|event_with_height| {
             let event = event_with_height.event;
@@ -310,7 +363,7 @@ where
                 packet.sequence,
                 *height,
             )
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         let packet = packet.clone();
 
@@ -340,7 +393,7 @@ where
                 packet.sequence,
                 *height,
             )
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         let packet = packet.clone();
         let ack = ack.ack.clone();
@@ -376,7 +429,7 @@ where
                 packet.sequence,
                 *height,
             )
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         let packet = packet.clone();
 

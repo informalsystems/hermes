@@ -8,7 +8,13 @@
 //!
 //! The test in most of its entirety (some parts omitted for brevity) looks like this:
 //!
-//! ```nocompile
+//! ```no_run
+//! # use serde_json as json;
+//! # use ibc_relayer::config::{types::Memo, Config};
+//! # use ibc_test_framework::ibc::denom::derive_ibc_denom;
+//! # use ibc_test_framework::prelude::*;
+//! # use ibc_test_framework::util::random::{random_string, random_u128_range};
+//!
 //! #[test]
 //! fn test_memo() -> Result<(), Error> {
 //!     let memo = Memo::new(random_string()).unwrap();
@@ -46,6 +52,7 @@
 //!             &chains.node_a.wallets().user1(),
 //!             &chains.node_b.wallets().user1().address(),
 //!             &denom_a.with_amount(a_to_b_amount).as_ref(),
+//!             None,
 //!         )?;
 //!
 //!         let denom_b = derive_ibc_denom(
@@ -69,6 +76,22 @@
 //!         Ok(())
 //!     }
 //! }
+//!
+//! # fn assert_tx_memo_equals(tx_info: &json::Value, expected_memo: &str) -> Result<(), Error> {
+//! #     debug!("comparing memo field from json value {}", tx_info);
+//! #
+//! #     let memo_field = &tx_info["txs"][0]["tx"]["body"]["memo"];
+//! #
+//! #     info!("memo field value: {}", memo_field);
+//! #
+//! #     let memo_str = memo_field
+//! #         .as_str()
+//! #         .ok_or_else(|| eyre!("expect memo string field to be present in JSON"))?;
+//! #
+//! #     assert_eq!(memo_str, expected_memo);
+//! #
+//! #     Ok(())
+//! # }
 //! ```
 //!
 //! This test runs initializes a `MemoTest` struct with a random string

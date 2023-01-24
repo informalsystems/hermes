@@ -2,6 +2,7 @@ use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer_framework::base::all_for_one::chain::{AfoBaseChain, AfoCounterpartyChain};
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::timestamp::Timestamp;
@@ -27,6 +28,8 @@ pub trait AfoCosmosBaseChain<Counterparty>:
     WriteAcknowledgementEvent = WriteAcknowledgement,
     ConsensusState = ConsensusState,
     ChainStatus = ChainStatus,
+    IncomingPacket = Packet,
+    OutgoingPacket = Packet,
 >
 where
     Counterparty: AfoCounterpartyChain<Self>,
@@ -50,6 +53,8 @@ where
         WriteAcknowledgementEvent = WriteAcknowledgement,
         ConsensusState = ConsensusState,
         ChainStatus = ChainStatus,
+        IncomingPacket = Packet,
+        OutgoingPacket = Packet,
     >,
     Counterparty: AfoCounterpartyChain<Chain>,
 {

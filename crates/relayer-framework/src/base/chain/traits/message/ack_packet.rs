@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::types::HasIbcPacketTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CanBuildAckPacketMessage<Counterparty>:
-    HasIbcEvents<Counterparty> + HasIbcPacketTypes<Counterparty>
+    HasWriteAcknowledgementEvent<Counterparty> + HasIbcPacketTypes<Counterparty>
 where
     Counterparty: HasIbcPacketTypes<
         Self,

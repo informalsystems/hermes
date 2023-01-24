@@ -15,6 +15,10 @@ where
 
     type MutexGuard<'a, T: Async> = Runtime::MutexGuard<'a, T>;
 
+    fn new_mutex<T: Async>(item: T) -> Self::Mutex<T> {
+        Runtime::new_mutex(item)
+    }
+
     async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T> {
         Runtime::acquire_mutex(mutex).await
     }

@@ -31,7 +31,11 @@ where
     Relay::SrcChain: OfaFullChain<Error = Relay::Error>,
     Relay::DstChain: OfaFullChain<Error = Relay::Error>,
 {
+    type AutoRelayer = preset::AutoRelayer;
+
     type PacketRelayer = preset::PacketRelayer;
+
+    type PacketFilter = preset::PacketFilter;
 
     type IbcMessageSender = preset::IbcMessageSender;
 }

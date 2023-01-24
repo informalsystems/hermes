@@ -110,9 +110,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.66"
+version = "1.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "216261ddc8289130e551ddcd5ce8a064710c0d064a4d2895c67151c92b5443f6"
+checksum = "2cb2f989d18dd141ab8ae82f64d1a8cdd37e0840f73a406896cf5e99502fab61"
 
 [[package]]
 name = "arc-swap"
@@ -580,16 +580,15 @@ dependencies = [
 
 [[package]]
 name = "console"
-version = "0.15.2"
+version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c050367d967ced717c04b65d8c619d863ef9292ce0c5760028655a2fb298718c"
+checksum = "c3d79fbe8970a77e3e34151cc13d3b3e248aa0faaecb9f6091fa07ebefe5ad60"
 dependencies = [
  "encode_unicode",
  "lazy_static",
  "libc",
- "terminal_size",
  "unicode-width",
- "winapi 0.3.9",
+ "windows-sys 0.42.0",
 ]
 
 [[package]]
@@ -862,11 +861,12 @@ dependencies = [
 
 [[package]]
 name = "dialoguer"
-version = "0.10.2"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a92e7e37ecef6857fdc0c0c5d42fd5b0938e46590c2183cc92dd310a6d078eb1"
+checksum = "af3c796f3b0b408d9fd581611b47fa850821fcb84aa640b83a3c1a5be2d691f2"
 dependencies = [
  "console",
+ "shell-words",
  "tempfile",
  "zeroize",
 ]
@@ -1741,7 +1741,7 @@ dependencies = [
  "flex-error",
  "futures",
  "http",
- "ibc-proto 0.24.0",
+ "ibc-proto 0.24.1",
  "ibc-relayer-types",
  "reqwest",
  "serde",
@@ -1793,8 +1793,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.24.0"
-source = "git+https://github.com/cosmos/ibc-proto-rs?branch=main#7d695f488bddec09257af97e8890c1f5687b6ae5"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30b46bcc4540116870cfb184f338b45174a7560ad46dd74e4cb4e81e005e2056"
 dependencies = [
  "base64",
  "bytes",
@@ -1831,7 +1832,7 @@ dependencies = [
  "http",
  "humantime",
  "humantime-serde",
- "ibc-proto 0.24.0",
+ "ibc-proto 0.24.1",
  "ibc-relayer-types",
  "ibc-telemetry",
  "itertools",
@@ -1916,8 +1917,9 @@ dependencies = [
  "async-trait",
  "eyre",
  "flex-error",
+ "futures",
  "http",
- "ibc-proto 0.24.0",
+ "ibc-proto 0.24.1",
  "ibc-relayer",
  "ibc-relayer-framework",
  "ibc-relayer-runtime",
@@ -1943,6 +1945,7 @@ name = "ibc-relayer-framework"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "futures",
 ]
 
 [[package]]
@@ -1979,8 +1982,10 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "flex-error",
+ "futures",
  "ibc-relayer-framework",
  "tokio",
+ "tokio-stream",
  "tracing",
 ]
 
@@ -1994,7 +1999,7 @@ dependencies = [
  "env_logger 0.10.0",
  "erased-serde",
  "flex-error",
- "ibc-proto 0.24.0",
+ "ibc-proto 0.24.1",
  "ics23",
  "itertools",
  "modelator",
@@ -2046,7 +2051,7 @@ dependencies = [
  "hdpath",
  "hex",
  "http",
- "ibc-proto 0.24.0",
+ "ibc-proto 0.24.1",
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-relayer-types",
@@ -3325,9 +3330,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.7.0"
+version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e076559ef8e241f2ae3479e36f97bd5741c0330689e217ad51ce2c76808b868a"
+checksum = "48aaa5748ba571fb95cd2c85c09f629215d3a6ece942baa100950af03a34f733"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -3960,6 +3965,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "shell-words"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24188a676b6ae68c3b2cb3a01be17fbf7240ce009799bb56d5b1409051e78fde"
+
+[[package]]
 name = "shlex"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4362,16 +4373,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "terminal_size"
-version = "0.1.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "633c1a546cee861a1a6d0dc69ebeca693bf4296661ba7852b9d21d159e0506df"
-dependencies = [
- "libc",
- "winapi 0.3.9",
-]
-
-[[package]]
 name = "test-log"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4521,9 +4522,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.23.0"
+version = "1.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eab6d665857cc6ca78d6e80303a02cea7a7851e85dfbd77cbdc09bd129f1ef46"
+checksum = "1d9f76183f91ecfb55e1d7d5602bd1d979e38a3a522fe900241cf195624d67ae"
 dependencies = [
  "autocfg",
  "bytes",

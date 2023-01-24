@@ -4,6 +4,8 @@ use std::fmt::Display;
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::base::types::height::Height;
 
+use super::events::SendPacketEvent;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PacketKey {
     pub src_channel_id: String,
@@ -19,6 +21,20 @@ impl Display for PacketKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "PacketKey{{ src_channel_id: {}, dst_channel_id: {}, src_port_id: {}, dst_port_id: {}, sequence: {}, timeout_height: {}, timeout_timestamp: {} }}", self.src_channel_id, self.dst_channel_id, self.src_port_id, self.dst_port_id, self.sequence, self.timeout_height, self.timeout_timestamp)?;
         Ok(())
+    }
+}
+
+impl From<SendPacketEvent> for PacketKey {
+    fn from(e: SendPacketEvent) -> Self {
+        PacketKey {
+            src_channel_id: e.src_channel_id,
+            src_port_id: e.src_port_id,
+            dst_channel_id: e.dst_channel_id,
+            dst_port_id: e.dst_port_id,
+            sequence: e.sequence,
+            timeout_height: e.timeout_height,
+            timeout_timestamp: e.timeout_timestamp,
+        }
     }
 }
 

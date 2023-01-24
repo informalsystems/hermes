@@ -70,7 +70,7 @@ impl MockChainContext {
     // Get the current height of the chain.
     pub fn get_current_height(&self) -> MockHeight {
         let locked_current_height = self.current_height.acquire_mutex();
-        locked_current_height.clone()
+        *locked_current_height
     }
 
     /// Get the current state of the chain.
@@ -138,7 +138,7 @@ impl MockChainContext {
         let client_consensus_states = match locked_consensus_states.get(&client_id) {
             Some(ccs) => {
                 let mut new_client_consensus_states = ccs.clone();
-                match new_client_consensus_states.entry(height.clone()) {
+                match new_client_consensus_states.entry(height) {
                     Entry::Occupied(o) => {
                         // Check if the existing Consensus State at the given height differs
                         // from the one passed.
@@ -377,7 +377,7 @@ impl MockChainContext {
 
         // Update current height.
         let mut locked_current_height = self.current_height.acquire_mutex();
-        *locked_current_height = new_height.clone();
+        *locked_current_height = new_height;
 
         self.runtime()
             .runtime
@@ -410,7 +410,7 @@ impl MockChainContext {
         for m in messages {
             match m {
                 MockMessage::RecvPacket(height, packet) => {
-                    current_state = self.receive_packet(height.clone(), packet, current_state)?;
+                    current_state = self.receive_packet(height, packet, current_state)?;
                     res.push(vec![Event::WriteAcknowledgment(height)]);
                 }
                 MockMessage::AckPacket(height, packet) => {

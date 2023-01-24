@@ -71,6 +71,10 @@ impl OfaBaseRuntime for MockRuntimeContext {
         Duration::from_millis((time.0 - other.0) as u64)
     }
 
+    fn new_mutex<T: Async>(item: T) -> Self::Mutex<T> {
+        Mutex::new(item)
+    }
+
     async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T> {
         mutex.lock().await
     }

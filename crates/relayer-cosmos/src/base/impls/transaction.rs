@@ -22,7 +22,7 @@ use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tokio::sync::Mutex;
 
-use crate::base::error::Error;
+use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;
 use crate::base::types::message::CosmosIbcMessage;
 use crate::base::types::transaction::CosmosTxWrapper;
@@ -62,11 +62,11 @@ where
     }
 
     fn runtime_error(e: TokioError) -> Error {
-        Error::tokio(e)
+        BaseError::tokio(e).into()
     }
 
     fn tx_no_response_error(tx_hash: &TxHash) -> Self::Error {
-        Error::tx_no_response(*tx_hash)
+        BaseError::tx_no_response(*tx_hash).into()
     }
 
     fn tx_size(signed_tx: &Self::Transaction) -> usize {
@@ -104,15 +104,15 @@ where
     ) -> Result<SignedTx, Error> {
         let tx_config = self.chain.tx_config();
         let memo = Memo::default();
-        let signer = key_pair_to_signer(key_pair).map_err(Error::relayer)?;
+        let signer = key_pair_to_signer(key_pair).map_err(BaseError::relayer)?;
 
         let raw_messages = messages
             .iter()
-            .map(|message| (message.to_protobuf_fn)(&signer).map_err(Error::encode))
+            .map(|message| (message.to_protobuf_fn)(&signer).map_err(BaseError::encode))
             .collect::<Result<Vec<_>, _>>()?;
 
         let signed_tx = sign_tx(tx_config, key_pair, account, &memo, &raw_messages, fee)
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         Ok(signed_tx)
     }
@@ -122,7 +122,7 @@ where
 
         let response = broadcast_tx_sync(&tx_config.rpc_client, &tx_config.rpc_address, tx.clone())
             .await
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         Ok(response.hash)
     }
@@ -132,11 +132,11 @@ where
 
         let response = send_tx_simulate(&tx_config.grpc_address, tx.clone())
             .await
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         let gas_info = response
             .gas_info
-            .ok_or_else(Error::missing_simulate_gas_info)?;
+            .ok_or_else(BaseError::missing_simulate_gas_info)?;
 
         let fee = gas_amount_to_fee(&tx_config.gas_config, gas_info.gas_used);
 
@@ -148,7 +148,7 @@ where
 
         let response = query_tx_response(&tx_config.rpc_client, &tx_config.rpc_address, tx_hash)
             .await
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         Ok(response)
     }
@@ -159,7 +159,7 @@ where
 
         let account = query_account(&tx_config.grpc_address, &address)
             .await
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         Ok(account.into())
     }

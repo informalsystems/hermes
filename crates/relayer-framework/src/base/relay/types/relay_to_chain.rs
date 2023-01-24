@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use core::marker::PhantomData;
 
 use crate::base::chain::traits::message_sender::CanSendMessages;
+use crate::base::chain::traits::types::height::HasHeightType;
 use crate::base::chain::traits::types::{
     CanEstimateMessageSize, HasChainTypes, HasEventType, HasMessageType,
 };
@@ -74,12 +75,20 @@ where
     type Event = <Target::TargetChain as HasEventType>::Event;
 }
 
+impl<Relay, Target> HasHeightType for RelayToChain<Relay, Target>
+where
+    Relay: HasRelayTypes,
+    Target: ChainTarget<Relay>,
+{
+    type Height = <Target::TargetChain as HasHeightType>::Height;
+}
+
 impl<Relay, Target> HasChainTypes for RelayToChain<Relay, Target>
 where
     Relay: HasRelayTypes,
     Target: ChainTarget<Relay>,
 {
-    type Height = <Target::TargetChain as HasChainTypes>::Height;
+    type ChainId = <Target::TargetChain as HasChainTypes>::ChainId;
 
     type Timestamp = <Target::TargetChain as HasChainTypes>::Timestamp;
 }
