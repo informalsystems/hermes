@@ -38,7 +38,7 @@ use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event;
 
-use crate::base::error::Error;
+use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;
 use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::message::CosmosIbcMessage;
@@ -88,11 +88,11 @@ where
     Chain: CosmosChain,
 {
     fn runtime_error(e: TokioError) -> Error {
-        Error::tokio(e)
+        BaseError::tokio(e).into()
     }
 
     fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
-        let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(Error::encode)?;
+        let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(BaseError::encode)?;
 
         Ok(raw.encoded_len())
     }
@@ -142,7 +142,7 @@ where
             .chain
             .chain_handle()
             .query_application_status()
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         Ok(status)
     }
@@ -258,8 +258,11 @@ where
         channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<ChainId, Error> {
-        counterparty_chain_from_channel(self.chain.chain_handle(), channel_id, port_id)
-            .map_err(Error::supervisor)
+        let channel_id =
+            counterparty_chain_from_channel(self.chain.chain_handle(), channel_id, port_id)
+                .map_err(BaseError::supervisor)?;
+
+        Ok(channel_id)
     }
 
     async fn query_consensus_state(
@@ -278,11 +281,11 @@ where
                 },
                 IncludeProof::No,
             )
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         match any_consensus_state {
             AnyConsensusState::Tendermint(consensus_state) => Ok(consensus_state),
-            _ => Err(Error::mismatch_consensus_state()),
+            _ => Err(BaseError::mismatch_consensus_state().into()),
         }
     }
 
@@ -300,7 +303,7 @@ where
                 channel_id: channel_id.clone(),
                 packet_commitment_sequences: vec![*sequence],
             })
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         let is_packet_received = unreceived_packet.is_empty();
 
@@ -328,7 +331,7 @@ where
 
         let ibc_events =
             query_write_ack_events(chain_handle, &path_ident, &[*sequence], src_query_height)
-                .map_err(Error::relayer)?;
+                .map_err(BaseError::relayer)?;
 
         let write_ack = ibc_events.into_iter().find_map(|event_with_height| {
             let event = event_with_height.event;
@@ -360,7 +363,7 @@ where
                 packet.sequence,
                 *height,
             )
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         let packet = packet.clone();
 
@@ -390,7 +393,7 @@ where
                 packet.sequence,
                 *height,
             )
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         let packet = packet.clone();
         let ack = ack.ack.clone();
@@ -426,7 +429,7 @@ where
                 packet.sequence,
                 *height,
             )
-            .map_err(Error::relayer)?;
+            .map_err(BaseError::relayer)?;
 
         let packet = packet.clone();
 

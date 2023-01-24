@@ -14,7 +14,7 @@ use tendermint_rpc::query::Query;
 use tendermint_rpc::Url;
 use tendermint_rpc::{SubscriptionClient, WebSocketClient};
 
-use crate::base::error::Error;
+use crate::base::error::{BaseError, Error};
 
 pub trait CanCreateAbciEventSubscription: Async {
     fn new_abci_event_subscription(
@@ -114,7 +114,7 @@ where
     ) -> Result<Pin<Box<dyn Stream<Item = RpcEvent> + Send + 'static>>, Error> {
         let (client, driver) = WebSocketClient::new(websocket_url.clone())
             .await
-            .map_err(Error::tendermint_rpc)?;
+            .map_err(BaseError::tendermint_rpc)?;
 
         let spawner = self.spawner();
         spawner.spawn(async move {
@@ -125,7 +125,7 @@ where
             .then(|query| async { client.subscribe(query.clone()).await })
             .try_collect::<Vec<_>>()
             .await
-            .map_err(Error::tendermint_rpc)?;
+            .map_err(BaseError::tendermint_rpc)?;
 
         let stream = stream::select_all(subscriptions).filter_map(|event| async { event.ok() });
 
