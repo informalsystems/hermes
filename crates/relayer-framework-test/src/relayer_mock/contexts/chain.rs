@@ -214,7 +214,7 @@ impl MockChainContext {
             })?;
 
         let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
-        dbg!(&client_consensus);
+
         if !client_consensus.check_sent((
             packet.src_port_id.clone(),
             packet.src_channel_id.clone(),
