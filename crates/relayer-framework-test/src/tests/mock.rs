@@ -6,6 +6,7 @@ use tracing::info;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
+use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::tests::util::context::build_mock_relay_context;
@@ -385,43 +386,6 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
     Ok(())
 }
 
-#[ignore]
-#[tokio::test]
-async fn test_mock_chain_process_recv_packet() -> Result<(), Error> {
-    let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
-
-    let src_channel_id = "channel-0".to_owned();
-    let dst_channel_id = "channel-1".to_owned();
-
-    let src_client_id = relay_context.relay.src_client_id().clone();
-    let dst_client_id = relay_context.relay.dst_client_id().clone();
-
-    src_chain
-        .chain
-        .map_channel_to_client(src_channel_id.clone(), src_client_id.clone());
-    dst_chain
-        .chain
-        .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
-
-    let packet = src_chain.chain.build_send_packet(
-        src_channel_id,
-        String::from("transfer"),
-        dst_channel_id,
-        String::from("transfer"),
-        1,
-        MockHeight(10),
-        MockTimestamp(60000),
-    );
-
-    let src_height = src_chain.chain.get_current_height();
-
-    src_chain.chain.send_packet(src_height, packet.clone())?;
-
-    relay_context.relay_packet(&packet).await?;
-
-    Ok(())
-}
-
 #[tokio::test]
 async fn test_mock_chain_process_update_client_message() -> Result<(), Error> {
     let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
@@ -474,6 +438,67 @@ async fn test_mock_chain_process_update_client_message() -> Result<(), Error> {
     assert!(
         src_consensus_state.is_ok(),
         "Expected a consensus state, but found none."
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_mock_chain_process_recv_packet() -> Result<(), Error> {
+    let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
+
+    let src_channel_id = "channel-0".to_owned();
+    let dst_channel_id = "channel-1".to_owned();
+
+    let src_client_id = relay_context.relay.src_client_id().clone();
+    let dst_client_id = relay_context.relay.dst_client_id().clone();
+
+    src_chain
+        .chain
+        .map_channel_to_client(dst_channel_id.clone(), src_client_id.clone());
+    dst_chain
+        .chain
+        .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
+
+    let packet = src_chain.chain.build_send_packet(
+        src_channel_id,
+        String::from("transfer"),
+        dst_channel_id,
+        String::from("transfer"),
+        1,
+        MockHeight(10),
+        MockTimestamp(60000),
+    );
+
+    let src_height = src_chain.chain.get_current_height();
+
+    src_chain
+        .chain
+        .send_packet(src_height.clone(), packet.clone())?;
+
+    let src_state = src_chain.chain.get_current_state();
+
+    let recv_packet_message = vec![
+        MockMessage::UpdateClient(src_client_id, src_height.clone(), src_state),
+        MockMessage::RecvPacket(src_height.clone(), packet),
+    ];
+
+    let events = src_chain.chain.process_messages(recv_packet_message)?;
+
+    assert_eq!(
+        events.len(),
+        2,
+        "Expected `process_messages` to return 2 events"
+    );
+    assert_eq!(
+        events.first(),
+        Some(&vec![]),
+        "Expected first event returned from processing UpdateClient message to be empty"
+    );
+    assert_eq!(
+        events.last(),
+        Some(&vec![Event::WriteAcknowledgment(src_height)]),
+        "Expected last event return from processing RecvPacket message to contain a WriteAcknowledgment"
     );
 
     Ok(())
