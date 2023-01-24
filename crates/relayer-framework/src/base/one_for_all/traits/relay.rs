@@ -12,7 +12,9 @@ use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::base::relay::traits::auto_relayer::AutoRelayer;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::base::relay::traits::packet_filter::PacketFilter;
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
@@ -102,7 +104,11 @@ pub trait OfaRelayPreset<Relay>:
 where
     Relay: OfaBaseRelay,
 {
+    type AutoRelayer: AutoRelayer<OfaRelayWrapper<Relay>>;
+
     type PacketRelayer: PacketRelayer<OfaRelayWrapper<Relay>>;
+
+    type PacketFilter: PacketFilter<OfaRelayWrapper<Relay>>;
 
     type IbcMessageSender: IbcMessageSender<OfaRelayWrapper<Relay>, SourceTarget>
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;

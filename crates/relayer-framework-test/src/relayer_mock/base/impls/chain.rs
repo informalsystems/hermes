@@ -8,30 +8,30 @@
 //!   have been sent, received, acknowledged, and timed out.
 //! * The ChainStatus is a ConsensusState with a Height and a Timestamp.
 
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::vec::Vec;
+use alloc::sync::Arc;
 use async_trait::async_trait;
 use eyre::eyre;
+
+use ibc_relayer_framework::base::one_for_all::traits::chain::{
+    OfaBaseChain, OfaChainTypes, OfaIbcChain,
+};
+use ibc_relayer_framework::base::runtime::traits::subscription::Subscription;
+
+use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
     ChainStatus, ChannelId, ClientId, ConsensusState, MockTimestamp, PortId, Sequence,
 };
 use crate::relayer_mock::base::types::chain::MockChainStatus;
-use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
+use crate::relayer_mock::base::types::events::{Event, SendPacketEvent, WriteAcknowledgementEvent};
 use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::packet::PacketKey;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::contexts::chain::MockChainContext;
-use ibc_relayer_framework::base::one_for_all::traits::chain::{
-    OfaBaseChain, OfaChainTypes, OfaIbcChain,
-};
-
-use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 impl OfaChainTypes for MockChainContext {
     type Preset = MinimalPreset;
@@ -48,6 +48,8 @@ impl OfaChainTypes for MockChainContext {
 
     type Event = Event;
 
+    type ChainId = String;
+
     type ClientId = ClientId;
 
     type ConnectionId = String;
@@ -63,6 +65,8 @@ impl OfaChainTypes for MockChainContext {
     type ConsensusState = ConsensusState;
 
     type ChainStatus = ChainStatus;
+
+    type SendPacketEvent = SendPacketEvent;
 }
 
 #[async_trait]
@@ -89,12 +93,16 @@ impl OfaBaseChain for MockChainContext {
     }
 
     fn try_extract_write_acknowledgement_event(
-        event: Self::Event,
+        event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         match event {
-            Event::WriteAcknowledgment(h) => Some(WriteAcknowledgementEvent::new(h)),
+            Event::WriteAcknowledgment(h) => Some(WriteAcknowledgementEvent::new(*h)),
             _ => None,
         }
+    }
+
+    fn chain_id(&self) -> &Self::ChainId {
+        &self.name
     }
 
     async fn send_messages(
@@ -112,6 +120,10 @@ impl OfaBaseChain for MockChainContext {
         self.new_block()?;
         let time = self.runtime().runtime.get_time();
         Ok(MockChainStatus::from((height, time, state)))
+    }
+
+    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>> {
+        todo!()
     }
 }
 
@@ -179,11 +191,38 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
-            MockMessage::RecvPacket(h, _) => Some(h.clone()),
-            MockMessage::AckPacket(h, _) => Some(h.clone()),
-            MockMessage::TimeoutPacket(h, _) => Some(h.clone()),
+            MockMessage::RecvPacket(h, _) => Some(*h),
+            MockMessage::AckPacket(h, _) => Some(*h),
+            MockMessage::TimeoutPacket(h, _) => Some(*h),
             _ => None,
         }
+    }
+
+    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
+        match event {
+            Event::SendPacket(send_packet_event) => Some(send_packet_event.clone()),
+            _ => None,
+        }
+    }
+
+    fn extract_packet_from_send_packet_event(
+        event: &Self::SendPacketEvent,
+    ) -> Self::OutgoingPacket {
+        PacketKey::from(event.clone())
+    }
+
+    fn extract_packet_from_write_acknowledgement_event(
+        _ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket {
+        todo!()
+    }
+
+    async fn query_chain_id_from_channel_id(
+        &self,
+        _channel_id: &ChannelId,
+        _port_id: &PortId,
+    ) -> Result<String, Self::Error> {
+        todo!()
     }
 
     async fn query_consensus_state(
@@ -192,7 +231,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         height: &Self::Height,
     ) -> Result<Self::ConsensusState, Self::Error> {
         let client_consensus =
-            self.query_consensus_state_at_height(client_id.to_string(), height.clone())?;
+            self.query_consensus_state_at_height(client_id.to_string(), *height)?;
         Ok(client_consensus)
     }
 
@@ -252,7 +291,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
                 packet.src_channel_id.to_string(),
             ));
         }
-        Ok(MockMessage::RecvPacket(height.clone(), packet.clone()))
+        Ok(MockMessage::RecvPacket(*height, packet.clone()))
     }
 
     async fn build_ack_packet_message(
@@ -275,7 +314,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
             ));
         }
 
-        Ok(MockMessage::AckPacket(height.clone(), packet.clone()))
+        Ok(MockMessage::AckPacket(*height, packet.clone()))
     }
 
     async fn build_timeout_unordered_packet_message(
@@ -287,13 +326,13 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         let runtime = self.runtime();
         let current_timestamp = runtime.runtime.get_time();
 
-        if !state.check_timeout(packet.clone(), height.clone(), current_timestamp) {
+        if !state.check_timeout(packet.clone(), *height, current_timestamp) {
             return Err(Error::timeout_without_sent(
                 self.name().to_string(),
                 packet.src_channel_id.to_string(),
             ));
         }
 
-        Ok(MockMessage::TimeoutPacket(height.clone(), packet.clone()))
+        Ok(MockMessage::TimeoutPacket(*height, packet.clone()))
     }
 }

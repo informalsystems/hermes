@@ -134,9 +134,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
 
     let height = src_chain.chain.get_current_height();
 
-    src_chain
-        .chain
-        .send_packet(height.clone(), packet.clone())?;
+    src_chain.chain.send_packet(height, packet.clone())?;
 
     // Sleep enough to trigger timeout from timestamp timeout
     relay_context
@@ -222,9 +220,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
 
     let height = src_chain.chain.get_current_height();
 
-    src_chain
-        .chain
-        .send_packet(height.clone(), packet.clone())?;
+    src_chain.chain.send_packet(height, packet.clone())?;
 
     // Increase height of destination chain to trigger Height timeout
     dst_chain.chain.new_block()?;

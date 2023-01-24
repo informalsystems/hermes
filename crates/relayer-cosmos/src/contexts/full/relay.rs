@@ -72,13 +72,9 @@ where
             dst_to_src_client,
             packet_filter,
             src_chain_message_batch_sender,
-            src_chain_message_batch_receiver: Arc::new(Mutex::new(
-                src_chain_message_batch_receiver,
-            )),
+            src_chain_message_batch_receiver: Mutex::new(src_chain_message_batch_receiver),
             dst_chain_message_batch_sender,
-            dst_chain_message_batch_receiver: Arc::new(Mutex::new(
-                dst_chain_message_batch_receiver,
-            )),
+            dst_chain_message_batch_receiver: Mutex::new(dst_chain_message_batch_receiver),
         };
 
         relay

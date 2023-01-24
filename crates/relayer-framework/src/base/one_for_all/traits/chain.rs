@@ -2,6 +2,7 @@
 //! in order to gain access to the APIs provided by the `AfoBaseChain`
 //! trait.
 
+use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::fmt::Debug;
 
@@ -11,6 +12,7 @@ use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::base::runtime::traits::subscription::Subscription;
 use crate::std_prelude::*;
 
 pub trait OfaChainTypes: Async {
@@ -30,7 +32,7 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasChainTypes::Height`](crate::base::chain::traits::types::HasChainTypes::Height).
+       [`HasChainTypes::Height`](crate::base::chain::traits::types::height::HasHeightType::Height).
     */
     type Height: Ord + Async;
 
@@ -51,6 +53,8 @@ pub trait OfaChainTypes: Async {
        [`HasEventType::Event`](crate::base::chain::traits::types::HasEventType::Event).
     */
     type Event: Async;
+
+    type ChainId: Eq + Async;
 
     /**
        Corresponds to
@@ -96,9 +100,11 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasIbcEvents::WriteAcknowledgementEvent`](crate::base::chain::traits::ibc_event::HasIbcEvents::WriteAcknowledgementEvent).
+       [`HasWriteAcknowledgementEvent::WriteAcknowledgementEvent`](crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent).
     */
     type WriteAcknowledgementEvent: Async;
+
+    type SendPacketEvent: Async;
 }
 
 #[async_trait]
@@ -114,7 +120,7 @@ pub trait OfaBaseChain: OfaChainTypes {
     fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
 
     fn try_extract_write_acknowledgement_event(
-        event: Self::Event,
+        event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
 
     async fn send_messages(
@@ -122,7 +128,11 @@ pub trait OfaBaseChain: OfaChainTypes {
         messages: Vec<Self::Message>,
     ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
 
+    fn chain_id(&self) -> &Self::ChainId;
+
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
+
+    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>>;
 }
 
 #[async_trait]
@@ -170,6 +180,21 @@ where
         -> &Counterparty::Timestamp;
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
+
+    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent>;
+
+    fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
+        -> Self::OutgoingPacket;
+
+    fn extract_packet_from_write_acknowledgement_event(
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket;
+
+    async fn query_chain_id_from_channel_id(
+        &self,
+        channel_id: &Self::ChannelId,
+        port_id: &Self::PortId,
+    ) -> Result<Counterparty::ChainId, Self::Error>;
 
     async fn query_consensus_state(
         &self,

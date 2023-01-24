@@ -67,7 +67,7 @@ pub trait CanAllocateNonce: HasTxTypes {
         cont: &'a Cont,
     ) -> Pin<Box<dyn Future<Output = Result<R, Self::Error>> + Send + 'a>>
     where
-        R: Async + 'a,
+        R: Async,
         Cont: Fn(Self::Nonce) -> Pin<Box<dyn Future<Output = Result<R, Self::Error>> + Send + 'a>>
             + Send
             + Sync

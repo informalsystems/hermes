@@ -1,15 +1,20 @@
+use alloc::sync::Arc;
 use eyre::Report;
-use flex_error::{define_error, DisplayOnly, ErrorMessageTracer, TraceError};
+use flex_error::{define_error, TraceError};
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
+use ibc_relayer::supervisor::error::Error as SupervisorError;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
 use prost::EncodeError;
 use tendermint::Hash as TxHash;
+use tendermint_rpc::Error as TendermintRpcError;
+
+pub type Error = Arc<BaseError>;
 
 define_error! {
-    #[derive(Clone, Debug)]
-    Error {
+    #[derive(Debug)]
+    BaseError {
         Generic
             [ TraceError<Report> ]
             | _ | { "generic error" },
@@ -19,20 +24,28 @@ define_error! {
             | _ | { "tokio runtime error" },
 
         Channel
-            [ DisplayOnly<ChannelError> ]
+            [ ChannelError ]
             | _ | { "channel error" },
 
         Relayer
-            [ DisplayOnly<RelayerError> ]
+            [ RelayerError ]
             | _ | { "ibc-relayer error" },
 
         ForeignClient
-            [ DisplayOnly<ForeignClientError> ]
+            [ ForeignClientError ]
             | _ | { "foreign client error" },
+
+        Supervisor
+            [ SupervisorError ]
+            | _ | { "supervisor error" },
 
         Encode
             [ TraceError<EncodeError> ]
             | _ | { "protobuf encode error" },
+
+        TendermintRpc
+            [ TendermintRpcError ]
+            | _ | { "tendermint rpc error" },
 
         MismatchConsensusState
             | _ | { "consensus state of a cosmos chain on the counterparty chain must be a tendermint consensus state" },
@@ -47,11 +60,5 @@ define_error! {
 
         MissingSimulateGasInfo
             | _ | { "missing gas info returned from send_tx_simulate" },
-    }
-}
-
-impl Clone for Error {
-    fn clone(&self) -> Self {
-        Error(self.detail().clone(), ErrorMessageTracer::new_message(self))
     }
 }

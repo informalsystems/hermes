@@ -92,7 +92,8 @@ where
        messages targetting this self chain. So any IBC message that the self
        chain received would correspond to events happening on the `Counterparty`
        chain. With this method, we are thus getting the
-       [`Counterparty::Height`](HasChainTypes::Height) and _not_ `Self::Height`.
+       [`Counterparty::Height`](crate::base::chain::traits::types::height::HasHeightType::Height)
+       and _not_ `Self::Height`.
     */
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 }

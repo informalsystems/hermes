@@ -1,8 +1,11 @@
-use crate::base::chain::traits::ibc_event::HasIbcEvents;
-use crate::base::chain::traits::types::{
-    CanEstimateMessageSize, HasChainTypes, HasEventType, HasIbcChainTypes, HasIbcPacketTypes,
-    HasMessageType,
-};
+use crate::base::chain::traits::chain_id::HasChainId;
+use crate::base::chain::traits::ibc_event::{HasSendPacketEvent, HasWriteAcknowledgementEvent};
+use crate::base::chain::traits::types::chain::HasChainTypes;
+use crate::base::chain::traits::types::event::HasEventType;
+use crate::base::chain::traits::types::height::HasHeightType;
+use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
+use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
@@ -40,10 +43,20 @@ impl<Chain: OfaBaseChain> HasEventType for OfaChainWrapper<Chain> {
     type Event = Chain::Event;
 }
 
-impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> HasHeightType for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
+}
+
+impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
+    type ChainId = Chain::ChainId;
 
     type Timestamp = Chain::Timestamp;
+}
+
+impl<Chain: OfaBaseChain> HasChainId for OfaChainWrapper<Chain> {
+    fn chain_id(&self) -> &Self::ChainId {
+        self.chain.chain_id()
+    }
 }
 
 impl<Chain, Counterparty> HasIbcChainTypes<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
@@ -145,7 +158,8 @@ where
     }
 }
 
-impl<Chain, Counterparty> HasIbcEvents<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
+impl<Chain, Counterparty> HasWriteAcknowledgementEvent<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<
@@ -157,8 +171,37 @@ where
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 
     fn try_extract_write_acknowledgement_event(
-        event: Self::Event,
+        event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         Chain::try_extract_write_acknowledgement_event(event)
+    }
+
+    fn extract_packet_from_write_acknowledgement_event(
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket {
+        Chain::extract_packet_from_write_acknowledgement_event(ack)
+    }
+}
+
+impl<Chain, Counterparty> HasSendPacketEvent<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
+{
+    type SendPacketEvent = Chain::SendPacketEvent;
+
+    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
+        Chain::try_extract_send_packet_event(event)
+    }
+
+    fn extract_packet_from_send_packet_event(
+        event: &Self::SendPacketEvent,
+    ) -> Self::OutgoingPacket {
+        Chain::extract_packet_from_send_packet_event(event)
     }
 }

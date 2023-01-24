@@ -1,5 +1,7 @@
 use async_trait::async_trait;
 use core::future::Future;
+use core::pin::Pin;
+use futures::stream::Stream;
 
 use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
@@ -36,11 +38,17 @@ pub trait OfaFullRuntime: OfaBaseRuntime {
     where
         T: Async;
 
-    async fn receive<T>(receiver: &Self::Receiver<T>) -> Result<T, Self::Error>
+    async fn receive<T>(receiver: &mut Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async;
 
-    async fn try_receive<T>(receiver: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    where
+        T: Async;
+
+    fn receiver_to_stream<T>(
+        receiver: Self::Receiver<T>,
+    ) -> Pin<Box<dyn Stream<Item = T> + Send + 'static>>
     where
         T: Async;
 

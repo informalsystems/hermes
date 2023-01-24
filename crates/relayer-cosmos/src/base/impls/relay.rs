@@ -12,7 +12,7 @@ use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 
-use crate::base::error::Error;
+use crate::base::error::{BaseError, Error};
 
 use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::chain::CosmosChainWrapper;
@@ -44,7 +44,7 @@ where
     Relay: CosmosRelay,
 {
     fn runtime_error(e: TokioError) -> Error {
-        Error::tokio(e)
+        BaseError::tokio(e).into()
     }
 
     fn src_chain_error(e: Error) -> Error {
@@ -139,7 +139,7 @@ where
 {
     let messages = foreign_client
         .build_update_client_with_trusted(height.increment(), None)
-        .map_err(Error::foreign_client)?;
+        .map_err(BaseError::foreign_client)?;
 
     let ibc_messages = messages
         .into_iter()
