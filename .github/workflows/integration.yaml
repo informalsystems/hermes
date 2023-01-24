@@ -227,12 +227,12 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia6
-            command: gaiad
             account_prefix: cosmos
-          - package: gaia8
-            command: gaiad
+          - package: ibc-go-v5-simapp
+            command: simd
             account_prefix: cosmos
+          - package: ibc-go-v6-simapp
+            command: simd
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
