@@ -1,0 +1,162 @@
+name: Integration - Multi-chains
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - unlabeled
+    paths:
+      - .github/workflows/multi-chains.yaml
+      - Cargo.toml
+      - Cargo.lock
+      - flake.nix
+      - flake.lock
+      - ci/**
+      - e2e/**
+      - crates/**
+      - tools/**
+  push:
+    branches: master
+    paths:
+      - .github/workflows/multi-chains.yaml
+      - Cargo.toml
+      - Cargo.lock
+      - flake.nix
+      - flake.lock
+      - ci/**
+      - e2e/**
+      - crates/**
+      - tools/**
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 1
+  CARGO_PROFILE_RELEASE_DEBUG: 1
+  RUST_BACKTRACE: short
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
+# Cancel previous runs of this workflow when a new commit is added to the PR, branch or tag
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  multi-chains-test:
+    runs-on: ubuntu-20.04
+    if: |
+      github.ref == 'refs/heads/master' || (
+        (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize') &&
+          contains(github.event.pull_request.labels.*.name, 'CI: multi-chains')
+      ) || (
+        github.event.action == 'labeled' && github.event.label.name == 'CI: multi-chains'
+      )
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        first-package:
+          - package: gaia6
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: gaia7
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: gaia8
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: ibc-go-v2-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v3-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v4-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v5-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v6-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: wasmd
+            chain_command_path: wasmd
+            account_prefix: wasm
+          - package: evmos
+            chain_command_path: evmosd
+            account_prefix: evmos
+          - package: osmosis
+            chain_command_path: osmosisd
+            account_prefix: osmo
+        second-package:
+          - package: gaia6
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: gaia7
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: gaia8
+            chain_command_path: gaiad
+            account_prefix: cosmos
+          - package: ibc-go-v2-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v3-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v4-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v5-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: ibc-go-v6-simapp
+            chain_command_path: simd
+            account_prefix: cosmos
+          - package: wasmd
+            chain_command_path: wasmd
+            account_prefix: wasm
+          - package: evmos
+            chain_command_path: evmosd
+            account_prefix: evmos
+          - package: osmosis
+            chain_command_path: osmosisd
+            account_prefix: osmo
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v15
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --no-fail-fast --no-run
+      - uses: nick-fields/retry@v2
+        env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          ACCOUNT_PREFIXES: ${{ matrix.first-package.account_prefix }},${{ matrix.second-package.account_prefix }}
+        with:
+          max_attempts: 3
+          timeout_minutes: 45
+          command: |
+            CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first-package.package }} -c which ${{ matrix.first-package.chain_command_path }}),$(nix shell .#${{ matrix.second-package.package }} -c which ${{ matrix.second-package.chain_command_path }}) \
+              nix shell .#python -c cargo \
+              test -p ibc-integration-test --no-fail-fast -- \
+              --nocapture --test-threads=2

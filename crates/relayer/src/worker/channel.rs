@@ -2,17 +2,31 @@ use core::time::Duration;
 use crossbeam_channel::Receiver;
 use tracing::{debug, error_span};
 
-use crate::channel::Channel as RelayChannel;
+use crate::channel::{channel_handshake_retry, Channel as RelayChannel};
+use crate::util::retry::RetryResult;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
     object::Channel,
     util::retry::retry_with_index,
-    worker::retry_strategy,
 };
 
 use super::error::RunError;
 use super::WorkerCmd;
+
+fn max_block_times<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chains: &ChainHandlePair<ChainA, ChainB>,
+) -> Duration {
+    let a_block_time = match chains.a.config() {
+        Err(_e) => Duration::from_millis(500),
+        Ok(config) => config.max_block_time,
+    };
+    let b_block_time = match chains.b.config() {
+        Err(_e) => Duration::from_millis(500),
+        Ok(config) => config.max_block_time,
+    };
+    a_block_time.max(b_block_time)
+}
 
 pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     channel: Channel,
@@ -24,6 +38,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
         error_span!("worker.channel", channel = %channel.short_name()),
         Some(Duration::from_millis(200)),
         move || {
+            let max_block_times = max_block_times(&chains);
             if let Ok(cmd) = cmd_rx.try_recv() {
                 match cmd {
                     WorkerCmd::IbcEvents { batch } => {
@@ -34,16 +49,18 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                         complete_handshake_on_new_block = false;
                         if let Some(event_with_height) = last_event {
-                            let mut handshake_channel = RelayChannel::restore_from_event(
-                                chains.a.clone(),
-                                chains.b.clone(),
-                                event_with_height.event.clone(),
+                            retry_with_index(
+                                channel_handshake_retry::default_strategy(max_block_times),
+                                |index| match RelayChannel::restore_from_event(
+                                    chains.a.clone(),
+                                    chains.b.clone(),
+                                    event_with_height.event.clone(),
+                                ) {
+                                    Ok(mut handshake_channel) => handshake_channel
+                                        .step_event(&event_with_height.event, index),
+                                    Err(_) => RetryResult::Retry(index),
+                                },
                             )
-                            .map_err(|e| TaskError::Fatal(RunError::channel(e)))?;
-
-                            retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                                handshake_channel.step_event(&event_with_height.event, index)
-                            })
                             .map_err(|e| TaskError::Fatal(RunError::retry(e)))
                         } else {
                             Ok(Next::Continue)
@@ -60,18 +77,21 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             .decrement()
                             .map_err(|e| TaskError::Fatal(RunError::ics02(e)))?;
 
-                        let (mut handshake_channel, state) = RelayChannel::restore_from_state(
-                            chains.a.clone(),
-                            chains.b.clone(),
-                            channel.clone(),
-                            height,
-                        )
-                        .map_err(|e| TaskError::Fatal(RunError::channel(e)))?;
-
                         complete_handshake_on_new_block = false;
-                        retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                            handshake_channel.step_state(state, index)
-                        })
+                        retry_with_index(
+                            channel_handshake_retry::default_strategy(max_block_times),
+                            |index| match RelayChannel::restore_from_state(
+                                chains.a.clone(),
+                                chains.b.clone(),
+                                channel.clone(),
+                                height,
+                            ) {
+                                Ok((mut handshake_channel, state)) => {
+                                    handshake_channel.step_state(state, index)
+                                }
+                                Err(_) => RetryResult::Retry(index),
+                            },
+                        )
                         .map_err(|e| TaskError::Fatal(RunError::retry(e)))
                     }
 

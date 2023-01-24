@@ -16,10 +16,6 @@ where
 }
 
 #[async_trait]
-pub trait HasPacketFilter: HasRelayTypes {
-    type PacketFilter: PacketFilter<Self>;
-
-    async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {
-        Self::PacketFilter::should_relay_packet(self, packet).await
-    }
+pub trait CanFilterPackets: HasRelayTypes {
+    async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error>;
 }

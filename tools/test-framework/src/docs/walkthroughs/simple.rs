@@ -3,8 +3,8 @@
 //! Here's an example of a simple test that showcases some of the important features that the
 //! framework exposes:
 //!
-//! ```nocompile
-//! # use ibc_integration_test::prelude::*;
+//! ```no_run
+//! # use ibc_test_framework::prelude::*;
 //!
 //! pub struct ExampleTest;
 //!

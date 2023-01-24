@@ -3,6 +3,7 @@ use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 use crate::base::chain::traits::types::event::HasEventType;
+use crate::base::chain::traits::types::height::HasHeightType;
 use crate::base::chain::traits::types::message::HasMessageType;
 
 /**
@@ -13,8 +14,8 @@ use crate::base::chain::traits::types::message::HasMessageType;
    -   [`Error`](HasErrorType::Error) - the error type encapsulating errors occured
        during chain operations.
 
-   -   [`Height`](Self::Height) - the height of a chain, which should behave like
-       natural numbers.
+   -   [`Height`](HasHeightType::Height) - the height of a chain, which should
+        behave like natural numbers.
 
    -   [`Timestamp`](Self::Timestamp) - the timestamp of a chain, which should
        increment monotonically.
@@ -36,22 +37,8 @@ use crate::base::chain::traits::types::message::HasMessageType;
     [`transaction`](crate::base::transaction) module for more information
     about the transaction context.
 */
-pub trait HasChainTypes: HasMessageType + HasEventType + HasErrorType {
-    /**
-       The height of the chain, which should behave like natural numbers.
-
-       By default, the height only contains the `Ord` constraint, and does
-       not support operations like addition.
-
-       We can impose additional constraints at the use site of `HasChainTypes`.
-       However doing so may impose limitations on which concrete types
-       the `Height` type can be.
-
-       By keeping the abstract type minimal, we can for example use
-       `u8` or `u128` as the `Height` type during testing, and use the
-       more complex Cosmos height type during production.
-    */
-    type Height: Ord + Async;
+pub trait HasChainTypes: HasHeightType + HasMessageType + HasEventType + HasErrorType {
+    type ChainId: Eq + Async;
 
     /**
        The timestamp of a chain, which should increment monotonically.

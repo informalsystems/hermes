@@ -1,18 +1,20 @@
 use crate::base::one_for_all::traits::chain::OfaChainTypes;
+use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
 use crate::std_prelude::*;
 
-pub type Sender<Chain, Payload> =
-    <<Chain as OfaChainTypes>::Runtime as OfaFullRuntime>::Sender<Payload>;
+pub type Runtime<Chain> = <Chain as OfaChainTypes>::Runtime;
+
+pub type Mutex<Chain, Item> = <Runtime<Chain> as OfaBaseRuntime>::Mutex<Item>;
+
+pub type Sender<Chain, Payload> = <Runtime<Chain> as OfaFullRuntime>::Sender<Payload>;
 
 pub type Receiver<Chain, Payload> =
-    <<Chain as OfaChainTypes>::Runtime as OfaFullRuntime>::Receiver<Payload>;
+    Mutex<Chain, <Runtime<Chain> as OfaFullRuntime>::Receiver<Payload>>;
 
-pub type SenderOnce<Chain, Payload> =
-    <<Chain as OfaChainTypes>::Runtime as OfaFullRuntime>::SenderOnce<Payload>;
+pub type SenderOnce<Chain, Payload> = <Runtime<Chain> as OfaFullRuntime>::SenderOnce<Payload>;
 
-pub type ReceiverOnce<Chain, Payload> =
-    <<Chain as OfaChainTypes>::Runtime as OfaFullRuntime>::ReceiverOnce<Payload>;
+pub type ReceiverOnce<Chain, Payload> = <Runtime<Chain> as OfaFullRuntime>::ReceiverOnce<Payload>;
 
 pub type EventResult<Chain, Error> = Result<Vec<Vec<<Chain as OfaChainTypes>::Event>>, Error>;
 

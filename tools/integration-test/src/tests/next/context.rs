@@ -7,15 +7,15 @@ use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_test_framework::error::{handle_generic_error, Error};
 use ibc_test_framework::types::binary::chains::ConnectedChains;
-
 use opentelemetry::global;
 use std::collections::HashMap;
 
 pub fn build_cosmos_relay_context<ChainA, ChainB>(
     chains: &ConnectedChains<ChainA, ChainB>,
     filter: PacketFilter,
-) -> impl AfoCosmosFullRelay
+) -> Result<impl AfoCosmosFullRelay, Error>
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
@@ -41,8 +41,15 @@ where
             .address
             .0
             .parse()
-            .unwrap(),
+            .map_err(handle_generic_error)?,
         chains.node_a.value().chain_driver.tx_config.clone(),
+        chains
+            .node_a
+            .value()
+            .chain_driver
+            .websocket_address()
+            .parse()
+            .map_err(handle_generic_error)?,
         chains.node_a.value().wallets.relayer.key.clone(),
         telemetry.clone(),
     );
@@ -57,8 +64,15 @@ where
             .address
             .0
             .parse()
-            .unwrap(),
+            .map_err(handle_generic_error)?,
         chains.node_b.value().chain_driver.tx_config.clone(),
+        chains
+            .node_b
+            .value()
+            .chain_driver
+            .websocket_address()
+            .parse()
+            .map_err(handle_generic_error)?,
         chains.node_b.value().wallets.relayer.key.clone(),
         telemetry,
     );
@@ -73,5 +87,5 @@ where
         Default::default(),
     );
 
-    relay
+    Ok(relay)
 }

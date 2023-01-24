@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
@@ -18,7 +18,7 @@ impl<Relay, Relayer> ReceivePacketRelayer<Relay> for SkipReceivedPacketRelayer<R
 where
     Relay: HasRelayTypes,
     Relayer: ReceivePacketRelayer<Relay>,
-    Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
+    Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
     Relay::DstChain: CanQueryReceivedPacket<Relay::SrcChain>,
 {
     async fn relay_receive_packet(

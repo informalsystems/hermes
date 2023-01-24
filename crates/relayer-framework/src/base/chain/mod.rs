@@ -40,7 +40,7 @@
    - [`HasEventType`](traits::types::HasEventType)
    - [`HasChainTypes`](traits::types::HasChainTypes)
    - [`HasIbcChainTypes`](traits::types::HasIbcChainTypes)
-   - [`HasIbcEvents`](traits::ibc_event::HasIbcEvents)
+   - [`HasWriteAcknowledgementEvent`](traits::ibc_event::HasWriteAcknowledgementEvent)
    - [`HasChainStatus`](traits::queries::status::HasChainStatus)
    - [`HasConsensusState`](traits::queries::consensus_state::HasConsensusState)
 

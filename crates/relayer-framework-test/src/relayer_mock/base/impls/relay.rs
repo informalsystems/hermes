@@ -106,13 +106,10 @@ impl OfaBaseRelay for MockRelayContext {
         &self,
         height: &<Self::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        let state = self
-            .dst_chain()
-            .chain
-            .query_state_at_height(height.clone())?;
+        let state = self.dst_chain().chain.query_state_at_height(*height)?;
         Ok(vec![MockMessage::UpdateClient(
             self.src_client_id().to_string(),
-            height.clone(),
+            *height,
             state,
         )])
     }
@@ -121,13 +118,10 @@ impl OfaBaseRelay for MockRelayContext {
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
-        let state = self
-            .src_chain()
-            .chain
-            .query_state_at_height(height.clone())?;
+        let state = self.src_chain().chain.query_state_at_height(*height)?;
         Ok(vec![MockMessage::UpdateClient(
             self.dst_client_id().to_string(),
-            height.clone(),
+            *height,
             state,
         )])
     }

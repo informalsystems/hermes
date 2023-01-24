@@ -1,9 +1,13 @@
 use async_trait::async_trait;
+use core::pin::Pin;
+use futures::stream::Stream;
 
 use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
-use crate::full::runtime::traits::channel::{CanCreateChannels, CanUseChannels, HasChannelTypes};
+use crate::full::runtime::traits::channel::{
+    CanCreateChannels, CanStreamReceiver, CanUseChannels, HasChannelTypes,
+};
 use crate::full::runtime::traits::channel_once::{
     CanCreateChannelsOnce, CanUseChannelsOnce, HasChannelOnceTypes,
 };
@@ -91,17 +95,31 @@ where
         Runtime::send(sender, value)
     }
 
-    async fn receive<T>(receiver: &Self::Receiver<T>) -> Result<T, Self::Error>
+    async fn receive<T>(receiver: &mut Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async,
     {
         Runtime::receive(receiver).await
     }
 
-    async fn try_receive<T>(receiver: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async,
     {
-        Runtime::try_receive(receiver).await
+        Runtime::try_receive(receiver)
+    }
+}
+
+impl<Runtime> CanStreamReceiver for OfaRuntimeWrapper<Runtime>
+where
+    Runtime: OfaFullRuntime,
+{
+    fn receiver_to_stream<T>(
+        receiver: Self::Receiver<T>,
+    ) -> Pin<Box<dyn Stream<Item = T> + Send + 'static>>
+    where
+        T: Async,
+    {
+        Runtime::receiver_to_stream(receiver)
     }
 }

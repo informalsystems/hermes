@@ -1,6 +1,8 @@
+use alloc::sync::Arc;
 use async_trait::async_trait;
 use ibc_relayer_framework::full::one_for_all::traits::relay::OfaFullRelay;
 
+use crate::base::error::Error;
 use crate::base::types::relay::CosmosRelayWrapper;
 use crate::full::traits::relay::CosmosFullRelay;
 use crate::full::types::batch::{CosmosBatchReceiver, CosmosBatchSender};
@@ -10,11 +12,15 @@ impl<Relay> OfaFullRelay for CosmosRelayWrapper<Relay>
 where
     Relay: CosmosFullRelay,
 {
-    fn is_retryable_error(_: &Self::Error) -> bool {
+    fn from_shared_error(e: Arc<Error>) -> Error {
+        e.as_ref().clone()
+    }
+
+    fn is_retryable_error(_: &Error) -> bool {
         false
     }
 
-    fn max_retry_exceeded_error(e: Self::Error) -> Self::Error {
+    fn max_retry_exceeded_error(e: Error) -> Error {
         e
     }
 

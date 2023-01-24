@@ -1,11 +1,14 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::future::Future;
+use core::pin::Pin;
 use core::time::Duration;
+use futures::stream::Stream;
 use std::time::Instant;
 use tokio::runtime::Runtime;
 use tokio::sync::{mpsc, oneshot, Mutex, MutexGuard};
 use tokio::time::sleep;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use tracing;
 
 use ibc_relayer_framework::base::core::traits::sync::Async;
@@ -57,6 +60,10 @@ impl OfaBaseRuntime for TokioRuntimeContext {
         time.duration_since(*other)
     }
 
+    fn new_mutex<T: Async>(item: T) -> Self::Mutex<T> {
+        Mutex::new(item)
+    }
+
     async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T> {
         mutex.lock().await
     }
@@ -68,7 +75,7 @@ impl OfaFullRuntime for TokioRuntimeContext {
     where
         T: Async;
 
-    type Receiver<T> = Arc<Mutex<mpsc::UnboundedReceiver<T>>>
+    type Receiver<T> = mpsc::UnboundedReceiver<T>
     where
         T: Async;
 
@@ -92,8 +99,7 @@ impl OfaFullRuntime for TokioRuntimeContext {
     where
         T: Async,
     {
-        let (sender, receiver) = mpsc::unbounded_channel();
-        (sender, Arc::new(Mutex::new(receiver)))
+        mpsc::unbounded_channel()
     }
 
     fn send<T>(sender: &Self::Sender<T>, value: T) -> Result<(), Self::Error>
@@ -103,26 +109,31 @@ impl OfaFullRuntime for TokioRuntimeContext {
         sender.send(value).map_err(|_| TokioError::channel_closed())
     }
 
-    async fn receive<T>(receiver_lock: &Self::Receiver<T>) -> Result<T, Self::Error>
+    async fn receive<T>(receiver: &mut Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async,
     {
-        let mut receiver = receiver_lock.lock().await;
-
         receiver.recv().await.ok_or_else(TokioError::channel_closed)
     }
 
-    async fn try_receive<T>(receiver_lock: &Self::Receiver<T>) -> Result<Option<T>, Self::Error>
+    fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async,
     {
-        let mut receiver = receiver_lock.lock().await;
-
         match receiver.try_recv() {
             Ok(batch) => Ok(Some(batch)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),
             Err(mpsc::error::TryRecvError::Disconnected) => Err(TokioError::channel_closed()),
         }
+    }
+
+    fn receiver_to_stream<T>(
+        receiver: Self::Receiver<T>,
+    ) -> Pin<Box<dyn Stream<Item = T> + Send + 'static>>
+    where
+        T: Async,
+    {
+        Box::pin(UnboundedReceiverStream::new(receiver))
     }
 
     fn new_channel_once<T>() -> (Self::SenderOnce<T>, Self::ReceiverOnce<T>)

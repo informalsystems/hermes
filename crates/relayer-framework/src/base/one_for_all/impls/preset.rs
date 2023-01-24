@@ -27,7 +27,11 @@ impl<Relay> OfaRelayPreset<Relay> for MinimalPreset
 where
     Relay: OfaBaseRelay<Preset = MinimalPreset>,
 {
+    type AutoRelayer = preset::AutoRelayer;
+
     type PacketRelayer = preset::PacketRelayer;
+
+    type PacketFilter = preset::PacketFilter;
 
     type IbcMessageSender = preset::IbcMessageSender;
 }

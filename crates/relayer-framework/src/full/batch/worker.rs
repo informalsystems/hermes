@@ -1,12 +1,15 @@
 use alloc::collections::VecDeque;
+use alloc::sync::Arc;
 use core::marker::PhantomData;
 use core::mem;
 
 use crate::base::chain::traits::types::{CanEstimateMessageSize, HasIbcChainTypes};
+use crate::base::core::traits::error::CanShareError;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
+use crate::base::runtime::traits::mutex::HasMutex;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
 use crate::base::runtime::traits::time::HasTime;
@@ -38,15 +41,16 @@ where
     Relay: HasRelayTypes<Error = Error>,
     Relay: HasMessageBatchReceiver<Target>,
     Relay: HasRuntime<Runtime = Runtime>,
+    Relay: CanShareError,
     TargetChain: CanEstimateMessageSize,
     TargetChain: HasRuntime<Runtime = Runtime>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
-    Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
+    Runtime: HasTime + CanSleep + HasMutex + HasSpawner + HasLogger<LevelDebug>,
     Runtime: CanUseChannelsOnce + CanUseChannels,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Event: Async,
-    Error: Clone + Async,
+    Error: Async,
     Message: Async,
 {
     pub fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
@@ -68,7 +72,13 @@ where
         let mut last_sent_time = self.relay.runtime().now();
 
         loop {
-            match Runtime::try_receive(self.relay.get_batch_receiver()).await {
+            let payload = {
+                let receiver_mutex = self.relay.get_batch_receiver();
+                let mut receiver = Runtime::acquire_mutex(receiver_mutex).await;
+                Runtime::try_receive(&mut receiver)
+            };
+
+            match payload {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
                         self.relay
@@ -196,8 +206,10 @@ where
 
         match send_result {
             Err(e) => {
+                let error = Arc::new(e);
                 for (_, sender) in senders.into_iter() {
-                    let _ = Runtime::send_once(sender, Err(e.clone()));
+                    let _ =
+                        Runtime::send_once(sender, Err(Relay::from_shared_error(error.clone())));
                 }
             }
             Ok(all_events) => {
