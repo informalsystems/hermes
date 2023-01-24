@@ -398,10 +398,10 @@ async fn test_mock_chain_process_update_client_message() -> Result<(), Error> {
 
     src_chain
         .chain
-        .map_channel_to_client(src_channel_id.clone(), src_client_id.clone());
+        .map_channel_to_client(src_channel_id, src_client_id.clone());
     dst_chain
         .chain
-        .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
+        .map_channel_to_client(dst_channel_id, dst_client_id);
 
     let src_height = src_chain.chain.get_current_height();
     let src_state = src_chain.chain.get_current_state();
