@@ -233,9 +233,9 @@ jobs:
             account_prefix: cosmos
           - package: ibc-go-v6-simapp
             command: simd
-          # - package: gaia8
-          #   command: gaiad
-          #   account_prefix: cosmos
+          - package: gaia8
+            command: gaiad
+            account_prefix: cosmos
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
