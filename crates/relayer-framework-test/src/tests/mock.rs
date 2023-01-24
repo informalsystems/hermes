@@ -139,9 +139,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     let src_height = src_chain.chain.get_current_height();
     let runtime = relay_context.relay.runtime();
 
-    src_chain
-        .chain
-        .send_packet(src_height.clone(), packet.clone())?;
+    src_chain.chain.send_packet(src_height, packet.clone())?;
 
     // Sleep enough to trigger timeout from timestamp timeout
     runtime.sleep(Duration::from_millis(70000)).await;
@@ -224,9 +222,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
 
     let src_height = src_chain.chain.get_current_height();
 
-    src_chain
-        .chain
-        .send_packet(src_height.clone(), packet.clone())?;
+    src_chain.chain.send_packet(src_height, packet.clone())?;
 
     // Increase height of destination chain to trigger Height timeout
     for _ in 0..3 {
@@ -408,7 +404,7 @@ async fn test_mock_chain_process_update_client_message() -> Result<(), Error> {
 
     let update_client_message = vec![MockMessage::UpdateClient(
         src_client_id.clone(),
-        src_height.clone(),
+        src_height,
         src_state,
     )];
 
@@ -416,7 +412,7 @@ async fn test_mock_chain_process_update_client_message() -> Result<(), Error> {
 
     let src_consensus_state = src_chain
         .chain
-        .query_consensus_state_at_height(src_client_id.clone(), src_height.clone());
+        .query_consensus_state_at_height(src_client_id.clone(), src_height);
 
     assert!(
         src_consensus_state.is_err(),
@@ -472,15 +468,13 @@ async fn test_mock_chain_process_recv_packet() -> Result<(), Error> {
 
     let src_height = src_chain.chain.get_current_height();
 
-    src_chain
-        .chain
-        .send_packet(src_height.clone(), packet.clone())?;
+    src_chain.chain.send_packet(src_height, packet.clone())?;
 
     let src_state = src_chain.chain.get_current_state();
 
     let recv_packet_message = vec![
-        MockMessage::UpdateClient(src_client_id, src_height.clone(), src_state),
-        MockMessage::RecvPacket(src_height.clone(), packet),
+        MockMessage::UpdateClient(src_client_id, src_height, src_state),
+        MockMessage::RecvPacket(src_height, packet),
     ];
 
     let events = src_chain.chain.process_messages(recv_packet_message)?;

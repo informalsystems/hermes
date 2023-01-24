@@ -213,7 +213,7 @@ impl MockChainContext {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
 
-        let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
 
         if !client_consensus.check_sent((
             packet.src_port_id.clone(),
@@ -230,8 +230,7 @@ impl MockChainContext {
         let current_height = self.get_current_height();
         let current_time = self.runtime().runtime.get_time();
 
-        if current_state.check_timeout(packet.clone(), current_height.clone(), current_time.clone())
-        {
+        if current_state.check_timeout(packet.clone(), current_height, current_time.clone()) {
             return Err(Error::timeout_receive(
                 self.name().to_string(),
                 packet.timeout_height.0,
@@ -271,7 +270,7 @@ impl MockChainContext {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
 
-        let client_consensus = self.query_consensus_state_at_height(client_id, height.clone())?;
+        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
 
         if !client_consensus.check_received((
             packet.dst_port_id.clone(),
