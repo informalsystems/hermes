@@ -17,7 +17,7 @@ impl WriteAcknowledgementEvent {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SendPacketEvent {
     pub src_channel_id: String,
     pub src_port_id: String,
