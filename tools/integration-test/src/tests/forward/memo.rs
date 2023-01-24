@@ -112,28 +112,17 @@ impl HopMemoField {
         intermediary_receiver: String,
         intermediary_port: String,
         intermediary_channel: String,
-        intermediary_timeout: String,
-        intermediary_retries: u64,
         final_receiver: String,
         final_port: String,
         final_channel: String,
-        final_timeout: String,
-        final_retries: u64,
     ) -> Self {
-        let hop_field = HopField::new(
-            final_receiver,
-            final_port,
-            final_channel,
-            final_timeout,
-            final_retries,
-        );
+        let hop_field = HopField::new(final_receiver, final_port, final_channel);
+        let hop_field_string = serde_json::to_string(&hop_field).unwrap();
         let memo_content = HopMemoInfo::new(
             intermediary_receiver,
             intermediary_port,
             intermediary_channel,
-            intermediary_timeout,
-            intermediary_retries,
-            hop_field,
+            hop_field_string,
         );
         Self {
             forward: memo_content,
@@ -146,26 +135,15 @@ pub struct HopMemoInfo {
     receiver: String,
     port: String,
     channel: String,
-    timeout: String,
-    retries: u64,
-    next: HopField,
+    next: String,
 }
 
 impl HopMemoInfo {
-    pub fn new(
-        receiver: String,
-        port: String,
-        channel: String,
-        timeout: String,
-        retries: u64,
-        next: HopField,
-    ) -> Self {
+    pub fn new(receiver: String, port: String, channel: String, next: String) -> Self {
         Self {
             receiver,
             port,
             channel,
-            timeout,
-            retries,
             next,
         }
     }
@@ -177,14 +155,8 @@ pub struct HopField {
 }
 
 impl HopField {
-    pub fn new(
-        receiver: String,
-        port: String,
-        channel: String,
-        timeout: String,
-        retries: u64,
-    ) -> Self {
-        let hop = Hop::new(receiver, port, channel, timeout, retries);
+    pub fn new(receiver: String, port: String, channel: String) -> Self {
+        let hop = Hop::new(receiver, port, channel);
         Self { forward: hop }
     }
 }
@@ -194,24 +166,14 @@ pub struct Hop {
     receiver: String,
     port: String,
     channel: String,
-    timeout: String,
-    retries: u64,
 }
 
 impl Hop {
-    pub fn new(
-        receiver: String,
-        port: String,
-        channel: String,
-        timeout: String,
-        retries: u64,
-    ) -> Self {
+    pub fn new(receiver: String, port: String, channel: String) -> Self {
         Self {
             receiver,
             port,
             channel,
-            timeout,
-            retries,
         }
     }
 }
