@@ -124,7 +124,7 @@ __Example__
 Query the states of client `07-tendermint-0` on `ibc-0`:
 
 ```shell
-{{#template ../../../templates/commands/hermes/query/client/consensus_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 OPTIONS= --heights-only}}
+{{#template ../../../templates/commands/hermes/query/client/consensus_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0}}
 ```
 
 ```json

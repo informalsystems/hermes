@@ -1,3 +1,18 @@
+//! This test asserts that IBC transactions queued to be relayed
+//! before the relayer is started are still successfully sent
+//! over an ordered channel, even when the `clear_on_start` relayer
+//! configuration option is not enabled.
+//!
+//! The test sends an IBC transfer before the relayer is started,
+//! and then starts the relayer. At that point, it sends another
+//! IBC transfer. It then checks the recipient wallet to see if
+//! its balance reflects both transactions, the one that was sent
+//! before the relayer was started, and the one that was sent
+//! after the relayer was started.
+//!
+//! A more thorough walkthrough of this test can be found at
+//! `tools/test-framework/src/docs/walkthroughs/ordered_channel.rs`.
+
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;

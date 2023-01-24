@@ -4,7 +4,7 @@
 //! framework exposes:
 //!
 //! ```no_run
-//! # use ibc_integration_test::prelude::*;
+//! # use ibc_test_framework::prelude::*;
 //!
 //! pub struct ExampleTest;
 //!

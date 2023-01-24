@@ -1,7 +1,8 @@
-___
+---
 name: Tracking Issue
 about: Create a meta issue for tracking more granular tasks
-___
+
+---
 
 <!-- 
   _Note_: Tracking issues are meta-level issues meant to capture smaller units 

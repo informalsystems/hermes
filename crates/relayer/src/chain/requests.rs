@@ -15,6 +15,7 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::{
     QueryClientStatesRequest as RawQueryClientStatesRequest,
+    QueryConsensusStateHeightsRequest as RawQueryConsensusStateHeightsRequest,
     QueryConsensusStatesRequest as RawQueryConsensusStatesRequest,
 };
 use ibc_proto::ibc::core::connection::v1::{
@@ -108,9 +109,12 @@ pub struct PageRequest {
 }
 
 impl PageRequest {
-    pub fn all() -> PageRequest {
+    pub fn all() -> Self {
+        // Note: do not use u64::MAX as the limit, as it may have unintended consequences
+        // See https://github.com/informalsystems/hermes/pull/2950#issuecomment-1373733744
+
         PageRequest {
-            limit: u64::MAX,
+            limit: u32::MAX as u64,
             ..Default::default()
         }
     }
@@ -175,6 +179,21 @@ pub struct QueryConsensusStatesRequest {
 impl From<QueryConsensusStatesRequest> for RawQueryConsensusStatesRequest {
     fn from(request: QueryConsensusStatesRequest) -> Self {
         RawQueryConsensusStatesRequest {
+            client_id: request.client_id.to_string(),
+            pagination: request.pagination.map(|pagination| pagination.into()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct QueryConsensusStateHeightsRequest {
+    pub client_id: ClientId,
+    pub pagination: Option<PageRequest>,
+}
+
+impl From<QueryConsensusStateHeightsRequest> for RawQueryConsensusStateHeightsRequest {
+    fn from(request: QueryConsensusStateHeightsRequest) -> Self {
+        RawQueryConsensusStateHeightsRequest {
             client_id: request.client_id.to_string(),
             pagination: request.pagination.map(|pagination| pagination.into()),
         }

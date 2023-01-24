@@ -4,4 +4,5 @@
 //! using the framework.
 
 pub mod memo;
+pub mod ordered_channel;
 pub mod simple;

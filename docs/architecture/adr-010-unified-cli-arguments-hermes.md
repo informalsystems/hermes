@@ -101,7 +101,7 @@ __Client__
     * Optional: `[--height <HEIGHT>]`
 
 * `query client consensus --chain <CHAIN_ID> --client <CLIENT_ID>`
-    * Optional: `[--consensus-height <CONSENSUS_HEIGHT>] [--height <HEIGHT>] [--heights-only]`
+    * Optional: `[--consensus-height <CONSENSUS_HEIGHT>] [--height <HEIGHT>]`
 
 * `query client header --chain <CHAIN_ID> --client <CLIENT_ID> --consensus-height <CONSENSUS_HEIGHT>`
     * Optional: `[--height <HEIGHT>]`
