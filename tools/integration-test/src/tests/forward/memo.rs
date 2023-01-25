@@ -1,8 +1,6 @@
 //! These struct represent different scenarios for forward transfer.
-//! The base structure is taken from https://github.com/strangelove-ventures/packet-forward-middleware#examples
-//!
-//!
-//!
+//! The base structure of the memos are taken from
+//! https://github.com/strangelove-ventures/packet-forward-middleware#examples
 
 use serde::{Deserialize, Serialize};
 
