@@ -2,10 +2,10 @@ use async_trait::async_trait;
 use core::marker::PhantomData;
 
 use crate::base::chain::traits::message_sender::CanSendMessages;
+use crate::base::chain::traits::types::chain::HasChainTypes;
+use crate::base::chain::traits::types::event::HasEventType;
 use crate::base::chain::traits::types::height::HasHeightType;
-use crate::base::chain::traits::types::{
-    CanEstimateMessageSize, HasChainTypes, HasEventType, HasMessageType,
-};
+use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;

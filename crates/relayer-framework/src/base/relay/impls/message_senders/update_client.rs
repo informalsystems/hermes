@@ -1,7 +1,7 @@
 use alloc::collections::BTreeSet;
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::HasIbcChainTypes;
+use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;

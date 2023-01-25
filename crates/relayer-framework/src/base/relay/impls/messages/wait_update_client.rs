@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 use core::time::Duration;
 
 use crate::base::chain::traits::queries::status::CanQueryChainStatus;
-use crate::base::chain::traits::types::HasIbcChainTypes;
+use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::base::relay::traits::target::ChainTarget;

@@ -1,4 +1,5 @@
-use crate::base::chain::traits::types::{HasEventType, HasMessageType};
+use crate::base::chain::traits::types::event::HasEventType;
+use crate::base::chain::traits::types::message::HasMessageType;
 use crate::base::runtime::traits::mutex::HasMutex;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::full::runtime::traits::channel::HasChannelTypes;

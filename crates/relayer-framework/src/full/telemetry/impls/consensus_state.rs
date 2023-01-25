@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::chain::traits::queries::consensus_state::*;
-use crate::base::chain::traits::types::HasIbcChainTypes;
+use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::full::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
 use crate::full::telemetry::traits::telemetry::HasTelemetry;
 

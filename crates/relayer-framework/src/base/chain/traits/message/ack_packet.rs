@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
-use crate::base::chain::traits::types::HasIbcPacketTypes;
+use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::std_prelude::*;
 
 #[async_trait]

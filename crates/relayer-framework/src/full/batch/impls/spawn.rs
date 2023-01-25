@@ -1,6 +1,7 @@
 use core::marker::PhantomData;
 
-use crate::base::chain::traits::types::{CanEstimateMessageSize, HasIbcChainTypes};
+use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::base::chain::traits::types::message::CanEstimateMessageSize;
 use crate::base::core::traits::error::CanShareError;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;

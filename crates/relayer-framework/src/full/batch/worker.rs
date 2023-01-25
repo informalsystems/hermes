@@ -3,7 +3,8 @@ use alloc::sync::Arc;
 use core::marker::PhantomData;
 use core::mem;
 
-use crate::base::chain::traits::types::{CanEstimateMessageSize, HasIbcChainTypes};
+use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::base::chain::traits::types::message::CanEstimateMessageSize;
 use crate::base::core::traits::error::CanShareError;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
