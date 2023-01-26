@@ -1,7 +1,7 @@
 use alloc::collections::BTreeSet;
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::base::chain::traits::types::ibc::{HasCounterpartyMessageHeight, HasIbcChainTypes};
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
@@ -19,6 +19,7 @@ where
     Target: ChainTarget<Context, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     Sender: IbcMessageSender<Context, Target>,
     TargetChain: HasIbcChainTypes<CounterpartyChain, Message = Message, Event = Event>,
+    TargetChain: HasCounterpartyMessageHeight<CounterpartyChain>,
     CounterpartyChain: HasIbcChainTypes<TargetChain, Height = Height>,
     Context: CanBuildUpdateClientMessage<Target>,
     Height: Ord + Async,

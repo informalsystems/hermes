@@ -1,7 +1,7 @@
 use crate::base::chain::traits::types::chain_id::{HasChainId, HasChainIdType};
 use crate::base::chain::traits::types::event::HasEventType;
 use crate::base::chain::traits::types::height::HasHeightType;
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::base::chain::traits::types::ibc::{HasCounterpartyMessageHeight, HasIbcChainTypes};
 use crate::base::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
 use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
@@ -80,7 +80,18 @@ where
     type PortId = Chain::PortId;
 
     type Sequence = Chain::Sequence;
+}
 
+impl<Chain, Counterparty> HasCounterpartyMessageHeight<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
+{
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height> {
         Chain::counterparty_message_height(message)
     }
