@@ -271,7 +271,7 @@ impl TryFrom<RawTmClientState> for ClientState {
         } else {
             trust_threshold
                 .try_into()
-                .map_err(|e| Error::invalid_trust_threshold(format!("{}", e)))?
+                .map_err(|e| Error::invalid_trust_threshold(format!("{e}")))?
         };
 
         // In `RawClientState`, a `frozen_height` of `0` means "not frozen".
