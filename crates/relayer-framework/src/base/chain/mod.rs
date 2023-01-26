@@ -32,32 +32,39 @@
 
    ## List of Traits
 
-   Here is a shortcut list of chain traits that are defined in this module:
+   Here is a non-comprehensive list of chain traits that are defined in this module:
 
-   Type traits:
+   ### Type Traits
 
-   - Chain Types
+   - Chain types:
       - [`HasChainTypes`](traits::types::chain::HasChainTypes)
       - [`HasHeightType`](traits::types::height::HasHeightType)
       - [`HasMessageType`](traits::types::message::HasMessageType)
       - [`HasEventType`](traits::types::event::HasEventType)
-   - IBC Chain Types
+   - IBC chain types:
       - [`HasIbcChainTypes`](traits::types::ibc::HasIbcChainTypes)
       - [`HasIbcPacketTypes`](traits::types::packet::HasIbcPacketTypes)
-   - IBC Events
+   - IBC events:
       - [`HasWriteAcknowledgementEvent`](traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent)
       - [`HasSendPacketEvent`](traits::types::ibc_events::send_packet::HasSendPacketEvent)
    - [`HasChainStatus`](traits::queries::status::HasChainStatus)
    - [`HasConsensusState`](traits::queries::consensus_state::HasConsensusState)
 
-   Consumer traits:
+   ### Consumer Traits
 
    - [`CanSendMessages`](traits::message_sender::CanSendMessages)
-   - [`CanQueryChainStatus`](traits::queries::status::CanQueryChainStatus)
-   - [`CanQueryConsensusState`](traits::queries::consensus_state::CanQueryConsensusState)
-   - [`CanQueryReceivedPacket`](traits::queries::received_packet::CanQueryReceivedPacket)
+   - Message builders:
+      - [`CanBuildAckPacketMessage`](traits::message_builders::ack_packet::CanBuildAckPacketMessage)
+      - [`CanBuildReceivePacketMessage`](traits::message_builders::receive_packet::CanBuildReceivePacketMessage)
+      - [`CanBuildTimeoutUnorderedPacketMessage`](traits::message_builders::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage)
+   - Chain queries:
+      - [`CanQueryChainStatus`](traits::queries::status::CanQueryChainStatus)
+      - [`CanQueryConsensusState`](traits::queries::consensus_state::CanQueryConsensusState)
+      - [`CanQueryReceivedPacket`](traits::queries::received_packet::CanQueryReceivedPacket)
+      - [`CanQueryCounterpartyChainIdFromChannel`](traits::queries::channel::CanQueryCounterpartyChainIdFromChannel)
+      - [`CanQueryCounterpartyChainIdFromChannel`](traits::queries::channel::CanQueryCounterpartyChainIdFromChannel)
 
-   Provider traits:
+   ### Provider Traits
 
    - [`MessageSender`](traits::message_sender::MessageSender)
    - [`ChainStatusQuerier`](traits::queries::status::ChainStatusQuerier)

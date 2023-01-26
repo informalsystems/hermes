@@ -312,25 +312,22 @@ where
 
     async fn query_write_ack_event(
         &self,
-        channel_id: &Self::ChannelId,
-        port_id: &Self::PortId,
-        counterparty_channel_id: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::ChannelId,
-        counterparty_port_id: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::PortId,
-        sequence: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::Sequence,
+        packet: &Packet,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
         let status = self.query_chain_status().await?;
         let chain_handle = self.chain.chain_handle();
-        let src_query_height =
+        let query_height =
             Qualified::Equal(*CosmosChainWrapper::<Chain>::chain_status_height(&status));
+
         let path_ident = PathIdentifiers {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            counterparty_port_id: counterparty_port_id.clone(),
-            counterparty_channel_id: counterparty_channel_id.clone(),
+            port_id: packet.destination_port.clone(),
+            channel_id: packet.destination_channel.clone(),
+            counterparty_port_id: packet.source_port.clone(),
+            counterparty_channel_id: packet.source_channel.clone(),
         };
 
         let ibc_events =
-            query_write_ack_events(chain_handle, &path_ident, &[*sequence], src_query_height)
+            query_write_ack_events(chain_handle, &path_ident, &[packet.sequence], query_height)
                 .map_err(BaseError::relayer)?;
 
         let write_ack = ibc_events.into_iter().find_map(|event_with_height| {

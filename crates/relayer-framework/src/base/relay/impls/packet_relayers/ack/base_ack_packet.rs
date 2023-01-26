@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::message::ack_packet::CanBuildAckPacketMessage;
+use crate::base::chain::traits::message_builders::ack_packet::CanBuildAckPacketMessage;
 use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
 use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
