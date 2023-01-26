@@ -41,6 +41,8 @@
       - [`HasHeightType`](traits::types::height::HasHeightType)
       - [`HasMessageType`](traits::types::message::HasMessageType)
       - [`HasEventType`](traits::types::event::HasEventType)
+      - [`HasChainIdType`](traits::types::chain_id::HasChainIdType)
+      - [`HasTimestampType`](traits::types::timestamp::HasTimestampType)
    - IBC chain types:
       - [`HasIbcChainTypes`](traits::types::ibc::HasIbcChainTypes)
       - [`HasIbcPacketTypes`](traits::types::packet::HasIbcPacketTypes)
@@ -52,6 +54,7 @@
 
    ### Consumer Traits
 
+   - [`HasChainId`](traits::types::chain_id::HasChainId)
    - [`CanSendMessages`](traits::message_sender::CanSendMessages)
    - Message builders:
       - [`CanBuildAckPacketMessage`](traits::message_builders::ack_packet::CanBuildAckPacketMessage)
@@ -62,7 +65,7 @@
       - [`CanQueryConsensusState`](traits::queries::consensus_state::CanQueryConsensusState)
       - [`CanQueryReceivedPacket`](traits::queries::received_packet::CanQueryReceivedPacket)
       - [`CanQueryCounterpartyChainIdFromChannel`](traits::queries::channel::CanQueryCounterpartyChainIdFromChannel)
-      - [`CanQueryCounterpartyChainIdFromChannel`](traits::queries::channel::CanQueryCounterpartyChainIdFromChannel)
+      - [`CanQueryWriteAcknowledgement`](traits::queries::write_ack::CanQueryWriteAcknowledgement)
 
    ### Provider Traits
 

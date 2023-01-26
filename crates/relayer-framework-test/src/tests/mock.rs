@@ -305,8 +305,14 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
 
         info!("Check that no WriteAcknowledgmentEvent is returned by query_write_ack");
 
-        let write_ack = dst_chain.chain.query_write_ack_event(&packet).await;
-        assert!(write_ack.is_ok(), "query_write_ack_event returned an error");
+        let write_ack = dst_chain
+            .chain
+            .query_write_acknowledgement_event(&packet)
+            .await;
+        assert!(
+            write_ack.is_ok(),
+            "query_write_acknowledgement_event returned an error"
+        );
         assert!(
             write_ack.unwrap().is_none(),
             "WriteAcknowlegmentEvent should be None as the chain hasn't received the packet yet"
@@ -337,9 +343,15 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
 
         info!("Check that a WriteAcknowledgmentEvent is returned by query_write_ack");
 
-        let write_ack = dst_chain.chain.query_write_ack_event(&packet).await;
-        assert!(write_ack.is_ok(), "query_write_ack_event returned an error");
-        assert!(write_ack.unwrap().is_some(), "A WriteAcknowlegmentEvent should be returned by query_write_ack_event since the chain received the packet");
+        let write_ack = dst_chain
+            .chain
+            .query_write_acknowledgement_event(&packet)
+            .await;
+        assert!(
+            write_ack.is_ok(),
+            "query_write_acknowledgement_event returned an error"
+        );
+        assert!(write_ack.unwrap().is_some(), "A WriteAcknowlegmentEvent should be returned by query_write_acknowledgement_event since the chain received the packet");
     }
 
     {

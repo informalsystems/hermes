@@ -245,7 +245,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         Ok(state.check_received((port_id.clone(), channel_id.clone(), *sequence)))
     }
 
-    async fn query_write_ack_event(
+    async fn query_write_acknowledgement_event(
         &self,
         packet: &PacketKey,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {

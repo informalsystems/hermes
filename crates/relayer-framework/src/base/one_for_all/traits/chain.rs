@@ -38,7 +38,7 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasChainTypes::Timestamp`](crate::base::chain::traits::types::chain::HasChainTypes::Timestamp).
+       [`HasChainTypes::Timestamp`](crate::base::chain::traits::types::timestamp::HasTimestampType::Timestamp).
     */
     type Timestamp: Ord + Async;
 
@@ -209,7 +209,7 @@ where
         sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
 
-    async fn query_write_ack_event(
+    async fn query_write_acknowledgement_event(
         &self,
         packet: &Self::IncomingPacket,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;

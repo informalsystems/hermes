@@ -8,7 +8,7 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
-use ibc_relayer::link::packet_events::query_write_ack_events;
+use ibc_relayer::link::packet_events::query_write_acknowledgement_events;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer_framework::base::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
@@ -310,7 +310,7 @@ where
         Ok(is_packet_received)
     }
 
-    async fn query_write_ack_event(
+    async fn query_write_acknowledgement_event(
         &self,
         packet: &Packet,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
@@ -326,9 +326,13 @@ where
             counterparty_channel_id: packet.source_channel.clone(),
         };
 
-        let ibc_events =
-            query_write_ack_events(chain_handle, &path_ident, &[packet.sequence], query_height)
-                .map_err(BaseError::relayer)?;
+        let ibc_events = query_write_acknowledgement_events(
+            chain_handle,
+            &path_ident,
+            &[packet.sequence],
+            query_height,
+        )
+        .map_err(BaseError::relayer)?;
 
         let write_ack = ibc_events.into_iter().find_map(|event_with_height| {
             let event = event_with_height.event;

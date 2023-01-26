@@ -5,7 +5,8 @@ use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanQueryWriteAck<Counterparty>: HasWriteAcknowledgementEvent<Counterparty>
+pub trait CanQueryWriteAcknowledgement<Counterparty>:
+    HasWriteAcknowledgementEvent<Counterparty>
 where
     Counterparty: HasIbcPacketTypes<
         Self,
@@ -13,7 +14,7 @@ where
         OutgoingPacket = Self::IncomingPacket,
     >,
 {
-    async fn query_write_ack_event(
+    async fn query_write_acknowledgement_event(
         &self,
         packet: &Self::IncomingPacket,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
