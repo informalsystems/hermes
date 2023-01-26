@@ -37,7 +37,7 @@ impl Acknowledgement {
     }
 
     pub fn from_error(err: Error) -> Self {
-        Self::Error(format!("{}: {}", ACK_ERR_STR, err))
+        Self::Error(format!("{ACK_ERR_STR}: {err}"))
     }
 }
 
@@ -53,8 +53,8 @@ impl AsRef<[u8]> for Acknowledgement {
 impl Display for Acknowledgement {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
-            Acknowledgement::Success(_) => write!(f, "{}", ACK_SUCCESS_B64),
-            Acknowledgement::Error(err_str) => write!(f, "{}", err_str),
+            Acknowledgement::Success(_) => write!(f, "{ACK_SUCCESS_B64}"),
+            Acknowledgement::Error(err_str) => write!(f, "{err_str}"),
         }
     }
 }

@@ -129,7 +129,7 @@ impl Display for TracePath {
             .map(|prefix| prefix.to_string())
             .collect::<Vec<String>>()
             .join("/");
-        write!(f, "{}", path)
+        write!(f, "{path}")
     }
 }
 
