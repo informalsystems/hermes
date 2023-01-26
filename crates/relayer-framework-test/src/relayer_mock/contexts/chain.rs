@@ -361,11 +361,10 @@ impl MockChainContext {
     }
 
     /// Update the chain's current_state and past_chain_states at the same time to ensure
-    /// they are always synchronized. Accepts an optional `duration` parameter that is
-    /// used to increment the state's timestamp. If no duration is given, both the state
-    /// and runtime clock are incremented by 1000.
+    /// they are always synchronized. Both the state and runtime clock are incremented by
+    /// 1000 milliseconds.
     ///
-    /// The MockChain must have a one and only one ChainState at every height.
+    /// The MockChain must have one and only one ChainState at every height.
     fn update_current_state(&self, state: State) -> Result<(), Error> {
         let latest_height = self.get_current_height();
         let new_height = latest_height.increment();
