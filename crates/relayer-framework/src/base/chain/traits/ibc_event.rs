@@ -3,7 +3,7 @@ use crate::base::core::traits::sync::Async;
 
 /**
    Indicates that a chain context's
-   [`Event`](crate::base::chain::traits::types::HasEventType::Event)
+   [`Event`](crate::base::chain::traits::types::event::HasEventType::Event)
    type contains a [`SendPacketEvent`](Self::SendPacketEvent) variant.
 */
 pub trait HasSendPacketEvent<Counterparty>: HasIbcPacketTypes<Counterparty>
@@ -23,7 +23,7 @@ where
 }
 /**
    Indicates that a chain context's
-   [`Event`](crate::base::chain::traits::types::HasEventType::Event)
+   [`Event`](crate::base::chain::traits::types::event::HasEventType::Event)
    type contains a [`WriteAcknowledgementEvent`](Self::WriteAcknowledgementEvent) variant.
 */
 pub trait HasWriteAcknowledgementEvent<Counterparty>: HasIbcPacketTypes<Counterparty>
@@ -51,7 +51,7 @@ where
 
     /**
        Try to convert an abstract
-       [`Event`](crate::base::chain::traits::types::HasEventType::Event)
+       [`Event`](crate::base::chain::traits::types::event::HasEventType::Event)
        type into a
        [`WriteAcknowledgementEvent`](Self::WriteAcknowledgementEvent).
        If the conversion fails, return `None`.

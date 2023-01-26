@@ -14,13 +14,13 @@ pub trait OfaTxTypes: Async {
 
     /**
        Corresponds to
-       [`HasMessageType::Message`](crate::base::chain::traits::types::HasMessageType::Message).
+       [`HasMessageType::Message`](crate::base::chain::traits::types::message::HasMessageType::Message).
     */
     type Message: Async;
 
     /**
        Corresponds to
-       [`HasEventType::Event`](crate::base::chain::traits::types::HasEventType::Event).
+       [`HasEventType::Event`](crate::base::chain::traits::types::event::HasEventType::Event).
     */
     type Event: Async;
 

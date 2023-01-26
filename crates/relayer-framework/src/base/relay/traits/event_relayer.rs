@@ -13,8 +13,8 @@ use crate::std_prelude::*;
 
    The event relayer is a general abstraction over other relayer types that
    need to be reactive to chain events. This includes the
-   [packet relayer](CanRelayPacket), but also future relayers such as
-   connection and channel handshake relayers.
+   [packet relayer]( crate::base::relay::traits::packet_relayer::CanRelayPacket),
+   but also future relayers such as connection and channel handshake relayers.
 */
 #[async_trait]
 pub trait EventRelayer<Relay, Target>: Async

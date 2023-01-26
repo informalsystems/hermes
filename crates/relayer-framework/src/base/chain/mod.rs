@@ -8,7 +8,7 @@
    a blockchain, and are not covered by this chain context.
 
    At its core, a chain context should implement
-   [`HasChainTypes`](traits::types::HasChainTypes), which declares the abstract
+   [`HasChainTypes`](traits::types::chain::HasChainTypes), which declares the abstract
    types that are commonly used inside a chain context.
 
    The chain context provides functionalities for querying the chain,
@@ -36,10 +36,10 @@
 
    Type traits:
 
-   - [`HasMessageType`](traits::types::HasMessageType)
-   - [`HasEventType`](traits::types::HasEventType)
-   - [`HasChainTypes`](traits::types::HasChainTypes)
-   - [`HasIbcChainTypes`](traits::types::HasIbcChainTypes)
+   - [`HasMessageType`](traits::types::message::HasMessageType)
+   - [`HasEventType`](traits::types::event::HasEventType)
+   - [`HasChainTypes`](traits::types::chain::HasChainTypes)
+   - [`HasIbcChainTypes`](traits::types::ibc::HasIbcChainTypes)
    - [`HasWriteAcknowledgementEvent`](traits::ibc_event::HasWriteAcknowledgementEvent)
    - [`HasChainStatus`](traits::queries::status::HasChainStatus)
    - [`HasConsensusState`](traits::queries::consensus_state::HasConsensusState)

@@ -367,7 +367,7 @@ Since the relayer framework is fully abstract, it also does not depend on
 the concrete type definitions of the IBC constructs, including primitives
 like height. Instead, the types are declared as abstract associated types in
 traits like
-[`HasChainTypes`](ibc_relayer_framework::base::chain::traits::types::HasChainTypes)
+[`HasChainTypes`](ibc_relayer_framework::base::chain::traits::types::chain::HasChainTypes)
 and [`HasRelayTypes`](ibc_relayer_framework::base::relay::traits::types::HasRelayTypes):
 
 ```rust,ignore
