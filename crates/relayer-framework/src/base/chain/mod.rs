@@ -36,11 +36,17 @@
 
    Type traits:
 
-   - [`HasMessageType`](traits::types::message::HasMessageType)
-   - [`HasEventType`](traits::types::event::HasEventType)
-   - [`HasChainTypes`](traits::types::chain::HasChainTypes)
-   - [`HasIbcChainTypes`](traits::types::ibc::HasIbcChainTypes)
-   - [`HasWriteAcknowledgementEvent`](traits::ibc_event::HasWriteAcknowledgementEvent)
+   - Chain Types
+      - [`HasChainTypes`](traits::types::chain::HasChainTypes)
+      - [`HasHeightType`](traits::types::height::HasHeightType)
+      - [`HasMessageType`](traits::types::message::HasMessageType)
+      - [`HasEventType`](traits::types::event::HasEventType)
+   - IBC Chain Types
+      - [`HasIbcChainTypes`](traits::types::ibc::HasIbcChainTypes)
+      - [`HasIbcPacketTypes`](traits::types::packet::HasIbcPacketTypes)
+   - IBC Events
+      - [`HasWriteAcknowledgementEvent`](traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent)
+      - [`HasSendPacketEvent`](traits::types::ibc_events::send_packet::HasSendPacketEvent)
    - [`HasChainStatus`](traits::queries::status::HasChainStatus)
    - [`HasConsensusState`](traits::queries::consensus_state::HasConsensusState)
 

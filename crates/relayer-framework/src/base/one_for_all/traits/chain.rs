@@ -100,7 +100,7 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasWriteAcknowledgementEvent::WriteAcknowledgementEvent`](crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent).
+       [`HasWriteAcknowledgementEvent::WriteAcknowledgementEvent`](crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent).
     */
     type WriteAcknowledgementEvent: Async;
 

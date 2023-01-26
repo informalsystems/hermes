@@ -2,8 +2,8 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::queries::received_packet::CanQueryReceivedPacket;
+use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::base::relay::traits::types::{HasRelayPacketFields, HasRelayTypes};

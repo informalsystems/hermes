@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::ibc_event::{HasSendPacketEvent, HasWriteAcknowledgementEvent};
+use crate::base::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
+use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::base::chain::types::aliases::{Event, Height};
 use crate::base::relay::impls::packet_filters::chain::{
     MatchPacketDestinationChain, MatchPacketSourceChain,

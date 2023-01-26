@@ -1,9 +1,10 @@
 use crate::base::chain::traits::chain_id::HasChainId;
-use crate::base::chain::traits::ibc_event::{HasSendPacketEvent, HasWriteAcknowledgementEvent};
 use crate::base::chain::traits::types::chain::HasChainTypes;
 use crate::base::chain::traits::types::event::HasEventType;
 use crate::base::chain::traits::types::height::HasHeightType;
 use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::base::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
+use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
 use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::base::core::traits::error::HasErrorType;
