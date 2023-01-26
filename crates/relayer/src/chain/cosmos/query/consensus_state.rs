@@ -78,12 +78,12 @@ pub async fn query_consensus_state_heights(
 }
 
 pub async fn query_consensus_states(
-    chain_id: &ChainId,
+    _chain_id: &ChainId,
     grpc_addr: &Uri,
     request: QueryConsensusStatesRequest,
 ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
     crate::time!("query_consensus_states");
-    crate::telemetry!(query, chain_id, "query_consensus_states");
+    crate::telemetry!(query, _chain_id, "query_consensus_states");
 
     let mut client =
         ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(grpc_addr.clone())

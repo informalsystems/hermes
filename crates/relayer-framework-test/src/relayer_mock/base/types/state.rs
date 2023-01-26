@@ -6,10 +6,14 @@ use crate::relayer_mock::base::types::packet::PacketKey;
 
 use super::aliases::MockTimestamp;
 
+/// A snapshot of the mock chain's state at a point in time.
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct State {
+    /// The packets that the mock chain has sent.
     sent_packets: HashMap<PacketUID, (PacketKey, Height)>,
+    /// The packets that the mock chain has received.
     recv_packets: HashMap<PacketUID, (PacketKey, Height)>,
+    /// The ack_packets that the mock chain has received.
     ack_packets: HashMap<PacketUID, (PacketKey, Height)>,
 }
 
@@ -78,10 +82,11 @@ impl State {
         current_height: Height,
         current_timestamp: MockTimestamp,
     ) -> bool {
-        // Check the current timestamp > packet timeout timestamp
-        // or the current height > the packet timeout height
-        if current_height > packet.timeout_height || current_timestamp > packet.timeout_timestamp {
-            return true;
+        // A packet has not timed out if its timeout height has not exceeded the chain's
+        // height AND its timeout timestamp has not exceeded the chain's timestamp.
+        if current_height <= packet.timeout_height && current_timestamp <= packet.timeout_timestamp
+        {
+            return false;
         }
 
         // also check that the packet has not been previously received

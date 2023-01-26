@@ -5,7 +5,10 @@ use std::time::Duration;
 use tracing::info;
 
 use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::types::aliases::MockTimestamp;
+use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::height::Height as MockHeight;
+use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::tests::util::context::build_mock_relay_context;
 
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
@@ -35,7 +38,7 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
         String::from("transfer"),
         1,
         MockHeight(10),
-        60000,
+        MockTimestamp(60000),
     );
 
     {
@@ -55,6 +58,7 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
 
     let height = src_chain.chain.get_current_height();
 
+    // Chain submits the transaction to be relayed
     src_chain.chain.send_packet(height, packet.clone())?;
 
     let events = relay_context.relay_packet(&packet).await;
@@ -114,7 +118,7 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
         String::from("transfer"),
         1,
         MockHeight(10),
-        60000,
+        MockTimestamp(60000),
     );
 
     {
@@ -132,24 +136,20 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
         );
     }
 
-    let height = src_chain.chain.get_current_height();
+    let src_height = src_chain.chain.get_current_height();
+    let runtime = relay_context.relay.runtime();
 
-    src_chain.chain.send_packet(height, packet.clone())?;
+    src_chain.chain.send_packet(src_height, packet.clone())?;
 
     // Sleep enough to trigger timeout from timestamp timeout
-    relay_context
-        .relay
-        .runtime()
-        .sleep(Duration::from_millis(70000))
-        .await;
+    runtime.sleep(Duration::from_millis(70000)).await;
 
     let events = relay_context.relay_packet(&packet).await;
-    let current_timestamp = relay_context.relay.runtime().runtime.get_time();
 
     assert!(events.is_ok(), "{}", events.err().unwrap());
 
     {
-        info!("Check that the packet has been received by the destination chain");
+        info!("Check that the packet has not been received by the destination chain");
 
         let state = dst_chain.chain.get_current_state();
 
@@ -164,15 +164,17 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     }
 
     {
-        info!("Check that the acknowledgment has been received by the source chain");
+        info!("Check that the timeout packet been received by the source chain");
 
         let state = src_chain.chain.get_current_state();
+        let elapsed_time = runtime.runtime.get_time();
 
         assert!(
-            state.check_timeout(packet, height, current_timestamp),
+            state.check_timeout(packet, src_height, elapsed_time),
             "Packet should be registered as timed out"
         );
     }
+
     Ok(())
 }
 
@@ -200,7 +202,7 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
         String::from("transfer"),
         1,
         MockHeight(3),
-        60000,
+        MockTimestamp(60000),
     );
 
     {
@@ -218,17 +220,16 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
         );
     }
 
-    let height = src_chain.chain.get_current_height();
+    let src_height = src_chain.chain.get_current_height();
 
-    src_chain.chain.send_packet(height, packet.clone())?;
+    src_chain.chain.send_packet(src_height, packet.clone())?;
 
     // Increase height of destination chain to trigger Height timeout
-    dst_chain.chain.new_block()?;
-    dst_chain.chain.new_block()?;
-    dst_chain.chain.new_block()?;
+    for _ in 0..3 {
+        dst_chain.chain.new_block()?;
+    }
 
     let events = relay_context.relay_packet(&packet).await;
-    let current_timestamp = relay_context.relay.runtime().runtime.get_time();
 
     assert!(events.is_ok(), "{}", events.err().unwrap());
 
@@ -248,15 +249,19 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
     }
 
     {
-        info!("Check that the acknowledgment has been received by the source chain");
+        info!("Check that the timeout packet has been received by the source chain");
 
         let state = src_chain.chain.get_current_state();
+        let dst_height = dst_chain.chain.get_current_height();
+        let runtime = &relay_context.relay.runtime().runtime;
+        let elapsed_time = runtime.get_time();
 
         assert!(
-            state.check_timeout(packet, height, current_timestamp),
+            state.check_timeout(packet, dst_height, elapsed_time),
             "Packet should be registered as timed out"
         );
     }
+
     Ok(())
 }
 
@@ -286,7 +291,7 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
         dst_port_id.clone(),
         1,
         MockHeight(10),
-        60000,
+        MockTimestamp(60000),
     );
 
     {
@@ -315,7 +320,9 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
                 &1,
             )
             .await;
+
         assert!(write_ack.is_ok(), "query_write_ack_event returned an error");
+
         assert!(
             write_ack.unwrap().is_none(),
             "WriteAcknowlegmentEvent should be None as the chain hasn't received the packet yet"
@@ -356,6 +363,7 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
                 &1,
             )
             .await;
+
         assert!(write_ack.is_ok(), "query_write_ack_event returned an error");
         assert!(write_ack.unwrap().is_some(), "A WriteAcknowlegmentEvent should be returned by query_write_ack_event since the chain received the packet");
     }
@@ -370,6 +378,122 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
             "Acknowledgment not found on source chain"
         );
     }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_mock_chain_process_update_client_message() -> Result<(), Error> {
+    let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
+
+    let src_channel_id = "channel-0".to_owned();
+    let dst_channel_id = "channel-1".to_owned();
+
+    let src_client_id = relay_context.relay.src_client_id().clone();
+    let dst_client_id = relay_context.relay.dst_client_id().clone();
+
+    src_chain
+        .chain
+        .map_channel_to_client(src_channel_id, src_client_id.clone());
+    dst_chain
+        .chain
+        .map_channel_to_client(dst_channel_id, dst_client_id);
+
+    let src_height = src_chain.chain.get_current_height();
+    let src_state = src_chain.chain.get_current_state();
+
+    let update_client_message = vec![MockMessage::UpdateClient(
+        src_client_id.clone(),
+        src_height,
+        src_state,
+    )];
+
+    info!("Check that no consensus states have been added");
+
+    let src_consensus_state = src_chain
+        .chain
+        .query_consensus_state_at_height(src_client_id.clone(), src_height);
+
+    assert!(
+        src_consensus_state.is_err(),
+        "Found a consensus state where there should have been none."
+    );
+
+    let events = src_chain.chain.process_messages(update_client_message)?;
+
+    assert_eq!(
+        events,
+        vec![vec![]],
+        "Found an Event where there should have been none."
+    );
+
+    let src_consensus_state = src_chain
+        .chain
+        .query_consensus_state_at_height(src_client_id, src_height);
+
+    assert!(
+        src_consensus_state.is_ok(),
+        "Expected a consensus state, but found none."
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_mock_chain_process_recv_packet() -> Result<(), Error> {
+    let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
+
+    let src_channel_id = "channel-0".to_owned();
+    let dst_channel_id = "channel-1".to_owned();
+
+    let src_client_id = relay_context.relay.src_client_id().clone();
+    let dst_client_id = relay_context.relay.dst_client_id().clone();
+
+    src_chain
+        .chain
+        .map_channel_to_client(dst_channel_id.clone(), src_client_id.clone());
+    dst_chain
+        .chain
+        .map_channel_to_client(dst_channel_id.clone(), dst_client_id);
+
+    let packet = src_chain.chain.build_send_packet(
+        src_channel_id,
+        String::from("transfer"),
+        dst_channel_id,
+        String::from("transfer"),
+        1,
+        MockHeight(10),
+        MockTimestamp(60000),
+    );
+
+    let src_height = src_chain.chain.get_current_height();
+
+    src_chain.chain.send_packet(src_height, packet.clone())?;
+
+    let src_state = src_chain.chain.get_current_state();
+
+    let recv_packet_message = vec![
+        MockMessage::UpdateClient(src_client_id, src_height, src_state),
+        MockMessage::RecvPacket(src_height, packet),
+    ];
+
+    let events = src_chain.chain.process_messages(recv_packet_message)?;
+
+    assert_eq!(
+        events.len(),
+        2,
+        "Expected `process_messages` to return 2 events"
+    );
+    assert_eq!(
+        events.first(),
+        Some(&vec![]),
+        "Expected first event returned from processing UpdateClient message to be empty"
+    );
+    assert_eq!(
+        events.last(),
+        Some(&vec![Event::WriteAcknowledgment(src_height)]),
+        "Expected last event return from processing RecvPacket message to contain a WriteAcknowledgment"
+    );
 
     Ok(())
 }
