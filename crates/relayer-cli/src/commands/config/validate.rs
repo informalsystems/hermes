@@ -29,11 +29,10 @@ impl Runnable for ValidateCmd {
                             Output::error("the configuration file is empty").exit();
                         }
                     }
-                    Err(e) => Output::error(format!(
-                        "error reading the configuration file {:?}: {}",
-                        p, e
-                    ))
-                    .exit(),
+                    Err(e) => {
+                        Output::error(format!("error reading the configuration file {p:?}: {e}"))
+                            .exit()
+                    }
                 }
             }
             None => Output::error("no configuration file found").exit(),

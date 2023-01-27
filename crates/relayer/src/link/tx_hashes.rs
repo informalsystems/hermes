@@ -23,6 +23,6 @@ impl From<TxHashes> for Vec<TxHash> {
 impl Display for TxHashes {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "TxHashes: count={}", self.0.len())?;
-        self.0.iter().try_for_each(|r| write!(f, "; {}", r))
+        self.0.iter().try_for_each(|r| write!(f, "; {r}"))
     }
 }

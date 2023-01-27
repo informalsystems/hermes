@@ -94,7 +94,7 @@ impl Runnable for ClearPacketsCmd {
             &self.channel_id,
         ) {
             Ok((chains, _)) => chains,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{e}")).exit(),
         };
 
         // If `counterparty_key_name` is provided, fetch the counterparty chain's
@@ -104,7 +104,7 @@ impl Runnable for ClearPacketsCmd {
                 Ok(mut dst_chain_cfg) => {
                     dst_chain_cfg.key_name = counterparty_key_name.to_string();
                 }
-                Err(e) => Output::error(format!("{}", e)).exit(),
+                Err(e) => Output::error(format!("{e}")).exit(),
             }
         }
 
@@ -118,11 +118,11 @@ impl Runnable for ClearPacketsCmd {
         let fwd_link = match Link::new_from_opts(chains.src.clone(), chains.dst, opts, false, false)
         {
             Ok(link) => link,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{e}")).exit(),
         };
         let rev_link = match fwd_link.reverse(false, false) {
             Ok(link) => link,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{e}")).exit(),
         };
 
         // Schedule RecvPacket messages for pending packets in both directions.

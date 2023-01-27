@@ -113,7 +113,7 @@ pub fn json() -> bool {
 ///     .unwrap_or_else(exit_with_unrecoverable_error);
 /// ```
 pub fn exit_with_unrecoverable_error<T, E: fmt::Display>(err: E) -> T {
-    Output::error(format!("{}", err)).exit()
+    Output::error(format!("{err}")).exit()
 }
 
 /// The result to display before quitting, can either be a JSON value, some plain text,
@@ -130,8 +130,8 @@ impl fmt::Display for Result {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Result::Json(v) => write!(f, "{}", serde_json::to_string(v).unwrap()),
-            Result::Value(v) => write!(f, "{:#?}", v),
-            Result::Text(t) => write!(f, "{}", t),
+            Result::Value(v) => write!(f, "{v:#?}"),
+            Result::Text(t) => write!(f, "{t}"),
             Result::Nothing => write!(f, "no output"),
         }
     }
@@ -224,7 +224,7 @@ impl Output {
 
         let value = match self.result {
             Result::Json(v) => v,
-            Result::Value(v) => serde_json::Value::String(format!("{:#?}", v)),
+            Result::Value(v) => serde_json::Value::String(format!("{v:#?}")),
             Result::Text(v) => serde_json::Value::String(v),
             Result::Nothing => serde_json::Value::String("no output".to_string()),
         };
@@ -237,7 +237,7 @@ impl Output {
 
 /// Helper to serialize a result into a `serde_json::Value`.
 fn serialize_result(res: impl Serialize + core::fmt::Debug) -> serde_json::Value {
-    let last_resort = format!("{:#?}", res);
+    let last_resort = format!("{res:#?}");
 
     match serde_json::to_value(res) {
         Ok(json_val) => json_val,

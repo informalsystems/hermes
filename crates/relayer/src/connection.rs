@@ -674,7 +674,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
             handshake_retry::from_retry_error(
                 err,
-                format!("failed to finish connection handshake for {:?}", self),
+                format!("failed to finish connection handshake for {self:?}"),
             )
         })?;
 

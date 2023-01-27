@@ -95,10 +95,10 @@ impl From<AnyMisbehaviour> for Any {
 impl core::fmt::Display for AnyMisbehaviour {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match self {
-            AnyMisbehaviour::Tendermint(tm) => write!(f, "{}", tm),
+            AnyMisbehaviour::Tendermint(tm) => write!(f, "{tm}"),
 
             #[cfg(test)]
-            AnyMisbehaviour::Mock(mock) => write!(f, "{:?}", mock),
+            AnyMisbehaviour::Mock(mock) => write!(f, "{mock:?}"),
         }
     }
 }

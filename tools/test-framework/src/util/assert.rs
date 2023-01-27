@@ -7,8 +7,7 @@ pub fn assert_eq<T: Eq + Debug>(message: &str, left: &T, right: &T) -> Result<()
         Ok(())
     } else {
         Err(Error::assertion(format!(
-            "expect left ({:?}) to be equal to right ({:?}): {}",
-            left, right, message
+            "expect left ({left:?}) to be equal to right ({right:?}): {message}"
         )))
     }
 }
@@ -18,8 +17,7 @@ pub fn assert_not_eq<T: Eq + Debug>(message: &str, left: &T, right: &T) -> Resul
         Ok(())
     } else {
         Err(Error::assertion(format!(
-            "expect left ({:?}) to be not equal to right ({:?}): {}",
-            left, right, message
+            "expect left ({left:?}) to be not equal to right ({right:?}): {message}"
         )))
     }
 }
@@ -29,8 +27,7 @@ pub fn assert_gt<T: Ord + Debug>(message: &str, left: &T, right: &T) -> Result<(
         Ok(())
     } else {
         Err(Error::assertion(format!(
-            "expect left ({:?}) to be greater than right ({:?}): {}",
-            left, right, message
+            "expect left ({left:?}) to be greater than right ({right:?}): {message}"
         )))
     }
 }
@@ -40,8 +37,7 @@ pub fn assert_err<T: Debug, E: Debug>(message: &str, result: Result<T, E>) -> Re
         Ok(())
     } else {
         Err(Error::assertion(format!(
-            "expect result ({:?}) to be an error: {}",
-            result, message
+            "expect result ({result:?}) to be an error: {message}"
         )))
     }
 }

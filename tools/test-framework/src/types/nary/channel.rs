@@ -124,32 +124,32 @@ impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedChannels<Han
         for (i, inner_channels) in self.channels.iter().enumerate() {
             for (j, channel_i_to_j) in inner_channels.iter().enumerate() {
                 writer.write_env(
-                    &format!("CONNECTION_ID_{}_to_{}", j, i),
+                    &format!("CONNECTION_ID_{j}_to_{i}"),
                     &format!("{}", channel_i_to_j.connection.connection_id_a),
                 );
 
                 writer.write_env(
-                    &format!("CONNECTION_ID_{}_to_{}", i, j),
+                    &format!("CONNECTION_ID_{i}_to_{j}"),
                     &format!("{}", channel_i_to_j.connection.connection_id_b),
                 );
 
                 writer.write_env(
-                    &format!("CHANNEL_ID_{}_to_{}", j, i),
+                    &format!("CHANNEL_ID_{j}_to_{i}"),
                     &format!("{}", channel_i_to_j.channel_id_a),
                 );
 
                 writer.write_env(
-                    &format!("PORT_{}_to_{}", j, i),
+                    &format!("PORT_{j}_to_{i}"),
                     &format!("{}", channel_i_to_j.port_a),
                 );
 
                 writer.write_env(
-                    &format!("CHANNEL_ID_{}_to_{}", i, j),
+                    &format!("CHANNEL_ID_{i}_to_{j}"),
                     &format!("{}", channel_i_to_j.channel_id_b),
                 );
 
                 writer.write_env(
-                    &format!("PORT_{}_to_{}", i, j),
+                    &format!("PORT_{i}_to_{j}"),
                     &format!("{}", channel_i_to_j.port_b),
                 );
             }

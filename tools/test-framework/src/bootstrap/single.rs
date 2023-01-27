@@ -150,7 +150,7 @@ pub fn bootstrap_single_node(
 fn add_wallet(driver: &ChainDriver, prefix: &str, use_random_id: bool) -> Result<Wallet, Error> {
     if use_random_id {
         let num = random_u32();
-        let wallet_id = format!("{}-{:x}", prefix, num);
+        let wallet_id = format!("{prefix}-{num:x}");
         driver.add_wallet(&wallet_id)
     } else {
         driver.add_wallet(prefix)

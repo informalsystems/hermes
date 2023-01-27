@@ -31,7 +31,7 @@ impl Runnable for StartCmd {
 
         let supervisor_handle = make_supervisor::<CachingChainHandle>(config, self.full_scan)
             .unwrap_or_else(|e| {
-                Output::error(format!("Hermes failed to start, last error: {}", e)).exit()
+                Output::error(format!("Hermes failed to start, last error: {e}")).exit()
             });
 
         match crate::config::config_path() {
@@ -81,7 +81,7 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
                         if let Ok(state) = rx.recv() {
                             if json() {
                                 match serde_json::to_string(&state) {
-                                    Ok(out) => println!("{}", out),
+                                    Ok(out) => println!("{out}"),
                                     Err(e) => {
                                         error!("failed to serialize relayer state to JSON: {}", e)
                                     }

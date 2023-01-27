@@ -17,10 +17,7 @@ pub fn set_rpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
         .ok_or_else(|| eyre!("expect rpc section"))?
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
-        .insert(
-            "laddr".to_string(),
-            format!("tcp://0.0.0.0:{}", port).into(),
-        );
+        .insert("laddr".to_string(), format!("tcp://0.0.0.0:{port}").into());
 
     Ok(())
 }
@@ -31,7 +28,7 @@ pub fn set_grpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
         .ok_or_else(|| eyre!("expect grpc section"))?
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
-        .insert("address".to_string(), format!("0.0.0.0:{}", port).into());
+        .insert("address".to_string(), format!("0.0.0.0:{port}").into());
 
     Ok(())
 }
@@ -65,10 +62,7 @@ pub fn set_p2p_port(config: &mut Value, port: u16) -> Result<(), Error> {
         .ok_or_else(|| eyre!("expect p2p section"))?
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
-        .insert(
-            "laddr".to_string(),
-            format!("tcp://0.0.0.0:{}", port).into(),
-        );
+        .insert("laddr".to_string(), format!("tcp://0.0.0.0:{port}").into());
 
     Ok(())
 }

@@ -162,8 +162,7 @@ impl Runnable for CreateChannelCommand {
                                 }
                                 Err(e) => {
                                     Output::error(format!(
-                                        "An error occurred while waiting for user input: {}",
-                                        e
+                                        "An error occurred while waiting for user input: {e}"
                                     ));
                                 }
                             }

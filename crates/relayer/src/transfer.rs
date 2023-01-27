@@ -211,10 +211,7 @@ pub fn send_messages<Chain: ChainHandle>(
             if let IbcEvent::ChainError(ref err) = err.event {
                 Err(TransferError::tx_response(err.clone()))
             } else {
-                panic!(
-                    "internal error, expected IBCEvent::ChainError, got {:?}",
-                    err
-                )
+                panic!("internal error, expected IBCEvent::ChainError, got {err:?}")
             }
         }
     }
