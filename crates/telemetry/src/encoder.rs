@@ -73,7 +73,7 @@ impl JsonEncoder {
             let mut family = JsonFamily {
                 name: name.to_string(),
                 desc: mf.get_help().to_string(),
-                r#type: format!("{:?}", metric_type).to_lowercase(),
+                r#type: format!("{metric_type:?}").to_lowercase(),
                 metrics: Vec::default(),
             };
 

@@ -1,7 +1,7 @@
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::base::types::height::Height;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Event {
     RecvPacket(Height),
     WriteAcknowledgment(Height),
@@ -17,7 +17,7 @@ impl WriteAcknowledgementEvent {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SendPacketEvent {
     pub src_channel_id: String,
     pub src_port_id: String,

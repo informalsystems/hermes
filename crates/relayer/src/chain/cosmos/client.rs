@@ -38,9 +38,11 @@ impl Settings {
                 user_value
             }
         };
+
         let trust_threshold = options
             .trust_threshold
             .unwrap_or_else(|| src_chain_config.trust_threshold.into());
+
         Settings {
             max_clock_drift,
             trusting_period: options.trusting_period,

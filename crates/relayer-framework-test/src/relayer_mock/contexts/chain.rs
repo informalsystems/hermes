@@ -18,7 +18,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::aliases::{
-    ChainState, ChannelId, ClientId, MockTimestamp, PortId, Sequence,
+    ChainState, ChannelId, ClientId, MockTimestamp, PortId, Sequence, StateStore,
 };
 use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::height::Height;
@@ -34,10 +34,10 @@ use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 pub struct MockChainContext {
     pub name: String,
-    pub past_chain_states: Arc<Mutex<HashMap<MockHeight, ChainState>>>,
+    pub past_chain_states: Arc<Mutex<StateStore>>,
     pub current_height: Arc<Mutex<MockHeight>>,
     pub current_state: Arc<Mutex<ChainState>>,
-    pub consensus_states: Arc<Mutex<HashMap<ClientId, HashMap<MockHeight, ChainState>>>>,
+    pub consensus_states: Arc<Mutex<HashMap<ClientId, StateStore>>>,
     pub channel_to_client: Arc<Mutex<HashMap<ChannelId, ClientId>>>,
     pub runtime: OfaRuntimeWrapper<MockRuntimeContext>,
 }
@@ -46,8 +46,8 @@ impl MockChainContext {
     pub fn new(name: String, clock: Arc<MockClock>) -> Self {
         let runtime = OfaRuntimeWrapper::new(MockRuntimeContext::new(clock));
         let chain_state = State::default();
-        let initial_state: HashMap<MockHeight, ChainState> =
-            HashMap::from([(MockHeight::from(1), chain_state.clone())]);
+        let initial_state: StateStore =
+            HashMap::from([(MockHeight::default(), chain_state.clone())]);
         Self {
             name,
             past_chain_states: Arc::new(Mutex::new(initial_state)),
@@ -171,9 +171,6 @@ impl MockChainContext {
         // Update the current_state of the Chain, which will increase the Height by 1.
         self.update_current_state(current_state)?;
 
-        // Timestamp is increased by 1 second when the Height of a chain increases by 1.
-        self.runtime().runtime.clock.increment_millis(1000)?;
-
         Ok(())
     }
 
@@ -182,6 +179,7 @@ impl MockChainContext {
     pub fn send_packet(&self, height: Height, packet: PacketKey) -> Result<(), Error> {
         // Retrieve the current_state and update it with the newly sent packet
         let mut new_state = self.get_current_state();
+
         new_state.update_sent(
             (
                 packet.src_port_id.clone(),
@@ -208,13 +206,15 @@ impl MockChainContext {
         packet: PacketKey,
         mut current_state: State,
     ) -> Result<State, Error> {
-        // Verify that with the consensus state that the packet was sent by the source chain.
+        // Verify via the consensus state that the packet was sent by the source chain.
         let client_id = self
             .get_client_from_channel(&packet.dst_channel_id)
             .ok_or_else(|| {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
+
         let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
+
         if !client_consensus.check_sent((
             packet.src_port_id.clone(),
             packet.src_channel_id.clone(),
@@ -229,13 +229,14 @@ impl MockChainContext {
         // Check that the packet is not timed out. Current height < packet timeout height.
         let current_height = self.get_current_height();
         let current_time = self.runtime().runtime.get_time();
-        if packet.timeout_height < current_height || packet.timeout_timestamp < current_time {
+
+        if current_state.check_timeout(packet.clone(), current_height, current_time.clone()) {
             return Err(Error::timeout_receive(
                 self.name().to_string(),
                 packet.timeout_height.0,
                 current_height.0,
-                packet.timeout_timestamp,
-                current_time,
+                packet.timeout_timestamp.0,
+                current_time.0,
             ));
         }
 
@@ -268,7 +269,9 @@ impl MockChainContext {
             .ok_or_else(|| {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
+
         let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
+
         if !client_consensus.check_received((
             packet.dst_port_id.clone(),
             packet.dst_channel_id.clone(),
@@ -308,7 +311,9 @@ impl MockChainContext {
             .ok_or_else(|| {
                 Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
             })?;
+
         let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
+
         if client_consensus.check_received((
             packet.dst_port_id.clone(),
             packet.dst_channel_id.clone(),
@@ -355,9 +360,11 @@ impl MockChainContext {
         )
     }
 
-    /// Update the chain's current_state and past_chain_states at the same time to insure
-    /// they are always synchronized.
-    /// The MockChain must have a one and only one ChainState at every height.
+    /// Update the chain's current_state and past_chain_states at the same time to ensure
+    /// they are always synchronized. Both the state and runtime clock are incremented by
+    /// 1000 milliseconds.
+    ///
+    /// The MockChain must have one and only one ChainState at every height.
     fn update_current_state(&self, state: State) -> Result<(), Error> {
         let latest_height = self.get_current_height();
         let new_height = latest_height.increment();
@@ -370,8 +377,10 @@ impl MockChainContext {
         let mut locked_current_height = self.current_height.acquire_mutex();
         *locked_current_height = new_height;
 
-        // Timestamp is increased by 1 second when the Height of a chain increases by 1.
-        self.runtime().runtime.clock.increment_millis(1000)?;
+        self.runtime()
+            .runtime
+            .clock
+            .increment_timestamp(MockTimestamp::default())?;
 
         // After inserting the new state in the current_state, update the past_chain_states
         // at the given height.
@@ -385,14 +394,17 @@ impl MockChainContext {
     /// and add a `RecvPacket` event to the returned array of events.
     /// If the message is an `AckPacket`, update the received acknowledgment
     /// packets.
-    /// If the message is an `UpdateClient` update the consensus state.
+    /// If the message is an `UpdateClient`, update the consensus state.
+    ///
     /// When a RecvPacket and AckPacket are received, verify that the client
     /// state has respectively sent the message and received the message.
+    ///
     /// The chain state will only be updated if all messages are processed
     /// successfully.
     pub fn process_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
         let mut res = vec![];
         let mut current_state = self.get_current_state();
+
         for m in messages {
             match m {
                 MockMessage::RecvPacket(height, packet) => {
@@ -412,7 +424,9 @@ impl MockChainContext {
                 }
             }
         }
+
         self.update_current_state(current_state)?;
+
         Ok(res)
     }
 }

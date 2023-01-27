@@ -319,8 +319,8 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         packet: &PacketKey,
     ) -> Result<MockMessage, Error> {
         let state = self.get_current_state();
-        let runtime = self.runtime();
-        let current_timestamp = runtime.runtime.get_time();
+        let runtime = &self.runtime().runtime;
+        let current_timestamp = runtime.get_time();
 
         if !state.check_timeout(packet.clone(), *height, current_timestamp) {
             return Err(Error::timeout_without_sent(

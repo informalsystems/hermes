@@ -64,7 +64,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             .map_err(|_| Error::invalid_packet_timeout_timestamp(raw_msg.timeout_timestamp))?;
 
         let timeout_height: TimeoutHeight = raw_msg.timeout_height.try_into().map_err(|e| {
-            Error::invalid_packet_timeout_height(format!("invalid timeout height {}", e))
+            Error::invalid_packet_timeout_height(format!("invalid timeout height {e}"))
         })?;
 
         Ok(MsgTransfer {

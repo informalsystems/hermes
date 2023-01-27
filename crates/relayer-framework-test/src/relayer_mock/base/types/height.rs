@@ -21,3 +21,9 @@ impl From<u128> for Height {
         Height(v)
     }
 }
+
+impl Default for Height {
+    fn default() -> Self {
+        Height(1)
+    }
+}

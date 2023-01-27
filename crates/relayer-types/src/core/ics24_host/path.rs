@@ -47,20 +47,15 @@ pub enum Path {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(fmt = "clients/{}/clientType", _0)]
+#[display(fmt = "clients/{_0}/clientType")]
 pub struct ClientTypePath(pub ClientId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(fmt = "clients/{}/clientState", _0)]
+#[display(fmt = "clients/{_0}/clientState")]
 pub struct ClientStatePath(pub ClientId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(
-    fmt = "clients/{}/consensusStates/{}-{}",
-    "client_id",
-    "epoch",
-    "height"
-)]
+#[display(fmt = "clients/{client_id}/consensusStates/{epoch}-{height}")]
 pub struct ClientConsensusStatePath {
     pub client_id: ClientId,
     pub epoch: u64,
@@ -68,40 +63,35 @@ pub struct ClientConsensusStatePath {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(fmt = "clients/{}/connections", _0)]
+#[display(fmt = "clients/{_0}/connections")]
 pub struct ClientConnectionsPath(pub ClientId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(fmt = "connections/{}", _0)]
+#[display(fmt = "connections/{_0}")]
 pub struct ConnectionsPath(pub ConnectionId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(fmt = "ports/{}", _0)]
+#[display(fmt = "ports/{_0}")]
 pub struct PortsPath(pub PortId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(fmt = "channelEnds/ports/{}/channels/{}", _0, _1)]
+#[display(fmt = "channelEnds/ports/{_0}/channels/{_1}")]
 pub struct ChannelEndsPath(pub PortId, pub ChannelId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(fmt = "nextSequenceSend/ports/{}/channels/{}", _0, _1)]
+#[display(fmt = "nextSequenceSend/ports/{_0}/channels/{_1}")]
 pub struct SeqSendsPath(pub PortId, pub ChannelId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(fmt = "nextSequenceRecv/ports/{}/channels/{}", _0, _1)]
+#[display(fmt = "nextSequenceRecv/ports/{_0}/channels/{_1}")]
 pub struct SeqRecvsPath(pub PortId, pub ChannelId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(fmt = "nextSequenceAck/ports/{}/channels/{}", _0, _1)]
+#[display(fmt = "nextSequenceAck/ports/{_0}/channels/{_1}")]
 pub struct SeqAcksPath(pub PortId, pub ChannelId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(
-    fmt = "commitments/ports/{}/channels/{}/sequences/{}",
-    "port_id",
-    "channel_id",
-    "sequence"
-)]
+#[display(fmt = "commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
 pub struct CommitmentsPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -109,12 +99,7 @@ pub struct CommitmentsPath {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(
-    fmt = "acks/ports/{}/channels/{}/sequences/{}",
-    "port_id",
-    "channel_id",
-    "sequence"
-)]
+#[display(fmt = "acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
 pub struct AcksPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -122,12 +107,7 @@ pub struct AcksPath {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
-#[display(
-    fmt = "receipts/ports/{}/channels/{}/sequences/{}",
-    "port_id",
-    "channel_id",
-    "sequence"
-)]
+#[display(fmt = "receipts/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
 pub struct ReceiptsPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -137,14 +117,9 @@ pub struct ReceiptsPath {
 /// Paths that are specific for client upgrades.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
 pub enum ClientUpgradePath {
-    #[display(fmt = "{}/{}/{}", UPGRADED_IBC_STATE, _0, UPGRADED_CLIENT_STATE)]
+    #[display(fmt = "{UPGRADED_IBC_STATE}/{_0}/{UPGRADED_CLIENT_STATE}")]
     UpgradedClientState(u64),
-    #[display(
-        fmt = "{}/{}/{}",
-        UPGRADED_IBC_STATE,
-        _0,
-        UPGRADED_CLIENT_CONSENSUS_STATE
-    )]
+    #[display(fmt = "{UPGRADED_IBC_STATE}/{_0}/{UPGRADED_CLIENT_CONSENSUS_STATE}")]
     UpgradedClientConsensusState(u64),
 }
 

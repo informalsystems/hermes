@@ -54,7 +54,11 @@ impl OfaBaseRuntime for MockRuntimeContext {
 
     // Increment the shared MockClock by the duration is milliseconds.
     async fn sleep(&self, duration: Duration) {
-        if self.clock.increment_millis(duration.as_millis()).is_err() {
+        if self
+            .clock
+            .increment_timestamp(MockTimestamp(duration.as_millis()))
+            .is_err()
+        {
             tracing::warn!("MockClock failed to sleep for {}ms", duration.as_millis());
         }
     }
@@ -64,7 +68,7 @@ impl OfaBaseRuntime for MockRuntimeContext {
     }
 
     fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration {
-        Duration::from_millis((time - other) as u64)
+        Duration::from_millis((time.0 - other.0) as u64)
     }
 
     fn new_mutex<T: Async>(item: T) -> Self::Mutex<T> {

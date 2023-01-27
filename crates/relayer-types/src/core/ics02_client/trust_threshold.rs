@@ -115,7 +115,7 @@ impl TryFrom<Fraction> for TrustThreshold {
 
 impl Default for TrustThreshold {
     fn default() -> Self {
-        Self::ONE_THIRD
+        Self::TWO_THIRDS
     }
 }
 

@@ -32,7 +32,7 @@ fn find_value<'a>(key: &str, entries: &'a [abci::EventAttribute]) -> Result<&'a 
                 None
             }
         })
-        .ok_or_else(|| Error::event(format!("attribute not found for key: {}", key)))
+        .ok_or_else(|| Error::event(format!("attribute not found for key: {key}")))
 }
 
 fn new_attr(key: &str, value: &str) -> abci::EventAttribute {
@@ -99,12 +99,11 @@ fn fetch_first_element_from_events(
 ) -> Result<String, Error> {
     let res = block_events
         .get(key)
-        .ok_or_else(|| Error::event(format!("attribute not found for key: {}", key)))?
+        .ok_or_else(|| Error::event(format!("attribute not found for key: {key}")))?
         .get(0)
         .ok_or_else(|| {
             Error::event(format!(
-                "element at position 0, of attribute with key `{}`, not found",
-                key
+                "element at position 0, of attribute with key `{key}`, not found"
             ))
         })?;
 
