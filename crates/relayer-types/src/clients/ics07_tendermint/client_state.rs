@@ -424,7 +424,7 @@ mod tests {
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: ChainId::default(),
-            trust_threshold: TrustThreshold::ONE_THIRD,
+            trust_threshold: TrustThreshold::TWO_THIRDS,
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
@@ -603,7 +603,7 @@ mod tests {
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: ChainId::default(),
-            trust_threshold: TrustThreshold::ONE_THIRD,
+            trust_threshold: TrustThreshold::TWO_THIRDS,
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),

@@ -32,6 +32,7 @@ This section includes a summary of the supported and planned features. It also i
     - Establish path over non-zero delay connection.
     - Relay all packets with the specified delay.
 - Interchain Accounts & Interchain Security
+    > Relaying between Interchain Security-enabled chains requires Hermes v1.2+.
 - Monitor and submit misbehaviour for clients
     - Monitor client updates for misbehaviour (fork and BFT time violation).
     - Submit misbehaviour evidence to the on-chain IBC client.
