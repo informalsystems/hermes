@@ -111,7 +111,7 @@ impl Display for ChainsScan {
 
                     writeln!(f, "    * Connection: {}", conn.connection.connection_id)?;
                     writeln!(f, "      | State: {}", conn.state())?;
-                    writeln!(f, "      | Counterparty state: {}", counterparty)?;
+                    writeln!(f, "      | Counterparty state: {counterparty}")?;
 
                     for chan in conn.channels.values() {
                         let counterparty = chan
@@ -123,7 +123,7 @@ impl Display for ChainsScan {
                         writeln!(f, "      + Channel: {}", chan.channel.channel_id)?;
                         writeln!(f, "        | Port: {}", chan.channel.port_id)?;
                         writeln!(f, "        | State: {}", chan.channel.channel_end.state())?;
-                        writeln!(f, "        | Counterparty: {}", counterparty)?;
+                        writeln!(f, "        | Counterparty: {counterparty}")?;
                     }
                 }
             }

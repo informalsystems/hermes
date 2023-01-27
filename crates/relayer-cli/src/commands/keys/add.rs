@@ -257,7 +257,7 @@ fn check_key_exists<S: SigningKeyPairSized>(keyring: &KeyRing<S>, key_name: &str
         if overwrite {
             warn!("key {} will be overwritten", key_name);
         } else {
-            Output::error(format!("A key with name '{}' already exists", key_name)).exit();
+            Output::error(format!("A key with name '{key_name}' already exists")).exit();
         }
     }
 }

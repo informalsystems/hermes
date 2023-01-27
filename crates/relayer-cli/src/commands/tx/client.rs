@@ -85,7 +85,7 @@ impl Runnable for TxCreateClientCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
@@ -103,7 +103,7 @@ impl Runnable for TxCreateClientCmd {
 
         match res {
             Ok(receipt) => Output::success(receipt.event).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
@@ -149,7 +149,7 @@ impl Runnable for TxUpdateClientCmd {
 
         let dst_chain = match spawn_chain_runtime(&config, &self.dst_chain_id) {
             Ok(handle) => handle,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let src_chain_id = match dst_chain.query_client_state(
@@ -171,7 +171,7 @@ impl Runnable for TxUpdateClientCmd {
 
         let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
             Ok(handle) => handle,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let target_height = self.target_height.map_or(QueryHeight::Latest, |height| {
@@ -195,7 +195,7 @@ impl Runnable for TxUpdateClientCmd {
 
         match res {
             Ok(events) => Output::success(events).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
@@ -236,7 +236,7 @@ impl Runnable for TxUpgradeClientCmd {
 
         let host_chain = match spawn_chain_runtime(&config, &self.chain_id) {
             Ok(handle) => handle,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let reference_chain_id = match host_chain.query_client_state(
@@ -258,7 +258,7 @@ impl Runnable for TxUpgradeClientCmd {
 
         let reference_chain = match spawn_chain_runtime(&config, &reference_chain_id) {
             Ok(handle) => handle,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let client = ForeignClient::find(reference_chain, host_chain, &self.client_id)
@@ -282,7 +282,7 @@ impl Runnable for TxUpgradeClientCmd {
         let mut reference_application_latest_height = match client.src_chain().query_latest_height()
         {
             Ok(height) => height,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         debug!(
@@ -295,7 +295,7 @@ impl Runnable for TxUpgradeClientCmd {
 
             reference_application_latest_height = match client.src_chain().query_latest_height() {
                 Ok(height) => height,
-                Err(e) => Output::error(format!("{}", e)).exit(),
+                Err(e) => Output::error(e).exit(),
             };
 
             debug!(
@@ -313,7 +313,7 @@ impl Runnable for TxUpgradeClientCmd {
 
         match outcome {
             Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
@@ -351,7 +351,7 @@ impl Runnable for TxUpgradeClientsCmd {
         let config = app_config();
         let reference_chain = match spawn_chain_runtime(&config, &self.reference_chain_id) {
             Ok(handle) => handle,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let reference_upgrade_height = Height::new(
@@ -366,7 +366,7 @@ impl Runnable for TxUpgradeClientsCmd {
 
         let mut reference_application_latest_height = match reference_chain.query_latest_height() {
             Ok(height) => height,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         debug!(
@@ -379,7 +379,7 @@ impl Runnable for TxUpgradeClientsCmd {
 
             reference_application_latest_height = match reference_chain.query_latest_height() {
                 Ok(height) => height,
-                Err(e) => Output::error(format!("{}", e)).exit(),
+                Err(e) => Output::error(e).exit(),
             };
 
             debug!(
@@ -479,7 +479,7 @@ fn parse_trust_threshold(input: &str) -> Result<TrustThreshold, Error> {
         .parse()
         .map_err(|_| Error::cli_arg("invalid denominator for the fraction".into()))?;
     TrustThreshold::new(numerator, denominator)
-        .map_err(|e| Error::cli_arg(format!("invalid trust threshold fraction: {}", e)))
+        .map_err(|e| Error::cli_arg(format!("invalid trust threshold fraction: {e}")))
 }
 
 type UpgradeClientResult = Result<Vec<IbcEvent>, Error>;
@@ -512,12 +512,12 @@ impl Display for OutputBuffer {
                             sep(i, inner_results.len(), "├─", "└─"),
                         )?;
                         match inner_result {
-                            Ok(events) => writeln!(f, "{:#?}", events)?,
-                            Err(e) => writeln!(f, "{}", e)?,
+                            Ok(events) => writeln!(f, "{events:#?}")?,
+                            Err(e) => writeln!(f, "{e}")?,
                         }
                     }
                 }
-                Err(e) => writeln!(f, " {}", e)?,
+                Err(e) => writeln!(f, " {e}")?,
             }
         }
         Ok(())

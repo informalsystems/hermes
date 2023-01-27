@@ -86,7 +86,7 @@ impl QueryPacketAcknowledgmentCmd {
             .map(|(bytes, _)| {
                 Hex::upper_case()
                     .encode_to_string(bytes.clone())
-                    .unwrap_or_else(|_| format!("{:?}", bytes))
+                    .unwrap_or_else(|_| format!("{bytes:?}"))
             })
     }
 }
@@ -95,7 +95,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
     fn run(&self) {
         match self.execute() {
             Ok(hex) => Output::success(hex).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }

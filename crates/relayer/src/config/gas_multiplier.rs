@@ -100,8 +100,7 @@ mod tests {
         let gas_multiplier = GasMultiplier::new(0.6);
         assert!(
             gas_multiplier.is_err(),
-            "Gas multiplier should be an error if value is lower than 1.0: {:?}",
-            gas_multiplier
+            "Gas multiplier should be an error if value is lower than 1.0: {gas_multiplier:?}"
         );
     }
 

@@ -141,7 +141,7 @@ impl fmt::Debug for CommitmentPrefix {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let converted = core::str::from_utf8(self.as_bytes());
         match converted {
-            Ok(s) => write!(f, "{}", s),
+            Ok(s) => write!(f, "{s}"),
             Err(_e) => write!(f, "<not valid UTF8: {:?}>", self.as_bytes()),
         }
     }
@@ -152,7 +152,7 @@ impl Serialize for CommitmentPrefix {
     where
         S: serde::Serializer,
     {
-        format!("{:?}", self).serialize(serializer)
+        format!("{self:?}").serialize(serializer)
     }
 }
 

@@ -62,7 +62,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
         let proto_timestamp = tpb::Timestamp { seconds, nanos };
         let timestamp = proto_timestamp
             .try_into()
-            .map_err(|e| Error::invalid_raw_consensus_state(format!("invalid timestamp: {}", e)))?;
+            .map_err(|e| Error::invalid_raw_consensus_state(format!("invalid timestamp: {e}")))?;
 
         Ok(Self {
             root: raw

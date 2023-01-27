@@ -49,8 +49,7 @@ impl Runnable for DenomTraceCmd {
             ))
             .exit(),
             Err(e) => Output::error(format!(
-                "there was a problem querying the denomination trace: {}",
-                e
+                "there was a problem querying the denomination trace: {e}"
             ))
             .exit(),
         }

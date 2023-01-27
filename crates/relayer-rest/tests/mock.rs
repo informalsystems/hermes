@@ -36,12 +36,12 @@ where
     std::thread::spawn(move || match rx.recv() {
         Ok(r) => match handler(r) {
             TestResult::Success => (), // all good
-            TestResult::WrongRequest(r) => panic!("got the wrong request: {:?}", r),
+            TestResult::WrongRequest(r) => panic!("got the wrong request: {r:?}"),
         },
-        Err(e) => panic!("got an error: {}", e),
+        Err(e) => panic!("got an error: {e}"),
     });
 
-    let response = ureq::get(&format!("http://127.0.0.1:{}{}", port, path))
+    let response = ureq::get(&format!("http://127.0.0.1:{port}{path}"))
         .call()
         .unwrap()
         .into_string()

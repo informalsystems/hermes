@@ -721,7 +721,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             channel_handshake_retry::from_retry_error(
                 err,
-                format!("failed to finish channel handshake for {:?}", self),
+                format!("failed to finish channel handshake for {self:?}"),
             )
         })?;
 

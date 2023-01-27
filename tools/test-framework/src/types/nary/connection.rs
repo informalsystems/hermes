@@ -121,12 +121,12 @@ impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedConnections<
         for (i, inner_connections) in self.connections.iter().enumerate() {
             for (j, connection_i_to_j) in inner_connections.iter().enumerate() {
                 writer.write_env(
-                    &format!("CONNECTION_ID_{}_to_{}", j, i),
+                    &format!("CONNECTION_ID_{j}_to_{i}"),
                     &format!("{}", connection_i_to_j.connection_id_a),
                 );
 
                 writer.write_env(
-                    &format!("CONNECTION_ID_{}_to_{}", i, j),
+                    &format!("CONNECTION_ID_{i}_to_{j}"),
                     &format!("{}", connection_i_to_j.connection_id_b),
                 );
             }

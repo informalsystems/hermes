@@ -58,20 +58,18 @@ impl BinaryChainTest for ClientDefaultsTest {
         match res {
             Ok(ibc_events) => assert!(
                 ibc_events.is_none(),
-                "Client refresh failed: {:?}",
-                ibc_events
+                "Client refresh failed: {ibc_events:?}"
             ),
-            Err(_) => panic!("Client refresh failed: {:?}", res),
+            Err(_) => panic!("Client refresh failed: {res:?}"),
         }
         let res = client_b_to_a.refresh();
         // Check that `refresh()` was successful but did not update the client, as elapsed < refresh_window.
         match res {
             Ok(ibc_events) => assert!(
                 ibc_events.is_none(),
-                "Client refresh failed: {:?}",
-                ibc_events
+                "Client refresh failed: {ibc_events:?}"
             ),
-            Err(_) => panic!("Client refresh failed: {:?}", res),
+            Err(_) => panic!("Client refresh failed: {res:?}"),
         }
 
         // Wait for elapsed > refresh_window
@@ -82,20 +80,18 @@ impl BinaryChainTest for ClientDefaultsTest {
         match res {
             Ok(ibc_events) => assert!(
                 ibc_events.is_some(),
-                "Client refresh failed: {:?}",
-                ibc_events
+                "Client refresh failed: {ibc_events:?}"
             ),
-            Err(_) => panic!("Client refresh failed: {:?}", res),
+            Err(_) => panic!("Client refresh failed: {res:?}"),
         }
         let res = client_b_to_a.refresh();
         // Check that `refresh()` was successful and update client was successful, as elapsed > refresh_window.
         match res {
             Ok(ibc_events) => assert!(
                 ibc_events.is_some(),
-                "Client refresh failed: {:?}",
-                ibc_events
+                "Client refresh failed: {ibc_events:?}"
             ),
-            Err(_) => panic!("Client refresh failed: {:?}", res),
+            Err(_) => panic!("Client refresh failed: {res:?}"),
         }
         Ok(())
     }
@@ -145,15 +141,13 @@ impl BinaryChainTest for ClientFailsTest {
         // Assert that `refresh()` returns an error as the update client will fail due to the low `gas_multiplier`.
         assert!(
             res.is_err(),
-            "Client refresh should return an Error {:?}",
-            res
+            "Client refresh should return an Error {res:?}"
         );
         let res = client_b_to_a.refresh();
         // Assert that `refresh()` returns an error as the update client will fail due to the low `gas_multiplier`.
         assert!(
             res.is_err(),
-            "Client refresh should return an Error {:?}",
-            res
+            "Client refresh should return an Error {res:?}"
         );
         Ok(())
     }

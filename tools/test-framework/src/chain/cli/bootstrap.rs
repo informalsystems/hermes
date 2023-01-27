@@ -155,8 +155,8 @@ pub fn start_chain(
         .take()
         .ok_or_else(|| eyre!("expected stderr to be present in child process"))?;
 
-    let stderr_path = format!("{}/stdout.log", home_path);
-    let stdout_path = format!("{}/stderr.log", home_path);
+    let stderr_path = format!("{home_path}/stdout.log");
+    let stdout_path = format!("{home_path}/stderr.log");
 
     pipe_to_file(stdout, &stdout_path)?;
     pipe_to_file(stderr, &stderr_path)?;

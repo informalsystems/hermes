@@ -288,7 +288,7 @@ fn fee_transfer(chains: ChainHandlePair, opts: FeeTransferOptions) -> Result<(),
 
     match res {
         Ok(ev) => Output::success(ev).exit(),
-        Err(e) => Output::error(format!("{}", e)).exit(),
+        Err(e) => Output::error(e).exit(),
     }
 }
 

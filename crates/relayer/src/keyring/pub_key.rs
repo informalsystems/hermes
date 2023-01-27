@@ -43,7 +43,7 @@ where
     // and then marshalled into a JSON String.
     let based64_encoded: Result<String, _> = Deserialize::deserialize(deser);
     let value = base64::decode(based64_encoded?)
-        .map_err(|e| serde::de::Error::custom(format!("error in decoding: {}", e)))?;
+        .map_err(|e| serde::de::Error::custom(format!("error in decoding: {e}")))?;
 
     Ok(value)
 }

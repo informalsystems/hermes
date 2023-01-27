@@ -73,7 +73,7 @@ impl Display for QueryHeight {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             QueryHeight::Latest => write!(f, "latest height"),
-            QueryHeight::Specific(height) => write!(f, "{}", height),
+            QueryHeight::Specific(height) => write!(f, "{height}"),
         }
     }
 }

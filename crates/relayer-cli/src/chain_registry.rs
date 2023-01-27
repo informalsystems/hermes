@@ -195,7 +195,7 @@ pub async fn get_configs(
     for i in 0..n {
         for chain_j in &chains[i + 1..] {
             let chain_i = &chains[i];
-            let resource = format!("{}-{}.json", chain_i, chain_j).to_string();
+            let resource = format!("{chain_i}-{chain_j}.json").to_string();
             let commit_clone = commit.clone();
             path_handles.push(tokio::spawn(async move {
                 IBCPath::fetch(resource, commit_clone).await
