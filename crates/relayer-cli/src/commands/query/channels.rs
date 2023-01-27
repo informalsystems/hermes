@@ -274,7 +274,7 @@ impl Runnable for QueryChannelsCmd {
     fn run(&self) {
         match run_query_channels::<BaseChainHandle>(self) {
             Ok(output) => Output::success(output).exit(),
-            Err(e) => Output::error(format!("{e}")).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
