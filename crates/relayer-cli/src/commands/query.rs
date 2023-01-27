@@ -68,6 +68,9 @@ pub enum QueryClientCmds {
     /// Query for the header used in a client update at a certain height
     Header(client::QueryClientHeaderCmd),
 
+    /// Query the client status (frozen, expired or active)
+    Status(client::QueryClientStatusCmd),
+
     /// Query the client connections
     Connections(client::QueryClientConnectionsCmd),
 }

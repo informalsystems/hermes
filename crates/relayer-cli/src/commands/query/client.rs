@@ -258,6 +258,107 @@ impl Runnable for QueryClientHeaderCmd {
     }
 }
 
+/// Query client status command
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
+pub struct QueryClientStatusCmd {
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain to query"
+    )]
+    chain_id: ChainId,
+
+    #[clap(
+        long = "client",
+        required = true,
+        value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the client to query"
+    )]
+    client_id: ClientId,
+}
+
+impl Runnable for QueryClientStatusCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        let client_state = chain
+            .query_client_state(
+                QueryClientStateRequest {
+                    client_id: self.client_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(cs, _)| cs)
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        #[derive(Debug, serde::Serialize)]
+        enum Status {
+            Frozen,
+            Expired,
+            Active,
+        }
+
+        let status = if client_state.is_frozen() {
+            Status::Frozen
+        } else {
+            let consensus_state_heights = chain
+                .query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+                    client_id: self.client_id.clone(),
+                    pagination: Some(PageRequest::all()),
+                })
+                .unwrap_or_else(exit_with_unrecoverable_error);
+
+            dbg!(&consensus_state_heights);
+
+            let latest_consensus_height =
+                consensus_state_heights.last().copied().unwrap_or_else(|| {
+                    exit_with_unrecoverable_error(format!(
+                        "no consensus state found for client '{}' on chain '{}'",
+                        self.client_id, self.chain_id
+                    ))
+                });
+
+            let (latest_consensus_state, _) = chain
+                .query_consensus_state(
+                    QueryConsensusStateRequest {
+                        client_id: self.client_id.clone(),
+                        consensus_height: latest_consensus_height,
+                        query_height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                )
+                .unwrap_or_else(exit_with_unrecoverable_error);
+
+            // Fetch the application status, containing the network time
+            let app_status = chain
+                .query_application_status()
+                .unwrap_or_else(exit_with_unrecoverable_error);
+
+            let current_src_network_time = app_status.timestamp;
+
+            // Compute the duration of time elapsed since this consensus state was installed
+            let elapsed = current_src_network_time
+                .duration_since(&latest_consensus_state.timestamp())
+                .unwrap_or_default();
+
+            if client_state.expired(elapsed) {
+                Status::Expired
+            } else {
+                Status::Active
+            }
+        };
+
+        Output::success(status).exit()
+    }
+}
+
 /// Query client connections command
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryClientConnectionsCmd {
