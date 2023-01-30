@@ -1,3 +1,7 @@
+/*!
+   Trait definition for [`HasTimestampType`].
+*/
+
 use crate::base::core::traits::sync::Async;
 
 pub trait HasTimestampType: Async {

@@ -1,3 +1,7 @@
+/*!
+   Trait definitions for [`HasSendPacketEvent`].
+*/
+
 use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::base::core::traits::sync::Async;
 

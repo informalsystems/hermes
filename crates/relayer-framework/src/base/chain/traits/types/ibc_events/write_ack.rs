@@ -1,3 +1,7 @@
+/*!
+   Trait definitions for [`HasWriteAcknowledgementEvent`].
+*/
+
 use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::base::core::traits::sync::Async;
 
@@ -30,11 +34,11 @@ where
     type WriteAcknowledgementEvent: Async;
 
     /**
-       Try to convert an abstract
+       Try to extract an abstract
        [`Event`](crate::base::chain::traits::types::event::HasEventType::Event)
        type into a
        [`WriteAcknowledgementEvent`](Self::WriteAcknowledgementEvent).
-       If the conversion fails, return `None`.
+       If the extraction fails, return `None`.
 
        Since an event type may contain many variants, it is not guaranteed
        that the event extraction would be successful. If the concrete
@@ -45,6 +49,20 @@ where
         event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
 
+    /**
+       Extract the [`IncomingPacket`](HasIbcPacketTypes::IncomingPacket)
+       from a write acknowledgement event.
+
+       Since write acknowledgements are emitted from a destination chain (self),
+       it is necessary for the event to correspond to an incoming packet
+       (with self being the destination).
+
+       Here we assume that a write acknowledgement event always contains
+       the packet data. This is currently true for Cosmos chains. However
+       in case additional queries are required, then this method should be
+       refactored into a method like
+       `query_packet_from_write_acknowledgement_event`.
+    */
     fn extract_packet_from_write_acknowledgement_event(
         ack: &Self::WriteAcknowledgementEvent,
     ) -> &Self::IncomingPacket;

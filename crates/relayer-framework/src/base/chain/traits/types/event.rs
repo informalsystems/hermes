@@ -1,3 +1,7 @@
+/*!
+   Trait definition for [`HasEventType`].
+*/
+
 use crate::base::core::traits::sync::Async;
 
 /**

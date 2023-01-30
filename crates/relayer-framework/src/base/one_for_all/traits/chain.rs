@@ -54,6 +54,10 @@ pub trait OfaChainTypes: Async {
     */
     type Event: Async;
 
+    /**
+       Corresponds to
+       [`HasChainIdType::ChainId`](crate::base::chain::traits::types::chain_id::HasChainIdType::ChainId).
+    */
     type ChainId: Eq + Async;
 
     /**
@@ -144,8 +148,16 @@ where
         OutgoingPacket = Self::IncomingPacket,
     >,
 {
+    /**
+       Corresponds to
+       [`HasIbcPacketTypes::IncomingPacket`](crate::base::chain::traits::types::packet::HasIbcPacketTypes::IncomingPacket)
+    */
     type IncomingPacket: Async;
 
+    /**
+       Corresponds to
+       [`HasIbcPacketTypes::OutgoingPacket`](crate::base::chain::traits::types::packet::HasIbcPacketTypes::OutgoingPacket)
+    */
     type OutgoingPacket: Async;
 
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;

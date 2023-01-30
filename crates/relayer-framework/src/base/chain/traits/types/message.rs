@@ -1,3 +1,7 @@
+/*!
+   Trait definition for [`HasMessageType`] and [`CanEstimateMessageSize`].
+*/
+
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
