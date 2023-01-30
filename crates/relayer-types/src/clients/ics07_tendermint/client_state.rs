@@ -78,7 +78,7 @@ impl ClientState {
 
         if trusting_period >= unbonding_period {
             return Err(Error::invalid_trusting_period(format!(
-                "ClientState trusting period ({trusting_period:?}) must be smaller than unbonding period ({unbonding_period:?})"            
+                "ClientState trusting period ({trusting_period:?}) must be smaller than unbonding period ({unbonding_period:?})",
             )));
         }
 

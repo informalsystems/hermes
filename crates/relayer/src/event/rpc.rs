@@ -243,7 +243,7 @@ fn extract_block_events(
         event_field: &str,
     ) -> Vec<T> {
         block_events
-            .get(&format!("{}.{}", event_type, event_field))
+            .get(&format!("{event_type}.{event_field}"))
             .unwrap_or(&vec![])
             .iter()
             .enumerate()

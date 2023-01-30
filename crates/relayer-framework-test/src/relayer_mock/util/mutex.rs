@@ -11,7 +11,7 @@ impl<T> MutexUtil<T> for Arc<Mutex<T>> {
     fn acquire_mutex(&self) -> MutexGuard<T> {
         match self.lock() {
             Ok(locked_mutex) => locked_mutex,
-            Err(e) => panic!("poisoned mutex: {}", e),
+            Err(e) => panic!("poisoned mutex: {e}"),
         }
     }
 }

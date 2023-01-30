@@ -91,7 +91,7 @@ fn default_directive(log_level: LogLevel) -> String {
 
     TARGET_CRATES
         .iter()
-        .map(|&c| format!("{}={}", c, log_level))
+        .map(|&c| format!("{c}={log_level}"))
         .join(",")
 }
 
@@ -107,8 +107,7 @@ fn build_tracing_filter(default_level: LogLevel) -> Result<EnvFilter, FrameworkE
         Ok(out) => Ok(out),
         Err(e) => {
             eprintln!(
-                "ERROR: unable to initialize Hermes with log filtering directive {:?}: {}",
-                directive, e
+                "ERROR: unable to initialize Hermes with log filtering directive {directive:?}: {e}"
             );
 
             Err(FrameworkErrorKind::ConfigError

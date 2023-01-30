@@ -243,13 +243,13 @@ impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for NaryConnectedChains<H
     fn export_env(&self, writer: &mut impl EnvWriter) {
         for (i, node) in self.full_nodes.iter().enumerate() {
             writer.write_env(
-                &format!("CHAIN_ID_{}", i),
+                &format!("CHAIN_ID_{i}"),
                 &format!("{}", node.chain_driver.chain_id),
             );
 
             self.foreign_clients.export_env(writer);
 
-            node.export_env(&mut prefix_writer(&format!("NODE_{}", i), writer));
+            node.export_env(&mut prefix_writer(&format!("NODE_{i}"), writer));
         }
     }
 }

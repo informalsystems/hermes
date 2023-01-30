@@ -40,7 +40,7 @@ impl Display for PrettyCode<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match &self.0 {
             Code::Ok => write!(f, "Ok"),
-            Code::Err(code) => write!(f, "Error with code {}", code),
+            Code::Err(code) => write!(f, "Error with code {code}"),
         }
     }
 }
@@ -101,7 +101,7 @@ impl<'a> Display for PrettyEvents<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         writeln!(f, "events:")?;
         for v in self.0 {
-            writeln!(f, "\t{}", v)?;
+            writeln!(f, "\t{v}")?;
         }
         Ok(())
     }
@@ -183,7 +183,7 @@ pub struct PrettyOption<'a, T>(pub &'a Option<T>);
 impl<'a, T: Display> Display for PrettyOption<'a, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match &self.0 {
-            Some(v) => write!(f, "{}", v),
+            Some(v) => write!(f, "{v}"),
             None => write!(f, "None"),
         }
     }
@@ -196,7 +196,7 @@ impl<'a, T: Display> Display for PrettySlice<'a, T> {
         write!(f, "[ ")?;
         let mut vec_iterator = self.0.iter().peekable();
         while let Some(element) = vec_iterator.next() {
-            write!(f, "{}", element)?;
+            write!(f, "{element}")?;
             // If it is not the last element, add separator.
             if vec_iterator.peek().is_some() {
                 write!(f, ", ")?;

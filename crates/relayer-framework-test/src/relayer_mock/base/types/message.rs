@@ -16,11 +16,11 @@ impl Display for Message {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::RecvPacket(h, p) => {
-                write!(f, "RecvPacket:{}: {}", h, p)
+                write!(f, "RecvPacket:{h}: {p}")
             }
-            Self::AckPacket(h, p) => write!(f, "AckPacket:{}: {}", h, p),
-            Self::TimeoutPacket(h, p) => write!(f, "TimeoutPacket:{}: {}", h, p),
-            Self::UpdateClient(from, h, s) => write!(f, "{}|UpdateClient:{}: {:?}", from, h, s),
+            Self::AckPacket(h, p) => write!(f, "AckPacket:{h}: {p}"),
+            Self::TimeoutPacket(h, p) => write!(f, "TimeoutPacket:{h}: {p}"),
+            Self::UpdateClient(from, h, s) => write!(f, "{from}|UpdateClient:{h}: {s:?}"),
         }
     }
 }
