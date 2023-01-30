@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
+use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::base::chain::types::aliases::{Height, Message, WriteAcknowledgementEvent};
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;

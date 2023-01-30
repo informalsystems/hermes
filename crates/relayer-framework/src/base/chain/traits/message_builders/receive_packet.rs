@@ -1,11 +1,10 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::HasIbcPacketTypes;
+use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanBuildTimeoutUnorderedPacketMessage<Counterparty>:
-    HasIbcPacketTypes<Counterparty>
+pub trait CanBuildReceivePacketMessage<Counterparty>: HasIbcPacketTypes<Counterparty>
 where
     Counterparty: HasIbcPacketTypes<
         Self,
@@ -13,9 +12,9 @@ where
         OutgoingPacket = Self::IncomingPacket,
     >,
 {
-    async fn build_timeout_unordered_packet_message(
+    async fn build_receive_packet_message(
         &self,
         height: &Self::Height,
-        packet: &Self::IncomingPacket,
+        packet: &Self::OutgoingPacket,
     ) -> Result<Counterparty::Message, Self::Error>;
 }

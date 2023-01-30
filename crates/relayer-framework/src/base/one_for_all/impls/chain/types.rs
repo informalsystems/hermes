@@ -1,11 +1,12 @@
-use crate::base::chain::traits::chain_id::HasChainId;
-use crate::base::chain::traits::ibc_event::{HasSendPacketEvent, HasWriteAcknowledgementEvent};
-use crate::base::chain::traits::types::chain::HasChainTypes;
+use crate::base::chain::traits::types::chain_id::{HasChainId, HasChainIdType};
 use crate::base::chain::traits::types::event::HasEventType;
 use crate::base::chain::traits::types::height::HasHeightType;
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::base::chain::traits::types::ibc::{HasCounterpartyMessageHeight, HasIbcChainTypes};
+use crate::base::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
+use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
 use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
+use crate::base::chain::traits::types::timestamp::HasTimestampType;
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
@@ -47,9 +48,11 @@ impl<Chain: OfaBaseChain> HasHeightType for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
 }
 
-impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> HasChainIdType for OfaChainWrapper<Chain> {
     type ChainId = Chain::ChainId;
+}
 
+impl<Chain: OfaBaseChain> HasTimestampType for OfaChainWrapper<Chain> {
     type Timestamp = Chain::Timestamp;
 }
 
@@ -77,7 +80,18 @@ where
     type PortId = Chain::PortId;
 
     type Sequence = Chain::Sequence;
+}
 
+impl<Chain, Counterparty> HasCounterpartyMessageHeight<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
+{
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height> {
         Chain::counterparty_message_height(message)
     }

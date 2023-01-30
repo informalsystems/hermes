@@ -1,4 +1,4 @@
-use crate::base::chain::traits::types::HasIbcPacketTypes;
+use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::base::chain::types::aliases::{
     ChannelId, ClientId, Height, PortId, Sequence, Timestamp,
 };

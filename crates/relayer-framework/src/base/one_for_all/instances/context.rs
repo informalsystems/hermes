@@ -1,4 +1,5 @@
-use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
+use crate::base::chain::traits::types::chain::HasChainTypes;
+use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;

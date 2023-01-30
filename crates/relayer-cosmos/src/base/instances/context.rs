@@ -1,5 +1,5 @@
 use core::marker::PhantomData;
-use ibc_relayer_framework::base::chain::traits::types::HasChainTypes;
+use ibc_relayer_framework::base::chain::traits::types::chain::HasChainTypes;
 use ibc_relayer_framework::base::one_for_all::traits::chain::OfaIbcChainPreset;
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayPreset;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;

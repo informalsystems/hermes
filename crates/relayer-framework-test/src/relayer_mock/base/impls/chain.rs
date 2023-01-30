@@ -245,29 +245,25 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         Ok(state.check_received((port_id.clone(), channel_id.clone(), *sequence)))
     }
 
-    async fn query_write_ack_event(
+    async fn query_write_acknowledgement_event(
         &self,
-        channel_id: &ChannelId,
-        port_id: &PortId,
-        counterparty_channel_id: &ChannelId,
-        counterparty_port_id: &PortId,
-        sequence: &Sequence,
+        packet: &PacketKey,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
         let received = self.get_received_packet_information(
-            counterparty_port_id.clone(),
-            counterparty_channel_id.clone(),
-            *sequence,
+            packet.dst_port_id.clone(),
+            packet.dst_channel_id.clone(),
+            packet.sequence,
         );
-        if let Some((packet, height)) = received {
-            if &packet.src_channel_id == channel_id
-                && &packet.src_port_id == port_id
-                && &packet.dst_channel_id == counterparty_channel_id
-                && &packet.dst_port_id == port_id
-                && &packet.sequence == sequence
-            {
+
+        if let Some((packet2, height)) = received {
+            if &packet2 == packet {
                 Ok(Some(WriteAcknowledgementEvent::new(height)))
             } else {
-                Err(Error::generic(eyre!("mismatch between packet in state {} and query parameters: channel_id: {}, port_id: {}, counterparty_channel_id: {}, counterparty_port_id: {}, sequence: {}", packet, channel_id, port_id, counterparty_channel_id, counterparty_port_id, sequence)))
+                Err(Error::generic(eyre!(
+                    "mismatch between packet in state {} and packet: {}",
+                    packet2,
+                    packet
+                )))
             }
         } else {
             Ok(None)

@@ -110,7 +110,7 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
 
 /// Returns packet event data for building ack messages for the
 /// given list of [`Sequence`] numbers.
-pub fn query_write_ack_events<ChainA: ChainHandle>(
+pub fn query_write_acknowledgement_events<ChainA: ChainHandle>(
     src_chain: &ChainA,
     path: &PathIdentifiers,
     sequences: &[Sequence],

@@ -82,7 +82,7 @@
 
     A good starting point to understand the relayer framework internals
     is to look at how abstract types are defined in
-    [`HasChainTypes`](crate::base::chain::traits::types::HasChainTypes) and
+    [`HasChainTypes`](crate::base::chain::traits::types::chain::HasChainTypes) and
     [`HasRelayTypes`](crate::base::relay::traits::types::HasRelayTypes).
     There are also simple components like
     [`CanQueryChainStatus`](crate::base::chain::traits::queries::status::CanQueryChainStatus)

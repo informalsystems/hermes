@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::message::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
+use crate::base::chain::traits::message_builders::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
 use crate::base::chain::types::aliases::Height;
 use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;

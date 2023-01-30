@@ -38,19 +38,19 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasChainTypes::Timestamp`](crate::base::chain::traits::types::HasChainTypes::Timestamp).
+       [`HasChainTypes::Timestamp`](crate::base::chain::traits::types::timestamp::HasTimestampType::Timestamp).
     */
     type Timestamp: Ord + Async;
 
     /**
        Corresponds to
-       [`HasMessageType::Message`](crate::base::chain::traits::types::HasMessageType::Message).
+       [`HasMessageType::Message`](crate::base::chain::traits::types::message::HasMessageType::Message).
     */
     type Message: Async;
 
     /**
        Corresponds to
-       [`HasEventType::Event`](crate::base::chain::traits::types::HasEventType::Event).
+       [`HasEventType::Event`](crate::base::chain::traits::types::event::HasEventType::Event).
     */
     type Event: Async;
 
@@ -58,31 +58,31 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::ClientId`](crate::base::chain::traits::types::HasIbcChainTypes::ClientId).
+       [`HasIbcChainTypes::ClientId`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::ClientId).
     */
     type ClientId: Async;
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::ConnectionId`](crate::base::chain::traits::types::HasIbcChainTypes::ConnectionId).
+       [`HasIbcChainTypes::ConnectionId`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::ConnectionId).
     */
     type ConnectionId: Async;
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::ChannelId`](crate::base::chain::traits::types::HasIbcChainTypes::ChannelId).
+       [`HasIbcChainTypes::ChannelId`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::ChannelId).
     */
     type ChannelId: Async;
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::PortId`](crate::base::chain::traits::types::HasIbcChainTypes::PortId).
+       [`HasIbcChainTypes::PortId`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::PortId).
     */
     type PortId: Async;
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::Sequence`](crate::base::chain::traits::types::HasIbcChainTypes::Sequence).
+       [`HasIbcChainTypes::Sequence`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::Sequence).
     */
     type Sequence: Async;
 
@@ -100,7 +100,7 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasWriteAcknowledgementEvent::WriteAcknowledgementEvent`](crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent).
+       [`HasWriteAcknowledgementEvent::WriteAcknowledgementEvent`](crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent).
     */
     type WriteAcknowledgementEvent: Async;
 
@@ -209,13 +209,9 @@ where
         sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
 
-    async fn query_write_ack_event(
+    async fn query_write_acknowledgement_event(
         &self,
-        channel_id: &Self::ChannelId,
-        port_id: &Self::PortId,
-        counterparty_channel_id: &Counterparty::ChannelId,
-        counterparty_port_id: &Counterparty::PortId,
-        sequence: &Counterparty::Sequence,
+        packet: &Self::IncomingPacket,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
 
     async fn build_receive_packet_message(

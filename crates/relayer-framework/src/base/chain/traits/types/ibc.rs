@@ -1,4 +1,6 @@
 use crate::base::chain::traits::types::chain::HasChainTypes;
+use crate::base::chain::traits::types::height::HasHeightType;
+use crate::base::chain::traits::types::message::HasMessageType;
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
@@ -73,7 +75,12 @@ where
        chain to self, the `Counterparty::Sequence` will be used.
     */
     type Sequence: Async;
+}
 
+pub trait HasCounterpartyMessageHeight<Counterparty>: HasMessageType
+where
+    Counterparty: HasHeightType,
+{
     /**
        Get the height of the counterparty chain that an IBC message is based
        on when it is constructed to be sent to the self chain. If the message

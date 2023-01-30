@@ -6,14 +6,11 @@
 */
 
 pub mod chain;
+pub mod chain_id;
 pub mod event;
 pub mod height;
 pub mod ibc;
+pub mod ibc_events;
 pub mod message;
 pub mod packet;
-
-pub use self::chain::HasChainTypes;
-pub use self::event::HasEventType;
-pub use self::ibc::HasIbcChainTypes;
-pub use self::message::{CanEstimateMessageSize, HasMessageType};
-pub use self::packet::HasIbcPacketTypes;
+pub mod timestamp;

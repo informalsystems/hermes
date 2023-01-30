@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::{HasEventType, HasMessageType};
+use crate::base::chain::traits::types::event::HasEventType;
+use crate::base::chain::traits::types::message::HasMessageType;
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 

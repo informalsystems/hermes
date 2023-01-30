@@ -8,7 +8,7 @@
    a blockchain, and are not covered by this chain context.
 
    At its core, a chain context should implement
-   [`HasChainTypes`](traits::types::HasChainTypes), which declares the abstract
+   [`HasChainTypes`](traits::types::chain::HasChainTypes), which declares the abstract
    types that are commonly used inside a chain context.
 
    The chain context provides functionalities for querying the chain,
@@ -32,26 +32,42 @@
 
    ## List of Traits
 
-   Here is a shortcut list of chain traits that are defined in this module:
+   Here is a non-comprehensive list of chain traits that are defined in this module:
 
-   Type traits:
+   ### Type Traits
 
-   - [`HasMessageType`](traits::types::HasMessageType)
-   - [`HasEventType`](traits::types::HasEventType)
-   - [`HasChainTypes`](traits::types::HasChainTypes)
-   - [`HasIbcChainTypes`](traits::types::HasIbcChainTypes)
-   - [`HasWriteAcknowledgementEvent`](traits::ibc_event::HasWriteAcknowledgementEvent)
+   - Chain types:
+      - [`HasChainTypes`](traits::types::chain::HasChainTypes)
+      - [`HasHeightType`](traits::types::height::HasHeightType)
+      - [`HasMessageType`](traits::types::message::HasMessageType)
+      - [`HasEventType`](traits::types::event::HasEventType)
+      - [`HasChainIdType`](traits::types::chain_id::HasChainIdType)
+      - [`HasTimestampType`](traits::types::timestamp::HasTimestampType)
+   - IBC chain types:
+      - [`HasIbcChainTypes`](traits::types::ibc::HasIbcChainTypes)
+      - [`HasIbcPacketTypes`](traits::types::packet::HasIbcPacketTypes)
+   - IBC events:
+      - [`HasWriteAcknowledgementEvent`](traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent)
+      - [`HasSendPacketEvent`](traits::types::ibc_events::send_packet::HasSendPacketEvent)
    - [`HasChainStatus`](traits::queries::status::HasChainStatus)
    - [`HasConsensusState`](traits::queries::consensus_state::HasConsensusState)
 
-   Consumer traits:
+   ### Consumer Traits
 
+   - [`HasChainId`](traits::types::chain_id::HasChainId)
    - [`CanSendMessages`](traits::message_sender::CanSendMessages)
-   - [`CanQueryChainStatus`](traits::queries::status::CanQueryChainStatus)
-   - [`CanQueryConsensusState`](traits::queries::consensus_state::CanQueryConsensusState)
-   - [`CanQueryReceivedPacket`](traits::queries::received_packet::CanQueryReceivedPacket)
+   - Message builders:
+      - [`CanBuildAckPacketMessage`](traits::message_builders::ack_packet::CanBuildAckPacketMessage)
+      - [`CanBuildReceivePacketMessage`](traits::message_builders::receive_packet::CanBuildReceivePacketMessage)
+      - [`CanBuildTimeoutUnorderedPacketMessage`](traits::message_builders::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage)
+   - Chain queries:
+      - [`CanQueryChainStatus`](traits::queries::status::CanQueryChainStatus)
+      - [`CanQueryConsensusState`](traits::queries::consensus_state::CanQueryConsensusState)
+      - [`CanQueryReceivedPacket`](traits::queries::received_packet::CanQueryReceivedPacket)
+      - [`CanQueryCounterpartyChainIdFromChannel`](traits::queries::channel::CanQueryCounterpartyChainIdFromChannel)
+      - [`CanQueryWriteAcknowledgement`](traits::queries::write_ack::CanQueryWriteAcknowledgement)
 
-   Provider traits:
+   ### Provider Traits
 
    - [`MessageSender`](traits::message_sender::MessageSender)
    - [`ChainStatusQuerier`](traits::queries::status::ChainStatusQuerier)

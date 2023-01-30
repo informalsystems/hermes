@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::HasIbcChainTypes;
+use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::chain::types::aliases::{Event, Message};
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;

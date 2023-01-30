@@ -1,9 +1,9 @@
-use crate::base::chain::traits::ibc_event::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::queries::consensus_state::{
     CanQueryConsensusState, HasConsensusState,
 };
 use crate::base::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use crate::base::chain::traits::queries::status::CanQueryChainStatus;
+use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 
 pub trait AfoBaseChain<Counterparty>:

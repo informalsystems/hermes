@@ -1,10 +1,9 @@
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
-use crate::std_prelude::*;
-
+use crate::base::chain::traits::types::chain_id::HasChainIdType;
 use crate::base::chain::traits::types::event::HasEventType;
 use crate::base::chain::traits::types::height::HasHeightType;
 use crate::base::chain::traits::types::message::HasMessageType;
+use crate::base::chain::traits::types::timestamp::HasTimestampType;
+use crate::base::core::traits::error::HasErrorType;
 
 /**
    This covers the minimal abstract types that are used inside a chain context.
@@ -17,7 +16,7 @@ use crate::base::chain::traits::types::message::HasMessageType;
    -   [`Height`](HasHeightType::Height) - the height of a chain, which should
         behave like natural numbers.
 
-   -   [`Timestamp`](Self::Timestamp) - the timestamp of a chain, which should
+   -   [`Timestamp`](HasTimestampType::Timestamp) - the timestamp of a chain, which should
        increment monotonically.
 
    -   [`Message`](HasMessageType::Message) - the messages being submitted
@@ -37,30 +36,17 @@ use crate::base::chain::traits::types::message::HasMessageType;
     [`transaction`](crate::base::transaction) module for more information
     about the transaction context.
 */
-pub trait HasChainTypes: HasHeightType + HasMessageType + HasEventType + HasErrorType {
-    type ChainId: Eq + Async;
+pub trait HasChainTypes:
+    HasHeightType + HasMessageType + HasEventType + HasChainIdType + HasTimestampType + HasErrorType
+{
+}
 
-    /**
-       The timestamp of a chain, which should increment monotonically.
-
-       By default, the timestamp only contains the `Ord` constraint, and does
-       not support operations like adding to a `Duration`.
-
-       We can impose additional constraints at the use site of `HasChainTypes`.
-       However doing so may impose limitations on which concrete types
-       the `Timestamp` type can be.
-
-       By keeping the abstract type minimal, we can for example use
-       simple `u8` or `u128` in seconds as the `Timestamp` type during testing,
-       and use the more complex types like `DateTime` type during production.
-
-       This especially helps given that having a canonical time type is
-       still largely an unsolved problem in software engineering. Depending
-       on the specific use cases, different concrete contexts may want to
-       use different date time types to enforce certain invariants.
-       By keeping this type abstract, we provide the flexibility to
-       concrete context implementers to decide which exact time type
-       they would like to use.
-    */
-    type Timestamp: Ord + Async;
+impl<Chain> HasChainTypes for Chain where
+    Chain: HasHeightType
+        + HasMessageType
+        + HasEventType
+        + HasChainIdType
+        + HasTimestampType
+        + HasErrorType
+{
 }
