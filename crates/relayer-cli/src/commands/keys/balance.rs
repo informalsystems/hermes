@@ -84,7 +84,7 @@ fn get_balance(chain: impl ChainHandle, key_name: Option<String>, denom: Option<
             ))
             .exit()
         }
-        Err(e) => Output::error(format!("there was a problem querying the balance: {}", e)).exit(),
+        Err(e) => Output::error(format!("there was a problem querying the balance: {e}")).exit(),
     }
 }
 
@@ -98,7 +98,7 @@ fn get_balances(chain: impl ChainHandle, key_name: Option<String>) {
                 chain_config.key_name
             });
 
-            let mut pretty_output = format!("Balances for key `{}`:", key_name);
+            let mut pretty_output = format!("Balances for key `{key_name}`:");
             for balance in balances {
                 write!(pretty_output, "\n\t{} {}", balance.amount, balance.denom)
                     .unwrap_or_else(exit_with_unrecoverable_error);
@@ -106,7 +106,7 @@ fn get_balances(chain: impl ChainHandle, key_name: Option<String>) {
 
             Output::success_msg(pretty_output).exit()
         }
-        Err(e) => Output::error(format!("there was a problem querying the balance: {}", e)).exit(),
+        Err(e) => Output::error(format!("there was a problem querying the balance: {e}")).exit(),
     }
 }
 

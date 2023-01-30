@@ -114,7 +114,7 @@ impl Runnable for TxChanOpenInitCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         // Retrieve the connection
@@ -126,7 +126,7 @@ impl Runnable for TxChanOpenInitCmd {
             IncludeProof::No,
         ) {
             Ok((connection, _)) => connection,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let channel = Channel {
@@ -158,7 +158,7 @@ impl Runnable for TxChanOpenInitCmd {
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }

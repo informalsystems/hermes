@@ -65,7 +65,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
         match self.execute() {
             Ok(p) if json() => Output::success(p).exit(),
             Ok(p) => Output::success(p.collated()).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }

@@ -57,7 +57,7 @@ impl Runnable for QueryChannelClientCmd {
             channel_id: self.channel_id.clone(),
         }) {
             Ok(cs) => Output::success(cs).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }

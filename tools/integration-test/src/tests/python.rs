@@ -41,7 +41,7 @@ impl BinaryChainTest for PythonTest {
         // package subdirectory automatically set by cargo
         let base_dir = env::var("PWD").unwrap_or(current_dir);
 
-        let command_args = [&format!("{}/e2e/run.py", base_dir), "-c", config_path];
+        let command_args = [&format!("{base_dir}/e2e/run.py"), "-c", config_path];
 
         let output = Command::new("python3")
             .args(command_args)

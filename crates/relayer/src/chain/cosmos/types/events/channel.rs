@@ -17,23 +17,23 @@ use ibc_relayer_types::Height;
 
 fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attributes, EventError> {
     Ok(Attributes {
-        port_id: extract_attribute(object, &format!("{}.port_id", namespace))?
+        port_id: extract_attribute(object, &format!("{namespace}.port_id"))?
             .parse()
             .map_err(EventError::parse)?,
-        channel_id: maybe_extract_attribute(object, &format!("{}.channel_id", namespace))
+        channel_id: maybe_extract_attribute(object, &format!("{namespace}.channel_id"))
             .and_then(|v| v.parse().ok()),
-        connection_id: extract_attribute(object, &format!("{}.connection_id", namespace))?
+        connection_id: extract_attribute(object, &format!("{namespace}.connection_id"))?
             .parse()
             .map_err(EventError::parse)?,
         counterparty_port_id: extract_attribute(
             object,
-            &format!("{}.counterparty_port_id", namespace),
+            &format!("{namespace}.counterparty_port_id"),
         )?
         .parse()
         .map_err(EventError::parse)?,
         counterparty_channel_id: maybe_extract_attribute(
             object,
-            &format!("{}.counterparty_channel_id", namespace),
+            &format!("{namespace}.counterparty_channel_id"),
         )
         .and_then(|v| v.parse().ok()),
     })

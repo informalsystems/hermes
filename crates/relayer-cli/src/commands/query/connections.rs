@@ -79,8 +79,7 @@ impl Runnable for QueryConnectionsCmd {
                 }
             }
             Err(e) => Output::error(format!(
-                "An error occurred trying to query connections: {}",
-                e
+                "An error occurred trying to query connections: {e}"
             ))
             .exit(),
         };

@@ -472,7 +472,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 ForeignClientError::client_upgrade(
                     self.id.clone(),
                     self.src_chain.id(),
-                    format!("failed while fetching from chain the upgraded client state. The upgrade height `{}` might be too low", src_upgrade_height),
+                    format!("failed while fetching from chain the upgraded client state. The upgrade height `{src_upgrade_height}` might be too low"),
                     e,
                 )
             })?;
@@ -730,10 +730,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 return Err(ForeignClientError::expired_or_frozen(
                     self.id().clone(),
                     self.dst_chain.id(),
-                    format!(
-                        "expired: time elapsed since last client update: {:?}",
-                        elapsed
-                    ),
+                    format!("expired: time elapsed since last client update: {elapsed:?}"),
                 ));
             }
             ConsensusStateTrusted::Trusted { elapsed } => Ok((client_state, Some(elapsed))),

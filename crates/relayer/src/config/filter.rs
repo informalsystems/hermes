@@ -102,7 +102,7 @@ impl fmt::Display for ChannelFilters {
             "{}",
             self.0
                 .iter()
-                .map(|(pid, cid)| format!("{}/{}", pid, cid))
+                .map(|(pid, cid)| format!("{pid}/{cid}"))
                 .join(", ")
         )
     }
@@ -239,8 +239,8 @@ impl<T> FilterPattern<T> {
 impl<T: fmt::Display> fmt::Display for FilterPattern<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FilterPattern::Exact(value) => write!(f, "{}", value),
-            FilterPattern::Wildcard(regex) => write!(f, "{}", regex),
+            FilterPattern::Exact(value) => write!(f, "{value}"),
+            FilterPattern::Wildcard(regex) => write!(f, "{regex}"),
         }
     }
 }
@@ -374,7 +374,7 @@ mod tests {
         let fp = PacketFilter::Allow(filter_policy);
         let toml_str = toml::to_string_pretty(&fp).expect("could not serialize packet filter");
 
-        println!("{}", toml_str);
+        println!("{toml_str}");
     }
 
     #[test]

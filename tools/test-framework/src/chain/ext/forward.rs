@@ -11,10 +11,8 @@ pub fn build_forward_address<'a, ChainB, ChainC>(
     channel: &'a ChannelId,
     final_destination_address: MonoTagged<ChainC, &'a WalletAddress>,
 ) -> WalletAddress {
-    let forward_address = format!(
-        "{}|{}/{}:{}",
-        intermediate_destination_address, port, channel, final_destination_address
-    );
+    let forward_address =
+        format!("{intermediate_destination_address}|{port}/{channel}:{final_destination_address}");
     WalletAddress(forward_address)
 }
 
@@ -24,9 +22,7 @@ pub fn build_invalid_forward_address<'a, ChainB, ChainC>(
     port: DualTagged<ChainB, ChainC, PortId>,
     channel: &'a ChannelId,
 ) -> WalletAddress {
-    let forward_address = format!(
-        "{}|{}/{}:invalid address",
-        intermediate_destination_address, port, channel
-    );
+    let forward_address =
+        format!("{intermediate_destination_address}|{port}/{channel}:invalid address");
     WalletAddress(forward_address)
 }

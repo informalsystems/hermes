@@ -274,7 +274,7 @@ impl Runnable for QueryChannelsCmd {
     fn run(&self) {
         match run_query_channels::<BaseChainHandle>(self) {
             Ok(output) => Output::success(output).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
@@ -355,8 +355,8 @@ impl QueryChannelsOutput {
 impl Debug for QueryChannelsOutput {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         match self {
-            QueryChannelsOutput::Verbose(output) => write!(f, "{:#?}", output),
-            QueryChannelsOutput::Summary(output) => write!(f, "{:#?}", output),
+            QueryChannelsOutput::Verbose(output) => write!(f, "{output:#?}"),
+            QueryChannelsOutput::Summary(output) => write!(f, "{output:#?}"),
             QueryChannelsOutput::Pretty(output) => {
                 output.iter().try_for_each(|pretty_print| {
                     write!(
