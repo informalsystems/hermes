@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 use core::mem;
 
 use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::chain::traits::types::message::CanEstimateMessageSize;
+use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
 use crate::base::chain::types::aliases::{Message, Runtime};
 use crate::base::core::traits::error::CanShareError;
 use crate::base::core::traits::sync::Async;
@@ -43,9 +43,8 @@ where
     Relay: HasRelayTypes<Error = Error>,
     Relay: HasMessageBatchReceiver<Target>,
     Relay: HasRuntime<Runtime = Runtime>,
-    Relay: CanShareError,
-    Relay: CanEstimateBatchSize<Target>,
     Relay: CanSendReadyBatches<Target>,
+    Relay: CanPartitionMessageBatches<Target>,
     TargetChain: HasRuntime<Runtime = Runtime>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
     Runtime: HasTime + CanSleep + HasMutex + HasSpawner + HasLogger<LevelDebug>,
@@ -115,7 +114,8 @@ where
         now: Runtime::Time,
         last_sent_time: &mut Runtime::Time,
     ) {
-        let ready_batches = self.partition_message_batches();
+        let ready_batches =
+            Relay::partition_message_batches(&self.config, &mut self.pending_batches);
 
         if ready_batches.is_empty() {
             // If there is nothing to send, return the remaining batches which should also be empty
@@ -138,11 +138,38 @@ where
             *last_sent_time = now;
         }
     }
+}
 
+pub trait CanPartitionMessageBatches<Target>: HasRelayTypes
+where
+    Target: ChainTarget<Self>,
+    Target::TargetChain: HasRuntime,
+    Runtime<Target::TargetChain>: HasChannelTypes + HasChannelOnceTypes,
+{
     fn partition_message_batches(
-        &mut self,
-    ) -> VecDeque<(Vec<Message>, EventResultSender<TargetChain, Error>)> {
-        let batches = mem::take(&mut self.pending_batches);
+        config: &BatchConfig,
+        pending_batches: &mut VecDeque<BatchSubmission<Target::TargetChain, Self::Error>>,
+    ) -> VecDeque<(
+        Vec<Message<Target::TargetChain>>,
+        EventResultSender<Target::TargetChain, Self::Error>,
+    )>;
+}
+
+impl<Relay, Target> CanPartitionMessageBatches<Target> for Relay
+where
+    Relay: HasRelayTypes,
+    Target: ChainTarget<Self>,
+    Target::TargetChain: HasRuntime + CanEstimateBatchSize,
+    Runtime<Target::TargetChain>: HasChannelTypes + HasChannelOnceTypes,
+{
+    fn partition_message_batches(
+        config: &BatchConfig,
+        pending_batches: &mut VecDeque<BatchSubmission<Target::TargetChain, Relay::Error>>,
+    ) -> VecDeque<(
+        Vec<Message<Target::TargetChain>>,
+        EventResultSender<Target::TargetChain, Self::Error>,
+    )> {
+        let batches = mem::take(pending_batches);
 
         let mut total_message_count: usize = 0;
         let mut total_batch_size: usize = 0;
@@ -150,16 +177,17 @@ where
         let (mut ready_batches, mut remaining_batches): (VecDeque<_>, _) = batches
             .into_iter()
             .partition(|(current_messages, _sender)| {
-                if total_message_count > self.config.max_message_count
-                    || total_batch_size > self.config.max_tx_size
+                if total_message_count > config.max_message_count
+                    || total_batch_size > config.max_tx_size
                 {
                     false
                 } else {
                     let current_message_count = current_messages.len();
-                    let current_batch_size = Relay::estimate_batch_size(current_messages);
+                    let current_batch_size =
+                        Target::TargetChain::estimate_batch_size(current_messages);
 
-                    if total_message_count + current_message_count > self.config.max_message_count
-                        || total_batch_size + current_batch_size > self.config.max_tx_size
+                    if total_message_count + current_message_count > config.max_message_count
+                        || total_batch_size + current_batch_size > config.max_tx_size
                     {
                         false
                     } else {
@@ -180,7 +208,7 @@ where
             }
         }
 
-        self.pending_batches = remaining_batches;
+        *pending_batches = remaining_batches;
 
         ready_batches
     }
@@ -250,26 +278,21 @@ where
     }
 }
 
-pub trait CanEstimateBatchSize<Target>: HasRelayTypes
-where
-    Target: ChainTarget<Self>,
-{
-    fn estimate_batch_size(messages: &[Message<Target::TargetChain>]) -> usize;
+pub trait CanEstimateBatchSize: HasMessageType {
+    fn estimate_batch_size(messages: &[Self::Message]) -> usize;
 }
 
-impl<Relay, Target> CanEstimateBatchSize<Target> for Relay
+impl<Chain> CanEstimateBatchSize for Chain
 where
-    Relay: HasRelayTypes,
-    Target: ChainTarget<Relay>,
-    Target::TargetChain: CanEstimateMessageSize,
+    Chain: CanEstimateMessageSize,
 {
-    fn estimate_batch_size(messages: &[Message<Target::TargetChain>]) -> usize {
+    fn estimate_batch_size(messages: &[Self::Message]) -> usize {
         messages
             .iter()
             .map(|message| {
                 // return 0 on encoding error, as we don't want
                 // the batching operation to error out.
-                Target::TargetChain::estimate_message_size(message).unwrap_or(0)
+                Chain::estimate_message_size(message).unwrap_or(0)
             })
             .sum()
     }
