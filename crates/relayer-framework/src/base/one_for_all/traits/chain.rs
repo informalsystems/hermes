@@ -127,6 +127,10 @@ pub trait OfaBaseChain: OfaChainTypes {
         event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
 
+    /**
+       Corresponds to
+       [`CanSendMessages::send_messages`](crate::base::chain::traits::message_sender::CanSendMessages::send_messages)
+    */
     async fn send_messages(
         &self,
         messages: Vec<Self::Message>,

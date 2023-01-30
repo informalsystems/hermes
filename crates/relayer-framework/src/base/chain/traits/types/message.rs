@@ -1,5 +1,5 @@
 /*!
-   Trait definition for [`HasMessageType`] and [`CanEstimateMessageSize`].
+   Trait definitions for [`HasMessageType`] and [`CanEstimateMessageSize`].
 */
 
 use crate::base::core::traits::error::HasErrorType;
