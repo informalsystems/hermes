@@ -86,9 +86,6 @@ where
             }
         }
 
-        // TODO: implementing the logic for extracting write acknowledgement
-        // and relaying Ack packets.
-
         Ok(())
     }
 }

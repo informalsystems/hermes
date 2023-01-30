@@ -1,6 +1,24 @@
 use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::core::traits::sync::Async;
 
+/**
+   Contains the abstract packet types for a chain context to send and receive
+   IBC packets from a counterparty chain.
+
+   To enable IBC communication, a chain context needs to have _two_ packet
+   types: [`IncomingPacket`](Self::IncomingPacket) for receiving packets
+   sent from a counterparty chain to the self (given) chain, and
+   [`OutgoingPacket`](Self::OutgoingPacket) for sending packets from the self
+   chain to the counterparty chain.
+
+   The two packet types are distinct, because the fields of the packets are
+   different. For example, the
+   [source channel ID](Self::incoming_packet_src_channel_id)
+   of an incoming packet is the counterparty chain's channel ID, but the
+   source channel ID of an outgoing packet is the self chain's channel ID.
+   For each field in a packet, there is one accessor method for the incoming
+   packet, and one for the outgoing packet.
+*/
 pub trait HasIbcPacketTypes<Counterparty>: HasIbcChainTypes<Counterparty>
 where
     Counterparty: HasIbcPacketTypes<
