@@ -5,6 +5,7 @@ use core::mem;
 
 use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::chain::traits::types::message::CanEstimateMessageSize;
+use crate::base::chain::types::aliases::Message;
 use crate::base::core::traits::error::CanShareError;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
@@ -43,7 +44,7 @@ where
     Relay: HasMessageBatchReceiver<Target>,
     Relay: HasRuntime<Runtime = Runtime>,
     Relay: CanShareError,
-    TargetChain: CanEstimateMessageSize,
+    Relay: CanEstimateBatchSize<Target>,
     TargetChain: HasRuntime<Runtime = Runtime>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
     Runtime: HasTime + CanSleep + HasMutex + HasSpawner + HasLogger<LevelDebug>,
@@ -155,7 +156,7 @@ where
                     false
                 } else {
                     let current_message_count = current_messages.len();
-                    let current_batch_size = Self::batch_size(current_messages);
+                    let current_batch_size = Relay::estimate_batch_size(current_messages);
 
                     if total_message_count + current_message_count > self.config.max_message_count
                         || total_batch_size + current_batch_size > self.config.max_tx_size
@@ -222,14 +223,28 @@ where
             }
         }
     }
+}
 
-    fn batch_size(messages: &[Message]) -> usize {
+pub trait CanEstimateBatchSize<Target>: HasRelayTypes
+where
+    Target: ChainTarget<Self>,
+{
+    fn estimate_batch_size(messages: &[Message<Target::TargetChain>]) -> usize;
+}
+
+impl<Relay, Target> CanEstimateBatchSize<Target> for Relay
+where
+    Relay: HasRelayTypes,
+    Target: ChainTarget<Relay>,
+    Target::TargetChain: CanEstimateMessageSize,
+{
+    fn estimate_batch_size(messages: &[Message<Target::TargetChain>]) -> usize {
         messages
             .iter()
             .map(|message| {
                 // return 0 on encoding error, as we don't want
                 // the batching operation to error out.
-                TargetChain::estimate_message_size(message).unwrap_or(0)
+                Target::TargetChain::estimate_message_size(message).unwrap_or(0)
             })
             .sum()
     }
