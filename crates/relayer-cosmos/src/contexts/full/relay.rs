@@ -4,10 +4,8 @@ use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_framework::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_framework::full::batch::impls::spawn::BatchMessageWorkerSpawner;
-use ibc_relayer_framework::full::batch::traits::spawn::CanSpawnBatchMessageWorker;
 use ibc_relayer_framework::full::batch::types::config::BatchConfig;
+use ibc_relayer_framework::full::batch::worker::CanSpawnBatchMessageWorkers;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
@@ -109,15 +107,7 @@ where
         runtime,
     ));
 
-    <BatchMessageWorkerSpawner<SourceTarget>>::spawn_batch_message_worker(
-        relay.clone(),
-        batch_config.clone(),
-    );
-
-    <BatchMessageWorkerSpawner<DestinationTarget>>::spawn_batch_message_worker(
-        relay.clone(),
-        batch_config,
-    );
+    relay.spawn_batch_message_workers(batch_config);
 
     relay
 }
