@@ -1,13 +1,12 @@
 use alloc::collections::VecDeque;
-use alloc::sync::Arc;
-use core::marker::PhantomData;
+use async_trait::async_trait;
 use core::mem;
 
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::chain::traits::types::message::CanEstimateMessageSize;
-use crate::base::core::traits::error::CanShareError;
+use crate::base::chain::traits::types::chain::HasChainTypes;
+use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
+use crate::base::chain::types::aliases::Runtime;
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::target::ChainTarget;
+use crate::base::relay::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
 use crate::base::runtime::traits::mutex::HasMutex;
@@ -23,58 +22,88 @@ use crate::full::runtime::traits::channel_once::{CanUseChannelsOnce, HasChannelO
 use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
-pub struct BatchMessageWorker<Relay, Target>
-where
-    Relay: HasRelayTypes,
-    Relay: CanSendIbcMessagesFromBatchWorker<Target>,
-    Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime,
-    <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes + HasChannelOnceTypes,
-{
-    pub relay: Relay,
-    pub pending_batches: VecDeque<BatchSubmission<Target::TargetChain, Relay::Error>>,
-    pub config: BatchConfig,
-    pub phantom: PhantomData<Target>,
+#[async_trait]
+pub trait CanSpawnBatchMessageWorkers: Async {
+    fn spawn_batch_message_workers(&self, config: BatchConfig);
 }
 
-impl<Relay, Target, TargetChain, Message, Event, Runtime, Error> BatchMessageWorker<Relay, Target>
+impl<Relay> CanSpawnBatchMessageWorkers for Relay
 where
-    Relay: HasRelayTypes<Error = Error>,
-    Relay: HasMessageBatchReceiver<Target>,
-    Relay: HasRuntime<Runtime = Runtime>,
-    Relay: CanShareError,
-    TargetChain: CanEstimateMessageSize,
-    TargetChain: HasRuntime<Runtime = Runtime>,
-    TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
-    Runtime: HasTime + CanSleep + HasMutex + HasSpawner + HasLogger<LevelDebug>,
-    Runtime: CanUseChannelsOnce + CanUseChannels,
-    Target: ChainTarget<Relay, TargetChain = TargetChain>,
-    Relay: CanSendIbcMessagesFromBatchWorker<Target>,
-    Event: Async,
-    Error: Async,
-    Message: Async,
+    Relay: Clone,
+    Relay: CanSpawnBatchMessageWorker<SourceTarget>,
+    Relay: CanSpawnBatchMessageWorker<DestinationTarget>,
 {
-    pub fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
-        let spawner = relay.runtime().spawner();
+    fn spawn_batch_message_workers(&self, config: BatchConfig) {
+        <Relay as CanSpawnBatchMessageWorker<SourceTarget>>::spawn_batch_message_worker(
+            self.clone(),
+            config.clone(),
+        );
 
-        let mut handler = Self {
-            relay,
-            pending_batches: VecDeque::new(),
+        <Relay as CanSpawnBatchMessageWorker<DestinationTarget>>::spawn_batch_message_worker(
+            self.clone(),
             config,
-            phantom: PhantomData,
-        };
+        );
+    }
+}
+
+#[async_trait]
+trait CanSpawnBatchMessageWorker<Target>: HasRelayTypes
+where
+    Target: ChainTarget<Self>,
+{
+    fn spawn_batch_message_worker(self, config: BatchConfig);
+}
+
+impl<Relay, Target, Runtime> CanSpawnBatchMessageWorker<Target> for Relay
+where
+    Relay: CanRunLoop<Target>,
+    Target: ChainTarget<Relay>,
+    Target::TargetChain: HasRuntime<Runtime = Runtime>,
+    Runtime: HasSpawner + HasChannelTypes + HasChannelOnceTypes,
+{
+    fn spawn_batch_message_worker(self, config: BatchConfig) {
+        let spawner = Target::target_chain(&self).runtime().spawner();
 
         spawner.spawn(async move {
-            handler.run_loop().await;
+            self.run_loop(&config).await;
         });
     }
+}
 
-    async fn run_loop(&mut self) {
-        let mut last_sent_time = self.relay.runtime().now();
+#[async_trait]
+trait CanRunLoop<Target>: HasRelayTypes
+where
+    Target: ChainTarget<Self>,
+    Target::TargetChain: HasRuntime,
+    Runtime<Target::TargetChain>: HasChannelTypes + HasChannelOnceTypes,
+{
+    async fn run_loop(&self, config: &BatchConfig);
+}
+
+#[async_trait]
+impl<Relay, Target, Runtime> CanRunLoop<Target> for Relay
+where
+    Relay: CanProcessMessageBatches<Target>,
+    Relay: HasMessageBatchReceiver<Target>,
+    Target: ChainTarget<Relay>,
+    Target::TargetChain: HasRuntime<Runtime = Runtime>,
+    Runtime: HasTime
+        + HasMutex
+        + CanSleep
+        + HasLogger<LevelDebug>
+        + CanUseChannels
+        + HasChannelOnceTypes,
+{
+    async fn run_loop(&self, config: &BatchConfig) {
+        let runtime = Target::target_chain(self).runtime();
+        let mut pending_batches: VecDeque<BatchSubmission<Target::TargetChain, Self::Error>> =
+            VecDeque::new();
+
+        let mut last_sent_time = runtime.now();
 
         loop {
             let payload = {
-                let receiver_mutex = self.relay.get_batch_receiver();
+                let receiver_mutex = self.get_batch_receiver();
                 let mut receiver = Runtime::acquire_mutex(receiver_mutex).await;
                 Runtime::try_receive(&mut receiver)
             };
@@ -82,66 +111,115 @@ where
             match payload {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
-                        self.relay
-                            .runtime()
-                            .log(LevelDebug, "received message batch")
-                            .await;
-                        self.pending_batches.push_back(batch);
+                        runtime.log(LevelDebug, "received message batch").await;
+                        pending_batches.push_back(batch);
                     }
 
-                    let current_batch_size = self.pending_batches.len();
-                    let now = self.relay.runtime().now();
+                    let current_batch_size = pending_batches.len();
+                    let now = runtime.now();
 
-                    self.process_message_batches(now, &mut last_sent_time).await;
+                    self.process_message_batches(
+                        config,
+                        &mut pending_batches,
+                        now,
+                        &mut last_sent_time,
+                    )
+                    .await;
 
-                    if self.pending_batches.len() == current_batch_size {
-                        self.relay.runtime().sleep(self.config.sleep_time).await;
+                    if pending_batches.len() == current_batch_size {
+                        runtime.sleep(config.sleep_time).await;
                     }
                 }
                 Err(_) => {
-                    self.relay
-                        .runtime()
+                    runtime
                         .log(LevelDebug, "error in try_receive, terminating worker")
                         .await;
+
                     return;
                 }
             }
         }
     }
+}
 
+#[async_trait]
+trait CanProcessMessageBatches<Target>: HasRelayTypes
+where
+    Target: ChainTarget<Self>,
+    Target::TargetChain: HasRuntime,
+    Runtime<Target::TargetChain>: HasTime + HasChannelTypes + HasChannelOnceTypes,
+{
     async fn process_message_batches(
-        &mut self,
+        &self,
+        config: &BatchConfig,
+        pending_batches: &mut VecDeque<BatchSubmission<Target::TargetChain, Self::Error>>,
+        now: <Runtime<Target::TargetChain> as HasTime>::Time,
+        last_sent_time: &mut <Runtime<Target::TargetChain> as HasTime>::Time,
+    );
+}
+
+#[async_trait]
+impl<Relay, Target, Runtime> CanProcessMessageBatches<Target> for Relay
+where
+    Relay: CanSendReadyBatches<Target>,
+    Target: ChainTarget<Relay>,
+    Target::TargetChain: HasRuntime<Runtime = Runtime>,
+    Target::TargetChain: CanPartitionMessageBatches<Relay::Error>,
+    Runtime: HasTime + HasLogger<LevelDebug> + HasChannelTypes + HasChannelOnceTypes,
+{
+    async fn process_message_batches(
+        &self,
+        config: &BatchConfig,
+        pending_batches: &mut VecDeque<BatchSubmission<Target::TargetChain, Self::Error>>,
         now: Runtime::Time,
         last_sent_time: &mut Runtime::Time,
     ) {
-        let ready_batches = self.partition_message_batches();
+        let runtime = Target::target_chain(self).runtime();
+        let ready_batches = Target::TargetChain::partition_message_batches(config, pending_batches);
 
         if ready_batches.is_empty() {
             // If there is nothing to send, return the remaining batches which should also be empty
-        } else if self.pending_batches.is_empty()
-            && Runtime::duration_since(&now, last_sent_time) < self.config.max_delay
+        } else if pending_batches.is_empty()
+            && Runtime::duration_since(&now, last_sent_time) < config.max_delay
         {
             // If the current batch is not full and there is still some time until max delay,
             // return everything and wait until the next batch is full
-            self.relay
-                .runtime()
+            runtime
                 .log(LevelDebug, "waiting for more batch to arrive")
                 .await;
-            self.pending_batches = ready_batches;
+
+            *pending_batches = ready_batches;
         } else {
-            self.relay
-                .runtime()
-                .log(LevelDebug, "sending reading batches")
-                .await;
-            Self::send_ready_batches(&self.relay, ready_batches).await;
+            runtime.log(LevelDebug, "sending reading batches").await;
+            self.send_ready_batches(ready_batches).await;
             *last_sent_time = now;
         }
     }
+}
 
+trait CanPartitionMessageBatches<Error>: HasChainTypes + HasRuntime
+where
+    Error: Async,
+    Self::Runtime: HasChannelTypes + HasChannelOnceTypes,
+{
     fn partition_message_batches(
-        &mut self,
-    ) -> VecDeque<(Vec<Message>, EventResultSender<TargetChain, Error>)> {
-        let batches = mem::take(&mut self.pending_batches);
+        config: &BatchConfig,
+        pending_batches: &mut VecDeque<BatchSubmission<Self, Error>>,
+    ) -> VecDeque<(Vec<Self::Message>, EventResultSender<Self, Error>)>;
+}
+
+impl<Chain, Error, Runtime> CanPartitionMessageBatches<Error> for Chain
+where
+    Error: Async,
+    Chain: HasChainTypes + HasRuntime<Runtime = Runtime>,
+    Chain: CanEstimateBatchSize,
+    Runtime: HasChannelTypes + HasChannelOnceTypes,
+{
+    fn partition_message_batches(
+        config: &BatchConfig,
+        pending_batches: &mut VecDeque<BatchSubmission<Chain, Error>>,
+    ) -> VecDeque<(Vec<Chain::Message>, EventResultSender<Chain, Error>)> {
+        let batches = mem::take(pending_batches);
 
         let mut total_message_count: usize = 0;
         let mut total_batch_size: usize = 0;
@@ -149,16 +227,16 @@ where
         let (mut ready_batches, mut remaining_batches): (VecDeque<_>, _) = batches
             .into_iter()
             .partition(|(current_messages, _sender)| {
-                if total_message_count > self.config.max_message_count
-                    || total_batch_size > self.config.max_tx_size
+                if total_message_count > config.max_message_count
+                    || total_batch_size > config.max_tx_size
                 {
                     false
                 } else {
                     let current_message_count = current_messages.len();
-                    let current_batch_size = Self::batch_size(current_messages);
+                    let current_batch_size = Chain::estimate_batch_size(current_messages);
 
-                    if total_message_count + current_message_count > self.config.max_message_count
-                        || total_batch_size + current_batch_size > self.config.max_tx_size
+                    if total_message_count + current_message_count > config.max_message_count
+                        || total_batch_size + current_batch_size > config.max_tx_size
                     {
                         false
                     } else {
@@ -179,15 +257,40 @@ where
             }
         }
 
-        self.pending_batches = remaining_batches;
+        *pending_batches = remaining_batches;
 
         ready_batches
     }
+}
 
+#[async_trait]
+trait CanSendReadyBatches<Target>: HasRelayTypes
+where
+    Target: ChainTarget<Self>,
+    Target::TargetChain: HasRuntime,
+    Runtime<Target::TargetChain>: HasChannelTypes + HasChannelOnceTypes,
+{
     async fn send_ready_batches(
-        relay: &Relay,
-        ready_batches: VecDeque<BatchSubmission<TargetChain, Error>>,
+        &self,
+        ready_batches: VecDeque<BatchSubmission<Target::TargetChain, Self::Error>>,
+    );
+}
+
+#[async_trait]
+impl<Relay, Target, Runtime> CanSendReadyBatches<Target> for Relay
+where
+    Relay: CanSendIbcMessagesFromBatchWorker<Target>,
+    Target: ChainTarget<Relay>,
+    Target::TargetChain: HasRuntime<Runtime = Runtime>,
+    Runtime: CanUseChannelsOnce + CanUseChannels + HasLogger<LevelDebug>,
+    Relay::Error: Clone,
+{
+    async fn send_ready_batches(
+        &self,
+        ready_batches: VecDeque<BatchSubmission<Target::TargetChain, Self::Error>>,
     ) {
+        let runtime = Target::target_chain(self).runtime();
+
         let (messages, senders): (Vec<_>, Vec<_>) = ready_batches
             .into_iter()
             .map(|(messages, result_sender)| {
@@ -198,19 +301,16 @@ where
 
         let in_messages = messages.into_iter().flatten().collect::<Vec<_>>();
 
-        relay
-            .runtime()
+        runtime
             .log(LevelDebug, "sending batched messages to inner sender")
             .await;
 
-        let send_result = relay.send_messages_from_batch_worker(in_messages).await;
+        let send_result = self.send_messages_from_batch_worker(in_messages).await;
 
         match send_result {
             Err(e) => {
-                let error = Arc::new(e);
                 for (_, sender) in senders.into_iter() {
-                    let _ =
-                        Runtime::send_once(sender, Err(Relay::from_shared_error(error.clone())));
+                    let _ = Runtime::send_once(sender, Err(e.clone()));
                 }
             }
             Ok(all_events) => {
@@ -222,14 +322,23 @@ where
             }
         }
     }
+}
 
-    fn batch_size(messages: &[Message]) -> usize {
+trait CanEstimateBatchSize: HasMessageType {
+    fn estimate_batch_size(messages: &[Self::Message]) -> usize;
+}
+
+impl<Chain> CanEstimateBatchSize for Chain
+where
+    Chain: CanEstimateMessageSize,
+{
+    fn estimate_batch_size(messages: &[Self::Message]) -> usize {
         messages
             .iter()
             .map(|message| {
                 // return 0 on encoding error, as we don't want
                 // the batching operation to error out.
-                TargetChain::estimate_message_size(message).unwrap_or(0)
+                Chain::estimate_message_size(message).unwrap_or(0)
             })
             .sum()
     }
