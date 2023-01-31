@@ -1,4 +1,3 @@
-use alloc::sync::Arc;
 use core::fmt::Debug;
 
 use crate::base::core::traits::sync::Async;
@@ -34,8 +33,4 @@ pub trait HasErrorType: Async {
 */
 pub trait InjectError<E>: HasErrorType {
     fn inject_error(err: E) -> Self::Error;
-}
-
-pub trait CanShareError: HasErrorType {
-    fn from_shared_error(err: Arc<Self::Error>) -> Self::Error;
 }
