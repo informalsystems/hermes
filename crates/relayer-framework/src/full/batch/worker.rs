@@ -4,11 +4,9 @@ use async_trait::async_trait;
 use core::marker::PhantomData;
 use core::mem;
 
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
 use crate::base::chain::types::aliases::{Message, Runtime};
 use crate::base::core::traits::error::CanShareError;
-use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
@@ -38,20 +36,15 @@ where
     pub phantom: PhantomData<Target>,
 }
 
-impl<Relay, Target, TargetChain, Message, Event, Runtime, Error> BatchMessageWorker<Relay, Target>
+impl<Relay, Target, Runtime> BatchMessageWorker<Relay, Target>
 where
-    Relay: HasRelayTypes<Error = Error>,
-    Relay: HasMessageBatchReceiver<Target>,
+    Relay: HasRelayTypes,
     Relay: HasRuntime<Runtime = Runtime>,
-    Relay: CanProcessMessageBatches<Target>,
-    TargetChain: HasRuntime<Runtime = Runtime>,
-    TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
-    Runtime: HasTime + CanSleep + HasMutex + HasSpawner + HasLogger<LevelDebug>,
-    Runtime: CanUseChannelsOnce + CanUseChannels,
-    Target: ChainTarget<Relay, TargetChain = TargetChain>,
-    Event: Async,
-    Error: Async,
-    Message: Async,
+    Relay: CanRunLoop<Target>,
+    Target::TargetChain: HasRuntime<Runtime = Runtime>,
+    Runtime: HasSpawner,
+    Runtime: HasChannelTypes + HasChannelOnceTypes,
+    Target: ChainTarget<Relay>,
 {
     pub fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
         let spawner = relay.runtime().spawner();
@@ -64,16 +57,54 @@ where
         };
 
         spawner.spawn(async move {
-            handler.run_loop().await;
+            handler
+                .relay
+                .run_loop(&handler.config, &mut handler.pending_batches)
+                .await;
         });
     }
+}
 
-    async fn run_loop(&mut self) {
-        let mut last_sent_time = self.relay.runtime().now();
+#[async_trait]
+pub trait CanRunLoop<Target>: HasRelayTypes
+where
+    Target: ChainTarget<Self>,
+    Target::TargetChain: HasRuntime,
+    Runtime<Target::TargetChain>: HasChannelTypes + HasChannelOnceTypes,
+{
+    async fn run_loop(
+        &self,
+        config: &BatchConfig,
+        pending_batches: &mut VecDeque<BatchSubmission<Target::TargetChain, Self::Error>>,
+    );
+}
+
+#[async_trait]
+impl<Relay, Target, Runtime> CanRunLoop<Target> for Relay
+where
+    Relay: CanProcessMessageBatches<Target>,
+    Relay: HasMessageBatchReceiver<Target>,
+    Target: ChainTarget<Relay>,
+    Target::TargetChain: HasRuntime<Runtime = Runtime>,
+    Runtime: HasTime
+        + HasMutex
+        + CanSleep
+        + HasLogger<LevelDebug>
+        + CanUseChannels
+        + HasChannelOnceTypes,
+{
+    async fn run_loop(
+        &self,
+        config: &BatchConfig,
+        pending_batches: &mut VecDeque<BatchSubmission<Target::TargetChain, Self::Error>>,
+    ) {
+        let runtime = Target::target_chain(self).runtime();
+
+        let mut last_sent_time = runtime.now();
 
         loop {
             let payload = {
-                let receiver_mutex = self.relay.get_batch_receiver();
+                let receiver_mutex = self.get_batch_receiver();
                 let mut receiver = Runtime::acquire_mutex(receiver_mutex).await;
                 Runtime::try_receive(&mut receiver)
             };
@@ -81,34 +112,25 @@ where
             match payload {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
-                        self.relay
-                            .runtime()
-                            .log(LevelDebug, "received message batch")
-                            .await;
-                        self.pending_batches.push_back(batch);
+                        runtime.log(LevelDebug, "received message batch").await;
+                        pending_batches.push_back(batch);
                     }
 
-                    let current_batch_size = self.pending_batches.len();
-                    let now = self.relay.runtime().now();
+                    let current_batch_size = pending_batches.len();
+                    let now = runtime.now();
 
-                    self.relay
-                        .process_message_batches(
-                            &self.config,
-                            &mut self.pending_batches,
-                            now,
-                            &mut last_sent_time,
-                        )
+                    self.process_message_batches(config, pending_batches, now, &mut last_sent_time)
                         .await;
 
-                    if self.pending_batches.len() == current_batch_size {
-                        self.relay.runtime().sleep(self.config.sleep_time).await;
+                    if pending_batches.len() == current_batch_size {
+                        runtime.sleep(config.sleep_time).await;
                     }
                 }
                 Err(_) => {
-                    self.relay
-                        .runtime()
+                    runtime
                         .log(LevelDebug, "error in try_receive, terminating worker")
                         .await;
+
                     return;
                 }
             }
