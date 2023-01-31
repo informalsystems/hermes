@@ -2,8 +2,9 @@ use alloc::collections::VecDeque;
 use async_trait::async_trait;
 use core::mem;
 
+use crate::base::chain::traits::types::chain::HasChainTypes;
 use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
-use crate::base::chain::types::aliases::{Message, Runtime};
+use crate::base::chain::types::aliases::Runtime;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -56,9 +57,9 @@ where
 impl<Relay, Target, Runtime> CanSpawnBatchMessageWorker<Target> for Relay
 where
     Relay: CanRunLoop<Target>,
+    Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: HasSpawner + HasChannelTypes + HasChannelOnceTypes,
-    Target: ChainTarget<Relay>,
 {
     fn spawn_batch_message_worker(self, config: BatchConfig) {
         let spawner = Target::target_chain(&self).runtime().spawner();
@@ -160,10 +161,10 @@ where
 #[async_trait]
 impl<Relay, Target, Runtime> CanProcessMessageBatches<Target> for Relay
 where
-    Relay: CanPartitionMessageBatches<Target>,
     Relay: CanSendReadyBatches<Target>,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
+    Target::TargetChain: CanPartitionMessageBatches<Relay::Error>,
     Runtime: HasTime + HasLogger<LevelDebug> + HasChannelTypes + HasChannelOnceTypes,
 {
     async fn process_message_batches(
@@ -174,7 +175,7 @@ where
         last_sent_time: &mut Runtime::Time,
     ) {
         let runtime = Target::target_chain(self).runtime();
-        let ready_batches = Relay::partition_message_batches(config, pending_batches);
+        let ready_batches = Target::TargetChain::partition_message_batches(config, pending_batches);
 
         if ready_batches.is_empty() {
             // If there is nothing to send, return the remaining batches which should also be empty
@@ -196,36 +197,28 @@ where
     }
 }
 
-trait CanPartitionMessageBatches<Target>: HasRelayTypes
+trait CanPartitionMessageBatches<Error>: HasChainTypes + HasRuntime
 where
-    Target: ChainTarget<Self>,
-    Target::TargetChain: HasRuntime,
-    Runtime<Target::TargetChain>: HasChannelTypes + HasChannelOnceTypes,
+    Error: Async,
+    Self::Runtime: HasChannelTypes + HasChannelOnceTypes,
 {
     fn partition_message_batches(
         config: &BatchConfig,
-        pending_batches: &mut VecDeque<BatchSubmission<Target::TargetChain, Self::Error>>,
-    ) -> VecDeque<(
-        Vec<Message<Target::TargetChain>>,
-        EventResultSender<Target::TargetChain, Self::Error>,
-    )>;
+        pending_batches: &mut VecDeque<BatchSubmission<Self, Error>>,
+    ) -> VecDeque<(Vec<Self::Message>, EventResultSender<Self, Error>)>;
 }
 
-impl<Relay, Target, Runtime> CanPartitionMessageBatches<Target> for Relay
+impl<Chain, Error, Runtime> CanPartitionMessageBatches<Error> for Chain
 where
-    Relay: HasRelayTypes,
-    Target: ChainTarget<Self>,
-    Target::TargetChain: HasRuntime<Runtime = Runtime>,
-    Target::TargetChain: CanEstimateBatchSize,
+    Error: Async,
+    Chain: HasChainTypes + HasRuntime<Runtime = Runtime>,
+    Chain: CanEstimateBatchSize,
     Runtime: HasChannelTypes + HasChannelOnceTypes,
 {
     fn partition_message_batches(
         config: &BatchConfig,
-        pending_batches: &mut VecDeque<BatchSubmission<Target::TargetChain, Relay::Error>>,
-    ) -> VecDeque<(
-        Vec<Message<Target::TargetChain>>,
-        EventResultSender<Target::TargetChain, Self::Error>,
-    )> {
+        pending_batches: &mut VecDeque<BatchSubmission<Chain, Error>>,
+    ) -> VecDeque<(Vec<Chain::Message>, EventResultSender<Chain, Error>)> {
         let batches = mem::take(pending_batches);
 
         let mut total_message_count: usize = 0;
@@ -240,8 +233,7 @@ where
                     false
                 } else {
                     let current_message_count = current_messages.len();
-                    let current_batch_size =
-                        Target::TargetChain::estimate_batch_size(current_messages);
+                    let current_batch_size = Chain::estimate_batch_size(current_messages);
 
                     if total_message_count + current_message_count > config.max_message_count
                         || total_batch_size + current_batch_size > config.max_tx_size
