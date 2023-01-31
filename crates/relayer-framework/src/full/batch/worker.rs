@@ -1,11 +1,9 @@
 use alloc::collections::VecDeque;
-use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::mem;
 
 use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
 use crate::base::chain::types::aliases::{Message, Runtime};
-use crate::base::core::traits::error::CanShareError;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -291,13 +289,12 @@ where
 #[async_trait]
 impl<Relay, Target, Runtime> CanSendReadyBatches<Target> for Relay
 where
-    Relay: HasRelayTypes,
-    Relay: CanShareError,
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: CanUseChannelsOnce + CanUseChannels,
     Runtime: HasLogger<LevelDebug>,
+    Relay::Error: Clone,
 {
     async fn send_ready_batches(
         &self,
@@ -322,10 +319,8 @@ where
 
         match send_result {
             Err(e) => {
-                let error = Arc::new(e);
                 for (_, sender) in senders.into_iter() {
-                    let _ =
-                        Runtime::send_once(sender, Err(Relay::from_shared_error(error.clone())));
+                    let _ = Runtime::send_once(sender, Err(e.clone()));
                 }
             }
             Ok(all_events) => {

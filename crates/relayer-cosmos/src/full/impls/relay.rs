@@ -1,4 +1,3 @@
-use alloc::sync::Arc;
 use async_trait::async_trait;
 use ibc_relayer_framework::full::one_for_all::traits::relay::OfaFullRelay;
 
@@ -12,10 +11,6 @@ impl<Relay> OfaFullRelay for CosmosRelayWrapper<Relay>
 where
     Relay: CosmosFullRelay,
 {
-    fn from_shared_error(e: Arc<Error>) -> Error {
-        e.as_ref().clone()
-    }
-
     fn is_retryable_error(_: &Error) -> bool {
         false
     }
