@@ -1,0 +1,27 @@
+[package]
+name         = "ibc-cosmos"
+version      = "0.19.0"
+edition      = "2021"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.60"
+description  = """
+    Implementation of an IBC Relayer in Rust, as a library
+"""
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+
+[dependencies]
+async-trait = "0.1.56"
+ibc = { version = "0.27.0" }
+ibc-proto     = { version = "0.24.0" }
+ibc-framework = { version = "0.1.0", path = "../ibc-framework" }
+tendermint = { version = "=0.28.0", default-features = false }
+tendermint-proto = { version = "=0.28.0", default-features = false }
+tendermint-light-client-verifier = { version = "=0.28.0", default-features = false }
