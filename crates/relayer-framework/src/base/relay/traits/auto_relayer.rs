@@ -6,14 +6,14 @@ use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanAutoRelay: HasRelayTypes {
+pub trait CanAutoRelay: Async {
     async fn auto_relay(&self);
 }
 
 #[async_trait]
 pub trait AutoRelayer<Relay>: Async
 where
-    Relay: HasRelayTypes,
+    Relay: Async,
 {
     async fn auto_relay(relay: &Relay);
 }
