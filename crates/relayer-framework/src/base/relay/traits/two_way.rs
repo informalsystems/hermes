@@ -1,40 +1,19 @@
-use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::types::HasRelayTypes;
 
 pub trait HasTwoWayRelay: HasErrorType {
-    type ChainA: HasIbcPacketTypes<
-        Self::ChainB,
-        IncomingPacket = Self::PacketBToA,
-        OutgoingPacket = Self::PacketAToB,
-    >;
-
-    type ChainB: HasIbcPacketTypes<
-        Self::ChainA,
-        IncomingPacket = Self::PacketAToB,
-        OutgoingPacket = Self::PacketBToA,
-    >;
-
-    type PacketAToB: Async;
-
-    type PacketBToA: Async;
-
-    type RelayAToB: HasRelayTypes<
-        SrcChain = Self::ChainA,
-        DstChain = Self::ChainB,
-        Packet = Self::PacketAToB,
-        Error = Self::Error,
-    >;
+    type RelayAToB: HasRelayTypes;
 
     type RelayBToA: HasRelayTypes<
-        SrcChain = Self::ChainB,
-        DstChain = Self::ChainA,
-        Packet = Self::PacketBToA,
-        Error = Self::Error,
+        SrcChain = <Self::RelayAToB as HasRelayTypes>::DstChain,
+        DstChain = <Self::RelayAToB as HasRelayTypes>::SrcChain,
     >;
 
     fn relay_a_to_b(&self) -> &Self::RelayAToB;
 
     fn relay_b_to_a(&self) -> &Self::RelayBToA;
+
+    fn error_a_to_b(e: <Self::RelayAToB as HasErrorType>::Error) -> Self::Error;
+
+    fn error_b_to_a(e: <Self::RelayAToB as HasErrorType>::Error) -> Self::Error;
 }

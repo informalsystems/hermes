@@ -1,4 +1,3 @@
-use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::two_way::HasTwoWayRelay;
@@ -20,27 +19,16 @@ where
     type Error = Error;
 }
 
-impl<Error, ChainA, ChainB, RelayAToB, RelayBToA, PacketAToB, PacketBToA> HasTwoWayRelay
-    for TwoWayRelayContext<RelayAToB, RelayBToA>
+impl<Error, RelayAToB, RelayBToA> HasTwoWayRelay for TwoWayRelayContext<RelayAToB, RelayBToA>
 where
     Error: Debug + Async,
-    PacketAToB: Async,
-    PacketBToA: Async,
-    ChainA: HasIbcPacketTypes<ChainB, IncomingPacket = PacketBToA, OutgoingPacket = PacketAToB>,
-    ChainB: HasIbcPacketTypes<ChainA, IncomingPacket = PacketAToB, OutgoingPacket = PacketBToA>,
-    RelayAToB:
-        HasRelayTypes<SrcChain = ChainA, DstChain = ChainB, Packet = PacketAToB, Error = Error>,
-    RelayBToA:
-        HasRelayTypes<SrcChain = ChainB, DstChain = ChainA, Packet = PacketBToA, Error = Error>,
+    RelayAToB: HasRelayTypes<Error = Error>,
+    RelayBToA: HasRelayTypes<
+        SrcChain = RelayAToB::DstChain,
+        DstChain = RelayAToB::SrcChain,
+        Error = Error,
+    >,
 {
-    type ChainA = ChainA;
-
-    type ChainB = ChainB;
-
-    type PacketAToB = PacketAToB;
-
-    type PacketBToA = PacketBToA;
-
     type RelayAToB = RelayAToB;
 
     type RelayBToA = RelayBToA;
@@ -51,5 +39,13 @@ where
 
     fn relay_b_to_a(&self) -> &RelayBToA {
         &self.relay_b_to_a
+    }
+
+    fn error_a_to_b(e: Error) -> Error {
+        e
+    }
+
+    fn error_b_to_a(e: Error) -> Error {
+        e
     }
 }
