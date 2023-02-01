@@ -103,6 +103,7 @@ where
                 })?;
 
             let trusted_state = TrustedBlockState {
+                chain_id: &client_state.chain_id.clone().into(),
                 header_time: trusted_consensus_state.timestamp,
                 height: trusted_block_height,
                 next_validators: &new_client_header.trusted_validator_set,

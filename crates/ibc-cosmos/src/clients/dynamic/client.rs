@@ -1,5 +1,6 @@
 use core::time::Duration;
 use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::clients::ics07_tendermint::client_type as tendermint_client_type;
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TendermintClientHeader;
 use ibc::clients::ics07_tendermint::misbehaviour::Misbehaviour as TendermintMisbehavior;
@@ -105,7 +106,9 @@ impl Prism<DynMisbehavior, TendermintMisbehavior> for DynamicClient {
 }
 
 impl HasClientTypeFor<TendermintClient> for DynamicClient {
-    const CLIENT_TYPE: ClientType = ClientType::Tendermint;
+    fn client_type() -> Self::ClientType {
+        tendermint_client_type()
+    }
 }
 
 impl HasHostTypes for DynamicClient {

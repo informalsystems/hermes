@@ -1845,8 +1845,7 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22a730a189bda73e2d2ac215b49fd2c533388b966dd59c9d7550e520f6b9e711"
+source = "git+https://github.com/cosmos/ibc-rs.git?branch=soares/relayer-next#3307b5738694b43324d4049204f7a890d0439893"
 dependencies = [
  "bytes",
  "derive_more",

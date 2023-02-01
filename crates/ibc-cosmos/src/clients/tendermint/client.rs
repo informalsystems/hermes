@@ -1,4 +1,5 @@
 use core::time::Duration;
+use ibc::clients::ics07_tendermint::client_type as tendermint_client_type;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::consensus_state::ConsensusState;
@@ -158,7 +159,9 @@ impl<T> Prism<T, T> for TendermintClient {
 }
 
 impl HasClientTypeFor<TendermintClient> for TendermintClient {
-    const CLIENT_TYPE: ClientType = ClientType::Tendermint;
+    fn client_type() -> Self::ClientType {
+        tendermint_client_type()
+    }
 }
 
 impl HasHostTypes for TendermintClient {

@@ -27,7 +27,7 @@ where
     ) -> Result<(Context::AnyClientState, Context::AnyConsensusState), Context::Error> {
         let client_type = context.get_client_type(client_id)?;
 
-        if client_type == Context::CLIENT_TYPE {
+        if client_type == Context::client_type() {
             <LiftClientUpdateHandler<Handler>>::check_client_header_and_update_state(
                 context,
                 client_id,
