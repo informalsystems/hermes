@@ -1,0 +1,21 @@
+[package]
+name         = "ibc-framework"
+version      = "0.1.0"
+edition      = "2021"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.60"
+description  = """
+    Implementation of an IBC Relayer in Rust, as a library
+"""
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+
+[dependencies]
+async-trait = "0.1.56"

@@ -11,6 +11,7 @@ members = [
     "crates/relayer-framework-test",
     "crates/relayer-runtime",
     "crates/relayer-cosmos",
+    "crates/ibc-framework",
     "crates/telemetry",
     "crates/chain-registry",
     "tools/integration-test",
