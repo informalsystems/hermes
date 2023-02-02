@@ -14,4 +14,5 @@ pub mod ibc;
 pub mod ibc_events;
 pub mod message;
 pub mod packet;
+pub mod status;
 pub mod timestamp;

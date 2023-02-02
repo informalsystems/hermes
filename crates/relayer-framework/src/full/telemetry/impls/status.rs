@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::chain::traits::queries::status::*;
+use crate::base::chain::traits::types::status::HasChainStatusType;
 use crate::full::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
 use crate::full::telemetry::traits::telemetry::HasTelemetry;
 
@@ -15,7 +16,7 @@ impl<InQuerier, Chain, Telemetry> ChainStatusQuerier<Chain>
     for ChainStatusTelemetryQuerier<InQuerier>
 where
     InQuerier: ChainStatusQuerier<Chain>,
-    Chain: HasTelemetry<Telemetry = Telemetry> + HasChainStatus,
+    Chain: HasChainStatusType + HasTelemetry<Telemetry = Telemetry>,
     Telemetry: HasMetric<TelemetryCounter>,
     Telemetry::Value: From<u64>,
 {
