@@ -4,23 +4,26 @@ use core::future::Future;
 use core::pin::Pin;
 use core::time::Duration;
 use futures::stream::Stream;
-use std::time::Instant;
-use tokio::runtime::Runtime;
-use tokio::sync::{mpsc, oneshot, Mutex, MutexGuard};
-use tokio::time::sleep;
-use tokio_stream::wrappers::UnboundedReceiverStream;
-use tracing;
-
 use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use ibc_relayer_framework::base::one_for_all::types::runtime::LogLevel;
 use ibc_relayer_framework::full::one_for_all::traits::runtime::OfaFullRuntime;
+use ibc_relayer_framework::full::runtime::traits::spawn::TaskHandle;
+use std::time::Instant;
+use tokio::runtime::Runtime;
+use tokio::sync::{mpsc, oneshot, Mutex, MutexGuard};
+use tokio::task::JoinHandle;
+use tokio::time::sleep;
+use tokio_stream::wrappers::UnboundedReceiverStream;
+use tracing;
 
 use super::error::Error as TokioError;
 
 pub struct TokioRuntimeContext {
     pub runtime: Arc<Runtime>,
 }
+
+pub struct TokioTaskHandle(pub JoinHandle<()>);
 
 impl TokioRuntimeContext {
     pub fn new(runtime: Arc<Runtime>) -> Self {
@@ -87,12 +90,15 @@ impl OfaFullRuntime for TokioRuntimeContext {
     where
         T: Async;
 
-    fn spawn<F>(&self, task: F)
+    fn spawn<F>(&self, task: F) -> Box<dyn TaskHandle>
     where
         F: Future + Send + 'static,
         F::Output: Send + 'static,
     {
-        self.runtime.spawn(task);
+        let join_handle = self.runtime.spawn(async move {
+            task.await;
+        });
+        Box::new(TokioTaskHandle(join_handle))
     }
 
     fn new_channel<T>() -> (Self::Sender<T>, Self::Receiver<T>)
@@ -156,5 +162,17 @@ impl OfaFullRuntime for TokioRuntimeContext {
         T: Async,
     {
         receiver.await.map_err(|_| TokioError::channel_closed())
+    }
+}
+
+impl TaskHandle for TokioTaskHandle {
+    fn abort(self: Box<Self>) {
+        self.0.abort();
+    }
+
+    fn into_future(self: Box<Self>) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
+        Box::pin(async move {
+            let _ = self.0.await;
+        })
     }
 }

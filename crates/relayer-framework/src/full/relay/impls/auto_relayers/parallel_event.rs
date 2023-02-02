@@ -32,7 +32,7 @@ where
                         let relay = relay.clone();
                         let spawner = runtime.spawner();
 
-                        spawner.spawn(async move {
+                        let handle = spawner.spawn(async move {
                             let (height, event) = item;
 
                             // Ignore any relaying errors, as the relayer still needs to proceed
@@ -40,6 +40,8 @@ where
                             // TODO: log errors inside EventRelayer
                             let _ = relay.relay_chain_event(&height, &event).await;
                         });
+
+                        handle.into_future().await;
                     })
                     .await;
             } else {
