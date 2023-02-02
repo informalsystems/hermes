@@ -1,8 +1,9 @@
+use crate::base::relay::traits::auto_relayer::CanAutoRelay;
 use crate::base::relay::traits::two_way::HasTwoWayRelay;
 use crate::full::all_for_one::relay::AfoFullRelay;
 
 pub trait AfoFullBiRelay:
-    HasTwoWayRelay<RelayAToB = Self::AfoRelayAToB, RelayBToA = Self::AfoRelayBToA>
+    CanAutoRelay + HasTwoWayRelay<RelayAToB = Self::AfoRelayAToB, RelayBToA = Self::AfoRelayBToA>
 {
     type AfoRelayAToB: AfoFullRelay;
 
@@ -17,7 +18,7 @@ where
     RelayAToB: AfoFullRelay,
     RelayBToA:
         AfoFullRelay<AfoSrcFullChain = RelayAToB::DstChain, AfoDstFullChain = RelayAToB::SrcChain>,
-    BiRelay: HasTwoWayRelay<RelayAToB = RelayAToB, RelayBToA = RelayBToA>,
+    BiRelay: CanAutoRelay + HasTwoWayRelay<RelayAToB = RelayAToB, RelayBToA = RelayBToA>,
 {
     type AfoRelayAToB = RelayAToB;
 

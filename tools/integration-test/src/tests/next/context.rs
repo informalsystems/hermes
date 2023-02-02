@@ -7,6 +7,7 @@ use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::base::relay::types::two_way::TwoWayRelayContext;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_framework::full::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_test_framework::error::{handle_generic_error, Error};
 use ibc_test_framework::types::binary::chains::ConnectedChains;
@@ -98,7 +99,7 @@ where
         Default::default(),
     );
 
-    let birelay = TwoWayRelayContext::new(relay_a_to_b, relay_b_to_a);
+    let birelay = TwoWayRelayContext::new(ParallelTwoWayAutoRelay, relay_a_to_b, relay_b_to_a);
 
     // Ok(relay_a_to_b)
     Ok(birelay)

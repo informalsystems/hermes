@@ -6,10 +6,10 @@ use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
-pub struct ConcurrentTwoWayAutoRelay;
+pub struct ParallelTwoWayAutoRelay;
 
 #[async_trait]
-impl<BiRelay, Runtime> AutoRelayer<BiRelay> for ConcurrentTwoWayAutoRelay
+impl<BiRelay, Runtime> AutoRelayer<BiRelay> for ParallelTwoWayAutoRelay
 where
     BiRelay: HasTwoWayRelay,
     Runtime: HasSpawner,

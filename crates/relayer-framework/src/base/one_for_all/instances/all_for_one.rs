@@ -13,6 +13,7 @@ use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::relay::OfaRelayPreset;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::relay::impls::auto_relayers::concurrent_two_way::ConcurrentTwoWayAutoRelay;
 use crate::base::relay::types::two_way::TwoWayRelayContext;
 
 pub fn afo_birelay_context<RelayAToB, RelayBToA>() -> PhantomData<impl AfoBaseBiRelay>
@@ -26,7 +27,13 @@ where
     RelayAToB::Preset: OfaRelayPreset<RelayAToB>,
     RelayBToA::Preset: OfaRelayPreset<RelayBToA>,
 {
-    PhantomData::<TwoWayRelayContext<OfaRelayWrapper<RelayAToB>, OfaRelayWrapper<RelayBToA>>>
+    PhantomData::<
+        TwoWayRelayContext<
+            ConcurrentTwoWayAutoRelay,
+            OfaRelayWrapper<RelayAToB>,
+            OfaRelayWrapper<RelayBToA>,
+        >,
+    >
 }
 
 /// Given a relay context `Relay` that implements the `OfaBaseRelay` trait, returns a type

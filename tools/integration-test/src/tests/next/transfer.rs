@@ -1,7 +1,6 @@
 use ibc_relayer::config::PacketFilter;
 
-use ibc_relayer_framework::base::relay::traits::auto_relayer::AutoRelayer;
-use ibc_relayer_framework::full::relay::impls::auto_relayers::parallel_two_way::ConcurrentTwoWayAutoRelay;
+use ibc_relayer_framework::base::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
@@ -36,7 +35,7 @@ impl BinaryChannelTest for IbcTransferTest {
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
         runtime.spawn(async move {
-            ConcurrentTwoWayAutoRelay::auto_relay(&relay_context).await;
+            relay_context.auto_relay().await;
         });
 
         let denom_a = chains.node_a.denom();

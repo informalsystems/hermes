@@ -6,6 +6,7 @@ use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayPreset;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::relay::types::two_way::TwoWayRelayContext;
+use ibc_relayer_framework::full::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 
 use crate::base::all_for_one::chain::AfoCosmosBaseChain;
 use crate::base::all_for_one::relay::AfoCosmosBaseRelay;
@@ -23,6 +24,7 @@ where
 {
     PhantomData::<
         TwoWayRelayContext<
+            ParallelTwoWayAutoRelay,
             OfaRelayWrapper<CosmosRelayWrapper<RelayAToB>>,
             OfaRelayWrapper<CosmosRelayWrapper<RelayBToA>>,
         >,
