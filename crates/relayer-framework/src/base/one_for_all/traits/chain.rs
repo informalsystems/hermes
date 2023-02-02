@@ -92,13 +92,13 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasChainStatus::ChainStatus`](crate::base::chain::traits::queries::status::HasChainStatus::ChainStatus).
+       [`HasChainStatusType::ChainStatus`](crate::base::chain::traits::types::status::HasChainStatusType::ChainStatus).
     */
     type ChainStatus: Async;
 
     /**
        Corresponds to
-       [`HasConsensusState::ConsensusState`](crate::base::chain::traits::queries::consensus_state::HasConsensusState::ConsensusState).
+       [`HasConsensusStateType::ConsensusState`](crate::base::chain::traits::types::consensus_state::HasConsensusStateType::ConsensusState).
     */
     type ConsensusState: Async;
 

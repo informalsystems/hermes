@@ -67,7 +67,7 @@ pub trait CanEstimateMessageSize: HasMessageType {
        value, so that it can be encoded into raw bytes.
 
        This is mainly used by
-       [`BatchMessageWorker`](crate::full::batch::worker::BatchMessageWorker)
+       [`CanSpawnBatchMessageWorker`](crate::full::batch::worker::CanSpawnBatchMessageWorker)
        to estimate the messages size when batching messages. We may consider
        moving this method into a separate crate if it is not being used
        elsewhere.

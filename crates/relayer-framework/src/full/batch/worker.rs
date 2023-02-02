@@ -47,7 +47,7 @@ where
 }
 
 #[async_trait]
-trait CanSpawnBatchMessageWorker<Target>: HasRelayTypes
+pub trait CanSpawnBatchMessageWorker<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
 {

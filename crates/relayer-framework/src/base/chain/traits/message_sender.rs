@@ -43,7 +43,7 @@ use crate::std_prelude::*;
     [`CheckEncodedTxSize`](crate::base::transaction::impls::encoders::max_tx_size::CheckEncodedTxSize)
     component if the total message size exceeds a given transaction size limit.
     A component like
-    [`BatchMessageWorker`](crate::full::batch::worker::BatchMessageWorker)
+    [`CanSpawnBatchMessageWorker`](crate::full::batch::worker::CanSpawnBatchMessageWorker)
     can then try and match against the error, and split the sent messages into
     smaller batches.
 
