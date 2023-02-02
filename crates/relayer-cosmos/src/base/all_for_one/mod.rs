@@ -3,5 +3,6 @@
 //! API methods that are part of this trait are used to facilitate the
 //! functionality of relayers.
 
+pub mod birelay;
 pub mod chain;
 pub mod relay;

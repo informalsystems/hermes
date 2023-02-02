@@ -1,4 +1,3 @@
-use crate::base::all_for_one::chain::AfoBaseChain;
 use crate::base::all_for_one::relay::AfoBaseRelay;
 use crate::base::relay::traits::two_way::HasTwoWayRelay;
 
@@ -13,13 +12,10 @@ pub trait AfoBaseBiRelay:
     >;
 }
 
-impl<BiRelay, ChainA, ChainB, RelayAToB, RelayBToA, PacketAToB, PacketBToA> AfoBaseBiRelay
-    for BiRelay
+impl<BiRelay, RelayAToB, RelayBToA> AfoBaseBiRelay for BiRelay
 where
-    ChainA: AfoBaseChain<ChainB, IncomingPacket = PacketBToA, OutgoingPacket = PacketAToB>,
-    ChainB: AfoBaseChain<ChainA, IncomingPacket = PacketAToB, OutgoingPacket = PacketBToA>,
-    RelayAToB: AfoBaseRelay<AfoSrcChain = ChainA, AfoDstChain = ChainB>,
-    RelayBToA: AfoBaseRelay<AfoSrcChain = ChainB, AfoDstChain = ChainA>,
+    RelayAToB: AfoBaseRelay,
+    RelayBToA: AfoBaseRelay<AfoSrcChain = RelayAToB::DstChain, AfoDstChain = RelayAToB::SrcChain>,
     BiRelay: HasTwoWayRelay<RelayAToB = RelayAToB, RelayBToA = RelayBToA>,
 {
     type AfoRelayAToB = RelayAToB;
