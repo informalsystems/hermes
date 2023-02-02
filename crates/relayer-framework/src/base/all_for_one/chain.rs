@@ -1,3 +1,4 @@
+use crate::base::all_for_one::runtime::HasAfoBaseRuntime;
 use crate::base::chain::traits::queries::consensus_state::{
     CanQueryConsensusState, HasConsensusState,
 };
@@ -7,7 +8,9 @@ use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledg
 use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 
 pub trait AfoBaseChain<Counterparty>:
-    HasIbcPacketTypes<Counterparty>
+    Clone
+    + HasAfoBaseRuntime
+    + HasIbcPacketTypes<Counterparty>
     + HasWriteAcknowledgementEvent<Counterparty>
     + HasConsensusState<Counterparty>
     + CanQueryConsensusState<Counterparty>
@@ -33,7 +36,9 @@ where
 impl<Chain, Counterparty> AfoBaseChain<Counterparty> for Chain
 where
     Counterparty: AfoCounterpartyChain<Self>,
-    Chain: HasIbcPacketTypes<Counterparty>
+    Chain: Clone
+        + HasAfoBaseRuntime
+        + HasIbcPacketTypes<Counterparty>
         + HasWriteAcknowledgementEvent<Counterparty>
         + HasConsensusState<Counterparty>
         + CanQueryConsensusState<Counterparty>

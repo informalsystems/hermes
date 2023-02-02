@@ -2,7 +2,9 @@
 //! this is where we 'prove' that the types that we want to implement the `all_for_one`
 //! functionality implement the required trait bounds, i.e. `OfaRelayWrapper` or
 //! `OfaChainWrapper`, etc.
+use core::marker::PhantomData;
 
+use crate::base::all_for_one::birelay::AfoBaseBiRelay;
 use crate::base::all_for_one::chain::AfoBaseChain;
 use crate::base::all_for_one::relay::AfoBaseRelay;
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
@@ -11,6 +13,28 @@ use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::relay::OfaRelayPreset;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::relay::impls::auto_relayers::concurrent_two_way::ConcurrentTwoWayAutoRelay;
+use crate::base::relay::types::two_way::TwoWayRelayContext;
+
+pub fn afo_birelay_context<RelayAToB, RelayBToA>() -> PhantomData<impl AfoBaseBiRelay>
+where
+    RelayAToB: OfaBaseRelay,
+    RelayBToA: OfaBaseRelay<
+        SrcChain = RelayAToB::DstChain,
+        DstChain = RelayAToB::SrcChain,
+        Error = RelayAToB::Error,
+    >,
+    RelayAToB::Preset: OfaRelayPreset<RelayAToB>,
+    RelayBToA::Preset: OfaRelayPreset<RelayBToA>,
+{
+    PhantomData::<
+        TwoWayRelayContext<
+            ConcurrentTwoWayAutoRelay,
+            OfaRelayWrapper<RelayAToB>,
+            OfaRelayWrapper<RelayBToA>,
+        >,
+    >
+}
 
 /// Given a relay context `Relay` that implements the `OfaBaseRelay` trait, returns a type
 /// that implements the `AfoBaseRelay`, meaning that this type exposes concrete APIs
