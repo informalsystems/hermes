@@ -3,7 +3,6 @@ use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
 use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::full::all_for_one::birelay::AfoCosmosFullBiRelay;
-use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelay;
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::base::relay::types::two_way::TwoWayRelayContext;
