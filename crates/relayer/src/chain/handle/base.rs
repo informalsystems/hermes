@@ -1,6 +1,7 @@
 use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 
 use crossbeam_channel as channel;
+
 use tracing::Span;
 
 use ibc_relayer_types::{
