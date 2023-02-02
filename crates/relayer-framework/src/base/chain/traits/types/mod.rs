@@ -7,6 +7,7 @@
 
 pub mod chain;
 pub mod chain_id;
+pub mod consensus_state;
 pub mod event;
 pub mod height;
 pub mod ibc;
