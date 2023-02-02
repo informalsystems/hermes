@@ -136,7 +136,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         // Trigger the client upgrade
         let outcome = foreign_clients.client_a_to_b.upgrade(client_upgrade_height);
 
-        assert!(outcome.is_ok(), "{:?}", outcome);
+        assert!(outcome.is_ok(), "{outcome:?}");
 
         Ok(())
     }
@@ -174,7 +174,7 @@ impl BinaryChainTest for InvalidClientUpgradeTest {
         // Trigger the client upgrade
         let outcome = foreign_clients.client_a_to_b.upgrade(client_upgrade_height);
 
-        assert!(outcome.is_err(), "{:?}", outcome);
+        assert!(outcome.is_err(), "{outcome:?}");
 
         Ok(())
     }
@@ -256,7 +256,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
             .client_a_to_b
             .upgrade(client_upgrade_height.increment());
 
-        assert!(outcome.is_err(), "{:?}", outcome);
+        assert!(outcome.is_err(), "{outcome:?}");
 
         Ok(())
     }
@@ -340,7 +340,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
                 .map_err(handle_generic_error)?,
         );
 
-        assert!(outcome.is_err(), "{:?}", outcome);
+        assert!(outcome.is_err(), "{outcome:?}");
 
         Ok(())
     }

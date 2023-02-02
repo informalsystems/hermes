@@ -49,7 +49,7 @@ impl FromStr for EventFilter {
         match s {
             "NewBlock" => Ok(Self::NewBlock),
             "Tx" => Ok(Self::Tx),
-            invalid => Err(format!("unrecognized event type: {}", invalid).into()),
+            invalid => Err(format!("unrecognized event type: {invalid}").into()),
         }
     }
 }

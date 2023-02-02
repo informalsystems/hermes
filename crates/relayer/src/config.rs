@@ -131,8 +131,7 @@ impl Display for ExtensionOption {
             Self::EthermintDynamicFee(max_priority_price) => {
                 write!(
                     f,
-                    "EthermintDynamicFee(max_priority_price: {})",
-                    max_priority_price
+                    "EthermintDynamicFee(max_priority_price: {max_priority_price})"
                 )
             }
         }
@@ -528,7 +527,7 @@ pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), Error> {
 pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<(), Error> {
     let toml_config = toml::to_string_pretty(&config).map_err(Error::encode)?;
 
-    writeln!(writer, "{}", toml_config).map_err(Error::io)?;
+    writeln!(writer, "{toml_config}").map_err(Error::io)?;
 
     Ok(())
 }

@@ -115,7 +115,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         file: &str,
         cont: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
     ) -> Result<(), Error> {
-        let config_path = format!("config/{}", file);
+        let config_path = format!("config/{file}");
 
         let config1 = self.read_file(&config_path)?;
 
@@ -139,7 +139,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         file: &str,
         cont: impl FnOnce(&mut serde_json::Value) -> Result<(), Error>,
     ) -> Result<(), Error> {
-        let config1 = self.read_file(&format!("config/{}", file))?;
+        let config1 = self.read_file(&format!("config/{file}"))?;
 
         let mut config2 = serde_json::from_str(&config1).map_err(handle_generic_error)?;
 
@@ -169,7 +169,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             .ok_or_else(|| eyre!("expect address string field to be present in json result"))?
             .to_string();
 
-        let seed_path = format!("{}-seed.json", wallet_id);
+        let seed_path = format!("{wallet_id}-seed.json");
         self.write_file(&seed_path, &seed_content)?;
 
         let hd_path = StandardHDPath::from_str(self.chain_type.hd_path())

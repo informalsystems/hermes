@@ -66,22 +66,19 @@ impl ClientState {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
             return Err(Error::invalid_trusting_period(format!(
-                "ClientState trusting period ({:?}) must be greater than zero",
-                trusting_period
+                "ClientState trusting period ({trusting_period:?}) must be greater than zero"
             )));
         }
 
         if unbonding_period <= Duration::new(0, 0) {
             return Err(Error::invalid_unbonding_period(format!(
-                "ClientState unbonding period ({:?}) must be greater than zero",
-                unbonding_period
+                "ClientState unbonding period ({unbonding_period:?}) must be greater than zero"
             )));
         }
 
         if trusting_period >= unbonding_period {
             return Err(Error::invalid_trusting_period(format!(
-                "ClientState trusting period ({:?}) must be smaller than unbonding period ({:?})",
-                trusting_period, unbonding_period,
+                "ClientState trusting period ({trusting_period:?}) must be smaller than unbonding period ({unbonding_period:?})",
             )));
         }
 
@@ -274,7 +271,7 @@ impl TryFrom<RawTmClientState> for ClientState {
         } else {
             trust_threshold
                 .try_into()
-                .map_err(|e| Error::invalid_trust_threshold(format!("{}", e)))?
+                .map_err(|e| Error::invalid_trust_threshold(format!("{e}")))?
         };
 
         // In `RawClientState`, a `frozen_height` of `0` means "not frozen".
@@ -427,7 +424,7 @@ mod tests {
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: ChainId::default(),
-            trust_threshold: TrustThreshold::ONE_THIRD,
+            trust_threshold: TrustThreshold::TWO_THIRDS,
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
@@ -606,7 +603,7 @@ mod tests {
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: ChainId::default(),
-            trust_threshold: TrustThreshold::ONE_THIRD,
+            trust_threshold: TrustThreshold::TWO_THIRDS,
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),

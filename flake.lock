@@ -88,11 +88,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1674201215,
-        "narHash": "sha256-bTSELKxsz9PRhjwgH6zBIh0n0P7H2dDyO6W8nCpdglc=",
+        "lastModified": 1674208980,
+        "narHash": "sha256-A2h6+ZzoPx2eP0RjZcxEtnrPFBST6PJLPtR5+la/15U=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "52505430074c29408b02d237e55f9a9266d5a32c",
+        "rev": "c6b7d2e8a24aad64cef4e311a0ce6348c502c420",
         "type": "github"
       },
       "original": {
@@ -300,16 +300,16 @@
     "gaia8-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1667411611,
-        "narHash": "sha256-DlFLKskYPC7rj55MeD9LTDTnuV8oadxGT4JVzRs2GyU=",
+        "lastModified": 1673981273,
+        "narHash": "sha256-NAeZrxbfo/bp8nz+FNbUJGAkzoqoYF3hJhET63LKKFc=",
         "owner": "cosmos",
         "repo": "gaia",
-        "rev": "8ef100554881240de6698449dc6f1bc9c1d5b771",
+        "rev": "27234da8e9f2a9efacea2d9da06edaf190a6af30",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "v8.0.0-rc",
+        "ref": "v8.0.0-rc3",
         "repo": "gaia",
         "type": "github"
       }

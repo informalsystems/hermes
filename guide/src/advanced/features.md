@@ -32,6 +32,7 @@ This section includes a summary of the supported and planned features. It also i
     - Establish path over non-zero delay connection.
     - Relay all packets with the specified delay.
 - Interchain Accounts & Interchain Security
+    > Relaying between Interchain Security-enabled chains requires Hermes v1.2+.
 - Monitor and submit misbehaviour for clients
     - Monitor client updates for misbehaviour (fork and BFT time violation).
     - Submit misbehaviour evidence to the on-chain IBC client.
@@ -90,31 +91,31 @@ __Feature comparison between Hermes and the Go relayer__
 | Packet Delay           | ✅    | ❌     | 
 |                        |       |        |
 | Chan_Unordered         | ✅    | ✅     |
-| Chan_Ordered           | ✅    | ❓     |
+| Chan_Ordered           | ✅    | ✅     |
 |                        |       |        |
 | Cl_Tendermint_Create   | ✅    | ✅     | tendermint light client creation
 | Cl_Tendermint_Update   | ✅    | ✅     | tendermint light client update
 | Cl_Tendermint_Upgrade  | ✅    | ✅     | tendermint light client upgrade
 |                        |       |        |
 | Conn_Open_Handshake_A  | ✅    | ✅     |
-| Conn_Open_Handshake_P  | ✅    | ❌     |
+| Conn_Open_Handshake_P  | ✅    | ✅     |
 |                        |       |        |
 | Chan_Open_Handshake_A  | ✅    | ✅     |
-| Chan_Open_Handshake_P  | ✅    | ❌     |
+| Chan_Open_Handshake_P  | ✅    | ✅     |
 | Chan_Open_Handshake_Optimistic  | ❌    | ❌     | open a channel on a non-Open connection
 |                        |       |        |
 | Chan_Close_Handshake_P | ✅    | ✅     | 
-| Chan_Close_Handshake_A | ✅    | ❌     |
+| Chan_Close_Handshake_A | ✅    | ✅     |
 |                        |       |        |
 | FT_Transfer            | ✅    | ✅     | can submit an ICS-20 fungible token transfer message
-| ICA_Relay               | ✅    | ❌     | can relay ICS-27 Interchain account packets
+| ICA_Relay               | ✅    | ✅     | can relay ICS-27 Interchain account packets
 | Packet_Recv_A          | ✅    | ✅     |
 | Packet_Recv_P          | ✅    | ✅     |
 | Packet_Timeout_A       | ✅    | ✅     |
 | Packet_Timeout_P       | ✅    | ✅     |
-| Packet_TimeoutClose_A  | ✅    | ❓     |
-| Packet_TimeoutClose_P  | ✅    | ❓     |
-| Packet_Optimistic      | ❌    | ❓     | relay packets over non-Open channels
+| Packet_TimeoutClose_A  | ✅    | ✅     |
+| Packet_TimeoutClose_P  | ✅    | ✅     |
+| Packet_Optimistic      | ❌    | ❌     | relay packets over non-Open channels
 |                        |       |        |
 | Cl_Non_Tendermint      | ❌    | ❌     | supports non tendermint IBC light clients
 | Chain_Non_Cosmos       | ❌    | ❌     | supports non cosmos-SDK chains

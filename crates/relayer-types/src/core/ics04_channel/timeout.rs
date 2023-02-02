@@ -121,7 +121,7 @@ impl From<Height> for TimeoutHeight {
 impl Display for TimeoutHeight {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
-            TimeoutHeight::At(timeout_height) => write!(f, "{}", timeout_height),
+            TimeoutHeight::At(timeout_height) => write!(f, "{timeout_height}"),
             TimeoutHeight::Never => write!(f, "no timeout"),
         }
     }

@@ -283,36 +283,36 @@ impl Display for IbcEvent {
         match self {
             IbcEvent::NewBlock(ev) => write!(f, "NewBlock({})", ev.height),
 
-            IbcEvent::CreateClient(ev) => write!(f, "CreateClient({})", ev),
-            IbcEvent::UpdateClient(ev) => write!(f, "UpdateClient({})", ev),
-            IbcEvent::UpgradeClient(ev) => write!(f, "UpgradeClient({})", ev),
-            IbcEvent::ClientMisbehaviour(ev) => write!(f, "ClientMisbehaviour({})", ev),
+            IbcEvent::CreateClient(ev) => write!(f, "CreateClient({ev})"),
+            IbcEvent::UpdateClient(ev) => write!(f, "UpdateClient({ev})"),
+            IbcEvent::UpgradeClient(ev) => write!(f, "UpgradeClient({ev})"),
+            IbcEvent::ClientMisbehaviour(ev) => write!(f, "ClientMisbehaviour({ev})"),
 
-            IbcEvent::OpenInitConnection(ev) => write!(f, "OpenInitConnection({})", ev),
-            IbcEvent::OpenTryConnection(ev) => write!(f, "OpenTryConnection({})", ev),
-            IbcEvent::OpenAckConnection(ev) => write!(f, "OpenAckConnection({})", ev),
-            IbcEvent::OpenConfirmConnection(ev) => write!(f, "OpenConfirmConnection({})", ev),
+            IbcEvent::OpenInitConnection(ev) => write!(f, "OpenInitConnection({ev})"),
+            IbcEvent::OpenTryConnection(ev) => write!(f, "OpenTryConnection({ev})"),
+            IbcEvent::OpenAckConnection(ev) => write!(f, "OpenAckConnection({ev})"),
+            IbcEvent::OpenConfirmConnection(ev) => write!(f, "OpenConfirmConnection({ev})"),
 
-            IbcEvent::OpenInitChannel(ev) => write!(f, "OpenInitChannel({})", ev),
-            IbcEvent::OpenTryChannel(ev) => write!(f, "OpenTryChannel({})", ev),
-            IbcEvent::OpenAckChannel(ev) => write!(f, "OpenAckChannel({})", ev),
-            IbcEvent::OpenConfirmChannel(ev) => write!(f, "OpenConfirmChannel({})", ev),
-            IbcEvent::CloseInitChannel(ev) => write!(f, "CloseInitChannel({})", ev),
-            IbcEvent::CloseConfirmChannel(ev) => write!(f, "CloseConfirmChannel({})", ev),
+            IbcEvent::OpenInitChannel(ev) => write!(f, "OpenInitChannel({ev})"),
+            IbcEvent::OpenTryChannel(ev) => write!(f, "OpenTryChannel({ev})"),
+            IbcEvent::OpenAckChannel(ev) => write!(f, "OpenAckChannel({ev})"),
+            IbcEvent::OpenConfirmChannel(ev) => write!(f, "OpenConfirmChannel({ev})"),
+            IbcEvent::CloseInitChannel(ev) => write!(f, "CloseInitChannel({ev})"),
+            IbcEvent::CloseConfirmChannel(ev) => write!(f, "CloseConfirmChannel({ev})"),
 
-            IbcEvent::SendPacket(ev) => write!(f, "SendPacket({})", ev),
-            IbcEvent::ReceivePacket(ev) => write!(f, "ReceivePacket({})", ev),
-            IbcEvent::WriteAcknowledgement(ev) => write!(f, "WriteAcknowledgement({})", ev),
-            IbcEvent::AcknowledgePacket(ev) => write!(f, "AcknowledgePacket({})", ev),
-            IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacket({})", ev),
-            IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacket({})", ev),
+            IbcEvent::SendPacket(ev) => write!(f, "SendPacket({ev})"),
+            IbcEvent::ReceivePacket(ev) => write!(f, "ReceivePacket({ev})"),
+            IbcEvent::WriteAcknowledgement(ev) => write!(f, "WriteAcknowledgement({ev})"),
+            IbcEvent::AcknowledgePacket(ev) => write!(f, "AcknowledgePacket({ev})"),
+            IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacket({ev})"),
+            IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacket({ev})"),
 
-            IbcEvent::IncentivizedPacket(ev) => write!(f, "IncenvitizedPacket({:?}", ev),
-            IbcEvent::CrossChainQueryPacket(ev) => write!(f, "CrosschainPacket({:?})", ev),
+            IbcEvent::IncentivizedPacket(ev) => write!(f, "IncenvitizedPacket({ev:?}"),
+            IbcEvent::CrossChainQueryPacket(ev) => write!(f, "CrosschainPacket({ev:?})"),
 
-            IbcEvent::AppModule(ev) => write!(f, "AppModule({})", ev),
+            IbcEvent::AppModule(ev) => write!(f, "AppModule({ev})"),
 
-            IbcEvent::ChainError(ev) => write!(f, "ChainError({})", ev),
+            IbcEvent::ChainError(ev) => write!(f, "ChainError({ev})"),
         }
     }
 }
@@ -356,7 +356,7 @@ impl IbcEvent {
     pub fn to_json(&self) -> String {
         match serde_json::to_string(self) {
             Ok(value) => value,
-            Err(_) => format!("{:?}", self), // Fallback to debug printing
+            Err(_) => format!("{self:?}"), // Fallback to debug printing
         }
     }
 

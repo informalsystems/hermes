@@ -64,7 +64,7 @@ impl Runnable for TxPacketRecvCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let opts = LinkParameters {
@@ -73,7 +73,7 @@ impl Runnable for TxPacketRecvCmd {
         };
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let packet_data_query_height = self
@@ -88,7 +88,7 @@ impl Runnable for TxPacketRecvCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
@@ -145,7 +145,7 @@ impl Runnable for TxPacketAckCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let opts = LinkParameters {
@@ -154,7 +154,7 @@ impl Runnable for TxPacketAckCmd {
         };
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         };
 
         let packet_data_query_height = self
@@ -167,7 +167,7 @@ impl Runnable for TxPacketAckCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }

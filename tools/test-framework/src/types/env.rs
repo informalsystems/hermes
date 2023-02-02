@@ -103,7 +103,7 @@ pub fn format_env(exporter: &impl ExportEnv) -> String {
     exporter.export_env(&mut envs);
 
     envs.iter()
-        .map(|(key, value)| format!("{}={}", key, value))
+        .map(|(key, value)| format!("{key}={value}"))
         .join("\n")
 }
 

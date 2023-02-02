@@ -111,7 +111,7 @@ impl Display for ChainsScan {
 
                     writeln!(f, "    * Connection: {}", conn.connection.connection_id)?;
                     writeln!(f, "      | State: {}", conn.state())?;
-                    writeln!(f, "      | Counterparty state: {}", counterparty)?;
+                    writeln!(f, "      | Counterparty state: {counterparty}")?;
 
                     for chan in conn.channels.values() {
                         let counterparty = chan
@@ -123,7 +123,7 @@ impl Display for ChainsScan {
                         writeln!(f, "      + Channel: {}", chan.channel.channel_id)?;
                         writeln!(f, "        | Port: {}", chan.channel.port_id)?;
                         writeln!(f, "        | State: {}", chan.channel.channel_end.state())?;
-                        writeln!(f, "        | Counterparty: {}", counterparty)?;
+                        writeln!(f, "        | Counterparty: {counterparty}")?;
                     }
                 }
             }
@@ -487,14 +487,16 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         let mut scan = ConnectionScan::new(connection, None);
 
-        if !scan.is_open() {
+        if !scan.is_open() && !self.config.mode.connections.enabled {
             warn!("connection is not open, skipping scan of channels over this connection");
             return Ok(Some(scan));
         }
 
         let counterparty_state = match self.counterparty_connection_state(client, &scan.connection)
         {
-            Ok(state) if !state.eq(&ConnectionState::Open) => {
+            Ok(state)
+                if !state.eq(&ConnectionState::Open) && !self.config.mode.connections.enabled =>
+            {
                 warn!("counterparty connection is not open, skipping scan of channels over this connection");
                 return Ok(Some(scan));
             }

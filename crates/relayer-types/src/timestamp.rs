@@ -124,7 +124,7 @@ impl Timestamp {
         self.time.map_or(0, |time| {
             let t: OffsetDateTime = time.into();
             let s = t.unix_timestamp_nanos();
-            assert!(s >= 0, "time {:?} has negative `.timestamp()`", time);
+            assert!(s >= 0, "time {time:?} has negative `.timestamp()`");
             s.try_into().unwrap()
         })
     }

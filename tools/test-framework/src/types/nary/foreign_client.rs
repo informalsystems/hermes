@@ -79,7 +79,7 @@ impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ForeignClientPairs<Ha
         for (source, inner_clients) in self.foreign_clients.iter().enumerate() {
             for (destination, client) in inner_clients.iter().enumerate() {
                 writer.write_env(
-                    &format!("CLIENT_ID_{}_to_{}", source, destination),
+                    &format!("CLIENT_ID_{source}_to_{destination}"),
                     &format!("{}", client.id()),
                 );
             }

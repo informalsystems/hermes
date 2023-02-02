@@ -64,7 +64,7 @@ pub fn query_recipient_transactions(
             "query",
             "txs",
             "--events",
-            &format!("transfer.recipient={}", recipient_address),
+            &format!("transfer.recipient={recipient_address}"),
         ],
     )?
     .stdout;
