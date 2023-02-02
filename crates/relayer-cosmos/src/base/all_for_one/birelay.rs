@@ -13,3 +13,17 @@ pub trait AfoCosmosBaseBiRelay:
         CosmosDstChain = SrcChain<Self::CosmosRelayAToB>,
     >;
 }
+
+impl<BiRelay, RelayAToB, RelayBToA> AfoCosmosBaseBiRelay for BiRelay
+where
+    BiRelay: AfoBaseBiRelay<AfoRelayAToB = RelayAToB, AfoRelayBToA = RelayBToA>,
+    RelayAToB: AfoCosmosBaseRelay,
+    RelayBToA: AfoCosmosBaseRelay<
+        CosmosSrcChain = RelayAToB::DstChain,
+        CosmosDstChain = RelayAToB::SrcChain,
+    >,
+{
+    type CosmosRelayAToB = RelayAToB;
+
+    type CosmosRelayBToA = RelayBToA;
+}

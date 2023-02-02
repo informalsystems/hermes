@@ -10,6 +10,15 @@ pub struct TwoWayRelayContext<RelayAToB, RelayBToA> {
     pub relay_b_to_a: RelayBToA,
 }
 
+impl<RelayAToB, RelayBToA> TwoWayRelayContext<RelayAToB, RelayBToA> {
+    pub fn new(relay_a_to_b: RelayAToB, relay_b_to_a: RelayBToA) -> Self {
+        Self {
+            relay_a_to_b,
+            relay_b_to_a,
+        }
+    }
+}
+
 impl<Error, RelayAToB, RelayBToA> HasErrorType for TwoWayRelayContext<RelayAToB, RelayBToA>
 where
     Error: Debug + Async,
