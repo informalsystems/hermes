@@ -1,4 +1,5 @@
 use crate::base::all_for_one::chain::AfoBaseChain;
+use crate::base::chain::types::aliases::{IncomingPacket, OutgoingPacket};
 use crate::base::relay::traits::auto_relayer::CanAutoRelay;
 use crate::base::relay::traits::event_relayer::CanRelayEvent;
 use crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages;
@@ -28,21 +29,13 @@ pub trait AfoBaseRelay:
     + CanRelayAckPacket
     + CanRelayTimeoutUnorderedPacket
 {
-    type AfoSrcChain: AfoBaseChain<
-        Self::AfoDstChain,
-        IncomingPacket = Self::AfoReversePacket,
-        OutgoingPacket = Self::AfoPacket,
-    >;
+    type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
 
     type AfoDstChain: AfoBaseChain<
         Self::AfoSrcChain,
-        IncomingPacket = Self::AfoPacket,
-        OutgoingPacket = Self::AfoReversePacket,
+        IncomingPacket = OutgoingPacket<Self::AfoSrcChain, Self::AfoDstChain>,
+        OutgoingPacket = IncomingPacket<Self::AfoSrcChain, Self::AfoDstChain>,
     >;
-
-    type AfoPacket;
-
-    type AfoReversePacket;
 }
 
 impl<Relay, SrcChain, DstChain, Packet, ReversePacket> AfoBaseRelay for Relay
@@ -66,8 +59,4 @@ where
     type AfoSrcChain = SrcChain;
 
     type AfoDstChain = DstChain;
-
-    type AfoPacket = Packet;
-
-    type AfoReversePacket = ReversePacket;
 }

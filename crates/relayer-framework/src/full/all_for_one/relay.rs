@@ -1,4 +1,5 @@
 use crate::base::all_for_one::relay::AfoBaseRelay;
+use crate::base::chain::types::aliases::{IncomingPacket, OutgoingPacket};
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::full::all_for_one::chain::AfoFullChain;
@@ -11,15 +12,11 @@ pub trait AfoFullRelay:
     + CanSendIbcMessagesFromBatchWorker<SourceTarget>
     + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
 {
-    type AfoSrcFullChain: AfoFullChain<
-        Self::AfoDstFullChain,
-        IncomingPacket = Self::AfoReversePacket,
-        OutgoingPacket = Self::AfoPacket,
-    >;
+    type AfoSrcFullChain: AfoFullChain<Self::AfoDstFullChain>;
     type AfoDstFullChain: AfoFullChain<
         Self::AfoSrcFullChain,
-        IncomingPacket = Self::AfoPacket,
-        OutgoingPacket = Self::AfoReversePacket,
+        IncomingPacket = OutgoingPacket<Self::AfoSrcChain, Self::AfoDstChain>,
+        OutgoingPacket = IncomingPacket<Self::AfoSrcChain, Self::AfoDstChain>,
     >;
 }
 
@@ -30,15 +27,11 @@ where
         + CanSendIbcMessagesFromBatchWorker<SourceTarget>
         + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
         + SupportsPacketRetry,
-    SrcChain: AfoFullChain<
-        DstChain,
-        IncomingPacket = Relay::AfoReversePacket,
-        OutgoingPacket = Relay::AfoPacket,
-    >,
+    SrcChain: AfoFullChain<DstChain>,
     DstChain: AfoFullChain<
         SrcChain,
-        IncomingPacket = Relay::AfoPacket,
-        OutgoingPacket = Relay::AfoReversePacket,
+        IncomingPacket = OutgoingPacket<SrcChain, DstChain>,
+        OutgoingPacket = IncomingPacket<SrcChain, DstChain>,
     >,
 {
     type AfoSrcFullChain = SrcChain;

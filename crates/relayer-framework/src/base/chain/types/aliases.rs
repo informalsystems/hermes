@@ -7,12 +7,19 @@ use crate::base::chain::traits::types::height::HasHeightType;
 use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::types::message::HasMessageType;
+use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::base::chain::traits::types::timestamp::HasTimestampType;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::subscription::Subscription;
 use crate::std_prelude::*;
 
 pub type Runtime<Chain> = <Chain as HasRuntime>::Runtime;
+
+pub type IncomingPacket<Chain, Counterparty> =
+    <Chain as HasIbcPacketTypes<Counterparty>>::IncomingPacket;
+
+pub type OutgoingPacket<Chain, Counterparty> =
+    <Chain as HasIbcPacketTypes<Counterparty>>::OutgoingPacket;
 
 pub type ClientId<Chain, Counterparty> = <Chain as HasIbcChainTypes<Counterparty>>::ClientId;
 
