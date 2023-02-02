@@ -39,7 +39,7 @@ pub trait HasChainStatusType: HasChainTypes {
 
     /**
         Get the blockchain's current
-        [`Timestamp`](crate::base::chain::traits::types::timestamp::HasTimestampType::Timestamp)
+        [timestamp](crate::base::chain::traits::types::timestamp::HasTimestampType::Timestamp)
         from the chain status result.
     */
     fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
