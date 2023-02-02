@@ -68,10 +68,11 @@ pub fn build_and_send_ibc_upgrade_proposal(
     src_chain: impl ChainHandle, // the source chain; supplies a client state for building the upgrade plan
     opts: &UpgradePlanOptions,
 ) -> Result<TxHash, UpgradeChainError> {
-    let upgrade_height = dst_chain
+    let mut upgrade_height = dst_chain
         .query_latest_height() // FIXME(romac): Use query_chain_latest_height once added to ChainHandle
         .map_err(UpgradeChainError::query)?
         .add(opts.height_offset);
+    upgrade_height.revision_number = opts.upgraded_chain_id.version();
 
     let (client_state, _) = src_chain
         .query_client_state(
