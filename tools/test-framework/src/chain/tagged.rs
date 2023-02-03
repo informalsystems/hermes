@@ -62,6 +62,9 @@ pub trait TaggedChainDriverExt<Chain> {
         token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error>;
 
+    fn assert_eventual_cross_chain_query_relayed(&self, pending_queries: bool)
+        -> Result<(), Error>;
+
     /**
         Taggged version of [`query_recipient_transactions`].
 
@@ -116,6 +119,14 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
     ) -> Result<(), Error> {
         self.value()
             .assert_eventual_wallet_amount(user.value(), token.value())
+    }
+
+    fn assert_eventual_cross_chain_query_relayed(
+        &self,
+        pending_queries: bool,
+    ) -> Result<(), Error> {
+        self.value()
+            .assert_eventual_cross_chain_query_relayed(pending_queries)
     }
 
     fn query_recipient_transactions(
