@@ -132,10 +132,19 @@ fn collect_events(res: block_results::Response) -> impl Iterator<Item = Event> {
         .txs_results
         .unwrap_or_default()
         .into_iter()
-        .flat_map(|tx| tx.events);
+        .flat_map(|tx| tx.events)
+        .map(Into::into);
 
-    let begin_events = res.begin_block_events.unwrap_or_default().into_iter();
-    let end_events = res.end_block_events.unwrap_or_default().into_iter();
+    let begin_events = res
+        .begin_block_events
+        .unwrap_or_default()
+        .into_iter()
+        .map(Into::into);
+    let end_events = res
+        .end_block_events
+        .unwrap_or_default()
+        .into_iter()
+        .map(Into::into);
 
     begin_events.chain(tx_events).chain(end_events)
 }
