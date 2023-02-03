@@ -1,21 +1,30 @@
 //! Various utilities for the Hermes CLI
 
+use std::collections::HashMap;
+
 use alloc::sync::Arc;
 use eyre::eyre;
+use ibc_relayer::chain::cosmos::types::config::TxConfig;
+use ibc_relayer::keyring::AnySigningKeyPair;
+use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
+use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
+use ibc_relayer_types::signer::Signer;
+use opentelemetry::global;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
+use ibc_relayer::chain::counterparty::{channel_connection_client, ChannelConnectionClient};
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
-use ibc_relayer::{
-    chain::{
-        counterparty::{channel_connection_client, ChannelConnectionClient},
-        handle::{BaseChainHandle, ChainHandle},
-    },
-    config::Config,
-    spawn,
-};
+use ibc_relayer::config::filter::PacketFilter;
+use ibc_relayer::{config::Config, spawn};
+use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelay;
+use ibc_relayer_cosmos::full::types::telemetry::CosmosTelemetry;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
@@ -185,4 +194,63 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
     }
 
     Ok(())
+}
+
+// #[cfg(feature = "relayer-next")]
+pub fn build_cosmos_relay_context<Chain: ChainHandle>(
+    src_chain: Chain,
+    dst_chain: Chain,
+    filter: PacketFilter,
+) -> Result<impl AfoCosmosFullRelay, Error> {
+    let telemetry = OfaTelemetryWrapper::new(CosmosTelemetry::new(
+        ibc_relayer_cosmos::full::types::telemetry::TelemetryState {
+            meter: global::meter("hermes"),
+            counters: HashMap::new(),
+            value_recorders: HashMap::new(),
+            updown_counters: HashMap::new(),
+        },
+    ));
+
+    let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(Arc::new(
+        TokioRuntime::new().unwrap(),
+    )));
+
+    let chain_a_signer = src_chain.get_signer().unwrap_or_else(|_| Signer::dummy());
+    let chain_b_signer = dst_chain.get_signer().unwrap_or_else(|_| Signer::dummy());
+
+    let Ok(AnySigningKeyPair::Secp256k1(chain_a_key)) = src_chain.get_key() else {
+        panic!("No Secp256k1 key pair for chain {}", src_chain.id());
+    };
+    let Ok(AnySigningKeyPair::Secp256k1(chain_b_key)) = dst_chain.get_key() else {
+        panic!("No Secp256k1 key pair for chain {}", dst_chain.id());
+    };
+
+    let chain_a_config = src_chain.config().unwrap();
+    let chain_a_websocket_addr = chain_a_config.websocket_addr.clone();
+    let chain_a_config = TxConfig::try_from(&chain_a_config).unwrap();
+
+    let chain_b_config = dst_chain.config().unwrap();
+    let chain_b_websocket_addr = chain_b_config.websocket_addr.clone();
+    let chain_b_config = TxConfig::try_from(&chain_b_config).unwrap();
+
+    let chain_a = FullCosmosChainContext::new(
+        src_chain.clone(),
+        chain_a_signer,
+        chain_a_config,
+        chain_a_websocket_addr,
+        chain_a_key,
+        telemetry.clone(),
+    );
+    let chain_b = FullCosmosChainContext::new(
+        dst_chain.clone(),
+        chain_b_signer,
+        chain_b_config,
+        chain_b_websocket_addr,
+        chain_b_key,
+        telemetry,
+    );
+
+    let relay = new_relay_context_with_batch(runtime, chain_a, chain_b);
+
+    Ok(relay)
 }
