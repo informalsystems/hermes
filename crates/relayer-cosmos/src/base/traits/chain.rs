@@ -1,5 +1,5 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_types::signer::Signer;

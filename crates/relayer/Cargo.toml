@@ -21,9 +21,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc-proto          = { version = "0.24.1" }
-ibc-telemetry      = { version = "0.21.0", path = "../telemetry", optional = true }
-ibc-relayer-types  = { version = "0.21.0", path = "../relayer-types", features = ["mocks"] }
+ibc-proto         = { version = "0.24.1" }
+ibc-telemetry     = { version = "0.21.0", path = "../telemetry", optional = true }
+ibc-relayer-types = { version = "0.21.0", path = "../relayer-types", features = ["mocks"] }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
