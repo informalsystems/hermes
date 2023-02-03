@@ -53,7 +53,7 @@ define_error! {
         UpgradeHeightRevision
             { revision: u64 }
             |r| {
-                format!("invalid upgrade height revision: {}", r)
+                format!("invalid upgrade height revision: {r}")
             }
     }
 }
