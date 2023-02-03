@@ -1,25 +1,23 @@
 //! Various utilities for the Hermes CLI
 
-use std::collections::HashMap;
-
 use alloc::sync::Arc;
 use eyre::eyre;
-use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::keyring::AnySigningKeyPair;
-use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
-use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
-use ibc_relayer_types::signer::Signer;
 use opentelemetry::global;
+use std::collections::HashMap;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
+use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::counterparty::{channel_connection_client, ChannelConnectionClient};
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::config::filter::PacketFilter;
+use ibc_relayer::keyring::AnySigningKeyPair;
 use ibc_relayer::{config::Config, spawn};
+use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
+use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelay;
 use ibc_relayer_cosmos::full::types::telemetry::CosmosTelemetry;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -27,6 +25,7 @@ use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrap
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::signer::Signer;
 
 use crate::error::Error;
 
