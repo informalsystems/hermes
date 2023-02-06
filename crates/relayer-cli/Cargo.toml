@@ -51,7 +51,7 @@ http                     = "0.2"
 humantime                = "2.1"
 itertools                = "0.10.5"
 oneline-eyre             = "0.1"
-opentelemetry            = { version = "0.18.0", features = ["metrics"] }
+opentelemetry            = { version = "0.17.0", features = ["metrics"] }
 regex                    = "1.7.1"
 serde                    = { version = "1.0", features = ["serde_derive"] }
 serde_json               = "1"
