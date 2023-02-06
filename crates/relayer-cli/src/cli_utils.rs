@@ -14,12 +14,13 @@ use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::config::filter::PacketFilter;
+use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::keyring::AnySigningKeyPair;
 use ibc_relayer::{config::Config, spawn};
 use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
 use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelay;
-use ibc_relayer_cosmos::full::types::telemetry::CosmosTelemetry;
+use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
@@ -27,6 +28,7 @@ use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::signer::Signer;
 
+use crate::conclude::exit_with_unrecoverable_error;
 use crate::error::Error;
 
 #[derive(Clone, Debug)]
@@ -201,14 +203,12 @@ pub fn build_cosmos_relay_context<Chain: ChainHandle>(
     dst_chain: Chain,
     filter: PacketFilter,
 ) -> Result<impl AfoCosmosFullRelay, Error> {
-    let telemetry = OfaTelemetryWrapper::new(CosmosTelemetry::new(
-        ibc_relayer_cosmos::full::types::telemetry::TelemetryState {
-            meter: global::meter("hermes"),
-            counters: HashMap::new(),
-            value_recorders: HashMap::new(),
-            updown_counters: HashMap::new(),
-        },
-    ));
+    let telemetry = OfaTelemetryWrapper::new(CosmosTelemetry::new(TelemetryState {
+        meter: global::meter("hermes"),
+        counters: HashMap::new(),
+        value_recorders: HashMap::new(),
+        updown_counters: HashMap::new(),
+    }));
 
     let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(Arc::new(
         TokioRuntime::new().unwrap(),
@@ -249,7 +249,20 @@ pub fn build_cosmos_relay_context<Chain: ChainHandle>(
         telemetry,
     );
 
-    let relay = new_relay_context_with_batch(runtime, chain_a, chain_b);
+    let client_a = ForeignClient::new(src_chain.clone(), dst_chain.clone())
+        .unwrap_or_else(exit_with_unrecoverable_error);
+    let client_b = ForeignClient::new(dst_chain.clone(), src_chain.clone())
+        .unwrap_or_else(exit_with_unrecoverable_error);
+
+    let relay = new_relay_context_with_batch(
+        runtime,
+        chain_a,
+        chain_b,
+        client_a,
+        client_b,
+        filter,
+        Default::default(),
+    );
 
     Ok(relay)
 }
