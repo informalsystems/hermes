@@ -2,6 +2,8 @@
 
 use alloc::sync::Arc;
 use eyre::eyre;
+use ibc_relayer_framework::base::relay::types::two_way::TwoWayRelayContext;
+use ibc_relayer_framework::full::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 use opentelemetry::global;
 use std::collections::HashMap;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -19,7 +21,7 @@ use ibc_relayer::keyring::AnySigningKeyPair;
 use ibc_relayer::{config::Config, spawn};
 use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
 use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
-use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelay;
+use ibc_relayer_cosmos::full::all_for_one::birelay::AfoCosmosFullBiRelay;
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
@@ -198,11 +200,12 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
 }
 
 // #[cfg(feature = "relayer-next")]
-pub fn build_cosmos_relay_context<Chain: ChainHandle>(
+pub fn build_cosmos_birelay_context<Chain: ChainHandle>(
     src_chain: Chain,
     dst_chain: Chain,
+    runtime: TokioRuntime,
     filter: PacketFilter,
-) -> Result<impl AfoCosmosFullRelay, Error> {
+) -> Result<impl AfoCosmosFullBiRelay, Error> {
     let telemetry = OfaTelemetryWrapper::new(CosmosTelemetry::new(TelemetryState {
         meter: global::meter("hermes"),
         counters: HashMap::new(),
@@ -210,9 +213,7 @@ pub fn build_cosmos_relay_context<Chain: ChainHandle>(
         updown_counters: HashMap::new(),
     }));
 
-    let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(Arc::new(
-        TokioRuntime::new().unwrap(),
-    )));
+    let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(Arc::new(runtime)));
 
     let chain_a_signer = src_chain.get_signer().unwrap_or_else(|_| Signer::dummy());
     let chain_b_signer = dst_chain.get_signer().unwrap_or_else(|_| Signer::dummy());
@@ -254,15 +255,26 @@ pub fn build_cosmos_relay_context<Chain: ChainHandle>(
     let client_b = ForeignClient::new(dst_chain.clone(), src_chain.clone())
         .unwrap_or_else(exit_with_unrecoverable_error);
 
-    let relay = new_relay_context_with_batch(
+    let relay_a_to_b = new_relay_context_with_batch(
+        runtime.clone(),
+        chain_a.clone(),
+        chain_b.clone(),
+        client_a.clone(),
+        client_b.clone(),
+        filter.clone(),
+        Default::default(),
+    );
+    let relay_b_to_a = new_relay_context_with_batch(
         runtime,
-        chain_a,
         chain_b,
-        client_a,
+        chain_a,
         client_b,
+        client_a,
         filter,
         Default::default(),
     );
 
-    Ok(relay)
+    let birelay = TwoWayRelayContext::new(ParallelTwoWayAutoRelay, relay_a_to_b, relay_b_to_a);
+
+    Ok(birelay)
 }

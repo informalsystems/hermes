@@ -1,16 +1,14 @@
 // #![cfg(feature = "relayer-next")]
 
-use std::sync::Arc;
-
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-// use ibc_relayer::link::{Link, LinkParameters};
+use tokio::runtime::Runtime as TokioRuntime;
+
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_framework::base::relay::traits::auto_relayer::CanAutoRelay;
-use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
 
-use crate::cli_utils::{build_cosmos_relay_context, ChainHandlePair};
+use crate::cli_utils::{build_cosmos_birelay_context, ChainHandlePair};
 use crate::conclude::Output;
 use crate::prelude::*;
 
@@ -98,12 +96,21 @@ impl Runnable for NewRelayPacketCmd {
             Err(e) => Output::error(e).exit(),
         };
 
+        let runtime = TokioRuntime::new().unwrap();
+
         // TODO: Read in PacketFilter policy from config
         let pf = PacketFilter::default();
 
-        let relay_context = match build_cosmos_relay_context(chains.src, chains.dst, pf) {
+        let relay_context = match build_cosmos_birelay_context(
+            chains.src,
+            chains.dst,
+            TokioRuntime::new().unwrap(),
+            pf,
+        ) {
             Ok(rc) => rc,
             Err(e) => Output::error(e).exit(),
         };
+
+        runtime.block_on(relay_context.auto_relay());
     }
 }
