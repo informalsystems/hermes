@@ -5,14 +5,14 @@ use crate::full::all_for_one::chain::AfoCosmosFullChain;
 
 pub trait AfoCosmosFullRelay:
     AfoFullRelay<
-    AfoSrcFullChain = Self::SrcCosmosFullChain,
-    AfoDstFullChain = Self::DstCosmosFullChain,
+    AfoSrcFullChain = Self::CosmosSrcChain,
+    AfoDstFullChain = Self::CosmosDstChain,
     Packet = Packet,
 >
 {
-    type SrcCosmosFullChain: AfoCosmosFullChain<Self::DstCosmosFullChain>;
+    type CosmosSrcChain: AfoCosmosFullChain<Self::CosmosDstChain>;
 
-    type DstCosmosFullChain: AfoCosmosFullChain<Self::SrcCosmosFullChain>;
+    type CosmosDstChain: AfoCosmosFullChain<Self::CosmosSrcChain>;
 }
 
 impl<Relay, SrcChain, DstChain> AfoCosmosFullRelay for Relay
@@ -21,6 +21,6 @@ where
     SrcChain: AfoCosmosFullChain<DstChain>,
     DstChain: AfoCosmosFullChain<SrcChain>,
 {
-    type SrcCosmosFullChain = SrcChain;
-    type DstCosmosFullChain = DstChain;
+    type CosmosSrcChain = SrcChain;
+    type CosmosDstChain = DstChain;
 }

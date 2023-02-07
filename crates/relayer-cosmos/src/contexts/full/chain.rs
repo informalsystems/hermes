@@ -10,6 +10,7 @@ use crate::base::traits::chain::CosmosChain;
 use crate::full::traits::chain::CosmosFullChain;
 use crate::full::types::telemetry::CosmosTelemetry;
 
+#[derive(Clone)]
 pub struct FullCosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,

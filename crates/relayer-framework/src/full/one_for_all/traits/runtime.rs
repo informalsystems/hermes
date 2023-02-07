@@ -5,6 +5,7 @@ use futures::stream::Stream;
 
 use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
+use crate::full::runtime::traits::spawn::TaskHandle;
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -25,7 +26,7 @@ pub trait OfaFullRuntime: OfaBaseRuntime {
     where
         T: Async;
 
-    fn spawn<F>(&self, task: F)
+    fn spawn<F>(&self, task: F) -> Box<dyn TaskHandle>
     where
         F: Future + Send + 'static,
         F::Output: Send + 'static;

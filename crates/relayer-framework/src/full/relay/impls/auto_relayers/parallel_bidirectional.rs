@@ -23,20 +23,21 @@ where
         let dst_relay = relay.clone();
         let spawner = src_relay.runtime().spawner();
 
-        spawner.spawn(async move {
+        let handle1 = spawner.spawn(async move {
             <InRelayer as AutoRelayerWithTarget<Relay, DestinationTarget>>::auto_relay_with_target(
                 &dst_relay,
             )
             .await;
         });
 
-        spawner.spawn(async move {
+        let handle2 = spawner.spawn(async move {
             <InRelayer as AutoRelayerWithTarget<Relay, SourceTarget>>::auto_relay_with_target(
                 &src_relay,
             )
             .await
         });
 
-        // TODO: implement JoinHandle in HasSpawner
+        handle1.into_future().await;
+        handle2.into_future().await;
     }
 }
