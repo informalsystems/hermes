@@ -27,10 +27,9 @@ use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
 use ibc_relayer_types::signer::Signer;
 
-use crate::conclude::exit_with_unrecoverable_error;
 use crate::error::Error;
 
 #[derive(Clone, Debug)]
@@ -200,12 +199,18 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
 }
 
 // #[cfg(feature = "relayer-next")]
-pub fn build_cosmos_birelay_context<Chain: ChainHandle>(
-    src_chain: Chain,
-    dst_chain: Chain,
+pub fn build_cosmos_birelay_context<ChainA, ChainB>(
+    handle_a: ChainA,
+    handle_b: ChainB,
+    client_id_a: ClientId,
+    client_id_b: ClientId,
     runtime: TokioRuntime,
     filter: PacketFilter,
-) -> Result<impl AfoCosmosFullBiRelay, Error> {
+) -> Result<impl AfoCosmosFullBiRelay, Error>
+where
+    ChainA: ChainHandle,
+    ChainB: ChainHandle,
+{
     let telemetry = OfaTelemetryWrapper::new(CosmosTelemetry::new(TelemetryState {
         meter: global::meter("hermes"),
         counters: HashMap::new(),
@@ -215,26 +220,27 @@ pub fn build_cosmos_birelay_context<Chain: ChainHandle>(
 
     let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(Arc::new(runtime)));
 
-    let chain_a_signer = src_chain.get_signer().unwrap_or_else(|_| Signer::dummy());
-    let chain_b_signer = dst_chain.get_signer().unwrap_or_else(|_| Signer::dummy());
+    let chain_a_signer = handle_a.get_signer().unwrap_or_else(|_| Signer::dummy());
+    let chain_b_signer = handle_b.get_signer().unwrap_or_else(|_| Signer::dummy());
 
-    let Ok(AnySigningKeyPair::Secp256k1(chain_a_key)) = src_chain.get_key() else {
-        panic!("No Secp256k1 key pair for chain {}", src_chain.id());
-    };
-    let Ok(AnySigningKeyPair::Secp256k1(chain_b_key)) = dst_chain.get_key() else {
-        panic!("No Secp256k1 key pair for chain {}", dst_chain.id());
+    let Ok(AnySigningKeyPair::Secp256k1(chain_a_key)) =handle_a.get_key() else {
+        panic!("No Secp256k1 key pair for chain {}", handle_a.id());
     };
 
-    let chain_a_config = src_chain.config().unwrap();
+    let Ok(AnySigningKeyPair::Secp256k1(chain_b_key)) = handle_b.get_key() else {
+        panic!("No Secp256k1 key pair for chain {}", handle_b.id());
+    };
+
+    let chain_a_config = handle_a.config().unwrap();
     let chain_a_websocket_addr = chain_a_config.websocket_addr.clone();
     let chain_a_config = TxConfig::try_from(&chain_a_config).unwrap();
 
-    let chain_b_config = dst_chain.config().unwrap();
+    let chain_b_config = handle_b.config().unwrap();
     let chain_b_websocket_addr = chain_b_config.websocket_addr.clone();
     let chain_b_config = TxConfig::try_from(&chain_b_config).unwrap();
 
     let chain_a = FullCosmosChainContext::new(
-        src_chain.clone(),
+        handle_a.clone(),
         chain_a_signer,
         chain_a_config,
         chain_a_websocket_addr,
@@ -242,7 +248,7 @@ pub fn build_cosmos_birelay_context<Chain: ChainHandle>(
         telemetry.clone(),
     );
     let chain_b = FullCosmosChainContext::new(
-        dst_chain.clone(),
+        handle_b.clone(),
         chain_b_signer,
         chain_b_config,
         chain_b_websocket_addr,
@@ -250,26 +256,26 @@ pub fn build_cosmos_birelay_context<Chain: ChainHandle>(
         telemetry,
     );
 
-    let client_a = ForeignClient::new(src_chain.clone(), dst_chain.clone())
-        .unwrap_or_else(exit_with_unrecoverable_error);
-    let client_b =
-        ForeignClient::new(dst_chain, src_chain).unwrap_or_else(exit_with_unrecoverable_error);
+    let client_a_to_b = ForeignClient::restore(client_id_b, handle_b.clone(), handle_a.clone());
+
+    let client_b_to_a = ForeignClient::restore(client_id_a, handle_a, handle_b);
 
     let relay_a_to_b = new_relay_context_with_batch(
         runtime.clone(),
         chain_a.clone(),
         chain_b.clone(),
-        client_a.clone(),
-        client_b.clone(),
+        client_a_to_b.clone(),
+        client_b_to_a.clone(),
         filter.clone(),
         Default::default(),
     );
+
     let relay_b_to_a = new_relay_context_with_batch(
         runtime,
         chain_b,
         chain_a,
-        client_b,
-        client_a,
+        client_b_to_a,
+        client_a_to_b,
         filter,
         Default::default(),
     );

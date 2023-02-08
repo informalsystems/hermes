@@ -6,7 +6,7 @@ use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_framework::base::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_framework::base::relay::traits::two_way::HasTwoWayRelay;
 use ibc_relayer_framework::base::runtime::traits::runtime::HasRuntime;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::cli_utils::{build_cosmos_birelay_context, ChainHandlePair};
@@ -34,15 +34,6 @@ pub struct NewRelayPacketCmd {
     src_chain_id: ChainId,
 
     #[clap(
-        long = "src-channel",
-        required = true,
-        value_name = "SRC_CHANNEL_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the channel associated with the source chain"
-    )]
-    src_channel_id: ChannelId,
-
-    #[clap(
         long = "src-client",
         required = true,
         value_name = "SRC_CLIENT_ID",
@@ -52,15 +43,6 @@ pub struct NewRelayPacketCmd {
     src_client_id: ClientId,
 
     #[clap(
-        long = "src-port",
-        required = true,
-        value_name = "SRC_PORT_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the port associated with the source chain"
-    )]
-    src_port_id: PortId,
-
-    #[clap(
         long = "dst-chain",
         required = true,
         value_name = "DST_CLIENT_ID",
@@ -68,15 +50,6 @@ pub struct NewRelayPacketCmd {
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
-
-    #[clap(
-        long = "dst-channel",
-        required = true,
-        value_name = "DST_CHANNEL_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the channel associated with the destination chain"
-    )]
-    dst_channel_id: ChannelId,
 
     #[clap(
         long = "dst-client",
@@ -103,6 +76,8 @@ impl Runnable for NewRelayPacketCmd {
         let relay_context = match build_cosmos_birelay_context(
             chains.src,
             chains.dst,
+            self.src_client_id.clone(),
+            self.dst_client_id.clone(),
             TokioRuntime::new().unwrap(),
             pf,
         ) {
