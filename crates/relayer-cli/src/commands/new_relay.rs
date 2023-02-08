@@ -110,11 +110,8 @@ impl Runnable for NewRelayPacketCmd {
             Err(e) => Output::error(e).exit(),
         };
 
-        let runtime_context = relay_context.relay_a_to_b().runtime();
+        let runtime: &TokioRuntime = &relay_context.relay_a_to_b().runtime().runtime.runtime;
 
-        runtime_context
-            .runtime
-            .runtime
-            .block_on(relay_context.auto_relay());
+        runtime.block_on(relay_context.auto_relay());
     }
 }
