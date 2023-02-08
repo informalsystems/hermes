@@ -267,9 +267,9 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia8
-            command: gaiad
-            account_prefix: cosmos
+          - package: .#gaia8 .#stride-no-admin
+            command: gaiad,strided
+            account_prefix: cosmos,stride
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
@@ -294,10 +294,10 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }},strided
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }},stride
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#${{ matrix.chain.package }} .#stride-no-admin -c cargo \
+          nix shell ${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features ics31 --no-fail-fast -- \
             --nocapture --test-threads=1 ics31::
 
