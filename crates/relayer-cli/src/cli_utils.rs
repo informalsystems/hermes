@@ -198,6 +198,8 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
     Ok(())
 }
 
+/// Initializes a Cosmos relay context that utilizes the experimental relayer
+/// architecture for relaying packets between two Cosmos chains.
 // #[cfg(feature = "relayer-next")]
 pub fn build_cosmos_birelay_context<ChainA, ChainB>(
     handle_a: ChainA,
@@ -220,10 +222,10 @@ where
 
     let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(Arc::new(runtime)));
 
-    let chain_a_signer = handle_a.get_signer().unwrap_or_else(|_| Signer::dummy());
-    let chain_b_signer = handle_b.get_signer().unwrap_or_else(|_| Signer::dummy());
+    let chain_a_signer = handle_a.get_signer().unwrap_or_default();
+    let chain_b_signer = handle_b.get_signer().unwrap_or_default();
 
-    let Ok(AnySigningKeyPair::Secp256k1(chain_a_key)) =handle_a.get_key() else {
+    let Ok(AnySigningKeyPair::Secp256k1(chain_a_key)) = handle_a.get_key() else {
         panic!("No Secp256k1 key pair for chain {}", handle_a.id());
     };
 

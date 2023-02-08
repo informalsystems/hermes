@@ -13,59 +13,60 @@ use crate::cli_utils::{build_cosmos_birelay_context, ChainHandlePair};
 use crate::conclude::Output;
 use crate::prelude::*;
 
-/// `relay` subcommands
+/// `relay` subcommands which utilize the experimental relayer architecture.
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum NewRelayCmds {
-    /// Relay all packets between two chains using the new
-    /// experimental relayer architecture.
-    Packet(NewRelayPacketCmd),
+    /// Relay all packets between two chains using the experimental
+    /// relayer architecture.
+    Packets(NewRelayPacketsCmd),
 }
 
-/// Encodes the parameters of the `new-relay packet` command.
+/// Encodes the parameters of the experimental `relay packet` command
+/// which utilizes the experiemental relayer architecture.
 #[derive(Debug, Parser, Command)]
-pub struct NewRelayPacketCmd {
+pub struct NewRelayPacketsCmd {
     #[clap(
-        long = "src-chain",
+        long = "chain-a",
         required = true,
-        value_name = "SRC_CHAIN_ID",
+        value_name = "CHAIN_A_ID",
         help_heading = "REQUIRED",
-        help = "Identifier of the source chain"
+        help = "Identifier of chain A"
     )]
-    src_chain_id: ChainId,
+    chain_a_id: ChainId,
 
     #[clap(
-        long = "src-client",
+        long = "client-a",
         required = true,
-        value_name = "SRC_CLIENT_ID",
+        value_name = "CLIENT_A_ID",
         help_heading = "REQUIRED",
-        help = "Identifier of the client associated with the source chain"
+        help = "Identifier of the client associated with chain A"
     )]
-    src_client_id: ClientId,
+    client_a_id: ClientId,
 
     #[clap(
-        long = "dst-chain",
+        long = "chain-b",
         required = true,
-        value_name = "DST_CLIENT_ID",
+        value_name = "CHAIN_B_ID",
         help_heading = "REQUIRED",
-        help = "Identifier of the destination chain"
+        help = "Identifier of chain B"
     )]
-    dst_chain_id: ChainId,
+    chain_b_id: ChainId,
 
     #[clap(
-        long = "dst-client",
+        long = "client-b",
         required = true,
-        value_name = "DST_CLIENT_ID",
+        value_name = "CLIENT_B_ID",
         help_heading = "REQUIRED",
-        help = "Identifier of the client associated with the destination chain"
+        help = "Identifier of the client associated with chain B"
     )]
-    dst_client_id: ClientId,
+    client_b_id: ClientId,
 }
 
-impl Runnable for NewRelayPacketCmd {
+impl Runnable for NewRelayPacketsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
+        let chains = match ChainHandlePair::spawn(&config, &self.chain_a_id, &self.chain_b_id) {
             Ok(chains) => chains,
             Err(e) => Output::error(e).exit(),
         };
@@ -77,8 +78,8 @@ impl Runnable for NewRelayPacketCmd {
         let relay_context = match build_cosmos_birelay_context(
             chains.src,
             chains.dst,
-            self.src_client_id.clone(),
-            self.dst_client_id.clone(),
+            self.client_a_id.clone(),
+            self.client_b_id.clone(),
             runtime,
             pf,
         ) {
