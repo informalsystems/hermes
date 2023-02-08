@@ -16,7 +16,7 @@ mod update;
 mod upgrade;
 mod version;
 
-#[cfg(feature = "experimental")]
+// #[cfg(feature = "experimental")]
 mod new_relay;
 
 use self::{

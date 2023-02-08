@@ -199,13 +199,13 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
 
 /// Initializes a Cosmos relay context that utilizes the experimental relayer
 /// architecture for relaying packets between two Cosmos chains.
-#[cfg(feature = "experimental")]
+// #[cfg(feature = "experimental")]
 pub fn build_cosmos_birelay_context<ChainA, ChainB>(
     handle_a: ChainA,
     handle_b: ChainB,
     client_id_a: ClientId,
     client_id_b: ClientId,
-    runtime: TokioRuntime,
+    runtime: Arc<TokioRuntime>,
     filter: PacketFilter,
 ) -> Result<impl AfoCosmosFullBiRelay, Error>
 where
@@ -219,16 +219,19 @@ where
         updown_counters: HashMap::new(),
     }));
 
-    let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(Arc::new(runtime)));
+    let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(runtime));
 
-    let chain_a_signer = handle_a.get_signer().unwrap_or_default();
-    let chain_b_signer = handle_b.get_signer().unwrap_or_default();
+    let chain_a_signer = handle_a.get_signer().map_err(Error::signer)?;
+    let chain_b_signer = handle_b.get_signer().map_err(Error::signer)?;
 
-    let Ok(AnySigningKeyPair::Secp256k1(chain_a_key)) = handle_a.get_key() else {
+    let chain_a_keypair = handle_a.get_key().map_err(Error::key_ring)?;
+    let chain_b_keypair = handle_b.get_key().map_err(Error::key_ring)?;
+
+    let AnySigningKeyPair::Secp256k1(chain_a_key) = chain_a_keypair else {
         panic!("No Secp256k1 key pair for chain {}", handle_a.id());
     };
 
-    let Ok(AnySigningKeyPair::Secp256k1(chain_b_key)) = handle_b.get_key() else {
+    let AnySigningKeyPair::Secp256k1(chain_b_key) = chain_b_keypair else {
         panic!("No Secp256k1 key pair for chain {}", handle_b.id());
     };
 

@@ -24,7 +24,7 @@ eyre_tracer  = ["flex-error/eyre_tracer"]
 profiling    = ["ibc-relayer/profiling"]
 telemetry    = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server  = ["ibc-relayer-rest"]
-experimental = ["ibc-relayer-framework"]
+# experimental = ["ibc-relayer-framework"]
 
 [dependencies]
 ibc-relayer-types     = { version = "0.21.0", path = "../relayer-types", features = ["std", "clock"] }
@@ -32,8 +32,8 @@ ibc-relayer           = { version = "0.21.0", path = "../relayer" }
 ibc-telemetry         = { version = "0.21.0", path = "../telemetry", optional = true }
 ibc-relayer-rest      = { version = "0.21.0", path = "../relayer-rest", optional = true }
 ibc-chain-registry    = { version = "0.2.0" , path = "../chain-registry" }
-ibc-relayer-cosmos    = { version = "O.20.0", path = "../relayer-cosmos" }
-ibc-relayer-framework = { version = "0.1.0" , path = "../relayer-framework", optional = true }
+ibc-relayer-cosmos    = { version = "0.20.0", path = "../relayer-cosmos" }
+ibc-relayer-framework = { version = "0.1.0" , path = "../relayer-framework" }
 ibc-relayer-runtime   = { version = "0.1.0" , path = "../relayer-runtime" }
 
 atty                     = "0.2.14"

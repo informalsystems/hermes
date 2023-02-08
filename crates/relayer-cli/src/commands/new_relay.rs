@@ -1,13 +1,15 @@
-#![cfg(feature = "experimental")]
+// #![cfg(feature = "experimental")]
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use alloc::sync::Arc;
+use tokio::runtime::Runtime as TokioRuntime;
+
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_framework::base::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_framework::base::relay::traits::two_way::HasTwoWayRelay;
 use ibc_relayer_framework::base::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::cli_utils::{build_cosmos_birelay_context, ChainHandlePair};
 use crate::conclude::Output;
@@ -73,7 +75,7 @@ impl Runnable for NewRelayPacketsCmd {
 
         // TODO: Read in PacketFilter policy from config
         let pf = PacketFilter::default();
-        let runtime = TokioRuntime::new().unwrap();
+        let runtime = Arc::new(TokioRuntime::new().unwrap());
 
         let relay_context = match build_cosmos_birelay_context(
             chains.src,
