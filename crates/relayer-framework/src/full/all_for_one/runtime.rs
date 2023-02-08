@@ -1,4 +1,4 @@
-use crate::base::all_for_one::runtime::{AfoBaseRuntime, HasAfoBaseRuntime};
+use crate::base::all_for_one::runtime::AfoBaseRuntime;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::full::runtime::traits::channel::{CanCreateChannels, CanStreamReceiver, CanUseChannels};
 use crate::full::runtime::traits::spawn::HasSpawner;
@@ -13,7 +13,7 @@ impl<Runtime> AfoFullRuntime for Runtime where
 {
 }
 
-pub trait HasAfoFullRuntime: HasAfoBaseRuntime<AfoBaseRuntime = Self::AfoFullRuntime> {
+pub trait HasAfoFullRuntime: HasRuntime<Runtime = Self::AfoFullRuntime> {
     type AfoFullRuntime: AfoFullRuntime;
 }
 
