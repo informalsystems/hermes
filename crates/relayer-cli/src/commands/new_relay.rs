@@ -16,7 +16,7 @@ use crate::prelude::*;
 /// `relay` subcommands
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum NewRelayCmds {
-    /// Relay a single packet between two chains using the new
+    /// Relay all packets between two chains using the new
     /// experimental relayer architecture.
     Packet(NewRelayPacketCmd),
 }
@@ -99,19 +99,19 @@ impl Runnable for NewRelayPacketCmd {
 
         // TODO: Read in PacketFilter policy from config
         let pf = PacketFilter::default();
+        let runtime = TokioRuntime::new().unwrap();
 
-        let relay_context = match build_cosmos_birelay_context(
-            chains.src,
-            chains.dst,
-            TokioRuntime::new().unwrap(),
-            pf,
-        ) {
+        let relay_context = match build_cosmos_birelay_context(chains.src, chains.dst, runtime, pf)
+        {
             Ok(rc) => rc,
             Err(e) => Output::error(e).exit(),
         };
 
-        let runtime: &TokioRuntime = &relay_context.relay_a_to_b().runtime().runtime.runtime;
-
-        runtime.block_on(relay_context.auto_relay());
+        relay_context
+            .relay_a_to_b()
+            .runtime()
+            .runtime
+            .runtime
+            .block_on(relay_context.auto_relay());
     }
 }
