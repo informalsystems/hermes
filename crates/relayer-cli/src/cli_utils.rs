@@ -257,7 +257,6 @@ where
     );
 
     let client_a_to_b = ForeignClient::restore(client_id_b, handle_b.clone(), handle_a.clone());
-
     let client_b_to_a = ForeignClient::restore(client_id_a, handle_a, handle_b);
 
     let relay_a_to_b = new_relay_context_with_batch(
