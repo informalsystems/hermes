@@ -252,8 +252,8 @@ pub fn build_cosmos_birelay_context<Chain: ChainHandle>(
 
     let client_a = ForeignClient::new(src_chain.clone(), dst_chain.clone())
         .unwrap_or_else(exit_with_unrecoverable_error);
-    let client_b = ForeignClient::new(dst_chain.clone(), src_chain.clone())
-        .unwrap_or_else(exit_with_unrecoverable_error);
+    let client_b =
+        ForeignClient::new(dst_chain, src_chain).unwrap_or_else(exit_with_unrecoverable_error);
 
     let relay_a_to_b = new_relay_context_with_batch(
         runtime.clone(),
