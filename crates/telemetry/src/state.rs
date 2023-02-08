@@ -984,7 +984,7 @@ impl Default for TelemetryState {
 
             fee_amounts: meter
             .u64_counter("ics29_fee_amounts")
-            .with_description("Total amount of recv fees from ICS29 packets")
+            .with_description("Total amount payed from ICS29 fees")
             .init(),
         }
     }
