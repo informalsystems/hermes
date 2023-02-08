@@ -173,9 +173,27 @@ pub struct TelemetryState {
     /// Timeout event.
     backlogs: DashMap<PathIdentifier, DashMap<u64, u64>>,
 
+    /// Number of packets containing ICS29 fees.
     fee_packets: Counter<u64>,
 
+    /// Total amount of fees received from ICS29 fees.
     fee_amounts: Counter<u64>,
+
+    /// Minimum amount of fees received from ICS29 fees.
+    min_fee_amount: ObservableGauge<u64>,
+
+    /// Maximum amount of fees received from ICS29 fees.
+    max_fee_amount: ObservableGauge<u64>,
+
+    /// Record the current minimum amount of fees received
+    /// from ICS29 fees.
+    /// Used for the `min_fee_amount` metric.
+    current_min_fee_amount: moka::sync::Cache<String, u64>,
+
+    /// Record the current maximum amount of fees received
+    /// from ICS29 fees.
+    /// Used for the `max_fee_amount` metric.
+    current_max_fee_amount: moka::sync::Cache<String, u64>,
 }
 
 impl TelemetryState {
@@ -784,6 +802,8 @@ impl TelemetryState {
     pub fn fees_amount(&self, chain_id: &ChainId, receiver: &Signer, fee_amounts: Coin<String>) {
         let cx = Context::current();
 
+        let fee_uid = format!("{}{}{}", chain_id, receiver, fee_amounts.denom);
+
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
             KeyValue::new("receiver", receiver.to_string()),
@@ -793,6 +813,34 @@ impl TelemetryState {
         let fee_amount = fee_amounts.amount.0.as_u64();
 
         self.fee_amounts.add(&cx, fee_amount, labels);
+
+        // If the new fee amount is smaller than the current minimum, record it
+        // as the new minimum.
+        // If no fee amount is recorded as a minimum, record it as the minimum
+        // and set the current minimum to this value.
+        if let Some(fee) = self.current_min_fee_amount.get(&fee_uid) {
+            if fee_amount < fee {
+                self.min_fee_amount.observe(&cx, fee_amount, labels);
+            }
+        } else {
+            self.current_min_fee_amount
+                .insert(fee_uid.to_string(), fee_amount);
+            self.min_fee_amount.observe(&cx, fee_amount, labels);
+        }
+
+        // If the new fee amount is smaller than the current maximum, record it
+        // as the new maximum.
+        // If no fee amount is recorded as a maximum, record it as the maximum
+        // and set the current maximum to this value.
+        if let Some(fee) = self.current_max_fee_amount.get(&fee_uid) {
+            if fee_amount > fee {
+                self.max_fee_amount.observe(&cx, fee_amount, labels);
+            }
+        } else {
+            self.current_max_fee_amount
+                .insert(fee_uid.to_string(), fee_amount);
+            self.max_fee_amount.observe(&cx, fee_amount, labels);
+        }
     }
 }
 
@@ -823,8 +871,8 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "tx_latency_confirmed" => Some(Arc::new(histogram(&[
                 1000.0, 5000.0, 9000.0, 13000.0, 17000.0, 20000.0,
             ]))),
-            "ics29_max_fee_amounts" => Some(Arc::new(last_value())),
-            "ics29_min_fee_amounts" => Some(Arc::new(last_value())),
+            "ics29_min_fee_amount" => Some(Arc::new(last_value())),
+            "ics29_max_fee_amount" => Some(Arc::new(last_value())),
             _ => Some(Arc::new(sum())),
         }
     }
@@ -983,9 +1031,29 @@ impl Default for TelemetryState {
                 .init(),
 
             fee_amounts: meter
-            .u64_counter("ics29_fee_amounts")
-            .with_description("Total amount payed from ICS29 fees")
-            .init(),
+                .u64_counter("ics29_fee_amounts")
+                .with_description("Total amount received from ICS29 fees")
+                .init(),
+
+            min_fee_amount: meter
+                .u64_observable_gauge("ics29_min_fee_amount")
+                .with_description("Minimum amount received from ICS29 fees")
+                .init(),
+
+            max_fee_amount: meter
+                .u64_observable_gauge("ics29_max_fee_amount")
+                .with_description("Maximum amount received from ICS29 fees")
+                .init(),
+
+            current_min_fee_amount: moka::sync::Cache::builder()
+                .time_to_live(Duration::from_secs(7 * 24 * 60 * 60)) // Remove entries after 1 week
+                .time_to_idle(Duration::from_secs(3 * 24 * 60 * 60)) // Remove entries if they have been idle for 3 days
+                .build(),
+
+            current_max_fee_amount: moka::sync::Cache::builder()
+                .time_to_live(Duration::from_secs(7 * 24 * 60 * 60)) // Remove entries after 1 week
+                .time_to_idle(Duration::from_secs(3 * 24 * 60 * 60)) // Remove entries if they have been idle for 3 days
+                .build(),
         }
     }
 }
