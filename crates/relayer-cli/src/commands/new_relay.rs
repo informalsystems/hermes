@@ -1,4 +1,4 @@
-// #![cfg(feature = "relayer-next")]
+#![cfg(feature = "experimental")]
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
@@ -21,8 +21,8 @@ pub enum NewRelayCmds {
     Packets(NewRelayPacketsCmd),
 }
 
-/// Encodes the parameters of the experimental `relay packet` command
-/// which utilizes the experiemental relayer architecture.
+/// Encodes the CLI parameters of the experimental `relay packet` command
+/// which utilizes the experimental relayer architecture.
 #[derive(Debug, Parser, Command)]
 pub struct NewRelayPacketsCmd {
     #[clap(
