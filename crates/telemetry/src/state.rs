@@ -10,7 +10,11 @@ use opentelemetry::{
 use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use ibc_relayer_types::{
+    applications::transfer::Coin,
+    core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
+    signer::Signer,
+};
 
 use tendermint::Time;
 
@@ -168,6 +172,10 @@ pub struct TelemetryState {
     /// that the relayer observed, and for which there was no associated Acknowledgement or
     /// Timeout event.
     backlogs: DashMap<PathIdentifier, DashMap<u64, u64>>,
+
+    fee_packets: Counter<u64>,
+
+    fee_amounts: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -760,6 +768,32 @@ impl TelemetryState {
             }
         }
     }
+
+    pub fn fee_packets(&self, chain_id: &ChainId, channel_id: &ChannelId, port_id: &PortId) {
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.fee_packets.add(&cx, 1, labels);
+    }
+
+    pub fn fees_amount(&self, chain_id: &ChainId, receiver: &Signer, fee_amounts: Coin<String>) {
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("receiver", receiver.to_string()),
+            KeyValue::new("denom", fee_amounts.denom),
+        ];
+
+        let fee_amount = fee_amounts.amount.0.as_u64();
+
+        self.fee_amounts.add(&cx, fee_amount, labels);
+    }
 }
 
 use std::sync::Arc;
@@ -789,6 +823,8 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "tx_latency_confirmed" => Some(Arc::new(histogram(&[
                 1000.0, 5000.0, 9000.0, 13000.0, 17000.0, 20000.0,
             ]))),
+            "ics29_max_fee_amounts" => Some(Arc::new(last_value())),
+            "ics29_min_fee_amounts" => Some(Arc::new(last_value())),
             _ => Some(Arc::new(sum())),
         }
     }
@@ -940,6 +976,16 @@ impl Default for TelemetryState {
                 .u64_observable_gauge("backlog_size")
                 .with_description("Total number of SendPacket events in the backlog")
                 .init(),
+
+            fee_packets: meter
+                .u64_counter("ics29_packets")
+                .with_description("Number of packets with ICS29 fees")
+                .init(),
+
+            fee_amounts: meter
+            .u64_counter("ics29_fee_amounts")
+            .with_description("Total amount of recv fees from ICS29 packets")
+            .init(),
         }
     }
 }

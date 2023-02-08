@@ -251,6 +251,21 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         &self.counterparty_chain_id
                     );
 
+                    for e in events.clone() {
+                        if let IbcEvent::IncentivizedPacket(_ip) = e {
+                            telemetry!(
+                                fee_packets,
+                                &self.chain.id(),
+                                &self.channel_id,
+                                &self.port_id,
+                            );
+                        } else if let IbcEvent::DistributionFeePacket(dist) = e {
+                            let amount = dist.fee;
+                            let receiver = dist.receiver;
+                            telemetry!(fees_amount, &self.chain.id(), &receiver, amount,);
+                        }
+                    }
+
                     // Append the events corresponding to errors from the pending tx.
                     events.extend(pending.error_events);
 

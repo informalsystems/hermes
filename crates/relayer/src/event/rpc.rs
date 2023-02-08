@@ -11,6 +11,7 @@ use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::cosmos::types::events::channel::RawObject;
 use crate::event::monitor::queries;
+use crate::telemetry;
 
 use super::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
@@ -149,6 +150,14 @@ pub fn get_all_events(
 
             for abci_event in &tx_result.result.events {
                 if let Ok(ibc_event) = ibc_event_try_from_abci_event(abci_event) {
+                    if let IbcEvent::IncentivizedPacket(ip) = ibc_event.clone() {
+                        telemetry!(fee_packets, chain_id, &ip.channel_id, &ip.port_id,);
+                    }
+                    if let IbcEvent::DistributionFeePacket(dist) = ibc_event.clone() {
+                        let amount = dist.fee;
+                        let receiver = dist.receiver;
+                        telemetry!(fees_amount, chain_id, &receiver, amount,);
+                    }
                     if query == queries::ibc_client().to_string()
                         && event_is_type_client(&ibc_event)
                     {

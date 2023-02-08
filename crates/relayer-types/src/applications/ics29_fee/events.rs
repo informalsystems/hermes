@@ -9,6 +9,7 @@ use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::IbcEventType;
 use crate::prelude::*;
+use crate::signer::Signer;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct IncentivizedPacket {
@@ -83,5 +84,40 @@ impl<'a> TryFrom<&'a [abci::EventAttribute]> for IncentivizedPacket {
             total_ack_fee,
             total_timeout_fee,
         })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+pub struct DistributeFeePacket {
+    pub receiver: Signer,
+    pub fee: RawCoin,
+}
+
+impl From<DistributeFeePacket> for abci::Event {
+    fn from(event: DistributeFeePacket) -> Self {
+        let attributes = vec![
+            ("receiver", event.receiver.to_string()).into(),
+            ("fee", event.fee.denom.as_str()).into(),
+        ];
+
+        Self {
+            kind: IbcEventType::DistributionFee.as_str().to_owned(),
+            attributes,
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a [abci::EventAttribute]> for DistributeFeePacket {
+    type Error = Error;
+
+    fn try_from(entries: &'a [abci::EventAttribute]) -> Result<Self, Error> {
+        let receiver_str = find_value("receiver", entries)?;
+        let fee_str = find_value("fee", entries)?;
+
+        let receiver = Signer::from_str(receiver_str).map_err(Error::signer)?;
+
+        let fee = RawCoin::from_str(fee_str).map_err(Error::transfer)?;
+
+        Ok(DistributeFeePacket { receiver, fee })
     }
 }
