@@ -2,8 +2,6 @@
 
 use alloc::sync::Arc;
 use eyre::eyre;
-use ibc_relayer_framework::base::relay::types::two_way::TwoWayRelayContext;
-use ibc_relayer_framework::full::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 use opentelemetry::global;
 use std::collections::HashMap;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -24,11 +22,12 @@ use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::full::all_for_one::birelay::AfoCosmosFullBiRelay;
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_framework::base::relay::types::two_way::TwoWayRelayContext;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_framework::full::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
-use ibc_relayer_types::signer::Signer;
 
 use crate::error::Error;
 
