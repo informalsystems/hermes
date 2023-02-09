@@ -221,27 +221,27 @@ where
 
     let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(runtime));
 
-    let chain_a_signer = handle_a.get_signer().map_err(Error::signer)?;
-    let chain_b_signer = handle_b.get_signer().map_err(Error::signer)?;
+    let chain_a_signer = handle_a.get_signer().map_err(Error::relayer)?;
+    let chain_b_signer = handle_b.get_signer().map_err(Error::relayer)?;
 
-    let chain_a_keypair = handle_a.get_key().map_err(Error::key_ring)?;
-    let chain_b_keypair = handle_b.get_key().map_err(Error::key_ring)?;
+    let chain_a_keypair = handle_a.get_key().map_err(Error::relayer)?;
+    let chain_b_keypair = handle_b.get_key().map_err(Error::relayer)?;
 
     let AnySigningKeyPair::Secp256k1(chain_a_key) = chain_a_keypair else {
-        panic!("No Secp256k1 key pair for chain {}", handle_a.id());
+        return Err(Error::secp256k1_key_pair(handle_a.id()));
     };
 
     let AnySigningKeyPair::Secp256k1(chain_b_key) = chain_b_keypair else {
-        panic!("No Secp256k1 key pair for chain {}", handle_b.id());
+        return Err(Error::secp256k1_key_pair(handle_b.id()));
     };
 
-    let chain_a_config = handle_a.config().unwrap();
+    let chain_a_config = handle_a.config().map_err(Error::relayer)?;
     let chain_a_websocket_addr = chain_a_config.websocket_addr.clone();
-    let chain_a_config = TxConfig::try_from(&chain_a_config).unwrap();
+    let chain_a_config = TxConfig::try_from(&chain_a_config).map_err(Error::relayer)?;
 
-    let chain_b_config = handle_b.config().unwrap();
+    let chain_b_config = handle_b.config().map_err(Error::relayer)?;
     let chain_b_websocket_addr = chain_b_config.websocket_addr.clone();
-    let chain_b_config = TxConfig::try_from(&chain_b_config).unwrap();
+    let chain_b_config = TxConfig::try_from(&chain_b_config).map_err(Error::relayer)?;
 
     let chain_a = FullCosmosChainContext::new(
         handle_a.clone(),
