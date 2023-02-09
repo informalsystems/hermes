@@ -259,10 +259,6 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                                 &self.channel_id,
                                 &self.port_id,
                             );
-                        } else if let IbcEvent::DistributionFeePacket(dist) = e {
-                            let amount = dist.fee;
-                            let receiver = dist.receiver;
-                            telemetry!(fees_amount, &self.chain.id(), &receiver, amount,);
                         }
                     }
 

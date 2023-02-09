@@ -278,7 +278,7 @@ pub enum IbcEvent {
     IncentivizedPacket(IncentivizedPacket),
     CrossChainQueryPacket(CrossChainQueryPacket),
 
-    DistributionFeePacket(DistributeFeePacket),
+    DistributeFeePacket(DistributeFeePacket),
 
     AppModule(ModuleEvent),
 
@@ -317,7 +317,7 @@ impl Display for IbcEvent {
             IbcEvent::IncentivizedPacket(ev) => write!(f, "IncenvitizedPacket({ev:?}"),
             IbcEvent::CrossChainQueryPacket(ev) => write!(f, "CrosschainPacket({ev:?})"),
 
-            IbcEvent::DistributionFeePacket(ev) => write!(f, "DistributionFeePacket({ev:?})"),
+            IbcEvent::DistributeFeePacket(ev) => write!(f, "DistributionFeePacket({ev:?})"),
 
             IbcEvent::AppModule(ev) => write!(f, "AppModule({ev})"),
 
@@ -353,7 +353,7 @@ impl TryFrom<IbcEvent> for abci::Event {
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::IncentivizedPacket(event) => event.into(),
             IbcEvent::CrossChainQueryPacket(event) => event.into(),
-            IbcEvent::DistributionFeePacket(event) => event.into(),
+            IbcEvent::DistributeFeePacket(event) => event.into(),
             IbcEvent::AppModule(event) => event.try_into()?,
             IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
                 return Err(Error::incorrect_event_type(event.to_string()));
@@ -395,7 +395,7 @@ impl IbcEvent {
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
             IbcEvent::IncentivizedPacket(_) => IbcEventType::IncentivizedPacket,
             IbcEvent::CrossChainQueryPacket(_) => IbcEventType::CrossChainQuery,
-            IbcEvent::DistributionFeePacket(_) => IbcEventType::DistributionFee,
+            IbcEvent::DistributeFeePacket(_) => IbcEventType::DistributionFee,
             IbcEvent::AppModule(_) => IbcEventType::AppModule,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
         }

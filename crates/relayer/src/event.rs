@@ -125,7 +125,7 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
         Ok(IbcEventType::IncentivizedPacket) => Ok(IbcEvent::IncentivizedPacket(
             IncentivizedPacket::try_from(&abci_event.attributes[..]).map_err(IbcEventError::fee)?,
         )),
-        Ok(IbcEventType::DistributionFee) => Ok(IbcEvent::DistributionFeePacket(
+        Ok(IbcEventType::DistributionFee) => Ok(IbcEvent::DistributeFeePacket(
             DistributeFeePacket::try_from(&abci_event.attributes[..])
                 .map_err(IbcEventError::fee)?,
         )),
