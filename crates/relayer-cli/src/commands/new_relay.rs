@@ -25,7 +25,7 @@ pub enum NewRelayCmds {
 
 /// Encodes the CLI parameters of the experimental `relay packet` command
 /// which utilizes the experimental relayer architecture.
-#[derive(Debug, Parser, Command)]
+#[derive(Debug, Parser, Command, PartialEq, Eq)]
 pub struct NewRelayPacketsCmd {
     #[clap(
         long = "chain-a",
@@ -95,5 +95,62 @@ impl Runnable for NewRelayPacketsCmd {
             .runtime
             .runtime
             .block_on(relay_context.auto_relay());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::NewRelayPacketsCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
+
+    #[test]
+    fn test_new_relay_packets_required_only() {
+        assert_eq!(
+            NewRelayPacketsCmd {
+                chain_a_id: ChainId::from_string("chain_a_id"),
+                chain_b_id: ChainId::from_string("chain_b_id"),
+                client_a_id: ClientId::from_str("client_a").unwrap(),
+                client_b_id: ClientId::from_str("client_b").unwrap(),
+            },
+            NewRelayPacketsCmd::parse_from([
+                "test",
+                "--chain-a",
+                "chain_a_id",
+                "--client-a",
+                "client_a",
+                "--chain-b",
+                "chain_b_id",
+                "--client-b",
+                "client_b",
+            ])
+        )
+    }
+
+    #[test]
+    fn test_new_relay_packets_no_chain_id() {
+        assert!(NewRelayPacketsCmd::try_parse_from([
+            "test",
+            "--client-a",
+            "client_a_id",
+            "--client-b",
+            "client_b_id"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_new_relay_packets_no_client_id() {
+        assert!(NewRelayPacketsCmd::try_parse_from([
+            "test",
+            "--chain-a",
+            "chain_a_id",
+            "--chain-b",
+            "chain_b_id"
+        ])
+        .is_err())
     }
 }
