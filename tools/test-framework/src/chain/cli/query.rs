@@ -97,12 +97,13 @@ fn yaml_to_json_value(value: yaml::Value) -> Result<json::Value, Error> {
     Ok(parsed)
 }
 
-pub fn query_cross_chain_query_list(
+/// This is used after having asserted that there is a pending Cross Chain
+/// Query with the method `query_pending_cross_chain_query`.
+pub fn query_cross_chain_query(
     chain_id: &str,
     command_path: &str,
     rpc_listen_address: &str,
-    pending_queries: bool,
-) -> Result<(), Error> {
+) -> Result<String, Error> {
     let res = simple_exec(
         chain_id,
         command_path,
@@ -118,38 +119,5 @@ pub fn query_cross_chain_query_list(
     )?
     .stdout;
 
-    // If `pending_queries` is passed as true, return Ok only when there is at least one pending
-    // cross chain query.
-    // If `pending_queries` is passed as false, return Ok only if there are no pending queries.
-    if pending_queries {
-        let request_sent = json::from_str::<json::Value>(&res)
-            .map_err(handle_generic_error)?
-            .get("pending_queries")
-            .ok_or_else(|| eyre!("no pending cross chain queries"))?
-            .as_array()
-            .ok_or_else(|| eyre!("pending cross chain queries is not an array"))?
-            .first()
-            .ok_or_else(|| eyre!("no pending cross chain queries"))?
-            .as_bool();
-
-        if let Some(sent) = request_sent {
-            if !sent {
-                return Err(Error::generic(eyre!("Request found but not sent")));
-            }
-        }
-    } else if json::from_str::<json::Value>(&res)
-        .map_err(handle_generic_error)?
-        .get("pending_queries")
-        .ok_or_else(|| eyre!("no pending cross chain queries"))?
-        .as_array()
-        .ok_or_else(|| eyre!("pending cross chain queries is not an array"))?
-        .first()
-        .is_some()
-    {
-        return Err(Error::generic(eyre!(
-            "Pending query has not been processed"
-        )));
-    }
-
-    Ok(())
+    Ok(res)
 }

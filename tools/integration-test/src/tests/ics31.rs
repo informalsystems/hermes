@@ -17,6 +17,7 @@ use ibc_test_framework::chain::{
         set_voting_period,
     },
     exec::simple_exec,
+    ext::crosschainquery::CrossChainQueryMethodsExt,
 };
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
@@ -147,13 +148,13 @@ impl BinaryChannelTest for ICS31Test {
         chains
             .node_b
             .chain_driver()
-            .assert_eventual_cross_chain_query_relayed(true)?;
+            .assert_pending_cross_chain_query()?;
 
         // After there is a pending cross chain query, wait for it to be processed
         chains
             .node_b
             .chain_driver()
-            .assert_eventual_cross_chain_query_relayed(false)?;
+            .assert_processed_cross_chain_query()?;
         Ok(())
     }
 }

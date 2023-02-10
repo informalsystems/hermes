@@ -12,6 +12,7 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer_types::applications::transfer::amount::Amount;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
+use crate::chain::chain_type::ChainType;
 use crate::chain::cli::query::query_balance;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
@@ -20,9 +21,6 @@ use crate::relayer::tx::new_tx_config_for_test;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::wallet::WalletAddress;
 use crate::util::retry::assert_eventually_succeed;
-
-use super::chain_type::ChainType;
-use super::cli::query::query_cross_chain_query_list;
 
 /**
    Number of times (seconds) to try and query a wallet to reach the
@@ -36,15 +34,6 @@ use super::cli::query::query_cross_chain_query_list;
    be indication of some underlying performance issues.
 */
 const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 90;
-
-/**
-   Number of times (seconds) to try and query the list of cross chain
-   queries.
-
-   If you encounter retry error, verify the value of `stride_epoch`in
-   the `stride_epoch` configuration in Stride's `genesis.toml` file.
-*/
-const WAIT_CROSS_CHAIN_QUERY_ATTEMPTS: u16 = 60;
 
 /**
     A driver for interacting with a chain full nodes through command line.
@@ -198,15 +187,6 @@ impl ChainDriver {
         )
     }
 
-    pub fn query_cross_chain_query_list(&self, pending_queries: bool) -> Result<(), Error> {
-        query_cross_chain_query_list(
-            self.chain_id.as_str(),
-            &self.command_path,
-            &self.rpc_listen_address(),
-            pending_queries,
-        )
-    }
-
     /**
        Assert that a wallet should eventually have the expected amount in the
        given denomination.
@@ -233,33 +213,6 @@ impl ChainDriver {
                         token
                     )))
                 }
-            },
-        )?;
-
-        Ok(())
-    }
-
-    /**
-       Depending on the value of `pending_queries`, assert that a
-       cross chain is pending or that no cross chain queries are
-       pending..
-    */
-    pub fn assert_eventual_cross_chain_query_relayed(
-        &self,
-        pending_queries: bool,
-    ) -> Result<(), Error> {
-        let desc = if pending_queries {
-            "waiting for a cross chain query request"
-        } else {
-            "waiting for the cross chain query to be relayed"
-        };
-        assert_eventually_succeed(
-            desc,
-            WAIT_CROSS_CHAIN_QUERY_ATTEMPTS,
-            Duration::from_secs(1),
-            || {
-                self.query_cross_chain_query_list(pending_queries)?;
-                Ok(())
             },
         )?;
 
