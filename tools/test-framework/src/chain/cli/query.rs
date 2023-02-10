@@ -97,8 +97,7 @@ fn yaml_to_json_value(value: yaml::Value) -> Result<json::Value, Error> {
     Ok(parsed)
 }
 
-/// This is used after having asserted that there is a pending Cross Chain
-/// Query with the method `query_pending_cross_chain_query`.
+/// Query pending Cross Chain Queries
 pub fn query_cross_chain_query(
     chain_id: &str,
     command_path: &str,
