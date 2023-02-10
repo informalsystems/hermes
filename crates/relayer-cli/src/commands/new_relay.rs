@@ -1,4 +1,4 @@
-// #![cfg(feature = "experimental")]
+#![cfg(feature = "experimental")]
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
@@ -113,19 +113,19 @@ mod tests {
             NewRelayPacketsCmd {
                 chain_a_id: ChainId::from_string("chain_a_id"),
                 chain_b_id: ChainId::from_string("chain_b_id"),
-                client_a_id: ClientId::from_str("client_a").unwrap(),
-                client_b_id: ClientId::from_str("client_b").unwrap(),
+                client_a_id: ClientId::from_str("client_a_id").unwrap(),
+                client_b_id: ClientId::from_str("client_b_id").unwrap(),
             },
             NewRelayPacketsCmd::parse_from([
                 "test",
                 "--chain-a",
                 "chain_a_id",
                 "--client-a",
-                "client_a",
+                "client_a_id",
                 "--chain-b",
                 "chain_b_id",
                 "--client-b",
-                "client_b",
+                "client_b_id",
             ])
         )
     }
