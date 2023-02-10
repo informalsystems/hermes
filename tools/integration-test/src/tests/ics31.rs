@@ -12,11 +12,11 @@
 use ibc_relayer::config::{self, ModeConfig};
 
 use ibc_test_framework::chain::{
+    cli::host_zone::register_host_zone,
     config::{
         set_crisis_denom, set_mint_mint_denom, set_staking_bond_denom, set_staking_max_entries,
         set_voting_period,
     },
-    exec::simple_exec,
     ext::crosschainquery::CrossChainQueryMethodsExt,
 };
 use ibc_test_framework::prelude::*;
@@ -112,36 +112,20 @@ impl BinaryChannelTest for ICS31Test {
         )?;
 
         info!("Registering host-zone");
-
-        simple_exec(
-            "stride",
-            "strided",
-            &[
-                "--home",
-                chains.node_b.0.chain_driver.home_path.as_str(),
-                "--node",
-                chains.node_b.0.chain_driver.rpc_listen_address().as_str(),
-                "--keyring-backend",
-                "test",
-                "tx",
-                "stakeibc",
-                "register-host-zone",
-                channel.channel.dst_connection_id().as_str(),
-                denom_a.0.as_str(),
-                "cosmos",
-                denom_b.0.as_str(),
-                channel.channel_id_a.0.as_str(),
-                "1",
-                "--from",
-                &wallet_b.0.id.to_string(),
-                "--chain-id",
-                chains.chain_id_b().0.as_str(),
-                "--gas",
-                "auto",
-                "-b",
-                "block",
-                "--yes",
-            ],
+        // gaiad binary doesn't have the CLI `tx stakeibc register-host-zone`
+        // if this method is not called with `strided` command_path it will
+        // fail.
+        register_host_zone(
+            chains.chain_id_b().0.as_str(),
+            chains.node_b.0.chain_driver.command_path.as_str(),
+            chains.node_b.0.chain_driver.home_path.as_str(),
+            chains.node_b.0.chain_driver.rpc_listen_address().as_str(),
+            channel.channel.dst_connection_id().as_str(),
+            denom_a.0.as_str(),
+            "cosmos",
+            denom_b.0.as_str(),
+            channel.channel_id_a.0.as_str(),
+            &wallet_b.0.id.to_string(),
         )?;
 
         // Wait for the cross chain query to be pending.
