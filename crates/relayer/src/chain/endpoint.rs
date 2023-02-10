@@ -570,7 +570,7 @@ pub trait ChainEndpoint: Sized {
 
                 (maybe_packet_proof, None)
             }
-            PacketMsgType::TimeoutOnClose => {
+            PacketMsgType::TimeoutOnCloseUnordered => {
                 let channel_proof = {
                     let (_, maybe_channel_proof) = self.query_channel(
                         QueryChannelRequest {
@@ -591,6 +591,33 @@ pub trait ChainEndpoint: Sized {
                         port_id,
                         channel_id,
                         sequence,
+                        height: QueryHeight::Specific(height),
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, channel_proof)
+            }
+            PacketMsgType::TimeoutOnCloseOrdered => {
+                let channel_proof = {
+                    let (_, maybe_channel_proof) = self.query_channel(
+                        QueryChannelRequest {
+                            port_id: port_id.clone(),
+                            channel_id: channel_id.clone(),
+                            height: QueryHeight::Specific(height),
+                        },
+                        IncludeProof::Yes,
+                    )?;
+                    let channel_merkle_proof = maybe_channel_proof.expect(QUERY_PROOF_EXPECT_MSG);
+                    Some(
+                        CommitmentProofBytes::try_from(channel_merkle_proof)
+                            .map_err(Error::malformed_proof)?,
+                    )
+                };
+                let (_, maybe_packet_proof) = self.query_next_sequence_receive(
+                    QueryNextSequenceReceiveRequest {
+                        port_id,
+                        channel_id,
                         height: QueryHeight::Specific(height),
                     },
                     IncludeProof::Yes,

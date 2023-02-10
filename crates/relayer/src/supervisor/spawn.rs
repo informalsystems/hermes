@@ -246,7 +246,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
 
         if (mode.clients.enabled || mode.packets.enabled)
             && chan_state_src.is_open()
-            && chan_state_dst.is_open()
+            && (chan_state_dst.is_open() || chan_state_dst.is_closed())
         {
             if mode.clients.enabled {
                 // Spawn the client worker

@@ -19,7 +19,8 @@ pub enum PacketMsgType {
     Ack,
     TimeoutUnordered,
     TimeoutOrdered,
-    TimeoutOnClose,
+    TimeoutOnCloseUnordered,
+    TimeoutOnCloseOrdered,
 }
 
 #[derive(Clone, Debug)]
@@ -34,7 +35,12 @@ impl core::fmt::Display for PacketMsgType {
             PacketMsgType::Ack => write!(f, "(PacketMsgType::Ack)"),
             PacketMsgType::TimeoutUnordered => write!(f, "(PacketMsgType::TimeoutUnordered)"),
             PacketMsgType::TimeoutOrdered => write!(f, "(PacketMsgType::TimeoutOrdered)"),
-            PacketMsgType::TimeoutOnClose => write!(f, "(PacketMsgType::TimeoutOnClose)"),
+            PacketMsgType::TimeoutOnCloseUnordered => {
+                write!(f, "(PacketMsgType::TimeoutOnCloseUnordered)")
+            }
+            PacketMsgType::TimeoutOnCloseOrdered => {
+                write!(f, "(PacketMsgType::TimeoutOnCloseOrdered)")
+            }
         }
     }
 }
