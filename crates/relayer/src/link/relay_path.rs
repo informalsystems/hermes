@@ -329,7 +329,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         event: &IbcEventWithHeight,
     ) -> Result<Option<Any>, LinkError> {
-        // Build the MsgChannelCloseConfirm only from Timeout or CloseInitChannel event types
+        // Build the `MsgChannelCloseConfirm` only from `Timeout` or `CloseInitChannel` event types
         if event.event.event_type() != IbcEventType::Timeout
             && event.event.event_type() != IbcEventType::CloseInitChannel
         {

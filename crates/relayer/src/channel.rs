@@ -751,6 +751,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         state: State,
     ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
         let event = match (state, self.counterparty_state()?) {
+            // Open handshake steps
             (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),
             (State::Init, State::Init) => Some(self.build_chan_open_try_and_send()?),
             (State::TryOpen, State::Init) => Some(self.build_chan_open_ack_and_send()?),
@@ -762,14 +763,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             // return anyway as the final step is to be done by the counterparty worker.
             (State::TryOpen, State::Open) => return Ok((None, Next::Abort)),
 
+            // Close handshake steps
+            (State::Closed, State::Closed) => return Ok((None, Next::Abort)),
+            (State::Closed, _) => Some(self.build_chan_close_confirm_and_send()?),
+
             _ => None,
         };
 
-        // Abort if the channel is at OpenAck or OpenConfirm stage, as there is nothing more for the worker to do
+        // Abort if the channel is at OpenAck, OpenConfirm or CloseConfirm stage, as there is
+        // nothing more for the worker to do
         match event {
-            Some(IbcEvent::OpenConfirmChannel(_)) | Some(IbcEvent::OpenAckChannel(_)) => {
-                Ok((event, Next::Abort))
-            }
+            Some(IbcEvent::OpenConfirmChannel(_))
+            | Some(IbcEvent::OpenAckChannel(_))
+            | Some(IbcEvent::CloseConfirmChannel(_)) => Ok((event, Next::Abort)),
             _ => Ok((event, Next::Continue)),
         }
     }
@@ -802,6 +808,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             IbcEvent::OpenTryChannel(_) => State::TryOpen,
             IbcEvent::OpenAckChannel(_) => State::Open,
             IbcEvent::OpenConfirmChannel(_) => State::Open,
+            IbcEvent::CloseInitChannel(_) => State::Closed,
             _ => State::Uninitialized,
         };
 
