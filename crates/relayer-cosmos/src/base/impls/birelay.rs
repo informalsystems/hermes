@@ -1,6 +1,4 @@
-use ibc_relayer_framework::base::one_for_all::traits::birelay::{
-    OfaBiRelay, OfaBiRelayPreset, OfaBiRelayTypes,
-};
+use ibc_relayer_framework::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayTypes};
 use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
@@ -14,7 +12,6 @@ use crate::base::types::relay::CosmosRelayWrapper;
 impl<BiRelay> OfaBiRelayTypes for CosmosBiRelayWrapper<BiRelay>
 where
     BiRelay: CosmosBiRelay,
-    BiRelay::Preset: OfaBiRelayPreset<Self>,
 {
     type Preset = BiRelay::Preset;
 
@@ -30,7 +27,6 @@ where
 impl<BiRelay> OfaBiRelay for CosmosBiRelayWrapper<BiRelay>
 where
     BiRelay: CosmosBiRelay,
-    BiRelay::Preset: OfaBiRelayPreset<Self>,
 {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
         self.birelay.runtime()

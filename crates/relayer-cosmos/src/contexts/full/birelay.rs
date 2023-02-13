@@ -18,6 +18,24 @@ where
     pub relay_b_to_a: OfaRelayWrapper<CosmosRelayWrapper<FullCosmosRelay<ChainB, ChainA>>>,
 }
 
+impl<ChainA, ChainB> FullCosmosBiRelay<ChainA, ChainB>
+where
+    ChainA: ChainHandle,
+    ChainB: ChainHandle,
+{
+    pub fn new(
+        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+        relay_a_to_b: OfaRelayWrapper<CosmosRelayWrapper<FullCosmosRelay<ChainA, ChainB>>>,
+        relay_b_to_a: OfaRelayWrapper<CosmosRelayWrapper<FullCosmosRelay<ChainB, ChainA>>>,
+    ) -> Self {
+        Self {
+            runtime,
+            relay_a_to_b,
+            relay_b_to_a,
+        }
+    }
+}
+
 impl<ChainA, ChainB> CosmosBiRelay for FullCosmosBiRelay<ChainA, ChainB>
 where
     ChainA: ChainHandle,
