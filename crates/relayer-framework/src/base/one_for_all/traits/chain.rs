@@ -255,3 +255,28 @@ where
         OfaChainWrapper<Counterparty>,
     >;
 }
+
+pub trait OfaIbcChainWithPreset<Counterparty>:
+    OfaIbcChain<Counterparty, Preset = Self::OfaPreset>
+where
+    Counterparty: OfaIbcChain<
+        Self,
+        IncomingPacket = Self::OutgoingPacket,
+        OutgoingPacket = Self::IncomingPacket,
+    >,
+{
+    type OfaPreset: OfaIbcChainPreset<Self, Counterparty>;
+}
+
+impl<Chain, Counterparty> OfaIbcChainWithPreset<Counterparty> for Chain
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<
+        Chain,
+        IncomingPacket = Chain::OutgoingPacket,
+        OutgoingPacket = Chain::IncomingPacket,
+    >,
+    Chain::Preset: OfaIbcChainPreset<Self, Counterparty>,
+{
+    type OfaPreset = Chain::Preset;
+}

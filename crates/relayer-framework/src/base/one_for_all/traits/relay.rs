@@ -113,3 +113,15 @@ where
     type IbcMessageSender: IbcMessageSender<OfaRelayWrapper<Relay>, SourceTarget>
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
 }
+
+pub trait OfaBaseRelayWithPreset: OfaBaseRelay<Preset = Self::OfaPreset> {
+    type OfaPreset: OfaRelayPreset<Self>;
+}
+
+impl<Relay> OfaBaseRelayWithPreset for Relay
+where
+    Relay: OfaBaseRelay,
+    Relay::Preset: OfaRelayPreset<Relay>,
+{
+    type OfaPreset = Relay::Preset;
+}
