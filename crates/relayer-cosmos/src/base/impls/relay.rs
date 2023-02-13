@@ -95,7 +95,7 @@ where
     }
 
     fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
-        &self.runtime
+        self.relay.runtime()
     }
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId {
@@ -107,11 +107,11 @@ where
     }
 
     fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain> {
-        &self.src_chain
+        self.relay.src_chain()
     }
 
     fn dst_chain(&self) -> &OfaChainWrapper<Self::DstChain> {
-        &self.dst_chain
+        self.relay.dst_chain()
     }
 
     async fn build_src_update_client_messages(

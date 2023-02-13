@@ -1,9 +1,11 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
+use ibc_relayer_cosmos::base::types::chain::CosmosChainWrapper;
 use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
 use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::full::all_for_one::birelay::AfoCosmosFullBiRelay;
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
+use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::base::relay::types::two_way::TwoWayRelayContext;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
@@ -13,6 +15,7 @@ use ibc_test_framework::error::{handle_generic_error, Error};
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 use opentelemetry::global;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 pub fn build_cosmos_relay_context<ChainA, ChainB>(
     chains: &ConnectedChains<ChainA, ChainB>,
@@ -33,51 +36,57 @@ where
         chains.node_a.value().chain_driver.runtime.clone(),
     ));
 
-    let chain_a = FullCosmosChainContext::new(
-        chains.handle_a.clone(),
-        chains
-            .node_a
-            .value()
-            .wallets
-            .relayer
-            .address
-            .0
-            .parse()
-            .map_err(handle_generic_error)?,
-        chains.node_a.value().chain_driver.tx_config.clone(),
-        chains
-            .node_a
-            .value()
-            .chain_driver
-            .websocket_address()
-            .parse()
-            .map_err(handle_generic_error)?,
-        chains.node_a.value().wallets.relayer.key.clone(),
-        telemetry.clone(),
-    );
+    let chain_a = OfaChainWrapper::new(CosmosChainWrapper::new(Arc::new(
+        FullCosmosChainContext::new(
+            chains.handle_a.clone(),
+            chains
+                .node_a
+                .value()
+                .wallets
+                .relayer
+                .address
+                .0
+                .parse()
+                .map_err(handle_generic_error)?,
+            chains.node_a.value().chain_driver.tx_config.clone(),
+            chains
+                .node_a
+                .value()
+                .chain_driver
+                .websocket_address()
+                .parse()
+                .map_err(handle_generic_error)?,
+            chains.node_a.value().wallets.relayer.key.clone(),
+            runtime.clone(),
+            telemetry.clone(),
+        ),
+    )));
 
-    let chain_b = FullCosmosChainContext::new(
-        chains.handle_b.clone(),
-        chains
-            .node_b
-            .value()
-            .wallets
-            .relayer
-            .address
-            .0
-            .parse()
-            .map_err(handle_generic_error)?,
-        chains.node_b.value().chain_driver.tx_config.clone(),
-        chains
-            .node_b
-            .value()
-            .chain_driver
-            .websocket_address()
-            .parse()
-            .map_err(handle_generic_error)?,
-        chains.node_b.value().wallets.relayer.key.clone(),
-        telemetry,
-    );
+    let chain_b = OfaChainWrapper::new(CosmosChainWrapper::new(Arc::new(
+        FullCosmosChainContext::new(
+            chains.handle_b.clone(),
+            chains
+                .node_b
+                .value()
+                .wallets
+                .relayer
+                .address
+                .0
+                .parse()
+                .map_err(handle_generic_error)?,
+            chains.node_b.value().chain_driver.tx_config.clone(),
+            chains
+                .node_b
+                .value()
+                .chain_driver
+                .websocket_address()
+                .parse()
+                .map_err(handle_generic_error)?,
+            chains.node_b.value().wallets.relayer.key.clone(),
+            runtime.clone(),
+            telemetry,
+        ),
+    )));
 
     let relay_a_to_b = new_relay_context_with_batch(
         runtime.clone(),

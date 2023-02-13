@@ -58,7 +58,7 @@ where
     Chain: CosmosChain,
 {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
-        &self.runtime
+        self.chain.runtime()
     }
 
     fn runtime_error(e: TokioError) -> Error {
