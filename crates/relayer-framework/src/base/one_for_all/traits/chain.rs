@@ -16,7 +16,7 @@ use crate::base::runtime::traits::subscription::Subscription;
 use crate::std_prelude::*;
 
 pub trait OfaChainTypes: Async {
-    type Preset;
+    type Preset: Async;
 
     /**
        Corresponds to
@@ -54,7 +54,7 @@ pub trait OfaChainTypes: Async {
     */
     type Event: Async;
 
-    type ChainId: Eq + Async;
+    type ChainId: Eq + Ord + Async;
 
     /**
        Corresponds to

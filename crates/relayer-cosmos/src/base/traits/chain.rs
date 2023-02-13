@@ -6,7 +6,7 @@ use ibc_relayer_types::signer::Signer;
 use tendermint_rpc::Url;
 
 pub trait CosmosChain: Async {
-    type Preset;
+    type Preset: Async;
 
     type ChainHandle: ChainHandle;
 

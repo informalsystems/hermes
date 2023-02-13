@@ -1,8 +1,9 @@
-use crate::base::traits::chain::CosmosChain;
-use crate::base::traits::relay::CosmosRelay;
-
 use alloc::sync::Arc;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::base::core::traits::sync::Async;
+
+use crate::base::traits::chain::CosmosChain;
+use crate::base::traits::relay::CosmosRelay;
 
 pub struct MinCosmosRelayContext<SrcChain, DstChain>
 where
@@ -51,6 +52,7 @@ where
 
 impl<SrcChain, DstChain, Preset> CosmosRelay for MinCosmosRelayContext<SrcChain, DstChain>
 where
+    Preset: Async,
     SrcChain: CosmosChain<Preset = Preset>,
     DstChain: CosmosChain<Preset = Preset>,
 {

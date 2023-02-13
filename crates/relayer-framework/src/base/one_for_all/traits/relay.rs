@@ -20,7 +20,7 @@ use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
 pub trait OfaRelayTypes: Async {
-    type Preset;
+    type Preset: Async;
 
     /**
        Corresponds to [`HasErrorType::Error`](crate::base::core::traits::error::HasErrorType).

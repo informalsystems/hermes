@@ -5,7 +5,7 @@ use ibc_relayer_framework::base::core::traits::sync::Async;
 use crate::base::traits::chain::CosmosChain;
 
 pub trait CosmosRelay: Async {
-    type Preset;
+    type Preset: Async;
 
     type SrcChain: CosmosChain<Preset = Self::Preset>;
 

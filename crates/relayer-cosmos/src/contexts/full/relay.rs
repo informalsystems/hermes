@@ -2,6 +2,7 @@ use alloc::sync::Arc;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::full::batch::types::config::BatchConfig;
@@ -114,6 +115,7 @@ where
 
 impl<SrcChain, DstChain, Preset> CosmosRelay for FullCosmosRelay<SrcChain, DstChain>
 where
+    Preset: Async,
     SrcChain: CosmosChain<Preset = Preset>,
     DstChain: CosmosChain<Preset = Preset>,
 {
@@ -152,6 +154,7 @@ where
 
 impl<SrcChain, DstChain, Preset> CosmosFullRelay for FullCosmosRelay<SrcChain, DstChain>
 where
+    Preset: Async,
     SrcChain: CosmosChain<Preset = Preset>,
     DstChain: CosmosChain<Preset = Preset>,
 {
