@@ -50,27 +50,3 @@ where
 {
     async fn build_relay_b_to_a(builder: &Builder) -> Result<RelayBToA<Builder>, Builder::Error>;
 }
-
-#[async_trait]
-pub trait RelayAToBFromChainsBuilder<Builder>: Async
-where
-    Builder: HasBiRelayType + HasErrorType,
-{
-    async fn build_relay_a_to_b_from_chains(
-        builder: &Builder,
-        chain_a: ChainA<Builder>,
-        chain_b: ChainB<Builder>,
-    ) -> Result<RelayAToB<Builder>, Builder::Error>;
-}
-
-#[async_trait]
-pub trait RelayBToAFromChainsBuilder<Builder>: Async
-where
-    Builder: HasBiRelayType + HasErrorType,
-{
-    async fn build_relay_b_to_a_from_chains(
-        builder: &Builder,
-        chain_b: ChainB<Builder>,
-        chain_a: ChainA<Builder>,
-    ) -> Result<RelayBToA<Builder>, Builder::Error>;
-}

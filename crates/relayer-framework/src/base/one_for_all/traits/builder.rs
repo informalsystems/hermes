@@ -1,5 +1,3 @@
-use alloc::collections::BTreeMap;
-use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::fmt::Debug;
 
@@ -9,6 +7,7 @@ use crate::base::one_for_all::traits::chain::OfaChainTypes;
 use crate::base::one_for_all::traits::relay::OfaRelayTypes;
 use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
@@ -36,20 +35,6 @@ pub type ChainIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ChainId;
 
 pub type ChainIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ChainId;
 
-pub type Runtime<Builder> = <Builder as OfaBuilderTypes>::Runtime;
-
-pub type Mutex<Builder, T> = <Runtime<Builder> as OfaBaseRuntime>::Mutex<T>;
-
-pub type ChainCacheA<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdA<Builder>, ChainA<Builder>>>>;
-
-pub type ChainCacheB<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdB<Builder>, ChainB<Builder>>>>;
-
-pub type RelayCacheAToB<Builder> =
-    Arc<Mutex<Builder, BTreeMap<(ChainIdA<Builder>, ChainIdB<Builder>), RelayAToB<Builder>>>>;
-
-pub type RelayCacheBToA<Builder> =
-    Arc<Mutex<Builder, BTreeMap<(ChainIdB<Builder>, ChainIdA<Builder>), RelayBToA<Builder>>>>;
-
 #[async_trait]
 pub trait OfaBuilder: OfaBuilderTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
@@ -75,4 +60,10 @@ pub trait OfaBuilder: OfaBuilderTypes {
         src_chain: OfaChainWrapper<ChainB<Self>>,
         dst_chain: OfaChainWrapper<ChainA<Self>>,
     ) -> Result<RelayBToA<Self>, Self::Error>;
+
+    async fn build_birelay(
+        &self,
+        relay_a_to_b: OfaRelayWrapper<RelayAToB<Self>>,
+        relay_b_to_a: OfaRelayWrapper<RelayBToA<Self>>,
+    ) -> Result<Self::BiRelay, Self::Error>;
 }

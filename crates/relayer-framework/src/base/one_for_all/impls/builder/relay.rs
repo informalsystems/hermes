@@ -10,8 +10,6 @@ use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
-pub struct BuildRelayFromOfa;
-
 #[async_trait]
 impl<Builder> CanBuildRelayAToBFromChains for OfaBuilderWrapper<Builder>
 where
