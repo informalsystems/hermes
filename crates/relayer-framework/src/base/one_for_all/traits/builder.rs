@@ -35,6 +35,10 @@ pub type ChainIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ChainId;
 
 pub type ChainIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ChainId;
 
+pub type ClientIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ClientId;
+
+pub type ClientIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ClientId;
+
 #[async_trait]
 pub trait OfaBuilder: OfaBuilderTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
@@ -44,6 +48,10 @@ pub trait OfaBuilder: OfaBuilderTypes {
     fn chain_id_a(&self) -> &ChainIdA<Self>;
 
     fn chain_id_b(&self) -> &ChainIdB<Self>;
+
+    fn client_id_a(&self) -> &ClientIdA<Self>;
+
+    fn client_id_b(&self) -> &ClientIdB<Self>;
 
     async fn build_chain_a(&self) -> Result<ChainA<Self>, Self::Error>;
 

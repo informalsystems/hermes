@@ -2,7 +2,7 @@ use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 
 use crate::base::one_for_all::traits::builder::{
-    ChainA, ChainB, ChainIdA, ChainIdB, OfaBuilderTypes, RelayAToB, RelayBToA,
+    ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, OfaBuilderTypes, RelayAToB, RelayBToA,
 };
 use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 
@@ -14,11 +14,35 @@ pub type ChainACache<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdA<Builder>, C
 
 pub type ChainBCache<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdB<Builder>, ChainB<Builder>>>>;
 
-pub type RelayAToBCache<Builder> =
-    Arc<Mutex<Builder, BTreeMap<(ChainIdA<Builder>, ChainIdB<Builder>), RelayAToB<Builder>>>>;
+pub type RelayAToBCache<Builder> = Arc<
+    Mutex<
+        Builder,
+        BTreeMap<
+            (
+                ChainIdA<Builder>,
+                ChainIdB<Builder>,
+                ClientIdA<Builder>,
+                ClientIdB<Builder>,
+            ),
+            RelayAToB<Builder>,
+        >,
+    >,
+>;
 
-pub type RelayBToACache<Builder> =
-    Arc<Mutex<Builder, BTreeMap<(ChainIdB<Builder>, ChainIdA<Builder>), RelayBToA<Builder>>>>;
+pub type RelayBToACache<Builder> = Arc<
+    Mutex<
+        Builder,
+        BTreeMap<
+            (
+                ChainIdB<Builder>,
+                ChainIdA<Builder>,
+                ClientIdB<Builder>,
+                ClientIdA<Builder>,
+            ),
+            RelayBToA<Builder>,
+        >,
+    >,
+>;
 
 pub struct OfaBuilderWrapper<Builder>
 where
@@ -35,7 +59,7 @@ impl<Builder> OfaBuilderWrapper<Builder>
 where
     Builder: OfaBuilderTypes,
 {
-    pub fn new(
+    pub fn new_with_cache(
         builder: Builder,
         chain_a_cache: ChainACache<Builder>,
         chain_b_cache: ChainACache<Builder>,
