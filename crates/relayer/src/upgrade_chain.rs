@@ -16,7 +16,7 @@ use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::UpgradeOptions;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer_types::downcast;
+use ibc_relayer_types::{downcast, Height};
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
@@ -48,7 +48,13 @@ define_error! {
             },
 
         TendermintOnly
-            |_| { "only Tendermint clients can be upgraded" }
+            |_| { "only Tendermint clients can be upgraded" },
+
+        UpgradeHeightRevision
+            { revision: u64 }
+            |r| {
+                format!("invalid upgrade height revision: {r}")
+            }
     }
 }
 
@@ -68,10 +74,19 @@ pub fn build_and_send_ibc_upgrade_proposal(
     src_chain: impl ChainHandle, // the source chain; supplies a client state for building the upgrade plan
     opts: &UpgradePlanOptions,
 ) -> Result<TxHash, UpgradeChainError> {
-    let upgrade_height = dst_chain
+    let plan_height = dst_chain
         .query_latest_height() // FIXME(romac): Use query_chain_latest_height once added to ChainHandle
         .map_err(UpgradeChainError::query)?
         .add(opts.height_offset);
+
+    let upgraded_client_latest_height =
+        if dst_chain.id().version() == opts.upgraded_chain_id.version() {
+            plan_height.increment()
+        } else {
+            Height::new(opts.upgraded_chain_id.version(), 1).map_err(|_| {
+                UpgradeChainError::upgrade_height_revision(opts.upgraded_chain_id.version())
+            })?
+        };
 
     let (client_state, _) = src_chain
         .query_client_state(
@@ -94,7 +109,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     };
 
     client_state.upgrade(
-        upgrade_height.increment(),
+        upgraded_client_latest_height,
         &upgrade_options,
         opts.upgraded_chain_id.clone(),
     );
@@ -105,7 +120,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
         upgraded_client_state: Some(Any::from(AnyClientState::from(client_state))),
         plan: Some(Plan {
             name: opts.upgrade_plan_name.clone(),
-            height: upgrade_height.revision_height() as i64,
+            height: plan_height.revision_height() as i64,
             info: "".to_string(),
             ..Default::default() // deprecated fields - time & upgraded_client_state
         }),

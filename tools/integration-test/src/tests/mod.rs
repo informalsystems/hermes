@@ -45,3 +45,6 @@ pub mod example;
 
 #[cfg(any(doc, feature = "forward-packet"))]
 pub mod forward;
+
+#[cfg(any(doc, feature = "ics31"))]
+pub mod ics31;
