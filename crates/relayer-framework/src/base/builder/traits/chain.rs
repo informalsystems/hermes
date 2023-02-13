@@ -14,3 +14,19 @@ pub trait CanBuildChainA: HasBiRelayType + HasErrorType {
 pub trait CanBuildChainB: HasBiRelayType + HasErrorType {
     async fn build_chain_b(&self) -> Result<ChainB<Self>, Self::Error>;
 }
+
+#[async_trait]
+pub trait ChainABuilder<Builder>
+where
+    Builder: HasBiRelayType + HasErrorType,
+{
+    async fn build_chain_a(builder: &Builder) -> Result<ChainA<Builder>, Builder::Error>;
+}
+
+#[async_trait]
+pub trait ChainBBuilder<Builder>
+where
+    Builder: HasBiRelayType + HasErrorType,
+{
+    async fn build_chain_b(builder: &Builder) -> Result<ChainB<Builder>, Builder::Error>;
+}

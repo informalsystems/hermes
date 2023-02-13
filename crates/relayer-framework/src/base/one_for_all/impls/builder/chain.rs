@@ -1,34 +1,40 @@
 use async_trait::async_trait;
 
-use crate::base::builder::traits::builder::TargetBuilder;
-use crate::base::one_for_all::traits::builder::OfaBuilder;
+use crate::base::builder::traits::chain::{ChainABuilder, ChainBBuilder};
+use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
+use crate::base::one_for_all::traits::builder::{ChainA, ChainB, OfaBuilder};
 use crate::base::one_for_all::types::builder::OfaBuilderWrapper;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
-pub struct BuildChainAFromOfa;
-
-pub struct BuildChainBFromOfa;
+pub struct BuildChainFromOfa;
 
 #[async_trait]
-impl<Builder> TargetBuilder<OfaBuilderWrapper<Builder>, Builder::ChainA> for BuildChainAFromOfa
+impl<Builder> ChainABuilder<OfaBuilderWrapper<Builder>> for BuildChainFromOfa
 where
     Builder: OfaBuilder,
+    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
-    async fn build_target(
+    async fn build_chain_a(
         builder: &OfaBuilderWrapper<Builder>,
-    ) -> Result<Builder::ChainA, Builder::Error> {
-        builder.builder.build_chain_a().await
+    ) -> Result<OfaChainWrapper<ChainA<Builder>>, Builder::Error> {
+        let chain = builder.builder.build_chain_a().await?;
+
+        Ok(OfaChainWrapper::new(chain))
     }
 }
 
 #[async_trait]
-impl<Builder> TargetBuilder<OfaBuilderWrapper<Builder>, Builder::ChainB> for BuildChainBFromOfa
+impl<Builder> ChainBBuilder<OfaBuilderWrapper<Builder>> for BuildChainFromOfa
 where
     Builder: OfaBuilder,
+    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
-    async fn build_target(
+    async fn build_chain_b(
         builder: &OfaBuilderWrapper<Builder>,
-    ) -> Result<Builder::ChainB, Builder::Error> {
-        builder.builder.build_chain_b().await
+    ) -> Result<OfaChainWrapper<ChainB<Builder>>, Builder::Error> {
+        let chain = builder.builder.build_chain_b().await?;
+
+        Ok(OfaChainWrapper::new(chain))
     }
 }
