@@ -45,5 +45,5 @@ pub trait OfaBiRelayPreset<BiRelay>:
 where
     BiRelay: OfaBiRelayTypes,
 {
-    type AutoRelayer: AutoRelayer<OfaBiRelayWrapper<BiRelay>>;
+    type TwoWayAutoRelayer: AutoRelayer<OfaBiRelayWrapper<BiRelay>>;
 }
