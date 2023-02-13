@@ -22,7 +22,6 @@ pub trait OfaBiRelayTypes: Async {
         Preset = Self::Preset,
         SrcChain = <Self::RelayAToB as OfaRelayTypes>::DstChain,
         DstChain = <Self::RelayAToB as OfaRelayTypes>::SrcChain,
-        Error = <Self::RelayAToB as OfaRelayTypes>::Error,
     >;
 }
 

@@ -1,6 +1,7 @@
+use crate::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayPreset};
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
 use crate::base::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
-use crate::base::one_for_all::traits::relay::OfaRelayPreset;
+use crate::base::one_for_all::traits::relay::{OfaRelayPreset, OfaRelayTypes};
 use crate::full::one_for_all::presets::full::{self as preset, FullPreset};
 use crate::full::one_for_all::traits::chain::OfaFullChain;
 use crate::full::one_for_all::traits::relay::OfaFullRelay;
@@ -28,8 +29,8 @@ where
 impl<Relay> OfaRelayPreset<Relay> for FullPreset
 where
     Relay: OfaFullRelay<Preset = FullPreset>,
-    Relay::SrcChain: OfaFullChain<Error = Relay::Error>,
-    Relay::DstChain: OfaFullChain<Error = Relay::Error>,
+    Relay::SrcChain: OfaFullChain,
+    Relay::DstChain: OfaFullChain,
 {
     type AutoRelayer = preset::AutoRelayer;
 
@@ -38,4 +39,19 @@ where
     type PacketFilter = preset::PacketFilter;
 
     type IbcMessageSender = preset::IbcMessageSender;
+}
+
+impl<BiRelay, RelayAToB, RelayBToA> OfaBiRelayPreset<BiRelay> for FullPreset
+where
+    BiRelay: OfaBiRelay<Preset = FullPreset, RelayAToB = RelayAToB, RelayBToA = RelayBToA>,
+    RelayAToB: OfaFullRelay<Preset = FullPreset>,
+    RelayBToA: OfaFullRelay<
+        Preset = FullPreset,
+        SrcChain = <RelayAToB as OfaRelayTypes>::DstChain,
+        DstChain = <RelayAToB as OfaRelayTypes>::SrcChain,
+    >,
+    RelayAToB::SrcChain: OfaFullChain,
+    RelayAToB::DstChain: OfaFullChain,
+{
+    type TwoWayAutoRelayer = preset::TwoWayAutoRelayer;
 }
