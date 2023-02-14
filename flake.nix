@@ -44,6 +44,7 @@
               ibc-go-v6-simapp
               apalache
               evmos
+              stride-no-admin
             ;
 
             inherit (nixpkgs)

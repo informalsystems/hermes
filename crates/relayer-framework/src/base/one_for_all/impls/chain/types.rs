@@ -8,7 +8,7 @@ use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMess
 use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::base::chain::traits::types::timestamp::HasTimestampType;
 use crate::base::core::traits::error::HasErrorType;
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes, OfaIbcChain};
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::base::runtime::traits::runtime::HasRuntime;
@@ -40,7 +40,7 @@ impl<Chain: OfaBaseChain> CanEstimateMessageSize for OfaChainWrapper<Chain> {
     }
 }
 
-impl<Chain: OfaBaseChain> HasEventType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChainTypes> HasEventType for OfaChainWrapper<Chain> {
     type Event = Chain::Event;
 }
 

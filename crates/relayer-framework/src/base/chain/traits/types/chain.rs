@@ -1,3 +1,7 @@
+/*!
+   Trait definition for [`HasChainTypes`].
+*/
+
 use crate::base::chain::traits::types::chain_id::HasChainIdType;
 use crate::base::chain::traits::types::event::HasEventType;
 use crate::base::chain::traits::types::height::HasHeightType;
