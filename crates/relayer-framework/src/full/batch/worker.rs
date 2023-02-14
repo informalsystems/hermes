@@ -19,12 +19,12 @@ use crate::full::batch::types::aliases::{BatchSubmission, EventResultSender};
 use crate::full::batch::types::config::BatchConfig;
 use crate::full::runtime::traits::channel::{CanUseChannels, HasChannelTypes};
 use crate::full::runtime::traits::channel_once::{CanUseChannelsOnce, HasChannelOnceTypes};
-use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
+use crate::full::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CanSpawnBatchMessageWorkers: Async {
-    fn spawn_batch_message_workers(&self, config: BatchConfig);
+    fn spawn_batch_message_workers(&self, config: BatchConfig) -> Box<dyn TaskHandle>;
 }
 
 impl<Relay> CanSpawnBatchMessageWorkers for Relay
@@ -33,25 +33,29 @@ where
     Relay: CanSpawnBatchMessageWorker<SourceTarget>,
     Relay: CanSpawnBatchMessageWorker<DestinationTarget>,
 {
-    fn spawn_batch_message_workers(&self, config: BatchConfig) {
-        <Relay as CanSpawnBatchMessageWorker<SourceTarget>>::spawn_batch_message_worker(
-            self.clone(),
-            config.clone(),
-        );
+    fn spawn_batch_message_workers(&self, config: BatchConfig) -> Box<dyn TaskHandle> {
+        let handle1 =
+            <Relay as CanSpawnBatchMessageWorker<SourceTarget>>::spawn_batch_message_worker(
+                self.clone(),
+                config.clone(),
+            );
 
-        <Relay as CanSpawnBatchMessageWorker<DestinationTarget>>::spawn_batch_message_worker(
-            self.clone(),
-            config,
-        );
+        let handle2 =
+            <Relay as CanSpawnBatchMessageWorker<DestinationTarget>>::spawn_batch_message_worker(
+                self.clone(),
+                config,
+            );
+
+        Box::new(vec![handle1, handle2])
     }
 }
 
 #[async_trait]
-trait CanSpawnBatchMessageWorker<Target>: HasRelayTypes
+pub trait CanSpawnBatchMessageWorker<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
 {
-    fn spawn_batch_message_worker(self, config: BatchConfig);
+    fn spawn_batch_message_worker(self, config: BatchConfig) -> Box<dyn TaskHandle>;
 }
 
 impl<Relay, Target, Runtime> CanSpawnBatchMessageWorker<Target> for Relay
@@ -61,12 +65,12 @@ where
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: HasSpawner + HasChannelTypes + HasChannelOnceTypes,
 {
-    fn spawn_batch_message_worker(self, config: BatchConfig) {
+    fn spawn_batch_message_worker(self, config: BatchConfig) -> Box<dyn TaskHandle> {
         let spawner = Target::target_chain(&self).runtime().spawner();
 
         spawner.spawn(async move {
             self.run_loop(&config).await;
-        });
+        })
     }
 }
 

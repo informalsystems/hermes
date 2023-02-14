@@ -1,9 +1,8 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::chain::traits::queries::consensus_state::{
-    CanQueryConsensusState, HasConsensusState,
-};
+use crate::base::chain::traits::queries::consensus_state::CanQueryConsensusState;
+use crate::base::chain::traits::types::consensus_state::HasConsensusStateType;
 use crate::base::chain::types::aliases::Height;
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::base::relay::traits::target::ChainTarget;
@@ -19,7 +18,7 @@ where
     Relay: HasRelayTypes,
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
-    CounterpartyChain: HasConsensusState<TargetChain>,
+    CounterpartyChain: HasConsensusStateType<TargetChain>,
     TargetChain: CanQueryConsensusState<CounterpartyChain>,
 {
     async fn build_update_client_messages(
