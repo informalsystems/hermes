@@ -8,7 +8,7 @@ use crate::full::batch::worker::CanSpawnBatchMessageWorkers;
 use crate::full::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 
 pub trait AfoFullRelay:
-    HasAfoFullRuntime
+    HasAfoFullRuntime<AfoFullRuntime = Self::AfoBaseRuntime>
     + AfoBaseRelay<AfoSrcChain = Self::AfoSrcFullChain, AfoDstChain = Self::AfoDstFullChain>
     + CanSendIbcMessagesFromBatchWorker<SourceTarget>
     + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
@@ -26,7 +26,7 @@ pub trait AfoFullRelay:
 
 impl<Relay, SrcChain, DstChain> AfoFullRelay for Relay
 where
-    Relay: HasAfoFullRuntime
+    Relay: HasAfoFullRuntime<AfoFullRuntime = Self::AfoBaseRuntime>
         + AfoBaseRelay<AfoSrcChain = SrcChain, AfoDstChain = DstChain>
         + CanSendIbcMessagesFromBatchWorker<SourceTarget>
         + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
