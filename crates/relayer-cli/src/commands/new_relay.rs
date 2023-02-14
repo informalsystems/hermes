@@ -1,4 +1,4 @@
-// #![cfg(feature = "experimental")]
+#![cfg(feature = "experimental")]
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
