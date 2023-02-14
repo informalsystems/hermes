@@ -55,5 +55,5 @@ list = [
 This information can also be found in the [Hermes guide][guide-ica].
 
 [ica]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
-[guide-ica]: https://hermes.informal.systems/config.html#support-for-interchain-accounts
+[guide-ica]: https://hermes.informal.systems/documentation/configuration/configure-hermes.html#support-for-interchain-accounts
 
