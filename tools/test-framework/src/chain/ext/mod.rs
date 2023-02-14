@@ -1,4 +1,5 @@
 pub mod bootstrap;
+pub mod crosschainquery;
 pub mod fee;
 pub mod forward;
 pub mod ica;

@@ -96,3 +96,27 @@ fn yaml_to_json_value(value: yaml::Value) -> Result<json::Value, Error> {
 
     Ok(parsed)
 }
+
+/// Query pending Cross Chain Queries
+pub fn query_cross_chain_query(
+    chain_id: &str,
+    command_path: &str,
+    rpc_listen_address: &str,
+) -> Result<String, Error> {
+    let res = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--node",
+            rpc_listen_address,
+            "query",
+            "interchainquery",
+            "list-pending-queries",
+            "--output",
+            "json",
+        ],
+    )?
+    .stdout;
+
+    Ok(res)
+}
