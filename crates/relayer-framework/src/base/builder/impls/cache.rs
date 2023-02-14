@@ -4,9 +4,8 @@ use core::marker::PhantomData;
 use crate::base::builder::traits::cache::{
     HasChainACache, HasChainBCache, HasRelayAToBCache, HasRelayBToACache,
 };
-use crate::base::builder::traits::chain::{
-    ChainABuilder, ChainBBuilder, HasTargetChainIds, HasTargetClientIds,
-};
+use crate::base::builder::traits::chain::{ChainABuilder, ChainBBuilder};
+use crate::base::builder::traits::id::{HasTargetChainIds, HasTargetClientIds};
 use crate::base::builder::traits::relay::{RelayAToBBuilder, RelayBToABuilder};
 use crate::base::builder::types::aliases::{
     ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, RelayAToB, RelayBToA,

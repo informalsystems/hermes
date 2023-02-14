@@ -29,13 +29,13 @@ pub trait OfaBuilder: OfaBuilderTypes {
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
 
-    fn chain_id_a(&self) -> &ChainIdA<Self>;
+    fn chain_id_a(&self) -> ChainIdA<Self>;
 
-    fn chain_id_b(&self) -> &ChainIdB<Self>;
+    fn chain_id_b(&self) -> ChainIdB<Self>;
 
-    fn client_id_a(&self) -> &ClientIdA<Self>;
+    fn client_id_a(&self) -> ClientIdA<Self>;
 
-    fn client_id_b(&self) -> &ClientIdB<Self>;
+    fn client_id_b(&self) -> ClientIdB<Self>;
 
     async fn build_chain_a(&self) -> Result<ChainA<Self>, Self::Error>;
 
