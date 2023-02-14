@@ -60,7 +60,7 @@ pub trait OfaChainTypes: Async {
        Corresponds to
        [`HasIbcChainTypes::ClientId`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::ClientId).
     */
-    type ClientId: Async;
+    type ClientId: Ord + Async;
 
     /**
        Corresponds to
