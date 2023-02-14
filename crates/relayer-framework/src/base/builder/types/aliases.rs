@@ -19,7 +19,7 @@ pub type ChainB<Builder> = <RelayAToB<Builder> as HasRelayTypes>::DstChain;
 
 pub type ChainIdA<Builder> = <ChainA<Builder> as HasChainIdType>::ChainId;
 
-pub type ChainIdB<Builder> = <ChainA<Builder> as HasChainIdType>::ChainId;
+pub type ChainIdB<Builder> = <ChainB<Builder> as HasChainIdType>::ChainId;
 
 pub type ClientIdA<Builder> = <ChainA<Builder> as HasIbcChainTypes<ChainB<Builder>>>::ClientId;
 
@@ -33,8 +33,32 @@ pub type ChainACache<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdA<Builder>, C
 
 pub type ChainBCache<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdB<Builder>, ChainB<Builder>>>>;
 
-pub type RelayAToBCache<Builder> =
-    Arc<Mutex<Builder, BTreeMap<(ChainIdA<Builder>, ChainIdB<Builder>), RelayAToB<Builder>>>>;
+pub type RelayAToBCache<Builder> = Arc<
+    Mutex<
+        Builder,
+        BTreeMap<
+            (
+                ChainIdA<Builder>,
+                ChainIdB<Builder>,
+                ClientIdA<Builder>,
+                ClientIdB<Builder>,
+            ),
+            RelayAToB<Builder>,
+        >,
+    >,
+>;
 
-pub type RelayBToACache<Builder> =
-    Arc<Mutex<Builder, BTreeMap<(ChainIdB<Builder>, ChainIdA<Builder>), RelayBToA<Builder>>>>;
+pub type RelayBToACache<Builder> = Arc<
+    Mutex<
+        Builder,
+        BTreeMap<
+            (
+                ChainIdB<Builder>,
+                ChainIdA<Builder>,
+                ClientIdB<Builder>,
+                ClientIdA<Builder>,
+            ),
+            RelayBToA<Builder>,
+        >,
+    >,
+>;

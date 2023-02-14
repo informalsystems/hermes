@@ -1,3 +1,5 @@
+use alloc::collections::BTreeMap;
+use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::fmt::Debug;
 
@@ -20,24 +22,6 @@ pub trait OfaBuilderTypes: Async {
 
     type BiRelay: OfaBiRelay<Preset = Self::Preset>;
 }
-
-pub type BiRelay<Builder> = <Builder as OfaBuilderTypes>::BiRelay;
-
-pub type RelayAToB<Builder> = <BiRelay<Builder> as OfaBiRelayTypes>::RelayAToB;
-
-pub type RelayBToA<Builder> = <BiRelay<Builder> as OfaBiRelayTypes>::RelayBToA;
-
-pub type ChainA<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::SrcChain;
-
-pub type ChainB<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::DstChain;
-
-pub type ChainIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ChainId;
-
-pub type ChainIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ChainId;
-
-pub type ClientIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ClientId;
-
-pub type ClientIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ClientId;
 
 #[async_trait]
 pub trait OfaBuilder: OfaBuilderTypes {
@@ -74,4 +58,68 @@ pub trait OfaBuilder: OfaBuilderTypes {
         relay_a_to_b: OfaRelayWrapper<RelayAToB<Self>>,
         relay_b_to_a: OfaRelayWrapper<RelayBToA<Self>>,
     ) -> Result<Self::BiRelay, Self::Error>;
+
+    fn chain_a_cache(&self) -> &ChainACache<Self>;
+
+    fn chain_b_cache(&self) -> &ChainACache<Self>;
+
+    fn relay_a_to_b_cache(&self) -> &RelayAToBCache<Self>;
+
+    fn relay_b_to_a_cache(&self) -> &RelayBToACache<Self>;
 }
+
+pub type BiRelay<Builder> = <Builder as OfaBuilderTypes>::BiRelay;
+
+pub type RelayAToB<Builder> = <BiRelay<Builder> as OfaBiRelayTypes>::RelayAToB;
+
+pub type RelayBToA<Builder> = <BiRelay<Builder> as OfaBiRelayTypes>::RelayBToA;
+
+pub type ChainA<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::SrcChain;
+
+pub type ChainB<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::DstChain;
+
+pub type ChainIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ChainId;
+
+pub type ChainIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ChainId;
+
+pub type ClientIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ClientId;
+
+pub type ClientIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ClientId;
+
+pub type Runtime<Builder> = <Builder as OfaBuilderTypes>::Runtime;
+
+pub type Mutex<Builder, T> = <Runtime<Builder> as OfaBaseRuntime>::Mutex<T>;
+
+pub type ChainACache<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdA<Builder>, ChainA<Builder>>>>;
+
+pub type ChainBCache<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdB<Builder>, ChainB<Builder>>>>;
+
+pub type RelayAToBCache<Builder> = Arc<
+    Mutex<
+        Builder,
+        BTreeMap<
+            (
+                ChainIdA<Builder>,
+                ChainIdB<Builder>,
+                ClientIdA<Builder>,
+                ClientIdB<Builder>,
+            ),
+            RelayAToB<Builder>,
+        >,
+    >,
+>;
+
+pub type RelayBToACache<Builder> = Arc<
+    Mutex<
+        Builder,
+        BTreeMap<
+            (
+                ChainIdB<Builder>,
+                ChainIdA<Builder>,
+                ClientIdB<Builder>,
+                ClientIdA<Builder>,
+            ),
+            RelayBToA<Builder>,
+        >,
+    >,
+>;

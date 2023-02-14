@@ -1,59 +1,141 @@
-use alloc::collections::BTreeMap;
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::builder::traits::builder::TargetBuilder;
-use crate::base::builder::types::aliases::{ChainA, ChainB, RelayAToB, RelayBToA};
+use crate::base::builder::traits::birelay::HasBiRelayType;
+use crate::base::builder::traits::chain::{
+    ChainABuilder, ChainBBuilder, HasTargetChainIds, HasTargetClientIds,
+};
+use crate::base::builder::traits::relay::{RelayAToBBuilder, RelayBToABuilder};
+use crate::base::builder::types::aliases::{
+    ChainA, ChainACache, ChainB, ChainBCache, ChainIdA, ChainIdB, ClientIdA, ClientIdB, RelayAToB,
+    RelayAToBCache, RelayBToA, RelayBToACache,
+};
 use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
-use crate::base::runtime::traits::mutex::HasMutex;
-use crate::base::runtime::traits::runtime::HasRuntime;
+use crate::base::runtime::traits::mutex::{HasMutex, HasRuntimeWithMutex};
 use crate::std_prelude::*;
 
-pub struct BuildWithCache;
+pub struct BuildWithCache<InBuilder>(pub PhantomData<InBuilder>);
 
-// pub struct BuildWithCache<CacheFetcher, InBuilder>(pub PhantomData<(CacheFetcher, InBuilder)>);
+pub trait HasChainACache: HasBiRelayType + HasRuntimeWithMutex {
+    fn chain_a_cache(&self) -> &ChainACache<Self>;
+}
 
-// pub type CacheMutex<Runtime, Id, Target> = <Runtime as HasMutex>::Mutex<BTreeMap<Id, Target>>;
+pub trait HasChainBCache: HasBiRelayType + HasRuntimeWithMutex {
+    fn chain_b_cache(&self) -> &ChainBCache<Self>;
+}
 
-// pub trait BuildCacheFetcher<Context, Target>: Async
-// where
-//     Target: Async,
-//     Context: HasRuntime,
-//     Context::Runtime: HasMutex,
-// {
-//     type Id: Ord + Async;
+pub trait HasRelayAToBCache: HasBiRelayType + HasRuntimeWithMutex {
+    fn relay_a_to_b_cache(&self) -> &RelayAToBCache<Self>;
+}
 
-//     fn get_target_id(context: &Context) -> Self::Id;
+pub trait HasRelayBToACache: HasBiRelayType + HasRuntimeWithMutex {
+    fn relay_b_to_a_cache(&self) -> &RelayBToACache<Self>;
+}
 
-//     fn get_cache_mutex(context: &Context) -> &CacheMutex<Context::Runtime, Self::Id, Target>;
-// }
+#[async_trait]
+impl<InBuilder, Context> ChainABuilder<Context> for BuildWithCache<InBuilder>
+where
+    ChainIdA<Context>: Ord,
+    Context: HasChainACache + HasTargetChainIds + HasErrorType,
+    InBuilder: ChainABuilder<Context>,
+{
+    async fn build_chain_a(context: &Context) -> Result<ChainA<Context>, Context::Error> {
+        let chain_id = context.chain_id_a();
+        let mut cache = Context::Runtime::acquire_mutex(context.chain_a_cache()).await;
 
-// #[async_trait]
-// impl<CacheFetcher, InBuilder, Runtime, Context, Target> TargetBuilder<Context, Target>
-//     for BuildWithCache<CacheFetcher, InBuilder>
-// where
-//     Target: Clone + Async,
-//     Context: HasRuntime<Runtime = Runtime> + HasErrorType,
-//     Runtime: HasMutex,
-//     InBuilder: TargetBuilder<Context, Target>,
-//     CacheFetcher: BuildCacheFetcher<Context, Target>,
-// {
-//     async fn build_target(context: &Context) -> Result<Target, Context::Error> {
-//         let target_id = CacheFetcher::get_target_id(context);
+        if let Some(chain) = cache.get(&chain_id) {
+            Ok(chain.clone())
+        } else {
+            let chain = InBuilder::build_chain_a(context).await?;
+            cache.insert(chain_id, chain.clone());
 
-//         let mutex = CacheFetcher::get_cache_mutex(context);
+            Ok(chain)
+        }
+    }
+}
 
-//         let mut cache = Runtime::acquire_mutex(mutex).await;
+#[async_trait]
+impl<InBuilder, Context> ChainBBuilder<Context> for BuildWithCache<InBuilder>
+where
+    ChainIdB<Context>: Ord,
+    Context: HasChainBCache + HasTargetChainIds + HasErrorType,
+    InBuilder: ChainBBuilder<Context>,
+{
+    async fn build_chain_b(context: &Context) -> Result<ChainB<Context>, Context::Error> {
+        let chain_id = context.chain_id_b();
+        let mut cache = Context::Runtime::acquire_mutex(context.chain_b_cache()).await;
 
-//         if let Some(target) = cache.get(&target_id) {
-//             Ok(target.clone())
-//         } else {
-//             let target = InBuilder::build_target(context).await?;
+        if let Some(chain) = cache.get(&chain_id) {
+            Ok(chain.clone())
+        } else {
+            let chain = InBuilder::build_chain_b(context).await?;
+            cache.insert(chain_id, chain.clone());
 
-//             cache.insert(target_id, target.clone());
+            Ok(chain)
+        }
+    }
+}
 
-//             Ok(target)
-//         }
-//     }
-// }
+#[async_trait]
+impl<InBuilder, Context> RelayAToBBuilder<Context> for BuildWithCache<InBuilder>
+where
+    ChainIdA<Context>: Ord,
+    ChainIdB<Context>: Ord,
+    ClientIdA<Context>: Ord,
+    ClientIdB<Context>: Ord,
+    Context: HasRelayAToBCache + HasTargetChainIds + HasTargetClientIds + HasErrorType,
+    InBuilder: RelayAToBBuilder<Context>,
+{
+    async fn build_relay_a_to_b(context: &Context) -> Result<RelayAToB<Context>, Context::Error> {
+        let chain_id_a = context.chain_id_a();
+        let chain_id_b = context.chain_id_b();
+
+        let client_id_a = context.client_id_a();
+        let client_id_b = context.client_id_b();
+
+        let relay_id = (chain_id_a, chain_id_b, client_id_a, client_id_b);
+
+        let mut cache = Context::Runtime::acquire_mutex(context.relay_a_to_b_cache()).await;
+
+        if let Some(relay) = cache.get(&relay_id) {
+            Ok(relay.clone())
+        } else {
+            let relay = InBuilder::build_relay_a_to_b(context).await?;
+            cache.insert(relay_id, relay.clone());
+
+            Ok(relay)
+        }
+    }
+}
+
+#[async_trait]
+impl<InBuilder, Context> RelayBToABuilder<Context> for BuildWithCache<InBuilder>
+where
+    ChainIdA<Context>: Ord,
+    ChainIdB<Context>: Ord,
+    ClientIdA<Context>: Ord,
+    ClientIdB<Context>: Ord,
+    Context: HasRelayBToACache + HasTargetChainIds + HasTargetClientIds + HasErrorType,
+    InBuilder: RelayBToABuilder<Context>,
+{
+    async fn build_relay_b_to_a(context: &Context) -> Result<RelayBToA<Context>, Context::Error> {
+        let chain_id_a = context.chain_id_a();
+        let chain_id_b = context.chain_id_b();
+
+        let client_id_a = context.client_id_a();
+        let client_id_b = context.client_id_b();
+
+        let relay_id = (chain_id_b, chain_id_a, client_id_b, client_id_a);
+
+        let mut cache = Context::Runtime::acquire_mutex(context.relay_b_to_a_cache()).await;
+
+        if let Some(relay) = cache.get(&relay_id) {
+            Ok(relay.clone())
+        } else {
+            let relay = InBuilder::build_relay_b_to_a(context).await?;
+            cache.insert(relay_id, relay.clone());
+
+            Ok(relay)
+        }
+    }
+}
