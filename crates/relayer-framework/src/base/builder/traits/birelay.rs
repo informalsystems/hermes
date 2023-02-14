@@ -34,9 +34,7 @@ pub trait CanBuildBiRelayFromRelays: HasBiRelayType + HasErrorType {
 }
 
 #[async_trait]
-pub trait CanBuildAfoBaseBiRelay:
-    HasBiRelayType<BiRelay = Self::AfoBaseBiRelay> + HasErrorType
-{
+pub trait CanBuildAfoBaseBiRelay: HasErrorType {
     type AfoBaseBiRelay: AfoBaseBiRelay;
 
     async fn build_afo_base_birelay(&self) -> Result<Self::AfoBaseBiRelay, Self::Error>;
@@ -50,7 +48,7 @@ where
 {
     type AfoBaseBiRelay = Context::BiRelay;
 
-    async fn build_afo_base_birelay(&self) -> Result<Self::BiRelay, Self::Error> {
+    async fn build_afo_base_birelay(&self) -> Result<Context::BiRelay, Context::Error> {
         self.build_birelay().await
     }
 }

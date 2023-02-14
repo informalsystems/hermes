@@ -5,6 +5,9 @@ use core::fmt::Debug;
 use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::tokio::error::Error as TokioRuntimeError;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use tokio::sync::Mutex;
 
@@ -14,7 +17,7 @@ use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::relay::CosmosRelayWrapper;
 
 pub trait CosmosBuilderTypes: Async {
-    type Preset;
+    type Preset: Async;
 
     type Error: Debug + Async;
 
@@ -23,6 +26,10 @@ pub trait CosmosBuilderTypes: Async {
 
 #[async_trait]
 pub trait CosmosBuilder: CosmosBuilderTypes {
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext>;
+
+    fn runtime_error(e: TokioRuntimeError) -> Self::Error;
+
     fn chain_id_a(&self) -> ChainId;
 
     fn chain_id_b(&self) -> ChainId;
@@ -51,7 +58,7 @@ pub trait CosmosBuilder: CosmosBuilderTypes {
         &self,
         relay_a_to_b: OfaRelayWrapper<CosmosRelayWrapper<RelayAToB<Self>>>,
         relay_b_to_a: OfaRelayWrapper<CosmosRelayWrapper<RelayBToA<Self>>>,
-    );
+    ) -> Result<Self::BiRelay, Self::Error>;
 
     fn chain_a_cache(&self) -> &ChainACache<Self>;
 
