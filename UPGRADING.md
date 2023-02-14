@@ -27,7 +27,7 @@ For more details, please check out the [new section that was added to guide][tel
 which describes how the new metrics can be used to observe both the current state of
 the relayer and the networks it is connected to.
 
-[telemetry-guide]: https://hermes.informal.systems/telemetry/operators.html
+[telemetry-guide]: https://hermes.informal.systems/documentation/telemetry/operators.html
 
 
 ## v1.0.0-rc.2
@@ -168,8 +168,8 @@ unless the `--new-client-connection` flag is provided.
 Please [refer to the guide][create-channel] for more information.
 
 [ics-26]: https://github.com/cosmos/ibc/blob/master/spec/core/ics-026-routing-module/README.md
-[pending]: https://hermes.informal.systems/commands/queries/packet.html#pending-packets
-[create-channel]: http://hermes.informal.systems/commands/path-setup/channels.html#establish-channel
+[pending]: https://hermes.informal.systems/documentation/commands/queries/packet.html#pending-packets
+[create-channel]: https://hermes.informal.systems/documentation/commands/path-setup/channels.html#establish-channel
 
 
 ## Older versions

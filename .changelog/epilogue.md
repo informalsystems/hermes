@@ -222,8 +222,8 @@ substantially by switching over to `tx_broadcast_sync` for submitting transactio
   that the worker-based relayer is not experimental anymore.
 - A regression where Hermes would not recover after a node went down and up again was fixed.
 
-[telemetry]: https://hermes.informal.systems/telemetry.html
-[strategy]: http://hermes.informal.systems/config.html?highlight=strategy#global
+[telemetry]: https://hermes.informal.systems/documentation/telemetry/index.html
+[strategy]: https://hermes.informal.systems/documentation/configuration/configure-hermes.html?highlight=strategy#global
 
 > Special thanks to Colin Axnér (@colin-axner) and Jongwhan Lee (@leejw51crypto)
 > for raising multiple issues that helped us improve the reliability of Hermes.
@@ -279,7 +279,7 @@ substantially by switching over to `tx_broadcast_sync` for submitting transactio
 [#1022]: https://github.com/informalsystems/ibc-rs/issues/1022
 [#1026]: https://github.com/informalsystems/ibc-rs/issues/1026
 [#1032]: https://github.com/informalsystems/ibc-rs/issues/1032
-[gaiad-manager]: https://github.com/informalsystems/ibc-rs/blob/master/scripts/gm/README.md
+[gaiad-manager]: https://github.com/informalsystems/gm/blob/master/README.md
 [#1039]: https://github.com/informalsystems/ibc-rs/issues/1039
 
 ## v0.3.2
