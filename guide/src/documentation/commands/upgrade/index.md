@@ -1,11 +1,19 @@
-# Client Upgrade
+# Upgrading Clients
+If IBC clients need to be upgraded after their reference chains went through an upgrade, the following CLIs may be used.
 
-## Client Upgrade Command
-
-Use the `upgrade client` command to upgrade a client after a chain upgrade.
+## Upgrade Client Command
+Use the `upgrade client` command to upgrade a specific IBC client after a chain upgrade.
 
 ```shell
 {{#include ../../../templates/help_templates/upgrade/client.md}}
+```
+
+## Upgrade Clients Command
+
+Use the `upgrade clients` command to upgrade all IBC clients that target a specific (upgraded) chain.
+
+```shell
+{{#include ../../../templates/help_templates/upgrade/clients.md}}
 ```
 
 __Example__

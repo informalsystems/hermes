@@ -154,6 +154,81 @@ pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> 
     Ok(())
 }
 
+pub fn set_staking_bond_denom(genesis: &mut serde_json::Value, denom: &str) -> Result<(), Error> {
+    let bond_denom = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("staking"))
+        .and_then(|staking| staking.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to update bond_denom in genesis file"))?;
+
+    bond_denom
+        .insert(
+            "bond_denom".to_owned(),
+            serde_json::Value::String(denom.to_string()),
+        )
+        .ok_or_else(|| eyre!("failed to update bond_denom in genesis file"))?;
+
+    Ok(())
+}
+
+pub fn set_staking_max_entries(
+    genesis: &mut serde_json::Value,
+    entries: &str,
+) -> Result<(), Error> {
+    let max_entries = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("staking"))
+        .and_then(|staking| staking.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to update max_entries in genesis file"))?;
+
+    max_entries
+        .insert(
+            "max_entries".to_owned(),
+            serde_json::Value::String(entries.to_string()),
+        )
+        .ok_or_else(|| eyre!("failed to update max_entries in genesis file"))?;
+
+    Ok(())
+}
+
+pub fn set_mint_mint_denom(genesis: &mut serde_json::Value, denom: &str) -> Result<(), Error> {
+    let mint_denom = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("mint"))
+        .and_then(|mint| mint.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to update mint_denom in genesis file"))?;
+
+    mint_denom
+        .insert(
+            "mint_denom".to_owned(),
+            serde_json::Value::String(denom.to_string()),
+        )
+        .ok_or_else(|| eyre!("failed to update mint_denom in genesis file"))?;
+
+    Ok(())
+}
+
+pub fn set_crisis_denom(genesis: &mut serde_json::Value, crisis_denom: &str) -> Result<(), Error> {
+    let denom = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("crisis"))
+        .and_then(|crisis| crisis.get_mut("constant_fee"))
+        .and_then(|constant_fee| constant_fee.as_object_mut())
+        .ok_or_else(|| eyre!("failed to update denom in genesis file"))?;
+
+    denom
+        .insert(
+            "denom".to_owned(),
+            serde_json::Value::String(crisis_denom.to_string()),
+        )
+        .ok_or_else(|| eyre!("failed to update denom in genesis file"))?;
+
+    Ok(())
+}
+
 pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Result<(), Error> {
     let voting_period = genesis
         .get_mut("app_state")
