@@ -90,9 +90,11 @@ pub type Runtime<Builder> = <Builder as OfaBuilderTypes>::Runtime;
 
 pub type Mutex<Builder, T> = <Runtime<Builder> as OfaBaseRuntime>::Mutex<T>;
 
-pub type ChainACache<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdA<Builder>, ChainA<Builder>>>>;
+pub type ChainACache<Builder> =
+    Arc<Mutex<Builder, BTreeMap<ChainIdA<Builder>, OfaChainWrapper<ChainA<Builder>>>>>;
 
-pub type ChainBCache<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdB<Builder>, ChainB<Builder>>>>;
+pub type ChainBCache<Builder> =
+    Arc<Mutex<Builder, BTreeMap<ChainIdB<Builder>, OfaChainWrapper<ChainB<Builder>>>>>;
 
 pub type RelayAToBCache<Builder> = Arc<
     Mutex<
@@ -104,7 +106,7 @@ pub type RelayAToBCache<Builder> = Arc<
                 ClientIdA<Builder>,
                 ClientIdB<Builder>,
             ),
-            RelayAToB<Builder>,
+            OfaRelayWrapper<RelayAToB<Builder>>,
         >,
     >,
 >;
@@ -119,7 +121,7 @@ pub type RelayBToACache<Builder> = Arc<
                 ClientIdB<Builder>,
                 ClientIdA<Builder>,
             ),
-            RelayBToA<Builder>,
+            OfaRelayWrapper<RelayBToA<Builder>>,
         >,
     >,
 >;

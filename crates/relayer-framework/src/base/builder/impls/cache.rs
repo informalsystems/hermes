@@ -1,36 +1,21 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::builder::traits::birelay::HasBiRelayType;
+use crate::base::builder::traits::cache::{
+    HasChainACache, HasChainBCache, HasRelayAToBCache, HasRelayBToACache,
+};
 use crate::base::builder::traits::chain::{
     ChainABuilder, ChainBBuilder, HasTargetChainIds, HasTargetClientIds,
 };
 use crate::base::builder::traits::relay::{RelayAToBBuilder, RelayBToABuilder};
 use crate::base::builder::types::aliases::{
-    ChainA, ChainACache, ChainB, ChainBCache, ChainIdA, ChainIdB, ClientIdA, ClientIdB, RelayAToB,
-    RelayAToBCache, RelayBToA, RelayBToACache,
+    ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, RelayAToB, RelayBToA,
 };
 use crate::base::core::traits::error::HasErrorType;
-use crate::base::runtime::traits::mutex::{HasMutex, HasRuntimeWithMutex};
+use crate::base::runtime::traits::mutex::HasMutex;
 use crate::std_prelude::*;
 
 pub struct BuildWithCache<InBuilder>(pub PhantomData<InBuilder>);
-
-pub trait HasChainACache: HasBiRelayType + HasRuntimeWithMutex {
-    fn chain_a_cache(&self) -> &ChainACache<Self>;
-}
-
-pub trait HasChainBCache: HasBiRelayType + HasRuntimeWithMutex {
-    fn chain_b_cache(&self) -> &ChainBCache<Self>;
-}
-
-pub trait HasRelayAToBCache: HasBiRelayType + HasRuntimeWithMutex {
-    fn relay_a_to_b_cache(&self) -> &RelayAToBCache<Self>;
-}
-
-pub trait HasRelayBToACache: HasBiRelayType + HasRuntimeWithMutex {
-    fn relay_b_to_a_cache(&self) -> &RelayBToACache<Self>;
-}
 
 #[async_trait]
 impl<InBuilder, Context> ChainABuilder<Context> for BuildWithCache<InBuilder>
