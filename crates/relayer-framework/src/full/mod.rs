@@ -4,6 +4,7 @@
 
 pub mod all_for_one;
 pub mod batch;
+pub mod builder;
 pub mod one_for_all;
 pub mod relay;
 pub mod runtime;

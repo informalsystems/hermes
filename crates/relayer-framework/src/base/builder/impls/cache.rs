@@ -19,6 +19,7 @@ pub struct BuildWithCache<InBuilder>(pub PhantomData<InBuilder>);
 #[async_trait]
 impl<InBuilder, Context> ChainABuilder<Context> for BuildWithCache<InBuilder>
 where
+    ChainA<Context>: Clone,
     ChainIdA<Context>: Ord,
     Context: HasChainACache + HasTargetChainIds + HasErrorType,
     InBuilder: ChainABuilder<Context>,
@@ -41,6 +42,7 @@ where
 #[async_trait]
 impl<InBuilder, Context> ChainBBuilder<Context> for BuildWithCache<InBuilder>
 where
+    ChainB<Context>: Clone,
     ChainIdB<Context>: Ord,
     Context: HasChainBCache + HasTargetChainIds + HasErrorType,
     InBuilder: ChainBBuilder<Context>,
@@ -67,6 +69,7 @@ where
     ChainIdB<Context>: Ord,
     ClientIdA<Context>: Ord,
     ClientIdB<Context>: Ord,
+    RelayAToB<Context>: Clone,
     Context: HasRelayAToBCache + HasTargetChainIds + HasTargetClientIds + HasErrorType,
     InBuilder: RelayAToBBuilder<Context>,
 {
@@ -99,6 +102,7 @@ where
     ChainIdB<Context>: Ord,
     ClientIdA<Context>: Ord,
     ClientIdB<Context>: Ord,
+    RelayBToA<Context>: Clone,
     Context: HasRelayBToACache + HasTargetChainIds + HasTargetClientIds + HasErrorType,
     InBuilder: RelayBToABuilder<Context>,
 {
