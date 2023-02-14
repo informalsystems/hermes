@@ -1741,7 +1741,7 @@ dependencies = [
  "flex-error",
  "futures",
  "http",
- "ibc-proto 0.24.1",
+ "ibc-proto",
  "ibc-relayer-types",
  "reqwest",
  "serde",
@@ -1756,7 +1756,7 @@ name = "ibc-integration-test"
 version = "0.21.0"
 dependencies = [
  "http",
- "ibc-proto 0.22.0",
+ "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-relayer-cosmos",
@@ -1777,22 +1777,6 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "874af3f9f3fe1a3458e54b1d4ebb2ab1fadc22b02470eb2d623a59f3c7d907c0"
-dependencies = [
- "base64",
- "bytes",
- "flex-error",
- "prost",
- "serde",
- "subtle-encoding",
- "tendermint-proto 0.26.0",
- "tonic",
-]
-
-[[package]]
-name = "ibc-proto"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30b46bcc4540116870cfb184f338b45174a7560ad46dd74e4cb4e81e005e2056"
@@ -1803,7 +1787,7 @@ dependencies = [
  "prost",
  "serde",
  "subtle-encoding",
- "tendermint-proto 0.28.0",
+ "tendermint-proto",
  "tonic",
 ]
 
@@ -1832,7 +1816,7 @@ dependencies = [
  "http",
  "humantime",
  "humantime-serde",
- "ibc-proto 0.24.1",
+ "ibc-proto",
  "ibc-relayer-types",
  "ibc-telemetry",
  "itertools",
@@ -1919,7 +1903,7 @@ dependencies = [
  "flex-error",
  "futures",
  "http",
- "ibc-proto 0.24.1",
+ "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-framework",
  "ibc-relayer-runtime",
@@ -1933,7 +1917,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client",
  "tendermint-light-client-verifier",
- "tendermint-proto 0.28.0",
+ "tendermint-proto",
  "tendermint-rpc",
  "tokio",
  "tonic",
@@ -1999,7 +1983,7 @@ dependencies = [
  "env_logger 0.10.0",
  "erased-serde",
  "flex-error",
- "ibc-proto 0.24.1",
+ "ibc-proto",
  "ics23",
  "itertools",
  "modelator",
@@ -2013,7 +1997,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
- "tendermint-proto 0.28.0",
+ "tendermint-proto",
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
@@ -2051,7 +2035,7 @@ dependencies = [
  "hdpath",
  "hex",
  "http",
- "ibc-proto 0.24.1",
+ "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-relayer-types",
@@ -4212,7 +4196,7 @@ dependencies = [
  "signature",
  "subtle",
  "subtle-encoding",
- "tendermint-proto 0.28.0",
+ "tendermint-proto",
  "time 0.3.17",
  "zeroize",
 ]
@@ -4263,24 +4247,6 @@ dependencies = [
  "flex-error",
  "serde",
  "tendermint",
- "time 0.3.17",
-]
-
-[[package]]
-name = "tendermint-proto"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "974d6330a19dfa6720e9f663fc59101d207a817db3f9c730d3f31caaa565b574"
-dependencies = [
- "bytes",
- "flex-error",
- "num-derive",
- "num-traits",
- "prost",
- "prost-types",
- "serde",
- "serde_bytes",
- "subtle-encoding",
  "time 0.3.17",
 ]
 
