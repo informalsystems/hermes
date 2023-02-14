@@ -6,10 +6,10 @@ use crate::base::all_for_one::chain::AfoCosmosBaseChain;
 
 pub trait AfoCosmosBaseRelay:
     AfoBaseRelay<
-        AfoSrcChain = Self::CosmosSrcChain,
-        AfoDstChain = Self::CosmosDstChain,
-        AfoBaseRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
-    >
+    AfoSrcChain = Self::CosmosSrcChain,
+    AfoDstChain = Self::CosmosDstChain,
+    AfoBaseRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
+>
 {
     type CosmosSrcChain: AfoCosmosBaseChain<Self::CosmosDstChain>;
 
