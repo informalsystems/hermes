@@ -66,11 +66,9 @@ pub trait CanEstimateMessageSize: HasMessageType {
        context may replace the message's signer field with a dummy signer
        value, so that it can be encoded into raw bytes.
 
-       This is mainly used by
-       [`CanSpawnBatchMessageWorker`](crate::full::batch::worker::CanSpawnBatchMessageWorker)
-       to estimate the messages size when batching messages. We may consider
-       moving this method into a separate crate if it is not being used
-       elsewhere.
+       This is mainly used by the `BatchMessageWorker` to estimate the
+       the message size when batching messages. We may consider moving
+       this method into a separate crate if it is not being used elsewhere.
     */
     fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
 }

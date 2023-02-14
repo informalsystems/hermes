@@ -1,4 +1,6 @@
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::full::all_for_one::relay::AfoFullRelay;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
 use crate::full::all_for_one::chain::AfoCosmosFullChain;
@@ -8,6 +10,7 @@ pub trait AfoCosmosFullRelay:
     AfoSrcFullChain = Self::CosmosSrcChain,
     AfoDstFullChain = Self::CosmosDstChain,
     Packet = Packet,
+    AfoBaseRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
 >
 {
     type CosmosSrcChain: AfoCosmosFullChain<Self::CosmosDstChain>;
@@ -17,7 +20,12 @@ pub trait AfoCosmosFullRelay:
 
 impl<Relay, SrcChain, DstChain> AfoCosmosFullRelay for Relay
 where
-    Relay: AfoFullRelay<AfoSrcFullChain = SrcChain, AfoDstFullChain = DstChain, Packet = Packet>,
+    Relay: AfoFullRelay<
+        AfoSrcFullChain = SrcChain,
+        AfoDstFullChain = DstChain,
+        Packet = Packet,
+        AfoBaseRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
+    >,
     SrcChain: AfoCosmosFullChain<DstChain>,
     DstChain: AfoCosmosFullChain<SrcChain>,
 {

@@ -119,5 +119,11 @@ define_error! {
         KeyRing
             [ KeyRingError ]
             |_| { "keyring error" },
+
+        Secp256k1KeyPair
+            { chain_id: ChainId }
+            | e | {
+                format_args!("no Secp256k1 key pair for chain {}", e.chain_id)
+            }
     }
 }
