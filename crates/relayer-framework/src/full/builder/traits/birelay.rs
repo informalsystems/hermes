@@ -9,7 +9,7 @@ use crate::std_prelude::*;
 pub trait CanBuildAfoFullBiRelay: HasErrorType {
     type AfoFullBiRelay: AfoFullBiRelay;
 
-    async fn build_afo_base_birelay(&self) -> Result<Self::AfoFullBiRelay, Self::Error>;
+    async fn build_afo_full_birelay(&self) -> Result<Self::AfoFullBiRelay, Self::Error>;
 }
 
 #[async_trait]
@@ -20,7 +20,7 @@ where
 {
     type AfoFullBiRelay = Context::BiRelay;
 
-    async fn build_afo_base_birelay(&self) -> Result<Context::BiRelay, Context::Error> {
+    async fn build_afo_full_birelay(&self) -> Result<Context::BiRelay, Context::Error> {
         self.build_birelay().await
     }
 }
