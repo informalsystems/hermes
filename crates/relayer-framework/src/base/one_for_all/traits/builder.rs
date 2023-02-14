@@ -61,7 +61,7 @@ pub trait OfaBuilder: OfaBuilderTypes {
 
     fn chain_a_cache(&self) -> &ChainACache<Self>;
 
-    fn chain_b_cache(&self) -> &ChainACache<Self>;
+    fn chain_b_cache(&self) -> &ChainBCache<Self>;
 
     fn relay_a_to_b_cache(&self) -> &RelayAToBCache<Self>;
 
