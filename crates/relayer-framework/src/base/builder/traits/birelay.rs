@@ -16,6 +16,14 @@ pub trait CanBuildBiRelay: HasBiRelayType + HasErrorType {
 }
 
 #[async_trait]
+pub trait BiRelayBuilder<Builder>
+where
+    Builder: HasBiRelayType + HasErrorType,
+{
+    async fn build_birelay(builder: &Builder) -> Result<Builder::BiRelay, Builder::Error>;
+}
+
+#[async_trait]
 pub trait CanBuildBiRelayFromRelays: HasBiRelayType + HasErrorType {
     async fn build_birelay_from_relays(
         &self,
