@@ -199,7 +199,7 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
 
 /// Initializes a Cosmos relay context that utilizes the experimental relayer
 /// architecture for relaying packets between two Cosmos chains.
-#[cfg(feature = "experimental")]
+// #[cfg(feature = "experimental")]
 pub fn build_cosmos_birelay_context<ChainA, ChainB>(
     handle_a: ChainA,
     handle_b: ChainB,
