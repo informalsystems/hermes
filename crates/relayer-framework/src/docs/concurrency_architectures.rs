@@ -45,7 +45,7 @@ that the relayer will take for specific use cases.
 The first use case focuses on the relaying of multiple IBC packets
 from one relay context:
 
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-1.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next/docs/architecture/assets/concurrency-architecture-1.svg)
 
 In the above scenario, we have a relay context with chain A being the source
 chain, and chain B being the destination chain. In our scenario, we have chain A
@@ -115,7 +115,7 @@ We will next look at what happens after the transactions are submitted to the
 blockchain. We first focus on the success case, where the transactions are
 committed successfully to the blockchain:
 
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-2.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next/docs/architecture/assets/concurrency-architecture-2.svg)
 
 The direction of information flow for the diagram above is reversed, and flows
 from right to left. First, the blockchain returns the transaction result as a
@@ -153,7 +153,7 @@ to account for failures and recovery. However, in practice, there are many cases
 of errors that the relayer needs to handle differently, and we will go through
 some of the error cases below:
 
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-3.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next/docs/architecture/assets/concurrency-architecture-3.svg)
 
 A common source of error during relayer operation is failures upon submitting
 transactions. There are several variants of such errors. The first is that the
@@ -301,7 +301,7 @@ messages, since the transactions cannot be submitted in parallel.
 A more advanced version of the optimization can be done with the following
 modification:
 
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-4.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next/docs/architecture/assets/concurrency-architecture-4.svg)
 
 The above optimization can be done by having a custom implementation of
 [`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
@@ -367,7 +367,7 @@ other relay context with an _inversed_ target.
 
 The arrangement would be as follows:
 
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-5.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next/docs/architecture/assets/concurrency-architecture-5.svg)
 
 In the above scenario, we have have a relay context X, with chain A being the
 source chain, and chain B being the destination chain. Next, we have a relay
@@ -435,7 +435,7 @@ appropriate height to build IBC messages, based on the messages that it needs
 to send within a given time frame. It can does so with the following
 architecture:
 
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-6.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next/docs/architecture/assets/concurrency-architecture-6.svg)
 
 The above scenario is similar to the arrangement in the previous section, except
 that we added a new "wait update client" component that would synchronize with
@@ -549,7 +549,7 @@ IBC messages between two chains as specified in the `RelayPath` construct.
 In the v2 relayer, we can batch IBC messages from multiple chains by adding
 an additional layer of message batch worker as follows:
 
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-7.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next/docs/architecture/assets/concurrency-architecture-7.svg)
 
 In the above scenario, we have a relay context X, with the source chain being
 chain A, and the destination chain being chain B. We also have a relay context Y,
@@ -646,7 +646,7 @@ ordered packet can be relayed in one transaction at a time. A better alternative
 is to keep the existing concurrency architecture, and introduce additional
 layers for relaying ordered packets:
 
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-8.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next/docs/architecture/assets/concurrency-architecture-8.svg)
 
 
 The above scenario describes a case where the relayer is using the same relay
