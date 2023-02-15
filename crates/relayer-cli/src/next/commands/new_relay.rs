@@ -1,5 +1,3 @@
-#![cfg(feature = "experimental")]
-
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use alloc::sync::Arc;
@@ -11,8 +9,9 @@ use ibc_relayer_framework::base::relay::traits::two_way::HasTwoWayRelay;
 use ibc_relayer_framework::base::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
-use crate::cli_utils::{build_cosmos_birelay_context, ChainHandlePair};
+use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
+use crate::next::build::build_cosmos_birelay_context;
 use crate::prelude::*;
 
 /// `relay` subcommands which utilize the experimental relayer architecture.
