@@ -62,22 +62,6 @@ where
         todo!()
     }
 
-    fn chain_id_a(&self) -> ChainId {
-        todo!()
-    }
-
-    fn chain_id_b(&self) -> ChainId {
-        todo!()
-    }
-
-    fn client_id_a(&self) -> ClientId {
-        todo!()
-    }
-
-    fn client_id_b(&self) -> ClientId {
-        todo!()
-    }
-
     async fn build_chain_a(
         &self,
         chain_id: &ChainId,

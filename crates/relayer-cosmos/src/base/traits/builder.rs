@@ -30,14 +30,6 @@ pub trait CosmosBuilder: CosmosBuilderTypes {
 
     fn runtime_error(e: TokioRuntimeError) -> Self::Error;
 
-    fn chain_id_a(&self) -> ChainId;
-
-    fn chain_id_b(&self) -> ChainId;
-
-    fn client_id_a(&self) -> ClientId;
-
-    fn client_id_b(&self) -> ClientId;
-
     async fn build_chain_a(&self, chain_id: &ChainId) -> Result<ChainA<Self>, Self::Error>;
 
     async fn build_chain_b(&self, chain_id: &ChainId) -> Result<ChainB<Self>, Self::Error>;
