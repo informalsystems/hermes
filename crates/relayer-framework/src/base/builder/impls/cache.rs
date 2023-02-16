@@ -29,7 +29,7 @@ where
     ) -> Result<ChainA<Context>, Context::Error> {
         let mut cache = Context::Runtime::acquire_mutex(context.chain_a_cache()).await;
 
-        if let Some(chain) = cache.get(&chain_id) {
+        if let Some(chain) = cache.get(chain_id) {
             Ok(chain.clone())
         } else {
             let chain = InBuilder::build_chain_a(context, chain_id).await?;
@@ -54,7 +54,7 @@ where
     ) -> Result<ChainB<Context>, Context::Error> {
         let mut cache = Context::Runtime::acquire_mutex(context.chain_b_cache()).await;
 
-        if let Some(chain) = cache.get(&chain_id) {
+        if let Some(chain) = cache.get(chain_id) {
             Ok(chain.clone())
         } else {
             let chain = InBuilder::build_chain_b(context, chain_id).await?;

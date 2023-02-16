@@ -3,7 +3,7 @@ use ibc_relayer_framework::base::core::traits::error::HasErrorType;
 use ibc_relayer_framework::base::one_for_all::traits::birelay::OfaBiRelayPreset;
 use ibc_relayer_framework::base::one_for_all::types::birelay::OfaBiRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::builder::OfaBuilderWrapper;
-use ibc_relayer_framework::full::builder::traits::birelay::CanBuildAfoFullBiRelay;
+use ibc_relayer_framework::full::all_for_one::builder::CanBuildAfoFullBiRelay;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
 use crate::base::traits::builder::{ChainA, ChainB, CosmosBuilder, RelayAToB, RelayBToA};
