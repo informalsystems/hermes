@@ -9,8 +9,7 @@ pub type Mutex<Chain, Item> = <Runtime<Chain> as OfaBaseRuntime>::Mutex<Item>;
 
 pub type Sender<Chain, Payload> = <Runtime<Chain> as OfaFullRuntime>::Sender<Payload>;
 
-pub type Receiver<Chain, Payload> =
-    Mutex<Chain, <Runtime<Chain> as OfaFullRuntime>::Receiver<Payload>>;
+pub type Receiver<Chain, Payload> = <Runtime<Chain> as OfaFullRuntime>::Receiver<Payload>;
 
 pub type SenderOnce<Chain, Payload> = <Runtime<Chain> as OfaFullRuntime>::SenderOnce<Payload>;
 

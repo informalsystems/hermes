@@ -2,7 +2,9 @@ use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
-use crate::full::one_for_all::types::batch::aliases::{MessageBatchReceiver, MessageBatchSender};
+use crate::full::one_for_all::types::batch::aliases::{
+    MessageBatchReceiver, MessageBatchSender, Mutex,
+};
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -17,13 +19,13 @@ pub trait OfaFullRelay: HasFullRuntime {
 
     fn src_chain_message_batch_receiver(
         &self,
-    ) -> &MessageBatchReceiver<Self::SrcChain, Self::Error>;
+    ) -> &Mutex<Self::SrcChain, Option<MessageBatchReceiver<Self::SrcChain, Self::Error>>>;
 
     fn dst_chain_message_batch_sender(&self) -> &MessageBatchSender<Self::DstChain, Self::Error>;
 
     fn dst_chain_message_batch_receiver(
         &self,
-    ) -> &MessageBatchReceiver<Self::DstChain, Self::Error>;
+    ) -> &Mutex<Self::DstChain, Option<MessageBatchReceiver<Self::DstChain, Self::Error>>>;
 }
 
 pub trait HasFullRuntime: OfaBaseRelay<Runtime = Self::FullRuntime> {

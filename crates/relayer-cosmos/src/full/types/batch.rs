@@ -13,4 +13,4 @@ pub type CosmosBatchPayload = (
 
 pub type CosmosBatchSender = UnboundedSender<CosmosBatchPayload>;
 
-pub type CosmosBatchReceiver = Mutex<UnboundedReceiver<CosmosBatchPayload>>;
+pub type CosmosBatchReceiver = Mutex<Option<UnboundedReceiver<CosmosBatchPayload>>>;

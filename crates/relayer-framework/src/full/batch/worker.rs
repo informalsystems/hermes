@@ -4,7 +4,6 @@ use core::mem;
 
 use crate::base::chain::traits::types::chain::HasChainTypes;
 use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
-use crate::base::chain::types::aliases::Runtime;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -13,6 +12,7 @@ use crate::base::runtime::traits::mutex::HasMutex;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
 use crate::base::runtime::traits::time::HasTime;
+use crate::base::runtime::types::aliases::Runtime;
 use crate::full::batch::traits::channel::HasMessageBatchReceiver;
 use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use crate::full::batch::types::aliases::{BatchSubmission, EventResultSender};
@@ -99,6 +99,14 @@ where
         + HasChannelOnceTypes,
 {
     async fn run_loop(&self, config: &BatchConfig) {
+        let m_receiver = Runtime::acquire_mutex(self.get_batch_receiver())
+            .await
+            .take();
+
+        let Some(mut receiver) = m_receiver else {
+            return;
+        };
+
         let runtime = Target::target_chain(self).runtime();
         let mut pending_batches: VecDeque<BatchSubmission<Target::TargetChain, Self::Error>> =
             VecDeque::new();
@@ -106,11 +114,7 @@ where
         let mut last_sent_time = runtime.now();
 
         loop {
-            let payload = {
-                let receiver_mutex = self.get_batch_receiver();
-                let mut receiver = Runtime::acquire_mutex(receiver_mutex).await;
-                Runtime::try_receive(&mut receiver)
-            };
+            let payload = Runtime::try_receive(&mut receiver);
 
             match payload {
                 Ok(m_batch) => {

@@ -6,8 +6,7 @@ use crate::base::chain::traits::types::chain_id::HasChainIdType;
 use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::relay::traits::two_way::HasTwoWayRelay;
 use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::mutex::HasMutex;
-use crate::base::runtime::traits::runtime::HasRuntime;
+use crate::base::runtime::types::aliases::Mutex;
 
 pub type RelayAToB<Builder> = <<Builder as HasBiRelayType>::BiRelay as HasTwoWayRelay>::RelayAToB;
 
@@ -24,10 +23,6 @@ pub type ChainIdB<Builder> = <ChainB<Builder> as HasChainIdType>::ChainId;
 pub type ClientIdA<Builder> = <ChainA<Builder> as HasIbcChainTypes<ChainB<Builder>>>::ClientId;
 
 pub type ClientIdB<Builder> = <ChainB<Builder> as HasIbcChainTypes<ChainA<Builder>>>::ClientId;
-
-pub type Runtime<Builder> = <Builder as HasRuntime>::Runtime;
-
-pub type Mutex<Builder, T> = <Runtime<Builder> as HasMutex>::Mutex<T>;
 
 pub type ChainACache<Builder> = Arc<Mutex<Builder, BTreeMap<ChainIdA<Builder>, ChainA<Builder>>>>;
 
