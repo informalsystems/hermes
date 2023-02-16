@@ -78,12 +78,12 @@ impl TxMonitorCmd {
 
     pub fn subscribe(&self) -> Result<Subscription> {
         let (tx, rx) = crossbeam_channel::bounded(1);
+
         self.0
             .send(MonitorCmd::Subscribe(tx))
             .map_err(|_| Error::channel_send_failed())?;
 
         let subscription = rx.recv().map_err(|_| Error::channel_recv_failed())?;
-
         Ok(subscription)
     }
 }
@@ -378,7 +378,11 @@ impl EventMonitor {
             if let Ok(cmd) = self.rx_cmd.try_recv() {
                 match cmd {
                     MonitorCmd::Shutdown => return Next::Abort,
-                    MonitorCmd::Subscribe(tx) => tx.send(self.event_bus.subscribe()).unwrap(),
+                    MonitorCmd::Subscribe(tx) => {
+                        if let Err(e) = tx.send(self.event_bus.subscribe()) {
+                            error!("failed to send back subscription: {e}");
+                        }
+                    }
                 }
             }
 
@@ -388,12 +392,6 @@ impl EventMonitor {
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
                 }
             });
-
-            // Repeat check of shutdown command here, as previous recv()
-            // may block for a long time.
-            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
-                return Next::Abort;
-            }
 
             match result {
                 Ok(batch) => self.process_batch(batch),
