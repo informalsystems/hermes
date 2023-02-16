@@ -1,9 +1,7 @@
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::mutex::HasMutex;
 use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::base::runtime::types::aliases::{Mutex, Runtime};
-use crate::full::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
+use crate::full::batch::types::aliases::MessageBatchSender;
 use crate::full::runtime::traits::channel::HasChannelTypes;
 use crate::full::runtime::traits::channel_once::HasChannelOnceTypes;
 
@@ -14,15 +12,4 @@ where
     <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes + HasChannelOnceTypes,
 {
     fn get_batch_sender(&self) -> &MessageBatchSender<Target::TargetChain, Self::Error>;
-}
-
-pub trait HasMessageBatchReceiver<Target>: HasRelayTypes
-where
-    Target: ChainTarget<Self>,
-    Target::TargetChain: HasRuntime,
-    Runtime<Target::TargetChain>: HasMutex + HasChannelTypes + HasChannelOnceTypes,
-{
-    fn get_batch_receiver(
-        &self,
-    ) -> &Mutex<Target::TargetChain, Option<MessageBatchReceiver<Target::TargetChain, Self::Error>>>;
 }

@@ -4,7 +4,7 @@ use ibc_relayer_framework::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::base::error::Error;
 use crate::base::types::relay::CosmosRelayWrapper;
 use crate::full::traits::relay::CosmosFullRelay;
-use crate::full::types::batch::{CosmosBatchReceiver, CosmosBatchSender};
+use crate::full::types::batch::CosmosBatchSender;
 
 #[async_trait]
 impl<Relay> OfaFullRelay for CosmosRelayWrapper<Relay>
@@ -30,15 +30,7 @@ where
         self.relay.src_chain_message_batch_sender()
     }
 
-    fn src_chain_message_batch_receiver(&self) -> &CosmosBatchReceiver {
-        self.relay.src_chain_message_batch_receiver()
-    }
-
     fn dst_chain_message_batch_sender(&self) -> &CosmosBatchSender {
         self.relay.dst_chain_message_batch_sender()
-    }
-
-    fn dst_chain_message_batch_receiver(&self) -> &CosmosBatchReceiver {
-        self.relay.dst_chain_message_batch_receiver()
     }
 }

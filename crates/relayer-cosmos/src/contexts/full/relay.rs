@@ -4,19 +4,19 @@ use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_framework::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_framework::full::batch::types::config::BatchConfig;
-use ibc_relayer_framework::full::batch::worker::CanSpawnBatchMessageWorkers;
+use ibc_relayer_framework::full::batch::worker::CanSpawnBatchMessageWorker;
 use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::Mutex;
 
 use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::relay::CosmosRelayWrapper;
 use crate::contexts::full::chain::FullCosmosChainContext;
 use crate::full::traits::relay::CosmosFullRelay;
-use crate::full::types::batch::{CosmosBatchReceiver, CosmosBatchSender};
+use crate::full::types::batch::CosmosBatchSender;
 
 pub struct FullCosmosRelay<SrcChain, DstChain>
 where
@@ -30,9 +30,7 @@ where
     pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     pub packet_filter: PacketFilter,
     pub src_chain_message_batch_sender: CosmosBatchSender,
-    pub src_chain_message_batch_receiver: CosmosBatchReceiver,
     pub dst_chain_message_batch_sender: CosmosBatchSender,
-    pub dst_chain_message_batch_receiver: CosmosBatchReceiver,
 }
 
 impl<SrcChain, DstChain> FullCosmosRelay<SrcChain, DstChain>
@@ -47,13 +45,9 @@ where
         src_to_dst_client: ForeignClient<DstChain, SrcChain>,
         dst_to_src_client: ForeignClient<SrcChain, DstChain>,
         packet_filter: PacketFilter,
+        src_chain_message_batch_sender: CosmosBatchSender,
+        dst_chain_message_batch_sender: CosmosBatchSender,
     ) -> Self {
-        let (src_chain_message_batch_sender, src_chain_message_batch_receiver) =
-            unbounded_channel();
-
-        let (dst_chain_message_batch_sender, dst_chain_message_batch_receiver) =
-            unbounded_channel();
-
         let relay = Self {
             runtime,
             src_chain,
@@ -62,9 +56,7 @@ where
             dst_to_src_client,
             packet_filter,
             src_chain_message_batch_sender,
-            src_chain_message_batch_receiver: Mutex::new(Some(src_chain_message_batch_receiver)),
             dst_chain_message_batch_sender,
-            dst_chain_message_batch_receiver: Mutex::new(Some(dst_chain_message_batch_receiver)),
         };
 
         relay
@@ -84,6 +76,10 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
+    let (src_chain_message_batch_sender, src_chain_message_batch_receiver) = unbounded_channel();
+
+    let (dst_chain_message_batch_sender, dst_chain_message_batch_receiver) = unbounded_channel();
+
     let relay = OfaRelayWrapper::new(CosmosRelayWrapper::new(FullCosmosRelay::new(
         runtime,
         src_chain,
@@ -91,9 +87,16 @@ where
         src_to_dst_client,
         dst_to_src_client,
         packet_filter,
+        src_chain_message_batch_sender,
+        dst_chain_message_batch_sender,
     )));
 
-    relay.spawn_batch_message_workers(batch_config);
+    <OfaRelayWrapper<_> as CanSpawnBatchMessageWorker<SourceTarget>>::spawn_batch_message_worker(
+        relay.clone(),
+        batch_config.clone(),
+        src_chain_message_batch_receiver,
+    );
+    <OfaRelayWrapper<_> as CanSpawnBatchMessageWorker<DestinationTarget>>::spawn_batch_message_worker(relay.clone(), batch_config, dst_chain_message_batch_receiver);
 
     relay
 }
@@ -143,15 +146,7 @@ where
         &self.src_chain_message_batch_sender
     }
 
-    fn src_chain_message_batch_receiver(&self) -> &CosmosBatchReceiver {
-        &self.src_chain_message_batch_receiver
-    }
-
     fn dst_chain_message_batch_sender(&self) -> &CosmosBatchSender {
         &self.dst_chain_message_batch_sender
-    }
-
-    fn dst_chain_message_batch_receiver(&self) -> &CosmosBatchReceiver {
-        &self.dst_chain_message_batch_receiver
     }
 }
