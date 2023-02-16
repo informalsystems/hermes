@@ -17,7 +17,7 @@ where
     Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     fn chain_a_cache(&self) -> &ChainACache<Self> {
-        self.builder.chain_a_cache()
+        &self.chain_a_cache
     }
 }
 
@@ -28,7 +28,7 @@ where
     Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     fn chain_b_cache(&self) -> &ChainBCache<Self> {
-        self.builder.chain_b_cache()
+        &self.chain_b_cache
     }
 }
 
@@ -39,7 +39,7 @@ where
     Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     fn relay_a_to_b_cache(&self) -> &RelayAToBCache<Self> {
-        self.builder.relay_a_to_b_cache()
+        &self.relay_a_to_b_cache
     }
 }
 
@@ -50,6 +50,6 @@ where
     Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     fn relay_b_to_a_cache(&self) -> &RelayBToACache<Self> {
-        self.builder.relay_b_to_a_cache()
+        &self.relay_b_to_a_cache
     }
 }

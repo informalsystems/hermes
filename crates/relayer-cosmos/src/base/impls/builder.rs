@@ -9,8 +9,7 @@ use ibc_relayer_runtime::tokio::error::Error as TokioRuntimeError;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
 use crate::base::traits::builder::{
-    ChainA, ChainACache, ChainB, ChainBCache, CosmosBuilder, CosmosBuilderTypes, RelayAToB,
-    RelayAToBCache, RelayBToA, RelayBToACache,
+    ChainA, ChainB, CosmosBuilder, CosmosBuilderTypes, RelayAToB, RelayBToA,
 };
 use crate::base::types::birelay::CosmosBiRelayWrapper;
 use crate::base::types::builder::CosmosBuilderWrapper;
@@ -102,21 +101,5 @@ where
             .await?;
 
         Ok(CosmosBiRelayWrapper::new(birelay))
-    }
-
-    fn chain_a_cache(&self) -> &ChainACache<Builder> {
-        self.builder.chain_a_cache()
-    }
-
-    fn chain_b_cache(&self) -> &ChainBCache<Builder> {
-        self.builder.chain_b_cache()
-    }
-
-    fn relay_a_to_b_cache(&self) -> &RelayAToBCache<Builder> {
-        self.builder.relay_a_to_b_cache()
-    }
-
-    fn relay_b_to_a_cache(&self) -> &RelayBToACache<Builder> {
-        self.builder.relay_b_to_a_cache()
     }
 }

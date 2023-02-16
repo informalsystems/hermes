@@ -78,16 +78,24 @@ where
         todo!()
     }
 
-    async fn build_chain_a(&self) -> Result<FullCosmosChainContext<ChainA>, Self::Error> {
+    async fn build_chain_a(
+        &self,
+        chain_id: &ChainId,
+    ) -> Result<FullCosmosChainContext<ChainA>, Self::Error> {
         todo!()
     }
 
-    async fn build_chain_b(&self) -> Result<FullCosmosChainContext<ChainB>, Self::Error> {
+    async fn build_chain_b(
+        &self,
+        chain_id: &ChainId,
+    ) -> Result<FullCosmosChainContext<ChainB>, Self::Error> {
         todo!()
     }
 
     async fn build_relay_a_to_b(
         &self,
+        src_client_id: &ClientId,
+        dst_client_id: &ClientId,
         src_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<ChainA>>>,
         dst_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<ChainB>>>,
     ) -> Result<FullCosmosRelay<ChainA, ChainB>, Self::Error> {
@@ -96,6 +104,8 @@ where
 
     async fn build_relay_b_to_a(
         &self,
+        src_client_id: &ClientId,
+        dst_client_id: &ClientId,
         src_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<ChainB>>>,
         dst_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<ChainA>>>,
     ) -> Result<FullCosmosRelay<ChainB, ChainA>, Self::Error> {
@@ -107,26 +117,6 @@ where
         relay_a_to_b: OfaRelayWrapper<CosmosRelayWrapper<FullCosmosRelay<ChainA, ChainB>>>,
         relay_b_to_a: OfaRelayWrapper<CosmosRelayWrapper<FullCosmosRelay<ChainB, ChainA>>>,
     ) -> Result<Self::BiRelay, Self::Error> {
-        todo!()
-    }
-
-    fn chain_a_cache(&self) -> &ibc_relayer_cosmos::base::traits::builder::ChainACache<Self> {
-        todo!()
-    }
-
-    fn chain_b_cache(&self) -> &ibc_relayer_cosmos::base::traits::builder::ChainBCache<Self> {
-        todo!()
-    }
-
-    fn relay_a_to_b_cache(
-        &self,
-    ) -> &ibc_relayer_cosmos::base::traits::builder::RelayAToBCache<Self> {
-        todo!()
-    }
-
-    fn relay_b_to_a_cache(
-        &self,
-    ) -> &ibc_relayer_cosmos::base::traits::builder::RelayBToACache<Self> {
         todo!()
     }
 }

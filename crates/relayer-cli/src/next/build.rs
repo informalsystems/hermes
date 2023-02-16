@@ -36,6 +36,9 @@ where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
 {
+    use ibc_relayer_cosmos::base::types::chain::CosmosChainWrapper;
+    use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
+
     let telemetry = OfaTelemetryWrapper::new(CosmosTelemetry::new(TelemetryState {
         meter: global::meter("hermes"),
         counters: HashMap::new(),
@@ -67,22 +70,29 @@ where
     let chain_b_websocket_addr = chain_b_config.websocket_addr.clone();
     let chain_b_config = TxConfig::try_from(&chain_b_config).map_err(Error::relayer)?;
 
-    let chain_a = FullCosmosChainContext::new(
-        handle_a.clone(),
-        chain_a_signer,
-        chain_a_config,
-        chain_a_websocket_addr,
-        chain_a_key,
-        telemetry.clone(),
-    );
-    let chain_b = FullCosmosChainContext::new(
-        handle_b.clone(),
-        chain_b_signer,
-        chain_b_config,
-        chain_b_websocket_addr,
-        chain_b_key,
-        telemetry,
-    );
+    let chain_a = OfaChainWrapper::new(CosmosChainWrapper::new(Arc::new(
+        FullCosmosChainContext::new(
+            handle_a.clone(),
+            chain_a_signer,
+            chain_a_config,
+            chain_a_websocket_addr,
+            chain_a_key,
+            runtime.clone(),
+            telemetry.clone(),
+        ),
+    )));
+
+    let chain_b = OfaChainWrapper::new(CosmosChainWrapper::new(Arc::new(
+        FullCosmosChainContext::new(
+            handle_b.clone(),
+            chain_b_signer,
+            chain_b_config,
+            chain_b_websocket_addr,
+            chain_b_key,
+            runtime.clone(),
+            telemetry,
+        ),
+    )));
 
     let client_a_to_b = ForeignClient::restore(client_id_b, handle_b.clone(), handle_a.clone());
     let client_b_to_a = ForeignClient::restore(client_id_a, handle_a, handle_b);

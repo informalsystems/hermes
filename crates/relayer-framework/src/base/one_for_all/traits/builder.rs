@@ -54,14 +54,6 @@ pub trait OfaBuilder: OfaBuilderTypes {
         relay_a_to_b: OfaRelayWrapper<RelayAToB<Self>>,
         relay_b_to_a: OfaRelayWrapper<RelayBToA<Self>>,
     ) -> Result<Self::BiRelay, Self::Error>;
-
-    fn chain_a_cache(&self) -> &ChainACache<Self>;
-
-    fn chain_b_cache(&self) -> &ChainBCache<Self>;
-
-    fn relay_a_to_b_cache(&self) -> &RelayAToBCache<Self>;
-
-    fn relay_b_to_a_cache(&self) -> &RelayBToACache<Self>;
 }
 
 pub type BiRelay<Builder> = <Builder as OfaBuilderTypes>::BiRelay;
