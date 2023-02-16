@@ -114,6 +114,32 @@ where
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
 }
 
+pub trait OfaHomogeneousRelay:
+    OfaRelayTypes<SrcChain = Self::Chain, DstChain = Self::Chain>
+{
+    type Chain: OfaIbcChain<
+        Self::Chain,
+        Runtime = Self::Runtime,
+        Preset = Self::Preset,
+        IncomingPacket = Self::Packet,
+        OutgoingPacket = Self::Packet,
+    >;
+}
+
+impl<Relay, Chain> OfaHomogeneousRelay for Relay
+where
+    Relay: OfaRelayTypes<SrcChain = Chain, DstChain = Chain>,
+    Chain: OfaIbcChain<
+        Chain,
+        Runtime = Self::Runtime,
+        Preset = Self::Preset,
+        IncomingPacket = Self::Packet,
+        OutgoingPacket = Self::Packet,
+    >,
+{
+    type Chain = Chain;
+}
+
 pub trait OfaBaseRelayWithPreset: OfaBaseRelay<Preset = Self::OfaPreset> {
     type OfaPreset: OfaRelayPreset<Self>;
 }

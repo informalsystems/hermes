@@ -1,7 +1,9 @@
 use core::fmt::Debug;
 
 use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset, OfaRelayTypes};
+use crate::base::one_for_all::traits::relay::{
+    OfaBaseRelay, OfaHomogeneousRelay, OfaRelayPreset, OfaRelayTypes,
+};
 use crate::base::one_for_all::types::birelay::OfaBiRelayWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -45,4 +47,18 @@ where
     BiRelay: OfaBiRelayTypes,
 {
     type TwoWayAutoRelayer: AutoRelayer<OfaBiRelayWrapper<BiRelay>>;
+}
+
+pub trait OfaHomogeneousBiRelay:
+    OfaBiRelayTypes<RelayAToB = Self::Relay, RelayBToA = Self::Relay>
+{
+    type Relay: OfaHomogeneousRelay;
+}
+
+impl<BiRelay, Relay> OfaHomogeneousBiRelay for BiRelay
+where
+    BiRelay: OfaBiRelayTypes<RelayAToB = Relay, RelayBToA = Relay>,
+    Relay: OfaHomogeneousRelay,
+{
+    type Relay = Relay;
 }
