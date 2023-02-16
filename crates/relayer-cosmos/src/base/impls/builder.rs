@@ -43,42 +43,34 @@ where
         Builder::runtime_error(e)
     }
 
-    fn chain_id_a(&self) -> ChainId {
-        self.builder.chain_id_a()
-    }
-
-    fn chain_id_b(&self) -> ChainId {
-        self.builder.chain_id_b()
-    }
-
-    fn client_id_a(&self) -> ClientId {
-        self.builder.client_id_a()
-    }
-
-    fn client_id_b(&self) -> ClientId {
-        self.builder.client_id_b()
-    }
-
-    async fn build_chain_a(&self) -> Result<CosmosChainWrapper<ChainA<Builder>>, Builder::Error> {
-        let chain = self.builder.build_chain_a().await?;
+    async fn build_chain_a(
+        &self,
+        chain_id: &ChainId,
+    ) -> Result<CosmosChainWrapper<ChainA<Builder>>, Builder::Error> {
+        let chain = self.builder.build_chain_a(chain_id).await?;
 
         Ok(CosmosChainWrapper::new(Arc::new(chain)))
     }
 
-    async fn build_chain_b(&self) -> Result<CosmosChainWrapper<ChainB<Builder>>, Builder::Error> {
-        let chain = self.builder.build_chain_b().await?;
+    async fn build_chain_b(
+        &self,
+        chain_id: &ChainId,
+    ) -> Result<CosmosChainWrapper<ChainB<Builder>>, Builder::Error> {
+        let chain = self.builder.build_chain_b(chain_id).await?;
 
         Ok(CosmosChainWrapper::new(Arc::new(chain)))
     }
 
     async fn build_relay_a_to_b(
         &self,
+        src_client_id: &ClientId,
+        dst_client_id: &ClientId,
         src_chain: OfaChainWrapper<CosmosChainWrapper<ChainA<Builder>>>,
         dst_chain: OfaChainWrapper<CosmosChainWrapper<ChainB<Builder>>>,
     ) -> Result<CosmosRelayWrapper<RelayAToB<Builder>>, Builder::Error> {
         let relay = self
             .builder
-            .build_relay_a_to_b(src_chain, dst_chain)
+            .build_relay_a_to_b(src_client_id, dst_client_id, src_chain, dst_chain)
             .await?;
 
         Ok(CosmosRelayWrapper::new(relay))
@@ -86,12 +78,14 @@ where
 
     async fn build_relay_b_to_a(
         &self,
+        src_client_id: &ClientId,
+        dst_client_id: &ClientId,
         src_chain: OfaChainWrapper<CosmosChainWrapper<ChainB<Builder>>>,
         dst_chain: OfaChainWrapper<CosmosChainWrapper<ChainA<Builder>>>,
     ) -> Result<CosmosRelayWrapper<RelayBToA<Builder>>, Builder::Error> {
         let relay = self
             .builder
-            .build_relay_b_to_a(src_chain, dst_chain)
+            .build_relay_b_to_a(src_client_id, dst_client_id, src_chain, dst_chain)
             .await?;
 
         Ok(CosmosRelayWrapper::new(relay))

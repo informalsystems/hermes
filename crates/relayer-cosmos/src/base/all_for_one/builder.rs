@@ -4,6 +4,7 @@ use ibc_relayer_framework::base::core::traits::error::HasErrorType;
 use ibc_relayer_framework::base::one_for_all::traits::birelay::OfaBiRelayPreset;
 use ibc_relayer_framework::base::one_for_all::types::birelay::OfaBiRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::builder::OfaBuilderWrapper;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
 use crate::base::all_for_one::birelay::AfoCosmosBaseBiRelay;
 use crate::base::traits::builder::CosmosBuilder;
@@ -16,6 +17,10 @@ pub trait CanBuildAfoCosmosBaseBiRelay: HasErrorType {
 
     async fn build_afo_cosmos_base_birelay(
         &self,
+        chain_id_a: &ChainId,
+        chain_id_b: &ChainId,
+        client_id_a: &ClientId,
+        client_id_b: &ClientId,
     ) -> Result<Self::AfoCosmosBaseBiRelay, Self::Error>;
 }
 
@@ -29,7 +34,12 @@ where
 
     async fn build_afo_cosmos_base_birelay(
         &self,
+        chain_id_a: &ChainId,
+        chain_id_b: &ChainId,
+        client_id_a: &ClientId,
+        client_id_b: &ClientId,
     ) -> Result<Self::AfoCosmosBaseBiRelay, Self::Error> {
-        self.build_afo_base_birelay().await
+        self.build_afo_base_birelay(chain_id_a, chain_id_b, client_id_a, client_id_b)
+            .await
     }
 }

@@ -38,18 +38,22 @@ pub trait CosmosBuilder: CosmosBuilderTypes {
 
     fn client_id_b(&self) -> ClientId;
 
-    async fn build_chain_a(&self) -> Result<ChainA<Self>, Self::Error>;
+    async fn build_chain_a(&self, chain_id: &ChainId) -> Result<ChainA<Self>, Self::Error>;
 
-    async fn build_chain_b(&self) -> Result<ChainB<Self>, Self::Error>;
+    async fn build_chain_b(&self, chain_id: &ChainId) -> Result<ChainB<Self>, Self::Error>;
 
     async fn build_relay_a_to_b(
         &self,
+        src_client_id: &ClientId,
+        dst_client_id: &ClientId,
         src_chain: OfaChainWrapper<CosmosChainWrapper<ChainA<Self>>>,
         dst_chain: OfaChainWrapper<CosmosChainWrapper<ChainB<Self>>>,
     ) -> Result<RelayAToB<Self>, Self::Error>;
 
     async fn build_relay_b_to_a(
         &self,
+        src_client_id: &ClientId,
+        dst_client_id: &ClientId,
         src_chain: OfaChainWrapper<CosmosChainWrapper<ChainB<Self>>>,
         dst_chain: OfaChainWrapper<CosmosChainWrapper<ChainA<Self>>>,
     ) -> Result<RelayBToA<Self>, Self::Error>;

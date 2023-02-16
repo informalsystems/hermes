@@ -5,7 +5,7 @@ use crate::base::builder::traits::chain::{
     CanBuildChainA, CanBuildChainB, ChainABuilder, ChainBBuilder,
 };
 use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::base::one_for_all::traits::builder::{ChainA, ChainB, OfaBuilder};
+use crate::base::one_for_all::traits::builder::{ChainA, ChainB, ChainIdA, ChainIdB, OfaBuilder};
 use crate::base::one_for_all::types::builder::OfaBuilderWrapper;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
@@ -20,8 +20,9 @@ where
 {
     async fn build_chain_a(
         builder: &OfaBuilderWrapper<Builder>,
+        chain_id: &ChainIdA<Builder>,
     ) -> Result<OfaChainWrapper<ChainA<Builder>>, Builder::Error> {
-        let chain = builder.builder.build_chain_a().await?;
+        let chain = builder.builder.build_chain_a(chain_id).await?;
 
         Ok(OfaChainWrapper::new(chain))
     }
@@ -35,8 +36,9 @@ where
 {
     async fn build_chain_b(
         builder: &OfaBuilderWrapper<Builder>,
+        chain_id: &ChainIdB<Builder>,
     ) -> Result<OfaChainWrapper<ChainB<Builder>>, Builder::Error> {
-        let chain = builder.builder.build_chain_b().await?;
+        let chain = builder.builder.build_chain_b(chain_id).await?;
 
         Ok(OfaChainWrapper::new(chain))
     }
@@ -48,8 +50,11 @@ where
     Builder: OfaBuilder,
     Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
-    async fn build_chain_a(&self) -> Result<OfaChainWrapper<ChainA<Builder>>, Self::Error> {
-        <BuildWithCache<BuildChainFromOfa>>::build_chain_a(self).await
+    async fn build_chain_a(
+        &self,
+        chain_id: &ChainIdA<Builder>,
+    ) -> Result<OfaChainWrapper<ChainA<Builder>>, Self::Error> {
+        <BuildWithCache<BuildChainFromOfa>>::build_chain_a(self, chain_id).await
     }
 }
 
@@ -59,7 +64,10 @@ where
     Builder: OfaBuilder,
     Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
-    async fn build_chain_b(&self) -> Result<OfaChainWrapper<ChainB<Builder>>, Self::Error> {
-        <BuildWithCache<BuildChainFromOfa>>::build_chain_b(self).await
+    async fn build_chain_b(
+        &self,
+        chain_id: &ChainIdB<Builder>,
+    ) -> Result<OfaChainWrapper<ChainB<Builder>>, Self::Error> {
+        <BuildWithCache<BuildChainFromOfa>>::build_chain_b(self, chain_id).await
     }
 }

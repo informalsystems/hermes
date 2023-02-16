@@ -29,26 +29,22 @@ pub trait OfaBuilder: OfaBuilderTypes {
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
 
-    fn chain_id_a(&self) -> ChainIdA<Self>;
+    async fn build_chain_a(&self, chain_id: &ChainIdA<Self>) -> Result<ChainA<Self>, Self::Error>;
 
-    fn chain_id_b(&self) -> ChainIdB<Self>;
-
-    fn client_id_a(&self) -> ClientIdA<Self>;
-
-    fn client_id_b(&self) -> ClientIdB<Self>;
-
-    async fn build_chain_a(&self) -> Result<ChainA<Self>, Self::Error>;
-
-    async fn build_chain_b(&self) -> Result<ChainB<Self>, Self::Error>;
+    async fn build_chain_b(&self, chain_id: &ChainIdB<Self>) -> Result<ChainB<Self>, Self::Error>;
 
     async fn build_relay_a_to_b(
         &self,
+        src_client_id: &ClientIdA<Self>,
+        dst_client_id: &ClientIdB<Self>,
         src_chain: OfaChainWrapper<ChainA<Self>>,
         dst_chain: OfaChainWrapper<ChainB<Self>>,
     ) -> Result<RelayAToB<Self>, Self::Error>;
 
     async fn build_relay_b_to_a(
         &self,
+        src_client_id: &ClientIdB<Self>,
+        dst_client_id: &ClientIdA<Self>,
         src_chain: OfaChainWrapper<ChainB<Self>>,
         dst_chain: OfaChainWrapper<ChainA<Self>>,
     ) -> Result<RelayBToA<Self>, Self::Error>;
