@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
-use ibc_relayer_cosmos::base::traits::builder::{CosmosBuilderTypes, CosmosBuilder};
+use ibc_relayer_cosmos::base::traits::builder::{CosmosBuilder, CosmosBuilderTypes};
 use ibc_relayer_cosmos::base::types::birelay::CosmosBiRelayWrapper;
 use ibc_relayer_cosmos::base::types::chain::CosmosChainWrapper;
 use ibc_relayer_cosmos::base::types::relay::CosmosRelayWrapper;
@@ -9,15 +9,15 @@ use ibc_relayer_cosmos::contexts::full::birelay::FullCosmosBiRelay;
 use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
 use ibc_relayer_cosmos::contexts::full::relay::{new_relay_context_with_batch, FullCosmosRelay};
 use ibc_relayer_cosmos::full::all_for_one::birelay::AfoCosmosFullBiRelay;
-use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
-use ibc_relayer_runtime::tokio::error::Error as TokioRuntimeError;
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::base::one_for_all::types::birelay::OfaBiRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::tokio::error::Error as TokioRuntimeError;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_test_framework::error::{handle_generic_error, Error};
 use ibc_test_framework::types::binary::chains::ConnectedChains;
@@ -48,14 +48,13 @@ where
     type BiRelay = FullCosmosBiRelay<ChainA, ChainB>;
 }
 
-
 #[async_trait]
 impl<ChainA, ChainB> CosmosBuilder for CosmosRelayBuilder<ChainA, ChainB>
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
 {
-    fn runtime(&self) ->  &OfaRuntimeWrapper<TokioRuntimeContext>  {
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
         todo!()
     }
 
@@ -111,19 +110,23 @@ where
         todo!()
     }
 
-    fn chain_a_cache(&self) ->  &ibc_relayer_cosmos::base::traits::builder::ChainACache<Self>  {
+    fn chain_a_cache(&self) -> &ibc_relayer_cosmos::base::traits::builder::ChainACache<Self> {
         todo!()
     }
 
-    fn chain_b_cache(&self) ->  &ibc_relayer_cosmos::base::traits::builder::ChainBCache<Self>  {
+    fn chain_b_cache(&self) -> &ibc_relayer_cosmos::base::traits::builder::ChainBCache<Self> {
         todo!()
     }
 
-    fn relay_a_to_b_cache(&self) ->  &ibc_relayer_cosmos::base::traits::builder::RelayAToBCache<Self>  {
+    fn relay_a_to_b_cache(
+        &self,
+    ) -> &ibc_relayer_cosmos::base::traits::builder::RelayAToBCache<Self> {
         todo!()
     }
 
-    fn relay_b_to_a_cache(&self) ->  &ibc_relayer_cosmos::base::traits::builder::RelayBToACache<Self>  {
+    fn relay_b_to_a_cache(
+        &self,
+    ) -> &ibc_relayer_cosmos::base::traits::builder::RelayBToACache<Self> {
         todo!()
     }
 }

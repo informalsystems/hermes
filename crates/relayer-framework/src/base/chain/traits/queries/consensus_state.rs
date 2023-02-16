@@ -1,22 +1,14 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::chain::HasChainTypes;
+use crate::base::chain::traits::types::consensus_state::HasConsensusStateType;
 use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
-
-pub trait HasConsensusState<Counterparty>: HasIbcChainTypes<Counterparty>
-where
-    Counterparty: HasChainTypes,
-{
-    type ConsensusState: Async;
-}
 
 #[async_trait]
 pub trait ConsensusStateQuerier<Chain, Counterparty>
 where
     Chain: HasIbcChainTypes<Counterparty>,
-    Counterparty: HasConsensusState<Chain>,
+    Counterparty: HasConsensusStateType<Chain>,
 {
     async fn query_consensus_state(
         chain: &Chain,
@@ -28,7 +20,7 @@ where
 #[async_trait]
 pub trait CanQueryConsensusState<Counterparty>: HasIbcChainTypes<Counterparty>
 where
-    Counterparty: HasConsensusState<Self>,
+    Counterparty: HasConsensusStateType<Self>,
 {
     async fn query_consensus_state(
         &self,

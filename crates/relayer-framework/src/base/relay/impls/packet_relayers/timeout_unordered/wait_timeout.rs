@@ -4,7 +4,8 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 
-use crate::base::chain::traits::queries::status::{CanQueryChainStatus, HasChainStatus};
+use crate::base::chain::traits::queries::status::CanQueryChainStatus;
+use crate::base::chain::traits::types::status::HasChainStatusType;
 use crate::base::chain::types::aliases::Message;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::messages::timeout_unordered_packet::TimeoutUnorderedPacketMessageBuilder;
@@ -26,7 +27,7 @@ impl<Relay, InMessageBuilder, Runtime, Height, Error> TimeoutUnorderedPacketMess
 where
     Relay: HasRelayTypes<Error = Error>,
     Relay: HasRuntime<Runtime = Runtime>,
-    Relay::DstChain: CanQueryChainStatus<Height = Height> + HasChainStatus,
+    Relay::DstChain: CanQueryChainStatus<Height = Height>,
     InMessageBuilder: TimeoutUnorderedPacketMessageBuilder<Relay>,
     Runtime: CanSleep,
     Height: Ord + Async,

@@ -1,25 +1,37 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::chain::HasChainTypes;
-use crate::base::core::traits::sync::Async;
+use crate::base::chain::traits::types::status::HasChainStatusType;
 use crate::std_prelude::*;
 
-/// Chains that implement this trait expose a `ChainStatus` type that, at
-/// minimum, exposes the chain's height and timestamp.
-pub trait HasChainStatus: HasChainTypes {
-    type ChainStatus: Async;
-
-    fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
-
-    fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
-}
-
+/**
+   Implemented by a chain context to provide method for querying the
+   [current status](HasChainStatusType::ChainStatus) of the blockchain.
+*/
 #[async_trait]
-pub trait ChainStatusQuerier<Chain: HasChainStatus> {
-    async fn query_chain_status(context: &Chain) -> Result<Chain::ChainStatus, Chain::Error>;
-}
+pub trait CanQueryChainStatus: HasChainStatusType {
+    /**
+        Query the current status of the blockchain. The returned
+        [status](HasChainStatusType::ChainStatus) is required to have the same
+        or increasing
+        [height](crate::base::chain::traits::types::height::HasHeightType::Height)
+        and
+        [timestamp](crate::base::chain::traits::types::timestamp::HasTimestampType::Timestamp)
+        each time the query is called.
 
-#[async_trait]
-pub trait CanQueryChainStatus: HasChainStatus {
+        The querying of the chain status may fail due to errors such as the full
+        node not responding, or from network disconnection.
+
+        TODO: Since the chain status can be queried frequently by the relayer,
+        we should implement a cache middleware that cache the result returned
+        from the chain query.
+    */
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
+}
+
+/**
+   The provider trait for [`ChainStatusQuerier`].
+*/
+#[async_trait]
+pub trait ChainStatusQuerier<Chain: HasChainStatusType> {
+    async fn query_chain_status(context: &Chain) -> Result<Chain::ChainStatus, Chain::Error>;
 }

@@ -1,8 +1,9 @@
 use async_trait::async_trait;
 
 use crate::base::chain::traits::queries::consensus_state::{
-    CanQueryConsensusState, ConsensusStateQuerier, HasConsensusState,
+    CanQueryConsensusState, ConsensusStateQuerier,
 };
+use crate::base::chain::traits::types::consensus_state::HasConsensusStateType;
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
 use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
@@ -33,7 +34,7 @@ where
     }
 }
 
-impl<Chain, Counterparty> HasConsensusState<OfaChainWrapper<Counterparty>>
+impl<Chain, Counterparty> HasConsensusStateType<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,

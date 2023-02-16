@@ -34,5 +34,8 @@ pub mod entry;
 pub mod error;
 pub mod prelude;
 
+#[cfg(feature = "experimental")]
+pub mod next;
+
 /// The path to the default configuration file, relative to the home directory.
 pub const DEFAULT_CONFIG_PATH: &str = ".hermes/config.toml";

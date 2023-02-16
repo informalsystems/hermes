@@ -18,19 +18,23 @@ default-run = "hermes"
 name = "hermes"
 
 [features]
-default     = ["telemetry", "rest-server", "std", "eyre_tracer",]
-std         = ["flex-error/std"]
-eyre_tracer = ["flex-error/eyre_tracer"]
-profiling   = ["ibc-relayer/profiling"]
-telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
-rest-server = ["ibc-relayer-rest"]
+default      = ["telemetry", "rest-server", "std", "eyre_tracer"]
+std          = ["flex-error/std"]
+eyre_tracer  = ["flex-error/eyre_tracer"]
+profiling    = ["ibc-relayer/profiling"]
+telemetry    = ["ibc-relayer/telemetry", "ibc-telemetry"]
+rest-server  = ["ibc-relayer-rest"]
+experimental = ["ibc-relayer-framework", "ibc-relayer-cosmos", "ibc-relayer-runtime"]
 
 [dependencies]
-ibc-relayer-types  = { version = "0.21.0", path = "../relayer-types", features = ["std", "clock"] }
-ibc-relayer        = { version = "0.21.0", path = "../relayer" }
-ibc-telemetry      = { version = "0.21.0", path = "../telemetry", optional = true }
-ibc-relayer-rest   = { version = "0.21.0", path = "../relayer-rest", optional = true }
-ibc-chain-registry = { version = "0.2.0" , path = "../chain-registry" }
+ibc-relayer-types     = { version = "0.21.0", path = "../relayer-types", features = ["std", "clock"] }
+ibc-relayer           = { version = "0.21.0", path = "../relayer" }
+ibc-telemetry         = { version = "0.21.0", path = "../telemetry", optional = true }
+ibc-relayer-rest      = { version = "0.21.0", path = "../relayer-rest", optional = true }
+ibc-chain-registry    = { version = "0.2.0" , path = "../chain-registry" }
+ibc-relayer-cosmos    = { version = "0.20.0", path = "../relayer-cosmos", optional = true }
+ibc-relayer-framework = { version = "0.1.0" , path = "../relayer-framework", optional = true }
+ibc-relayer-runtime   = { version = "0.1.0" , path = "../relayer-runtime", optional = true }
 
 atty                     = "0.2.14"
 clap                     = { version = "3.2", features = ["cargo"] }
@@ -48,10 +52,11 @@ http                     = "0.2"
 humantime                = "2.1"
 itertools                = "0.10.5"
 oneline-eyre             = "0.1"
+opentelemetry            = { version = "0.17.0", features = ["metrics"] }
 regex                    = "1.7.1"
 serde                    = { version = "1.0", features = ["serde_derive"] }
 serde_json               = "1"
-signal-hook              = "0.3.14"
+signal-hook              = "0.3.15"
 subtle-encoding          = "0.5"
 tokio                    = { version = "1.0", features = ["full"] }
 tracing                  = "0.1.36"
@@ -74,5 +79,5 @@ features = ["options"]
 
 [dev-dependencies]
 abscissa_core = { version = "=0.6.0", features = ["testing"] }
-once_cell = "1.16"
+once_cell = "1.17"
 regex = "1.7"

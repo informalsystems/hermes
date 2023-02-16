@@ -54,6 +54,10 @@ pub trait OfaChainTypes: Async {
     */
     type Event: Async;
 
+    /**
+       Corresponds to
+       [`HasChainIdType::ChainId`](crate::base::chain::traits::types::chain_id::HasChainIdType::ChainId).
+    */
     type ChainId: Eq + Ord + Async;
 
     /**
@@ -88,13 +92,13 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasChainStatus::ChainStatus`](crate::base::chain::traits::queries::status::HasChainStatus::ChainStatus).
+       [`HasChainStatusType::ChainStatus`](crate::base::chain::traits::types::status::HasChainStatusType::ChainStatus).
     */
     type ChainStatus: Async;
 
     /**
        Corresponds to
-       [`HasConsensusState::ConsensusState`](crate::base::chain::traits::queries::consensus_state::HasConsensusState::ConsensusState).
+       [`HasConsensusStateType::ConsensusState`](crate::base::chain::traits::types::consensus_state::HasConsensusStateType::ConsensusState).
     */
     type ConsensusState: Async;
 
@@ -123,6 +127,10 @@ pub trait OfaBaseChain: OfaChainTypes {
         event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
 
+    /**
+       Corresponds to
+       [`CanSendMessages::send_messages`](crate::base::chain::traits::message_sender::CanSendMessages::send_messages)
+    */
     async fn send_messages(
         &self,
         messages: Vec<Self::Message>,
@@ -144,8 +152,16 @@ where
         OutgoingPacket = Self::IncomingPacket,
     >,
 {
+    /**
+       Corresponds to
+       [`HasIbcPacketTypes::IncomingPacket`](crate::base::chain::traits::types::packet::HasIbcPacketTypes::IncomingPacket)
+    */
     type IncomingPacket: Async;
 
+    /**
+       Corresponds to
+       [`HasIbcPacketTypes::OutgoingPacket`](crate::base::chain::traits::types::packet::HasIbcPacketTypes::OutgoingPacket)
+    */
     type OutgoingPacket: Async;
 
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
