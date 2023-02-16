@@ -32,25 +32,31 @@ pub trait CanBuildRelayBToA: HasBiRelayType + HasErrorType {
 }
 
 #[async_trait]
-pub trait CanBuildRelayAToBFromChains: HasBiRelayType + HasErrorType {
+pub trait RelayAToBFromChainsBuilder<Build>: Async
+where
+    Build: HasBiRelayType + HasErrorType,
+{
     async fn build_relay_a_to_b_from_chains(
-        &self,
-        src_client_id: &ClientIdA<Self>,
-        dst_client_id: &ClientIdB<Self>,
-        src_chain: ChainA<Self>,
-        dst_chain: ChainB<Self>,
-    ) -> Result<RelayAToB<Self>, Self::Error>;
+        build: &Build,
+        src_client_id: &ClientIdA<Build>,
+        dst_client_id: &ClientIdB<Build>,
+        src_chain: ChainA<Build>,
+        dst_chain: ChainB<Build>,
+    ) -> Result<RelayAToB<Build>, Build::Error>;
 }
 
 #[async_trait]
-pub trait CanBuildRelayBToAFromChains: HasBiRelayType + HasErrorType {
+pub trait RelayBToAFromChainsBuilder<Build>: Async
+where
+    Build: HasBiRelayType + HasErrorType,
+{
     async fn build_relay_b_to_a_from_chains(
-        &self,
-        src_client_id: &ClientIdB<Self>,
-        dst_client_id: &ClientIdA<Self>,
-        src_chain: ChainB<Self>,
-        dst_chain: ChainA<Self>,
-    ) -> Result<RelayBToA<Self>, Self::Error>;
+        build: &Build,
+        src_client_id: &ClientIdB<Build>,
+        dst_client_id: &ClientIdA<Build>,
+        src_chain: ChainB<Build>,
+        dst_chain: ChainA<Build>,
+    ) -> Result<RelayBToA<Build>, Build::Error>;
 }
 
 #[async_trait]

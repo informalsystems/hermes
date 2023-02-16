@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use crate::base::builder::impls::cache::BuildWithCache;
 use crate::base::builder::impls::relay::BuildRelayFromChains;
 use crate::base::builder::traits::relay::{
-    CanBuildRelayAToB, CanBuildRelayAToBFromChains, CanBuildRelayBToA, CanBuildRelayBToAFromChains,
-    RelayAToBBuilder, RelayBToABuilder,
+    CanBuildRelayAToB, CanBuildRelayBToA, RelayAToBBuilder, RelayAToBFromChainsBuilder,
+    RelayBToABuilder, RelayBToAFromChainsBuilder,
 };
 use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
 use crate::base::one_for_all::traits::builder::{
@@ -15,21 +15,23 @@ use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
+pub struct BuildRelayAToBFromChainsWithOfa;
+
 #[async_trait]
-impl<Builder> CanBuildRelayAToBFromChains for OfaBuilderWrapper<Builder>
+impl<Build> RelayAToBFromChainsBuilder<OfaBuilderWrapper<Build>> for BuildRelayAToBFromChainsWithOfa
 where
-    Builder: OfaBuilder,
-    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
+    Build: OfaBuilder,
+    Build::Preset: OfaBiRelayPreset<Build::BiRelay>,
 {
     async fn build_relay_a_to_b_from_chains(
-        &self,
-        src_client_id: &ClientIdA<Builder>,
-        dst_client_id: &ClientIdB<Builder>,
-        src_chain: OfaChainWrapper<ChainA<Builder>>,
-        dst_chain: OfaChainWrapper<ChainB<Builder>>,
-    ) -> Result<OfaRelayWrapper<RelayAToB<Builder>>, Builder::Error> {
+        build: &OfaBuilderWrapper<Build>,
+        src_client_id: &ClientIdA<Build>,
+        dst_client_id: &ClientIdB<Build>,
+        src_chain: OfaChainWrapper<ChainA<Build>>,
+        dst_chain: OfaChainWrapper<ChainB<Build>>,
+    ) -> Result<OfaRelayWrapper<RelayAToB<Build>>, Build::Error> {
         let relay_a_to_b = OfaBuilder::build_relay_a_to_b(
-            self.builder.as_ref(),
+            build.builder.as_ref(),
             src_client_id,
             dst_client_id,
             src_chain,
@@ -42,20 +44,20 @@ where
 }
 
 #[async_trait]
-impl<Builder> CanBuildRelayBToAFromChains for OfaBuilderWrapper<Builder>
+impl<Build> RelayBToAFromChainsBuilder<OfaBuilderWrapper<Build>> for BuildRelayAToBFromChainsWithOfa
 where
-    Builder: OfaBuilder,
-    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
+    Build: OfaBuilder,
+    Build::Preset: OfaBiRelayPreset<Build::BiRelay>,
 {
     async fn build_relay_b_to_a_from_chains(
-        &self,
-        src_client_id: &ClientIdB<Builder>,
-        dst_client_id: &ClientIdA<Builder>,
-        src_chain: OfaChainWrapper<ChainB<Builder>>,
-        dst_chain: OfaChainWrapper<ChainA<Builder>>,
-    ) -> Result<OfaRelayWrapper<RelayBToA<Builder>>, Builder::Error> {
+        build: &OfaBuilderWrapper<Build>,
+        src_client_id: &ClientIdB<Build>,
+        dst_client_id: &ClientIdA<Build>,
+        src_chain: OfaChainWrapper<ChainB<Build>>,
+        dst_chain: OfaChainWrapper<ChainA<Build>>,
+    ) -> Result<OfaRelayWrapper<RelayBToA<Build>>, Build::Error> {
         let relay_b_to_a = OfaBuilder::build_relay_b_to_a(
-            self.builder.as_ref(),
+            build.builder.as_ref(),
             src_client_id,
             dst_client_id,
             src_chain,
@@ -80,7 +82,7 @@ where
         src_client_id: &ClientIdA<Builder>,
         dst_client_id: &ClientIdB<Builder>,
     ) -> Result<OfaRelayWrapper<RelayAToB<Builder>>, Self::Error> {
-        <BuildWithCache<BuildRelayFromChains>>::build_relay_a_to_b(
+        <BuildWithCache<BuildRelayFromChains<BuildRelayAToBFromChainsWithOfa>>>::build_relay_a_to_b(
             self,
             src_chain_id,
             dst_chain_id,
@@ -104,7 +106,7 @@ where
         src_client_id: &ClientIdB<Builder>,
         dst_client_id: &ClientIdA<Builder>,
     ) -> Result<OfaRelayWrapper<RelayBToA<Builder>>, Self::Error> {
-        <BuildWithCache<BuildRelayFromChains>>::build_relay_b_to_a(
+        <BuildWithCache<BuildRelayFromChains<BuildRelayAToBFromChainsWithOfa>>>::build_relay_b_to_a(
             self,
             src_chain_id,
             dst_chain_id,
