@@ -1,13 +1,12 @@
 use async_trait::async_trait;
 
+use crate::base::builder::traits::birelay::HasBiRelayType;
 use crate::base::builder::types::aliases::{
     ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, RelayAToB, RelayBToA,
 };
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
-
-use super::birelay::HasBiRelayType;
 
 #[async_trait]
 pub trait CanBuildRelayAToB: HasBiRelayType + HasErrorType {
