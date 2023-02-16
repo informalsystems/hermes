@@ -24,6 +24,7 @@ pub trait OfaBiRelayTypes: Async {
         Preset = Self::Preset,
         SrcChain = <Self::RelayAToB as OfaRelayTypes>::DstChain,
         DstChain = <Self::RelayAToB as OfaRelayTypes>::SrcChain,
+        Error = <Self::RelayAToB as OfaRelayTypes>::Error,
     >;
 }
 
@@ -36,9 +37,7 @@ pub trait OfaBiRelay: OfaBiRelayTypes {
 
     fn relay_b_to_a(&self) -> &OfaRelayWrapper<Self::RelayBToA>;
 
-    fn error_a_to_b(e: <Self::RelayAToB as OfaRelayTypes>::Error) -> Self::Error;
-
-    fn error_b_to_a(e: <Self::RelayAToB as OfaRelayTypes>::Error) -> Self::Error;
+    fn relay_error(e: <Self::RelayAToB as OfaRelayTypes>::Error) -> Self::Error;
 }
 
 pub trait OfaBiRelayPreset<BiRelay>:

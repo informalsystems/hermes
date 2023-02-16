@@ -20,11 +20,7 @@ where
         self.birelay.relay_b_to_a()
     }
 
-    fn error_a_to_b(e: <Self::RelayAToB as HasErrorType>::Error) -> Self::Error {
-        BiRelay::error_a_to_b(e)
-    }
-
-    fn error_b_to_a(e: <Self::RelayAToB as HasErrorType>::Error) -> Self::Error {
-        BiRelay::error_b_to_a(e)
+    fn relay_error(e: <Self::RelayAToB as HasErrorType>::Error) -> Self::Error {
+        BiRelay::relay_error(e)
     }
 }

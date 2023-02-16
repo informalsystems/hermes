@@ -61,11 +61,7 @@ where
         &self.relay_b_to_a
     }
 
-    fn error_a_to_b(e: Error) -> Error {
-        e
-    }
-
-    fn error_b_to_a(e: Error) -> Error {
+    fn relay_error(e: Error) -> Error {
         e
     }
 }
