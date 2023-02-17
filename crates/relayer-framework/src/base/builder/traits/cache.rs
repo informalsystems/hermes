@@ -1,21 +1,12 @@
-use crate::base::builder::traits::birelay::HasBiRelayType;
-use crate::base::builder::types::aliases::{
-    ChainACache, ChainBCache, RelayAToBCache, RelayBToACache,
-};
+use crate::base::builder::traits::target::chain::HasChainBuildTarget;
+use crate::base::builder::traits::target::relay::HasRelayBuildTarget;
+use crate::base::builder::types::aliases::{RelayAToBCache, TargetChainCache};
 use crate::base::runtime::traits::mutex::HasRuntimeWithMutex;
 
-pub trait HasChainACache: HasBiRelayType + HasRuntimeWithMutex {
-    fn chain_a_cache(&self) -> &ChainACache<Self>;
+pub trait HasChainCache<Target>: HasChainBuildTarget<Target> + HasRuntimeWithMutex {
+    fn chain_cache(&self) -> &TargetChainCache<Self, Target>;
 }
 
-pub trait HasChainBCache: HasBiRelayType + HasRuntimeWithMutex {
-    fn chain_b_cache(&self) -> &ChainBCache<Self>;
-}
-
-pub trait HasRelayAToBCache: HasBiRelayType + HasRuntimeWithMutex {
-    fn relay_a_to_b_cache(&self) -> &RelayAToBCache<Self>;
-}
-
-pub trait HasRelayBToACache: HasBiRelayType + HasRuntimeWithMutex {
-    fn relay_b_to_a_cache(&self) -> &RelayBToACache<Self>;
+pub trait HasRelayCache<Target>: HasRelayBuildTarget<Target> + HasRuntimeWithMutex {
+    fn relay_cache(&self) -> &RelayAToBCache<Self>;
 }

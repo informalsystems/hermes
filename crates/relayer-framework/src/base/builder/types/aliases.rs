@@ -2,6 +2,8 @@ use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 
 use crate::base::builder::traits::birelay::HasBiRelayType;
+use crate::base::builder::traits::target::chain::HasChainBuildTarget;
+use crate::base::builder::traits::target::relay::HasRelayBuildTarget;
 use crate::base::chain::traits::types::chain_id::HasChainIdType;
 use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::core::traits::error::HasErrorType;
@@ -57,6 +59,50 @@ pub type RelayBToACache<Build> = Arc<
                 ClientIdA<Build>,
             ),
             RelayBToA<Build>,
+        >,
+    >,
+>;
+
+pub type TargetChain<Build, Target> = <Build as HasChainBuildTarget<Target>>::TargetChain;
+
+pub type TargetChainId<Build, Target> = <TargetChain<Build, Target> as HasChainIdType>::ChainId;
+
+pub type TargetChainCache<Build, Target> =
+    Arc<Mutex<Build, BTreeMap<TargetChainId<Build, Target>, TargetChain<Build, Target>>>>;
+
+pub type TargetRelay<Build, Target> = <Build as HasRelayBuildTarget<Target>>::TargetRelay;
+
+pub type SrcChainTarget<Build, Target> = <Build as HasRelayBuildTarget<Target>>::SrcChainTarget;
+
+pub type DstChainTarget<Build, Target> = <Build as HasRelayBuildTarget<Target>>::DstChainTarget;
+
+pub type TargetSrcChain<Build, Target> = <TargetRelay<Build, Target> as HasRelayTypes>::SrcChain;
+
+pub type TargetDstChain<Build, Target> = <TargetRelay<Build, Target> as HasRelayTypes>::DstChain;
+
+pub type TargetSrcChainId<Build, Target> =
+    <TargetSrcChain<Build, Target> as HasChainIdType>::ChainId;
+
+pub type TargetDstChainId<Build, Target> =
+    <TargetDstChain<Build, Target> as HasChainIdType>::ChainId;
+
+pub type TargetSrcClientId<Build, Target> =
+    <TargetSrcChain<Build, Target> as HasIbcChainTypes<TargetDstChain<Build, Target>>>::ClientId;
+
+pub type TargetDstClientId<Build, Target> =
+    <TargetDstChain<Build, Target> as HasIbcChainTypes<TargetSrcChain<Build, Target>>>::ClientId;
+
+pub type RelayCache<Build, Target> = Arc<
+    Mutex<
+        Build,
+        BTreeMap<
+            (
+                TargetSrcChainId<Build, Target>,
+                TargetDstChainId<Build, Target>,
+                TargetSrcClientId<Build, Target>,
+                TargetDstClientId<Build, Target>,
+            ),
+            TargetRelay<Build, Target>,
         >,
     >,
 >;
