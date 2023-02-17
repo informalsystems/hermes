@@ -91,12 +91,17 @@ where
         dst_chain_message_batch_sender,
     )));
 
-    <OfaRelayWrapper<_> as CanSpawnBatchMessageWorker<SourceTarget>>::spawn_batch_message_worker(
-        relay.clone(),
+    relay.clone().spawn_batch_message_worker(
+        SourceTarget,
         batch_config.clone(),
         src_chain_message_batch_receiver,
     );
-    <OfaRelayWrapper<_> as CanSpawnBatchMessageWorker<DestinationTarget>>::spawn_batch_message_worker(relay.clone(), batch_config, dst_chain_message_batch_receiver);
+
+    relay.clone().spawn_batch_message_worker(
+        DestinationTarget,
+        batch_config,
+        dst_chain_message_batch_receiver,
+    );
 
     relay
 }

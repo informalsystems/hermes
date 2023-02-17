@@ -32,6 +32,7 @@ where
 {
     fn spawn_batch_message_worker(
         self,
+        target: Target,
         config: BatchConfig,
         receiver: MessageBatchReceiver<Target::TargetChain, Self::Error>,
     ) -> Box<dyn TaskHandle>;
@@ -46,6 +47,7 @@ where
 {
     fn spawn_batch_message_worker(
         self,
+        _target: Target,
         config: BatchConfig,
         receiver: MessageBatchReceiver<Target::TargetChain, Self::Error>,
     ) -> Box<dyn TaskHandle> {

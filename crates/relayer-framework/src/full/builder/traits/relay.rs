@@ -19,7 +19,9 @@ pub trait RelayAToBWithBatchBuilder<Build>: Async
 where
     Build: HasBiRelayType + HasRuntimeWithMutex + HasErrorType,
     ChainA<Build>: HasRuntime,
+    ChainB<Build>: HasRuntime,
     Runtime<ChainA<Build>>: HasChannelTypes + HasChannelOnceTypes,
+    Runtime<ChainB<Build>>: HasChannelTypes + HasChannelOnceTypes,
 {
     async fn build_relay_a_to_b_with_batch(
         build: &Build,
@@ -28,6 +30,7 @@ where
         src_chain: ChainA<Build>,
         dst_chain: ChainB<Build>,
         src_batch_sender: MessageBatchSender<ChainA<Build>, RelayError<Build>>,
+        dst_batch_sender: MessageBatchSender<ChainB<Build>, RelayError<Build>>,
     ) -> Result<RelayAToB<Build>, Build::Error>;
 }
 
@@ -35,15 +38,18 @@ where
 pub trait RelayBToAWithBatchBuilder<Build>: Async
 where
     Build: HasBiRelayType + HasRuntimeWithMutex + HasErrorType,
+    ChainA<Build>: HasRuntime,
     ChainB<Build>: HasRuntime,
+    Runtime<ChainA<Build>>: HasChannelTypes + HasChannelOnceTypes,
     Runtime<ChainB<Build>>: HasChannelTypes + HasChannelOnceTypes,
 {
-    async fn build_relay_a_to_b_with_batch(
+    async fn build_relay_b_to_a_with_batch(
         build: &Build,
         src_client_id: &ClientIdB<Build>,
         dst_client_id: &ClientIdA<Build>,
         src_chain: ChainB<Build>,
         dst_chain: ChainA<Build>,
         src_batch_sender: MessageBatchSender<ChainB<Build>, RelayError<Build>>,
+        dst_batch_sender: MessageBatchSender<ChainA<Build>, RelayError<Build>>,
     ) -> Result<RelayBToA<Build>, Build::Error>;
 }
