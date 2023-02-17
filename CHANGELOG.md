@@ -1,5 +1,88 @@
 # CHANGELOG
 
+## 1.3.0
+*February 17th, 2023*
+
+Hermes v1.3.0 adds support for Cross-chain Queries ([ICS 031][ics-031]),
+implements optimistic channel handshake for lower latency, and comes with a
+major performance improvement when clearing packets on busy channels for
+chains using a recent version of IBC-Go.
+This release also brings a few bug fixes related to closing ordered channels and upgrading clients.
+
+See the full release notes below for more details.
+
+[ics-031]: https://github.com/cosmos/ibc/blob/main/spec/app/ics-031-crosschain-queries/README.md
+
+### General
+
+### FEATURES
+
+- Support for Cross-chain Queries ([ICS 031][ics-031])
+  ([#2915](https://github.com/informalsystems/hermes/pull/2915))
+
+### Guide
+
+### IMPROVEMENTS
+
+- Document `upgrade clients` command, [see the guide](https://hermes.informal.systems/documentation/commands/upgrade/index.html)
+  ([#3066](https://github.com/informalsystems/hermes/issues/3066))
+
+
+### Hermes - `ibc-relayer-cli` (v1.3.0)
+
+### BUG FIXES
+
+- Fix error message on client update with expired trusted state
+  ([#3054](https://github.com/informalsystems/hermes/issues/3054))
+
+### Relayer Library - `ibc-relayer` (v0.22.0)
+
+#### BREAKING CHANGES
+
+- Remove `query_consensus_states` from the `ChainEndpoint` trait
+  ([#2001](https://github.com/informalsystems/hermes/issues/2001))
+- The `query consensus state` command now only list heights and its `--heights-only` option was removed
+  ([#2001](https://github.com/informalsystems/hermes/issues/2001))
+- Bump the default trust threshold for new clients from 1/3 to 2/3
+  ([#2876](https://github.com/informalsystems/hermes/issues/2876))
+
+#### FEATURES
+
+- Enable optimistic channel handshake
+  ([#2910](https://github.com/informalsystems/hermes/issues/2910))
+
+#### IMPROVEMENTS
+
+- Fetch consensus state heights using the more efficient
+  `QueryConsensusStateHeights` gRPC query instead of fetching all the consensus
+  states themselves using `QueryConsensusStates` and extracting the heights from
+  the result ([#2001](https://github.com/informalsystems/ibc-rs/issues/2001))
+
+#### BUG FIXES
+
+- Fix proof in timeout on close messages for ordered channels
+  ([#3024](https://github.com/informalsystems/hermes/issues/3024))
+- Fix upgraded client state latest height in upgrade proposal
+  ([#3057](https://github.com/informalsystems/hermes/issues/3057))
+- Fix bug where one could sometimes not subscribe to events.
+  This mostly affected the `listen` command but also external
+  consumers of events via the `EventMonitor` interface
+  ([#3070](https://github.com/informalsystems/hermes/issues/3070))
+
+### Integration Test Framework - [`ibc-test-framework`](tools/test-framework) (v0.22.0)
+
+### BUG FIXES
+
+- Updated packet forwarding tests to use memo field instead of
+  overloading receiver following packet-forward-middleware v3.0.0 update
+  ([#3025](https://github.com/informalsystems/hermes/issues/3025))
+
+### FEATURES
+
+- Add integration tests for ICS31 Cross Chain Queries
+  ([#2967](https://github.com/informalsystems/hermes/issues/2967))
+
+
 ## v1.2.0
 
 *December 13th, 2022*
@@ -126,7 +209,7 @@ this reorganization of the repository.
 The `gm` binary has been split out of the repo and has been moved into its own [repository](https://github.com/informalsystems/gm).
 This change doesn't affect current local instances of the `gm` binary,
 though new versions will need to be sourced from the new repository by running
-`git clone informalsystems/gm` and running the install script from there. 
+`git clone informalsystems/gm` and running the install script from there.
 
 For more information, see [this section](https://hermes.informal.systems/tutorials/pre-requisites/gaiad-manager.html#how-to-run) of the Hermes guide.
 
