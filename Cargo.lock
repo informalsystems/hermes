@@ -1743,7 +1743,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-integration-test"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "http",
  "ibc-relayer",
@@ -1776,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1839,7 +1839,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "abscissa_core",
  "atty",
@@ -1879,7 +1879,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "crossbeam-channel 0.5.6",
  "ibc-relayer",
@@ -1894,7 +1894,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-types"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "bytes",
  "derive_more",
@@ -1928,7 +1928,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "dashmap",
  "ibc-relayer-types",
@@ -1945,7 +1945,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-test-framework"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "color-eyre",
  "crossbeam-channel 0.5.6",
