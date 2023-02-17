@@ -1,3 +1,8 @@
+/*!
+   Trait definitions for [`HasIbcChainTypes`] and
+  [`HasCounterpartyMessageHeight`].
+*/
+
 use crate::base::chain::traits::types::chain::HasChainTypes;
 use crate::base::chain::traits::types::height::HasHeightType;
 use crate::base::chain::traits::types::message::HasMessageType;

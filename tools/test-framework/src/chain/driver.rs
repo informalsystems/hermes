@@ -12,6 +12,7 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer_types::applications::transfer::amount::Amount;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
+use crate::chain::chain_type::ChainType;
 use crate::chain::cli::query::query_balance;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
@@ -20,8 +21,6 @@ use crate::relayer::tx::new_tx_config_for_test;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::wallet::WalletAddress;
 use crate::util::retry::assert_eventually_succeed;
-
-use super::chain_type::ChainType;
 
 /**
    Number of times (seconds) to try and query a wallet to reach the

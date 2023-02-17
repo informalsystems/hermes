@@ -97,6 +97,11 @@ pub enum CliCmd {
     /// Generate auto-complete scripts for different shells.
     #[clap(display_order = 1000)]
     Completions(CompletionsCmd),
+
+    /// Relay packets using the new experimental relayer architecture.
+    #[clap(subcommand)]
+    #[cfg(feature = "experimental")]
+    Relay(crate::next::commands::new_relay::NewRelayCmds),
 }
 
 /// This trait allows you to define how application configuration is loaded.

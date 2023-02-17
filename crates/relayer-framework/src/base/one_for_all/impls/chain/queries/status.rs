@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::queries::status::{
-    CanQueryChainStatus, ChainStatusQuerier, HasChainStatus,
-};
+use crate::base::chain::traits::queries::status::{CanQueryChainStatus, ChainStatusQuerier};
+use crate::base::chain::traits::types::status::HasChainStatusType;
 use crate::base::one_for_all::traits::chain::OfaBaseChain;
 use crate::base::one_for_all::traits::chain::OfaChainPreset;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
@@ -10,7 +9,7 @@ use crate::std_prelude::*;
 
 pub struct SendChainStatusQueryToOfa;
 
-impl<Chain: OfaBaseChain> HasChainStatus for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> HasChainStatusType for OfaChainWrapper<Chain> {
     type ChainStatus = Chain::ChainStatus;
 
     fn chain_status_height(status: &Chain::ChainStatus) -> &Chain::Height {

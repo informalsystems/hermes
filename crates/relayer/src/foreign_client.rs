@@ -1133,7 +1133,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .build_header(trusted_height, target_height, client_state.clone())
             .map_err(|e| {
                 ForeignClientError::client_update(
-                    self.src_chain.id(),
+                    self.dst_chain.id(),
                     "failed building header with error".to_string(),
                     e,
                 )

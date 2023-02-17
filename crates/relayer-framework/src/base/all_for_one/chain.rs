@@ -1,15 +1,17 @@
-use crate::base::chain::traits::queries::consensus_state::{
-    CanQueryConsensusState, HasConsensusState,
-};
+use crate::base::all_for_one::runtime::HasAfoBaseRuntime;
+use crate::base::chain::traits::queries::consensus_state::CanQueryConsensusState;
 use crate::base::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use crate::base::chain::traits::queries::status::CanQueryChainStatus;
+use crate::base::chain::traits::types::consensus_state::HasConsensusStateType;
 use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
 
 pub trait AfoBaseChain<Counterparty>:
-    HasIbcPacketTypes<Counterparty>
+    Clone
+    + HasAfoBaseRuntime
+    + HasIbcPacketTypes<Counterparty>
     + HasWriteAcknowledgementEvent<Counterparty>
-    + HasConsensusState<Counterparty>
+    + HasConsensusStateType<Counterparty>
     + CanQueryConsensusState<Counterparty>
     + CanQueryReceivedPacket<Counterparty>
     + CanQueryChainStatus
@@ -19,7 +21,7 @@ where
 }
 
 pub trait AfoCounterpartyChain<Chain>:
-    HasConsensusState<Chain>
+    HasConsensusStateType<Chain>
     + HasIbcPacketTypes<
         Chain,
         IncomingPacket = Chain::OutgoingPacket,
@@ -33,9 +35,11 @@ where
 impl<Chain, Counterparty> AfoBaseChain<Counterparty> for Chain
 where
     Counterparty: AfoCounterpartyChain<Self>,
-    Chain: HasIbcPacketTypes<Counterparty>
+    Chain: Clone
+        + HasAfoBaseRuntime
+        + HasIbcPacketTypes<Counterparty>
         + HasWriteAcknowledgementEvent<Counterparty>
-        + HasConsensusState<Counterparty>
+        + HasConsensusStateType<Counterparty>
         + CanQueryConsensusState<Counterparty>
         + CanQueryReceivedPacket<Counterparty>
         + CanQueryChainStatus,
@@ -45,7 +49,7 @@ where
 impl<Chain, Counterparty> AfoCounterpartyChain<Chain> for Counterparty
 where
     Chain: HasIbcPacketTypes<Counterparty>,
-    Counterparty: HasConsensusState<Chain>
+    Counterparty: HasConsensusStateType<Chain>
         + HasIbcPacketTypes<
             Chain,
             IncomingPacket = Chain::OutgoingPacket,

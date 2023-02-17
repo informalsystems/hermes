@@ -7,6 +7,7 @@
 use ibc_relayer::config::PacketFilter;
 
 use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
+use ibc_relayer_framework::base::relay::traits::two_way::HasTwoWayRelay;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
@@ -72,7 +73,13 @@ impl BinaryChannelTest for IbcTransferTest {
 
         sleep(Duration::from_secs(5));
 
-        runtime.block_on(async { relay_context.relay_packet(&packet).await.unwrap() });
+        runtime.block_on(async {
+            relay_context
+                .relay_a_to_b()
+                .relay_packet(&packet)
+                .await
+                .unwrap()
+        });
 
         info!("finished running relayer");
 

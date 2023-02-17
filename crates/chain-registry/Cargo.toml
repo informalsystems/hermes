@@ -16,9 +16,9 @@ ibc-proto         = { version = "0.24.1" }
 ibc-relayer-types = { version = "0.21.0", path = "../relayer-types", features = ["std"] }
 tendermint-rpc    = { version = "0.28.0", features = ["http-client", "websocket-client"] }
 
-async-trait = "0.1.60"
+async-trait = "0.1.64"
 flex-error  = { version = "0.4.4", default-features = false }
-futures     = { version = "0.3.25", features = ["executor"] }
+futures     = { version = "0.3.26", features = ["executor"] }
 http        = "0.2"
 reqwest     = { version = "0.11.13", features = ["rustls-tls", "json"], default-features = false }
 serde       = "1.0.149"

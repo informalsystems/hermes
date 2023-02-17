@@ -1,26 +1,31 @@
 use ibc_relayer_framework::base::all_for_one::relay::AfoBaseRelay;
-use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 
 use crate::base::all_for_one::chain::AfoCosmosBaseChain;
 
 pub trait AfoCosmosBaseRelay:
     AfoBaseRelay<
-    AfoSrcChain = Self::SrcCosmosChain,
-    AfoDstChain = Self::DstCosmosChain,
-    Packet = Packet,
+    AfoSrcChain = Self::CosmosSrcChain,
+    AfoDstChain = Self::CosmosDstChain,
+    AfoBaseRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
 >
 {
-    type SrcCosmosChain: AfoCosmosBaseChain<Self::DstCosmosChain>;
+    type CosmosSrcChain: AfoCosmosBaseChain<Self::CosmosDstChain>;
 
-    type DstCosmosChain: AfoCosmosBaseChain<Self::SrcCosmosChain>;
+    type CosmosDstChain: AfoCosmosBaseChain<Self::CosmosSrcChain>;
 }
 
 impl<Relay, SrcChain, DstChain> AfoCosmosBaseRelay for Relay
 where
-    Relay: AfoBaseRelay<AfoSrcChain = SrcChain, AfoDstChain = DstChain, Packet = Packet>,
+    Relay: AfoBaseRelay<
+        AfoSrcChain = SrcChain,
+        AfoDstChain = DstChain,
+        AfoBaseRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
+    >,
     SrcChain: AfoCosmosBaseChain<DstChain>,
     DstChain: AfoCosmosBaseChain<SrcChain>,
 {
-    type SrcCosmosChain = SrcChain;
-    type DstCosmosChain = DstChain;
+    type CosmosSrcChain = SrcChain;
+    type CosmosDstChain = DstChain;
 }

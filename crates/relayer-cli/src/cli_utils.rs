@@ -5,17 +5,12 @@ use eyre::eyre;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
+use ibc_relayer::chain::counterparty::{channel_connection_client, ChannelConnectionClient};
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
-use ibc_relayer::{
-    chain::{
-        counterparty::{channel_connection_client, ChannelConnectionClient},
-        handle::{BaseChainHandle, ChainHandle},
-    },
-    config::Config,
-    spawn,
-};
+use ibc_relayer::{config::Config, spawn};
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
