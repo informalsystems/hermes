@@ -83,6 +83,8 @@ pub type TargetChainCache<Build, Target> =
 
 pub type TargetRelay<Build, Target> = <Target as RelayBuildTarget<Build>>::TargetRelay;
 
+pub type TargetRelayError<Build, Target> = <TargetRelay<Build, Target> as HasErrorType>::Error;
+
 pub type SrcChainTarget<Build, Target> = <Target as RelayBuildTarget<Build>>::SrcChainTarget;
 
 pub type DstChainTarget<Build, Target> = <Target as RelayBuildTarget<Build>>::DstChainTarget;

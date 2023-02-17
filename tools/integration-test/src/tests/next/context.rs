@@ -48,6 +48,7 @@ where
     type BiRelay = FullCosmosBiRelay<ChainA, ChainB>;
 }
 
+#[allow(unused)]
 #[async_trait]
 impl<ChainA, ChainB> CosmosBuilder for CosmosRelayBuilder<ChainA, ChainB>
 where

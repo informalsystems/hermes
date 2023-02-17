@@ -5,12 +5,13 @@ use crate::base::builder::traits::birelay::HasBiRelayType;
 use crate::base::builder::traits::relay::RelayFromChainsBuilder;
 use crate::base::builder::traits::target::relay::RelayBuildTarget;
 use crate::base::builder::types::aliases::{
-    RelayError, TargetDstChain, TargetDstChainId, TargetDstClientId, TargetRelay, TargetSrcChain,
-    TargetSrcChainId, TargetSrcClientId,
+    TargetDstChain, TargetDstClientId, TargetSrcChain, TargetSrcClientId,
 };
 use crate::base::chain::traits::types::chain_id::HasChainId;
+use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
+use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::mutex::{HasMutex, HasRuntimeWithMutex};
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::types::aliases::Runtime;
@@ -26,34 +27,37 @@ use crate::std_prelude::*;
 pub struct BuildBatchWorker<InBuilder>(pub PhantomData<InBuilder>);
 
 #[async_trait]
-impl<Build, InBuilder, Target> RelayFromChainsBuilder<Build, Target> for BuildBatchWorker<InBuilder>
+impl<Build, InBuilder, Target, Relay, SrcChain, DstChain> RelayFromChainsBuilder<Build, Target>
+    for BuildBatchWorker<InBuilder>
 where
-    Target: RelayBuildTarget<Build>,
-    TargetRelay<Build, Target>: Clone,
-    TargetSrcChain<Build, Target>: HasRuntime + HasChainId,
-    TargetDstChain<Build, Target>: HasRuntime + HasChainId,
-    TargetSrcChainId<Build, Target>: Ord + Clone,
-    TargetDstChainId<Build, Target>: Ord + Clone,
-    TargetSrcClientId<Build, Target>: Ord + Clone,
-    TargetDstClientId<Build, Target>: Ord + Clone,
+    Target: RelayBuildTarget<Build, TargetRelay = Relay>,
+    Relay: HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain>,
+    SrcChain: HasIbcChainTypes<DstChain>,
+    DstChain: HasIbcChainTypes<SrcChain>,
+    SrcChain: HasRuntime + HasChainId,
+    DstChain: HasRuntime + HasChainId,
+    SrcChain::ChainId: Ord + Clone,
+    DstChain::ChainId: Ord + Clone,
+    SrcChain::ClientId: Ord + Clone,
+    DstChain::ClientId: Ord + Clone,
     InBuilder: RelayWithBatchBuilder<Build, Target>,
-    Runtime<TargetSrcChain<Build, Target>>: CanCreateChannels + HasChannelOnceTypes,
-    Runtime<TargetDstChain<Build, Target>>: CanCreateChannels + HasChannelOnceTypes,
+    SrcChain::Runtime: CanCreateChannels + HasChannelOnceTypes,
+    DstChain::Runtime: CanCreateChannels + HasChannelOnceTypes,
     Build: HasBiRelayType
         + HasRuntimeWithMutex
         + HasBatchConfig
         + HasErrorType
-        + HasBatchSenderCache<Target::SrcChainTarget>
-        + HasBatchSenderCache<Target::DstChainTarget>,
-    MessageBatchSender<TargetSrcChain<Build, Target>, RelayError<Build>>: Clone,
-    MessageBatchSender<TargetDstChain<Build, Target>, RelayError<Build>>: Clone,
+        + HasBatchSenderCache<Target::SrcChainTarget, Relay::Error>
+        + HasBatchSenderCache<Target::DstChainTarget, Relay::Error>,
+    MessageBatchSender<SrcChain, Relay::Error>: Clone,
+    MessageBatchSender<DstChain, Relay::Error>: Clone,
     Target::TargetRelay: CanSpawnBatchMessageWorker<SourceTarget>
         + CanSpawnBatchMessageWorker<DestinationTarget>
         + Clone,
 {
     async fn build_relay_from_chains(
         build: &Build,
-        target: Target,
+        _target: Target,
         src_client_id: &TargetSrcClientId<Build, Target>,
         dst_client_id: &TargetDstClientId<Build, Target>,
         src_chain: TargetSrcChain<Build, Target>,
