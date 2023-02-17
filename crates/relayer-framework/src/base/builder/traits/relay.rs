@@ -49,6 +49,7 @@ where
 {
     async fn build_relay_from_chains(
         build: &Build,
+        target: Target,
         src_client_id: &TargetSrcClientId<Build, Target>,
         dst_client_id: &TargetDstClientId<Build, Target>,
         src_chain: TargetSrcChain<Build, Target>,

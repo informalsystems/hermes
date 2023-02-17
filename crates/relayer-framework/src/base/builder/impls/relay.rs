@@ -39,6 +39,7 @@ where
 
         InBuilder::build_relay_from_chains(
             build,
+            target,
             src_client_id,
             dst_client_id,
             src_chain,

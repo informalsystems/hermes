@@ -67,6 +67,17 @@ pub type TargetChain<Build, Target> = <Target as ChainBuildTarget<Build>>::Targe
 
 pub type TargetChainId<Build, Target> = <TargetChain<Build, Target> as HasChainIdType>::ChainId;
 
+pub type TargetClientId<Build, Target> =
+    <TargetChain<Build, Target> as HasIbcChainTypes<CounterpartyChain<Build, Target>>>::ClientId;
+
+pub type CounterpartyChain<Build, Target> = <Target as ChainBuildTarget<Build>>::CounterpartyChain;
+
+pub type CounterpartyChainId<Build, Target> =
+    <CounterpartyChain<Build, Target> as HasChainIdType>::ChainId;
+
+pub type CounterpartyClientId<Build, Target> =
+    <CounterpartyChain<Build, Target> as HasIbcChainTypes<TargetChain<Build, Target>>>::ClientId;
+
 pub type TargetChainCache<Build, Target> =
     Arc<Mutex<Build, BTreeMap<TargetChainId<Build, Target>, TargetChain<Build, Target>>>>;
 

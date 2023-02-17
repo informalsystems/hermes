@@ -1,8 +1,9 @@
 use async_trait::async_trait;
 
 use crate::base::builder::traits::birelay::HasBiRelayType;
+use crate::base::builder::traits::target::relay::RelayBuildTarget;
 use crate::base::builder::types::aliases::{
-    ChainA, ChainB, ClientIdA, ClientIdB, RelayAToB, RelayBToA, RelayError,
+    RelayError, TargetDstChain, TargetDstClientId, TargetRelay, TargetSrcChain, TargetSrcClientId,
 };
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
@@ -15,41 +16,22 @@ use crate::full::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait RelayAToBWithBatchBuilder<Build>: Async
+pub trait RelayWithBatchBuilder<Build, Target>: Async
 where
     Build: HasBiRelayType + HasRuntimeWithMutex + HasErrorType,
-    ChainA<Build>: HasRuntime,
-    ChainB<Build>: HasRuntime,
-    Runtime<ChainA<Build>>: HasChannelTypes + HasChannelOnceTypes,
-    Runtime<ChainB<Build>>: HasChannelTypes + HasChannelOnceTypes,
+    Target: RelayBuildTarget<Build>,
+    TargetSrcChain<Build, Target>: HasRuntime,
+    TargetDstChain<Build, Target>: HasRuntime,
+    Runtime<TargetSrcChain<Build, Target>>: HasChannelTypes + HasChannelOnceTypes,
+    Runtime<TargetDstChain<Build, Target>>: HasChannelTypes + HasChannelOnceTypes,
 {
-    async fn build_relay_a_to_b_with_batch(
+    async fn build_relay_with_batch(
         build: &Build,
-        src_client_id: &ClientIdA<Build>,
-        dst_client_id: &ClientIdB<Build>,
-        src_chain: ChainA<Build>,
-        dst_chain: ChainB<Build>,
-        src_batch_sender: MessageBatchSender<ChainA<Build>, RelayError<Build>>,
-        dst_batch_sender: MessageBatchSender<ChainB<Build>, RelayError<Build>>,
-    ) -> Result<RelayAToB<Build>, Build::Error>;
-}
-
-#[async_trait]
-pub trait RelayBToAWithBatchBuilder<Build>: Async
-where
-    Build: HasBiRelayType + HasRuntimeWithMutex + HasErrorType,
-    ChainA<Build>: HasRuntime,
-    ChainB<Build>: HasRuntime,
-    Runtime<ChainA<Build>>: HasChannelTypes + HasChannelOnceTypes,
-    Runtime<ChainB<Build>>: HasChannelTypes + HasChannelOnceTypes,
-{
-    async fn build_relay_b_to_a_with_batch(
-        build: &Build,
-        src_client_id: &ClientIdB<Build>,
-        dst_client_id: &ClientIdA<Build>,
-        src_chain: ChainB<Build>,
-        dst_chain: ChainA<Build>,
-        src_batch_sender: MessageBatchSender<ChainB<Build>, RelayError<Build>>,
-        dst_batch_sender: MessageBatchSender<ChainA<Build>, RelayError<Build>>,
-    ) -> Result<RelayBToA<Build>, Build::Error>;
+        src_client_id: &TargetSrcClientId<Build, Target>,
+        dst_client_id: &TargetDstClientId<Build, Target>,
+        src_chain: TargetSrcChain<Build, Target>,
+        dst_chain: TargetDstChain<Build, Target>,
+        src_batch_sender: MessageBatchSender<TargetSrcChain<Build, Target>, RelayError<Build>>,
+        dst_batch_sender: MessageBatchSender<TargetDstChain<Build, Target>, RelayError<Build>>,
+    ) -> Result<TargetRelay<Build, Target>, Build::Error>;
 }
