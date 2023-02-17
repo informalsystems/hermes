@@ -77,13 +77,15 @@ where
 {
     async fn build_relay(
         &self,
+        target: RelayAToBTarget,
         src_chain_id: &ChainIdA<Builder>,
         dst_chain_id: &ChainIdB<Builder>,
         src_client_id: &ClientIdA<Builder>,
         dst_client_id: &ClientIdB<Builder>,
     ) -> Result<OfaRelayWrapper<RelayAToB<Builder>>, Self::Error> {
-        <BuildWithCache<BuildRelayFromChains<BuildRelayFromChainsWithOfa>>>::build_relay_a_to_b(
+        <BuildWithCache<BuildRelayFromChains<BuildRelayFromChainsWithOfa>>>::build_relay(
             self,
+            target,
             src_chain_id,
             dst_chain_id,
             src_client_id,
@@ -101,6 +103,7 @@ where
 {
     async fn build_relay(
         &self,
+        target: RelayBToATarget,
         src_chain_id: &ChainIdB<Builder>,
         dst_chain_id: &ChainIdA<Builder>,
         src_client_id: &ClientIdB<Builder>,
@@ -108,6 +111,7 @@ where
     ) -> Result<OfaRelayWrapper<RelayBToA<Builder>>, Self::Error> {
         <BuildWithCache<BuildRelayFromChains<BuildRelayFromChainsWithOfa>>>::build_relay(
             self,
+            target,
             src_chain_id,
             dst_chain_id,
             src_client_id,

@@ -4,6 +4,8 @@ use core::marker::PhantomData;
 use crate::base::builder::traits::cache::{HasChainCache, HasRelayCache};
 use crate::base::builder::traits::chain::ChainBuilder;
 use crate::base::builder::traits::relay::RelayBuilder;
+use crate::base::builder::traits::target::chain::ChainBuildTarget;
+use crate::base::builder::traits::target::relay::RelayBuildTarget;
 use crate::base::builder::types::aliases::{
     TargetChain, TargetChainId, TargetDstChainId, TargetDstClientId, TargetRelay, TargetSrcChainId,
     TargetSrcClientId,
@@ -21,9 +23,11 @@ where
     TargetChainId<Build, Target>: Ord + Clone,
     Build: HasChainCache<Target> + HasErrorType,
     InBuilder: ChainBuilder<Build, Target>,
+    Target: ChainBuildTarget<Build>,
 {
     async fn build_chain(
         build: &Build,
+        target: Target,
         chain_id: &TargetChainId<Build, Target>,
     ) -> Result<TargetChain<Build, Target>, Build::Error> {
         let mut cache = Build::Runtime::acquire_mutex(build.chain_cache()).await;
@@ -31,7 +35,7 @@ where
         if let Some(chain) = cache.get(chain_id) {
             Ok(chain.clone())
         } else {
-            let chain = InBuilder::build_chain(build, chain_id).await?;
+            let chain = InBuilder::build_chain(build, target, chain_id).await?;
             cache.insert(chain_id.clone(), chain.clone());
 
             Ok(chain)
@@ -49,9 +53,11 @@ where
     TargetRelay<Build, Target>: Clone,
     Build: HasRelayCache<Target> + HasErrorType,
     InBuilder: RelayBuilder<Build, Target>,
+    Target: RelayBuildTarget<Build>,
 {
     async fn build_relay(
         build: &Build,
+        target: Target,
         src_chain_id: &TargetSrcChainId<Build, Target>,
         dst_chain_id: &TargetDstChainId<Build, Target>,
         src_client_id: &TargetSrcClientId<Build, Target>,
@@ -69,8 +75,9 @@ where
         if let Some(relay) = cache.get(&relay_id) {
             Ok(relay.clone())
         } else {
-            let relay = InBuilder::build_relay_a_to_b(
+            let relay = InBuilder::build_relay(
                 build,
+                target,
                 src_chain_id,
                 dst_chain_id,
                 src_client_id,
