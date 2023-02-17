@@ -414,6 +414,11 @@ impl State {
         self == State::Open
     }
 
+    /// Returns whether or not this channel state is `Closed`.
+    pub fn is_closed(self) -> bool {
+        self == State::Closed
+    }
+
     /// Returns whether or not the channel with this state
     /// has progressed less or the same than the argument.
     ///

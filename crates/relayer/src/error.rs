@@ -564,7 +564,10 @@ define_error! {
             { key_type: KeyType }
             |e| {
                 format!("Invalid key type {} for the current chain", e.key_type)
-            }
+            },
+
+        QueriedProofNotFound
+            |_| { "Requested proof with query but no proof was returned." },
     }
 }
 
@@ -674,9 +677,6 @@ fn parse_sequences_in_mismatch_error_message(message: &str) -> Option<(u64, u64)
         },
     }
 }
-
-pub const QUERY_PROOF_EXPECT_MSG: &str =
-    "Internal error. Requested proof with query but no proof was returned.";
 
 #[cfg(test)]
 mod tests {

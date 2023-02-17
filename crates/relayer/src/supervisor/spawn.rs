@@ -246,7 +246,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
 
         if (mode.clients.enabled || mode.packets.enabled)
             && chan_state_src.is_open()
-            && chan_state_dst.is_open()
+            && (chan_state_dst.is_open() || chan_state_dst.is_closed())
         {
             if mode.clients.enabled {
                 // Spawn the client worker
@@ -303,23 +303,42 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             }
 
             Ok(mode.clients.enabled)
-        } else if mode.channels.enabled
-            && !chan_state_dst.is_open()
-            && chan_state_dst.less_or_equal_progress(chan_state_src)
-        {
-            // create worker for channel handshake that will advance the remote state
-            let channel_object = Object::Channel(Channel {
-                dst_chain_id: counterparty_chain.id(),
-                src_chain_id: chain.id(),
-                src_channel_id: channel_scan.channel.channel_id,
-                src_port_id: channel_scan.channel.port_id,
-            });
+        } else if mode.channels.enabled {
+            let has_packets = || {
+                !channel_scan
+                    .unreceived_packets_on_counterparty(&counterparty_chain, &chain)
+                    .unwrap_or_default()
+                    .is_empty()
+            };
 
-            self.workers
-                .spawn(chain, counterparty_chain, &channel_object, self.config)
-                .then(|| info!("spawned channel worker: {}", channel_object.short_name()));
+            // Determine if open handshake is required
+            let open_handshake = chan_state_dst.less_or_equal_progress(ChannelState::TryOpen)
+                && chan_state_dst.less_or_equal_progress(chan_state_src);
 
-            Ok(true)
+            // Determine if close handshake is required, i.e. if channel state on source is `Closed`,
+            // and on destination channel state is not `Closed, and there are no pending packets.
+            // If there are pending packets on destination then we let the packet worker clear the
+            // packets and we do not finish the channel handshake.
+            let close_handshake =
+                chan_state_src.is_closed() && !chan_state_dst.is_closed() && !has_packets();
+
+            if open_handshake || close_handshake {
+                // create worker for channel handshake that will advance the counterparty state
+                let channel_object = Object::Channel(Channel {
+                    dst_chain_id: counterparty_chain.id(),
+                    src_chain_id: chain.id(),
+                    src_channel_id: channel_scan.channel.channel_id,
+                    src_port_id: channel_scan.channel.port_id,
+                });
+
+                self.workers
+                    .spawn(chain, counterparty_chain, &channel_object, self.config)
+                    .then(|| info!("spawned channel worker: {}", channel_object.short_name()));
+
+                Ok(true)
+            } else {
+                Ok(false)
+            }
         } else {
             Ok(false)
         }
