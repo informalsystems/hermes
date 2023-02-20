@@ -144,6 +144,16 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
         health_check(&config, &mut registry.write());
     }
 
+    // If telemetry is enabled, for each chain register the relayer's address
+    // in the list of visible fee addresses.
+    if config.telemetry.enabled {
+        for chain in registry.read().chains() {
+            if let Ok(key) = chain.get_key() {
+                telemetry!(add_visible_fee_address, key.account());
+            }
+        }
+    }
+
     let workers = Arc::new(RwLock::new(WorkerMap::new()));
     let client_state_filter = Arc::new(RwLock::new(FilterPolicy::default()));
 

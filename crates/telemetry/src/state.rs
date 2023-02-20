@@ -1,7 +1,7 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use std::time::{Duration, Instant};
 
-use dashmap::DashMap;
+use dashmap::{DashMap, DashSet};
 use opentelemetry::{
     global,
     metrics::{Counter, ObservableGauge, UpDownCounter},
@@ -178,6 +178,9 @@ pub struct TelemetryState {
 
     /// Total amount of fees received from ICS29 fees.
     fee_amounts: Counter<u64>,
+
+    /// List of addresses for which rewarded fees from ICS29 should be recorded.
+    visible_fee_addresses: DashSet<String>,
 
     /// Minimum amount of fees received from ICS29 fees.
     min_fee_amount: ObservableGauge<u64>,
@@ -799,7 +802,13 @@ impl TelemetryState {
         self.fee_packets.add(&cx, 1, labels);
     }
 
+    /// Record the rewarded fee from ICS29 if the address is in the registered addresses
+    /// list.
     pub fn fees_amount(&self, chain_id: &ChainId, receiver: &Signer, fee_amounts: Coin<String>) {
+        // If the address isn't in the filter list, don't record the metric.
+        if !self.visible_fee_addresses.contains(&receiver.to_string()) {
+            return;
+        }
         let cx = Context::current();
 
         let fee_uid = format!("{}{}{}", chain_id, receiver, fee_amounts.denom);
@@ -841,6 +850,12 @@ impl TelemetryState {
                 .insert(fee_uid.to_string(), fee_amount);
             self.max_fee_amount.observe(&cx, fee_amount, labels);
         }
+    }
+
+    // Add an address to the list of addresses which will record
+    // the rewarded fees from ICS29.
+    pub fn add_visible_fee_address(&self, address: String) {
+        self.visible_fee_addresses.insert(address);
     }
 }
 
@@ -1034,6 +1049,8 @@ impl Default for TelemetryState {
                 .u64_counter("ics29_fee_amounts")
                 .with_description("Total amount received from ICS29 fees")
                 .init(),
+
+            visible_fee_addresses: DashSet::new(),
 
             min_fee_amount: meter
                 .u64_observable_gauge("ics29_min_fee_amount")
