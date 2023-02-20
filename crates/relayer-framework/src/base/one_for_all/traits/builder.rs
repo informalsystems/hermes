@@ -64,6 +64,8 @@ pub type RelayBToA<Builder> = <BiRelay<Builder> as OfaBiRelayTypes>::RelayBToA;
 
 pub type ChainA<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::SrcChain;
 
+pub type RelayError<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::Error;
+
 pub type ChainB<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::DstChain;
 
 pub type ChainIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ChainId;

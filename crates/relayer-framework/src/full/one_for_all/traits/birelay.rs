@@ -1,6 +1,6 @@
 use crate::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayTypes};
 use crate::base::one_for_all::traits::relay::OfaRelayTypes;
-use crate::full::one_for_all::traits::relay::{OfaFullRelay, OfaFullRelayTypes};
+use crate::full::one_for_all::traits::relay::{OfaFullRelay, OfaHomogeneousFullRelay};
 use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
 
 pub trait OfaFullBiRelayTypes:
@@ -16,8 +16,8 @@ pub trait OfaFullBiRelayTypes:
 
     type FullRelayBToA: OfaFullRelay<
         Preset = Self::Preset,
-        FullSrcChain = <Self::RelayAToB as OfaFullRelayTypes>::FullDstChain,
-        FullDstChain = <Self::RelayAToB as OfaFullRelayTypes>::FullSrcChain,
+        FullSrcChain = <Self::RelayAToB as OfaRelayTypes>::DstChain,
+        FullDstChain = <Self::RelayAToB as OfaRelayTypes>::SrcChain,
         Error = <Self::RelayAToB as OfaRelayTypes>::Error,
     >;
 }
@@ -42,3 +42,17 @@ where
 pub trait OfaFullBiRelay: OfaFullBiRelayTypes + OfaBiRelay {}
 
 impl<BiRelay> OfaFullBiRelay for BiRelay where BiRelay: OfaFullBiRelayTypes + OfaBiRelay {}
+
+pub trait OfaHomogeneousFullBiRelay:
+    OfaFullBiRelayTypes<FullRelayAToB = Self::Relay, FullRelayBToA = Self::Relay>
+{
+    type Relay: OfaHomogeneousFullRelay;
+}
+
+impl<BiRelay, Relay> OfaHomogeneousFullBiRelay for BiRelay
+where
+    BiRelay: OfaFullBiRelayTypes<FullRelayAToB = Relay, FullRelayBToA = Relay>,
+    Relay: OfaHomogeneousFullRelay,
+{
+    type Relay = Relay;
+}

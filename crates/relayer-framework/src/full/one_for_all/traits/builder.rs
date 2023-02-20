@@ -1,7 +1,10 @@
+use alloc::collections::BTreeMap;
+use alloc::sync::Arc;
 use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::builder::{
-    ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, OfaBuilderTypes, RelayAToB, RelayBToA,
+    ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, Mutex, OfaBuilderTypes, RelayAToB,
+    RelayBToA, RelayError,
 };
 use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
@@ -36,16 +39,16 @@ pub trait OfaFullBuilder: OfaFullBuilderTypes {
         dst_client_id: &ClientIdB<Self>,
         src_chain: OfaChainWrapper<ChainA<Self>>,
         dst_chain: OfaChainWrapper<ChainB<Self>>,
-        src_batch_sender: MessageBatchSender<ChainA<Self>, Self::Error>,
-        dst_batch_sender: MessageBatchSender<ChainB<Self>, Self::Error>,
+        src_batch_sender: MessageBatchSender<ChainA<Self>, RelayError<Self>>,
+        dst_batch_sender: MessageBatchSender<ChainB<Self>, RelayError<Self>>,
     ) -> Result<RelayAToB<Self>, Self::Error>;
 
     async fn build_birelay(
         &self,
         relay_a_to_b: OfaRelayWrapper<RelayAToB<Self>>,
         relay_b_to_a: OfaRelayWrapper<RelayBToA<Self>>,
-        src_batch_sender: MessageBatchSender<ChainB<Self>, Self::Error>,
-        dst_batch_sender: MessageBatchSender<ChainA<Self>, Self::Error>,
+        src_batch_sender: MessageBatchSender<ChainB<Self>, RelayError<Self>>,
+        dst_batch_sender: MessageBatchSender<ChainA<Self>, RelayError<Self>>,
     ) -> Result<Self::BiRelay, Self::Error>;
 }
 
@@ -59,3 +62,33 @@ where
 
     type FullBiRelay = Build::BiRelay;
 }
+
+pub type BatchSenderCacheA<Build> = Arc<
+    Mutex<
+        Build,
+        BTreeMap<
+            (
+                ChainIdA<Build>,
+                ChainIdB<Build>,
+                ClientIdA<Build>,
+                ClientIdB<Build>,
+            ),
+            MessageBatchSender<ChainA<Build>, RelayError<Build>>,
+        >,
+    >,
+>;
+
+pub type BatchSenderCacheB<Build> = Arc<
+    Mutex<
+        Build,
+        BTreeMap<
+            (
+                ChainIdB<Build>,
+                ChainIdA<Build>,
+                ClientIdB<Build>,
+                ClientIdA<Build>,
+            ),
+            MessageBatchSender<ChainB<Build>, RelayError<Build>>,
+        >,
+    >,
+>;
