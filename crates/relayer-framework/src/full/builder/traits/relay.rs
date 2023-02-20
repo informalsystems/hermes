@@ -3,8 +3,7 @@ use async_trait::async_trait;
 use crate::base::builder::traits::birelay::HasBiRelayType;
 use crate::base::builder::traits::target::relay::RelayBuildTarget;
 use crate::base::builder::types::aliases::{
-    TargetDstChain, TargetDstClientId, TargetRelay, TargetRelayError, TargetSrcChain,
-    TargetSrcClientId,
+    RelayError, TargetDstChain, TargetDstClientId, TargetRelay, TargetSrcChain, TargetSrcClientId,
 };
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::core::traits::sync::Async;
@@ -33,13 +32,7 @@ where
         dst_client_id: &TargetDstClientId<Build, Target>,
         src_chain: TargetSrcChain<Build, Target>,
         dst_chain: TargetDstChain<Build, Target>,
-        src_batch_sender: MessageBatchSender<
-            TargetSrcChain<Build, Target>,
-            TargetRelayError<Build, Target>,
-        >,
-        dst_batch_sender: MessageBatchSender<
-            TargetDstChain<Build, Target>,
-            TargetRelayError<Build, Target>,
-        >,
+        src_batch_sender: MessageBatchSender<TargetSrcChain<Build, Target>, RelayError<Build>>,
+        dst_batch_sender: MessageBatchSender<TargetDstChain<Build, Target>, RelayError<Build>>,
     ) -> Result<TargetRelay<Build, Target>, Build::Error>;
 }

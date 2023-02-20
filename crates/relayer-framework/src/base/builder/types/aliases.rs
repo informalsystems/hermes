@@ -9,6 +9,7 @@ use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::base::core::traits::error::HasErrorType;
 use crate::base::relay::traits::two_way::HasTwoWayRelay;
 use crate::base::relay::traits::types::HasRelayTypes;
+use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::types::aliases::Mutex;
 
 pub type RelayAToB<Build> = <<Build as HasBiRelayType>::BiRelay as HasTwoWayRelay>::RelayAToB;
@@ -64,6 +65,8 @@ pub type RelayBToACache<Build> = Arc<
 >;
 
 pub type TargetChain<Build, Target> = <Target as ChainBuildTarget<Build>>::TargetChain;
+
+pub type TargetChainRuntime<Build, Target> = <TargetChain<Build, Target> as HasRuntime>::Runtime;
 
 pub type TargetChainId<Build, Target> = <TargetChain<Build, Target> as HasChainIdType>::ChainId;
 
