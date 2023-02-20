@@ -75,14 +75,14 @@ impl CosmosFullBuilder for CosmosRelayBuilder {
         &self,
         chain_id: &ChainId,
     ) -> Result<FullCosmosChainContext<BaseChainHandle>, Error> {
-        self.build_chain(chain_id)
+        tokio::task::block_in_place(|| self.build_chain(chain_id))
     }
 
     async fn build_chain_b(
         &self,
         chain_id: &ChainId,
     ) -> Result<FullCosmosChainContext<BaseChainHandle>, Self::Error> {
-        self.build_chain(chain_id)
+        tokio::task::block_in_place(|| self.build_chain(chain_id))
     }
 
     async fn build_relay_a_to_b(
