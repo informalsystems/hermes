@@ -1,31 +1,37 @@
 use async_trait::async_trait;
-use core::fmt::Debug;
-use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_framework::full::batch::types::config::BatchConfig;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioRuntimeError;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
-use crate::base::traits::birelay::CosmosBiRelay;
-use crate::base::traits::relay::CosmosRelay;
+use crate::base::traits::builder::{ChainA, ChainB, CosmosBuilderTypes, RelayAToB, RelayBToA};
 use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::relay::CosmosRelayWrapper;
+use crate::full::traits::birelay::CosmosFullBiRelay;
+use crate::full::types::batch::CosmosBatchSender;
 
-pub trait CosmosBuilderTypes: Async {
-    type Preset: Async;
+pub trait CosmosFullBuilderTypes: CosmosBuilderTypes<BiRelay = Self::FullBiRelay> {
+    type FullBiRelay: CosmosFullBiRelay<Preset = Self::Preset>;
+}
 
-    type Error: Debug + Async;
-
-    type BiRelay: CosmosBiRelay<Preset = Self::Preset>;
+impl<Build> CosmosFullBuilderTypes for Build
+where
+    Build: CosmosBuilderTypes,
+    Build::BiRelay: CosmosFullBiRelay,
+{
+    type FullBiRelay = Build::BiRelay;
 }
 
 #[async_trait]
-pub trait CosmosBuilder: CosmosBuilderTypes {
+pub trait CosmosFullBuilder: CosmosFullBuilderTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext>;
 
     fn runtime_error(e: TokioRuntimeError) -> Self::Error;
+
+    fn batch_config(&self) -> &BatchConfig;
 
     async fn build_chain_a(&self, chain_id: &ChainId) -> Result<ChainA<Self>, Self::Error>;
 
@@ -37,6 +43,8 @@ pub trait CosmosBuilder: CosmosBuilderTypes {
         dst_client_id: &ClientId,
         src_chain: OfaChainWrapper<CosmosChainWrapper<ChainA<Self>>>,
         dst_chain: OfaChainWrapper<CosmosChainWrapper<ChainB<Self>>>,
+        src_batch_sender: CosmosBatchSender,
+        dst_batch_sender: CosmosBatchSender,
     ) -> Result<RelayAToB<Self>, Self::Error>;
 
     async fn build_relay_b_to_a(
@@ -45,6 +53,8 @@ pub trait CosmosBuilder: CosmosBuilderTypes {
         dst_client_id: &ClientId,
         src_chain: OfaChainWrapper<CosmosChainWrapper<ChainB<Self>>>,
         dst_chain: OfaChainWrapper<CosmosChainWrapper<ChainA<Self>>>,
+        src_batch_sender: CosmosBatchSender,
+        dst_batch_sender: CosmosBatchSender,
     ) -> Result<RelayBToA<Self>, Self::Error>;
 
     async fn build_birelay(
@@ -53,13 +63,3 @@ pub trait CosmosBuilder: CosmosBuilderTypes {
         relay_b_to_a: OfaRelayWrapper<CosmosRelayWrapper<RelayBToA<Self>>>,
     ) -> Result<Self::BiRelay, Self::Error>;
 }
-
-pub type BiRelay<Builder> = <Builder as CosmosBuilderTypes>::BiRelay;
-
-pub type RelayAToB<Builder> = <BiRelay<Builder> as CosmosBiRelay>::RelayAToB;
-
-pub type RelayBToA<Builder> = <BiRelay<Builder> as CosmosBiRelay>::RelayBToA;
-
-pub type ChainA<Builder> = <RelayAToB<Builder> as CosmosRelay>::SrcChain;
-
-pub type ChainB<Builder> = <RelayAToB<Builder> as CosmosRelay>::DstChain;
