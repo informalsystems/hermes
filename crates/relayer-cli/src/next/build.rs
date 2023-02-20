@@ -1,11 +1,8 @@
 use alloc::sync::Arc;
-use opentelemetry::global;
-use std::collections::HashMap;
-use tokio::runtime::Runtime as TokioRuntime;
-
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
+use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::keyring::AnySigningKeyPair;
 use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
@@ -14,16 +11,27 @@ use ibc_relayer_cosmos::full::all_for_one::birelay::AfoCosmosFullBiRelay;
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::base::relay::types::two_way::TwoWayRelayContext;
+use ibc_relayer_framework::full::batch::types::config::BatchConfig;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_framework::full::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
+use opentelemetry::global;
+use std::collections::HashMap;
+use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::error::Error;
 
+pub struct CosmosRelayBuilder {
+    pub config: Config,
+    pub filter: PacketFilter,
+    pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
+    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    pub batch_config: BatchConfig,
+}
+
 /// Initializes a Cosmos relay context that utilizes the experimental relayer
 /// architecture for relaying packets between two Cosmos chains.
-#[cfg(feature = "experimental")]
 pub fn build_cosmos_birelay_context<ChainA, ChainB>(
     handle_a: ChainA,
     handle_b: ChainB,

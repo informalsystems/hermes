@@ -1,6 +1,6 @@
 use crate::base::traits::birelay::CosmosBiRelay;
 use crate::base::traits::relay::CosmosRelay;
-use crate::full::traits::relay::CosmosFullRelay;
+use crate::full::traits::relay::{CosmosFullRelay, CosmosHomogenousFullRelay};
 
 pub trait CosmosFullBiRelay:
     CosmosBiRelay<RelayAToB = Self::FullRelayAToB, RelayBToA = Self::FullRelayBToA>
@@ -27,4 +27,18 @@ where
     type FullRelayAToB = BiRelay::RelayAToB;
 
     type FullRelayBToA = BiRelay::RelayBToA;
+}
+
+pub trait CosmosHomogenousFullBiRelay:
+    CosmosFullBiRelay<FullRelayAToB = Self::FullRelay, FullRelayBToA = Self::FullRelay>
+{
+    type FullRelay: CosmosHomogenousFullRelay<Preset = Self::Preset>;
+}
+
+impl<BiRelay, Relay> CosmosHomogenousFullBiRelay for BiRelay
+where
+    BiRelay: CosmosFullBiRelay<FullRelayAToB = Relay, FullRelayBToA = Relay>,
+    Relay: CosmosHomogenousFullRelay<Preset = Self::Preset>,
+{
+    type FullRelay = Relay;
 }
