@@ -47,8 +47,9 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 
 use tendermint::block::Height as TmHeight;
-use tendermint::node::info::TxIndexStatus;
+use tendermint::node::{self, info::TxIndexStatus};
 use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
+use tendermint_rpc::client::CompatMode;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::endpoint::status;
 use tendermint_rpc::{Client, HttpClient, Order};
@@ -710,10 +711,16 @@ impl ChainEndpoint for CosmosSdkChain {
     type SigningKeyPair = Secp256k1KeyPair;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
-        let rpc_client = HttpClient::new(config.rpc_addr.clone())
+        let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
-        let light_client = rt.block_on(init_light_client(&rpc_client, &config))?;
+        let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
+
+        let compat_mode = CompatMode::from_version(node_info.version)
+            .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+        rpc_client.set_compat_mode(compat_mode);
+
+        let light_client = TmLightClient::from_config(&config, node_info.id)?;
 
         // Initialize key store and load key
         let keybase =
@@ -1895,25 +1902,16 @@ fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
     });
 }
 
-/// Initialize the light client for the given chain using the given HTTP client
-/// to fetch the node identifier to be used as peer id in the light client.
-async fn init_light_client(
+async fn fetch_node_info(
     rpc_client: &HttpClient,
     config: &ChainConfig,
-) -> Result<TmLightClient, Error> {
-    use tendermint_light_client_verifier::types::PeerId;
-
-    crate::time!("init_light_client");
-
-    let peer_id: PeerId = rpc_client
+) -> Result<node::Info, Error> {
+    crate::time!("fetch_node_info");
+    rpc_client
         .status()
         .await
-        .map(|s| s.node_info.id)
-        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
-
-    let light_client = TmLightClient::from_config(config, peer_id)?;
-
-    Ok(light_client)
+        .map(|s| s.node_info)
+        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))
 }
 
 /// Returns the suffix counter for a CosmosSDK client id.

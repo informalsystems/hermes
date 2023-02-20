@@ -12,8 +12,8 @@ use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
 use tendermint_rpc::{
-    event::Event as RpcEvent, query::Query, Error as RpcError, SubscriptionClient, Url,
-    WebSocketClient, WebSocketClientDriver,
+    client::CompatMode, client::WebSocketConfig, event::Event as RpcEvent, query::Query, Client,
+    Error as RpcError, SubscriptionClient, Url, WebSocketClient, WebSocketClientDriver,
 };
 
 use ibc_relayer_types::{
@@ -117,6 +117,8 @@ pub struct EventMonitor {
     rx_cmd: channel::Receiver<MonitorCmd>,
     /// Node Address
     node_addr: Url,
+    /// RPC compatibility mode
+    rpc_compat: CompatMode,
     /// Queries
     event_queries: Vec<Query>,
     /// All subscriptions combined in a single stream
@@ -201,6 +203,7 @@ impl EventMonitor {
             tx_err,
             rx_cmd,
             node_addr,
+            rpc_compat: Default::default(),
             subscriptions: Box::new(futures::stream::empty()),
         };
 
@@ -248,9 +251,16 @@ impl EventMonitor {
         );
 
         // Try to reconnect
+        let config = WebSocketConfig {
+            compat: self.rpc_compat,
+            ..Default::default()
+        };
         let (mut client, driver) = self
             .rt
-            .block_on(WebSocketClient::new(self.node_addr.clone()))
+            .block_on(WebSocketClient::new_with_config(
+                self.node_addr.clone(),
+                config,
+            ))
             .map_err(|_| {
                 Error::client_creation_failed(self.chain_id.clone(), self.node_addr.clone())
             })?;
@@ -340,13 +350,39 @@ impl EventMonitor {
     pub fn run(mut self) {
         debug!("starting event monitor");
 
+        // Discover if the node is running an older version of Tendermint,
+        // so that we need to reinitialize our client. With the current
+        // tendermint-rpc API, we cannot tell the existing WebSocket client
+        // to switch to the compatibility mode.
+        let mut next = match self
+            .rt
+            .block_on(self.client.status())
+            .and_then(|r| CompatMode::from_version(r.node_info.version))
+        {
+            Ok(CompatMode::Latest) => Next::Continue,
+            Ok(CompatMode::V0_34) => {
+                self.rpc_compat = CompatMode::V0_34;
+                if let Err(e) = self.try_reconnect() {
+                    error!("failed to reconnect for the compatibility mode: {}", e);
+                    Next::Abort
+                } else {
+                    Next::Continue
+                }
+            }
+            Err(e) => {
+                error!("failed to discover Tendermint RPC version: {}", e);
+                Next::Abort
+            }
+        };
+
         // Continuously run the event loop, so that when it aborts
         // because of WebSocket client restart, we pick up the work again.
         loop {
-            match self.run_loop() {
-                Next::Continue => continue,
+            match next {
+                Next::Continue => {}
                 Next::Abort => break,
             }
+            next = self.run_loop();
         }
 
         debug!("event monitor is shutting down");
