@@ -15,7 +15,7 @@ use crate::full::batch::traits::config::HasBatchConfig;
 use crate::full::batch::types::aliases::MessageBatchSender;
 use crate::full::batch::worker::CanSpawnBatchMessageWorker;
 use crate::full::builder::traits::cache::HasBatchSenderCache;
-use crate::full::builder::traits::relay::RelayWithBatchBuilder;
+use crate::full::builder::traits::relay::RelayBuilderWithBatch;
 use crate::full::runtime::traits::channel::CanCreateChannels;
 use crate::full::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::std_prelude::*;
@@ -26,6 +26,7 @@ pub struct BuildBatchWorker<InBuilder>(pub PhantomData<InBuilder>);
 impl<Build, InBuilder, Target, Relay, SrcChain, DstChain, SrcRuntime, DstRuntime>
     RelayFromChainsBuilder<Build, Target> for BuildBatchWorker<InBuilder>
 where
+    InBuilder: RelayBuilderWithBatch<Build, Target>,
     Build: HasBiRelayType
         + HasRuntimeWithMutex
         + HasBatchConfig
@@ -45,7 +46,6 @@ where
     DstChain::ChainId: Ord + Clone,
     SrcChain::ClientId: Ord + Clone,
     DstChain::ClientId: Ord + Clone,
-    InBuilder: RelayWithBatchBuilder<Build, Target>,
     SrcRuntime: CanCreateChannels + HasChannelOnceTypes,
     DstRuntime: CanCreateChannels + HasChannelOnceTypes,
     MessageBatchSender<SrcChain, Relay::Error>: Clone,
@@ -53,7 +53,7 @@ where
 {
     async fn build_relay_from_chains(
         build: &Build,
-        _target: Target,
+        target: Target,
         src_client_id: &SrcChain::ClientId,
         dst_client_id: &DstChain::ClientId,
         src_chain: SrcChain,
@@ -101,6 +101,7 @@ where
 
         let relay = InBuilder::build_relay_with_batch(
             build,
+            target,
             src_client_id,
             dst_client_id,
             src_chain,

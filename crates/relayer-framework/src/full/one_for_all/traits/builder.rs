@@ -43,6 +43,16 @@ pub trait OfaFullBuilder: OfaFullBuilderTypes {
         dst_batch_sender: MessageBatchSender<ChainB<Self>, RelayError<Self>>,
     ) -> Result<RelayAToB<Self>, Self::Error>;
 
+    async fn build_relay_b_to_a(
+        &self,
+        src_client_id: &ClientIdB<Self>,
+        dst_client_id: &ClientIdA<Self>,
+        src_chain: OfaChainWrapper<ChainB<Self>>,
+        dst_chain: OfaChainWrapper<ChainA<Self>>,
+        src_batch_sender: MessageBatchSender<ChainB<Self>, RelayError<Self>>,
+        dst_batch_sender: MessageBatchSender<ChainA<Self>, RelayError<Self>>,
+    ) -> Result<RelayBToA<Self>, Self::Error>;
+
     async fn build_birelay(
         &self,
         relay_a_to_b: OfaRelayWrapper<RelayAToB<Self>>,

@@ -17,7 +17,7 @@ use crate::full::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait RelayWithBatchBuilder<Build, Target>: Async
+pub trait RelayBuilderWithBatch<Build, Target>: Async
 where
     Build: HasBiRelayType + HasRuntimeWithMutex + HasErrorType,
     Target: RelayBuildTarget<Build>,
@@ -28,6 +28,7 @@ where
 {
     async fn build_relay_with_batch(
         build: &Build,
+        target: Target,
         src_client_id: &TargetSrcClientId<Build, Target>,
         dst_client_id: &TargetDstClientId<Build, Target>,
         src_chain: TargetSrcChain<Build, Target>,
