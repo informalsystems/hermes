@@ -1,5 +1,6 @@
 use alloc::collections::BTreeMap as HashMap;
 use core::convert::TryFrom;
+use ibc_relayer_types::applications::ics29_fee::events::DistributionType;
 
 use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
 
@@ -187,9 +188,12 @@ pub fn get_all_events(
                         && event_is_type_distribute_fee(&ibc_event)
                     {
                         if let IbcEvent::DistributeFeePacket(dist) = ibc_event {
-                            let amount = dist.fee;
-                            let receiver = dist.receiver;
-                            telemetry!(fees_amount, chain_id, &receiver, amount,);
+                            // Only record rewarded fees
+                            if let DistributionType::Reward = dist.distribution_type {
+                                let amount = dist.fee;
+                                let receiver = dist.receiver;
+                                telemetry!(fees_amount, chain_id, &receiver, amount,);
+                            }
                         }
                     }
                 }
