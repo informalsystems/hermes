@@ -1,12 +1,37 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::traits::chain::OfaIbcChain;
+use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
+use crate::full::one_for_all::traits::chain::{OfaFullChain, OfaFullIbcChain};
 use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
 use crate::full::one_for_all::types::batch::aliases::MessageBatchSender;
 use crate::std_prelude::*;
 
+pub trait OfaFullRelayTypes:
+    OfaRelayTypes<
+    Runtime = Self::FullRuntime,
+    SrcChain = Self::FullSrcChain,
+    DstChain = Self::FullDstChain,
+>
+{
+    type FullRuntime: OfaFullRuntime;
+
+    type FullSrcChain: OfaFullIbcChain<
+        Self::DstChain,
+        Preset = Self::Preset,
+        OutgoingPacket = Self::Packet,
+    >;
+
+    type FullDstChain: OfaFullIbcChain<
+        Self::SrcChain,
+        Preset = Self::Preset,
+        IncomingPacket = Self::Packet,
+        OutgoingPacket = <Self::SrcChain as OfaIbcChain<Self::DstChain>>::IncomingPacket,
+    >;
+}
+
 #[async_trait]
-pub trait OfaFullRelay: HasFullRuntime {
+pub trait OfaFullRelay: OfaFullRelayTypes + OfaBaseRelay {
     async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error>;
 
     fn is_retryable_error(e: &Self::Error) -> bool;
@@ -18,14 +43,16 @@ pub trait OfaFullRelay: HasFullRuntime {
     fn dst_chain_message_batch_sender(&self) -> &MessageBatchSender<Self::DstChain, Self::Error>;
 }
 
-pub trait HasFullRuntime: OfaBaseRelay<Runtime = Self::FullRuntime> {
-    type FullRuntime: OfaFullRuntime;
-}
-
-impl<Relay> HasFullRuntime for Relay
+impl<Relay> OfaFullRelayTypes for Relay
 where
-    Relay: OfaBaseRelay,
+    Relay: OfaRelayTypes,
     Relay::Runtime: OfaFullRuntime,
+    Relay::SrcChain: OfaFullChain,
+    Relay::DstChain: OfaFullChain,
 {
     type FullRuntime = Relay::Runtime;
+
+    type FullSrcChain = Relay::SrcChain;
+
+    type FullDstChain = Relay::DstChain;
 }

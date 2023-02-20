@@ -4,12 +4,11 @@ use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::relay::{
     OfaBaseRelay, OfaHomogeneousRelay, OfaRelayPreset, OfaRelayTypes,
 };
+use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::birelay::OfaBiRelayWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::base::relay::traits::auto_relayer::AutoRelayer;
-
-use super::runtime::OfaBaseRuntime;
 
 pub trait OfaBiRelayTypes: Async {
     type Preset: Async;
