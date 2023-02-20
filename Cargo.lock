@@ -757,6 +757,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "curve25519-dalek-ng"
+version = "4.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c359b7249347e46fb28804470d071c921156ad62b3eef5d34e2ba867533dec8"
+dependencies = [
+ "byteorder",
+ "digest 0.9.0",
+ "rand_core 0.6.4",
+ "subtle-ng",
+ "zeroize",
+]
+
+[[package]]
 name = "cxx"
 version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -948,6 +961,19 @@ checksum = "1e9c280362032ea4203659fc489832d0204ef09f247a0506f170dafcac08c369"
 dependencies = [
  "serde",
  "signature",
+]
+
+[[package]]
+name = "ed25519-consensus"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c8465edc8ee7436ffea81d21a019b16676ee3db267aa8d5a8d729581ecf998b"
+dependencies = [
+ "curve25519-dalek-ng",
+ "hex",
+ "rand_core 0.6.4",
+ "sha2 0.9.9",
+ "zeroize",
 ]
 
 [[package]]
@@ -1736,7 +1762,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "tendermint-rpc",
+ "tendermint-rpc 0.29.0",
  "tokio",
  "tracing",
 ]
@@ -1770,7 +1796,7 @@ dependencies = [
  "prost",
  "serde",
  "subtle-encoding",
- "tendermint-proto",
+ "tendermint-proto 0.28.0",
  "tonic",
 ]
 
@@ -1820,10 +1846,10 @@ dependencies = [
  "signature",
  "strum",
  "subtle-encoding",
- "tendermint",
+ "tendermint 0.28.0",
  "tendermint-light-client",
  "tendermint-light-client-verifier",
- "tendermint-rpc",
+ "tendermint-rpc 0.29.0",
  "tendermint-testgen",
  "test-log",
  "thiserror",
@@ -1869,9 +1895,9 @@ dependencies = [
  "serde_json",
  "signal-hook",
  "subtle-encoding",
- "tendermint",
+ "tendermint 0.28.0",
  "tendermint-light-client-verifier",
- "tendermint-rpc",
+ "tendermint-rpc 0.29.0",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -1914,10 +1940,10 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "subtle-encoding",
- "tendermint",
+ "tendermint 0.28.0",
  "tendermint-light-client-verifier",
- "tendermint-proto",
- "tendermint-rpc",
+ "tendermint-proto 0.28.0",
+ "tendermint-rpc 0.29.0",
  "tendermint-testgen",
  "test-log",
  "time 0.3.17",
@@ -1940,7 +1966,7 @@ dependencies = [
  "rouille",
  "serde",
  "serde_json",
- "tendermint",
+ "tendermint 0.28.0",
 ]
 
 [[package]]
@@ -1967,7 +1993,7 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.6",
  "subtle-encoding",
- "tendermint-rpc",
+ "tendermint-rpc 0.29.0",
  "tokio",
  "toml",
  "tonic",
@@ -3065,8 +3091,8 @@ dependencies = [
  "clap",
  "futures",
  "itertools",
- "tendermint",
- "tendermint-rpc",
+ "tendermint 0.28.0",
+ "tendermint-rpc 0.29.0",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -4020,6 +4046,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "subtle-ng"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
+
+[[package]]
 name = "syn"
 version = "1.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4093,7 +4125,36 @@ dependencies = [
  "signature",
  "subtle",
  "subtle-encoding",
- "tendermint-proto",
+ "tendermint-proto 0.28.0",
+ "time 0.3.17",
+ "zeroize",
+]
+
+[[package]]
+name = "tendermint"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bb661ab5325af3741b7c37e81ce4bddbf9fdd4e2fb602357843becc8f235041"
+dependencies = [
+ "bytes",
+ "digest 0.10.6",
+ "ed25519",
+ "ed25519-consensus",
+ "flex-error",
+ "futures",
+ "num-traits",
+ "once_cell",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "serde_repr",
+ "sha2 0.10.6",
+ "signature",
+ "subtle",
+ "subtle-encoding",
+ "tendermint-proto 0.29.0",
  "time 0.3.17",
  "zeroize",
 ]
@@ -4107,7 +4168,21 @@ dependencies = [
  "flex-error",
  "serde",
  "serde_json",
- "tendermint",
+ "tendermint 0.28.0",
+ "toml",
+ "url",
+]
+
+[[package]]
+name = "tendermint-config"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44e259436c7b92d2c35b78d0fcdd56985d9ffa0cc1245601a7f4d1ec0bbe8bef"
+dependencies = [
+ "flex-error",
+ "serde",
+ "serde_json",
+ "tendermint 0.29.0",
  "toml",
  "url",
 ]
@@ -4127,9 +4202,9 @@ dependencies = [
  "serde_cbor",
  "serde_derive",
  "static_assertions",
- "tendermint",
+ "tendermint 0.28.0",
  "tendermint-light-client-verifier",
- "tendermint-rpc",
+ "tendermint-rpc 0.28.0",
  "time 0.3.17",
  "tokio",
 ]
@@ -4143,7 +4218,7 @@ dependencies = [
  "derive_more",
  "flex-error",
  "serde",
- "tendermint",
+ "tendermint 0.28.0",
  "time 0.3.17",
 ]
 
@@ -4166,10 +4241,61 @@ dependencies = [
 ]
 
 [[package]]
+name = "tendermint-proto"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c2e8dc89de3ab71cf63adcc71eb76200fae5a9ba7afd659fee54e0810beac8f"
+dependencies = [
+ "bytes",
+ "flex-error",
+ "num-derive",
+ "num-traits",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "subtle-encoding",
+ "time 0.3.17",
+]
+
+[[package]]
 name = "tendermint-rpc"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06df4715f9452ec0a21885d6da8d804799455ba50d8bc40be1ec1c800afd4bd8"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "flex-error",
+ "futures",
+ "getrandom 0.2.8",
+ "http",
+ "hyper",
+ "hyper-proxy",
+ "hyper-rustls 0.22.1",
+ "peg",
+ "pin-project",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "subtle",
+ "subtle-encoding",
+ "tendermint 0.28.0",
+ "tendermint-config 0.28.0",
+ "thiserror",
+ "time 0.3.17",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid 0.8.2",
+ "walkdir",
+]
+
+[[package]]
+name = "tendermint-rpc"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3710b9ebdab1a4900d93130155fe547e0f328466b92899e67e602617c9422afa"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4188,8 +4314,8 @@ dependencies = [
  "serde_json",
  "subtle",
  "subtle-encoding",
- "tendermint",
- "tendermint-config",
+ "tendermint 0.29.0",
+ "tendermint-config 0.29.0",
  "thiserror",
  "time 0.3.17",
  "tokio",
@@ -4211,7 +4337,7 @@ dependencies = [
  "serde_json",
  "simple-error",
  "tempfile",
- "tendermint",
+ "tendermint 0.28.0",
  "time 0.3.17",
 ]
 
