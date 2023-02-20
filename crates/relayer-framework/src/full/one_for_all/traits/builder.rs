@@ -60,8 +60,6 @@ pub trait OfaFullBuilder: OfaFullBuilderTypes {
         &self,
         relay_a_to_b: OfaRelayWrapper<RelayAToB<Self>>,
         relay_b_to_a: OfaRelayWrapper<RelayBToA<Self>>,
-        src_batch_sender: MessageBatchSender<ChainB<Self>, RelayError<Self>>,
-        dst_batch_sender: MessageBatchSender<ChainA<Self>, RelayError<Self>>,
     ) -> Result<Self::BiRelay, Self::Error>;
 }
 
