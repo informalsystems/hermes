@@ -21,7 +21,7 @@ use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
-use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::error::{BaseError, Error};
 use crate::relayer_mock::base::types::aliases::{
     ChainStatus, ChannelId, ClientId, ConsensusState, MockTimestamp, PortId, Sequence,
 };
@@ -76,7 +76,7 @@ impl OfaBaseChain for MockChainContext {
     }
 
     fn runtime_error(e: TokioError) -> Self::Error {
-        Error::tokio(e)
+        BaseError::tokio(e).into()
     }
 
     // Only single messages are sent by the Mock Chain
@@ -259,11 +259,12 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
             if &packet2 == packet {
                 Ok(Some(WriteAcknowledgementEvent::new(height)))
             } else {
-                Err(Error::generic(eyre!(
+                Err(BaseError::generic(eyre!(
                     "mismatch between packet in state {} and packet: {}",
                     packet2,
                     packet
-                )))
+                ))
+                .into())
             }
         } else {
             Ok(None)
@@ -282,10 +283,11 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
             packet.src_channel_id.clone(),
             packet.sequence,
         )) {
-            return Err(Error::receive_without_sent(
+            return Err(BaseError::receive_without_sent(
                 self.name().to_string(),
                 packet.src_channel_id.to_string(),
-            ));
+            )
+            .into());
         }
         Ok(MockMessage::RecvPacket(*height, packet.clone()))
     }
@@ -304,10 +306,11 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
             packet.dst_channel_id.clone(),
             packet.sequence,
         )) {
-            return Err(Error::acknowledgment_without_received(
+            return Err(BaseError::acknowledgment_without_received(
                 self.name().to_string(),
                 packet.dst_channel_id.to_string(),
-            ));
+            )
+            .into());
         }
 
         Ok(MockMessage::AckPacket(*height, packet.clone()))
@@ -323,10 +326,11 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         let current_timestamp = runtime.get_time();
 
         if !state.check_timeout(packet.clone(), *height, current_timestamp) {
-            return Err(Error::timeout_without_sent(
+            return Err(BaseError::timeout_without_sent(
                 self.name().to_string(),
                 packet.src_channel_id.to_string(),
-            ));
+            )
+            .into());
         }
 
         Ok(MockMessage::TimeoutPacket(*height, packet.clone()))

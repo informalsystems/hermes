@@ -10,6 +10,7 @@ use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::full::batch::types::config::BatchConfig;
 use crate::full::one_for_all::traits::birelay::OfaFullBiRelay;
 use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
 use crate::full::one_for_all::types::batch::aliases::MessageBatchSender;
@@ -28,6 +29,8 @@ pub trait OfaFullBuilder: OfaFullBuilderTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
+
+    fn batch_config(&self) -> &BatchConfig;
 
     async fn build_chain_a(&self, chain_id: &ChainIdA<Self>) -> Result<ChainA<Self>, Self::Error>;
 

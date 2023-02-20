@@ -25,7 +25,7 @@ pub trait OfaRelayTypes: Async {
     /**
        Corresponds to [`HasErrorType::Error`](crate::base::core::traits::error::HasErrorType).
     */
-    type Error: Async + Debug;
+    type Error: Debug + Clone + Async;
 
     type Runtime: OfaBaseRuntime;
 

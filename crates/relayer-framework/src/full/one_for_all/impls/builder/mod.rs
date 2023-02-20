@@ -1,3 +1,4 @@
+pub mod batch;
 pub mod cache;
 pub mod chain;
 pub mod error;

@@ -16,7 +16,7 @@ use std::sync::Mutex;
 use std::vec;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::error::{BaseError, Error};
 use crate::relayer_mock::base::types::aliases::{
     ChainState, ChannelId, ClientId, MockTimestamp, PortId, Sequence, StateStore,
 };
@@ -92,7 +92,7 @@ impl MockChainContext {
         let locked_past_chain_states = self.past_chain_states.acquire_mutex();
         let state = locked_past_chain_states
             .get(&height)
-            .ok_or_else(|| Error::no_chain_state(self.name().to_string(), height.0))?;
+            .ok_or_else(|| BaseError::no_chain_state(self.name().to_string(), height.0))?;
         Ok(state.clone())
     }
 
@@ -106,10 +106,10 @@ impl MockChainContext {
         let locked_consensus_states = self.consensus_states.acquire_mutex();
         let client_consensus_states = locked_consensus_states
             .get(&client_id)
-            .ok_or_else(|| Error::no_consensus_state(client_id.clone()))?;
+            .ok_or_else(|| BaseError::no_consensus_state(client_id.clone()))?;
         let client_consensus_state = client_consensus_states
             .get(&height)
-            .ok_or_else(|| Error::no_consensus_state_at_height(client_id, height.0))?;
+            .ok_or_else(|| BaseError::no_consensus_state_at_height(client_id, height.0))?;
         Ok(client_consensus_state.clone())
     }
 
@@ -143,7 +143,7 @@ impl MockChainContext {
                         // Check if the existing Consensus State at the given height differs
                         // from the one passed.
                         if o.get() != &state {
-                            return Err(Error::consensus_divergence(client_id, height.0));
+                            return Err(BaseError::consensus_divergence(client_id, height.0).into());
                         }
                     }
                     Entry::Vacant(_) => {
@@ -210,7 +210,10 @@ impl MockChainContext {
         let client_id = self
             .get_client_from_channel(&packet.dst_channel_id)
             .ok_or_else(|| {
-                Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
+                BaseError::no_client_for_channel(
+                    packet.src_channel_id.clone(),
+                    self.name().to_string(),
+                )
             })?;
 
         let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
@@ -220,10 +223,11 @@ impl MockChainContext {
             packet.src_channel_id.clone(),
             packet.sequence,
         )) {
-            return Err(Error::generic(eyre!(
+            return Err(BaseError::generic(eyre!(
                 "chain `{}` got a RecvPacket, but client state doesn't have the packet as sent",
                 self.name()
-            )));
+            ))
+            .into());
         }
 
         // Check that the packet is not timed out. Current height < packet timeout height.
@@ -231,13 +235,14 @@ impl MockChainContext {
         let current_time = self.runtime().runtime.get_time();
 
         if current_state.check_timeout(packet.clone(), current_height, current_time.clone()) {
-            return Err(Error::timeout_receive(
+            return Err(BaseError::timeout_receive(
                 self.name().to_string(),
                 packet.timeout_height.0,
                 current_height.0,
                 packet.timeout_timestamp.0,
                 current_time.0,
-            ));
+            )
+            .into());
         }
 
         // Update the state with the newly received packet
@@ -267,7 +272,10 @@ impl MockChainContext {
         let client_id = self
             .get_client_from_channel(&packet.src_channel_id)
             .ok_or_else(|| {
-                Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
+                BaseError::no_client_for_channel(
+                    packet.src_channel_id.clone(),
+                    self.name().to_string(),
+                )
             })?;
 
         let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
@@ -277,10 +285,11 @@ impl MockChainContext {
             packet.dst_channel_id.clone(),
             packet.sequence,
         )) {
-            return Err(Error::generic(eyre!(
+            return Err(BaseError::generic(eyre!(
                 "chain `{}` got a AckPacket, but client state doesn't have the packet as received",
                 self.name()
-            )));
+            ))
+            .into());
         }
 
         // Update the current state with the newly received acknowledgement
@@ -309,7 +318,10 @@ impl MockChainContext {
         let client_id = self
             .get_client_from_channel(&packet.src_channel_id)
             .ok_or_else(|| {
-                Error::no_client_for_channel(packet.src_channel_id.clone(), self.name().to_string())
+                BaseError::no_client_for_channel(
+                    packet.src_channel_id.clone(),
+                    self.name().to_string(),
+                )
             })?;
 
         let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
@@ -319,10 +331,11 @@ impl MockChainContext {
             packet.dst_channel_id.clone(),
             packet.sequence,
         )) {
-            return Err(Error::generic(eyre!(
+            return Err(BaseError::generic(eyre!(
                 "chain `{}` got a TimeoutPacket, but client state received the packet as received",
                 self.name()
-            )));
+            ))
+            .into());
         }
 
         Ok(current_state)
