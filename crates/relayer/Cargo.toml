@@ -1,13 +1,13 @@
 [package]
 name         = "ibc-relayer"
 version      = "0.22.0"
-edition      = "2021"
-license      = "Apache-2.0"
+edition.workspace = true
+license.workspace = true
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-repository   = "https://github.com/informalsystems/hermes"
-authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.65"
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
 description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
@@ -21,85 +21,85 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc-proto         = { version = "0.24.1" }
+ibc-proto.workspace = true
 ibc-telemetry     = { version = "0.22.0", path = "../telemetry", optional = true }
 ibc-relayer-types = { version = "0.22.0", path = "../relayer-types", features = ["mocks"] }
 
-subtle-encoding = "0.5"
-humantime-serde = "1.1.1"
-serde = "1.0"
-serde_derive = "1.0"
-thiserror = "1.0.36"
-toml = "0.5"
-tracing = "0.1.36"
-tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
-serde_json = { version = "1" }
-bytes = "1.3.0"
-prost = { version = "0.11" }
-tonic = { version = "0.8", features = ["tls", "tls-roots"] }
-futures = "0.3.26"
-crossbeam-channel = "0.5.5"
-hex = "0.4"
-bitcoin = { version = "0.29.1", features = ["serde"] }
-tiny-bip39 = "1.0.0"
-hdpath = "0.6.1"
-sha2 = "0.10.6"
-tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = false }
-ripemd = "0.1.3"
-bech32 = "0.9.1"
-itertools = "0.10.5"
-dirs-next = "2.0.0"
-retry = { version = "2.0.0", default-features = false }
-async-stream = "0.3.3"
-http = "0.2.8"
-flex-error = { version = "0.4.4", default-features = false }
-signature = "1.6.0"
-anyhow = "1.0"
-semver = "1.0"
-humantime = "2.1.0"
-regex = "1.7.1"
-moka = "0.9.7"
-uuid = { version = "1.2.1", features = ["v4"] }
-bs58 = "0.4.0"
-digest = "0.10.6"
-ed25519 = "1.5.2"
-ed25519-dalek = { version = "1.0.1", features = ["serde"] }
-ed25519-dalek-bip32 = "0.2.0"
-generic-array = "0.14.6"
-secp256k1 = { version = "0.24.2", features = ["rand-std"] }
-strum = { version = "0.24.1", features = ["derive"] }
+subtle-encoding.workspace = true
+humantime-serde.workspace = true
+serde.workspace = true
+serde_derive.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+tracing.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "time", "sync"] }
+serde_json.workspace = true
+bytes.workspace = true
+prost.workspace = true
+tonic = { workspace = true, features = ["tls", "tls-roots"] }
+futures.workspace = true
+crossbeam-channel.workspace = true
+hex.workspace = true
+bitcoin = { workspace = true, features = ["serde"] }
+tiny-bip39.workspace = true
+hdpath.workspace = true
+sha2.workspace = true
+tiny-keccak = { workspace = true, features = ["keccak"], default-features = false }
+ripemd.workspace = true
+bech32.workspace = true
+itertools.workspace = true
+dirs-next.workspace = true
+retry = { workspace = true, default-features = false }
+async-stream.workspace = true
+http.workspace = true
+flex-error = { workspace = true, default-features = false }
+signature.workspace = true
+anyhow.workspace = true
+semver.workspace = true
+humantime.workspace = true
+regex.workspace = true
+moka.workspace = true
+uuid = { workspace = true, features = ["v4"] }
+bs58.workspace = true
+digest.workspace = true
+ed25519.workspace = true
+ed25519-dalek = { workspace = true, features = ["serde"] }
+ed25519-dalek-bip32.workspace = true
+generic-array.workspace = true
+secp256k1 = { workspace = true, features = ["rand-std"] }
+strum = { workspace = true, features = ["derive"] }
 
 [dependencies.num-bigint]
-version = "0.4"
+workspace = true
 features = ["serde"]
 
 [dependencies.num-rational]
-version = "0.4.1"
+workspace = true
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "0.28.0"
+workspace = true
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "0.28.0"
+workspace = true
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "0.28.0"
+workspace = true
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.28.0"
+workspace = true
 default-features = false
 
 [dev-dependencies]
 ibc-relayer-types = { version = "0.22.0", path = "../relayer-types", features = ["mocks"] }
-serial_test = "1.0.0"
-env_logger = "0.10.0"
-tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
-test-log = { version = "0.2.10", features = ["trace"] }
+serial_test.workspace = true
+env_logger.workspace = true
+tracing-subscriber = { workspace = true, features = ["fmt", "env-filter", "json"] }
+test-log = { workspace = true, features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "0.28.0" }
+tendermint-testgen.workspace = true

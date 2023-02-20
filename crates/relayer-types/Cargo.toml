@@ -1,13 +1,13 @@
 [package]
 name         = "ibc-relayer-types"
 version      = "0.22.0"
-edition      = "2021"
-license      = "Apache-2.0"
+edition.workspace = true
+license.workspace = true
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-repository   = "https://github.com/informalsystems/hermes"
-authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.65"
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
 description  = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
     This crate comprises the main data structures and on-chain logic.
@@ -27,53 +27,53 @@ mocks = ["tendermint-testgen", "clock", "std"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.24.1", default-features = false }
-ics23 = { version = "=0.9.0", default-features = false, features = ["host-functions"] }
-time = { version = ">=0.3.0, <0.3.18", default-features = false }
-serde_derive = { version = "1.0.104", default-features = false }
-serde = { version = "1.0", default-features = false }
-serde_json = { version = "1", default-features = false }
-erased-serde = { version = "0.3", default-features = false, features = ["alloc"] }
-prost = { version = "0.11", default-features = false }
-bytes = { version = "1.3.0", default-features = false }
-safe-regex = { version = "0.2.5", default-features = false }
-subtle-encoding = { version = "0.5", default-features = false }
-flex-error = { version = "0.4.4", default-features = false }
-derive_more = { version = "0.99.17", default-features = false, features = ["from", "into", "display"] }
-uint = { version = "0.9", default-features = false }
-itertools = { version = "0.10.3", default-features = false, features = ["use_alloc"] }
-primitive-types = { version = "0.12.1", default-features = false, features = ["serde_no_std"] }
-dyn-clone = "1.0.8"
-num-rational = "0.4.1"
+ibc-proto = { workspace = true, default-features = false }
+ics23 = { workspace = true, default-features = false, features = ["host-functions"] }
+time = { workspace = true, default-features = false }
+serde_derive = { workspace = true, default-features = false }
+serde = { workspace = true, default-features = false }
+serde_json = { workspace = true, default-features = false }
+erased-serde = { workspace = true, default-features = false, features = ["alloc"] }
+prost = { workspace = true, default-features = false }
+bytes = { workspace = true, default-features = false }
+safe-regex = { workspace = true, default-features = false }
+subtle-encoding = { workspace = true, default-features = false }
+flex-error = { workspace = true, default-features = false }
+derive_more = { workspace = true, default-features = false, features = ["from", "into", "display"] }
+uint = { workspace = true, default-features = false }
+itertools = { workspace = true, default-features = false, features = ["use_alloc"] }
+primitive-types = { workspace = true, default-features = false, features = ["serde_no_std"] }
+dyn-clone.workspace = true
+num-rational.workspace = true
 
 [dependencies.tendermint]
-version = "0.28.0"
+workspace = true
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "0.28.0"
+workspace = true
 default-features = false
 
 # Temporary, until this change makes it into a tendermint-rs release:
 # https://github.com/informalsystems/tendermint-rs/pull/1204
 [dependencies.tendermint-rpc]
-version = "0.28.0"
+workspace = true
 default-features = false
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.28.0"
+workspace = true
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "0.28.0"
+workspace = true
 optional = true
 default-features = false
 
 [dev-dependencies]
-env_logger = "0.10.0"
-tracing = { version = "0.1.36", default-features = false }
-tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
-test-log = { version = "0.2.10", features = ["trace"] }
-modelator = "0.4.2"
-tendermint-rpc = { version = "0.28.0", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "0.28.0" } # Needed for generating (synthetic) light blocks.
+env_logger.workspace = true
+tracing = { workspace = true, default-features = false }
+tracing-subscriber = { workspace = true, features = ["fmt", "env-filter", "json"]}
+test-log = { workspace = true, features = ["trace"] }
+modelator.workspace = true
+tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
+tendermint-testgen = { workspace = true } # Needed for generating (synthetic) light blocks.

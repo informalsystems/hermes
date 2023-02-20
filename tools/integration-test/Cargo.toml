@@ -1,14 +1,14 @@
 [package]
 name       = "ibc-integration-test"
 version    = "0.22.0"
-edition    = "2021"
-license    = "Apache-2.0"
+edition.workspace = true
+license.workspace = true
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-homepage   = "https://hermes.informal.systems/"
-repository = "https://github.com/informalsystems/hermes"
-authors    = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.65"
+homepage.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
 description = """
   Integration tests for IBC Relayer
 """
@@ -18,13 +18,13 @@ ibc-relayer-types  = { path = "../../crates/relayer-types" }
 ibc-relayer        = { path = "../../crates/relayer" }
 ibc-test-framework = { path = "../test-framework" }
 
-http = "0.2.8"
-prost = { version = "0.11" }
-serde_json = "1"
-time = "0.3"
-toml = "0.5"
-tonic = { version = "0.8", features = ["tls", "tls-roots"] }
-serde = "1.0.149"
+http.workspace = true
+prost.workspace = true
+serde_json.workspace = true
+time.workspace = true
+toml.workspace = true
+tonic = { workspace = true, features = ["tls", "tls-roots"] }
+serde.workspace = true
 
 [features]
 default = []
@@ -43,4 +43,4 @@ name = "test_setup_with_binary_channel"
 doc = true
 
 [dev-dependencies]
-tempfile = "3.3.0"
+tempfile.workspace = true
