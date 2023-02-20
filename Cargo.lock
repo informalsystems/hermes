@@ -1860,6 +1860,7 @@ name = "ibc-relayer-cli"
 version = "1.2.0"
 dependencies = [
  "abscissa_core",
+ "async-trait",
  "atty",
  "clap",
  "clap_complete",

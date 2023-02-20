@@ -1,6 +1,7 @@
 //! All errors which can be raised from a command.
 
-use flex_error::{define_error, DisplayError};
+use eyre::Report;
+use flex_error::{define_error, DisplayError, TraceError};
 use std::io::Error as IoError;
 
 use tendermint::Error as TendermintError;
@@ -24,6 +25,10 @@ use ibc_relayer::upgrade_chain::UpgradeChainError;
 define_error! {
     /// An error raised within the relayer CLI
     Error {
+        Generic
+            [ TraceError<Report> ]
+            | _ | { "generic error" },
+
         Config
             |_| { "config error" },
 
@@ -126,4 +131,8 @@ define_error! {
                 format_args!("no Secp256k1 key pair for chain {}", e.chain_id)
             }
     }
+}
+
+pub fn handle_generic_error(e: impl Into<Report>) -> Error {
+    Error::generic(e.into())
 }

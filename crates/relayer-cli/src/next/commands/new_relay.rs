@@ -3,15 +3,13 @@ use abscissa_core::{Command, Runnable};
 use alloc::sync::Arc;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_framework::base::relay::traits::auto_relayer::CanAutoRelay;
-use ibc_relayer_framework::base::relay::traits::two_way::HasTwoWayRelay;
-use ibc_relayer_framework::base::runtime::traits::runtime::HasRuntime;
+use ibc_relayer_framework::full::all_for_one::builder::CanBuildAfoFullBiRelay;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
-use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
-use crate::next::build::build_cosmos_birelay_context;
+use crate::error::Error;
+use crate::next::build::CosmosRelayBuilder;
 use crate::prelude::*;
 
 /// `relay` subcommands which utilize the experimental relayer architecture.
@@ -67,33 +65,28 @@ impl Runnable for NewRelayPacketsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains = match ChainHandlePair::spawn(&config, &self.chain_a_id, &self.chain_b_id) {
-            Ok(chains) => chains,
-            Err(e) => Output::error(e).exit(),
-        };
-
-        // TODO: Read in PacketFilter policy from config
-        let pf = PacketFilter::default();
         let runtime = Arc::new(TokioRuntime::new().unwrap());
 
-        let relay_context = match build_cosmos_birelay_context(
-            chains.src,
-            chains.dst,
-            self.client_a_id.clone(),
-            self.client_b_id.clone(),
-            runtime,
-            pf,
-        ) {
-            Ok(rc) => rc,
-            Err(e) => Output::error(e).exit(),
-        };
+        let builder = CosmosRelayBuilder::new_wrapped(config, runtime.clone());
 
-        relay_context
-            .relay_a_to_b()
-            .runtime()
-            .runtime
-            .runtime
-            .block_on(relay_context.auto_relay());
+        let res: Result<(), Error> = runtime.block_on(async {
+            let birelay = builder
+                .build_afo_full_birelay(
+                    &self.chain_a_id,
+                    &self.chain_b_id,
+                    &self.client_a_id,
+                    &self.client_b_id,
+                )
+                .await?;
+
+            birelay.auto_relay().await;
+
+            Ok(())
+        });
+
+        if let Err(e) = res {
+            Output::error(e).exit();
+        }
     }
 }
 
