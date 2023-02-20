@@ -1,5 +1,8 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
-use std::time::{Duration, Instant};
+use std::{
+    sync::Mutex,
+    time::{Duration, Instant},
+};
 
 use dashmap::{DashMap, DashSet};
 use opentelemetry::{
@@ -59,6 +62,11 @@ const QUERY_TYPES: [&str; 26] = [
     "query_latest_height",
     "query_staking_params",
 ];
+
+// Constant value used to define the number of seconds
+// the rewarded fees Cache value live.
+// Current value is 7 days.
+const FEE_LIFETIME: u64 = 60 * 60 * 24 * 7;
 
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
@@ -182,21 +190,11 @@ pub struct TelemetryState {
     /// List of addresses for which rewarded fees from ICS29 should be recorded.
     visible_fee_addresses: DashSet<String>,
 
-    /// Minimum amount of fees received from ICS29 fees.
-    min_fee_amount: ObservableGauge<u64>,
+    /// Vector of rewarded fees stored in a moka Cache value
+    cached_fees: Mutex<Vec<moka::sync::Cache<String, u64>>>,
 
-    /// Maximum amount of fees received from ICS29 fees.
-    max_fee_amount: ObservableGauge<u64>,
-
-    /// Record the current minimum amount of fees received
-    /// from ICS29 fees.
-    /// Used for the `min_fee_amount` metric.
-    current_min_fee_amount: moka::sync::Cache<String, u64>,
-
-    /// Record the current maximum amount of fees received
-    /// from ICS29 fees.
-    /// Used for the `max_fee_amount` metric.
-    current_max_fee_amount: moka::sync::Cache<String, u64>,
+    /// Sum of rewarded fees for the last FEE_LIFETIME days
+    temporal_fees: ObservableGauge<u64>,
 }
 
 impl TelemetryState {
@@ -811,8 +809,6 @@ impl TelemetryState {
         }
         let cx = Context::current();
 
-        let fee_uid = format!("{}{}{}", chain_id, receiver, fee_amounts.denom);
-
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
             KeyValue::new("receiver", receiver.to_string()),
@@ -823,33 +819,20 @@ impl TelemetryState {
 
         self.fee_amounts.add(&cx, fee_amount, labels);
 
-        // If the new fee amount is smaller than the current minimum, record it
-        // as the new minimum.
-        // If no fee amount is recorded as a minimum, record it as the minimum
-        // and set the current minimum to this value.
-        if let Some(fee) = self.current_min_fee_amount.get(&fee_uid) {
-            if fee_amount < fee {
-                self.min_fee_amount.observe(&cx, fee_amount, labels);
-            }
-        } else {
-            self.current_min_fee_amount
-                .insert(fee_uid.to_string(), fee_amount);
-            self.min_fee_amount.observe(&cx, fee_amount, labels);
-        }
+        let ephemeral_fee: moka::sync::Cache<String, u64> = moka::sync::Cache::builder()
+            .time_to_live(Duration::from_secs(FEE_LIFETIME)) // Remove entries after 1 hour without insert
+            .time_to_idle(Duration::from_secs(FEE_LIFETIME)) // Remove entries if they have been idle for 30 minutes without get or insert
+            .build();
 
-        // If the new fee amount is smaller than the current maximum, record it
-        // as the new maximum.
-        // If no fee amount is recorded as a maximum, record it as the maximum
-        // and set the current maximum to this value.
-        if let Some(fee) = self.current_max_fee_amount.get(&fee_uid) {
-            if fee_amount > fee {
-                self.max_fee_amount.observe(&cx, fee_amount, labels);
-            }
-        } else {
-            self.current_max_fee_amount
-                .insert(fee_uid.to_string(), fee_amount);
-            self.max_fee_amount.observe(&cx, fee_amount, labels);
-        }
+        let key = "fee_amount".to_owned();
+        ephemeral_fee.insert(key.clone(), fee_amount);
+
+        let mut cached_fees = self.cached_fees.lock().unwrap();
+        cached_fees.push(ephemeral_fee);
+
+        let sum: u64 = cached_fees.iter().filter_map(|e| e.get(&key)).sum();
+
+        self.temporal_fees.observe(&cx, sum, labels);
     }
 
     // Add an address to the list of addresses which will record
@@ -886,8 +869,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "tx_latency_confirmed" => Some(Arc::new(histogram(&[
                 1000.0, 5000.0, 9000.0, 13000.0, 17000.0, 20000.0,
             ]))),
-            "ics29_min_fee_amount" => Some(Arc::new(last_value())),
-            "ics29_max_fee_amount" => Some(Arc::new(last_value())),
+            "observed_temporal_fee" => Some(Arc::new(last_value())),
             _ => Some(Arc::new(sum())),
         }
     }
@@ -1052,25 +1034,12 @@ impl Default for TelemetryState {
 
             visible_fee_addresses: DashSet::new(),
 
-            min_fee_amount: meter
-                .u64_observable_gauge("ics29_min_fee_amount")
-                .with_description("Minimum amount received from ICS29 fees")
+            cached_fees: Mutex::new(Vec::new()),
+
+            temporal_fees: meter
+                .u64_observable_gauge("temporal_fees")
+                .with_description("Amount of ICS29 fees rewarded last 7 days since latest fee has been rewarded. Please note that if no fees have been received, the value is outdated.")
                 .init(),
-
-            max_fee_amount: meter
-                .u64_observable_gauge("ics29_max_fee_amount")
-                .with_description("Maximum amount received from ICS29 fees")
-                .init(),
-
-            current_min_fee_amount: moka::sync::Cache::builder()
-                .time_to_live(Duration::from_secs(7 * 24 * 60 * 60)) // Remove entries after 1 week
-                .time_to_idle(Duration::from_secs(3 * 24 * 60 * 60)) // Remove entries if they have been idle for 3 days
-                .build(),
-
-            current_max_fee_amount: moka::sync::Cache::builder()
-                .time_to_live(Duration::from_secs(7 * 24 * 60 * 60)) // Remove entries after 1 week
-                .time_to_idle(Duration::from_secs(3 * 24 * 60 * 60)) // Remove entries if they have been idle for 3 days
-                .build(),
         }
     }
 }
