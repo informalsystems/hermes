@@ -1,5 +1,88 @@
 # CHANGELOG
 
+## 1.3.0
+*February 17th, 2023*
+
+Hermes v1.3.0 adds support for Cross-chain Queries ([ICS 031][ics-031]),
+implements optimistic channel handshake for lower latency, and comes with a
+major performance improvement when clearing packets on busy channels for
+chains using a recent version of IBC-Go.
+This release also brings a few bug fixes related to closing ordered channels and upgrading clients.
+
+See the full release notes below for more details.
+
+[ics-031]: https://github.com/cosmos/ibc/blob/main/spec/app/ics-031-crosschain-queries/README.md
+
+### General
+
+### FEATURES
+
+- Support for Cross-chain Queries ([ICS 031][ics-031])
+  ([#2915](https://github.com/informalsystems/hermes/pull/2915))
+
+### Guide
+
+### IMPROVEMENTS
+
+- Document `upgrade clients` command, [see the guide](https://hermes.informal.systems/documentation/commands/upgrade/index.html)
+  ([#3066](https://github.com/informalsystems/hermes/issues/3066))
+
+
+### Hermes - `ibc-relayer-cli` (v1.3.0)
+
+### BUG FIXES
+
+- Fix error message on client update with expired trusted state
+  ([#3054](https://github.com/informalsystems/hermes/issues/3054))
+
+### Relayer Library - `ibc-relayer` (v0.22.0)
+
+#### BREAKING CHANGES
+
+- Remove `query_consensus_states` from the `ChainEndpoint` trait
+  ([#2001](https://github.com/informalsystems/hermes/issues/2001))
+- The `query consensus state` command now only list heights and its `--heights-only` option was removed
+  ([#2001](https://github.com/informalsystems/hermes/issues/2001))
+- Bump the default trust threshold for new clients from 1/3 to 2/3
+  ([#2876](https://github.com/informalsystems/hermes/issues/2876))
+
+#### FEATURES
+
+- Enable optimistic channel handshake
+  ([#2910](https://github.com/informalsystems/hermes/issues/2910))
+
+#### IMPROVEMENTS
+
+- Fetch consensus state heights using the more efficient
+  `QueryConsensusStateHeights` gRPC query instead of fetching all the consensus
+  states themselves using `QueryConsensusStates` and extracting the heights from
+  the result ([#2001](https://github.com/informalsystems/ibc-rs/issues/2001))
+
+#### BUG FIXES
+
+- Fix proof in timeout on close messages for ordered channels
+  ([#3024](https://github.com/informalsystems/hermes/issues/3024))
+- Fix upgraded client state latest height in upgrade proposal
+  ([#3057](https://github.com/informalsystems/hermes/issues/3057))
+- Fix bug where one could sometimes not subscribe to events.
+  This mostly affected the `listen` command but also external
+  consumers of events via the `EventMonitor` interface
+  ([#3070](https://github.com/informalsystems/hermes/issues/3070))
+
+### Integration Test Framework - [`ibc-test-framework`](tools/test-framework) (v0.22.0)
+
+### BUG FIXES
+
+- Updated packet forwarding tests to use memo field instead of
+  overloading receiver following packet-forward-middleware v3.0.0 update
+  ([#3025](https://github.com/informalsystems/hermes/issues/3025))
+
+### FEATURES
+
+- Add integration tests for ICS31 Cross Chain Queries
+  ([#2967](https://github.com/informalsystems/hermes/issues/2967))
+
+
 ## v1.2.0
 
 *December 13th, 2022*
@@ -50,8 +133,7 @@ Additionally, IBC clients with a trust level between `1/3` and `2/3` inclusive a
   begin/end block events because of a quirk of the Tendermint event indexer
   ([#2867](https://github.com/informalsystems/ibc-rs/issues/2867))
 - Hermes tx CLIs that use the `packet_data_query_height` option now also clear
-  begin/end block events ([#2868](https://github.com/informalsystems/ibc-
-  rs/issues/2868))
+  begin/end block events ([#2868](https://github.com/informalsystems/ibc-rs/issues/2868))
 
 #### IMPROVEMENTS
 
@@ -127,9 +209,9 @@ this reorganization of the repository.
 The `gm` binary has been split out of the repo and has been moved into its own [repository](https://github.com/informalsystems/gm).
 This change doesn't affect current local instances of the `gm` binary,
 though new versions will need to be sourced from the new repository by running
-`git clone informalsystems/gm` and running the install script from there. 
+`git clone informalsystems/gm` and running the install script from there.
 
-For more information, see [this section](https://hermes.informal.systems/tutorials/local-chains/gaiad-manager.html#how-to-run) of the Hermes guide. 
+For more information, see [this section](https://hermes.informal.systems/tutorials/pre-requisites/gaiad-manager.html#how-to-run) of the Hermes guide.
 
 #### BREAKING CHANGES
 
@@ -379,7 +461,7 @@ v1.0.0-rc.2, v1.0.0-rc.1 and v1.0.0-rc.0.
   both the current state of the Hermes relayer and the networks it is connected to
  ([#2479](https://github.com/informalsystems/hermes/issues/2479))
 
-[telemetry-guide]: https://hermes.informal.systems/telemetry/operators.html
+[telemetry-guide]: https://hermes.informal.systems/documentation/telemetry/operators.html
 
 
 ## v1.0.0-rc.2
@@ -814,8 +896,8 @@ unless the `--new-client-connection` flag is provided.
 Please [refer to the guide][create-channel] for more information.
 
 [ics-26]: https://github.com/cosmos/ibc/blob/main/spec/core/ics-026-routing-module/README.md
-[pending]: https://hermes.informal.systems/commands/queries/packet.html#pending-packets
-[create-channel]: http://hermes.informal.systems/commands/path-setup/channels.html#establish-channel
+[pending]: https://hermes.informal.systems/documentation/commands/queries/packet.html#pending-packets
+[create-channel]: https://hermes.informal.systems/documentation/commands/path-setup/channels.html#establish-channel
 
 ### BREAKING CHANGES
 
@@ -929,7 +1011,7 @@ list = [
 This information can also be found in the [Hermes guide][guide-ica].
 
 [ica]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
-[guide-ica]: https://hermes.informal.systems/config.html#support-for-interchain-accounts
+[guide-ica]: https://hermes.informal.systems/documentation/configuration/configure-hermes.html#support-for-interchain-accounts
 
 ### BUG FIXES
 
@@ -988,7 +1070,7 @@ not reload the configuration anymore. This feature has been deemed unnecessary g
 recent performance improvements, and it is now recommended to just restart the relayer
 when the configuration is updated.
 
-Additionally, a new CLI command [`clear packets`](https://hermes.informal.systems/commands/relaying/clear.html)
+Additionally, a new CLI command [`clear packets`](https://hermes.informal.systems/documentation/commands/relaying/clear.html)
 has been added for clearing packets in both direction on a given channel.
 
 ### BUG FIXES
@@ -1473,7 +1555,7 @@ It also bumps the compatibility to Cosmos SDK 0.44.
 - Skip `consensus_heights` query in `update_client` when possible ([#1362](https://github.com/informalsystems/hermes/issues/1362))
 - Support for disabling tx confirmation mechanism ([#1380](https://github.com/informalsystems/hermes/issues/1380))
 
-- [gm](scripts/gm)
+- [gm](https://github.com/informalsystems/gm)
   - Binaries in the config can be defined as URLs now.
   - Add the option to set gm-lib path via the `$GM_LIB` environment variable ([#1365](https://github.com/informalsystems/hermes/issues/1365))
 
@@ -1496,7 +1578,7 @@ This release also fixes a bug where the chain runtime within the relayer would c
 
 - Fix header decoding error which resulted in killing the chain runtime ([#1342](https://github.com/informalsystems/hermes/issues/1342))
 
-- [gm](scripts/gm)
+- [gm](https://github.com/informalsystems/gm)
   - Fix gaiad keys add prints to stderr instead of stdout in SDK 0.43 ([#1312])
   - Bumped default `rpc_timeout` in Hermes config to 5 seconds ([#1312])
 
@@ -1538,7 +1620,7 @@ Additionnally, Hermes now includes a REST server which exposes the relayer's int
 - [ibc](https://github.com/cosmos/ibc-rs)
   - Set the index of `ibc::ics05_port::capabilities::Capability` ([#74])
 
-- [gm](scripts/gm)
+- [gm](https://github.com/informalsystems/gm)
   - Fix silent exit when requirements are missing
 
 [#74]: https://github.com/cosmos/ibc-rs/issues/74
@@ -1848,8 +1930,8 @@ substantially by switching over to `tx_broadcast_sync` for submitting transactio
   that the worker-based relayer is not experimental anymore.
 - A regression where Hermes would not recover after a node went down and up again was fixed.
 
-[telemetry]: https://hermes.informal.systems/telemetry.html
-[strategy]: http://hermes.informal.systems/config.html?highlight=strategy#global
+[telemetry]: https://hermes.informal.systems/documentation/telemetry/index.html
+[strategy]: https://hermes.informal.systems/documentation/configuration/configure-hermes.html?highlight=strategy#global
 
 > Special thanks to Colin Axnér (@colin-axner) and Jongwhan Lee (@leejw51crypto)
 > for raising multiple issues that helped us improve the reliability of Hermes.
@@ -1905,7 +1987,7 @@ substantially by switching over to `tx_broadcast_sync` for submitting transactio
 [#1022]: https://github.com/informalsystems/hermes/issues/1022
 [#1026]: https://github.com/informalsystems/hermes/issues/1026
 [#1032]: https://github.com/informalsystems/hermes/issues/1032
-[gaiad-manager]: https://github.com/informalsystems/hermes/blob/master/scripts/gm/README.md
+[gaiad-manager]: https://github.com/informalsystems/gm/blob/master/README.md
 [#1039]: https://github.com/informalsystems/hermes/issues/1039
 
 ## v0.3.2

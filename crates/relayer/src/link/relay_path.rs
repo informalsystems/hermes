@@ -16,7 +16,7 @@ use ibc_relayer_types::core::ics04_channel::msgs::{
 };
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc_relayer_types::events::{IbcEvent, WithBlockDataType};
+use ibc_relayer_types::events::{IbcEvent, IbcEventType, WithBlockDataType};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
@@ -328,7 +328,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn build_chan_close_confirm_from_event(
         &self,
         event: &IbcEventWithHeight,
-    ) -> Result<Any, LinkError> {
+    ) -> Result<Option<Any>, LinkError> {
+        // Build the `MsgChannelCloseConfirm` only from `Timeout` or `CloseInitChannel` event types
+        if event.event.event_type() != IbcEventType::Timeout
+            && event.event.event_type() != IbcEventType::CloseInitChannel
+        {
+            return Ok(None);
+        }
+
+        // Nothing to do if channel on destination is already closed
+        if self
+            .dst_channel(QueryHeight::Latest)?
+            .state_matches(&ChannelState::Closed)
+        {
+            return Ok(None);
+        }
+
         let src_channel_id = self.src_channel_id();
         let proofs = self
             .src_chain()
@@ -343,7 +358,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             signer: self.dst_signer()?,
         };
 
-        Ok(new_msg.to_any())
+        Ok(Some(new_msg.to_any()))
     }
 
     /// Determines if the events received are relevant and should be processed.
@@ -530,7 +545,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             let (dst_msg, src_msg) = match &event_with_height.event {
                 IbcEvent::CloseInitChannel(_) => (
-                    Some(self.build_chan_close_confirm_from_event(event_with_height)?),
+                    self.build_chan_close_confirm_from_event(event_with_height)?,
                     None,
                 ),
                 IbcEvent::TimeoutPacket(_) => {
@@ -545,7 +560,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             .state_matches(&ChannelState::Closed)
                     {
                         (
-                            Some(self.build_chan_close_confirm_from_event(event_with_height)?),
+                            self.build_chan_close_confirm_from_event(event_with_height)?,
                             None,
                         )
                     } else {
@@ -1284,13 +1299,34 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         packet: &Packet,
         height: Height,
     ) -> Result<Option<Any>, LinkError> {
+        let dst_channel_id = self.dst_channel_id();
+
+        trace!(%packet, %height, "build timeout on close for channel");
+        let (packet_type, next_sequence_received) = if self.ordered_channel() {
+            let (next_seq, _) = self
+                .dst_chain()
+                .query_next_sequence_receive(
+                    QueryNextSequenceReceiveRequest {
+                        port_id: self.dst_port_id().clone(),
+                        channel_id: dst_channel_id.clone(),
+                        height: QueryHeight::Specific(height),
+                    },
+                    IncludeProof::No,
+                )
+                .map_err(|e| LinkError::query(self.dst_chain().id(), e))?;
+
+            (PacketMsgType::TimeoutOnCloseOrdered, next_seq)
+        } else {
+            (PacketMsgType::TimeoutOnCloseUnordered, packet.sequence)
+        };
+
         let proofs = self
             .dst_chain()
             .build_packet_proofs(
-                PacketMsgType::TimeoutOnClose,
+                packet_type,
                 &packet.destination_port,
                 &packet.destination_channel,
-                packet.sequence,
+                next_sequence_received,
                 height,
             )
             .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;

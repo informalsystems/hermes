@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-integration-test"
-version    = "0.21.0"
+version    = "0.22.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -36,6 +36,7 @@ ics29-fee = []
 experimental = []
 mbt = []
 forward-packet = []
+ics31 = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
