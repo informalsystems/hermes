@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-rest"
-version      = "0.21.0"
+version      = "0.22.0"
 authors      = ["Informal Systems <hello@informal.systems>"]
 edition      = "2021"
 license      = "Apache-2.0"
@@ -14,8 +14,8 @@ description  = """
 """
 
 [dependencies]
-ibc-relayer-types = { version = "0.21.0", path = "../relayer-types" }
-ibc-relayer       = { version = "0.21.0", path = "../relayer" }
+ibc-relayer-types = { version = "0.22.0", path = "../relayer-types" }
+ibc-relayer       = { version = "0.22.0", path = "../relayer" }
 
 crossbeam-channel = "0.5"
 rouille           = "3.6"
@@ -23,6 +23,6 @@ serde             = "1.0"
 tracing           = "0.1"
 
 [dev-dependencies]
-serde_json = "1.0.91"
+serde_json = "1.0.93"
 toml       = "0.5.10"
 ureq       = "2.6.2"
