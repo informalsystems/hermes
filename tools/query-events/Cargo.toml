@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tendermint     = { version  = "0.28.0" }
+tendermint     = { version  = "0.29.0" }
 tendermint-rpc = { version  = "0.28.0", features = ["http-client"] }
 
 clap               = { version = "3.2", features = ["derive"] }
