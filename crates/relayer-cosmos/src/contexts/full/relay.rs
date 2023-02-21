@@ -2,18 +2,12 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_framework::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_framework::full::batch::types::config::BatchConfig;
-use ibc_relayer_framework::full::batch::worker::CanSpawnBatchMessageWorker;
 use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-use tokio::sync::mpsc::unbounded_channel;
 
 use crate::base::traits::relay::CosmosRelay;
 use crate::base::types::chain::CosmosChainWrapper;
-use crate::base::types::relay::CosmosRelayWrapper;
 use crate::contexts::full::chain::FullCosmosChainContext;
 use crate::full::traits::relay::CosmosFullRelay;
 use crate::full::types::batch::CosmosBatchSender;
@@ -61,49 +55,6 @@ where
 
         relay
     }
-}
-
-pub fn new_relay_context_with_batch<SrcChain, DstChain>(
-    runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
-    src_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<SrcChain>>>,
-    dst_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<DstChain>>>,
-    src_to_dst_client: ForeignClient<DstChain, SrcChain>,
-    dst_to_src_client: ForeignClient<SrcChain, DstChain>,
-    packet_filter: PacketFilter,
-    batch_config: BatchConfig,
-) -> OfaRelayWrapper<CosmosRelayWrapper<FullCosmosRelay<SrcChain, DstChain>>>
-where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
-{
-    let (src_chain_message_batch_sender, src_chain_message_batch_receiver) = unbounded_channel();
-
-    let (dst_chain_message_batch_sender, dst_chain_message_batch_receiver) = unbounded_channel();
-
-    let relay = OfaRelayWrapper::new(CosmosRelayWrapper::new(FullCosmosRelay::new(
-        runtime,
-        src_chain,
-        dst_chain,
-        src_to_dst_client,
-        dst_to_src_client,
-        packet_filter,
-        src_chain_message_batch_sender,
-        dst_chain_message_batch_sender,
-    )));
-
-    relay.clone().spawn_batch_message_worker(
-        SourceTarget,
-        batch_config.clone(),
-        src_chain_message_batch_receiver,
-    );
-
-    relay.clone().spawn_batch_message_worker(
-        DestinationTarget,
-        batch_config,
-        dst_chain_message_batch_receiver,
-    );
-
-    relay
 }
 
 impl<SrcChain, DstChain> CosmosRelay for FullCosmosRelay<SrcChain, DstChain>

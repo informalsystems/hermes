@@ -28,17 +28,3 @@ where
     type FullSrcChain = Relay::SrcChain;
     type FullDstChain = Relay::DstChain;
 }
-
-pub trait CosmosHomogenousFullRelay:
-    CosmosFullRelayTypes<FullSrcChain = Self::FullChain, FullDstChain = Self::FullChain>
-{
-    type FullChain: CosmosFullChain<Preset = Self::Preset>;
-}
-
-impl<Relay, Chain> CosmosHomogenousFullRelay for Relay
-where
-    Relay: CosmosFullRelayTypes<FullSrcChain = Chain, FullDstChain = Chain>,
-    Chain: CosmosFullChain<Preset = Self::Preset>,
-{
-    type FullChain = Chain;
-}

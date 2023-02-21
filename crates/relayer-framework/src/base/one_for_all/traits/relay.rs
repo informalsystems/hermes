@@ -113,8 +113,6 @@ pub trait OfaHomogeneousRelay:
 {
     type Chain: OfaIbcChain<
         Self::Chain,
-        Runtime = Self::Runtime,
-        Preset = Self::Preset,
         IncomingPacket = Self::Packet,
         OutgoingPacket = Self::Packet,
     >;
@@ -123,25 +121,7 @@ pub trait OfaHomogeneousRelay:
 impl<Relay, Chain> OfaHomogeneousRelay for Relay
 where
     Relay: OfaRelayTypes<SrcChain = Chain, DstChain = Chain>,
-    Chain: OfaIbcChain<
-        Chain,
-        Runtime = Self::Runtime,
-        Preset = Self::Preset,
-        IncomingPacket = Self::Packet,
-        OutgoingPacket = Self::Packet,
-    >,
+    Chain: OfaIbcChain<Chain, IncomingPacket = Self::Packet, OutgoingPacket = Self::Packet>,
 {
     type Chain = Chain;
-}
-
-pub trait OfaBaseRelayWithPreset: OfaBaseRelay<Preset = Self::OfaPreset> {
-    type OfaPreset: OfaRelayPreset<Self>;
-}
-
-impl<Relay> OfaBaseRelayWithPreset for Relay
-where
-    Relay: OfaBaseRelay,
-    Relay::Preset: OfaRelayPreset<Relay>,
-{
-    type OfaPreset = Relay::Preset;
 }

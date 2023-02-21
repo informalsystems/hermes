@@ -60,10 +60,8 @@ where
 pub trait OfaHomogeneousFullRelay:
     OfaFullRelayTypes<FullSrcChain = Self::Chain, FullDstChain = Self::Chain>
 {
-    type Chain: OfaIbcChain<
+    type Chain: OfaFullIbcChain<
         Self::Chain,
-        Runtime = Self::Runtime,
-        Preset = Self::Preset,
         IncomingPacket = Self::Packet,
         OutgoingPacket = Self::Packet,
     >;
@@ -72,13 +70,7 @@ pub trait OfaHomogeneousFullRelay:
 impl<Relay, Chain> OfaHomogeneousFullRelay for Relay
 where
     Relay: OfaFullRelayTypes<FullSrcChain = Chain, FullDstChain = Chain>,
-    Chain: OfaIbcChain<
-        Chain,
-        Runtime = Self::Runtime,
-        Preset = Self::Preset,
-        IncomingPacket = Self::Packet,
-        OutgoingPacket = Self::Packet,
-    >,
+    Chain: OfaFullIbcChain<Chain, IncomingPacket = Self::Packet, OutgoingPacket = Self::Packet>,
 {
     type Chain = Chain;
 }

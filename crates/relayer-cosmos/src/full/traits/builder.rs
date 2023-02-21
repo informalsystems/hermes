@@ -10,7 +10,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use crate::base::traits::builder::{ChainA, ChainB, CosmosBuilderTypes, RelayAToB, RelayBToA};
 use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::relay::CosmosRelayWrapper;
-use crate::full::traits::birelay::{CosmosFullBiRelay, CosmosHomogenousFullBiRelay};
+use crate::full::traits::birelay::CosmosFullBiRelay;
 use crate::full::types::batch::CosmosBatchSender;
 
 pub trait CosmosFullBuilderTypes: CosmosBuilderTypes<BiRelay = Self::FullBiRelay> {
@@ -62,18 +62,4 @@ pub trait CosmosFullBuilder: CosmosFullBuilderTypes {
         relay_a_to_b: OfaRelayWrapper<CosmosRelayWrapper<RelayAToB<Self>>>,
         relay_b_to_a: OfaRelayWrapper<CosmosRelayWrapper<RelayBToA<Self>>>,
     ) -> Result<Self::BiRelay, Self::Error>;
-}
-
-pub trait CosmosHomogenousFullBuilderTypes:
-    CosmosFullBuilderTypes<FullBiRelay = Self::HomogenousFullBiRelay>
-{
-    type HomogenousFullBiRelay: CosmosHomogenousFullBiRelay<Preset = Self::Preset>;
-}
-
-impl<Build, BiRelay> CosmosHomogenousFullBuilderTypes for Build
-where
-    Build: CosmosFullBuilderTypes<FullBiRelay = BiRelay>,
-    BiRelay: CosmosHomogenousFullBiRelay<Preset = Build::Preset>,
-{
-    type HomogenousFullBiRelay = BiRelay;
 }
