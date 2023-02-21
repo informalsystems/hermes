@@ -62,9 +62,11 @@ pub async fn wait_for_block_commits(
             thread::sleep(WAIT_BACKOFF);
 
             for tx_sync_result in tx_sync_results.iter_mut() {
-                // ignore error
-                let _ =
+                let res =
                     update_tx_sync_result(chain_id, rpc_client, rpc_address, tx_sync_result).await;
+                if let Err(e) = res {
+                    debug!("update_tx_sync_result failed: {e}");
+                }
             }
         }
     }
