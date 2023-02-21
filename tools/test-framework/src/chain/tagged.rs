@@ -7,6 +7,7 @@ use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::event::IbcEventWithHeight;
 use serde_json as json;
+use tendermint_rpc::HttpClient;
 
 use crate::chain::cli::query::query_recipient_transactions;
 use crate::chain::driver::ChainDriver;
@@ -29,6 +30,8 @@ use crate::types::wallet::{Wallet, WalletAddress};
 */
 pub trait TaggedChainDriverExt<Chain> {
     fn chain_id(&self) -> TaggedChainIdRef<Chain>;
+
+    fn rpc_client(&self) -> MonoTagged<Chain, &HttpClient>;
 
     fn tx_config(&self) -> MonoTagged<Chain, &TxConfig>;
 
@@ -79,6 +82,10 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         self.map_ref(|val| &val.chain_id)
     }
 
+    fn rpc_client(&self) -> MonoTagged<Chain, &HttpClient> {
+        self.map_ref(|val| &val.rpc_client)
+    }
+
     fn tx_config(&self) -> MonoTagged<Chain, &TxConfig> {
         self.map_ref(|val| &val.tx_config)
     }
@@ -91,6 +98,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         self.value()
             .runtime
             .block_on(simple_send_tx(
+                &self.value().rpc_client,
                 &self.value().tx_config,
                 &wallet.value().key,
                 messages,

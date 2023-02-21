@@ -543,9 +543,8 @@ impl CosmosSdkChain {
 
         if self.config.sequential_batch_tx {
             sequential_send_batched_messages_and_wait_commit(
+                &self.rpc_client,
                 &self.tx_config,
-                self.config.max_msg_num,
-                self.config.max_tx_size,
                 &key_pair,
                 account,
                 &self.config.memo_prefix,
@@ -554,9 +553,8 @@ impl CosmosSdkChain {
             .await
         } else {
             send_batched_messages_and_wait_commit(
+                &self.rpc_client,
                 &self.tx_config,
-                self.config.max_msg_num,
-                self.config.max_tx_size,
                 &key_pair,
                 account,
                 &self.config.memo_prefix,
@@ -590,9 +588,8 @@ impl CosmosSdkChain {
             get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
         send_batched_messages_and_wait_check_tx(
+            &self.rpc_client,
             &self.tx_config,
-            self.config.max_msg_num,
-            self.config.max_tx_size,
             &key_pair,
             account,
             &self.config.memo_prefix,
@@ -1861,6 +1858,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let key_pair = self.key()?;
 
         self.rt.block_on(maybe_register_counterparty_payee(
+            &self.rpc_client,
             &self.tx_config,
             &key_pair,
             &mut self.account,

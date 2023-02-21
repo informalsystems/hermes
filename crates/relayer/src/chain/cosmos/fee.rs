@@ -1,6 +1,7 @@
 use ibc_relayer_types::applications::ics29_fee::msgs::register_payee::build_register_counterparty_payee_message;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::signer::Signer;
+use tendermint_rpc::HttpClient;
 
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::fee::query_counterparty_payee;
@@ -12,7 +13,9 @@ use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
 
+// FIXME: monster function, refactor
 pub async fn maybe_register_counterparty_payee(
+    rpc_client: &HttpClient,
     tx_config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     m_account: &mut Option<Account>,
@@ -44,6 +47,7 @@ pub async fn maybe_register_counterparty_payee(
             .map_err(Error::ics29)?;
 
             let response = send_tx_with_account_sequence_retry(
+                rpc_client,
                 tx_config,
                 key_pair,
                 account,
@@ -53,7 +57,7 @@ pub async fn maybe_register_counterparty_payee(
             .await?;
 
             wait_tx_succeed(
-                &tx_config.rpc_client,
+                rpc_client,
                 &tx_config.rpc_address,
                 &tx_config.rpc_timeout,
                 &response.hash,

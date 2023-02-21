@@ -11,10 +11,11 @@ use tokio::runtime::Runtime;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer_types::applications::transfer::amount::Amount;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use tendermint_rpc::HttpClient;
 
 use crate::chain::chain_type::ChainType;
 use crate::chain::cli::query::query_balance;
-use crate::error::Error;
+use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
 use crate::ibc::token::Token;
 use crate::relayer::tx::new_tx_config_for_test;
@@ -89,6 +90,8 @@ pub struct ChainDriver {
 
     pub tx_config: TxConfig,
 
+    pub rpc_client: HttpClient,
+
     pub runtime: Arc<Runtime>,
 }
 
@@ -122,6 +125,9 @@ impl ChainDriver {
             chain_type.address_type(),
         )?;
 
+        let rpc_client =
+            HttpClient::new(tx_config.rpc_address.clone()).map_err(handle_generic_error)?;
+
         Ok(Self {
             chain_type,
             command_path,
@@ -133,6 +139,7 @@ impl ChainDriver {
             grpc_web_port,
             p2p_port,
             tx_config,
+            rpc_client,
             runtime,
         })
     }
