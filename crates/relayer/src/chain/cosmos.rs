@@ -1957,10 +1957,6 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         )
     })?;
 
-    if chain.historical_entries()? == 0 {
-        return Err(Error::no_historical_entries(chain_id.clone()));
-    }
-
     let status = chain.chain_status()?;
 
     if status.node_info.other.tx_index != TxIndexStatus::On {
@@ -2007,6 +2003,10 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             grpc_address,
             diagnostic.to_string(),
         ));
+    }
+
+    if chain.historical_entries()? == 0 {
+        return Err(Error::no_historical_entries(chain_id.clone()));
     }
 
     Ok(())
