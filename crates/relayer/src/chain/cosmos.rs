@@ -2005,6 +2005,39 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         ));
     }
 
+    let unbonding_period = chain
+        .query_staking_params()
+        .map(|params| params.unbonding_time);
+
+    match unbonding_period {
+        Ok(Some(unbonding_period)) if chain.config.unbonding_period.is_some() => {
+            warn!(
+                "Chain '{}' has an unbonding period configured in the config.toml, \
+                but this is not required as this information can be fetched from the staking parameters. \
+                Please remove the `unbonding_period` setting from the chain configuration. \
+                Unbonding period in configuration: {:?}, unbonding period in staking parameters: {:?}",
+                chain_id, chain.config.unbonding_period.unwrap(), unbonding_period
+            );
+        }
+        Ok(None) if chain.config.unbonding_period.is_none() => {
+            warn!(
+                "Hermes was unable to fetch the unbonding period from the staking parameters for chain '{}'. \
+                If this is an ICS customer chain, please add the `unbonding_period` setting \
+                to the chain configuration.",
+                chain_id,
+            );
+        }
+        Err(e) if chain.config.unbonding_period.is_none() => {
+            warn!(
+                "Hermes was unable to fetch the unbonding period from the staking parameters for chain '{}'. \
+                If this is an ICS customer chain, please add the `unbonding_period` setting \
+                to the chain configuration. Otherwise, inspect the following error for more information: {}",
+                chain_id, e
+            );
+        }
+        _ => (),
+    }
+
     if chain.historical_entries()? == 0 {
         return Err(Error::no_historical_entries(chain_id.clone()));
     }
