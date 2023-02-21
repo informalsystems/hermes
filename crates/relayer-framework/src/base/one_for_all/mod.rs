@@ -18,7 +18,6 @@
 //! encapsulated in the `all_for_one` trait.
 
 pub mod impls;
-pub mod instances;
 pub mod presets;
 pub mod traits;
 pub mod types;
