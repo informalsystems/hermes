@@ -20,27 +20,21 @@ use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
 pub trait OfaRelayTypes: Async {
-    type Preset;
+    type Preset: Async;
 
     /**
        Corresponds to [`HasErrorType::Error`](crate::base::core::traits::error::HasErrorType).
     */
-    type Error: Async + Debug;
+    type Error: Debug + Clone + Async;
 
     type Runtime: OfaBaseRuntime;
 
     type Packet: Async;
 
-    type SrcChain: OfaIbcChain<
-        Self::DstChain,
-        Runtime = Self::Runtime,
-        Preset = Self::Preset,
-        OutgoingPacket = Self::Packet,
-    >;
+    type SrcChain: OfaIbcChain<Self::DstChain, Preset = Self::Preset, OutgoingPacket = Self::Packet>;
 
     type DstChain: OfaIbcChain<
         Self::SrcChain,
-        Runtime = Self::Runtime,
         Preset = Self::Preset,
         IncomingPacket = Self::Packet,
         OutgoingPacket = <Self::SrcChain as OfaIbcChain<Self::DstChain>>::IncomingPacket,
@@ -112,4 +106,22 @@ where
 
     type IbcMessageSender: IbcMessageSender<OfaRelayWrapper<Relay>, SourceTarget>
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
+}
+
+pub trait OfaHomogeneousRelay:
+    OfaRelayTypes<SrcChain = Self::Chain, DstChain = Self::Chain>
+{
+    type Chain: OfaIbcChain<
+        Self::Chain,
+        IncomingPacket = Self::Packet,
+        OutgoingPacket = Self::Packet,
+    >;
+}
+
+impl<Relay, Chain> OfaHomogeneousRelay for Relay
+where
+    Relay: OfaRelayTypes<SrcChain = Chain, DstChain = Chain>,
+    Chain: OfaIbcChain<Chain, IncomingPacket = Self::Packet, OutgoingPacket = Self::Packet>,
+{
+    type Chain = Chain;
 }

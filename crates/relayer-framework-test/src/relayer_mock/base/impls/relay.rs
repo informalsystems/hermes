@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use async_trait::async_trait;
 use std::vec;
 
-use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::error::{BaseError, Error};
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::packet::PacketKey;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
@@ -35,7 +35,7 @@ impl OfaRelayTypes for MockRelayContext {
 #[async_trait]
 impl OfaBaseRelay for MockRelayContext {
     fn runtime_error(e: TokioError) -> Self::Error {
-        Error::tokio(e)
+        BaseError::tokio(e).into()
     }
 
     fn src_chain_error(e: Error) -> Self::Error {

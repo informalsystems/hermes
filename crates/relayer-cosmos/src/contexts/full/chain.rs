@@ -1,8 +1,10 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::Secp256k1KeyPair;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
 use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::signer::Signer;
 use tendermint_rpc::Url;
 
@@ -17,6 +19,7 @@ pub struct FullCosmosChainContext<Handle: ChainHandle> {
     pub tx_config: TxConfig,
     pub key_entry: Secp256k1KeyPair,
     pub websocket_url: Url,
+    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 }
 
@@ -27,6 +30,7 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
         tx_config: TxConfig,
         websocket_url: Url,
         key_entry: Secp256k1KeyPair,
+        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
         telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     ) -> Self {
         let chain = Self {
@@ -35,6 +39,7 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
             tx_config,
             websocket_url,
             key_entry,
+            runtime,
             telemetry,
         };
 
@@ -49,6 +54,10 @@ where
     type Preset = FullPreset;
 
     type ChainHandle = Handle;
+
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+        &self.runtime
+    }
 
     fn chain_handle(&self) -> &Self::ChainHandle {
         &self.handle

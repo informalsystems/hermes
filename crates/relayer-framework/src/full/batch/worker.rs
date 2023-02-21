@@ -4,18 +4,19 @@ use core::mem;
 
 use crate::base::chain::traits::types::chain::HasChainTypes;
 use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
-use crate::base::chain::types::aliases::Runtime;
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
+use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::log::{HasLogger, LevelDebug};
 use crate::base::runtime::traits::mutex::HasMutex;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::runtime::traits::sleep::CanSleep;
 use crate::base::runtime::traits::time::HasTime;
-use crate::full::batch::traits::channel::HasMessageBatchReceiver;
+use crate::base::runtime::types::aliases::Runtime;
 use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
-use crate::full::batch::types::aliases::{BatchSubmission, EventResultSender};
+use crate::full::batch::types::aliases::{
+    BatchSubmission, EventResultSender, MessageBatchReceiver,
+};
 use crate::full::batch::types::config::BatchConfig;
 use crate::full::runtime::traits::channel::{CanUseChannels, HasChannelTypes};
 use crate::full::runtime::traits::channel_once::{CanUseChannelsOnce, HasChannelOnceTypes};
@@ -23,39 +24,18 @@ use crate::full::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanSpawnBatchMessageWorkers: Async {
-    fn spawn_batch_message_workers(&self, config: BatchConfig) -> Box<dyn TaskHandle>;
-}
-
-impl<Relay> CanSpawnBatchMessageWorkers for Relay
-where
-    Relay: Clone,
-    Relay: CanSpawnBatchMessageWorker<SourceTarget>,
-    Relay: CanSpawnBatchMessageWorker<DestinationTarget>,
-{
-    fn spawn_batch_message_workers(&self, config: BatchConfig) -> Box<dyn TaskHandle> {
-        let handle1 =
-            <Relay as CanSpawnBatchMessageWorker<SourceTarget>>::spawn_batch_message_worker(
-                self.clone(),
-                config.clone(),
-            );
-
-        let handle2 =
-            <Relay as CanSpawnBatchMessageWorker<DestinationTarget>>::spawn_batch_message_worker(
-                self.clone(),
-                config,
-            );
-
-        Box::new(vec![handle1, handle2])
-    }
-}
-
-#[async_trait]
 pub trait CanSpawnBatchMessageWorker<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
+    Target::TargetChain: HasRuntime,
+    Runtime<Target::TargetChain>: HasChannelTypes + HasChannelOnceTypes,
 {
-    fn spawn_batch_message_worker(self, config: BatchConfig) -> Box<dyn TaskHandle>;
+    fn spawn_batch_message_worker(
+        self,
+        target: Target,
+        config: BatchConfig,
+        receiver: MessageBatchReceiver<Target::TargetChain, Self::Error>,
+    ) -> Box<dyn TaskHandle>;
 }
 
 impl<Relay, Target, Runtime> CanSpawnBatchMessageWorker<Target> for Relay
@@ -65,11 +45,16 @@ where
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: HasSpawner + HasChannelTypes + HasChannelOnceTypes,
 {
-    fn spawn_batch_message_worker(self, config: BatchConfig) -> Box<dyn TaskHandle> {
+    fn spawn_batch_message_worker(
+        self,
+        _target: Target,
+        config: BatchConfig,
+        receiver: MessageBatchReceiver<Target::TargetChain, Self::Error>,
+    ) -> Box<dyn TaskHandle> {
         let spawner = Target::target_chain(&self).runtime().spawner();
 
         spawner.spawn(async move {
-            self.run_loop(&config).await;
+            self.run_loop(&config, receiver).await;
         })
     }
 }
@@ -81,14 +66,17 @@ where
     Target::TargetChain: HasRuntime,
     Runtime<Target::TargetChain>: HasChannelTypes + HasChannelOnceTypes,
 {
-    async fn run_loop(&self, config: &BatchConfig);
+    async fn run_loop(
+        &self,
+        config: &BatchConfig,
+        receiver: MessageBatchReceiver<Target::TargetChain, Self::Error>,
+    );
 }
 
 #[async_trait]
 impl<Relay, Target, Runtime> CanRunLoop<Target> for Relay
 where
     Relay: CanProcessMessageBatches<Target>,
-    Relay: HasMessageBatchReceiver<Target>,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: HasTime
@@ -98,7 +86,11 @@ where
         + CanUseChannels
         + HasChannelOnceTypes,
 {
-    async fn run_loop(&self, config: &BatchConfig) {
+    async fn run_loop(
+        &self,
+        config: &BatchConfig,
+        mut receiver: MessageBatchReceiver<Target::TargetChain, Self::Error>,
+    ) {
         let runtime = Target::target_chain(self).runtime();
         let mut pending_batches: VecDeque<BatchSubmission<Target::TargetChain, Self::Error>> =
             VecDeque::new();
@@ -106,11 +98,7 @@ where
         let mut last_sent_time = runtime.now();
 
         loop {
-            let payload = {
-                let receiver_mutex = self.get_batch_receiver();
-                let mut receiver = Runtime::acquire_mutex(receiver_mutex).await;
-                Runtime::try_receive(&mut receiver)
-            };
+            let payload = Runtime::try_receive(&mut receiver);
 
             match payload {
                 Ok(m_batch) => {

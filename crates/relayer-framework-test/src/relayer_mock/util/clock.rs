@@ -5,10 +5,9 @@
 use eyre::eyre;
 use std::sync::{Arc, Mutex};
 
-use crate::relayer_mock::{
-    base::{error::Error, types::aliases::MockTimestamp},
-    util::mutex::MutexUtil,
-};
+use crate::relayer_mock::base::error::{BaseError, Error};
+use crate::relayer_mock::base::types::aliases::MockTimestamp;
+use crate::relayer_mock::util::mutex::MutexUtil;
 
 pub struct MockClock {
     timestamp: Arc<Mutex<MockTimestamp>>,
@@ -29,7 +28,7 @@ impl MockClock {
             .0
             .checked_add(duration.0)
             .ok_or_else(|| {
-                Error::generic(eyre!(
+                BaseError::generic(eyre!(
                     "overflow when adding {} to {}",
                     locked_timestamp,
                     duration,

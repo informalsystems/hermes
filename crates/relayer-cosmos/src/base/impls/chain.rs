@@ -123,7 +123,7 @@ where
     }
 
     fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
-        &self.runtime
+        self.chain.runtime()
     }
 
     fn chain_id(&self) -> &Self::ChainId {

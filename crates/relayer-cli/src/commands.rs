@@ -101,7 +101,7 @@ pub enum CliCmd {
     /// Relay packets using the new experimental relayer architecture.
     #[clap(subcommand)]
     #[cfg(feature = "experimental")]
-    Relay(crate::next::commands::new_relay::NewRelayCmds),
+    NewRelay(crate::next::commands::new_relay::NewRelayCmds),
 }
 
 /// This trait allows you to define how application configuration is loaded.

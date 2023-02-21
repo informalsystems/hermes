@@ -10,7 +10,7 @@ use crate::std_prelude::*;
 
 #[async_trait]
 pub trait OfaFullRuntime: OfaBaseRuntime {
-    type Sender<T>: Async
+    type Sender<T>: Clone + Async
     where
         T: Async;
 

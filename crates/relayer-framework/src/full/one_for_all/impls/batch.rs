@@ -8,9 +8,9 @@ use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWi
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::full::batch::traits::channel::{HasMessageBatchReceiver, HasMessageBatchSender};
+use crate::full::batch::traits::channel::HasMessageBatchSender;
 use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
-use crate::full::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
+use crate::full::batch::types::aliases::MessageBatchSender;
 use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::std_prelude::*;
 
@@ -39,29 +39,11 @@ where
     }
 }
 
-impl<Relay> HasMessageBatchReceiver<SourceTarget> for OfaRelayWrapper<Relay>
-where
-    Relay: OfaFullRelay,
-{
-    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self::SrcChain, Self::Error> {
-        self.relay.src_chain_message_batch_receiver()
-    }
-}
-
 impl<Relay> HasMessageBatchSender<DestinationTarget> for OfaRelayWrapper<Relay>
 where
     Relay: OfaFullRelay,
 {
     fn get_batch_sender(&self) -> &MessageBatchSender<Self::DstChain, Self::Error> {
         self.relay.dst_chain_message_batch_sender()
-    }
-}
-
-impl<Relay> HasMessageBatchReceiver<DestinationTarget> for OfaRelayWrapper<Relay>
-where
-    Relay: OfaFullRelay,
-{
-    fn get_batch_receiver(&self) -> &MessageBatchReceiver<Self::DstChain, Self::Error> {
-        self.relay.dst_chain_message_batch_receiver()
     }
 }

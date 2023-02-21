@@ -1,12 +1,15 @@
 use alloc::string::String;
+use alloc::sync::Arc;
 use eyre::Report;
 use flex_error::{define_error, TraceError};
 
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
+pub type Error = Arc<BaseError>;
+
 define_error! {
     #[derive(Clone, Debug)]
-    Error {
+    BaseError {
         EmptyIterator
             | _ | { "empty iterator error" },
 
@@ -79,8 +82,8 @@ define_error! {
     }
 }
 
-impl From<Report> for Error {
+impl From<Report> for BaseError {
     fn from(e: Report) -> Self {
-        Error::generic(e)
+        BaseError::generic(e)
     }
 }

@@ -1,159 +1,98 @@
-use alloc::sync::Arc;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_framework::full::batch::types::config::BatchConfig;
-use ibc_relayer_framework::full::batch::worker::CanSpawnBatchMessageWorkers;
+use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::Mutex;
 
-use crate::base::traits::chain::CosmosChain;
 use crate::base::traits::relay::CosmosRelay;
-use crate::base::types::relay::CosmosRelayWrapper;
+use crate::base::types::chain::CosmosChainWrapper;
 use crate::contexts::full::chain::FullCosmosChainContext;
 use crate::full::traits::relay::CosmosFullRelay;
-use crate::full::types::batch::{CosmosBatchReceiver, CosmosBatchSender};
+use crate::full::types::batch::CosmosBatchSender;
 
 pub struct FullCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: CosmosChain,
-    DstChain: CosmosChain,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
-    pub src_chain: Arc<SrcChain>,
-    pub dst_chain: Arc<DstChain>,
-    pub src_to_dst_client: ForeignClient<
-        <DstChain as CosmosChain>::ChainHandle,
-        <SrcChain as CosmosChain>::ChainHandle,
-    >,
-    pub dst_to_src_client: ForeignClient<
-        <SrcChain as CosmosChain>::ChainHandle,
-        <DstChain as CosmosChain>::ChainHandle,
-    >,
+    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    pub src_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<SrcChain>>>,
+    pub dst_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<DstChain>>>,
+    pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
+    pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     pub packet_filter: PacketFilter,
     pub src_chain_message_batch_sender: CosmosBatchSender,
-    pub src_chain_message_batch_receiver: CosmosBatchReceiver,
     pub dst_chain_message_batch_sender: CosmosBatchSender,
-    pub dst_chain_message_batch_receiver: CosmosBatchReceiver,
 }
 
 impl<SrcChain, DstChain> FullCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: CosmosChain,
-    DstChain: CosmosChain,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
     pub fn new(
-        src_chain: Arc<SrcChain>,
-        dst_chain: Arc<DstChain>,
-        src_to_dst_client: ForeignClient<
-            <DstChain as CosmosChain>::ChainHandle,
-            <SrcChain as CosmosChain>::ChainHandle,
-        >,
-        dst_to_src_client: ForeignClient<
-            <SrcChain as CosmosChain>::ChainHandle,
-            <DstChain as CosmosChain>::ChainHandle,
-        >,
+        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+        src_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<SrcChain>>>,
+        dst_chain: OfaChainWrapper<CosmosChainWrapper<FullCosmosChainContext<DstChain>>>,
+        src_to_dst_client: ForeignClient<DstChain, SrcChain>,
+        dst_to_src_client: ForeignClient<SrcChain, DstChain>,
         packet_filter: PacketFilter,
+        src_chain_message_batch_sender: CosmosBatchSender,
+        dst_chain_message_batch_sender: CosmosBatchSender,
     ) -> Self {
-        let (src_chain_message_batch_sender, src_chain_message_batch_receiver) =
-            unbounded_channel();
-
-        let (dst_chain_message_batch_sender, dst_chain_message_batch_receiver) =
-            unbounded_channel();
-
         let relay = Self {
+            runtime,
             src_chain,
             dst_chain,
             src_to_dst_client,
             dst_to_src_client,
             packet_filter,
             src_chain_message_batch_sender,
-            src_chain_message_batch_receiver: Mutex::new(src_chain_message_batch_receiver),
             dst_chain_message_batch_sender,
-            dst_chain_message_batch_receiver: Mutex::new(dst_chain_message_batch_receiver),
         };
 
         relay
     }
 }
 
-pub fn new_relay_context_with_batch<SrcChain, DstChain>(
-    runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
-    src_chain: FullCosmosChainContext<SrcChain>,
-    dst_chain: FullCosmosChainContext<DstChain>,
-    src_to_dst_client: ForeignClient<DstChain, SrcChain>,
-    dst_to_src_client: ForeignClient<SrcChain, DstChain>,
-    packet_filter: PacketFilter,
-    batch_config: BatchConfig,
-) -> OfaRelayWrapper<
-    CosmosRelayWrapper<
-        FullCosmosRelay<FullCosmosChainContext<SrcChain>, FullCosmosChainContext<DstChain>>,
-    >,
->
+impl<SrcChain, DstChain> CosmosRelay for FullCosmosRelay<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    let relay = OfaRelayWrapper::new(CosmosRelayWrapper::new(
-        Arc::new(FullCosmosRelay::new(
-            Arc::new(src_chain),
-            Arc::new(dst_chain),
-            src_to_dst_client,
-            dst_to_src_client,
-            packet_filter,
-        )),
-        runtime,
-    ));
+    type Preset = FullPreset;
 
-    relay.spawn_batch_message_workers(batch_config);
+    type SrcChain = FullCosmosChainContext<SrcChain>;
 
-    relay
-}
+    type DstChain = FullCosmosChainContext<DstChain>;
 
-impl<SrcChain, DstChain, Preset> CosmosRelay for FullCosmosRelay<SrcChain, DstChain>
-where
-    SrcChain: CosmosChain<Preset = Preset>,
-    DstChain: CosmosChain<Preset = Preset>,
-{
-    type Preset = Preset;
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+        &self.runtime
+    }
 
-    type SrcChain = SrcChain;
-
-    type DstChain = DstChain;
-
-    fn src_chain(&self) -> &Arc<Self::SrcChain> {
+    fn src_chain(&self) -> &OfaChainWrapper<CosmosChainWrapper<Self::SrcChain>> {
         &self.src_chain
     }
 
-    fn dst_chain(&self) -> &Arc<Self::DstChain> {
+    fn dst_chain(&self) -> &OfaChainWrapper<CosmosChainWrapper<Self::DstChain>> {
         &self.dst_chain
     }
 
-    fn src_to_dst_client(
-        &self,
-    ) -> &ForeignClient<
-        <Self::DstChain as CosmosChain>::ChainHandle,
-        <Self::SrcChain as CosmosChain>::ChainHandle,
-    > {
+    fn src_to_dst_client(&self) -> &ForeignClient<DstChain, SrcChain> {
         &self.src_to_dst_client
     }
 
-    fn dst_to_src_client(
-        &self,
-    ) -> &ForeignClient<
-        <Self::SrcChain as CosmosChain>::ChainHandle,
-        <Self::DstChain as CosmosChain>::ChainHandle,
-    > {
+    fn dst_to_src_client(&self) -> &ForeignClient<SrcChain, DstChain> {
         &self.dst_to_src_client
     }
 }
 
-impl<SrcChain, DstChain, Preset> CosmosFullRelay for FullCosmosRelay<SrcChain, DstChain>
+impl<SrcChain, DstChain> CosmosFullRelay for FullCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: CosmosChain<Preset = Preset>,
-    DstChain: CosmosChain<Preset = Preset>,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
     fn packet_filter(&self) -> &PacketFilter {
         &self.packet_filter
@@ -163,15 +102,7 @@ where
         &self.src_chain_message_batch_sender
     }
 
-    fn src_chain_message_batch_receiver(&self) -> &CosmosBatchReceiver {
-        &self.src_chain_message_batch_receiver
-    }
-
     fn dst_chain_message_batch_sender(&self) -> &CosmosBatchSender {
         &self.dst_chain_message_batch_sender
-    }
-
-    fn dst_chain_message_batch_receiver(&self) -> &CosmosBatchReceiver {
-        &self.dst_chain_message_batch_receiver
     }
 }

@@ -1,19 +1,24 @@
-use alloc::sync::Arc;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::base::core::traits::sync::Async;
+use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 
 use crate::base::traits::chain::CosmosChain;
+use crate::base::types::chain::CosmosChainWrapper;
 
 pub trait CosmosRelay: Async {
-    type Preset;
+    type Preset: Async;
 
     type SrcChain: CosmosChain<Preset = Self::Preset>;
 
     type DstChain: CosmosChain<Preset = Self::Preset>;
 
-    fn src_chain(&self) -> &Arc<Self::SrcChain>;
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext>;
 
-    fn dst_chain(&self) -> &Arc<Self::DstChain>;
+    fn src_chain(&self) -> &OfaChainWrapper<CosmosChainWrapper<Self::SrcChain>>;
+
+    fn dst_chain(&self) -> &OfaChainWrapper<CosmosChainWrapper<Self::DstChain>>;
 
     fn src_to_dst_client(
         &self,

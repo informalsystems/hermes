@@ -1,44 +1,41 @@
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
+use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+
 use crate::base::traits::chain::CosmosChain;
 use crate::base::traits::relay::CosmosRelay;
-
-use alloc::sync::Arc;
-use ibc_relayer::foreign_client::ForeignClient;
+use crate::base::types::chain::CosmosChainWrapper;
+use crate::contexts::min::chain::MinCosmosChainContext;
 
 pub struct MinCosmosRelayContext<SrcChain, DstChain>
 where
-    SrcChain: CosmosChain,
-    DstChain: CosmosChain,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
-    pub src_chain: Arc<SrcChain>,
-    pub dst_chain: Arc<DstChain>,
-    pub src_to_dst_client: ForeignClient<
-        <DstChain as CosmosChain>::ChainHandle,
-        <SrcChain as CosmosChain>::ChainHandle,
-    >,
-    pub dst_to_src_client: ForeignClient<
-        <SrcChain as CosmosChain>::ChainHandle,
-        <DstChain as CosmosChain>::ChainHandle,
-    >,
+    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    pub src_chain: OfaChainWrapper<CosmosChainWrapper<MinCosmosChainContext<SrcChain>>>,
+    pub dst_chain: OfaChainWrapper<CosmosChainWrapper<MinCosmosChainContext<DstChain>>>,
+    pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
+    pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
 }
 
 impl<SrcChain, DstChain> MinCosmosRelayContext<SrcChain, DstChain>
 where
-    SrcChain: CosmosChain,
-    DstChain: CosmosChain,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
     pub fn new(
-        src_chain: Arc<SrcChain>,
-        dst_chain: Arc<DstChain>,
-        src_to_dst_client: ForeignClient<
-            <DstChain as CosmosChain>::ChainHandle,
-            <SrcChain as CosmosChain>::ChainHandle,
-        >,
-        dst_to_src_client: ForeignClient<
-            <SrcChain as CosmosChain>::ChainHandle,
-            <DstChain as CosmosChain>::ChainHandle,
-        >,
+        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+        src_chain: OfaChainWrapper<CosmosChainWrapper<MinCosmosChainContext<SrcChain>>>,
+        dst_chain: OfaChainWrapper<CosmosChainWrapper<MinCosmosChainContext<DstChain>>>,
+        src_to_dst_client: ForeignClient<DstChain, SrcChain>,
+        dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     ) -> Self {
         let relay = Self {
+            runtime,
             src_chain,
             dst_chain,
             src_to_dst_client,
@@ -49,22 +46,26 @@ where
     }
 }
 
-impl<SrcChain, DstChain, Preset> CosmosRelay for MinCosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain> CosmosRelay for MinCosmosRelayContext<SrcChain, DstChain>
 where
-    SrcChain: CosmosChain<Preset = Preset>,
-    DstChain: CosmosChain<Preset = Preset>,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
-    type Preset = Preset;
+    type Preset = MinimalPreset;
 
-    type SrcChain = SrcChain;
+    type SrcChain = MinCosmosChainContext<SrcChain>;
 
-    type DstChain = DstChain;
+    type DstChain = MinCosmosChainContext<DstChain>;
 
-    fn src_chain(&self) -> &Arc<Self::SrcChain> {
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+        &self.runtime
+    }
+
+    fn src_chain(&self) -> &OfaChainWrapper<CosmosChainWrapper<Self::SrcChain>> {
         &self.src_chain
     }
 
-    fn dst_chain(&self) -> &Arc<Self::DstChain> {
+    fn dst_chain(&self) -> &OfaChainWrapper<CosmosChainWrapper<Self::DstChain>> {
         &self.dst_chain
     }
 
