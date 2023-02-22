@@ -1,5 +1,4 @@
 use alloc::collections::BTreeMap;
-use alloc::sync::Arc;
 
 use crate::base::builder::traits::birelay::HasBiRelayType;
 use crate::base::builder::traits::target::chain::ChainBuildTarget;
@@ -28,39 +27,35 @@ pub type ClientIdA<Build> = <ChainA<Build> as HasIbcChainTypes<ChainB<Build>>>::
 
 pub type ClientIdB<Build> = <ChainB<Build> as HasIbcChainTypes<ChainA<Build>>>::ClientId;
 
-pub type ChainACache<Build> = Arc<Mutex<Build, BTreeMap<ChainIdA<Build>, ChainA<Build>>>>;
+pub type ChainACache<Build> = Mutex<Build, BTreeMap<ChainIdA<Build>, ChainA<Build>>>;
 
-pub type ChainBCache<Build> = Arc<Mutex<Build, BTreeMap<ChainIdB<Build>, ChainB<Build>>>>;
+pub type ChainBCache<Build> = Mutex<Build, BTreeMap<ChainIdB<Build>, ChainB<Build>>>;
 
 pub type RelayError<Build> = <RelayAToB<Build> as HasErrorType>::Error;
 
-pub type RelayAToBCache<Build> = Arc<
-    Mutex<
-        Build,
-        BTreeMap<
-            (
-                ChainIdA<Build>,
-                ChainIdB<Build>,
-                ClientIdA<Build>,
-                ClientIdB<Build>,
-            ),
-            RelayAToB<Build>,
-        >,
+pub type RelayAToBCache<Build> = Mutex<
+    Build,
+    BTreeMap<
+        (
+            ChainIdA<Build>,
+            ChainIdB<Build>,
+            ClientIdA<Build>,
+            ClientIdB<Build>,
+        ),
+        RelayAToB<Build>,
     >,
 >;
 
-pub type RelayBToACache<Build> = Arc<
-    Mutex<
-        Build,
-        BTreeMap<
-            (
-                ChainIdB<Build>,
-                ChainIdA<Build>,
-                ClientIdB<Build>,
-                ClientIdA<Build>,
-            ),
-            RelayBToA<Build>,
-        >,
+pub type RelayBToACache<Build> = Mutex<
+    Build,
+    BTreeMap<
+        (
+            ChainIdB<Build>,
+            ChainIdA<Build>,
+            ClientIdB<Build>,
+            ClientIdA<Build>,
+        ),
+        RelayBToA<Build>,
     >,
 >;
 
@@ -82,7 +77,7 @@ pub type CounterpartyClientId<Build, Target> =
     <CounterpartyChain<Build, Target> as HasIbcChainTypes<TargetChain<Build, Target>>>::ClientId;
 
 pub type TargetChainCache<Build, Target> =
-    Arc<Mutex<Build, BTreeMap<TargetChainId<Build, Target>, TargetChain<Build, Target>>>>;
+    Mutex<Build, BTreeMap<TargetChainId<Build, Target>, TargetChain<Build, Target>>>;
 
 pub type TargetRelay<Build, Target> = <Target as RelayBuildTarget<Build>>::TargetRelay;
 
@@ -108,17 +103,15 @@ pub type TargetSrcClientId<Build, Target> =
 pub type TargetDstClientId<Build, Target> =
     <TargetDstChain<Build, Target> as HasIbcChainTypes<TargetSrcChain<Build, Target>>>::ClientId;
 
-pub type TargetRelayCache<Build, Target> = Arc<
-    Mutex<
-        Build,
-        BTreeMap<
-            (
-                TargetSrcChainId<Build, Target>,
-                TargetDstChainId<Build, Target>,
-                TargetSrcClientId<Build, Target>,
-                TargetDstClientId<Build, Target>,
-            ),
-            TargetRelay<Build, Target>,
-        >,
+pub type TargetRelayCache<Build, Target> = Mutex<
+    Build,
+    BTreeMap<
+        (
+            TargetSrcChainId<Build, Target>,
+            TargetDstChainId<Build, Target>,
+            TargetSrcClientId<Build, Target>,
+            TargetDstClientId<Build, Target>,
+        ),
+        TargetRelay<Build, Target>,
     >,
 >;
