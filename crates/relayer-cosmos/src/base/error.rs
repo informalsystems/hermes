@@ -3,6 +3,7 @@ use eyre::Report;
 use flex_error::{define_error, TraceError};
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
+use ibc_relayer::spawn::SpawnError;
 use ibc_relayer::supervisor::error::Error as SupervisorError;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
@@ -34,6 +35,10 @@ define_error! {
         ForeignClient
             [ ForeignClientError ]
             | _ | { "foreign client error" },
+
+        Spawn
+            [ SpawnError ]
+            | _ | { "failed to spawn chain runtime" },
 
         Supervisor
             [ SupervisorError ]
