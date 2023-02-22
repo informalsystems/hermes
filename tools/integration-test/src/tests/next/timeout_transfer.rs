@@ -5,7 +5,6 @@
 //! relayed by a full relayer.
 
 use ibc_relayer::config::PacketFilter;
-
 use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_relayer_framework::base::relay::traits::two_way::HasTwoWayRelay;
 use ibc_test_framework::prelude::*;
@@ -14,7 +13,7 @@ use ibc_test_framework::util::random::random_u64_range;
 use crate::tests::next::context::build_cosmos_relay_context;
 
 #[test]
-fn test_ibc_transfer_next() -> Result<(), Error> {
+fn test_ibc_transfer_timeout_next() -> Result<(), Error> {
     run_binary_channel_test(&IbcTransferTest)
 }
 
@@ -30,13 +29,13 @@ impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        _relayer: RelayerDriver,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let pf: PacketFilter = PacketFilter::AllowAll;
 
-        let relay_context = build_cosmos_relay_context(&chains, pf)?;
+        let relay_context = build_cosmos_relay_context(&relayer.config, &chains, pf)?;
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 

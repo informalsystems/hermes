@@ -1,5 +1,4 @@
 use alloc::collections::BTreeMap;
-use alloc::sync::Arc;
 
 use crate::base::builder::traits::birelay::HasBiRelayType;
 use crate::base::builder::traits::target::chain::ChainBuildTarget;
@@ -8,24 +7,28 @@ use crate::base::builder::types::aliases::{
 };
 use crate::base::core::traits::sync::Async;
 use crate::base::runtime::traits::mutex::HasRuntimeWithMutex;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::base::runtime::types::aliases::{Mutex, Runtime};
-use crate::full::batch::types::aliases::MessageBatchSender;
-use crate::full::runtime::traits::channel::HasChannelTypes;
-use crate::full::runtime::traits::channel_once::HasChannelOnceTypes;
+use crate::base::runtime::types::aliases::Mutex;
+use crate::full::batch::traits::channel::HasMessageBatchSenderType;
 
-pub trait HasBatchSenderCache<Target, Error>: HasBiRelayType + HasRuntimeWithMutex
+pub trait HasBatchSenderCache<Target, Error>: Async
 where
-    Error: Async,
-    Target: ChainBuildTarget<Self>,
-    TargetChain<Self, Target>: HasRuntime,
-    Runtime<TargetChain<Self, Target>>: HasChannelTypes + HasChannelOnceTypes,
+    Target: HasBatchSenderCacheType<Self, Error>,
 {
-    fn batch_sender_cache(&self, target: Target) -> &BatchSenderCache<Self, Target, Error>;
+    fn batch_sender_cache(&self, target: Target) -> &Target::BatchSenderCache;
 }
 
-pub type BatchSenderCache<Build, Target, Error> = Arc<
-    Mutex<
+pub trait HasBatchSenderCacheType<Build, Error>: Async {
+    type BatchSenderCache: Async;
+}
+
+impl<Target, Build, Error> HasBatchSenderCacheType<Build, Error> for Target
+where
+    Error: Async,
+    Build: HasBiRelayType + HasRuntimeWithMutex,
+    Target: ChainBuildTarget<Build>,
+    Target::TargetChain: HasMessageBatchSenderType<Error>,
+{
+    type BatchSenderCache = Mutex<
         Build,
         BTreeMap<
             (
@@ -34,7 +37,7 @@ pub type BatchSenderCache<Build, Target, Error> = Arc<
                 TargetClientId<Build, Target>,
                 CounterpartyClientId<Build, Target>,
             ),
-            MessageBatchSender<TargetChain<Build, Target>, Error>,
+            <TargetChain<Build, Target> as HasMessageBatchSenderType<Error>>::MessageBatchSender,
         >,
-    >,
->;
+    >;
+}

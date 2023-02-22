@@ -1,5 +1,9 @@
+use std::collections::HashMap;
+
 use alloc::sync::Arc;
 use async_trait::async_trait;
+use eyre::eyre;
+use ibc_relayer::chain::cosmos::encode::key_pair_to_signer;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -7,17 +11,8 @@ use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::keyring::AnySigningKeyPair;
-use ibc_relayer_cosmos::base::traits::builder::CosmosBuilderTypes;
-use ibc_relayer_cosmos::base::traits::chain::CosmosChain;
-use ibc_relayer_cosmos::base::types::builder::CosmosBuilderWrapper;
-use ibc_relayer_cosmos::base::types::chain::CosmosChainWrapper;
-use ibc_relayer_cosmos::base::types::relay::CosmosRelayWrapper;
-use ibc_relayer_cosmos::contexts::full::birelay::FullCosmosBiRelay;
-use ibc_relayer_cosmos::contexts::full::chain::FullCosmosChainContext;
-use ibc_relayer_cosmos::contexts::full::relay::FullCosmosRelay;
-use ibc_relayer_cosmos::full::traits::builder::CosmosFullBuilder;
-use ibc_relayer_cosmos::full::types::batch::CosmosBatchSender;
-use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
+use ibc_relayer::keyring::Secp256k1KeyPair;
+use ibc_relayer::spawn::spawn_chain_runtime;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -29,19 +24,28 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioRuntimeError;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
-use opentelemetry::global;
-use std::collections::HashMap;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use crate::cli_utils::spawn_chain_runtime_generic;
-use crate::error::Error;
+use crate::base::error::{BaseError, Error};
+use crate::base::traits::builder::CosmosBuilderTypes;
+use crate::base::traits::chain::CosmosChain;
+use crate::base::types::builder::CosmosBuilderWrapper;
+use crate::base::types::chain::CosmosChainWrapper;
+use crate::base::types::relay::CosmosRelayWrapper;
+use crate::contexts::full::birelay::FullCosmosBiRelay;
+use crate::contexts::full::chain::FullCosmosChainContext;
+use crate::contexts::full::relay::FullCosmosRelay;
+use crate::full::traits::builder::CosmosFullBuilder;
+use crate::full::types::batch::CosmosBatchSender;
+use crate::full::types::telemetry::CosmosTelemetry;
 
 pub struct CosmosRelayBuilder {
-    pub config: Arc<Config>,
-    pub filter: PacketFilter,
+    pub config: Config,
+    pub packet_filter: PacketFilter,
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
     pub batch_config: BatchConfig,
+    pub key_map: HashMap<ChainId, Secp256k1KeyPair>,
 }
 
 impl CosmosBuilderTypes for CosmosRelayBuilder {
@@ -60,7 +64,7 @@ impl CosmosFullBuilder for CosmosRelayBuilder {
     }
 
     fn runtime_error(e: TokioRuntimeError) -> Error {
-        Error::generic(e.into())
+        BaseError::tokio(e).into()
     }
 
     fn batch_config(&self) -> &BatchConfig {
@@ -71,14 +75,18 @@ impl CosmosFullBuilder for CosmosRelayBuilder {
         &self,
         chain_id: &ChainId,
     ) -> Result<FullCosmosChainContext<BaseChainHandle>, Error> {
-        tokio::task::block_in_place(|| self.build_chain(chain_id))
+        tokio::task::block_in_place(|| {
+            self.build_chain(chain_id, self.runtime.runtime.runtime.clone())
+        })
     }
 
     async fn build_chain_b(
         &self,
         chain_id: &ChainId,
     ) -> Result<FullCosmosChainContext<BaseChainHandle>, Self::Error> {
-        tokio::task::block_in_place(|| self.build_chain(chain_id))
+        tokio::task::block_in_place(|| {
+            self.build_chain(chain_id, self.runtime.runtime.runtime.clone())
+        })
     }
 
     async fn build_relay_a_to_b(
@@ -135,51 +143,61 @@ impl CosmosFullBuilder for CosmosRelayBuilder {
 }
 
 impl CosmosRelayBuilder {
-    pub fn new(config: Arc<Config>, runtime: Arc<TokioRuntime>) -> Self {
-        let telemetry = OfaTelemetryWrapper::new(CosmosTelemetry::new(TelemetryState {
-            meter: global::meter("hermes"),
-            counters: HashMap::new(),
-            value_recorders: HashMap::new(),
-            updown_counters: HashMap::new(),
-        }));
+    pub fn new(
+        config: Config,
+        runtime: Arc<TokioRuntime>,
+        telemetry: CosmosTelemetry,
+        packet_filter: PacketFilter,
+        batch_config: BatchConfig,
+        key_map: HashMap<ChainId, Secp256k1KeyPair>,
+    ) -> Self {
+        let telemetry = OfaTelemetryWrapper::new(telemetry);
 
         let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(runtime));
 
         Self {
             config,
-            filter: PacketFilter::default(),
+            packet_filter,
             telemetry,
             runtime,
-            batch_config: BatchConfig::default(),
+            batch_config,
+            key_map,
         }
     }
 
     pub fn new_wrapped(
-        config: Arc<Config>,
+        config: Config,
         runtime: Arc<TokioRuntime>,
+        telemetry: CosmosTelemetry,
+        packet_filter: PacketFilter,
+        batch_config: BatchConfig,
+        key_map: HashMap<ChainId, Secp256k1KeyPair>,
     ) -> OfaFullBuilderWrapper<CosmosBuilderWrapper<Self>> {
         OfaFullBuilderWrapper::new_with_homogenous_cache(CosmosBuilderWrapper::new(Self::new(
-            config, runtime,
+            config,
+            runtime,
+            telemetry,
+            packet_filter,
+            batch_config,
+            key_map,
         )))
     }
 
     pub fn build_chain(
         &self,
         chain_id: &ChainId,
+        runtime: Arc<TokioRuntime>,
     ) -> Result<FullCosmosChainContext<BaseChainHandle>, Error> {
-        let handle = spawn_chain_runtime_generic::<BaseChainHandle>(&self.config, chain_id)?;
+        let handle = spawn_chain_runtime::<BaseChainHandle>(&self.config, chain_id, runtime)
+            .map_err(BaseError::spawn)?;
 
-        let signer = handle.get_signer().map_err(Error::relayer)?;
+        let key = get_keypair(chain_id, &handle, &self.key_map)?;
 
-        let keypair = handle.get_key().map_err(Error::relayer)?;
+        let signer = key_pair_to_signer(&key).map_err(BaseError::relayer)?;
 
-        let AnySigningKeyPair::Secp256k1(key) = keypair else {
-            return Err(Error::secp256k1_key_pair(handle.id()));
-        };
-
-        let chain_config = handle.config().map_err(Error::relayer)?;
+        let chain_config = handle.config().map_err(BaseError::relayer)?;
         let websocket_addr = chain_config.websocket_addr.clone();
-        let tx_config = TxConfig::try_from(&chain_config).map_err(Error::relayer)?;
+        let tx_config = TxConfig::try_from(&chain_config).map_err(BaseError::relayer)?;
 
         let context = FullCosmosChainContext::new(
             handle,
@@ -221,11 +239,38 @@ impl CosmosRelayBuilder {
             dst_chain,
             client_src_to_dst,
             client_dst_to_src,
-            self.filter.clone(),
+            self.packet_filter.clone(),
             src_batch_sender,
             dst_batch_sender,
         );
 
         Ok(relay)
     }
+}
+
+pub fn get_keypair(
+    chain_id: &ChainId,
+    handle: &BaseChainHandle,
+    key_map: &HashMap<ChainId, Secp256k1KeyPair>,
+) -> Result<Secp256k1KeyPair, Error> {
+    if let Some(key) = key_map.get(chain_id) {
+        let chain_config = handle.config().map_err(BaseError::relayer)?;
+
+        // try add the key to the chain handle, in case if it is only in the key map,
+        // as for the case of integration tests.
+        let _ = handle.add_key(
+            chain_config.key_name,
+            AnySigningKeyPair::Secp256k1(key.clone()),
+        );
+
+        return Ok(key.clone());
+    }
+
+    let keypair = handle.get_key().map_err(BaseError::relayer)?;
+
+    let AnySigningKeyPair::Secp256k1(key) = keypair else {
+        return Err(BaseError::generic(eyre!("no Secp256k1 key pair for chain {}", chain_id)).into());
+    };
+
+    Ok(key)
 }

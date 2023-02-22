@@ -2,6 +2,7 @@ use alloc::sync::Arc;
 use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetry;
 use ibc_relayer_framework::full::telemetry::traits::metrics::HasLabel;
 use opentelemetry::{
+    global,
     metrics::{Counter, Meter, Unit, UpDownCounter, ValueRecorder},
     KeyValue,
 };
@@ -24,6 +25,17 @@ impl CosmosTelemetry {
         Self {
             telemetry_state: Arc::new(Mutex::new(telemetry_state)),
         }
+    }
+}
+
+impl Default for CosmosTelemetry {
+    fn default() -> Self {
+        Self::new(TelemetryState {
+            meter: global::meter("hermes"),
+            counters: HashMap::new(),
+            value_recorders: HashMap::new(),
+            updown_counters: HashMap::new(),
+        })
     }
 }
 

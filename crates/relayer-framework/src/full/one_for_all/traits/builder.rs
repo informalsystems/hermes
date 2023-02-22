@@ -1,5 +1,4 @@
 use alloc::collections::BTreeMap;
-use alloc::sync::Arc;
 use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::builder::{
@@ -74,32 +73,28 @@ where
     type FullBiRelay = Build::BiRelay;
 }
 
-pub type BatchSenderCacheA<Build> = Arc<
-    Mutex<
-        Build,
-        BTreeMap<
-            (
-                ChainIdA<Build>,
-                ChainIdB<Build>,
-                ClientIdA<Build>,
-                ClientIdB<Build>,
-            ),
-            MessageBatchSender<ChainA<Build>, RelayError<Build>>,
-        >,
+pub type BatchSenderCacheA<Build> = Mutex<
+    Build,
+    BTreeMap<
+        (
+            ChainIdA<Build>,
+            ChainIdB<Build>,
+            ClientIdA<Build>,
+            ClientIdB<Build>,
+        ),
+        MessageBatchSender<ChainA<Build>, RelayError<Build>>,
     >,
 >;
 
-pub type BatchSenderCacheB<Build> = Arc<
-    Mutex<
-        Build,
-        BTreeMap<
-            (
-                ChainIdB<Build>,
-                ChainIdA<Build>,
-                ClientIdB<Build>,
-                ClientIdA<Build>,
-            ),
-            MessageBatchSender<ChainB<Build>, RelayError<Build>>,
-        >,
+pub type BatchSenderCacheB<Build> = Mutex<
+    Build,
+    BTreeMap<
+        (
+            ChainIdB<Build>,
+            ChainIdA<Build>,
+            ClientIdB<Build>,
+            ClientIdA<Build>,
+        ),
+        MessageBatchSender<ChainB<Build>, RelayError<Build>>,
     >,
 >;

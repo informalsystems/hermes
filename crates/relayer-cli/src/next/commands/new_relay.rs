@@ -3,13 +3,13 @@ use abscissa_core::{Command, Runnable};
 use alloc::sync::Arc;
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc_relayer_cosmos::contexts::full::builder::CosmosRelayBuilder;
 use ibc_relayer_framework::base::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_framework::full::all_for_one::builder::CanBuildAfoFullBiRelay;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
 use crate::conclude::Output;
-use crate::error::Error;
-use crate::next::build::CosmosRelayBuilder;
+use crate::error::{handle_generic_error, Error};
 use crate::prelude::*;
 
 /// `relay` subcommands which utilize the experimental relayer architecture.
@@ -67,7 +67,14 @@ impl Runnable for NewRelayPacketsCmd {
 
         let runtime = Arc::new(TokioRuntime::new().unwrap());
 
-        let builder = CosmosRelayBuilder::new_wrapped(config, runtime.clone());
+        let builder = CosmosRelayBuilder::new_wrapped(
+            (*config).clone(),
+            runtime.clone(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+        );
 
         let res: Result<(), Error> = runtime.block_on(async {
             let birelay = builder
@@ -77,7 +84,8 @@ impl Runnable for NewRelayPacketsCmd {
                     &self.client_a_id,
                     &self.client_b_id,
                 )
-                .await?;
+                .await
+                .map_err(handle_generic_error)?;
 
             birelay.auto_relay().await;
 
