@@ -1,5 +1,6 @@
+use crate::base::chain::traits::types::chain::HasChainTypes;
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
+use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::full::batch::types::aliases::MessageBatchSender;
@@ -15,18 +16,17 @@ where
     fn get_batch_sender(&self) -> &MessageBatchSender<Target::TargetChain, Self::Error>;
 }
 
-pub trait HasMessageBatchSenderType<Target>: Async {
+pub trait HasMessageBatchSenderType<Error>: Async {
     type MessageBatchSender: Async;
 }
 
-impl<Relay, Target> HasMessageBatchSenderType<Target> for Relay
+impl<Chain, Error> HasMessageBatchSenderType<Error> for Chain
 where
-    Relay: HasRelayTypes,
-    Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime,
-    <Target::TargetChain as HasRuntime>::Runtime: HasChannelTypes + HasChannelOnceTypes,
+    Error: Async,
+    Chain: HasChainTypes + HasRuntime,
+    Chain::Runtime: HasChannelTypes + HasChannelOnceTypes,
 {
-    type MessageBatchSender = MessageBatchSender<Target::TargetChain, Relay::Error>;
+    type MessageBatchSender = MessageBatchSender<Chain, Error>;
 }
 
 pub trait HasMessageBatchSenderTypes: Async {
@@ -39,9 +39,11 @@ impl<Relay, SrcMessageBatchSender, DstMessageBatchSender> HasMessageBatchSenderT
 where
     SrcMessageBatchSender: Async,
     DstMessageBatchSender: Async,
-    Relay: HasRelayTypes
-        + HasMessageBatchSenderType<SourceTarget, MessageBatchSender = SrcMessageBatchSender>
-        + HasMessageBatchSenderType<DestinationTarget, MessageBatchSender = DstMessageBatchSender>,
+    Relay: HasRelayTypes,
+    Relay::SrcChain:
+        HasMessageBatchSenderType<Relay::Error, MessageBatchSender = SrcMessageBatchSender>,
+    Relay::DstChain:
+        HasMessageBatchSenderType<Relay::Error, MessageBatchSender = DstMessageBatchSender>,
 {
     type SrcMessageBatchSender = SrcMessageBatchSender;
 

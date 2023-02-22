@@ -139,7 +139,7 @@ where
 impl<Build, Target, Chain, Counterparty, Runtime> CanBuildBatchChannel<Target> for Build
 where
     Build: HasBiRelayType + HasErrorType,
-    Target: ChainBuildTarget<Self, TargetChain = Chain, CounterpartyChain = Counterparty>,
+    Target: ChainBuildTarget<Build, TargetChain = Chain, CounterpartyChain = Counterparty>,
     Chain: HasIbcChainTypes<Counterparty> + HasRuntime<Runtime = Runtime>,
     Counterparty: HasIbcChainTypes<Chain>,
     Runtime: CanCreateChannels + HasChannelOnceTypes,
@@ -148,7 +148,7 @@ where
     Counterparty::ChainId: Ord + Clone,
     Chain::ClientId: Ord + Clone,
     Counterparty::ClientId: Ord + Clone,
-    MessageBatchSender<Chain, RelayError<Self>>: Clone,
+    MessageBatchSender<Chain, RelayError<Build>>: Clone,
 {
     async fn build_batch_channel(
         &self,

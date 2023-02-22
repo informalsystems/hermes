@@ -8,18 +8,14 @@ use crate::base::builder::types::aliases::{
 };
 use crate::base::core::traits::sync::Async;
 use crate::base::runtime::traits::mutex::HasRuntimeWithMutex;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::base::runtime::types::aliases::{Mutex, Runtime};
-use crate::full::batch::types::aliases::MessageBatchSender;
-use crate::full::runtime::traits::channel::HasChannelTypes;
-use crate::full::runtime::traits::channel_once::HasChannelOnceTypes;
+use crate::base::runtime::types::aliases::Mutex;
+use crate::full::batch::traits::channel::HasMessageBatchSenderType;
 
 pub trait HasBatchSenderCache<Target, Error>: HasBiRelayType + HasRuntimeWithMutex
 where
     Error: Async,
     Target: ChainBuildTarget<Self>,
-    TargetChain<Self, Target>: HasRuntime,
-    Runtime<TargetChain<Self, Target>>: HasChannelTypes + HasChannelOnceTypes,
+    Target::TargetChain: HasMessageBatchSenderType<Error>,
 {
     fn batch_sender_cache(&self, target: Target) -> &BatchSenderCache<Self, Target, Error>;
 }
@@ -34,7 +30,7 @@ pub type BatchSenderCache<Build, Target, Error> = Arc<
                 TargetClientId<Build, Target>,
                 CounterpartyClientId<Build, Target>,
             ),
-            MessageBatchSender<TargetChain<Build, Target>, Error>,
+            <TargetChain<Build, Target> as HasMessageBatchSenderType<Error>>::MessageBatchSender,
         >,
     >,
 >;
