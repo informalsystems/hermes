@@ -1,4 +1,5 @@
 use ibc_relayer::config::filter::PacketFilter;
+use ibc_relayer::keyring::Store;
 use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_relayer_framework::base::relay::traits::two_way::HasTwoWayRelay;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
@@ -17,6 +18,15 @@ pub struct ChannelFilterTest;
 impl TestOverrides for ChannelFilterTest {
     fn should_spawn_supervisor(&self) -> bool {
         false
+    }
+
+    fn modify_relayer_config(&self, config: &mut Config) {
+        for mut chain in config.chains.iter_mut() {
+            // Modify the key store type to `Store::Test` so that the wallet
+            // keys are stored to ~/.hermes/keys so that we can use them
+            // with relayer-next's builder without reusing the ChainHandle
+            chain.key_store_type = Store::Test;
+        }
     }
 }
 
