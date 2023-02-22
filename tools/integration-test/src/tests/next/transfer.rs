@@ -83,10 +83,10 @@ impl BinaryChannelTest for IbcTransferTest {
             &(balance_a - a_to_b_amount).as_ref(),
         )?;
 
-        // chains.node_b.chain_driver().assert_eventual_wallet_amount(
-        //     &wallet_b.address(),
-        //     &denom_b.with_amount(a_to_b_amount).as_ref(),
-        // )?;
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            &denom_b.with_amount(a_to_b_amount).as_ref(),
+        )?;
 
         info!(
             "successfully performed IBC transfer from chain {} to chain {}",

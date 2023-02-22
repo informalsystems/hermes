@@ -254,6 +254,15 @@ pub fn get_keypair(
     key_map: &HashMap<ChainId, Secp256k1KeyPair>,
 ) -> Result<Secp256k1KeyPair, Error> {
     if let Some(key) = key_map.get(chain_id) {
+        let chain_config = handle.config().map_err(BaseError::relayer)?;
+
+        // try add the key to the chain handle, in case if it is only in the key map,
+        // as for the case of integration tests.
+        let _ = handle.add_key(
+            chain_config.key_name,
+            AnySigningKeyPair::Secp256k1(key.clone()),
+        );
+
         return Ok(key.clone());
     }
 
