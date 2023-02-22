@@ -11,26 +11,39 @@ use crate::base::runtime::traits::mutex::HasRuntimeWithMutex;
 use crate::base::runtime::types::aliases::Mutex;
 use crate::full::batch::traits::channel::HasMessageBatchSenderType;
 
-pub trait HasBatchSenderCache<Target, Error>: HasBiRelayType + HasRuntimeWithMutex
+pub trait HasBatchSenderCache<Target, Error>: Async
 where
-    Error: Async,
-    Target: ChainBuildTarget<Self>,
-    Target::TargetChain: HasMessageBatchSenderType<Error>,
+    Target: HasBatchSenderCacheType<Self, Error>,
 {
-    fn batch_sender_cache(&self, target: Target) -> &BatchSenderCache<Self, Target, Error>;
+    fn batch_sender_cache(
+        &self,
+        target: Target,
+    ) -> &<Target as HasBatchSenderCacheType<Self, Error>>::BatchSenderCache;
 }
 
-pub type BatchSenderCache<Build, Target, Error> = Arc<
-    Mutex<
-        Build,
-        BTreeMap<
-            (
-                TargetChainId<Build, Target>,
-                CounterpartyChainId<Build, Target>,
-                TargetClientId<Build, Target>,
-                CounterpartyClientId<Build, Target>,
-            ),
-            <TargetChain<Build, Target> as HasMessageBatchSenderType<Error>>::MessageBatchSender,
+pub trait HasBatchSenderCacheType<Build, Error>: Async {
+    type BatchSenderCache: Async;
+}
+
+impl<Target, Build, Error> HasBatchSenderCacheType<Build, Error> for Target
+where
+    Error: Async,
+    Build: HasBiRelayType + HasRuntimeWithMutex,
+    Target: ChainBuildTarget<Build>,
+    Target::TargetChain: HasMessageBatchSenderType<Error>,
+{
+    type BatchSenderCache = Arc<
+        Mutex<
+            Build,
+            BTreeMap<
+                (
+                    TargetChainId<Build, Target>,
+                    CounterpartyChainId<Build, Target>,
+                    TargetClientId<Build, Target>,
+                    CounterpartyClientId<Build, Target>,
+                ),
+                <TargetChain<Build, Target> as HasMessageBatchSenderType<Error>>::MessageBatchSender,
+            >,
         >,
-    >,
->;
+    >;
+}

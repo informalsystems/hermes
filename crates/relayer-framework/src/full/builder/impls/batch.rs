@@ -138,7 +138,7 @@ where
 #[async_trait]
 impl<Build, Target, Chain, Counterparty, Runtime> CanBuildBatchChannel<Target> for Build
 where
-    Build: HasBiRelayType + HasErrorType,
+    Build: HasBiRelayType + HasRuntimeWithMutex + HasErrorType,
     Target: ChainBuildTarget<Build, TargetChain = Chain, CounterpartyChain = Counterparty>,
     Chain: HasIbcChainTypes<Counterparty> + HasRuntime<Runtime = Runtime>,
     Counterparty: HasIbcChainTypes<Chain>,
