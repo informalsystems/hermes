@@ -19,8 +19,8 @@ where
     pub chain_b_cache: ChainBCache<Build>,
     pub relay_a_to_b_cache: RelayAToBCache<Build>,
     pub relay_b_to_a_cache: RelayBToACache<Build>,
-    pub batch_sender_cache_a: BatchSenderCacheA<Build>,
-    pub batch_sender_cache_b: BatchSenderCacheB<Build>,
+    pub batch_sender_cache_a: Arc<BatchSenderCacheA<Build>>,
+    pub batch_sender_cache_b: Arc<BatchSenderCacheB<Build>>,
 }
 
 impl<Builder> OfaFullBuilderWrapper<Builder>

@@ -1,5 +1,4 @@
 use alloc::collections::BTreeMap;
-use alloc::sync::Arc;
 
 use crate::base::builder::traits::birelay::HasBiRelayType;
 use crate::base::builder::traits::target::chain::ChainBuildTarget;
@@ -15,10 +14,7 @@ pub trait HasBatchSenderCache<Target, Error>: Async
 where
     Target: HasBatchSenderCacheType<Self, Error>,
 {
-    fn batch_sender_cache(
-        &self,
-        target: Target,
-    ) -> &<Target as HasBatchSenderCacheType<Self, Error>>::BatchSenderCache;
+    fn batch_sender_cache(&self, target: Target) -> &Target::BatchSenderCache;
 }
 
 pub trait HasBatchSenderCacheType<Build, Error>: Async {
@@ -32,18 +28,16 @@ where
     Target: ChainBuildTarget<Build>,
     Target::TargetChain: HasMessageBatchSenderType<Error>,
 {
-    type BatchSenderCache = Arc<
-        Mutex<
-            Build,
-            BTreeMap<
-                (
-                    TargetChainId<Build, Target>,
-                    CounterpartyChainId<Build, Target>,
-                    TargetClientId<Build, Target>,
-                    CounterpartyClientId<Build, Target>,
-                ),
-                <TargetChain<Build, Target> as HasMessageBatchSenderType<Error>>::MessageBatchSender,
-            >,
+    type BatchSenderCache = Mutex<
+        Build,
+        BTreeMap<
+            (
+                TargetChainId<Build, Target>,
+                CounterpartyChainId<Build, Target>,
+                TargetClientId<Build, Target>,
+                CounterpartyClientId<Build, Target>,
+            ),
+            <TargetChain<Build, Target> as HasMessageBatchSenderType<Error>>::MessageBatchSender,
         >,
     >;
 }
