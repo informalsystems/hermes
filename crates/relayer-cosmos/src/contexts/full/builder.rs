@@ -20,8 +20,6 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioRuntimeError;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
-use opentelemetry::global;
-use std::collections::HashMap;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::base::error::{BaseError, Error};
@@ -35,11 +33,11 @@ use crate::contexts::full::chain::FullCosmosChainContext;
 use crate::contexts::full::relay::FullCosmosRelay;
 use crate::full::traits::builder::CosmosFullBuilder;
 use crate::full::types::batch::CosmosBatchSender;
-use crate::full::types::telemetry::{CosmosTelemetry, TelemetryState};
+use crate::full::types::telemetry::CosmosTelemetry;
 
 pub struct CosmosRelayBuilder {
-    pub config: Arc<Config>,
-    pub filter: PacketFilter,
+    pub config: Config,
+    pub packet_filter: PacketFilter,
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
     pub batch_config: BatchConfig,
@@ -140,31 +138,39 @@ impl CosmosFullBuilder for CosmosRelayBuilder {
 }
 
 impl CosmosRelayBuilder {
-    pub fn new(config: Arc<Config>, runtime: Arc<TokioRuntime>) -> Self {
-        let telemetry = OfaTelemetryWrapper::new(CosmosTelemetry::new(TelemetryState {
-            meter: global::meter("hermes"),
-            counters: HashMap::new(),
-            value_recorders: HashMap::new(),
-            updown_counters: HashMap::new(),
-        }));
+    pub fn new(
+        config: Config,
+        runtime: Arc<TokioRuntime>,
+        telemetry: CosmosTelemetry,
+        packet_filter: PacketFilter,
+        batch_config: BatchConfig,
+    ) -> Self {
+        let telemetry = OfaTelemetryWrapper::new(telemetry);
 
         let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(runtime));
 
         Self {
             config,
-            filter: PacketFilter::default(),
+            packet_filter,
             telemetry,
             runtime,
-            batch_config: BatchConfig::default(),
+            batch_config,
         }
     }
 
     pub fn new_wrapped(
-        config: Arc<Config>,
+        config: Config,
         runtime: Arc<TokioRuntime>,
+        telemetry: CosmosTelemetry,
+        packet_filter: PacketFilter,
+        batch_config: BatchConfig,
     ) -> OfaFullBuilderWrapper<CosmosBuilderWrapper<Self>> {
         OfaFullBuilderWrapper::new_with_homogenous_cache(CosmosBuilderWrapper::new(Self::new(
-            config, runtime,
+            config,
+            runtime,
+            telemetry,
+            packet_filter,
+            batch_config,
         )))
     }
 
@@ -228,7 +234,7 @@ impl CosmosRelayBuilder {
             dst_chain,
             client_src_to_dst,
             client_dst_to_src,
-            self.filter.clone(),
+            self.packet_filter.clone(),
             src_batch_sender,
             dst_batch_sender,
         );

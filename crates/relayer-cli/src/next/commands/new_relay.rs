@@ -67,7 +67,13 @@ impl Runnable for NewRelayPacketsCmd {
 
         let runtime = Arc::new(TokioRuntime::new().unwrap());
 
-        let builder = CosmosRelayBuilder::new_wrapped(config, runtime.clone());
+        let builder = CosmosRelayBuilder::new_wrapped(
+            (*config).clone(),
+            runtime.clone(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+        );
 
         let res: Result<(), Error> = runtime.block_on(async {
             let birelay = builder

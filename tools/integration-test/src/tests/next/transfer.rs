@@ -24,13 +24,13 @@ impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        _relayer: RelayerDriver,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let pf: PacketFilter = PacketFilter::AllowAll;
 
-        let relay_context = build_cosmos_relay_context(&chains, pf)?;
+        let relay_context = build_cosmos_relay_context(&relayer.config, &chains, pf)?;
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
