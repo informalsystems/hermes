@@ -1756,6 +1756,7 @@ name = "ibc-integration-test"
 version = "0.22.0"
 dependencies = [
  "async-trait",
+ "eyre",
  "http",
  "ibc-proto",
  "ibc-relayer",

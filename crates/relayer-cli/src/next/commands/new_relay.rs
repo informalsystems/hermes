@@ -73,6 +73,7 @@ impl Runnable for NewRelayPacketsCmd {
             Default::default(),
             Default::default(),
             Default::default(),
+            Default::default(),
         );
 
         let res: Result<(), Error> = runtime.block_on(async {

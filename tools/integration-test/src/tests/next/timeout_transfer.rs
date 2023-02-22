@@ -5,8 +5,6 @@
 //! relayed by a full relayer.
 
 use ibc_relayer::config::PacketFilter;
-
-use ibc_relayer::keyring::Store;
 use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_relayer_framework::base::relay::traits::two_way::HasTwoWayRelay;
 use ibc_test_framework::prelude::*;
@@ -24,15 +22,6 @@ pub struct IbcTransferTest;
 impl TestOverrides for IbcTransferTest {
     fn should_spawn_supervisor(&self) -> bool {
         false
-    }
-
-    fn modify_relayer_config(&self, config: &mut Config) {
-        for mut chain in config.chains.iter_mut() {
-            // Modify the key store type to `Store::Test` so that the wallet
-            // keys are stored to ~/.hermes/keys so that we can use them
-            // with relayer-next's builder without reusing the ChainHandle
-            chain.key_store_type = Store::Test;
-        }
     }
 }
 
