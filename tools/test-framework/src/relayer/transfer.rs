@@ -78,7 +78,7 @@ pub fn build_transfer_message<SrcChain, DstChain>(
    transfer message and pass it to send_tx.
 */
 pub async fn ibc_token_transfer<SrcChain, DstChain>(
-    rpc_client: &MonoTagged<SrcChain, &HttpClient>,
+    rpc_client: MonoTagged<SrcChain, &HttpClient>,
     tx_config: &MonoTagged<SrcChain, &TxConfig>,
     port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,

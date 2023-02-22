@@ -7,11 +7,11 @@ use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::event::IbcEventWithHeight;
 use serde_json as json;
-use tendermint_rpc::HttpClient;
+use tendermint_rpc::client::{Client, CompatMode, HttpClient};
 
 use crate::chain::cli::query::query_recipient_transactions;
 use crate::chain::driver::ChainDriver;
-use crate::error::Error;
+use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
 use crate::ibc::token::{TaggedDenomExt, TaggedToken, TaggedTokenRef};
 use crate::types::id::TaggedChainIdRef;
@@ -31,9 +31,13 @@ use crate::types::wallet::{Wallet, WalletAddress};
 pub trait TaggedChainDriverExt<Chain> {
     fn chain_id(&self) -> TaggedChainIdRef<Chain>;
 
-    fn rpc_client(&self) -> MonoTagged<Chain, &HttpClient>;
-
     fn tx_config(&self) -> MonoTagged<Chain, &TxConfig>;
+
+    /// Sets up an RPC client for making requests to the chain node.
+    ///
+    /// The RPC server must be running and be able to respond on the
+    /// `/status` endpoint.
+    fn rpc_client(&self) -> Result<MonoTagged<Chain, HttpClient>, Error>;
 
     fn send_tx(
         &self,
@@ -82,12 +86,22 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         self.map_ref(|val| &val.chain_id)
     }
 
-    fn rpc_client(&self) -> MonoTagged<Chain, &HttpClient> {
-        self.map_ref(|val| &val.rpc_client)
-    }
-
     fn tx_config(&self) -> MonoTagged<Chain, &TxConfig> {
         self.map_ref(|val| &val.tx_config)
+    }
+
+    fn rpc_client(&self) -> Result<MonoTagged<Chain, HttpClient>, Error> {
+        let rpc_address = self.value().tx_config.rpc_address.clone();
+        let rt = &self.value().runtime;
+
+        let mut client = HttpClient::new(rpc_address).map_err(handle_generic_error)?;
+
+        let status = rt.block_on(client.status()).map_err(handle_generic_error)?;
+        let compat_mode =
+            CompatMode::from_version(status.node_info.version).map_err(handle_generic_error)?;
+        client.set_compat_mode(compat_mode);
+
+        Ok(MonoTagged::new(client))
     }
 
     fn send_tx(
@@ -95,10 +109,12 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         wallet: &MonoTagged<Chain, &Wallet>,
         messages: Vec<Any>,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        let rpc_client = self.rpc_client()?;
+
         self.value()
             .runtime
             .block_on(simple_send_tx(
-                &self.value().rpc_client,
+                rpc_client.as_ref().into_value(),
                 &self.value().tx_config,
                 &wallet.value().key,
                 messages,
