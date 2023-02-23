@@ -24,4 +24,4 @@ tokio = "1.24"
 tokio-stream = "0.1"
 tracing = "0.1.36"
 flex-error = { version = "0.4.4", default-features = false }
-ibc-relayer-framework = { version = "0.1.0", path = "../relayer-framework" }
+ibc-relayer-all-in-one = { version = "0.1.0", path = "../relayer-all-in-one" }

@@ -1760,9 +1760,9 @@ dependencies = [
  "http",
  "ibc-proto",
  "ibc-relayer",
+ "ibc-relayer-all-in-one",
  "ibc-relayer-cli",
  "ibc-relayer-cosmos",
- "ibc-relayer-framework",
  "ibc-relayer-runtime",
  "ibc-relayer-types",
  "ibc-test-framework",
@@ -1866,6 +1866,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-relayer-all-in-one-extra"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+]
+
+[[package]]
 name = "ibc-relayer-cli"
 version = "1.3.0"
 dependencies = [
@@ -1887,8 +1895,8 @@ dependencies = [
  "humantime",
  "ibc-chain-registry",
  "ibc-relayer",
+ "ibc-relayer-all-in-one",
  "ibc-relayer-cosmos",
- "ibc-relayer-framework",
  "ibc-relayer-rest",
  "ibc-relayer-runtime",
  "ibc-relayer-types",
@@ -1938,7 +1946,7 @@ dependencies = [
  "http",
  "ibc-proto",
  "ibc-relayer",
- "ibc-relayer-framework",
+ "ibc-relayer-all-in-one",
  "ibc-relayer-runtime",
  "ibc-relayer-types",
  "ibc-telemetry",
@@ -1958,21 +1966,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc-relayer-framework"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
-]
-
-[[package]]
 name = "ibc-relayer-framework-test"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "eyre",
  "flex-error",
- "ibc-relayer-framework",
+ "ibc-relayer-all-in-one",
  "ibc-relayer-runtime",
  "tokio",
  "tracing",
@@ -2000,7 +2000,7 @@ dependencies = [
  "async-trait",
  "flex-error",
  "futures",
- "ibc-relayer-framework",
+ "ibc-relayer-all-in-one",
  "tokio",
  "tokio-stream",
  "tracing",

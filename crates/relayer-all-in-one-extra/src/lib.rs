@@ -111,5 +111,5 @@ mod std_prelude;
 extern crate alloc;
 
 pub mod docs;
-
-pub mod full;
+pub mod all_for_one;
+pub mod one_for_all;

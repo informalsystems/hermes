@@ -18,7 +18,7 @@ description  = """
 async-trait = "0.1.56"
 eyre = "0.6.8"
 flex-error = "0.4.4"
-ibc-relayer-framework = { path = "../relayer-framework" }
+ibc-relayer-all-in-one = { version = "0.1.0", path = "../relayer-all-in-one" }
 ibc-relayer-runtime = { path = "../relayer-runtime" }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.36"
