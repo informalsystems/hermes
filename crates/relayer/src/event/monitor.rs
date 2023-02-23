@@ -362,7 +362,8 @@ impl EventMonitor {
             Ok(CompatMode::Latest) => Next::Continue,
             Ok(CompatMode::V0_34) => {
                 self.rpc_compat = CompatMode::V0_34;
-                if let Err(e) = self.try_reconnect() {
+
+                if let Err(e) = self.try_reconnect().and_then(|_| self.try_resubscribe()) {
                     error!("failed to reconnect for the compatibility mode: {}", e);
                     Next::Abort
                 } else {
