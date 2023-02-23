@@ -140,7 +140,7 @@ pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> 
     let max_deposit_period = genesis
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
-        .and_then(|gov| get_mut_with_fallback(gov, "deposit_params", "params"))
+        .and_then(|gov| get_mut_with_fallback(gov, "params", "deposit_params"))
         .and_then(|deposit_params| deposit_params.as_object_mut())
         .ok_or_else(|| eyre!("failed to update max_deposit_period in genesis file"))?;
 
@@ -233,7 +233,7 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
     let voting_period = genesis
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
-        .and_then(|gov| get_mut_with_fallback(gov, "voting_params", "params"))
+        .and_then(|gov| get_mut_with_fallback(gov, "params", "voting_params"))
         .and_then(|voting_params| voting_params.as_object_mut())
         .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
 
