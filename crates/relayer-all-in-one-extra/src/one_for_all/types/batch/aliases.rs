@@ -1,6 +1,7 @@
-use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
+use ibc_relayer_all_in_one::one_for_all::traits::chain::OfaChainTypes;
+use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaBaseRuntime;
+
+use crate::one_for_all::traits::runtime::OfaFullRuntime;
 use crate::std_prelude::*;
 
 pub type Runtime<Chain> = <Chain as OfaChainTypes>::Runtime;

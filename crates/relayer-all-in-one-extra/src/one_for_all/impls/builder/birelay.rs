@@ -1,17 +1,17 @@
 use async_trait::async_trait;
-
-use crate::base::builder::impls::birelay::BuildBiRelayFromRelays;
-use crate::base::builder::traits::birelay::{
-    BiRelayBuilder, CanBuildBiRelay, CanBuildBiRelayFromRelays,
-};
-use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::base::one_for_all::traits::builder::{
+use ibc_relayer_all_in_one::one_for_all::traits::birelay::OfaBiRelayPreset;
+use ibc_relayer_all_in_one::one_for_all::traits::builder::{
     ChainIdA, ChainIdB, ClientIdA, ClientIdB, RelayAToB, RelayBToA,
 };
-use crate::base::one_for_all::types::birelay::OfaBiRelayWrapper;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::full::one_for_all::traits::builder::OfaFullBuilder;
-use crate::full::one_for_all::types::builder::OfaFullBuilderWrapper;
+use ibc_relayer_all_in_one::one_for_all::types::birelay::OfaBiRelayWrapper;
+use ibc_relayer_all_in_one::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_components::builder::impls::birelay::BuildBiRelayFromRelays;
+use ibc_relayer_components::builder::traits::birelay::{
+    BiRelayBuilder, CanBuildBiRelay, CanBuildBiRelayFromRelays,
+};
+
+use crate::one_for_all::traits::builder::OfaFullBuilder;
+use crate::one_for_all::types::builder::OfaFullBuilderWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]

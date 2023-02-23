@@ -1,13 +1,13 @@
 use async_trait::async_trait;
+use ibc_relayer_all_in_one::one_for_all::traits::birelay::OfaBiRelayPreset;
+use ibc_relayer_all_in_one::one_for_all::traits::builder::{ChainA, ChainB, ChainIdA, ChainIdB};
+use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_components::builder::impls::cache::BuildWithCache;
+use ibc_relayer_components::builder::traits::chain::{CanBuildChain, ChainBuilder};
+use ibc_relayer_components::builder::traits::target::chain::{ChainATarget, ChainBTarget};
 
-use crate::base::builder::impls::cache::BuildWithCache;
-use crate::base::builder::traits::chain::{CanBuildChain, ChainBuilder};
-use crate::base::builder::traits::target::chain::{ChainATarget, ChainBTarget};
-use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::base::one_for_all::traits::builder::{ChainA, ChainB, ChainIdA, ChainIdB};
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::full::one_for_all::traits::builder::OfaFullBuilder;
-use crate::full::one_for_all::types::builder::OfaFullBuilderWrapper;
+use crate::one_for_all::traits::builder::OfaFullBuilder;
+use crate::one_for_all::types::builder::OfaFullBuilderWrapper;
 use crate::std_prelude::*;
 
 pub struct BuildChainFromOfa;

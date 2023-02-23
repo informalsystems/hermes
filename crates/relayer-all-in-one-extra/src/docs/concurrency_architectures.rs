@@ -10,8 +10,8 @@ users will be able to customize the relayer framework and introduce new
 concurrency architectures that are best suited for specific relaying use cases.
 
 The relayer v2 implementations are centered around three kinds of contexts:
-[relay context](crate::base::relay), [chain context](crate::base::chain),
-and [transaction context](crate::base::transaction). Each context contains
+[relay context](ibc_relayer_components::relay), [chain context](ibc_relayer_components::chain),
+and [transaction context](ibc_relayer_components::transaction). Each context contains
 the environment and dependencies that are required for operations in that
 context to work. For instance, the chain context would contain parameters
 for talking to a full node, and the transaction context would contain
@@ -55,7 +55,7 @@ which are `SendPacket` events that are targetting chain B.
 When the `SendPacket` events are handled, the event handler spawns three
 concurrent async tasks, all of which handle the relaying of the packets by
 holding a shared reference to the relay context. The worker tasks call the
-[`PacketRelayer`](crate::base::relay::traits::packet_relayer::PacketRelayer)'s
+[`PacketRelayer`](ibc_relayer_components::relay::traits::packet_relayer::PacketRelayer)'s
 `relay_packet` method, which start the lifecycle of relaying an IBC packet.
 
 The packet relayer may contain logics such as checking on whether the packet
@@ -81,7 +81,7 @@ the third `RecvPacket` messages.
 
 The batch worker sends the batched messages by spawning concurrent async tasks
 for each batch. For each batch, the messages would go through the
-[`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+[`SendIbcMessagesWithUpdateClient`](ibc_relayer_components::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
 middleware component, which would build and attach `UpdateClient` messages to
 each message batch. In this specific case, we can see that the relayer is not
 being very cost-efficient, as the same `UpdateClient` messages are sent twice
@@ -124,7 +124,7 @@ The events are extracted from the transaction response, and returned by
 passing through the nonce allocator.
 
 When the events are returned to the
-[SendIbcMessagesWithUpdateClient](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+[SendIbcMessagesWithUpdateClient](ibc_relayer_components::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
 middleware, the component extracts the update client event from the top of the
 list, and returns the remaining events. This is required, as the downstream
 components require the events returned in the same order as the original
@@ -282,7 +282,7 @@ failure when the update client component attempts to build the `UpdateClient`
 message. There could also be errors within the packet relayer itself, such as
 temporary failures when constructing the `RecvPacket` message. All these would
 be handled by the top-level
-[`RetryRelayer`](crate::full::relay::impls::packet_relayers::retry::RetryRelayer)
+[`RetryRelayer`](ibc_relayer_components_extra::relay::impls::packet_relayers::retry::RetryRelayer)
 component, which would call the core packet relaying logic again if the error
 is considered retryable.
 
@@ -304,7 +304,7 @@ modification:
 ![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next/docs/architecture/assets/concurrency-architecture-4.svg)
 
 The above optimization can be done by having a custom implementation of
-[`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+[`SendIbcMessagesWithUpdateClient`](ibc_relayer_components::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
 Using a shared state across tasks, we can make it such that the component blocks
 a task if multiple tasks are trying to build `UpdateClient` messages at the
 same height.

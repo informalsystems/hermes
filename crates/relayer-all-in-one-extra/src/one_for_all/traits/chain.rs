@@ -1,7 +1,10 @@
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes, OfaIbcChain};
-use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
-use crate::full::one_for_all::traits::telemetry::OfaTelemetry;
-use crate::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_all_in_one::one_for_all::traits::chain::{
+    OfaBaseChain, OfaChainTypes, OfaIbcChain,
+};
+
+use crate::one_for_all::traits::runtime::OfaFullRuntime;
+use crate::one_for_all::traits::telemetry::OfaTelemetry;
+use crate::one_for_all::types::telemetry::OfaTelemetryWrapper;
 
 pub trait OfaFullChainTypes: OfaChainTypes<Runtime = Self::FullRuntime> {
     type FullRuntime: OfaFullRuntime;

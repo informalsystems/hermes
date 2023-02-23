@@ -1,7 +1,8 @@
-use crate::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayTypes};
-use crate::base::one_for_all::traits::relay::OfaRelayTypes;
-use crate::full::one_for_all::traits::relay::{OfaFullRelay, OfaHomogeneousFullRelay};
-use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
+use ibc_relayer_all_in_one::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayTypes};
+use ibc_relayer_all_in_one::one_for_all::traits::relay::OfaRelayTypes;
+
+use crate::one_for_all::traits::relay::{OfaFullRelay, OfaHomogeneousFullRelay};
+use crate::one_for_all::traits::runtime::OfaFullRuntime;
 
 pub trait OfaFullBiRelayTypes:
     OfaBiRelayTypes<

@@ -1,10 +1,11 @@
-use crate::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayPreset};
-use crate::base::one_for_all::traits::chain::OfaIbcChain;
-use crate::base::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
-use crate::base::one_for_all::traits::relay::OfaRelayPreset;
-use crate::full::one_for_all::presets::full::{self as preset, FullPreset};
-use crate::full::one_for_all::traits::chain::OfaFullChain;
-use crate::full::one_for_all::traits::relay::OfaFullRelay;
+use ibc_relayer_all_in_one::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayPreset};
+use ibc_relayer_all_in_one::one_for_all::traits::chain::OfaIbcChain;
+use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
+use ibc_relayer_all_in_one::one_for_all::traits::relay::OfaRelayPreset;
+
+use crate::one_for_all::presets::full::{self as preset, FullPreset};
+use crate::one_for_all::traits::chain::OfaFullChain;
+use crate::one_for_all::traits::relay::OfaFullRelay;
 
 impl<Chain> OfaChainPreset<Chain> for FullPreset
 where

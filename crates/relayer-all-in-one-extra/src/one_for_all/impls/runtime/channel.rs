@@ -1,16 +1,17 @@
-use async_trait::async_trait;
 use core::pin::Pin;
-use futures::stream::Stream;
 
-use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
-use crate::full::runtime::traits::channel::{
+use async_trait::async_trait;
+use futures::stream::Stream;
+use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components_extra::runtime::traits::channel::{
     CanCreateChannels, CanStreamReceiver, CanUseChannels, HasChannelTypes,
 };
-use crate::full::runtime::traits::channel_once::{
+use ibc_relayer_components_extra::runtime::traits::channel_once::{
     CanCreateChannelsOnce, CanUseChannelsOnce, HasChannelOnceTypes,
 };
+
+use crate::one_for_all::traits::runtime::OfaFullRuntime;
 use crate::std_prelude::*;
 
 impl<Runtime> HasChannelTypes for OfaRuntimeWrapper<Runtime>

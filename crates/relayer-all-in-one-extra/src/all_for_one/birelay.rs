@@ -1,6 +1,7 @@
-use crate::base::relay::traits::auto_relayer::CanAutoRelay;
-use crate::base::relay::traits::two_way::HasTwoWayRelay;
-use crate::full::all_for_one::relay::AfoFullRelay;
+use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
+use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
+
+use crate::all_for_one::relay::AfoFullRelay;
 
 pub trait AfoFullBiRelay:
     CanAutoRelay + HasTwoWayRelay<RelayAToB = Self::AfoRelayAToB, RelayBToA = Self::AfoRelayBToA>

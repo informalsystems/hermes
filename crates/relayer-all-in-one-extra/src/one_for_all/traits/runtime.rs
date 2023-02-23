@@ -1,11 +1,12 @@
-use async_trait::async_trait;
 use core::future::Future;
 use core::pin::Pin;
-use futures::stream::Stream;
 
-use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::full::runtime::traits::spawn::TaskHandle;
+use async_trait::async_trait;
+use futures::stream::Stream;
+use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaBaseRuntime;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components_extra::runtime::traits::spawn::TaskHandle;
+
 use crate::std_prelude::*;
 
 #[async_trait]

@@ -1,10 +1,10 @@
 use async_trait::async_trait;
+use ibc_relayer_all_in_one::one_for_all::traits::chain::OfaIbcChain;
+use ibc_relayer_all_in_one::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
 
-use crate::base::one_for_all::traits::chain::OfaIbcChain;
-use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
-use crate::full::one_for_all::traits::chain::{OfaFullChain, OfaFullIbcChain};
-use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
-use crate::full::one_for_all::types::batch::aliases::MessageBatchSender;
+use crate::one_for_all::traits::chain::{OfaFullChain, OfaFullIbcChain};
+use crate::one_for_all::traits::runtime::OfaFullRuntime;
+use crate::one_for_all::types::batch::aliases::MessageBatchSender;
 use crate::std_prelude::*;
 
 pub trait OfaFullRelayTypes:

@@ -1,17 +1,17 @@
 use async_trait::async_trait;
+use ibc_relayer_all_in_one::one_for_all::traits::relay::OfaBaseRelay;
+use ibc_relayer_all_in_one::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_components::chain::types::aliases::{Event, Message};
+use ibc_relayer_components::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
+use ibc_relayer_components::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
+use ibc_relayer_components::relay::traits::ibc_message_sender::IbcMessageSender;
+use ibc_relayer_components::relay::traits::target::ChainTarget;
+use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
+use ibc_relayer_components_extra::batch::traits::channel::HasMessageBatchSender;
+use ibc_relayer_components_extra::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
+use ibc_relayer_components_extra::batch::types::aliases::MessageBatchSender;
 
-use crate::base::chain::types::aliases::{Event, Message};
-use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
-use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::full::batch::traits::channel::HasMessageBatchSender;
-use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
-use crate::full::batch::types::aliases::MessageBatchSender;
-use crate::full::one_for_all::traits::relay::OfaFullRelay;
+use crate::one_for_all::traits::relay::OfaFullRelay;
 use crate::std_prelude::*;
 
 #[async_trait]

@@ -1,21 +1,21 @@
 use async_trait::async_trait;
-
-use crate::base::builder::impls::cache::BuildWithCache;
-use crate::base::builder::impls::relay::BuildRelayFromChains;
-use crate::base::builder::traits::relay::{CanBuildRelay, RelayBuilder};
-use crate::base::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
-use crate::base::one_for_all::impls::builder::relay::BuildRelayFromChainsWithOfa;
-use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::base::one_for_all::traits::builder::{
+use ibc_relayer_all_in_one::one_for_all::impls::builder::relay::BuildRelayFromChainsWithOfa;
+use ibc_relayer_all_in_one::one_for_all::traits::birelay::OfaBiRelayPreset;
+use ibc_relayer_all_in_one::one_for_all::traits::builder::{
     ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, RelayAToB, RelayBToA, RelayError,
 };
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::full::builder::impls::batch::BuildBatchWorker;
-use crate::full::builder::traits::relay::RelayBuilderWithBatch;
-use crate::full::one_for_all::traits::builder::OfaFullBuilder;
-use crate::full::one_for_all::types::batch::aliases::MessageBatchSender;
-use crate::full::one_for_all::types::builder::OfaFullBuilderWrapper;
+use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_all_in_one::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_components::builder::impls::cache::BuildWithCache;
+use ibc_relayer_components::builder::impls::relay::BuildRelayFromChains;
+use ibc_relayer_components::builder::traits::relay::{CanBuildRelay, RelayBuilder};
+use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
+use ibc_relayer_components_extra::builder::impls::batch::BuildBatchWorker;
+use ibc_relayer_components_extra::builder::traits::relay::RelayBuilderWithBatch;
+
+use crate::one_for_all::traits::builder::OfaFullBuilder;
+use crate::one_for_all::types::batch::aliases::MessageBatchSender;
+use crate::one_for_all::types::builder::OfaFullBuilderWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]

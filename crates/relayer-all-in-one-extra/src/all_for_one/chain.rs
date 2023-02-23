@@ -1,6 +1,7 @@
-use crate::base::all_for_one::chain::{AfoBaseChain, AfoCounterpartyChain};
-use crate::full::all_for_one::runtime::HasAfoFullRuntime;
-use crate::full::telemetry::traits::telemetry::HasTelemetry;
+use ibc_relayer_all_in_one::all_for_one::chain::{AfoBaseChain, AfoCounterpartyChain};
+use ibc_relayer_components_extra::telemetry::traits::telemetry::HasTelemetry;
+
+use crate::all_for_one::runtime::HasAfoFullRuntime;
 
 pub trait AfoFullChain<Counterparty>:
     AfoBaseChain<Counterparty> + HasAfoFullRuntime<AfoFullRuntime = Self::AfoBaseRuntime> + HasTelemetry

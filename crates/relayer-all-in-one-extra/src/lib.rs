@@ -55,7 +55,7 @@
     that a context needs to implement in order to construct a minimal
     relayer. The [`full`] variant requires the context to implement
     additional traits, such as
-    [OfaFullChain](crate::full::one_for_all::traits::chain::OfaFullChain),
+    [OfaFullChain](crate::one_for_all::traits::chain::OfaFullChain),
     in order to construct a full-featured relayer.
 
     The all-in-one traits provided by the relayer framework for convenience,
@@ -82,26 +82,26 @@
 
     A good starting point to understand the relayer framework internals
     is to look at how abstract types are defined in
-    [`HasChainTypes`](crate::base::chain::traits::types::chain::HasChainTypes) and
-    [`HasRelayTypes`](crate::base::relay::traits::types::HasRelayTypes).
+    [`HasChainTypes`](ibc_relayer_components::chain::traits::types::chain::HasChainTypes) and
+    [`HasRelayTypes`](ibc_relayer_components::relay::traits::types::HasRelayTypes).
     There are also simple components like
-    [`CanQueryChainStatus`](crate::base::chain::traits::queries::status::CanQueryChainStatus)
+    [`CanQueryChainStatus`](ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus)
     that can be understood as standalone pieces.
 
     The core logic of IBC relaying is encapsulated behind the
-    [`CanRelayPacket`](crate::base::relay::traits::packet_relayer::CanRelayPacket) trait.
-    The [`FullCycleRelayer`](crate::base::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer)
+    [`CanRelayPacket`](ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket) trait.
+    The [`FullCycleRelayer`](ibc_relayer_components::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer)
     component is one of the top-level components that performs the full cycle of
     relaying an IBC packet from a source chain to a destination chain.
 
     A key feature that the relayer framework provides is to allow for
     customization on different strategies of how the messages should be
     submitted to the chain. The
-    [`CanSendMessages`](crate::base::chain::traits::message_sender::CanSendMessages)
+    [`CanSendMessages`](ibc_relayer_components::chain::traits::message_sender::CanSendMessages)
     trait provides the interface for sending messages to a chain. In contrast,
-    the [`CanSendIbcMessages`](crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages)
+    the [`CanSendIbcMessages`](ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages)
     trait provides the interface for sending messages from a _relay_ context. The
-    [`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+    [`SendIbcMessagesWithUpdateClient`](ibc_relayer_components::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
     component is one example of an IBC message sender _middleware_ that attaches
     an UpdateClient message before sending the modified message to a downstream
     message sender.
@@ -110,6 +110,6 @@
 mod std_prelude;
 extern crate alloc;
 
-pub mod docs;
 pub mod all_for_one;
+pub mod docs;
 pub mod one_for_all;

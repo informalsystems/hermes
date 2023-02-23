@@ -1,12 +1,13 @@
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 
-use crate::base::one_for_all::traits::builder::{
+use ibc_relayer_all_in_one::one_for_all::traits::builder::{
     ChainACache, ChainBCache, RelayAToBCache, RelayBToACache,
 };
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::full::one_for_all::traits::birelay::OfaHomogeneousFullBiRelay;
-use crate::full::one_for_all::traits::builder::{
+use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaBaseRuntime;
+
+use crate::one_for_all::traits::birelay::OfaHomogeneousFullBiRelay;
+use crate::one_for_all::traits::builder::{
     BatchSenderCacheA, BatchSenderCacheB, OfaFullBuilderTypes,
 };
 

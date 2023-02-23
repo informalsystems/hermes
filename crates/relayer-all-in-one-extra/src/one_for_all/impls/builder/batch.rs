@@ -1,7 +1,8 @@
-use crate::full::batch::traits::config::HasBatchConfig;
-use crate::full::batch::types::config::BatchConfig;
-use crate::full::one_for_all::traits::builder::OfaFullBuilder;
-use crate::full::one_for_all::types::builder::OfaFullBuilderWrapper;
+use ibc_relayer_components_extra::batch::traits::config::HasBatchConfig;
+use ibc_relayer_components_extra::batch::types::config::BatchConfig;
+
+use crate::one_for_all::traits::builder::OfaFullBuilder;
+use crate::one_for_all::types::builder::OfaFullBuilderWrapper;
 
 impl<Builder> HasBatchConfig for OfaFullBuilderWrapper<Builder>
 where

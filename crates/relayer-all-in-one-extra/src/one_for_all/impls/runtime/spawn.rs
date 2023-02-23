@@ -1,8 +1,9 @@
 use core::future::Future;
 
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
-use crate::full::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
+use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_components_extra::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
+
+use crate::one_for_all::traits::runtime::OfaFullRuntime;
 use crate::std_prelude::*;
 
 impl<Runtime: OfaFullRuntime> HasSpawner for OfaRuntimeWrapper<Runtime> {

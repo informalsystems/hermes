@@ -1,15 +1,16 @@
-use crate::base::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
-use crate::base::one_for_all::impls::chain::queries::status::SendChainStatusQueryToOfa;
-use crate::base::relay::impls::packet_relayers::general::filter_relayer::FilterRelayer;
-use crate::base::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
-use crate::full::batch::impls::message_sender::SendMessagesToBatchWorker;
-use crate::full::one_for_all::impls::packet_filter::FilterPacketFromOfa;
-use crate::full::relay::impls::auto_relayers::parallel_bidirectional::ParallelBidirectionalRelayer;
-use crate::full::relay::impls::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
-use crate::full::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
-use crate::full::relay::impls::packet_relayers::retry::RetryRelayer;
-use crate::full::telemetry::impls::consensus_state::ConsensusStateTelemetryQuerier;
-use crate::full::telemetry::impls::status::ChainStatusTelemetryQuerier;
+use ibc_relayer_all_in_one::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
+use ibc_relayer_all_in_one::one_for_all::impls::chain::queries::status::SendChainStatusQueryToOfa;
+use ibc_relayer_components::relay::impls::packet_relayers::general::filter_relayer::FilterRelayer;
+use ibc_relayer_components::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
+use ibc_relayer_components_extra::batch::impls::message_sender::SendMessagesToBatchWorker;
+use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_bidirectional::ParallelBidirectionalRelayer;
+use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
+use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
+use ibc_relayer_components_extra::relay::impls::packet_relayers::retry::RetryRelayer;
+use ibc_relayer_components_extra::telemetry::impls::consensus_state::ConsensusStateTelemetryQuerier;
+use ibc_relayer_components_extra::telemetry::impls::status::ChainStatusTelemetryQuerier;
+
+use crate::one_for_all::impls::packet_filter::FilterPacketFromOfa;
 
 pub struct FullPreset;
 

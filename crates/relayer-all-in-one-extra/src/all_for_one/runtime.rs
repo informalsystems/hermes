@@ -1,7 +1,9 @@
-use crate::base::all_for_one::runtime::AfoBaseRuntime;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::full::runtime::traits::channel::{CanCreateChannels, CanStreamReceiver, CanUseChannels};
-use crate::full::runtime::traits::spawn::HasSpawner;
+use ibc_relayer_all_in_one::all_for_one::runtime::AfoBaseRuntime;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
+use ibc_relayer_components_extra::runtime::traits::channel::{
+    CanCreateChannels, CanStreamReceiver, CanUseChannels,
+};
+use ibc_relayer_components_extra::runtime::traits::spawn::HasSpawner;
 
 pub trait AfoFullRuntime:
     AfoBaseRuntime + HasSpawner + CanCreateChannels + CanStreamReceiver + CanUseChannels

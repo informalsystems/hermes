@@ -1,18 +1,19 @@
 use alloc::collections::BTreeMap;
-use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::builder::{
+use async_trait::async_trait;
+use ibc_relayer_all_in_one::one_for_all::traits::builder::{
     ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, Mutex, OfaBuilderTypes, RelayAToB,
     RelayBToA, RelayError,
 };
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use crate::full::batch::types::config::BatchConfig;
-use crate::full::one_for_all::traits::birelay::OfaFullBiRelay;
-use crate::full::one_for_all::traits::runtime::OfaFullRuntime;
-use crate::full::one_for_all::types::batch::aliases::MessageBatchSender;
+use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaBaseRuntime;
+use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_all_in_one::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_components_extra::batch::types::config::BatchConfig;
+
+use crate::one_for_all::traits::birelay::OfaFullBiRelay;
+use crate::one_for_all::traits::runtime::OfaFullRuntime;
+use crate::one_for_all::types::batch::aliases::MessageBatchSender;
 use crate::std_prelude::*;
 
 pub trait OfaFullBuilderTypes:

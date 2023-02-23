@@ -1,18 +1,16 @@
 use async_trait::async_trait;
-
-use crate::base::builder::traits::cache::{HasChainCache, HasRelayCache};
-use crate::base::builder::traits::target::chain::{ChainATarget, ChainBTarget};
-use crate::base::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
-use crate::base::builder::types::aliases::{
+use ibc_relayer_all_in_one::one_for_all::traits::birelay::OfaBiRelayPreset;
+use ibc_relayer_all_in_one::one_for_all::traits::builder::RelayError;
+use ibc_relayer_components::builder::traits::cache::{HasChainCache, HasRelayCache};
+use ibc_relayer_components::builder::traits::target::chain::{ChainATarget, ChainBTarget};
+use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
+use ibc_relayer_components::builder::types::aliases::{
     ChainACache, ChainBCache, RelayAToBCache, RelayBToACache,
 };
-use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::base::one_for_all::traits::builder::RelayError;
-use crate::full::builder::traits::cache::HasBatchSenderCache;
-use crate::full::one_for_all::traits::builder::{
-    BatchSenderCacheA, BatchSenderCacheB, OfaFullBuilder,
-};
-use crate::full::one_for_all::types::builder::OfaFullBuilderWrapper;
+use ibc_relayer_components_extra::builder::traits::cache::HasBatchSenderCache;
+
+use crate::one_for_all::traits::builder::{BatchSenderCacheA, BatchSenderCacheB, OfaFullBuilder};
+use crate::one_for_all::types::builder::OfaFullBuilderWrapper;
 
 #[async_trait]
 impl<Build> HasChainCache<ChainATarget> for OfaFullBuilderWrapper<Build>
