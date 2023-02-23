@@ -140,7 +140,7 @@ pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> 
     let max_deposit_period = genesis
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
-        .and_then(|gov| get_mut_multi_version(gov, "deposit_params", "params"))
+        .and_then(|gov| get_mut_with_fallback(gov, "deposit_params", "params"))
         .and_then(|deposit_params| deposit_params.as_object_mut())
         .ok_or_else(|| eyre!("failed to update max_deposit_period in genesis file"))?;
 
@@ -233,7 +233,7 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
     let voting_period = genesis
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
-        .and_then(|gov| get_mut_multi_version(gov, "voting_params", "params"))
+        .and_then(|gov| get_mut_with_fallback(gov, "voting_params", "params"))
         .and_then(|voting_params| voting_params.as_object_mut())
         .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
 
@@ -262,15 +262,16 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
 ///
 /// but that does not work because of the first `get_mut` borrows `value` mutably, which
 /// prevents the second `get_mut` from borrowing it again.
-fn get_mut_multi_version<'a>(
+fn get_mut_with_fallback<'a>(
     value: &'a mut serde_json::Value,
-    key_034: &str,
-    key_037: &str,
+    key: &str,
+    fallback_key: &str,
 ) -> Option<&'a mut serde_json::Value> {
-    let key = value
-        .get(key_034)
-        .map(|_| key_034) // Tendermint 0.34
-        .unwrap_or(key_037); // Tendermint 0.37
-
-    value.get_mut(key)
+    let obj = value.as_object_mut()?;
+    let key = if obj.contains_key(key) {
+        key
+    } else {
+        fallback_key
+    };
+    obj.get_mut(key)
 }
