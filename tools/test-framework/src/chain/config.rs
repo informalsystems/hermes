@@ -258,7 +258,7 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
 /// Note: This function is needed to avoid having to inline its code every time we need it.
 /// The more obvious way to write it inline would be:
 ///
-///     value.get_mut(key_034).or_else(|| value.get_mut(key_037))
+/// value.get_mut(key_034).or_else(|| value.get_mut(key_037))
 ///
 /// but that does not work because of the first `get_mut` borrows `value` mutably, which
 /// prevents the second `get_mut` from borrowing it again.
