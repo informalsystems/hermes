@@ -10,8 +10,8 @@ use std::fs;
 use std::sync::Once;
 use tracing_subscriber::{
     self as ts,
-    filter::EnvFilter,
-    layer::{Layer, SubscriberExt},
+    filter::{EnvFilter, LevelFilter},
+    layer::SubscriberExt,
     util::SubscriberInitExt,
 };
 
@@ -82,16 +82,11 @@ fn parse_chain_command_paths(chain_command_path: String) -> Vec<String> {
 */
 pub fn install_logger(with_color: bool) {
     // Use log level INFO by default if RUST_LOG is not set.
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .from_env_lossy();
 
-    let module_filter_fn = ts::filter::filter_fn(|metadata| match metadata.module_path() {
-        Some(path) => path.starts_with("ibc"),
-        None => false,
-    });
-
-    let layer = ts::fmt::layer()
-        .with_ansi(with_color)
-        .with_filter(module_filter_fn);
+    let layer = ts::fmt::layer().with_ansi(with_color);
 
     ts::registry().with(env_filter).with(layer).init();
 }
