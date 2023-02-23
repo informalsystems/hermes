@@ -4,10 +4,10 @@ use ibc_relayer_components::relay::traits::ibc_message_sender::{
 };
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
-use crate::one_for_all::traits::chain::OfaChainTypes;
-use crate::one_for_all::traits::relay::OfaBaseRelay;
-use crate::one_for_all::traits::relay::OfaRelayPreset;
-use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::traits::chain::OfaChainTypes;
+use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::traits::relay::OfaRelayPreset;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]

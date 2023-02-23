@@ -6,13 +6,13 @@ use ibc_relayer_components::builder::traits::relay::{
 };
 use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
 
-use crate::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::one_for_all::traits::builder::{
+use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
+use crate::base::one_for_all::traits::builder::{
     ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, OfaBuilder, RelayAToB, RelayBToA,
 };
-use crate::one_for_all::types::builder::OfaBuilderWrapper;
-use crate::one_for_all::types::chain::OfaChainWrapper;
-use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::types::builder::OfaBuilderWrapper;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 pub struct BuildRelayFromChainsWithOfa;

@@ -11,8 +11,8 @@ use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_pa
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_components::relay::traits::types::HasRelayTypes;
 
-use crate::all_for_one::chain::AfoBaseChain;
-use crate::all_for_one::runtime::HasAfoBaseRuntime;
+use crate::base::all_for_one::chain::AfoBaseChain;
+use crate::base::all_for_one::runtime::HasAfoBaseRuntime;
 
 /// The functionality that a relay context gains access to once that relay
 /// context implements the `OfaRelayWrapper` trait.

@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use ibc_relayer_components::relay::traits::packet_filter::{CanFilterPackets, PacketFilter};
 
-use crate::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
-use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]

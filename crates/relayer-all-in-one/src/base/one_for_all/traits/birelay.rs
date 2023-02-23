@@ -3,13 +3,13 @@ use core::fmt::Debug;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayer;
 
-use crate::one_for_all::traits::relay::{
+use crate::base::one_for_all::traits::relay::{
     OfaBaseRelay, OfaHomogeneousRelay, OfaRelayPreset, OfaRelayTypes,
 };
-use crate::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::one_for_all::types::birelay::OfaBiRelayWrapper;
-use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
+use crate::base::one_for_all::types::birelay::OfaBiRelayWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 pub trait OfaBiRelayTypes: Async {
     type Preset: Async;

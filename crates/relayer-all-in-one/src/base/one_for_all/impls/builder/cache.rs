@@ -6,9 +6,9 @@ use ibc_relayer_components::builder::types::aliases::{
     ChainACache, ChainBCache, RelayAToBCache, RelayBToACache,
 };
 
-use crate::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::one_for_all::traits::builder::OfaBuilder;
-use crate::one_for_all::types::builder::OfaBuilderWrapper;
+use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
+use crate::base::one_for_all::traits::builder::OfaBuilder;
+use crate::base::one_for_all::types::builder::OfaBuilderWrapper;
 
 #[async_trait]
 impl<Builder> HasChainCache<ChainATarget> for OfaBuilderWrapper<Builder>

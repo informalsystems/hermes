@@ -6,8 +6,8 @@ use ibc_relayer_components::transaction::impls::poll::HasPollTimeout;
 use ibc_relayer_components::transaction::traits::fee::HasFeeForSimulation;
 use ibc_relayer_components::transaction::traits::signer::HasSigner;
 
-use crate::one_for_all::traits::transaction::OfaTxContext;
-use crate::one_for_all::types::transaction::OfaTxWrapper;
+use crate::base::one_for_all::traits::transaction::OfaTxContext;
+use crate::base::one_for_all::types::transaction::OfaTxWrapper;
 
 impl<TxContext> HasSigner for OfaTxWrapper<TxContext>
 where

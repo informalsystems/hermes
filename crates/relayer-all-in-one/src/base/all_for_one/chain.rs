@@ -5,7 +5,7 @@ use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusS
 use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
 
-use crate::all_for_one::runtime::HasAfoBaseRuntime;
+use crate::base::all_for_one::runtime::HasAfoBaseRuntime;
 
 pub trait AfoBaseChain<Counterparty>:
     Clone

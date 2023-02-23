@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use ibc_relayer_components::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
 
-use crate::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayPreset};
-use crate::one_for_all::types::birelay::OfaBiRelayWrapper;
+use crate::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayPreset};
+use crate::base::one_for_all::types::birelay::OfaBiRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]

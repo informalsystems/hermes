@@ -1,11 +1,11 @@
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 
-use crate::one_for_all::traits::birelay::OfaHomogeneousBiRelay;
-use crate::one_for_all::traits::builder::{
+use crate::base::one_for_all::traits::birelay::OfaHomogeneousBiRelay;
+use crate::base::one_for_all::traits::builder::{
     ChainACache, ChainBCache, OfaBuilderTypes, RelayAToBCache, RelayBToACache,
 };
-use crate::one_for_all::traits::runtime::OfaBaseRuntime;
+use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 
 pub struct OfaBuilderWrapper<Builder>
 where

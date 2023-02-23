@@ -5,7 +5,7 @@ use core::time::Duration;
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
 
-use crate::one_for_all::types::runtime::LogLevel;
+use crate::base::one_for_all::types::runtime::LogLevel;
 use crate::std_prelude::*;
 
 #[async_trait]

@@ -3,11 +3,11 @@ use ibc_relayer_components::builder::traits::birelay::{CanBuildBiRelay, HasBiRel
 use ibc_relayer_components::builder::types::aliases::{ChainIdA, ChainIdB, ClientIdA, ClientIdB};
 use ibc_relayer_components::core::traits::error::HasErrorType;
 
-use crate::all_for_one::birelay::AfoBaseBiRelay;
-use crate::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::one_for_all::traits::builder::OfaBuilder;
-use crate::one_for_all::types::birelay::OfaBiRelayWrapper;
-use crate::one_for_all::types::builder::OfaBuilderWrapper;
+use crate::base::all_for_one::birelay::AfoBaseBiRelay;
+use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
+use crate::base::one_for_all::traits::builder::OfaBuilder;
+use crate::base::one_for_all::types::birelay::OfaBiRelayWrapper;
+use crate::base::one_for_all::types::builder::OfaBuilderWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]

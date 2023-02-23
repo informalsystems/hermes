@@ -1,9 +1,9 @@
-use crate::one_for_all::presets::min as preset;
-use crate::one_for_all::presets::min::MinimalPreset;
-use crate::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayPreset};
-use crate::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
-use crate::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
-use crate::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
+use crate::base::one_for_all::presets::min as preset;
+use crate::base::one_for_all::presets::min::MinimalPreset;
+use crate::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayPreset};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
+use crate::base::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
+use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
 
 impl<Chain> OfaChainPreset<Chain> for MinimalPreset
 where

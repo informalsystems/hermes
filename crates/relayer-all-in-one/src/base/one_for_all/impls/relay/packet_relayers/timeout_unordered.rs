@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::one_for_all::traits::chain::OfaChainTypes;
-use crate::one_for_all::traits::relay::OfaBaseRelay;
-use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::traits::chain::OfaChainTypes;
+use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_components::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::{
     CanRelayTimeoutUnorderedPacket, TimeoutUnorderedPacketRelayer,

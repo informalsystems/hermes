@@ -12,12 +12,12 @@ use ibc_relayer_components::relay::traits::packet_filter::PacketFilter;
 use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayer;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
-use crate::one_for_all::traits::chain::OfaIbcChainPreset;
-use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
-use crate::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::one_for_all::types::chain::OfaChainWrapper;
-use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
+use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
+use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
 pub trait OfaRelayTypes: Async {

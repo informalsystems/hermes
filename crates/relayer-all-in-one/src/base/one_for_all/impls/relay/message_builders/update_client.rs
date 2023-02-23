@@ -8,9 +8,9 @@ use ibc_relayer_components::relay::traits::messages::update_client::{
 use ibc_relayer_components::relay::traits::target::ChainTarget;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
-use crate::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
-use crate::one_for_all::traits::relay::OfaBaseRelay;
-use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
+use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 pub struct BuildUpdateClientMessageFromOfa;
