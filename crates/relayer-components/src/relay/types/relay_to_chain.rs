@@ -33,8 +33,8 @@ use crate::std_prelude::*;
    With the `RelayToChain` wrapper, this allows the relay context to pretend that it
    is a chain context while also holding the counterparty chain context. The wrapper
    allows the relay context to be used with components that need to be polymorphic
-   over any context that supports sending of messages, such as the
-   [batch worker component](crate::full::batch).
+   over any context that supports sending of messages, such as the batch worker
+   component.
 */
 
 pub struct RelayToChain<Relay, Target> {

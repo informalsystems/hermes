@@ -34,16 +34,6 @@ use crate::core::traits::sync::Async;
     [`OutgoingPacket`](Self::OutgoingPacket) is sent to a counterparty chain,
     and when a chain receives [`IncomingPacket`](Self::IncomingPacket) that is
     coming from a counterparty chain.
-
-    This trait is automatically implemented by
-    [`OfaChainWrapper`](crate::one_for_all::types::chain::OfaChainWrapper)
-    for a chain context that implements
-    [`OfaIbcChain`](crate::one_for_all::traits::chain::OfaIbcChain).
-    From there, the [`HasIbcPacketTypes::IncomingPacket`] type is derived from
-    [`OfaIbcChain::IncomingPacket`](crate::one_for_all::traits::chain::OfaIbcChain::IncomingPacket),
-    and the [`HasIbcPacketTypes::OutgoingPacket`] type is derived from
-    [`OfaIbcChain::OutgoingPacket`](crate::one_for_all::traits::chain::OfaIbcChain::OutgoingPacket),
-
 */
 pub trait HasIbcPacketTypes<Counterparty>: HasIbcChainTypes<Counterparty>
 where

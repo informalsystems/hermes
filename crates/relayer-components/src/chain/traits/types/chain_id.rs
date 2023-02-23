@@ -11,13 +11,6 @@ use crate::core::traits::sync::Async;
    The relay context uses this information to identify whether an IBC packet
    corresponds to a given chain, based on the chain ID information that is
    queried from a channel ID.
-
-   This trait is automatically implemented by
-   [`OfaChainWrapper`](crate::one_for_all::types::chain::OfaChainWrapper)
-   for a chain context that implements
-   [`OfaChainTypes`](crate::one_for_all::traits::chain::OfaChainTypes).
-   From there, the [`HasChainIdType::ChainId`] type is derived from
-   [`OfaChainTypes::ChainId`](crate::one_for_all::traits::chain::OfaChainTypes::ChainId).
 */
 pub trait HasChainIdType: Async {
     /**
@@ -30,13 +23,6 @@ pub trait HasChainIdType: Async {
 /**
    This implements the accessor method to get a chain context's
    [chain ID](HasChainIdType::ChainId).
-
-   This trait is automatically implemented by
-   [`OfaChainWrapper`](crate::one_for_all::types::chain::OfaChainWrapper)
-   for a chain context that implements
-   [`OfaBaseChain`](crate::one_for_all::traits::chain::OfaBaseChain).
-   From there, the [`HasChainId::chain_id`] method is derived from
-   [`OfaBaseChain::chain_id`](crate::one_for_all::traits::chain::OfaBaseChain::chain_id).
 */
 pub trait HasChainId: HasChainIdType {
     /**

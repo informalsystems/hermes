@@ -16,20 +16,6 @@
    It also supports sending of messages to a chain using
    [`CanSendMessages`](traits::message_sender::CanSendMessages).
 
-   ## All-In-One Traits
-
-   The provider-side closure of the chain components defined in this module
-   is captured by the one-for-all trait
-   [`OfaBaseChain`](crate::one_for_all::traits::chain::OfaBaseChain).
-   That allows users to implement all chain context traits in this module
-   by implementing the one-for-all chain context traits.
-
-   The consumer-side closure of the chain components defined in this module
-   is captured by the all-for-one trait
-   [`AfoBaseChain`](crate::all_for_one::chain::AfoBaseChain).
-   That allows users to consume all chain context methods in this module
-   by adding `Chain: AfoBaseChain` to the `where` clause.
-
    ## List of Traits
 
    Here is a non-comprehensive list of chain traits that are defined in this module:

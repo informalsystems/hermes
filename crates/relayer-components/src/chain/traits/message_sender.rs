@@ -42,22 +42,17 @@ use crate::std_prelude::*;
     error is returned from the
     [`CheckEncodedTxSize`](crate::transaction::impls::encoders::max_tx_size::CheckEncodedTxSize)
     component if the total message size exceeds a given transaction size limit.
-    A component like
-    [`CanSpawnBatchMessageWorker`](crate::full::batch::worker::CanSpawnBatchMessageWorker)
+    A component like `CanSpawnBatchMessageWorker`
     can then try and match against the error, and split the sent messages into
     smaller batches.
 
    This trait is automatically implemented by
-   [`OfaChainWrapper`](crate::one_for_all::types::chain::OfaChainWrapper)
-   for a chain context that implements
-   [`OfaBaseChain`](crate::one_for_all::traits::chain::OfaBaseChain).
+   `OfaChainWrapper` for a chain context that implements `OfaBaseChain`.
    From there, the [`CanSendMessages::send_messages`] method is derived from
-   [`OfaBaseChain::send_messages`](crate::one_for_all::traits::chain::OfaBaseChain::send_messages).
+   `OfaBaseChain::send_messages`.
 
    Additionally, this trait is also automatically implemented by
-   [`OfaTxWrapper`](crate::one_for_all::types::transaction::OfaTxWrapper)
-   for a chain context that implements
-   [`OfaTxContext`](crate::one_for_all::traits::transaction::OfaTxContext).
+   `OfaTxWrapper` for a chain context that implements `OfaTxContext`.
    From there, the
    [`SendMessagesAsTx`](crate::transaction::impls::message_sender::SendMessagesAsTx)
    component is used to submit the messages as transaction using the transaction

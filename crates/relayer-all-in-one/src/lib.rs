@@ -27,11 +27,11 @@
 
     There are currently two variants of relayers supported by the relayer
     framework. The [`base`] or minimal variant provides the base components
-    required to implement a minimal version of an IBC relayer. The [`full`]
+    required to implement a minimal version of an IBC relayer. The [`extra`]
     variant provides all the additional components that can be used to run
     a full-featured relayer.
 
-    Note that all the components in both [`base`] and [`full`] are implemented
+    Note that all the components in both [`base`] and [`extra`] are implemented
     in a fully modular fashion. As a result, power users can choose to use only
     a subset of components provided by the framework, or introduce new
     components that provide additional functionalities.
@@ -53,9 +53,9 @@
     There are currently two all-in-one variants of the relayer. The
     [`base`] or minimal variant expose the minimal set of requirements
     that a context needs to implement in order to construct a minimal
-    relayer. The [`full`] variant requires the context to implement
+    relayer. The [`extra`] variant requires the context to implement
     additional traits, such as
-    [OfaFullChain](crate::one_for_all::traits::chain::OfaFullChain),
+    [OfaFullChain](crate::extra::one_for_all::traits::chain::OfaFullChain),
     in order to construct a full-featured relayer.
 
     The all-in-one traits provided by the relayer framework for convenience,
