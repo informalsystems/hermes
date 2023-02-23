@@ -1,5 +1,3 @@
-use crate::all_for_one::chain::AfoBaseChain;
-use crate::all_for_one::runtime::HasAfoBaseRuntime;
 use ibc_relayer_components::chain::types::aliases::{IncomingPacket, OutgoingPacket};
 use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
@@ -12,6 +10,9 @@ use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::CanR
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+
+use crate::all_for_one::chain::AfoBaseChain;
+use crate::all_for_one::runtime::HasAfoBaseRuntime;
 
 /// The functionality that a relay context gains access to once that relay
 /// context implements the `OfaRelayWrapper` trait.

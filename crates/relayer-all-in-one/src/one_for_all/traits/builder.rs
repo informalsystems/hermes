@@ -1,7 +1,9 @@
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
-use async_trait::async_trait;
 use core::fmt::Debug;
+
+use async_trait::async_trait;
+use ibc_relayer_components::core::traits::sync::Async;
 
 use crate::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayTypes};
 use crate::one_for_all::traits::chain::OfaChainTypes;
@@ -11,7 +13,6 @@ use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
-use ibc_relayer_components::core::traits::sync::Async;
 
 pub trait OfaBuilderTypes: Async {
     type Preset: Async;

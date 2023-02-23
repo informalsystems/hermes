@@ -1,7 +1,8 @@
-use async_trait::async_trait;
 use core::cmp::Ord;
 use core::marker::PhantomData;
 use core::time::Duration;
+
+use async_trait::async_trait;
 
 use crate::chain::traits::queries::status::CanQueryChainStatus;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;

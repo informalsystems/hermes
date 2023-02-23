@@ -1,8 +1,9 @@
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
+
 use crate::one_for_all::traits::builder::OfaBuilder;
 use crate::one_for_all::types::builder::OfaBuilderWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_components::core::traits::error::HasErrorType;
-use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 impl<Builder> HasRuntime for OfaBuilderWrapper<Builder>
 where

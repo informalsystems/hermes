@@ -1,7 +1,3 @@
-use crate::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes, OfaIbcChain};
-use crate::one_for_all::types::chain::OfaChainWrapper;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
-use crate::std_prelude::*;
 use ibc_relayer_components::chain::traits::types::chain_id::{HasChainId, HasChainIdType};
 use ibc_relayer_components::chain::traits::types::event::HasEventType;
 use ibc_relayer_components::chain::traits::types::height::HasHeightType;
@@ -17,6 +13,11 @@ use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
 use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
+
+use crate::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes, OfaIbcChain};
+use crate::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::std_prelude::*;
 
 impl<Chain: OfaBaseChain> HasErrorType for OfaChainWrapper<Chain> {
     type Error = Chain::Error;

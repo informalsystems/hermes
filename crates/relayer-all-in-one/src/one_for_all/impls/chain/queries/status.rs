@@ -1,13 +1,13 @@
 use async_trait::async_trait;
+use ibc_relayer_components::chain::traits::queries::status::{
+    CanQueryChainStatus, ChainStatusQuerier,
+};
+use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 
 use crate::one_for_all::traits::chain::OfaBaseChain;
 use crate::one_for_all::traits::chain::OfaChainPreset;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
-use ibc_relayer_components::chain::traits::queries::status::{
-    CanQueryChainStatus, ChainStatusQuerier,
-};
-use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 
 pub struct SendChainStatusQueryToOfa;
 

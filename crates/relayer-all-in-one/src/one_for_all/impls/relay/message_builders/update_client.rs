@@ -1,9 +1,4 @@
 use async_trait::async_trait;
-
-use crate::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
-use crate::one_for_all::traits::relay::OfaBaseRelay;
-use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::std_prelude::*;
 use ibc_relayer_components::chain::types::aliases::{Height, Message};
 use ibc_relayer_components::relay::impls::messages::skip_update_client::SkipUpdateClient;
 use ibc_relayer_components::relay::impls::messages::wait_update_client::WaitUpdateClient;
@@ -12,6 +7,11 @@ use ibc_relayer_components::relay::traits::messages::update_client::{
 };
 use ibc_relayer_components::relay::traits::target::ChainTarget;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
+
+use crate::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
+use crate::one_for_all::traits::relay::OfaBaseRelay;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::std_prelude::*;
 
 pub struct BuildUpdateClientMessageFromOfa;
 

@@ -1,5 +1,6 @@
-use async_trait::async_trait;
 use core::time::Duration;
+
+use async_trait::async_trait;
 
 use crate::runtime::traits::runtime::HasRuntime;
 use crate::runtime::traits::sleep::CanSleep;

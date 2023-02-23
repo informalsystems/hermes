@@ -7,3 +7,4 @@ reorder_imports = true
 # format_strings = false
 # comment_width = 100
 # wrap_comments = true
+# group_imports = "StdExternalCrate"

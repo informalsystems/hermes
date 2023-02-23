@@ -2,8 +2,15 @@
 //! in order to gain access to the APIs provided by the `AfoBaseRelay`
 //! trait.
 
-use async_trait::async_trait;
 use core::fmt::Debug;
+
+use async_trait::async_trait;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayer;
+use ibc_relayer_components::relay::traits::ibc_message_sender::IbcMessageSender;
+use ibc_relayer_components::relay::traits::packet_filter::PacketFilter;
+use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayer;
+use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
 use crate::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
@@ -12,12 +19,6 @@ use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
-use ibc_relayer_components::core::traits::sync::Async;
-use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayer;
-use ibc_relayer_components::relay::traits::ibc_message_sender::IbcMessageSender;
-use ibc_relayer_components::relay::traits::packet_filter::PacketFilter;
-use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayer;
-use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
 pub trait OfaRelayTypes: Async {
     type Preset: Async;

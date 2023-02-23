@@ -1,9 +1,9 @@
 use async_trait::async_trait;
+use ibc_relayer_components::chain::traits::message_builders::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
 
 use crate::one_for_all::traits::chain::OfaIbcChain;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
-use ibc_relayer_components::chain::traits::message_builders::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
 
 #[async_trait]
 impl<Chain, Counterparty> CanBuildTimeoutUnorderedPacketMessage<OfaChainWrapper<Counterparty>>

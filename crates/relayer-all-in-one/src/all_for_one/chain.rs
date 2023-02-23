@@ -1,10 +1,11 @@
-use crate::all_for_one::runtime::HasAfoBaseRuntime;
 use ibc_relayer_components::chain::traits::queries::consensus_state::CanQueryConsensusState;
 use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus;
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
 use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
+
+use crate::all_for_one::runtime::HasAfoBaseRuntime;
 
 pub trait AfoBaseChain<Counterparty>:
     Clone

@@ -1,6 +1,7 @@
-use async_trait::async_trait;
 use core::fmt::Debug;
 use core::marker::PhantomData;
+
+use async_trait::async_trait;
 
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;

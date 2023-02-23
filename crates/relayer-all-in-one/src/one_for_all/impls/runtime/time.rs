@@ -1,8 +1,9 @@
 use core::time::Duration;
 
+use ibc_relayer_components::runtime::traits::time::HasTime;
+
 use crate::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_components::runtime::traits::time::HasTime;
 
 impl<Runtime: OfaBaseRuntime> HasTime for OfaRuntimeWrapper<Runtime> {
     type Time = Runtime::Time;

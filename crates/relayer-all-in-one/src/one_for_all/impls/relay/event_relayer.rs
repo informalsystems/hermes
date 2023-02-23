@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-
-use crate::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
-use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::std_prelude::*;
 use ibc_relayer_components::chain::types::aliases::{Event, Height};
 use ibc_relayer_components::relay::impls::event_relayers::packet_event::PacketEventRelayer;
 use ibc_relayer_components::relay::traits::event_relayer::{CanRelayEvent, EventRelayer};
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
+
+use crate::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
+use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::std_prelude::*;
 
 #[async_trait]
 impl<Relay, Preset> CanRelayEvent<SourceTarget> for OfaRelayWrapper<Relay>

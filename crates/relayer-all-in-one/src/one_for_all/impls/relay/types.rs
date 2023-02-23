@@ -1,11 +1,12 @@
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
+
 use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::traits::relay::OfaBaseRelay;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_components::core::traits::error::HasErrorType;
-use ibc_relayer_components::relay::traits::types::HasRelayTypes;
-use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 impl<Relay: OfaBaseRelay> HasErrorType for OfaRelayWrapper<Relay> {
     type Error = Relay::Error;

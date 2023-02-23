@@ -1,5 +1,6 @@
-use async_trait::async_trait;
 use core::marker::PhantomData;
+
+use async_trait::async_trait;
 
 use crate::builder::traits::cache::{HasChainCache, HasRelayCache};
 use crate::builder::traits::chain::ChainBuilder;

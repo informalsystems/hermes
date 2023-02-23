@@ -1,6 +1,7 @@
-use async_trait::async_trait;
 use core::future::Future;
 use core::pin::Pin;
+
+use async_trait::async_trait;
 
 use crate::core::traits::error::InjectError;
 use crate::core::traits::sync::Async;

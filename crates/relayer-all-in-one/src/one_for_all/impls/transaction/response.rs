@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-
-use crate::one_for_all::traits::transaction::OfaTxContext;
-use crate::one_for_all::types::transaction::OfaTxWrapper;
-use crate::std_prelude::*;
 use ibc_relayer_components::transaction::impls::poll::PollTxResponse;
 use ibc_relayer_components::transaction::traits::response::{
     CanPollTxResponse, CanQueryTxResponse, TxResponsePoller,
 };
+
+use crate::one_for_all::traits::transaction::OfaTxContext;
+use crate::one_for_all::types::transaction::OfaTxWrapper;
+use crate::std_prelude::*;
 
 #[async_trait]
 impl<TxContext> CanQueryTxResponse for OfaTxWrapper<TxContext>

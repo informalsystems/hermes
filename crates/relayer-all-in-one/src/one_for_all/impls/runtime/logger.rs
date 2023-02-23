@@ -1,11 +1,11 @@
 use async_trait::async_trait;
+use ibc_relayer_components::runtime::traits::log::{
+    HasLogger, LevelDebug, LevelError, LevelInfo, LevelTrace, LevelWarn,
+};
 
 use crate::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::one_for_all::types::runtime::{LogLevel, OfaRuntimeWrapper};
 use crate::std_prelude::*;
-use ibc_relayer_components::runtime::traits::log::{
-    HasLogger, LevelDebug, LevelError, LevelInfo, LevelTrace, LevelWarn,
-};
 
 #[async_trait]
 impl<Runtime: OfaBaseRuntime> HasLogger<LevelError> for OfaRuntimeWrapper<Runtime> {

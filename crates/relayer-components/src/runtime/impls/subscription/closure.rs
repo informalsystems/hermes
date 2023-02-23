@@ -1,7 +1,8 @@
 use alloc::sync::Arc;
-use async_trait::async_trait;
 use core::future::Future;
 use core::pin::Pin;
+
+use async_trait::async_trait;
 use futures::stream::Stream;
 
 use crate::core::traits::sync::Async;

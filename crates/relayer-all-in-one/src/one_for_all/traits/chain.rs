@@ -3,17 +3,18 @@
 //! trait.
 
 use alloc::sync::Arc;
-use async_trait::async_trait;
 use core::fmt::Debug;
+
+use async_trait::async_trait;
+use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
+use ibc_relayer_components::chain::traits::queries::status::ChainStatusQuerier;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::runtime::traits::subscription::Subscription;
 
 use crate::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
-use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
-use ibc_relayer_components::chain::traits::queries::status::ChainStatusQuerier;
-use ibc_relayer_components::core::traits::sync::Async;
-use ibc_relayer_components::runtime::traits::subscription::Subscription;
 
 pub trait OfaChainTypes: Async {
     type Preset: Async;
