@@ -115,7 +115,7 @@ jobs:
           command: |
             nix shell .#python .#${{ matrix.chain.package }} -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
-              --nocapture --test-threads=1
+                --test-threads=1
 
   # ordered-channel-test:
   #   runs-on: ubuntu-20.04
@@ -147,7 +147,7 @@ jobs:
   #       run: |
   #         nix shell .#python .#gaia6-ordered -c cargo \
   #           test -p ibc-integration-test --features ordered --no-fail-fast -- \
-  #           --nocapture --test-threads=1 test_ordered_channel
+  #             --test-threads=1 test_ordered_channel
 
   # ica-filter-test:
   #   runs-on: ubuntu-20.04
@@ -179,7 +179,7 @@ jobs:
   #       run: |
   #         nix shell .#python .#ica -c cargo \
   #           test -p ibc-integration-test --features ica --no-fail-fast -- \
-  #           --nocapture --test-threads=1 test_ica_filter
+  #             --test-threads=1 test_ica_filter
 
   # ics29-fee-test:
   #   runs-on: ubuntu-20.04
@@ -225,7 +225,7 @@ jobs:
   #       run: |
   #         nix shell .#${{ matrix.chain.package }} -c cargo \
   #           test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
-  #           --nocapture --test-threads=1 fee::
+  #             --test-threads=1 fee::
 
   # forward-packet:
   #   runs-on: ubuntu-20.04
@@ -265,7 +265,7 @@ jobs:
   #       run: |
   #         nix shell .#${{ matrix.chain.package }} -c cargo \
   #           test -p ibc-integration-test --features forward-packet --no-fail-fast -- \
-  #           --nocapture --test-threads=1 forward::
+  #             --test-threads=1 forward::
 
   # ics31:
   #   runs-on: ubuntu-20.04
@@ -305,7 +305,7 @@ jobs:
   #       run: |
   #         nix shell ${{ matrix.chain.package }} -c cargo \
   #           test -p ibc-integration-test --features ics31 --no-fail-fast -- \
-  #           --nocapture --test-threads=1 ics31::
+  #             --test-threads=1 ics31::
 
   # model-based-test:
   #   runs-on: ubuntu-20.04
@@ -345,4 +345,4 @@ jobs:
   #     #       .#apalache \
   #     #       -c cargo \
   #     #       test -p ibc-integration-test --features mbt --no-fail-fast -- \
-  #     #       --nocapture --test-threads=1 mbt
+  #     #         --test-threads=1 mbt
