@@ -198,7 +198,7 @@ async fn sequential_send_messages_as_batches(
 
         wait_for_block_commits(
             &config.chain_id,
-            &rpc_client,
+            rpc_client,
             &config.rpc_address,
             &config.rpc_timeout,
             &mut tx_sync_results,
@@ -476,7 +476,7 @@ mod tests {
             },
         ];
 
-        let mut limited_config = config.clone();
+        let mut limited_config = config;
         limited_config.max_msg_num = MaxMsgNum::new(1).unwrap();
         limited_config.max_tx_size = MaxTxSize::default();
 
