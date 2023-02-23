@@ -21,3 +21,4 @@ all-features = true
 async-trait = "0.1.56"
 futures = { version = "0.3", default-features = false, features = ["alloc"] }
 ibc-relayer-components = { version = "0.1.0", path = "../relayer-components" }
+ibc-relayer-components-extra = { version = "0.1.0", path = "../relayer-components-extra" }

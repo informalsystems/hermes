@@ -1863,6 +1863,7 @@ dependencies = [
  "async-trait",
  "futures",
  "ibc-relayer-components",
+ "ibc-relayer-components-extra",
 ]
 
 [[package]]
