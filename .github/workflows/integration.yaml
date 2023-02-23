@@ -51,9 +51,9 @@ jobs:
           # - package: gaia7
           #   command: gaiad
           #   account_prefix: cosmos
-          # - package: gaia8
-          #   command: gaiad
-          #   account_prefix: cosmos
+          - package: gaia8
+            command: gaiad
+            account_prefix: cosmos
           # - package: ibc-go-v2-simapp
           #   command: simd
           #   account_prefix: cosmos
@@ -65,10 +65,10 @@ jobs:
           #   account_prefix: cosmos
           # - package: ibc-go-v5-simapp
           #   command: simd
-          #   account_prefix: cosmos
-          # - package: ibc-go-v6-simapp
-          #   command: simd
-          #   account_prefix: cosmos
+            # account_prefix: cosmos
+          - package: ibc-go-v6-simapp
+            command: simd
+            account_prefix: cosmos
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
