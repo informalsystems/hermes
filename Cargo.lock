@@ -1963,7 +1963,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc-relayer-framework-test"
+name = "ibc-relayer-mock"
 version = "0.1.0"
 dependencies = [
  "async-trait",
