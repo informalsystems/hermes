@@ -375,6 +375,7 @@ impl EventMonitor {
         let rt = self.rt.clone();
 
         loop {
+            // Process any shutdown or subscription commands
             if let Ok(cmd) = self.rx_cmd.try_recv() {
                 match cmd {
                     MonitorCmd::Shutdown => return Next::Abort,
@@ -392,6 +393,18 @@ impl EventMonitor {
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
                 }
             });
+
+            // Before handling the batch, check if there are any pending shutdown or subscribe commands.
+            if let Ok(cmd) = self.rx_cmd.try_recv() {
+                match cmd {
+                    MonitorCmd::Shutdown => return Next::Abort,
+                    MonitorCmd::Subscribe(tx) => {
+                        if let Err(e) = tx.send(self.event_bus.subscribe()) {
+                            error!("failed to send back subscription: {e}");
+                        }
+                    }
+                }
+            }
 
             match result {
                 Ok(batch) => self.process_batch(batch),
