@@ -131,6 +131,7 @@ pub struct CosmosSdkChain {
     config: ChainConfig,
     tx_config: TxConfig,
     rpc_client: HttpClient,
+    compat_mode: CompatMode,
     grpc_addr: Uri,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
@@ -282,6 +283,7 @@ impl CosmosSdkChain {
         let (mut event_monitor, monitor_tx) = EventMonitor::new(
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
+            self.compat_mode,
             self.rt.clone(),
         )
         .map_err(Error::event_monitor)?;
@@ -734,6 +736,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let chain = Self {
             config,
             rpc_client,
+            compat_mode,
             grpc_addr,
             light_client,
             rt,
