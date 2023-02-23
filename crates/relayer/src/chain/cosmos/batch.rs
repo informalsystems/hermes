@@ -476,7 +476,7 @@ mod tests {
             },
         ];
 
-        let mut limited_config = config.clone();
+        let mut limited_config = config;
         limited_config.max_msg_num = MaxMsgNum::new(1).unwrap();
         limited_config.max_tx_size = MaxTxSize::default();
 
