@@ -2,8 +2,8 @@
    Trait definitions for [`HasMessageType`] and [`CanEstimateMessageSize`].
 */
 
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
+use crate::core::traits::error::HasErrorType;
+use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 /**
@@ -44,7 +44,7 @@ pub trait HasMessageType: HasErrorType {
 
        The relayer framework delegates the _construction_ of messages to
        specialized traits such as
-       [`CanBuildUpdateClientMessage`](crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage).
+       [`CanBuildUpdateClientMessage`](crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage).
        Because the construction of messages typically also requires querying
        from the chain, the relayer framework lets the concrete chain contexts
        to perform both the querying operations and message construction

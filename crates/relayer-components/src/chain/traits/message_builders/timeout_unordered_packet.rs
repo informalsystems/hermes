@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
+use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::std_prelude::*;
 
 #[async_trait]

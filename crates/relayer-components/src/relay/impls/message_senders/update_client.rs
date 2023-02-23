@@ -1,12 +1,12 @@
 use alloc::collections::BTreeSet;
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::ibc::{HasCounterpartyMessageHeight, HasIbcChainTypes};
-use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::relay::traits::types::HasRelayTypes;
+use crate::chain::traits::types::ibc::{HasCounterpartyMessageHeight, HasIbcChainTypes};
+use crate::core::traits::sync::Async;
+use crate::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
+use crate::relay::traits::target::ChainTarget;
+use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 pub struct SendIbcMessagesWithUpdateClient<Sender>(pub Sender);

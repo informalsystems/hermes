@@ -3,10 +3,10 @@
   [`HasCounterpartyMessageHeight`].
 */
 
-use crate::base::chain::traits::types::chain::HasChainTypes;
-use crate::base::chain::traits::types::height::HasHeightType;
-use crate::base::chain::traits::types::message::HasMessageType;
-use crate::base::core::traits::sync::Async;
+use crate::chain::traits::types::chain::HasChainTypes;
+use crate::chain::traits::types::height::HasHeightType;
+use crate::chain::traits::types::message::HasMessageType;
+use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 /**
@@ -42,7 +42,7 @@ use crate::std_prelude::*;
    would require access to the counterparty chain context, which is implemented
    separately from the self chain context. Instead, operations that require
    access to two chain contexts are handled by the
-   [relay context](crate::base::relay).
+   [relay context](crate::relay).
 */
 pub trait HasIbcChainTypes<Counterparty>: HasChainTypes
 where
@@ -92,7 +92,7 @@ where
        is not IBC-related, this would return `None`.
 
        This is used by the
-       [`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+       [`SendIbcMessagesWithUpdateClient`](crate::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
        message sender middleware to attach `UpdateClient` messages to the
        front of the message batch before sending it to the downstream
        message sender.
@@ -104,7 +104,7 @@ where
        messages targetting this self chain. So any IBC message that the self
        chain received would correspond to events happening on the `Counterparty`
        chain. With this method, we are thus getting the
-       [`Counterparty::Height`](crate::base::chain::traits::types::height::HasHeightType::Height)
+       [`Counterparty::Height`](crate::chain::traits::types::height::HasHeightType::Height)
        and _not_ `Self::Height`.
     */
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;

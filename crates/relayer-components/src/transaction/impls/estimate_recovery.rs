@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::transaction::traits::estimate::TxFeeEstimator;
-use crate::base::transaction::traits::types::HasTxTypes;
 use crate::std_prelude::*;
+use crate::transaction::traits::estimate::TxFeeEstimator;
+use crate::transaction::traits::types::HasTxTypes;
 
 pub trait CanRecoverEstimateError: HasTxTypes {
     fn try_recover_estimate_error(&self, e: Self::Error) -> Result<Self::Fee, Self::Error>;

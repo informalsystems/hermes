@@ -8,10 +8,10 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::core::traits::error::InjectError;
-use crate::base::transaction::traits::encode::TxEncoder;
-use crate::base::transaction::traits::types::HasTxTypes;
+use crate::core::traits::error::InjectError;
 use crate::std_prelude::*;
+use crate::transaction::traits::encode::TxEncoder;
+use crate::transaction::traits::types::HasTxTypes;
 
 pub struct MaxTxSizeExceededError {
     pub max_tx_size: usize,

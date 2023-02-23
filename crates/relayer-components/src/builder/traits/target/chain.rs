@@ -1,7 +1,7 @@
-use crate::base::builder::traits::birelay::HasBiRelayType;
-use crate::base::builder::types::aliases::{ChainA, ChainB};
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::core::traits::sync::Async;
+use crate::builder::traits::birelay::HasBiRelayType;
+use crate::builder::types::aliases::{ChainA, ChainB};
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::core::traits::sync::Async;
 
 #[derive(Default)]
 pub struct ChainATarget;

@@ -2,12 +2,12 @@
    Trait definitions for [`HasWriteAcknowledgementEvent`].
 */
 
-use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
-use crate::base::core::traits::sync::Async;
+use crate::chain::traits::types::packet::HasIbcPacketTypes;
+use crate::core::traits::sync::Async;
 
 /**
    Indicates that a chain context's
-   [`Event`](crate::base::chain::traits::types::event::HasEventType::Event)
+   [`Event`](crate::chain::traits::types::event::HasEventType::Event)
    type contains a [`WriteAcknowledgementEvent`](Self::WriteAcknowledgementEvent) variant.
 */
 pub trait HasWriteAcknowledgementEvent<Counterparty>: HasIbcPacketTypes<Counterparty>
@@ -35,7 +35,7 @@ where
 
     /**
        Try to extract an abstract
-       [`Event`](crate::base::chain::traits::types::event::HasEventType::Event)
+       [`Event`](crate::chain::traits::types::event::HasEventType::Event)
        type into a
        [`WriteAcknowledgementEvent`](Self::WriteAcknowledgementEvent).
        If the extraction fails, return `None`.

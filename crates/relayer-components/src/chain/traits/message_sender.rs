@@ -4,9 +4,9 @@
 
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::event::HasEventType;
-use crate::base::chain::traits::types::message::HasMessageType;
-use crate::base::core::traits::sync::Async;
+use crate::chain::traits::types::event::HasEventType;
+use crate::chain::traits::types::message::HasMessageType;
+use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 /**
@@ -38,9 +38,9 @@ use crate::std_prelude::*;
     the messages to smaller batch to the caller.
 
     For example, the
-    [`MaxTxSizeExceededError`](crate::base::transaction::impls::encoders::max_tx_size::MaxTxSizeExceededError)
+    [`MaxTxSizeExceededError`](crate::transaction::impls::encoders::max_tx_size::MaxTxSizeExceededError)
     error is returned from the
-    [`CheckEncodedTxSize`](crate::base::transaction::impls::encoders::max_tx_size::CheckEncodedTxSize)
+    [`CheckEncodedTxSize`](crate::transaction::impls::encoders::max_tx_size::CheckEncodedTxSize)
     component if the total message size exceeds a given transaction size limit.
     A component like
     [`CanSpawnBatchMessageWorker`](crate::full::batch::worker::CanSpawnBatchMessageWorker)
@@ -48,18 +48,18 @@ use crate::std_prelude::*;
     smaller batches.
 
    This trait is automatically implemented by
-   [`OfaChainWrapper`](crate::base::one_for_all::types::chain::OfaChainWrapper)
+   [`OfaChainWrapper`](crate::one_for_all::types::chain::OfaChainWrapper)
    for a chain context that implements
-   [`OfaBaseChain`](crate::base::one_for_all::traits::chain::OfaBaseChain).
+   [`OfaBaseChain`](crate::one_for_all::traits::chain::OfaBaseChain).
    From there, the [`CanSendMessages::send_messages`] method is derived from
-   [`OfaBaseChain::send_messages`](crate::base::one_for_all::traits::chain::OfaBaseChain::send_messages).
+   [`OfaBaseChain::send_messages`](crate::one_for_all::traits::chain::OfaBaseChain::send_messages).
 
    Additionally, this trait is also automatically implemented by
-   [`OfaTxWrapper`](crate::base::one_for_all::types::transaction::OfaTxWrapper)
+   [`OfaTxWrapper`](crate::one_for_all::types::transaction::OfaTxWrapper)
    for a chain context that implements
-   [`OfaTxContext`](crate::base::one_for_all::traits::transaction::OfaTxContext).
+   [`OfaTxContext`](crate::one_for_all::traits::transaction::OfaTxContext).
    From there, the
-   [`SendMessagesAsTx`](crate::base::transaction::impls::message_sender::SendMessagesAsTx)
+   [`SendMessagesAsTx`](crate::transaction::impls::message_sender::SendMessagesAsTx)
    component is used to submit the messages as transaction using the transaction
    context. In other words, both the chain context and the transaction context
    provides the same interface for sending messages using this trait.
@@ -77,7 +77,7 @@ pub trait CanSendMessages: HasMessageType + HasEventType {
         at the same position in the input message list.
 
         On failure, the method returns an
-        [error](crate::base::core::traits::error::HasErrorType::Error).
+        [error](crate::core::traits::error::HasErrorType::Error).
         Note that since the message sending must be atomic, the sending of
         messages must either all succeed or all failed. i.e. partial failure
         is forbidden.

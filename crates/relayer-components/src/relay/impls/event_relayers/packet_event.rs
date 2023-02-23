@@ -1,16 +1,16 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
-use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
-use crate::base::chain::types::aliases::{Event, Height};
-use crate::base::relay::impls::packet_filters::chain::{
+use crate::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
+use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
+use crate::chain::types::aliases::{Event, Height};
+use crate::relay::impls::packet_filters::chain::{
     MatchPacketDestinationChain, MatchPacketSourceChain,
 };
-use crate::base::relay::traits::event_relayer::EventRelayer;
-use crate::base::relay::traits::packet_filter::{CanFilterPackets, PacketFilter};
-use crate::base::relay::traits::packet_relayer::CanRelayPacket;
-use crate::base::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
-use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
+use crate::relay::traits::event_relayer::EventRelayer;
+use crate::relay::traits::packet_filter::{CanFilterPackets, PacketFilter};
+use crate::relay::traits::packet_relayer::CanRelayPacket;
+use crate::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
+use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
 /**

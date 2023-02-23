@@ -2,7 +2,7 @@
    Trait definitions for [`HasChainIdType`] and [`HasChainId`].
 */
 
-use crate::base::core::traits::sync::Async;
+use crate::core::traits::sync::Async;
 
 /**
    This is implemented by a chain context to provide a
@@ -13,11 +13,11 @@ use crate::base::core::traits::sync::Async;
    queried from a channel ID.
 
    This trait is automatically implemented by
-   [`OfaChainWrapper`](crate::base::one_for_all::types::chain::OfaChainWrapper)
+   [`OfaChainWrapper`](crate::one_for_all::types::chain::OfaChainWrapper)
    for a chain context that implements
-   [`OfaChainTypes`](crate::base::one_for_all::traits::chain::OfaChainTypes).
+   [`OfaChainTypes`](crate::one_for_all::traits::chain::OfaChainTypes).
    From there, the [`HasChainIdType::ChainId`] type is derived from
-   [`OfaChainTypes::ChainId`](crate::base::one_for_all::traits::chain::OfaChainTypes::ChainId).
+   [`OfaChainTypes::ChainId`](crate::one_for_all::traits::chain::OfaChainTypes::ChainId).
 */
 pub trait HasChainIdType: Async {
     /**
@@ -32,11 +32,11 @@ pub trait HasChainIdType: Async {
    [chain ID](HasChainIdType::ChainId).
 
    This trait is automatically implemented by
-   [`OfaChainWrapper`](crate::base::one_for_all::types::chain::OfaChainWrapper)
+   [`OfaChainWrapper`](crate::one_for_all::types::chain::OfaChainWrapper)
    for a chain context that implements
-   [`OfaBaseChain`](crate::base::one_for_all::traits::chain::OfaBaseChain).
+   [`OfaBaseChain`](crate::one_for_all::traits::chain::OfaBaseChain).
    From there, the [`HasChainId::chain_id`] method is derived from
-   [`OfaBaseChain::chain_id`](crate::base::one_for_all::traits::chain::OfaBaseChain::chain_id).
+   [`OfaBaseChain::chain_id`](crate::one_for_all::traits::chain::OfaBaseChain::chain_id).
 */
 pub trait HasChainId: HasChainIdType {
     /**

@@ -1,8 +1,8 @@
-use crate::base::builder::traits::birelay::HasBiRelayType;
-use crate::base::builder::traits::target::chain::ChainBuildTarget;
-use crate::base::builder::traits::target::relay::RelayBuildTarget;
-use crate::base::builder::types::aliases::{TargetChainCache, TargetRelayCache};
-use crate::base::runtime::traits::mutex::HasRuntimeWithMutex;
+use crate::builder::traits::birelay::HasBiRelayType;
+use crate::builder::traits::target::chain::ChainBuildTarget;
+use crate::builder::traits::target::relay::RelayBuildTarget;
+use crate::builder::types::aliases::{TargetChainCache, TargetRelayCache};
+use crate::runtime::traits::mutex::HasRuntimeWithMutex;
 
 pub trait HasChainCache<Target>: HasBiRelayType + HasRuntimeWithMutex
 where

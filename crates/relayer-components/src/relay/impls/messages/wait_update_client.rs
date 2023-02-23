@@ -3,14 +3,14 @@ use core::cmp::Ord;
 use core::marker::PhantomData;
 use core::time::Duration;
 
-use crate::base::chain::traits::queries::status::CanQueryChainStatus;
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::base::runtime::traits::sleep::CanSleep;
+use crate::chain::traits::queries::status::CanQueryChainStatus;
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::core::traits::sync::Async;
+use crate::relay::traits::messages::update_client::UpdateClientMessageBuilder;
+use crate::relay::traits::target::ChainTarget;
+use crate::relay::traits::types::HasRelayTypes;
+use crate::runtime::traits::runtime::HasRuntime;
+use crate::runtime::traits::sleep::CanSleep;
 use crate::std_prelude::*;
 
 /**

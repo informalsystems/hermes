@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::event::HasEventType;
-use crate::base::chain::types::aliases::{Event, Height};
-use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::relay::traits::types::HasRelayTypes;
+use crate::chain::traits::types::event::HasEventType;
+use crate::chain::types::aliases::{Event, Height};
+use crate::core::traits::sync::Async;
+use crate::relay::traits::target::ChainTarget;
+use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 /**
@@ -13,7 +13,7 @@ use crate::std_prelude::*;
 
    The event relayer is a general abstraction over other relayer types that
    need to be reactive to chain events. This includes the
-   [packet relayer]( crate::base::relay::traits::packet_relayer::CanRelayPacket),
+   [packet relayer]( crate::relay::traits::packet_relayer::CanRelayPacket),
    but also future relayers such as connection and channel handshake relayers.
 */
 #[async_trait]

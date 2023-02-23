@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::base::builder::traits::birelay::{BiRelayBuilder, CanBuildBiRelayFromRelays};
-use crate::base::builder::traits::relay::CanBuildRelay;
-use crate::base::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
-use crate::base::builder::types::aliases::{ChainIdA, ChainIdB, ClientIdA, ClientIdB};
+use crate::builder::traits::birelay::{BiRelayBuilder, CanBuildBiRelayFromRelays};
+use crate::builder::traits::relay::CanBuildRelay;
+use crate::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
+use crate::builder::types::aliases::{ChainIdA, ChainIdB, ClientIdA, ClientIdB};
 use crate::std_prelude::*;
 
 pub struct BuildBiRelayFromRelays;

@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use crate::base::core::traits::sync::Async;
+use crate::core::traits::sync::Async;
 
 pub trait HasTime: Async {
     type Time: Async;

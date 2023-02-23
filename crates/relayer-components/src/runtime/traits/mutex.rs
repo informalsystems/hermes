@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use core::ops::DerefMut;
 
-use crate::base::core::traits::sync::Async;
-use crate::base::runtime::traits::runtime::HasRuntime;
+use crate::core::traits::sync::Async;
+use crate::runtime::traits::runtime::HasRuntime;
 use crate::std_prelude::*;
 
 #[async_trait]

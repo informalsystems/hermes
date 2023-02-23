@@ -1,9 +1,7 @@
-use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
-use crate::base::chain::types::aliases::{
-    ChannelId, ClientId, Height, PortId, Sequence, Timestamp,
-};
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
+use crate::chain::traits::types::packet::HasIbcPacketTypes;
+use crate::chain::types::aliases::{ChannelId, ClientId, Height, PortId, Sequence, Timestamp};
+use crate::core::traits::error::HasErrorType;
+use crate::core::traits::sync::Async;
 
 /**
     This covers the minimal abstract types that are used inside a relay context.

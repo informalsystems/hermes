@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::consensus_state::HasConsensusStateType;
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::chain::traits::types::consensus_state::HasConsensusStateType;
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::std_prelude::*;
 
 #[async_trait]

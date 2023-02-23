@@ -2,8 +2,8 @@
    Trait definition for [`HasIbcPacketTypes`].
 */
 
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::core::traits::sync::Async;
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::core::traits::sync::Async;
 
 /**
     Contains the abstract packet types for a chain context to send and receive
@@ -36,13 +36,13 @@ use crate::base::core::traits::sync::Async;
     coming from a counterparty chain.
 
     This trait is automatically implemented by
-    [`OfaChainWrapper`](crate::base::one_for_all::types::chain::OfaChainWrapper)
+    [`OfaChainWrapper`](crate::one_for_all::types::chain::OfaChainWrapper)
     for a chain context that implements
-    [`OfaIbcChain`](crate::base::one_for_all::traits::chain::OfaIbcChain).
+    [`OfaIbcChain`](crate::one_for_all::traits::chain::OfaIbcChain).
     From there, the [`HasIbcPacketTypes::IncomingPacket`] type is derived from
-    [`OfaIbcChain::IncomingPacket`](crate::base::one_for_all::traits::chain::OfaIbcChain::IncomingPacket),
+    [`OfaIbcChain::IncomingPacket`](crate::one_for_all::traits::chain::OfaIbcChain::IncomingPacket),
     and the [`HasIbcPacketTypes::OutgoingPacket`] type is derived from
-    [`OfaIbcChain::OutgoingPacket`](crate::base::one_for_all::traits::chain::OfaIbcChain::OutgoingPacket),
+    [`OfaIbcChain::OutgoingPacket`](crate::one_for_all::traits::chain::OfaIbcChain::OutgoingPacket),
 
 */
 pub trait HasIbcPacketTypes<Counterparty>: HasIbcChainTypes<Counterparty>

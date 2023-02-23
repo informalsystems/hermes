@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use core::pin::Pin;
 use futures::stream::Stream;
 
-use crate::base::core::traits::sync::Async;
+use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 /**
@@ -24,7 +24,7 @@ use crate::std_prelude::*;
     stream would have to open new network connections, but it is simpler and
     more resilient to error conditions such as network disconnections. A simple
     way to implement a naive subscription is to use
-    [`CanCreateClosureSubscription`](crate::base::runtime::impls::subscription::closure::CanCreateClosureSubscription)
+    [`CanCreateClosureSubscription`](crate::runtime::impls::subscription::closure::CanCreateClosureSubscription)
     to turn a closure into a [`Subscription`].
 
     A [`Subscription`] implementation could be made efficient by sharing one

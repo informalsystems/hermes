@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::message_builders::ack_packet::CanBuildAckPacketMessage;
-use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
-use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
-use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
-use crate::base::relay::traits::target::SourceTarget;
-use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::relay::types::aliases::Packet;
+use crate::chain::traits::message_builders::ack_packet::CanBuildAckPacketMessage;
+use crate::chain::types::aliases::{Height, WriteAcknowledgementEvent};
+use crate::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
+use crate::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
+use crate::relay::traits::target::SourceTarget;
+use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 
 /// The minimal component that can send an acknowledgement packet.

@@ -1,17 +1,17 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::builder::traits::cache::{HasChainCache, HasRelayCache};
-use crate::base::builder::traits::chain::ChainBuilder;
-use crate::base::builder::traits::relay::RelayBuilder;
-use crate::base::builder::traits::target::chain::ChainBuildTarget;
-use crate::base::builder::traits::target::relay::RelayBuildTarget;
-use crate::base::builder::types::aliases::{
+use crate::builder::traits::cache::{HasChainCache, HasRelayCache};
+use crate::builder::traits::chain::ChainBuilder;
+use crate::builder::traits::relay::RelayBuilder;
+use crate::builder::traits::target::chain::ChainBuildTarget;
+use crate::builder::traits::target::relay::RelayBuildTarget;
+use crate::builder::types::aliases::{
     TargetChain, TargetChainId, TargetDstChainId, TargetDstClientId, TargetRelay, TargetSrcChainId,
     TargetSrcClientId,
 };
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::runtime::traits::mutex::HasMutex;
+use crate::core::traits::error::HasErrorType;
+use crate::runtime::traits::mutex::HasMutex;
 use crate::std_prelude::*;
 
 pub struct BuildWithCache<InBuilder>(pub PhantomData<InBuilder>);

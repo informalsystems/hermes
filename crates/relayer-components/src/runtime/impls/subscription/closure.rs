@@ -4,9 +4,9 @@ use core::future::Future;
 use core::pin::Pin;
 use futures::stream::Stream;
 
-use crate::base::core::traits::sync::Async;
-use crate::base::runtime::traits::mutex::HasMutex;
-use crate::base::runtime::traits::subscription::Subscription;
+use crate::core::traits::sync::Async;
+use crate::runtime::traits::mutex::HasMutex;
+use crate::runtime::traits::subscription::Subscription;
 use crate::std_prelude::*;
 
 /**

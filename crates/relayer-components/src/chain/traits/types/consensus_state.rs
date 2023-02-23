@@ -1,6 +1,6 @@
-use crate::base::chain::traits::types::chain::HasChainTypes;
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::core::traits::sync::Async;
+use crate::chain::traits::types::chain::HasChainTypes;
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::core::traits::sync::Async;
 
 pub trait HasConsensusStateType<Counterparty>: HasIbcChainTypes<Counterparty>
 where

@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::message_sender::CanSendMessages;
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::relay::traits::types::HasRelayTypes;
+use crate::chain::traits::message_sender::CanSendMessages;
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::relay::traits::target::ChainTarget;
+use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 pub struct SendIbcMessagesToChain;

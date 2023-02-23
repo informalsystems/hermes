@@ -1,15 +1,15 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::chain::traits::message_sender::CanSendMessages;
-use crate::base::chain::traits::types::chain_id::HasChainIdType;
-use crate::base::chain::traits::types::event::HasEventType;
-use crate::base::chain::traits::types::height::HasHeightType;
-use crate::base::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
-use crate::base::chain::traits::types::timestamp::HasTimestampType;
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::relay::traits::types::HasRelayTypes;
+use crate::chain::traits::message_sender::CanSendMessages;
+use crate::chain::traits::types::chain_id::HasChainIdType;
+use crate::chain::traits::types::event::HasEventType;
+use crate::chain::traits::types::height::HasHeightType;
+use crate::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
+use crate::chain::traits::types::timestamp::HasTimestampType;
+use crate::core::traits::error::HasErrorType;
+use crate::relay::traits::target::ChainTarget;
+use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 /**
@@ -19,11 +19,11 @@ use crate::std_prelude::*;
    The main use case is to wrap the relay context to implement [`CanSendMessages`].
 
    The relay context on its own can implement
-   [`CanSendIbcMessages`](crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages)
+   [`CanSendIbcMessages`](crate::relay::traits::ibc_message_sender::CanSendIbcMessages)
    but not [`CanSendMessages`], as the former is parameterized by a relay target.
    The two traits also have different charasteristics, as `CanSendIbcMessages` allows
    middleware components such as
-   [`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+   [`SendIbcMessagesWithUpdateClient`](crate::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
    to access the relay context and build `UpdateClient` messages to append to the
    front of incoming messages. On the other hand, [`CanSendMessages`] can only
    access the chain context but not the counterparty chain context, thus not able

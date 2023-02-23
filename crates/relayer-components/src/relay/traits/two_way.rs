@@ -1,5 +1,5 @@
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::relay::traits::types::HasRelayTypes;
+use crate::core::traits::error::HasErrorType;
+use crate::relay::traits::types::HasRelayTypes;
 
 pub trait HasTwoWayRelay: HasErrorType {
     type RelayAToB: HasRelayTypes;

@@ -1,4 +1,4 @@
-use crate::base::core::traits::error::HasErrorType;
+use crate::core::traits::error::HasErrorType;
 
 pub trait HasRuntime: HasErrorType {
     type Runtime: HasErrorType;

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use crate::base::transaction::traits::types::HasTxTypes;
 use crate::std_prelude::*;
+use crate::transaction::traits::types::HasTxTypes;
 
 #[async_trait]
 pub trait CanSendMessagesAsTx: HasTxTypes {

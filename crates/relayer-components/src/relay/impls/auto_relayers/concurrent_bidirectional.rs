@@ -4,9 +4,9 @@ use core::marker::PhantomData;
 use core::pin::Pin;
 use futures::stream::{self, StreamExt};
 
-use crate::base::relay::traits::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
-use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::base::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
+use crate::relay::traits::target::{DestinationTarget, SourceTarget};
+use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 pub struct ConcurrentBidirectionalRelayer<InRelayer>(pub PhantomData<InRelayer>);

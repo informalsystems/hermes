@@ -2,12 +2,12 @@
    Trait definition for [`HasChainTypes`].
 */
 
-use crate::base::chain::traits::types::chain_id::HasChainIdType;
-use crate::base::chain::traits::types::event::HasEventType;
-use crate::base::chain::traits::types::height::HasHeightType;
-use crate::base::chain::traits::types::message::HasMessageType;
-use crate::base::chain::traits::types::timestamp::HasTimestampType;
-use crate::base::core::traits::error::HasErrorType;
+use crate::chain::traits::types::chain_id::HasChainIdType;
+use crate::chain::traits::types::event::HasEventType;
+use crate::chain::traits::types::height::HasHeightType;
+use crate::chain::traits::types::message::HasMessageType;
+use crate::chain::traits::types::timestamp::HasTimestampType;
+use crate::core::traits::error::HasErrorType;
 
 /**
    This covers the minimal abstract types that are used inside a chain context.
@@ -37,7 +37,7 @@ use crate::base::core::traits::error::HasErrorType;
     type. This is because we separate the concerns of normal chain operations
     from the special concerns of assembling chain messages into transactions
     and broadcasting it to the blockchain. See the
-    [`transaction`](crate::base::transaction) module for more information
+    [`transaction`](crate::transaction) module for more information
     about the transaction context.
 */
 pub trait HasChainTypes:

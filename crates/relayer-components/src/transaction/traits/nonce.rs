@@ -2,10 +2,10 @@ use async_trait::async_trait;
 use core::future::Future;
 use core::pin::Pin;
 
-use crate::base::core::traits::error::InjectError;
-use crate::base::core::traits::sync::Async;
-use crate::base::transaction::traits::types::HasTxTypes;
+use crate::core::traits::error::InjectError;
+use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
+use crate::transaction::traits::types::HasTxTypes;
 
 pub struct NonceMistmatchError<Nonce> {
     pub expected_nonce: Nonce,

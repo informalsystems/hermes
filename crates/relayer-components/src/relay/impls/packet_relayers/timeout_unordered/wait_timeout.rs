@@ -4,14 +4,14 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 
-use crate::base::chain::traits::queries::status::CanQueryChainStatus;
-use crate::base::chain::traits::types::status::HasChainStatusType;
-use crate::base::chain::types::aliases::Message;
-use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::messages::timeout_unordered_packet::TimeoutUnorderedPacketMessageBuilder;
-use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::base::runtime::traits::sleep::CanSleep;
+use crate::chain::traits::queries::status::CanQueryChainStatus;
+use crate::chain::traits::types::status::HasChainStatusType;
+use crate::chain::types::aliases::Message;
+use crate::core::traits::sync::Async;
+use crate::relay::traits::messages::timeout_unordered_packet::TimeoutUnorderedPacketMessageBuilder;
+use crate::relay::traits::types::HasRelayTypes;
+use crate::runtime::traits::runtime::HasRuntime;
+use crate::runtime::traits::sleep::CanSleep;
 use crate::std_prelude::*;
 
 /// An unordered packet message builder variant that waits for the counterparty

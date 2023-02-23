@@ -1,5 +1,5 @@
-use crate::base::runtime::traits::mutex::HasMutex;
-use crate::base::runtime::traits::runtime::HasRuntime;
+use crate::runtime::traits::mutex::HasMutex;
+use crate::runtime::traits::runtime::HasRuntime;
 
 pub type Runtime<Context> = <Context as HasRuntime>::Runtime;
 

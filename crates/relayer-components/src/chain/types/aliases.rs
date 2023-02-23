@@ -2,14 +2,14 @@ use alloc::sync::Arc;
 use core::pin::Pin;
 use futures::stream::Stream;
 
-use crate::base::chain::traits::types::event::HasEventType;
-use crate::base::chain::traits::types::height::HasHeightType;
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
-use crate::base::chain::traits::types::message::HasMessageType;
-use crate::base::chain::traits::types::packet::HasIbcPacketTypes;
-use crate::base::chain::traits::types::timestamp::HasTimestampType;
-use crate::base::runtime::traits::subscription::Subscription;
+use crate::chain::traits::types::event::HasEventType;
+use crate::chain::traits::types::height::HasHeightType;
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
+use crate::chain::traits::types::message::HasMessageType;
+use crate::chain::traits::types::packet::HasIbcPacketTypes;
+use crate::chain::traits::types::timestamp::HasTimestampType;
+use crate::runtime::traits::subscription::Subscription;
 use crate::std_prelude::*;
 
 pub type IncomingPacket<Chain, Counterparty> =

@@ -1,14 +1,14 @@
-use crate::base::chain::traits::types::chain::HasChainTypes;
-use crate::base::core::traits::sync::Async;
+use crate::chain::traits::types::chain::HasChainTypes;
+use crate::core::traits::sync::Async;
 
 /**
    A chain context that offers a [`ChainStatus`](Self::ChainStatus) type to
    contain information about the current status of the chain.
 
    The `ChainStatus` type contains at minimal a
-   [`Height`](crate::base::chain::traits::types::height::HasHeightType::Height)
+   [`Height`](crate::chain::traits::types::height::HasHeightType::Height)
    field and a
-   [`Timestamp`](crate::base::chain::traits::types::timestamp::HasTimestampType::Timestamp)
+   [`Timestamp`](crate::chain::traits::types::timestamp::HasTimestampType::Timestamp)
    field, which are accessible
    via the accessor methods [`chain_status_height`](Self::chain_status_height)
    and [`chain_status_timestamp`](Self::chain_status_timestamp).
@@ -32,14 +32,14 @@ pub trait HasChainStatusType: HasChainTypes {
 
     /**
        Get the blockchain's current
-       [height](crate::base::chain::traits::types::height::HasHeightType::Height)
+       [height](crate::chain::traits::types::height::HasHeightType::Height)
        from the chain status result.
     */
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
 
     /**
         Get the blockchain's current
-        [timestamp](crate::base::chain::traits::types::timestamp::HasTimestampType::Timestamp)
+        [timestamp](crate::chain::traits::types::timestamp::HasTimestampType::Timestamp)
         from the chain status result.
     */
     fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;

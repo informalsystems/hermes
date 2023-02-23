@@ -2,11 +2,11 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::base::builder::traits::chain::CanBuildChain;
-use crate::base::builder::traits::relay::{RelayBuilder, RelayFromChainsBuilder};
-use crate::base::builder::traits::target::relay::RelayBuildTarget;
-use crate::base::builder::types::aliases::{DstChainTarget, SrcChainTarget};
-use crate::base::builder::types::aliases::{
+use crate::builder::traits::chain::CanBuildChain;
+use crate::builder::traits::relay::{RelayBuilder, RelayFromChainsBuilder};
+use crate::builder::traits::target::relay::RelayBuildTarget;
+use crate::builder::types::aliases::{DstChainTarget, SrcChainTarget};
+use crate::builder::types::aliases::{
     TargetDstChainId, TargetDstClientId, TargetRelay, TargetSrcChainId, TargetSrcClientId,
 };
 use crate::std_prelude::*;

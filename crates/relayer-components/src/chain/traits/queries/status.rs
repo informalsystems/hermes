@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::status::HasChainStatusType;
+use crate::chain::traits::types::status::HasChainStatusType;
 use crate::std_prelude::*;
 
 /**
@@ -13,9 +13,9 @@ pub trait CanQueryChainStatus: HasChainStatusType {
         Query the current status of the blockchain. The returned
         [status](HasChainStatusType::ChainStatus) is required to have the same
         or increasing
-        [height](crate::base::chain::traits::types::height::HasHeightType::Height)
+        [height](crate::chain::traits::types::height::HasHeightType::Height)
         and
-        [timestamp](crate::base::chain::traits::types::timestamp::HasTimestampType::Timestamp)
+        [timestamp](crate::chain::traits::types::timestamp::HasTimestampType::Timestamp)
         each time the query is called.
 
         The querying of the chain status may fail due to errors such as the full

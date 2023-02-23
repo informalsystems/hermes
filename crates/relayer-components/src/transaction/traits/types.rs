@@ -1,7 +1,7 @@
-use crate::base::chain::traits::types::event::HasEventType;
-use crate::base::chain::traits::types::message::HasMessageType;
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
+use crate::chain::traits::types::event::HasEventType;
+use crate::chain::traits::types::message::HasMessageType;
+use crate::core::traits::error::HasErrorType;
+use crate::core::traits::sync::Async;
 
 pub trait HasTxTypes: HasMessageType + HasEventType + HasErrorType {
     type Transaction: Async;

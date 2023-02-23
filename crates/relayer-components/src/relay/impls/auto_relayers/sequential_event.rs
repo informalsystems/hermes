@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use futures::stream::StreamExt;
 
-use crate::base::chain::traits::event_subscription::HasEventSubscription;
-use crate::base::relay::traits::auto_relayer::AutoRelayerWithTarget;
-use crate::base::relay::traits::event_relayer::CanRelayEvent;
-use crate::base::relay::traits::target::ChainTarget;
+use crate::chain::traits::event_subscription::HasEventSubscription;
+use crate::relay::traits::auto_relayer::AutoRelayerWithTarget;
+use crate::relay::traits::event_relayer::CanRelayEvent;
+use crate::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
 pub struct SequentialEventSubscriptionRelayer;

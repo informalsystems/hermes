@@ -2,11 +2,11 @@ use async_trait::async_trait;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
-use crate::base::relay::traits::two_way::HasTwoWayRelay;
-use crate::base::relay::traits::types::HasRelayTypes;
+use crate::core::traits::error::HasErrorType;
+use crate::core::traits::sync::Async;
+use crate::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
+use crate::relay::traits::two_way::HasTwoWayRelay;
+use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[derive(Clone)]

@@ -1,4 +1,4 @@
-use crate::base::transaction::traits::types::HasTxTypes;
+use crate::transaction::traits::types::HasTxTypes;
 
 /**
    A simplified accessor for a transaction context to provide
@@ -13,7 +13,7 @@ use crate::base::transaction::traits::types::HasTxTypes;
    signer is going to be used. If we want to use a more
    sophisticated strategy to multiple signers, we can define
    more complex trait similar to
-   [`NonceAllocator`](crate::base::transaction::traits::nonce::NonceAllocator)
+   [`NonceAllocator`](crate::transaction::traits::nonce::NonceAllocator)
    so that the usage of each signer is tracked across the implementation.
 
    On the other hand, this trait is suited for use in the minimal relayer,

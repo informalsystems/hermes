@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 use core::time::Duration;
 
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::base::runtime::traits::sleep::CanSleep;
-use crate::base::runtime::traits::time::HasTime;
-use crate::base::transaction::traits::response::{CanQueryTxResponse, TxResponsePoller};
-use crate::base::transaction::traits::types::HasTxTypes;
+use crate::runtime::traits::runtime::HasRuntime;
+use crate::runtime::traits::sleep::CanSleep;
+use crate::runtime::traits::time::HasTime;
 use crate::std_prelude::*;
+use crate::transaction::traits::response::{CanQueryTxResponse, TxResponsePoller};
+use crate::transaction::traits::types::HasTxTypes;
 
 pub trait InjectNoTxResponseError: HasTxTypes {
     fn tx_no_response_error(tx_hash: &Self::TxHash) -> Self::Error;

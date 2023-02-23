@@ -3,8 +3,8 @@ use core::future::Future;
 use core::pin::Pin;
 use futures::stream::{self, StreamExt};
 
-use crate::base::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
-use crate::base::relay::traits::two_way::HasTwoWayRelay;
+use crate::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
+use crate::relay::traits::two_way::HasTwoWayRelay;
 use crate::std_prelude::*;
 
 pub struct ConcurrentTwoWayAutoRelay;

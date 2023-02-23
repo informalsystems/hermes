@@ -2,7 +2,7 @@
    Trait definition for [`HasHeightType`].
 */
 
-use crate::base::core::traits::sync::Async;
+use crate::core::traits::sync::Async;
 
 pub trait HasHeightType: Async {
     /**

@@ -2,12 +2,10 @@ use core::future::Future;
 use core::marker::PhantomData;
 use core::pin::Pin;
 
-use crate::base::core::traits::sync::Async;
-use crate::base::transaction::traits::nonce::{
-    CanRefreshNonce, HasNonceMismatchError, NonceAllocator,
-};
-use crate::base::transaction::traits::types::HasTxTypes;
+use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
+use crate::transaction::traits::nonce::{CanRefreshNonce, HasNonceMismatchError, NonceAllocator};
+use crate::transaction::traits::types::HasTxTypes;
 
 /**
    A nonce allocator that retries the nonce continuation in case there is

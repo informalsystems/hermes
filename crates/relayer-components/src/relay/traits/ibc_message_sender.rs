@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::chain::types::aliases::{Event, Message};
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::relay::traits::types::HasRelayTypes;
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::chain::types::aliases::{Event, Message};
+use crate::core::traits::error::HasErrorType;
+use crate::core::traits::sync::Async;
+use crate::relay::traits::target::ChainTarget;
+use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
