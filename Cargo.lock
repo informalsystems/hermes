@@ -1862,7 +1862,8 @@ name = "ibc-relayer-all-in-one"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "futures",
+ "futures-core",
+ "futures-util",
  "ibc-relayer-components",
  "ibc-relayer-components-extra",
 ]
@@ -1918,7 +1919,8 @@ name = "ibc-relayer-components"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "futures",
+ "futures-core",
+ "futures-util",
 ]
 
 [[package]]
@@ -1926,7 +1928,8 @@ name = "ibc-relayer-components-extra"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "futures",
+ "futures-core",
+ "futures-util",
  "ibc-relayer-components",
 ]
 

@@ -1,7 +1,7 @@
 use core::pin::Pin;
 
 use async_trait::async_trait;
-use futures::stream::Stream;
+use futures_core::stream::Stream;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components_extra::runtime::traits::channel::{
     CanCreateChannels, CanStreamReceiver, CanUseChannels, HasChannelTypes,

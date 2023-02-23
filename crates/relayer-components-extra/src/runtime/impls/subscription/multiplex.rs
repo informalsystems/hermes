@@ -3,7 +3,8 @@ use core::ops::DerefMut;
 use core::pin::Pin;
 
 use async_trait::async_trait;
-use futures::stream::{Stream, StreamExt};
+use futures_core::stream::Stream;
+use futures_util::stream::StreamExt;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;

@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 use core::pin::Pin;
 
 use async_trait::async_trait;
-use futures::stream::Stream;
+use futures_core::stream::Stream;
 
 use crate::core::traits::sync::Async;
 use crate::std_prelude::*;

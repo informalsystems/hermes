@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 use core::pin::Pin;
 
-use futures::stream::Stream;
+use futures_core::stream::Stream;
 
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::traits::types::height::HasHeightType;

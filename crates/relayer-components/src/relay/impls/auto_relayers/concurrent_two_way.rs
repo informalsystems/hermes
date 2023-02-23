@@ -2,7 +2,7 @@ use core::future::Future;
 use core::pin::Pin;
 
 use async_trait::async_trait;
-use futures::stream::{self, StreamExt};
+use futures_util::stream::{self, StreamExt};
 
 use crate::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
 use crate::relay::traits::two_way::HasTwoWayRelay;

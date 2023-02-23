@@ -19,4 +19,5 @@ all-features = true
 
 [dependencies]
 async-trait = "0.1.56"
-futures = { version = "0.3", default-features = false, features = ["alloc"] }
+futures-core = { version = "0.3", default-features = false, features = ["alloc"] }
+futures-util = { version = "0.3", default-features = false, features = ["alloc"] }

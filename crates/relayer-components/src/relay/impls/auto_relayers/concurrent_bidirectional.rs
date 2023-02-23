@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use core::pin::Pin;
 
 use async_trait::async_trait;
-use futures::stream::{self, StreamExt};
+use futures_util::stream::{self, StreamExt};
 
 use crate::relay::traits::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
