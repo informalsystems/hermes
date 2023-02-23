@@ -45,7 +45,7 @@ async fn send_tx_with_fee(
 ) -> Result<Response, Error> {
     let tx_bytes = sign_and_encode_tx(config, key_pair, account, tx_memo, messages, fee)?;
 
-    let response = broadcast_tx_sync(&rpc_client, &config.rpc_address, tx_bytes).await?;
+    let response = broadcast_tx_sync(rpc_client, &config.rpc_address, tx_bytes).await?;
 
     Ok(response)
 }
@@ -102,7 +102,7 @@ pub async fn simple_send_tx(
     }
 
     let response = wait_tx_succeed(
-        &rpc_client,
+        rpc_client,
         &config.rpc_address,
         &config.rpc_timeout,
         &response.hash,
