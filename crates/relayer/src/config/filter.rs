@@ -2,10 +2,38 @@
 
 use core::fmt;
 use core::str::FromStr;
+use std::collections::HashMap;
 
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use itertools::Itertools;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PacketFilter {
+    #[serde(flatten)]
+    pub channel_policy: ChannelPolicy,
+    #[serde(default)]
+    pub min_fees: HashMap<String, FeesFilters>,
+}
+
+impl Default for PacketFilter {
+    /// By default, allows all channels & ports.
+    fn default() -> Self {
+        Self {
+            channel_policy: ChannelPolicy::default(),
+            min_fees: HashMap::new(),
+        }
+    }
+}
+
+impl PacketFilter {
+    pub fn new(channel_policy: ChannelPolicy, min_fees: HashMap<String, FeesFilters>) -> Self {
+        Self {
+            channel_policy,
+            min_fees,
+        }
+    }
+}
 
 /// Represents the ways in which packets can be filtered.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -15,7 +43,7 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
     content = "list",
     deny_unknown_fields
 )]
-pub enum PacketFilter {
+pub enum ChannelPolicy {
     /// Allow packets from the specified channels.
     Allow(ChannelFilters),
     /// Deny packets from the specified channels.
@@ -24,21 +52,34 @@ pub enum PacketFilter {
     AllowAll,
 }
 
-impl Default for PacketFilter {
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FeesFilters {
+    recv: Vec<FeeInformation>,
+    ack: Vec<FeeInformation>,
+    timeout: Vec<FeeInformation>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FeeInformation {
+    amount: u64,
+    denom: Option<String>,
+}
+
+impl Default for ChannelPolicy {
     /// By default, allows all channels & ports.
     fn default() -> Self {
         Self::AllowAll
     }
 }
 
-impl PacketFilter {
+impl ChannelPolicy {
     /// Returns true if the packets can be relayed on the channel with [`PortId`] and [`ChannelId`],
     /// false otherwise.
     pub fn is_allowed(&self, port_id: &PortId, channel_id: &ChannelId) -> bool {
         match self {
-            PacketFilter::Allow(filters) => filters.matches((port_id, channel_id)),
-            PacketFilter::Deny(filters) => !filters.matches((port_id, channel_id)),
-            PacketFilter::AllowAll => true,
+            ChannelPolicy::Allow(filters) => filters.matches((port_id, channel_id)),
+            ChannelPolicy::Deny(filters) => !filters.matches((port_id, channel_id)),
+            ChannelPolicy::AllowAll => true,
         }
     }
 }
@@ -336,7 +377,7 @@ pub(crate) mod channel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::PacketFilter;
+    use crate::config::filter::ChannelPolicy;
 
     #[test]
     fn deserialize_packet_filter_policy() {
@@ -348,7 +389,7 @@ mod tests {
             ]
             "#;
 
-        let filter_policy: PacketFilter =
+        let filter_policy: ChannelPolicy =
             toml::from_str(toml_content).expect("could not parse filter policy");
 
         dbg!(filter_policy);
@@ -371,7 +412,7 @@ mod tests {
             ),
         ]);
 
-        let fp = PacketFilter::Allow(filter_policy);
+        let fp = ChannelPolicy::Allow(filter_policy);
         let toml_str = toml::to_string_pretty(&fp).expect("could not serialize packet filter");
 
         println!("{toml_str}");
@@ -390,9 +431,10 @@ mod tests {
             ]
             "#;
 
-        let pf: PacketFilter = toml::from_str(toml_content).expect("could not parse filter policy");
+        let pf: ChannelPolicy =
+            toml::from_str(toml_content).expect("could not parse filter policy");
 
-        if let PacketFilter::Deny(channel_filters) = pf {
+        if let ChannelPolicy::Deny(channel_filters) = pf {
             let exact_matches = channel_filters.iter_exact().collect::<Vec<_>>();
             assert_eq!(
                 exact_matches,
@@ -408,7 +450,7 @@ mod tests {
                 ]
             );
         } else {
-            panic!("expected `PacketFilter::Deny` variant");
+            panic!("expected `ChannelPolicy::Deny` variant");
         }
     }
 
@@ -425,7 +467,7 @@ mod tests {
             ]
             "#;
 
-        let pf: PacketFilter = toml::from_str(deny_policy).expect("could not parse filter policy");
+        let pf: ChannelPolicy = toml::from_str(deny_policy).expect("could not parse filter policy");
 
         assert!(!pf.is_allowed(
             &PortId::from_str("ft-transfer").unwrap(),
@@ -458,7 +500,8 @@ mod tests {
             ]
             "#;
 
-        let pf: PacketFilter = toml::from_str(allow_policy).expect("could not parse filter policy");
+        let pf: ChannelPolicy =
+            toml::from_str(allow_policy).expect("could not parse filter policy");
 
         assert!(pf.is_allowed(
             &PortId::from_str("ft-transfer").unwrap(),
@@ -491,7 +534,8 @@ mod tests {
             ]
             "#;
 
-        let pf: PacketFilter = toml::from_str(allow_policy).expect("could not parse filter policy");
+        let pf: ChannelPolicy =
+            toml::from_str(allow_policy).expect("could not parse filter policy");
 
         assert!(!pf.is_allowed(
             &PortId::from_str("ft-transfer").unwrap(),
