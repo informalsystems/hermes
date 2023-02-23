@@ -5,8 +5,8 @@
 //! relayed by a full relayer.
 
 use ibc_relayer::config::PacketFilter;
-use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
-use ibc_relayer_framework::base::relay::traits::two_way::HasTwoWayRelay;
+use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
+use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 

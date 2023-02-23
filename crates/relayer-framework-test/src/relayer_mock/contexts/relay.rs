@@ -1,7 +1,8 @@
 use alloc::string::String;
-use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use std::sync::Arc;
+
+use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::contexts::chain::MockChainContext;

@@ -9,16 +9,15 @@
 //! * The ChainStatus is a ConsensusState with a Height and a Timestamp.
 
 use alloc::sync::Arc;
+
 use async_trait::async_trait;
 use eyre::eyre;
-
-use ibc_relayer_framework::base::one_for_all::traits::chain::{
+use ibc_relayer_all_in_one::base::one_for_all::presets::min::MinimalPreset;
+use ibc_relayer_all_in_one::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
-use ibc_relayer_framework::base::runtime::traits::subscription::Subscription;
-
-use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 use crate::relayer_mock::base::error::{BaseError, Error};

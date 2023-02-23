@@ -18,7 +18,8 @@ ibc-relayer-types  = { path = "../../crates/relayer-types" }
 ibc-relayer        = { path = "../../crates/relayer" }
 ibc-relayer-cli    = { path = "../../crates/relayer-cli" }
 ibc-relayer-all-in-one = { path = "../../crates/relayer-all-in-one" }
-ibc-relayer-runtime     = { path = "../../crates/relayer-runtime" }
+ibc-relayer-components = { version = "0.1.0", path = "../../crates/relayer-components" }
+ibc-relayer-runtime    = { path = "../../crates/relayer-runtime" }
 ibc-relayer-cosmos     = { path = "../../crates/relayer-cosmos" }
 ibc-proto          = { version = "0.24.1" }
 ibc-test-framework = { path = "../test-framework" }

@@ -2,10 +2,9 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::fmt::{self, Display};
 
+use super::height::Height;
 use crate::relayer_mock::base::types::chain::MockChainStatus;
 use crate::relayer_mock::base::types::state::State;
-
-use super::height::Height;
 
 pub type PacketUID = (PortId, ChannelId, Sequence);
 pub type ConsensusState = State;

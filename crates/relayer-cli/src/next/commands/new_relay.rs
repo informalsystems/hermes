@@ -3,9 +3,9 @@ use abscissa_core::{Command, Runnable};
 use alloc::sync::Arc;
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc_relayer_all_in_one::extra::all_for_one::builder::CanBuildAfoFullBiRelay;
+use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_cosmos::contexts::full::builder::CosmosRelayBuilder;
-use ibc_relayer_framework::base::relay::traits::auto_relayer::CanAutoRelay;
-use ibc_relayer_framework::full::all_for_one::builder::CanBuildAfoFullBiRelay;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
 use crate::conclude::Output;

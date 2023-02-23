@@ -2,8 +2,9 @@
 //! entities to safely access a shared timestamp, represented by
 //! a u128. The timestamp needs to be manually incremented.
 
-use eyre::eyre;
 use std::sync::{Arc, Mutex};
+
+use eyre::eyre;
 
 use crate::relayer_mock::base::error::{BaseError, Error};
 use crate::relayer_mock::base::types::aliases::MockTimestamp;

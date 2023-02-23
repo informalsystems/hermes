@@ -1,10 +1,11 @@
 use alloc::boxed::Box;
 use alloc::sync::Arc;
-use async_trait::async_trait;
 use core::time::Duration;
-use ibc_relayer_framework::base::core::traits::sync::Async;
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use ibc_relayer_framework::base::one_for_all::types::runtime::LogLevel;
+
+use async_trait::async_trait;
+use ibc_relayer_all_in_one::base::one_for_all::traits::runtime::OfaBaseRuntime;
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::LogLevel;
+use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use tokio::sync::{Mutex, MutexGuard};
 

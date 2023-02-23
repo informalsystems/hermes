@@ -1,7 +1,10 @@
 use alloc::string::String;
-use ibc_relayer_framework::base::one_for_all::traits::chain::OfaIbcChain;
-use ibc_relayer_framework::base::runtime::traits::sleep::CanSleep;
 use std::time::Duration;
+
+use ibc_relayer_all_in_one::base::one_for_all::traits::chain::OfaIbcChain;
+use ibc_relayer_all_in_one::base::one_for_all::traits::relay::OfaBaseRelay;
+use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
+use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 use tracing::info;
 
 use crate::relayer_mock::base::error::Error;
@@ -10,9 +13,6 @@ use crate::relayer_mock::base::types::events::Event;
 use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::tests::util::context::build_mock_relay_context;
-
-use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
-use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 
 #[tokio::test]
 async fn test_mock_chain_relay() -> Result<(), Error> {

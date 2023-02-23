@@ -1,10 +1,9 @@
 use std::{collections::HashMap, fmt::Display};
 
+use super::aliases::MockTimestamp;
 use crate::relayer_mock::base::types::aliases::PacketUID;
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::packet::PacketKey;
-
-use super::aliases::MockTimestamp;
 
 /// A snapshot of the mock chain's state at a point in time.
 #[derive(Clone, Default, Debug, PartialEq, Eq)]

@@ -1,6 +1,5 @@
 use ibc_relayer::config::PacketFilter;
-
-use ibc_relayer_framework::base::relay::traits::auto_relayer::CanAutoRelay;
+use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
