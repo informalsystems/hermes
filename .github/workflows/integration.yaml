@@ -115,7 +115,7 @@ jobs:
           command: |
             nix shell .#python .#${{ matrix.chain.package }} -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
-                --test-threads=1
+                --test-threads=4
 
   # ordered-channel-test:
   #   runs-on: ubuntu-20.04
