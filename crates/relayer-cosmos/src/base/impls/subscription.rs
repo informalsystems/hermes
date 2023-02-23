@@ -1,12 +1,13 @@
 use alloc::sync::Arc;
-use async_trait::async_trait;
 use core::pin::Pin;
+
+use async_trait::async_trait;
 use futures::stream::{self, Stream, StreamExt, TryStreamExt};
-use ibc_relayer_framework::base::core::traits::sync::Async;
-use ibc_relayer_framework::base::runtime::impls::subscription::closure::CanCreateClosureSubscription;
-use ibc_relayer_framework::base::runtime::traits::subscription::Subscription;
-use ibc_relayer_framework::full::runtime::impls::subscription::multiplex::CanMultiplexSubscription;
-use ibc_relayer_framework::full::runtime::traits::spawn::{HasSpawner, Spawner};
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::runtime::impls::subscription::closure::CanCreateClosureSubscription;
+use ibc_relayer_components::runtime::traits::subscription::Subscription;
+use ibc_relayer_components_extra::runtime::impls::subscription::multiplex::CanMultiplexSubscription;
+use ibc_relayer_components_extra::runtime::traits::spawn::{HasSpawner, Spawner};
 use ibc_relayer_types::core::ics02_client::height::Height;
 use tendermint::abci::Event as AbciEvent;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};

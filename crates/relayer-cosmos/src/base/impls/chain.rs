@@ -1,4 +1,5 @@
 use alloc::sync::Arc;
+
 use async_trait::async_trait;
 use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
@@ -10,12 +11,12 @@ use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::link::packet_events::query_write_acknowledgement_events;
 use ibc_relayer::path::PathIdentifiers;
-use ibc_relayer_framework::base::chain::traits::message_sender::CanSendMessages;
-use ibc_relayer_framework::base::one_for_all::traits::chain::{
+use ibc_relayer_all_in_one::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_framework::base::runtime::traits::subscription::Subscription;
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
+use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;

@@ -1,4 +1,4 @@
-use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_all_in_one::extra::one_for_all::types::telemetry::OfaTelemetryWrapper;
 
 use crate::base::traits::chain::CosmosChain;
 use crate::full::types::telemetry::CosmosTelemetry;

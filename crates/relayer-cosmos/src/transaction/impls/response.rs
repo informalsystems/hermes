@@ -1,4 +1,4 @@
-use ibc_relayer_framework::base::core::traits::error::HasErrorType;
+use ibc_relayer_components::core::traits::error::HasErrorType;
 use tendermint::abci::Code;
 
 pub trait InjectRpcResponseError: HasErrorType {

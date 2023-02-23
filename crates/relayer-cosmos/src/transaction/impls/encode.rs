@@ -7,7 +7,7 @@ use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::AddressType;
 use ibc_relayer::keyring::errors::Error as KeyringError;
 use ibc_relayer::keyring::SigningKeyPair;
-use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
+use ibc_relayer_components::core::traits::error::{HasErrorType, InjectError};
 use prost::EncodeError;
 
 use crate::transaction::traits::fields::{

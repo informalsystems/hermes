@@ -1,7 +1,8 @@
 use alloc::sync::Arc;
+
 use ibc_relayer::event::monitor::queries::all;
-use ibc_relayer_framework::base::one_for_all::types::transaction::OfaTxWrapper;
-use ibc_relayer_framework::base::runtime::traits::subscription::Subscription;
+use ibc_relayer_all_in_one::base::one_for_all::types::transaction::OfaTxWrapper;
+use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_types::core::ics02_client::height::Height;
 use tendermint::abci::Event as AbciEvent;
 

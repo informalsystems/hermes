@@ -1,6 +1,6 @@
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount};
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer_framework::base::core::traits::error::HasErrorType;
+use ibc_relayer_components::core::traits::error::HasErrorType;
 use prost::{DecodeError, Message};
 
 use crate::transaction::traits::decoders::account::AccountDecoder;

@@ -1,6 +1,6 @@
-use ibc_relayer_framework::base::core::traits::sync::Async;
-use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 
 use crate::base::traits::relay::CosmosRelay;

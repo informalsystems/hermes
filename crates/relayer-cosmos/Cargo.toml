@@ -24,6 +24,8 @@ ibc-relayer     = { version = "0.22.0", path = "../relayer" }
 ibc-relayer-types = { version = "0.22.0", path = "../relayer-types" }
 ibc-relayer-runtime = { version = "0.1.0", path = "../relayer-runtime" }
 ibc-relayer-all-in-one = { version = "0.1.0", path = "../relayer-all-in-one" }
+ibc-relayer-components = { version = "0.1.0", path = "../relayer-components" }
+ibc-relayer-components-extra = { version = "0.1.0", path = "../relayer-components-extra" }
 ibc-telemetry = { version = "0.22.0", path = "../telemetry" }
 
 serde = "1.0"

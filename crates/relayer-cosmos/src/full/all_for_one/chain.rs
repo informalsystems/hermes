@@ -1,5 +1,5 @@
-use ibc_relayer_framework::base::all_for_one::chain::AfoCounterpartyChain;
-use ibc_relayer_framework::full::all_for_one::chain::AfoFullChain;
+use ibc_relayer_all_in_one::base::all_for_one::chain::AfoCounterpartyChain;
+use ibc_relayer_all_in_one::extra::all_for_one::chain::AfoFullChain;
 
 use crate::base::all_for_one::chain::AfoCosmosBaseChain;
 

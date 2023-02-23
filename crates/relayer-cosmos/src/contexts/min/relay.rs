@@ -1,8 +1,8 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
-use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::presets::min::MinimalPreset;
+use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 
 use crate::base::traits::chain::CosmosChain;

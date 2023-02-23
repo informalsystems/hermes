@@ -1,6 +1,6 @@
+use alloc::sync::Arc;
 use std::collections::HashMap;
 
-use alloc::sync::Arc;
 use async_trait::async_trait;
 use eyre::eyre;
 use ibc_relayer::chain::cosmos::encode::key_pair_to_signer;
@@ -13,13 +13,13 @@ use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::keyring::AnySigningKeyPair;
 use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer::spawn::spawn_chain_runtime;
-use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_framework::full::batch::types::config::BatchConfig;
-use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
-use ibc_relayer_framework::full::one_for_all::types::builder::OfaFullBuilderWrapper;
-use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::extra::one_for_all::presets::full::FullPreset;
+use ibc_relayer_all_in_one::extra::one_for_all::types::builder::OfaFullBuilderWrapper;
+use ibc_relayer_all_in_one::extra::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_components_extra::batch::types::config::BatchConfig;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioRuntimeError;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;

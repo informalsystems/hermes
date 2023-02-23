@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use ibc_relayer::chain::cosmos::types::account::Account;
-use ibc_relayer_framework::base::core::traits::error::HasErrorType;
+use ibc_relayer_components::core::traits::error::HasErrorType;
 
 #[async_trait]
 pub trait CanQueryAccount: HasErrorType {

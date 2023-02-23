@@ -1,10 +1,11 @@
-use async_trait::async_trait;
 use core::fmt::Display;
 use core::marker::PhantomData;
+
+use async_trait::async_trait;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_relayer::chain::cosmos::gas::gas_amount_to_fee;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
-use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
+use ibc_relayer_components::core::traits::error::{HasErrorType, InjectError};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tracing::{debug, error, warn};
 

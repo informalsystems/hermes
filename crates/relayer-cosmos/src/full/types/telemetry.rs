@@ -1,13 +1,14 @@
 use alloc::sync::Arc;
-use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetry;
-use ibc_relayer_framework::full::telemetry::traits::metrics::HasLabel;
+use std::collections::HashMap;
+use std::sync::Mutex;
+
+use ibc_relayer_all_in_one::extra::one_for_all::traits::telemetry::OfaTelemetry;
+use ibc_relayer_components_extra::telemetry::traits::metrics::HasLabel;
 use opentelemetry::{
     global,
     metrics::{Counter, Meter, Unit, UpDownCounter, ValueRecorder},
     KeyValue,
 };
-use std::collections::HashMap;
-use std::sync::Mutex;
 
 pub struct TelemetryState {
     pub meter: Meter,

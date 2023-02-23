@@ -1,9 +1,9 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::Secp256k1KeyPair;
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
-use ibc_relayer_framework::full::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::extra::one_for_all::presets::full::FullPreset;
+use ibc_relayer_all_in_one::extra::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::signer::Signer;
 use tendermint_rpc::Url;

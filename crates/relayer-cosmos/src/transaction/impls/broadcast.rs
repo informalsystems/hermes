@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_proto::cosmos::tx::v1beta1::TxRaw;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
-use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
+use ibc_relayer_components::core::traits::error::{HasErrorType, InjectError};
 use prost::EncodeError;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::error::Error as RpcError;

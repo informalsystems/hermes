@@ -3,7 +3,7 @@ use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
 use ibc_proto::cosmos::auth::v1beta1::QueryAccountRequest;
 use ibc_relayer::chain::cosmos::types::account::Account;
 use ibc_relayer::keyring::SigningKeyPair;
-use ibc_relayer_framework::base::core::traits::error::{HasErrorType, InjectError};
+use ibc_relayer_components::core::traits::error::{HasErrorType, InjectError};
 use tonic::transport::Error as TransportError;
 use tonic::{Request, Status};
 

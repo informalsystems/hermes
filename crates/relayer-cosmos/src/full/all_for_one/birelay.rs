@@ -1,5 +1,5 @@
-use ibc_relayer_framework::base::relay::types::aliases::{DstChain, SrcChain};
-use ibc_relayer_framework::full::all_for_one::birelay::AfoFullBiRelay;
+use ibc_relayer_all_in_one::extra::all_for_one::birelay::AfoFullBiRelay;
+use ibc_relayer_components::relay::types::aliases::{DstChain, SrcChain};
 
 use crate::full::all_for_one::relay::AfoCosmosFullRelay;
 

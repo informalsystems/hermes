@@ -1,6 +1,6 @@
 use ibc_relayer::chain::endpoint::ChainStatus;
-use ibc_relayer_framework::base::all_for_one::chain::{AfoBaseChain, AfoCounterpartyChain};
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::base::all_for_one::chain::{AfoBaseChain, AfoCounterpartyChain};
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;

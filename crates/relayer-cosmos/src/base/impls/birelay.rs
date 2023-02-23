@@ -1,6 +1,6 @@
-use ibc_relayer_framework::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayTypes};
-use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
-use ibc_relayer_framework::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayTypes};
+use ibc_relayer_all_in_one::base::one_for_all::types::relay::OfaRelayWrapper;
+use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
