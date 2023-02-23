@@ -112,5 +112,4 @@ extern crate alloc;
 
 pub mod docs;
 
-pub mod base;
 pub mod full;
