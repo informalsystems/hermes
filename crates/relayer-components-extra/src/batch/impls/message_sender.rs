@@ -1,14 +1,14 @@
 use async_trait::async_trait;
+use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
+use ibc_relayer_components::relay::traits::ibc_message_sender::IbcMessageSender;
+use ibc_relayer_components::relay::traits::target::ChainTarget;
+use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::full::batch::traits::channel::HasMessageBatchSender;
-use crate::full::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
-use crate::full::runtime::traits::channel::CanUseChannels;
-use crate::full::runtime::traits::channel_once::{CanCreateChannelsOnce, CanUseChannelsOnce};
+use crate::batch::traits::channel::HasMessageBatchSender;
+use crate::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
+use crate::runtime::traits::channel::CanUseChannels;
+use crate::runtime::traits::channel_once::{CanCreateChannelsOnce, CanUseChannelsOnce};
 use crate::std_prelude::*;
 
 pub struct SendMessagesToBatchWorker;

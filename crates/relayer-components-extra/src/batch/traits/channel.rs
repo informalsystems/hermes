@@ -1,11 +1,12 @@
-use crate::base::chain::traits::types::chain::HasChainTypes;
-use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::full::batch::types::aliases::MessageBatchSender;
-use crate::full::runtime::traits::channel::HasChannelTypes;
-use crate::full::runtime::traits::channel_once::HasChannelOnceTypes;
+use ibc_relayer_components::chain::traits::types::chain::HasChainTypes;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::relay::traits::target::ChainTarget;
+use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
+
+use crate::batch::types::aliases::MessageBatchSender;
+use crate::runtime::traits::channel::HasChannelTypes;
+use crate::runtime::traits::channel_once::HasChannelOnceTypes;
 
 pub trait HasMessageBatchSender<Target>: HasRelayTypes
 where

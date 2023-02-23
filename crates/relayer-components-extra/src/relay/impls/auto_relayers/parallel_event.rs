@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 use futures::stream::StreamExt;
+use ibc_relayer_components::chain::traits::event_subscription::HasEventSubscription;
+use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayerWithTarget;
+use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
+use ibc_relayer_components::relay::traits::target::ChainTarget;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
-use crate::base::chain::traits::event_subscription::HasEventSubscription;
-use crate::base::relay::traits::auto_relayer::AutoRelayerWithTarget;
-use crate::base::relay::traits::event_relayer::CanRelayEvent;
-use crate::base::relay::traits::target::ChainTarget;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
+use crate::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
 pub struct ParallelEventSubscriptionRelayer;

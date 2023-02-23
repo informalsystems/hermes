@@ -1,14 +1,14 @@
 use async_trait::async_trait;
-
-use crate::base::builder::traits::birelay::HasBiRelayType;
-use crate::base::builder::traits::target::relay::RelayBuildTarget;
-use crate::base::builder::types::aliases::{
+use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
+use ibc_relayer_components::builder::traits::target::relay::RelayBuildTarget;
+use ibc_relayer_components::builder::types::aliases::{
     TargetDstChain, TargetDstClientId, TargetRelay, TargetSrcChain, TargetSrcClientId,
 };
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
-use crate::base::runtime::traits::mutex::HasRuntimeWithMutex;
-use crate::full::batch::traits::channel::HasMessageBatchSenderTypes;
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::runtime::traits::mutex::HasRuntimeWithMutex;
+
+use crate::batch::traits::channel::HasMessageBatchSenderTypes;
 use crate::std_prelude::*;
 
 #[async_trait]

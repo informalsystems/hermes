@@ -1,11 +1,12 @@
-use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::relay::traits::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
-use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
+use async_trait::async_trait;
+use ibc_relayer_components::relay::traits::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
+use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
+use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
+
+use crate::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
 pub struct ParallelBidirectionalRelayer<InRelayer>(pub PhantomData<InRelayer>);

@@ -1,11 +1,11 @@
 use core::marker::PhantomData;
 
 use async_trait::async_trait;
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayer;
+use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::relay::types::aliases::Packet;
 
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::relay::traits::packet_relayer::PacketRelayer;
-use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 
 pub struct RetryRelayer<InRelay> {

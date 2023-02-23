@@ -7,12 +7,13 @@
    [`std::sync::mpsc::channel`](https://doc.rust-lang.org/std/sync/mpsc/fn.channel.html).
 */
 
-use async_trait::async_trait;
 use core::pin::Pin;
-use futures::stream::Stream;
 
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
+use async_trait::async_trait;
+use futures::stream::Stream;
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::core::traits::sync::Async;
+
 use crate::std_prelude::*;
 
 /**

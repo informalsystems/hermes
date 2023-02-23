@@ -1,9 +1,9 @@
 use async_trait::async_trait;
+use ibc_relayer_components::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
+use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
-use crate::base::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
-use crate::base::relay::traits::two_way::HasTwoWayRelay;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
+use crate::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
 pub struct ParallelTwoWayAutoRelay;

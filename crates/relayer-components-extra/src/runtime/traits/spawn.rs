@@ -1,8 +1,9 @@
 use core::future::Future;
 use core::pin::Pin;
-use futures::stream::{self, StreamExt};
 
-use crate::base::core::traits::sync::Async;
+use futures::stream::{self, StreamExt};
+use ibc_relayer_components::core::traits::sync::Async;
+
 use crate::std_prelude::*;
 
 pub trait HasSpawner: Async {

@@ -1,11 +1,10 @@
 use async_trait::async_trait;
-
-use crate::base::chain::traits::queries::status::*;
-use crate::base::chain::traits::types::status::HasChainStatusType;
-use crate::full::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
-use crate::full::telemetry::traits::telemetry::HasTelemetry;
+use ibc_relayer_components::chain::traits::queries::status::*;
+use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 
 use crate::std_prelude::*;
+use crate::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
+use crate::telemetry::traits::telemetry::HasTelemetry;
 
 pub struct ChainStatusTelemetryQuerier<InQuerier> {
     pub querier: InQuerier,

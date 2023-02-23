@@ -1,14 +1,15 @@
 use alloc::collections::BTreeMap;
 
-use crate::base::builder::traits::birelay::HasBiRelayType;
-use crate::base::builder::traits::target::chain::ChainBuildTarget;
-use crate::base::builder::types::aliases::{
+use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
+use ibc_relayer_components::builder::traits::target::chain::ChainBuildTarget;
+use ibc_relayer_components::builder::types::aliases::{
     CounterpartyChainId, CounterpartyClientId, TargetChain, TargetChainId, TargetClientId,
 };
-use crate::base::core::traits::sync::Async;
-use crate::base::runtime::traits::mutex::HasRuntimeWithMutex;
-use crate::base::runtime::types::aliases::Mutex;
-use crate::full::batch::traits::channel::HasMessageBatchSenderType;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::runtime::traits::mutex::HasRuntimeWithMutex;
+use ibc_relayer_components::runtime::types::aliases::Mutex;
+
+use crate::batch::traits::channel::HasMessageBatchSenderType;
 
 pub trait HasBatchSenderCache<Target, Error>: Async
 where

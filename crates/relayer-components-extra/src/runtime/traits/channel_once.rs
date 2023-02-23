@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::core::traits::sync::Async;
 
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 pub trait HasChannelOnceTypes: HasErrorType {

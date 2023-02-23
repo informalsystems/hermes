@@ -1,12 +1,11 @@
 use async_trait::async_trait;
-
-use crate::base::chain::traits::queries::consensus_state::ConsensusStateQuerier;
-use crate::base::chain::traits::types::consensus_state::HasConsensusStateType;
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::full::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
-use crate::full::telemetry::traits::telemetry::HasTelemetry;
+use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
+use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
+use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
 
 use crate::std_prelude::*;
+use crate::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
+use crate::telemetry::traits::telemetry::HasTelemetry;
 
 pub struct ConsensusStateTelemetryQuerier<InQuerier> {
     pub querier: InQuerier,

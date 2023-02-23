@@ -1,16 +1,17 @@
 use alloc::sync::Arc;
-use async_trait::async_trait;
 use core::ops::DerefMut;
 use core::pin::Pin;
-use futures::stream::{Stream, StreamExt};
 
-use crate::base::core::traits::sync::Async;
-use crate::base::runtime::traits::mutex::HasMutex;
-use crate::base::runtime::traits::subscription::Subscription;
-use crate::full::runtime::traits::channel::{
+use async_trait::async_trait;
+use futures::stream::{Stream, StreamExt};
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::runtime::traits::mutex::HasMutex;
+use ibc_relayer_components::runtime::traits::subscription::Subscription;
+
+use crate::runtime::traits::channel::{
     CanCreateChannels, CanStreamReceiver, CanUseChannels, HasChannelTypes,
 };
-use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
+use crate::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
 /**
@@ -21,7 +22,7 @@ use crate::std_prelude::*;
    and [`CanStreamReceiver`].
 
    This can be used to improve the efficiency of naive subscriptions created from
-   [`CanCreateClosureSubscription`](crate::base::runtime::impls::subscription::closure::CanCreateClosureSubscription).
+   [`CanCreateClosureSubscription`](ibc_relayer_components::runtime::impls::subscription::closure::CanCreateClosureSubscription).
    For example, one can first create a subscription closure that establishes
    new network connection each time `subscribe` is called. The subscription
    closure is then passed to [`multiplex_subscription`](Self::multiplex_subscription),

@@ -1,28 +1,29 @@
-use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::builder::traits::birelay::HasBiRelayType;
-use crate::base::builder::traits::relay::RelayFromChainsBuilder;
-use crate::base::builder::traits::target::chain::ChainBuildTarget;
-use crate::base::builder::traits::target::relay::RelayBuildTarget;
-use crate::base::builder::types::aliases::{
+use async_trait::async_trait;
+use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
+use ibc_relayer_components::builder::traits::relay::RelayFromChainsBuilder;
+use ibc_relayer_components::builder::traits::target::chain::ChainBuildTarget;
+use ibc_relayer_components::builder::traits::target::relay::RelayBuildTarget;
+use ibc_relayer_components::builder::types::aliases::{
     CounterpartyChainId, CounterpartyClientId, RelayError, TargetChain, TargetChainId,
     TargetChainRuntime, TargetClientId,
 };
-use crate::base::chain::traits::types::chain_id::HasChainId;
-use crate::base::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::base::core::traits::error::HasErrorType;
-use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::base::relay::traits::types::HasRelayTypes;
-use crate::base::runtime::traits::mutex::{HasMutex, HasRuntimeWithMutex};
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::full::batch::traits::config::HasBatchConfig;
-use crate::full::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
-use crate::full::batch::worker::CanSpawnBatchMessageWorker;
-use crate::full::builder::traits::cache::HasBatchSenderCache;
-use crate::full::builder::traits::relay::RelayBuilderWithBatch;
-use crate::full::runtime::traits::channel::{CanCreateChannels, HasChannelTypes};
-use crate::full::runtime::traits::channel_once::HasChannelOnceTypes;
+use ibc_relayer_components::chain::traits::types::chain_id::HasChainId;
+use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
+use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::runtime::traits::mutex::{HasMutex, HasRuntimeWithMutex};
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
+
+use crate::batch::traits::config::HasBatchConfig;
+use crate::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
+use crate::batch::worker::CanSpawnBatchMessageWorker;
+use crate::builder::traits::cache::HasBatchSenderCache;
+use crate::builder::traits::relay::RelayBuilderWithBatch;
+use crate::runtime::traits::channel::{CanCreateChannels, HasChannelTypes};
+use crate::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::std_prelude::*;
 
 pub struct BuildBatchWorker<InBuilder>(pub PhantomData<InBuilder>);

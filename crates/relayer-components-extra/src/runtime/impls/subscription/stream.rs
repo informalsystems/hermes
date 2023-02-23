@@ -1,13 +1,14 @@
 use alloc::sync::Arc;
 use core::ops::DerefMut;
-use futures::stream::{Stream, StreamExt};
 
-use crate::base::core::traits::sync::Async;
-use crate::base::runtime::traits::mutex::HasMutex;
-use crate::base::runtime::traits::subscription::Subscription;
-use crate::full::runtime::impls::subscription::multiplex::MultiplexingSubscription;
-use crate::full::runtime::traits::channel::{CanCreateChannels, CanStreamReceiver, CanUseChannels};
-use crate::full::runtime::traits::spawn::{HasSpawner, Spawner};
+use futures::stream::{Stream, StreamExt};
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::runtime::traits::mutex::HasMutex;
+use ibc_relayer_components::runtime::traits::subscription::Subscription;
+
+use crate::runtime::impls::subscription::multiplex::MultiplexingSubscription;
+use crate::runtime::traits::channel::{CanCreateChannels, CanStreamReceiver, CanUseChannels};
+use crate::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
 /**
