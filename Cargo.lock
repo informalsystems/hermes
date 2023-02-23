@@ -1868,17 +1868,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc-relayer-all-in-one-extra"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
- "ibc-relayer-all-in-one",
- "ibc-relayer-components",
- "ibc-relayer-components-extra",
-]
-
-[[package]]
 name = "ibc-relayer-cli"
 version = "1.3.0"
 dependencies = [
