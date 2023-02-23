@@ -425,9 +425,20 @@ impl EventMonitor {
             let result = rt.block_on(async {
                 tokio::select! {
                     Some(batch) = batches.next() => batch,
-                    Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
+                    Some(err) = self.rx_err.recv() => Err(Error::web_socket_driver(err)),
                 }
             });
+
+            if let Ok(cmd) = self.rx_cmd.try_recv() {
+                match cmd {
+                    MonitorCmd::Shutdown => return Next::Abort,
+                    MonitorCmd::Subscribe(tx) => {
+                        if let Err(e) = tx.send(self.event_bus.subscribe()) {
+                            error!("failed to send back subscription: {e}");
+                        }
+                    }
+                }
+            }
 
             match result {
                 Ok(batch) => self.process_batch(batch),
