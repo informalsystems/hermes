@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use crate::one_for_all::traits::chain::OfaIbcChain;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
+use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 
 #[async_trait]
 impl<Chain, Counterparty> CanQueryReceivedPacket<OfaChainWrapper<Counterparty>>

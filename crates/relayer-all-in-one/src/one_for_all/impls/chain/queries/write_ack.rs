@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::queries::write_ack::CanQueryWriteAcknowledgement;
 use crate::one_for_all::traits::chain::OfaIbcChain;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
+use ibc_relayer_components::chain::traits::queries::write_ack::CanQueryWriteAcknowledgement;
 
 #[async_trait]
 impl<Chain, Counterparty> CanQueryWriteAcknowledgement<OfaChainWrapper<Counterparty>>

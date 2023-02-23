@@ -1,7 +1,7 @@
 use crate::one_for_all::traits::transaction::OfaTxContext;
 use crate::one_for_all::types::transaction::OfaTxWrapper;
-use crate::base::transaction::traits::event::CanParseTxResponseAsEvents;
 use crate::std_prelude::*;
+use ibc_relayer_components::transaction::traits::event::CanParseTxResponseAsEvents;
 
 impl<TxContext> CanParseTxResponseAsEvents for OfaTxWrapper<TxContext>
 where

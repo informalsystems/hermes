@@ -2,12 +2,14 @@ use async_trait::async_trait;
 use core::future::Future;
 use core::pin::Pin;
 
-use crate::base::core::traits::sync::Async;
 use crate::one_for_all::traits::transaction::OfaTxContext;
 use crate::one_for_all::types::transaction::OfaTxWrapper;
-use crate::base::transaction::impls::nonces::naive::NaiveNonceAllocator;
-use crate::base::transaction::traits::nonce::{CanAllocateNonce, CanQueryNonce, NonceAllocator};
 use crate::std_prelude::*;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::transaction::impls::nonces::naive::NaiveNonceAllocator;
+use ibc_relayer_components::transaction::traits::nonce::{
+    CanAllocateNonce, CanQueryNonce, NonceAllocator,
+};
 
 #[async_trait]
 impl<TxContext> CanQueryNonce for OfaTxWrapper<TxContext>

@@ -1,17 +1,17 @@
 use crate::all_for_one::chain::AfoBaseChain;
 use crate::all_for_one::runtime::HasAfoBaseRuntime;
-use crate::base::chain::types::aliases::{IncomingPacket, OutgoingPacket};
-use crate::base::relay::traits::auto_relayer::CanAutoRelay;
-use crate::base::relay::traits::event_relayer::CanRelayEvent;
-use crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages;
-use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
-use crate::base::relay::traits::packet_filter::CanFilterPackets;
-use crate::base::relay::traits::packet_relayer::CanRelayPacket;
-use crate::base::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
-use crate::base::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
-use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
-use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::base::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::chain::types::aliases::{IncomingPacket, OutgoingPacket};
+use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
+use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
+use ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages;
+use ibc_relayer_components::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
+use ibc_relayer_components::relay::traits::packet_filter::CanFilterPackets;
+use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
+use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
+use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
+use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
+use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
+use ibc_relayer_components::relay::traits::types::HasRelayTypes;
 
 /// The functionality that a relay context gains access to once that relay
 /// context implements the `OfaRelayWrapper` trait.

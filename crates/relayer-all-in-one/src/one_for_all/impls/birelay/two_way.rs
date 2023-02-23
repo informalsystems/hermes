@@ -1,8 +1,8 @@
-use crate::base::core::traits::error::HasErrorType;
 use crate::one_for_all::traits::birelay::OfaBiRelay;
 use crate::one_for_all::types::birelay::OfaBiRelayWrapper;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::relay::traits::two_way::HasTwoWayRelay;
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 
 impl<BiRelay> HasTwoWayRelay for OfaBiRelayWrapper<BiRelay>
 where

@@ -1,9 +1,5 @@
 use async_trait::async_trait;
 
-use crate::base::builder::impls::cache::BuildWithCache;
-use crate::base::builder::impls::relay::BuildRelayFromChains;
-use crate::base::builder::traits::relay::{CanBuildRelay, RelayBuilder, RelayFromChainsBuilder};
-use crate::base::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
 use crate::one_for_all::traits::birelay::OfaBiRelayPreset;
 use crate::one_for_all::traits::builder::{
     ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, OfaBuilder, RelayAToB, RelayBToA,
@@ -12,6 +8,12 @@ use crate::one_for_all::types::builder::OfaBuilderWrapper;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
+use ibc_relayer_components::builder::impls::cache::BuildWithCache;
+use ibc_relayer_components::builder::impls::relay::BuildRelayFromChains;
+use ibc_relayer_components::builder::traits::relay::{
+    CanBuildRelay, RelayBuilder, RelayFromChainsBuilder,
+};
+use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
 
 pub struct BuildRelayFromChainsWithOfa;
 

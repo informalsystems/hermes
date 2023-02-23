@@ -4,9 +4,11 @@ use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::traits::relay::OfaBaseRelay;
 use crate::one_for_all::traits::relay::OfaRelayPreset;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSender};
-use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
+use ibc_relayer_components::relay::traits::ibc_message_sender::{
+    CanSendIbcMessages, IbcMessageSender,
+};
+use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
 #[async_trait]
 impl<Relay, Preset> CanSendIbcMessages<SourceTarget> for OfaRelayWrapper<Relay>

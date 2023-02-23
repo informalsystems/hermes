@@ -1,14 +1,14 @@
 use async_trait::async_trait;
 
 use crate::all_for_one::birelay::AfoBaseBiRelay;
-use crate::base::builder::traits::birelay::{CanBuildBiRelay, HasBiRelayType};
-use crate::base::builder::types::aliases::{ChainIdA, ChainIdB, ClientIdA, ClientIdB};
-use crate::base::core::traits::error::HasErrorType;
 use crate::one_for_all::traits::birelay::OfaBiRelayPreset;
 use crate::one_for_all::traits::builder::OfaBuilder;
 use crate::one_for_all::types::birelay::OfaBiRelayWrapper;
 use crate::one_for_all::types::builder::OfaBuilderWrapper;
 use crate::std_prelude::*;
+use ibc_relayer_components::builder::traits::birelay::{CanBuildBiRelay, HasBiRelayType};
+use ibc_relayer_components::builder::types::aliases::{ChainIdA, ChainIdB, ClientIdA, ClientIdB};
+use ibc_relayer_components::core::traits::error::HasErrorType;
 
 #[async_trait]
 pub trait CanBuildAfoBaseBiRelay:

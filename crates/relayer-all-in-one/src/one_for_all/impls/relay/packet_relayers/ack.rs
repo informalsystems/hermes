@@ -3,11 +3,11 @@ use async_trait::async_trait;
 use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::traits::relay::OfaBaseRelay;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::relay::impls::packet_relayers::ack::base_ack_packet::BaseAckPacketRelayer;
-use crate::base::relay::traits::packet_relayers::ack_packet::{
+use crate::std_prelude::*;
+use ibc_relayer_components::relay::impls::packet_relayers::ack::base_ack_packet::BaseAckPacketRelayer;
+use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::{
     AckPacketRelayer, CanRelayAckPacket,
 };
-use crate::std_prelude::*;
 
 #[async_trait]
 impl<Relay> CanRelayAckPacket for OfaRelayWrapper<Relay>

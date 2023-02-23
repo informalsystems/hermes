@@ -2,10 +2,10 @@ use async_trait::async_trait;
 use core::fmt::Debug;
 use core::time::Duration;
 
-use crate::base::core::traits::sync::Async;
 use crate::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
+use ibc_relayer_components::core::traits::sync::Async;
 
 pub trait OfaTxTypes: Async {
     type Error: Async + Debug;
@@ -14,13 +14,13 @@ pub trait OfaTxTypes: Async {
 
     /**
        Corresponds to
-       [`HasMessageType::Message`](crate::base::chain::traits::types::message::HasMessageType::Message).
+       [`HasMessageType::Message`](ibc_relayer_components::chain::traits::types::message::HasMessageType::Message).
     */
     type Message: Async;
 
     /**
        Corresponds to
-       [`HasEventType::Event`](crate::base::chain::traits::types::event::HasEventType::Event).
+       [`HasEventType::Event`](ibc_relayer_components::chain::traits::types::event::HasEventType::Event).
     */
     type Event: Async;
 

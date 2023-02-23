@@ -1,8 +1,8 @@
-use crate::base::runtime::traits::log::HasBasicLogger;
-use crate::base::runtime::traits::mutex::HasMutex;
-use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::base::runtime::traits::sleep::CanSleep;
-use crate::base::runtime::traits::time::HasTime;
+use ibc_relayer_components::runtime::traits::log::HasBasicLogger;
+use ibc_relayer_components::runtime::traits::mutex::HasMutex;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
+use ibc_relayer_components::runtime::traits::sleep::CanSleep;
+use ibc_relayer_components::runtime::traits::time::HasTime;
 
 pub trait AfoBaseRuntime: HasBasicLogger + HasMutex + CanSleep + HasTime {}
 

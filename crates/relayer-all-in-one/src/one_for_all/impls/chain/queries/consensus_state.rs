@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::queries::consensus_state::{
-    CanQueryConsensusState, ConsensusStateQuerier,
-};
-use crate::base::chain::traits::types::consensus_state::HasConsensusStateType;
 use crate::one_for_all::traits::chain::OfaIbcChain;
 use crate::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
+use ibc_relayer_components::chain::traits::queries::consensus_state::{
+    CanQueryConsensusState, ConsensusStateQuerier,
+};
+use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
 
 pub struct SendConsensusStateQueryToOfa;
 

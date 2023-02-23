@@ -5,25 +5,25 @@
 use async_trait::async_trait;
 use core::fmt::Debug;
 
-use crate::base::core::traits::sync::Async;
 use crate::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
-use crate::base::relay::traits::auto_relayer::AutoRelayer;
-use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::relay::traits::packet_filter::PacketFilter;
-use crate::base::relay::traits::packet_relayer::PacketRelayer;
-use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayer;
+use ibc_relayer_components::relay::traits::ibc_message_sender::IbcMessageSender;
+use ibc_relayer_components::relay::traits::packet_filter::PacketFilter;
+use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayer;
+use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
 pub trait OfaRelayTypes: Async {
     type Preset: Async;
 
     /**
-       Corresponds to [`HasErrorType::Error`](crate::base::core::traits::error::HasErrorType).
+       Corresponds to [`HasErrorType::Error`](ibc_relayer_components::core::traits::error::HasErrorType).
     */
     type Error: Debug + Clone + Async;
 

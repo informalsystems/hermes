@@ -6,105 +6,105 @@ use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::fmt::Debug;
 
-use crate::base::chain::traits::queries::consensus_state::ConsensusStateQuerier;
-use crate::base::chain::traits::queries::status::ChainStatusQuerier;
-use crate::base::core::traits::sync::Async;
 use crate::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
-use crate::base::runtime::traits::subscription::Subscription;
 use crate::std_prelude::*;
+use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
+use ibc_relayer_components::chain::traits::queries::status::ChainStatusQuerier;
+use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::runtime::traits::subscription::Subscription;
 
 pub trait OfaChainTypes: Async {
     type Preset: Async;
 
     /**
        Corresponds to
-       [`HasErrorType::Error`](crate::base::core::traits::error::HasErrorType::Error).
+       [`HasErrorType::Error`](ibc_relayer_components::core::traits::error::HasErrorType::Error).
     */
     type Error: Async + Debug;
 
     /**
        Corresponds to
-       [`HasRuntime::Runtime`](crate::base::runtime::traits::runtime::HasRuntime::Runtime).
+       [`HasRuntime::Runtime`](ibc_relayer_components::runtime::traits::runtime::HasRuntime::Runtime).
     */
     type Runtime: OfaBaseRuntime;
 
     /**
        Corresponds to
-       [`HasChainTypes::Height`](crate::base::chain::traits::types::height::HasHeightType::Height).
+       [`HasChainTypes::Height`](ibc_relayer_components::chain::traits::types::height::HasHeightType::Height).
     */
     type Height: Ord + Async;
 
     /**
        Corresponds to
-       [`HasChainTypes::Timestamp`](crate::base::chain::traits::types::timestamp::HasTimestampType::Timestamp).
+       [`HasChainTypes::Timestamp`](ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType::Timestamp).
     */
     type Timestamp: Ord + Async;
 
     /**
        Corresponds to
-       [`HasMessageType::Message`](crate::base::chain::traits::types::message::HasMessageType::Message).
+       [`HasMessageType::Message`](ibc_relayer_components::chain::traits::types::message::HasMessageType::Message).
     */
     type Message: Async;
 
     /**
        Corresponds to
-       [`HasEventType::Event`](crate::base::chain::traits::types::event::HasEventType::Event).
+       [`HasEventType::Event`](ibc_relayer_components::chain::traits::types::event::HasEventType::Event).
     */
     type Event: Async;
 
     /**
        Corresponds to
-       [`HasChainIdType::ChainId`](crate::base::chain::traits::types::chain_id::HasChainIdType::ChainId).
+       [`HasChainIdType::ChainId`](ibc_relayer_components::chain::traits::types::chain_id::HasChainIdType::ChainId).
     */
     type ChainId: Eq + Ord + Clone + Async;
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::ClientId`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::ClientId).
+       [`HasIbcChainTypes::ClientId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::ClientId).
     */
     type ClientId: Ord + Clone + Async;
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::ConnectionId`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::ConnectionId).
+       [`HasIbcChainTypes::ConnectionId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::ConnectionId).
     */
     type ConnectionId: Async;
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::ChannelId`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::ChannelId).
+       [`HasIbcChainTypes::ChannelId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::ChannelId).
     */
     type ChannelId: Async;
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::PortId`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::PortId).
+       [`HasIbcChainTypes::PortId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::PortId).
     */
     type PortId: Async;
 
     /**
        Corresponds to
-       [`HasIbcChainTypes::Sequence`](crate::base::chain::traits::types::ibc::HasIbcChainTypes::Sequence).
+       [`HasIbcChainTypes::Sequence`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::Sequence).
     */
     type Sequence: Async;
 
     /**
        Corresponds to
-       [`HasChainStatusType::ChainStatus`](crate::base::chain::traits::types::status::HasChainStatusType::ChainStatus).
+       [`HasChainStatusType::ChainStatus`](ibc_relayer_components::chain::traits::types::status::HasChainStatusType::ChainStatus).
     */
     type ChainStatus: Async;
 
     /**
        Corresponds to
-       [`HasConsensusStateType::ConsensusState`](crate::base::chain::traits::types::consensus_state::HasConsensusStateType::ConsensusState).
+       [`HasConsensusStateType::ConsensusState`](ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType::ConsensusState).
     */
     type ConsensusState: Async;
 
     /**
        Corresponds to
-       [`HasWriteAcknowledgementEvent::WriteAcknowledgementEvent`](crate::base::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent).
+       [`HasWriteAcknowledgementEvent::WriteAcknowledgementEvent`](ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent).
     */
     type WriteAcknowledgementEvent: Async;
 
@@ -129,7 +129,7 @@ pub trait OfaBaseChain: OfaChainTypes {
 
     /**
        Corresponds to
-       [`CanSendMessages::send_messages`](crate::base::chain::traits::message_sender::CanSendMessages::send_messages)
+       [`CanSendMessages::send_messages`](ibc_relayer_components::chain::traits::message_sender::CanSendMessages::send_messages)
     */
     async fn send_messages(
         &self,
@@ -154,13 +154,13 @@ where
 {
     /**
        Corresponds to
-       [`HasIbcPacketTypes::IncomingPacket`](crate::base::chain::traits::types::packet::HasIbcPacketTypes::IncomingPacket)
+       [`HasIbcPacketTypes::IncomingPacket`](ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes::IncomingPacket)
     */
     type IncomingPacket: Async;
 
     /**
        Corresponds to
-       [`HasIbcPacketTypes::OutgoingPacket`](crate::base::chain::traits::types::packet::HasIbcPacketTypes::OutgoingPacket)
+       [`HasIbcPacketTypes::OutgoingPacket`](ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes::OutgoingPacket)
     */
     type OutgoingPacket: Async;
 
