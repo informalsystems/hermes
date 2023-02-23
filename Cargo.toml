@@ -7,6 +7,7 @@ members = [
     "crates/relayer-types",
     "crates/relayer-cli",
     "crates/relayer-rest",
+    "crates/relayer-components",
     "crates/relayer-framework",
     "crates/relayer-framework-test",
     "crates/relayer-runtime",
