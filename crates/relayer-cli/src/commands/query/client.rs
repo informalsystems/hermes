@@ -1,5 +1,6 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use color_eyre::eyre::eyre;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
@@ -287,75 +288,72 @@ impl Runnable for QueryClientStatusCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let client_state = chain
-            .query_client_state(
-                QueryClientStateRequest {
-                    client_id: self.client_id.clone(),
-                    height: QueryHeight::Latest,
-                },
-                IncludeProof::No,
-            )
-            .map(|(cs, _)| cs)
-            .unwrap_or_else(exit_with_unrecoverable_error);
-
-        #[derive(Debug, serde::Serialize)]
-        enum Status {
-            Frozen,
-            Expired,
-            Active,
-        }
-
-        let status = if client_state.is_frozen() {
-            Status::Frozen
-        } else {
-            let consensus_state_heights = chain
-                .query_consensus_state_heights(QueryConsensusStateHeightsRequest {
-                    client_id: self.client_id.clone(),
-                    pagination: Some(PageRequest::all()),
-                })
-                .unwrap_or_else(exit_with_unrecoverable_error);
-
-            dbg!(&consensus_state_heights);
-
-            let latest_consensus_height =
-                consensus_state_heights.last().copied().unwrap_or_else(|| {
-                    exit_with_unrecoverable_error(format!(
-                        "no consensus state found for client '{}' on chain '{}'",
-                        self.client_id, self.chain_id
-                    ))
-                });
-
-            let (latest_consensus_state, _) = chain
-                .query_consensus_state(
-                    QueryConsensusStateRequest {
-                        client_id: self.client_id.clone(),
-                        consensus_height: latest_consensus_height,
-                        query_height: QueryHeight::Latest,
-                    },
-                    IncludeProof::No,
-                )
-                .unwrap_or_else(exit_with_unrecoverable_error);
-
-            // Fetch the application status, containing the network time
-            let app_status = chain
-                .query_application_status()
-                .unwrap_or_else(exit_with_unrecoverable_error);
-
-            let current_src_network_time = app_status.timestamp;
-
-            // Compute the duration of time elapsed since this consensus state was installed
-            let elapsed = current_src_network_time
-                .duration_since(&latest_consensus_state.timestamp())
-                .unwrap_or_default();
-
-            if client_state.expired(elapsed) {
-                Status::Expired
-            } else {
-                Status::Active
-            }
-        };
+        let status =
+            client_status(&chain, &self.client_id).unwrap_or_else(exit_with_unrecoverable_error);
 
         Output::success(status).exit()
+    }
+}
+
+#[derive(Debug, serde::Serialize)]
+enum Status {
+    Frozen,
+    Expired,
+    Active,
+}
+
+fn client_status(
+    chain: &impl ChainHandle,
+    client_id: &ClientId,
+) -> Result<Status, color_eyre::Report> {
+    let (client_state, _) = chain.query_client_state(
+        QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
+
+    if client_state.is_frozen() {
+        return Ok(Status::Frozen);
+    }
+
+    let consensus_state_heights =
+        chain.query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+            client_id: client_id.clone(),
+            pagination: Some(PageRequest::all()),
+        })?;
+
+    let latest_consensus_height = consensus_state_heights.last().copied().ok_or_else(|| {
+        eyre!(
+            "no consensus state found for client '{}' on chain '{}'",
+            client_id,
+            chain.id()
+        )
+    })?;
+
+    let (latest_consensus_state, _) = chain.query_consensus_state(
+        QueryConsensusStateRequest {
+            client_id: client_id.clone(),
+            consensus_height: latest_consensus_height,
+            query_height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
+
+    // Fetch the application status, for the network time
+    let app_status = chain.query_application_status()?;
+    let current_src_network_time = app_status.timestamp;
+
+    // Compute the duration of time elapsed since this consensus state was installed
+    let elapsed = current_src_network_time
+        .duration_since(&latest_consensus_state.timestamp())
+        .unwrap_or_default();
+
+    if client_state.expired(elapsed) {
+        Ok(Status::Expired)
+    } else {
+        Ok(Status::Active)
     }
 }
 
