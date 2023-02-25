@@ -83,7 +83,7 @@ pub fn bootstrap_single_node(
 
     chain_driver.collect_gen_txs()?;
 
-    let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+    let log_level = std::env::var("CHAIN_LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
 
     chain_driver.update_chain_config("config.toml", |config| {
         config::set_log_level(config, &log_level)?;
