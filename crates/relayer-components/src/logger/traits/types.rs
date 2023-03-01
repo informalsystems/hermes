@@ -15,33 +15,39 @@ pub trait CanLogValue<T>: HasLoggerType {
 }
 
 pub trait BaseLogger: Async {
-    type Log<'a, 'r>: Async;
+    type Log<'a, 'r>;
 
-    type LogLevel: Default + Async;
+    type LogValue<'a>;
 
-    type LogValue<'a>: Async;
+    type LogLevel: Clone + Async;
+
+    fn default_level() -> Self::LogLevel;
 
     fn new_log<'a>(
         &'a self,
         level: Self::LogLevel,
         message: &str,
-        build_log: impl for<'r> FnOnce(Self::Log<'a, 'r>),
+        build_log: impl for<'r> FnOnce(&'r Self::Log<'a, 'r>),
     );
 
-    fn log_field<'a, 'b, 'r>(log: &Self::Log<'a, 'r>, key: &str, value: Self::LogValue<'b>)
+    fn log_field<'a, 'b, 'r>(log: &Self::Log<'a, 'r>, key: &'b str, value: Self::LogValue<'b>)
     where
         'b: 'a;
 
-    fn display_value<'a, T>(value: T) -> Self::LogValue<'a>
+    fn display_value<'a, T>(value: &'a T) -> Self::LogValue<'a>
     where
-        T: Display + ?Sized;
+        T: Display;
+
+    fn debug_value<'a, T>(value: &'a T) -> Self::LogValue<'a>
+    where
+        T: Debug;
 }
 
 pub struct LogWrapper<'a, 'r, Context>
 where
     Context: HasLoggerType,
 {
-    pub log: <Context::Logger as BaseLogger>::Log<'a, 'r>,
+    pub log: &'r <Context::Logger as BaseLogger>::Log<'a, 'r>,
 }
 
 impl<'a, 'r, Context> LogWrapper<'a, 'r, Context>
@@ -50,7 +56,7 @@ where
 {
     pub fn field<'b>(
         &self,
-        key: &str,
+        key: &'b str,
         value: <Context::Logger as BaseLogger>::LogValue<'b>,
     ) -> &Self
     where
@@ -61,21 +67,23 @@ where
         self
     }
 
-    pub fn display<T>(&self, key: &str, value: T) -> &Self
+    pub fn display<'b, T>(&self, key: &'b str, value: &'b T) -> &Self
     where
+        'b: 'a,
         T: Display,
     {
         self.field(key, Context::Logger::display_value(value))
     }
 
-    pub fn debug<T>(&self, key: &str, value: T) -> &Self
+    pub fn debug<'b, T>(&self, key: &'b str, value: &'b T) -> &Self
     where
+        'b: 'a,
         T: Debug,
     {
-        self.display(key, format_args!("{:?}", value))
+        self.field(key, Context::Logger::debug_value(value))
     }
 
-    pub fn value<'b, T>(&self, key: &str, value: &'b T) -> &Self
+    pub fn value<'b, T>(&self, key: &'b str, value: &'b T) -> &Self
     where
         'b: 'a,
         Context: CanLogValue<T>,
@@ -134,8 +142,8 @@ where
         let foo = self.foo();
         let bar = 42;
 
-        self.log(Default::default(), "testing", |log| {
-            log.value("foo", foo).debug("bar", bar);
+        self.log(Context::Logger::default_level(), "testing", |log| {
+            log.value("foo", foo).debug("bar", &bar);
         });
     }
 }
