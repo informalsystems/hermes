@@ -1,6 +1,7 @@
 use core::fmt::Debug;
 
 use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayer;
 
 use crate::base::one_for_all::traits::relay::{
@@ -18,6 +19,8 @@ pub trait OfaBiRelayTypes: Async {
 
     type Runtime: OfaBaseRuntime;
 
+    type Logger: HasBaseLogLevels;
+
     type RelayAToB: OfaBaseRelay<Preset = Self::Preset>;
 
     type RelayBToA: OfaBaseRelay<
@@ -32,6 +35,8 @@ pub trait OfaBiRelay: OfaBiRelayTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
+
+    fn logger(&self) -> &Self::Logger;
 
     fn relay_a_to_b(&self) -> &OfaRelayWrapper<Self::RelayAToB>;
 

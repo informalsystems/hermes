@@ -3,6 +3,7 @@ use ibc_relayer_all_in_one::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 
 use crate::base::error::{BaseError, Error};
 use crate::base::traits::birelay::CosmosBiRelay;
@@ -19,6 +20,8 @@ where
 
     type Runtime = TokioRuntimeContext;
 
+    type Logger = TracingLogger;
+
     type RelayAToB = CosmosRelayWrapper<BiRelay::RelayAToB>;
 
     type RelayBToA = CosmosRelayWrapper<BiRelay::RelayBToA>;
@@ -34,6 +37,10 @@ where
 
     fn runtime_error(e: TokioError) -> Error {
         BaseError::tokio(e).into()
+    }
+
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
     }
 
     fn relay_a_to_b(&self) -> &OfaRelayWrapper<Self::RelayAToB> {
