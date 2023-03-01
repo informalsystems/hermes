@@ -1,3 +1,4 @@
+use crate::logger::traits::has_logger::HasLogger;
 use crate::logger::traits::logger::BaseLogger;
 
 pub struct LevelTrace;
@@ -49,4 +50,16 @@ where
     const LEVEL_WARN: Self::LogLevel = <Logger as HasLogLevel<LevelWarn>>::LEVEL;
 
     const LEVEL_ERROR: Self::LogLevel = <Logger as HasLogLevel<LevelError>>::LEVEL;
+}
+
+pub trait HasLoggerWithBaseLevels: HasLogger<Logger = Self::LoggerWithBaseLevels> {
+    type LoggerWithBaseLevels: HasBaseLogLevels;
+}
+
+impl<Context, Logger> HasLoggerWithBaseLevels for Context
+where
+    Context: HasLogger<Logger = Logger>,
+    Logger: HasBaseLogLevels,
+{
+    type LoggerWithBaseLevels = Logger;
 }

@@ -4,12 +4,14 @@ use ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus;
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
 use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
+use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
 
 use crate::base::all_for_one::runtime::HasAfoBaseRuntime;
 
 pub trait AfoBaseChain<Counterparty>:
     Clone
     + HasAfoBaseRuntime
+    + HasLoggerWithBaseLevels
     + HasIbcPacketTypes<Counterparty>
     + HasWriteAcknowledgementEvent<Counterparty>
     + HasConsensusStateType<Counterparty>
@@ -38,6 +40,7 @@ where
     Counterparty: AfoCounterpartyChain<Self>,
     Chain: Clone
         + HasAfoBaseRuntime
+        + HasLoggerWithBaseLevels
         + HasIbcPacketTypes<Counterparty>
         + HasWriteAcknowledgementEvent<Counterparty>
         + HasConsensusStateType<Counterparty>
