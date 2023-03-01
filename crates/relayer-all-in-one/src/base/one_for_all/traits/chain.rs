@@ -5,6 +5,7 @@
 use alloc::sync::Arc;
 use core::fmt::Debug;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
+use ibc_relayer_components::logger::traits::logger::BaseLogger;
 
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
@@ -123,6 +124,8 @@ pub trait OfaBaseChain: OfaChainTypes {
 
     fn logger(&self) -> &Self::Logger;
 
+    fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a>;
+
     fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
 
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
@@ -200,6 +203,14 @@ where
 
     fn outgoing_packet_timeout_timestamp(packet: &Self::OutgoingPacket)
         -> &Counterparty::Timestamp;
+
+    fn log_incoming_packet<'a>(
+        event: &'a Self::IncomingPacket,
+    ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
+
+    fn log_outgoing_packet<'a>(
+        event: &'a Self::OutgoingPacket,
+    ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 

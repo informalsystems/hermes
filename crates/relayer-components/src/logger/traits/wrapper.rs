@@ -2,7 +2,6 @@ use core::fmt::{Debug, Display};
 
 use crate::logger::traits::has_logger::HasLoggerType;
 use crate::logger::traits::logger::BaseLogger;
-use crate::logger::traits::value::CanLogValue;
 
 pub struct LogWrapper<'a, 'r, Context>
 where
@@ -42,13 +41,5 @@ where
         T: Debug,
     {
         self.field(key, Context::Logger::debug_value(value))
-    }
-
-    pub fn value<'b, T>(&self, key: &'b str, value: &'b T) -> &Self
-    where
-        'b: 'a,
-        Context: CanLogValue<T>,
-    {
-        self.field(key, Context::log_value(value))
     }
 }

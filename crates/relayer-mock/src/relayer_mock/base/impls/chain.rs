@@ -20,6 +20,7 @@ use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
+use ibc_relayer_runtime::tokio::logger::value::LogValue;
 
 use crate::relayer_mock::base::error::{BaseError, Error};
 use crate::relayer_mock::base::types::aliases::{
@@ -83,6 +84,10 @@ impl OfaBaseChain for MockChainContext {
 
     fn logger(&self) -> &TracingLogger {
         &TracingLogger
+    }
+
+    fn log_event<'a>(event: &'a Event) -> LogValue<'a> {
+        LogValue::Str(format!("{:?}", event))
     }
 
     // Only single messages are sent by the Mock Chain
@@ -193,6 +198,14 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
 
     fn outgoing_packet_timeout_timestamp(packet: &PacketKey) -> &MockTimestamp {
         &packet.timeout_timestamp
+    }
+
+    fn log_incoming_packet<'a>(packet: &'a PacketKey) -> LogValue<'a> {
+        LogValue::Str(format!("{:?}", packet))
+    }
+
+    fn log_outgoing_packet<'a>(packet: &'a PacketKey) -> LogValue<'a> {
+        LogValue::Str(format!("{:?}", packet))
     }
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {

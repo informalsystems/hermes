@@ -20,6 +20,7 @@ use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
+use ibc_relayer_runtime::tokio::logger::value::LogValue;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
@@ -101,6 +102,10 @@ where
 
     fn logger(&self) -> &TracingLogger {
         &TracingLogger
+    }
+
+    fn log_event<'a>(event: &'a Event) -> LogValue<'a> {
+        LogValue::Str(format!("{:?}", event))
     }
 
     fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
@@ -231,6 +236,14 @@ where
 
     fn outgoing_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
         &packet.timeout_timestamp
+    }
+
+    fn log_incoming_packet<'a>(packet: &'a Packet) -> LogValue<'a> {
+        LogValue::Str(format!("{:?}", packet))
+    }
+
+    fn log_outgoing_packet<'a>(packet: &'a Packet) -> LogValue<'a> {
+        LogValue::Str(format!("{:?}", packet))
     }
 
     fn counterparty_message_height(message: &CosmosIbcMessage) -> Option<Height> {
