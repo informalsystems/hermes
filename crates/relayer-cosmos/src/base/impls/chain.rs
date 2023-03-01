@@ -104,8 +104,8 @@ where
         &TracingLogger
     }
 
-    fn log_event<'a>(event: &'a Event) -> LogValue<'a> {
-        LogValue::Str(format!("{:?}", event))
+    fn log_event(event: &Event) -> LogValue<'_> {
+        LogValue::Str(format!("{event:?}",))
     }
 
     fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
@@ -238,12 +238,12 @@ where
         &packet.timeout_timestamp
     }
 
-    fn log_incoming_packet<'a>(packet: &'a Packet) -> LogValue<'a> {
-        LogValue::Str(format!("{:?}", packet))
+    fn log_incoming_packet(packet: &Packet) -> LogValue<'_> {
+        LogValue::Str(format!("{packet:?}",))
     }
 
-    fn log_outgoing_packet<'a>(packet: &'a Packet) -> LogValue<'a> {
-        LogValue::Str(format!("{:?}", packet))
+    fn log_outgoing_packet(packet: &Packet) -> LogValue<'_> {
+        LogValue::Str(format!("{packet:?}",))
     }
 
     fn counterparty_message_height(message: &CosmosIbcMessage) -> Option<Height> {
