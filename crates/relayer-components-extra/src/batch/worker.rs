@@ -1,5 +1,8 @@
 use alloc::collections::VecDeque;
 use core::mem;
+use ibc_relayer_components::logger::traits::has_logger::HasLogger;
+use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
+use ibc_relayer_components::logger::traits::simple::SimpleLogger;
 
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::types::chain::HasChainTypes;
@@ -9,7 +12,6 @@ use ibc_relayer_components::chain::traits::types::message::{
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::relay::traits::target::ChainTarget;
 use ibc_relayer_components::relay::traits::types::HasRelayTypes;
-use ibc_relayer_components::runtime::traits::log::{HasLogger, LevelDebug};
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
@@ -75,23 +77,20 @@ where
 }
 
 #[async_trait]
-impl<Relay, Target, Runtime> CanRunLoop<Target> for Relay
+impl<Relay, Target, Runtime, Logger> CanRunLoop<Target> for Relay
 where
     Relay: CanProcessMessageBatches<Target>,
     Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime<Runtime = Runtime>,
-    Runtime: HasTime
-        + HasMutex
-        + CanSleep
-        + HasLogger<LevelDebug>
-        + CanUseChannels
-        + HasChannelOnceTypes,
+    Target::TargetChain: HasRuntime<Runtime = Runtime> + HasLogger<Logger = Logger>,
+    Logger: HasBaseLogLevels,
+    Runtime: HasTime + HasMutex + CanSleep + CanUseChannels + HasChannelOnceTypes,
 {
     async fn run_loop(
         &self,
         config: &BatchConfig,
         mut receiver: MessageBatchReceiver<Target::TargetChain, Self::Error>,
     ) {
+        let chain = Target::target_chain(self);
         let runtime = Target::target_chain(self).runtime();
         let mut pending_batches: VecDeque<BatchSubmission<Target::TargetChain, Self::Error>> =
             VecDeque::new();
@@ -104,7 +103,7 @@ where
             match payload {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
-                        runtime.log(LevelDebug, "received message batch").await;
+                        chain.log_message(Logger::LEVEL_DEBUG, "received message batch");
                         pending_batches.push_back(batch);
                     }
 
@@ -124,9 +123,10 @@ where
                     }
                 }
                 Err(_) => {
-                    runtime
-                        .log(LevelDebug, "error in try_receive, terminating worker")
-                        .await;
+                    chain.log_message(
+                        Logger::LEVEL_DEBUG,
+                        "error in try_receive, terminating worker",
+                    );
 
                     return;
                 }
@@ -152,13 +152,14 @@ where
 }
 
 #[async_trait]
-impl<Relay, Target, Runtime> CanProcessMessageBatches<Target> for Relay
+impl<Relay, Target, Runtime, Logger> CanProcessMessageBatches<Target> for Relay
 where
     Relay: CanSendReadyBatches<Target>,
     Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime<Runtime = Runtime>,
+    Target::TargetChain: HasRuntime<Runtime = Runtime> + HasLogger<Logger = Logger>,
+    Logger: HasBaseLogLevels,
     Target::TargetChain: CanPartitionMessageBatches<Relay::Error>,
-    Runtime: HasTime + HasLogger<LevelDebug> + HasChannelTypes + HasChannelOnceTypes,
+    Runtime: HasTime + HasChannelTypes + HasChannelOnceTypes,
 {
     async fn process_message_batches(
         &self,
@@ -167,7 +168,7 @@ where
         now: Runtime::Time,
         last_sent_time: &mut Runtime::Time,
     ) {
-        let runtime = Target::target_chain(self).runtime();
+        let chain = Target::target_chain(self);
         let ready_batches = Target::TargetChain::partition_message_batches(config, pending_batches);
 
         if ready_batches.is_empty() {
@@ -177,13 +178,11 @@ where
         {
             // If the current batch is not full and there is still some time until max delay,
             // return everything and wait until the next batch is full
-            runtime
-                .log(LevelDebug, "waiting for more batch to arrive")
-                .await;
+            chain.log_message(Logger::LEVEL_DEBUG, "waiting for more batch to arrive");
 
             *pending_batches = ready_batches;
         } else {
-            runtime.log(LevelDebug, "sending reading batches").await;
+            chain.log_message(Logger::LEVEL_DEBUG, "sending reading batches");
             self.send_ready_batches(ready_batches).await;
             *last_sent_time = now;
         }
@@ -270,19 +269,20 @@ where
 }
 
 #[async_trait]
-impl<Relay, Target, Runtime> CanSendReadyBatches<Target> for Relay
+impl<Relay, Target, Runtime, Logger> CanSendReadyBatches<Target> for Relay
 where
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime<Runtime = Runtime>,
-    Runtime: CanUseChannelsOnce + CanUseChannels + HasLogger<LevelDebug>,
+    Target::TargetChain: HasRuntime<Runtime = Runtime> + HasLogger<Logger = Logger>,
+    Logger: HasBaseLogLevels,
+    Runtime: CanUseChannelsOnce + CanUseChannels,
     Relay::Error: Clone,
 {
     async fn send_ready_batches(
         &self,
         ready_batches: VecDeque<BatchSubmission<Target::TargetChain, Self::Error>>,
     ) {
-        let runtime = Target::target_chain(self).runtime();
+        let chain = Target::target_chain(self);
 
         let (messages, senders): (Vec<_>, Vec<_>) = ready_batches
             .into_iter()
@@ -294,9 +294,10 @@ where
 
         let in_messages = messages.into_iter().flatten().collect::<Vec<_>>();
 
-        runtime
-            .log(LevelDebug, "sending batched messages to inner sender")
-            .await;
+        chain.log_message(
+            Logger::LEVEL_DEBUG,
+            "sending batched messages to inner sender",
+        );
 
         let send_result = self.send_messages_from_batch_worker(in_messages).await;
 
