@@ -19,12 +19,14 @@ pub trait OfaFullRelayTypes:
     type FullSrcChain: OfaFullIbcChain<
         Self::DstChain,
         Preset = Self::Preset,
+        Logger = Self::Logger,
         OutgoingPacket = Self::Packet,
     >;
 
     type FullDstChain: OfaFullIbcChain<
         Self::SrcChain,
         Preset = Self::Preset,
+        Logger = Self::Logger,
         IncomingPacket = Self::Packet,
         OutgoingPacket = <Self::SrcChain as OfaIbcChain<Self::DstChain>>::IncomingPacket,
     >;

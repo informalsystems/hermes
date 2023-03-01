@@ -1,8 +1,11 @@
 use async_trait::async_trait;
 use futures_util::stream::StreamExt;
 use ibc_relayer_components::chain::traits::event_subscription::HasEventSubscription;
+use ibc_relayer_components::logger::traits::level::{HasBaseLogLevels, HasLoggerWithBaseLevels};
+use ibc_relayer_components::logger::traits::simple::SimpleLogger;
 use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayerWithTarget;
 use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
+use ibc_relayer_components::relay::traits::logs::event::CanLogTargetEvent;
 use ibc_relayer_components::relay::traits::target::ChainTarget;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
@@ -15,7 +18,7 @@ pub struct ParallelEventSubscriptionRelayer;
 impl<Relay, Target, Runtime> AutoRelayerWithTarget<Relay, Target>
     for ParallelEventSubscriptionRelayer
 where
-    Relay: CanRelayEvent<Target> + Clone,
+    Relay: Clone + CanRelayEvent<Target> + HasLoggerWithBaseLevels + CanLogTargetEvent<Target>,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime> + HasEventSubscription,
     Runtime: HasSpawner,
@@ -35,10 +38,18 @@ where
                         let handle = spawner.spawn(async move {
                             let (height, event) = item;
 
-                            // Ignore any relaying errors, as the relayer still needs to proceed
-                            // relaying the next event regardless.
-                            // TODO: log errors inside EventRelayer
-                            let _ = relay.relay_chain_event(&height, &event).await;
+                            let res = relay.relay_chain_event(&height, &event).await;
+
+                            if let Err(e) = res {
+                                relay.log(
+                                    Relay::Logger::LEVEL_ERROR,
+                                    "error relaying chain event",
+                                    |log| {
+                                        log.field("event", Relay::log_target_event(&event))
+                                            .debug("error", &e);
+                                    },
+                                )
+                            }
                         });
 
                         handle.into_future().await;
