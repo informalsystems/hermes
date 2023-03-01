@@ -1,4 +1,7 @@
 use core::fmt::{Debug, Display};
+use ibc_relayer_components::logger::traits::level::{
+    HasLogLevel, LevelDebug, LevelError, LevelInfo, LevelTrace, LevelWarn,
+};
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use tracing::{debug, error, event_enabled, info, trace, warn, Level};
 
@@ -80,4 +83,24 @@ impl BaseLogger for TracingLogger {
     {
         LogValue::Debug(value)
     }
+}
+
+impl HasLogLevel<LevelTrace> for TracingLogger {
+    const LEVEL: LogLevel = LogLevel::Trace;
+}
+
+impl HasLogLevel<LevelDebug> for TracingLogger {
+    const LEVEL: LogLevel = LogLevel::Debug;
+}
+
+impl HasLogLevel<LevelInfo> for TracingLogger {
+    const LEVEL: LogLevel = LogLevel::Info;
+}
+
+impl HasLogLevel<LevelWarn> for TracingLogger {
+    const LEVEL: LogLevel = LogLevel::Warn;
+}
+
+impl HasLogLevel<LevelError> for TracingLogger {
+    const LEVEL: LogLevel = LogLevel::Error;
 }
