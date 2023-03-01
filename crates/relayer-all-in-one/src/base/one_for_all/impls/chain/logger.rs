@@ -1,5 +1,5 @@
-use ibc_relayer_components::chain::traits::logs::event::CanLogEvent;
-use ibc_relayer_components::chain::traits::logs::packet::CanLogPacket;
+use ibc_relayer_components::chain::traits::logs::event::CanLogChainEvent;
+use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 
@@ -22,7 +22,7 @@ where
     }
 }
 
-impl<Chain> CanLogEvent for OfaChainWrapper<Chain>
+impl<Chain> CanLogChainEvent for OfaChainWrapper<Chain>
 where
     Chain: OfaBaseChain,
 {
@@ -31,7 +31,8 @@ where
     }
 }
 
-impl<Chain, Counterparty> CanLogPacket<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
+impl<Chain, Counterparty> CanLogChainPacket<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<

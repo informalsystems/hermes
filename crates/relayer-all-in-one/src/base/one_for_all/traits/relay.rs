@@ -35,11 +35,17 @@ pub trait OfaRelayTypes: Async {
 
     type Packet: Async;
 
-    type SrcChain: OfaIbcChain<Self::DstChain, Preset = Self::Preset, OutgoingPacket = Self::Packet>;
+    type SrcChain: OfaIbcChain<
+        Self::DstChain,
+        Preset = Self::Preset,
+        Logger = Self::Logger,
+        OutgoingPacket = Self::Packet,
+    >;
 
     type DstChain: OfaIbcChain<
         Self::SrcChain,
         Preset = Self::Preset,
+        Logger = Self::Logger,
         IncomingPacket = Self::Packet,
         OutgoingPacket = <Self::SrcChain as OfaIbcChain<Self::DstChain>>::IncomingPacket,
     >;

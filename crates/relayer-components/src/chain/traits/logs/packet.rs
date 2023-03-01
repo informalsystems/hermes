@@ -2,7 +2,7 @@ use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::logger::traits::has_logger::HasLoggerType;
 use crate::logger::traits::logger::BaseLogger;
 
-pub trait CanLogPacket<Counterparty>: HasLoggerType + HasIbcPacketTypes<Counterparty>
+pub trait CanLogChainPacket<Counterparty>: HasLoggerType + HasIbcPacketTypes<Counterparty>
 where
     Counterparty: HasIbcPacketTypes<
         Self,
