@@ -3,6 +3,7 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 
 use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -12,6 +13,8 @@ pub trait OfaTxTypes: Async {
     type Error: Async + Debug;
 
     type Runtime: OfaBaseRuntime;
+
+    type Logger: HasBaseLogLevels;
 
     /**
        Corresponds to
@@ -43,6 +46,8 @@ pub trait OfaTxContext: OfaTxTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
+
+    fn logger(&self) -> &Self::Logger;
 
     fn tx_no_response_error(tx_hash: &Self::TxHash) -> Self::Error;
 
