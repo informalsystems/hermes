@@ -21,7 +21,7 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc-proto         = { version = "0.24.1" }
+ibc-proto         = { version = "0.26.0" }
 ibc-telemetry     = { version = "0.22.0", path = "../telemetry", optional = true }
 ibc-relayer-types = { version = "0.22.0", path = "../relayer-types", features = ["mocks"] }
 
@@ -78,20 +78,20 @@ version = "0.4.1"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "0.28.0"
+version = "0.29.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "0.28.0"
+version = "0.29.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "0.28.0"
+version = "0.29.0"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.28.0"
+version = "0.29.0"
 default-features = false
 
 [dev-dependencies]
@@ -102,4 +102,4 @@ tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "jso
 test-log = { version = "0.2.10", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "0.28.0" }
+tendermint-testgen = { version = "0.29.0" }

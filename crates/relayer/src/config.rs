@@ -14,6 +14,7 @@ use core::{
     time::Duration,
 };
 use std::{fs, fs::File, io::Write, path::Path};
+use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
 use serde_derive::{Deserialize, Serialize};
@@ -425,9 +426,9 @@ pub struct ChainConfig {
     pub id: ChainId,
     #[serde(default = "default::chain_type")]
     pub r#type: ChainType,
-    pub rpc_addr: tendermint_rpc::Url,
-    pub websocket_addr: tendermint_rpc::Url,
-    pub grpc_addr: tendermint_rpc::Url,
+    pub rpc_addr: Url,
+    pub websocket_addr: WebSocketClientUrl,
+    pub grpc_addr: Url,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
     pub account_prefix: String,
