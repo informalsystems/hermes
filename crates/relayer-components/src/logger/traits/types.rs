@@ -1,7 +1,5 @@
 use core::fmt::{Debug, Display};
 
-use alloc::string::ToString;
-
 use crate::core::traits::sync::Async;
 
 pub trait HasLoggerType: Async {
@@ -76,6 +74,14 @@ where
     {
         self.display(key, format_args!("{:?}", value))
     }
+
+    pub fn value<'b, T>(&self, key: &str, value: &'b T) -> &Self
+    where
+        'b: 'a,
+        Context: CanLogValue<T>,
+    {
+        self.field(key, Context::log_value(value))
+    }
 }
 
 pub trait SimpleLogger: HasLoggerType {
@@ -85,6 +91,8 @@ pub trait SimpleLogger: HasLoggerType {
         message: &str,
         build_log: impl for<'r> FnOnce(LogWrapper<'a, 'r, Self>),
     );
+
+    fn log_message(&self, level: <Self::Logger as BaseLogger>::LogLevel, message: &str);
 }
 
 impl<Context, Logger> SimpleLogger for Context
@@ -102,6 +110,16 @@ where
             build_log(LogWrapper { log });
         });
     }
+
+    fn log_message(&self, level: <Self::Logger as BaseLogger>::LogLevel, message: &str) {
+        self.log(level, message, |_| {})
+    }
+}
+
+pub trait HasFoo {
+    type Foo;
+
+    fn foo(&self) -> &Self::Foo;
 }
 
 pub trait TestLogger {
@@ -110,14 +128,14 @@ pub trait TestLogger {
 
 impl<Context> TestLogger for Context
 where
-    Context: HasLogger,
+    Context: HasLogger + HasFoo + CanLogValue<Context::Foo>,
 {
     fn test(&self) {
-        let foo = "foo".to_string();
+        let foo = self.foo();
         let bar = 42;
 
         self.log(Default::default(), "testing", |log| {
-            log.display("foo", &foo).debug("bar", bar);
+            log.value("foo", foo).debug("bar", bar);
         });
     }
 }
