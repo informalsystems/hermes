@@ -22,7 +22,7 @@ where
     where
         'b: 'a,
     {
-        Context::Logger::log_field(&self.log, key, value);
+        Context::Logger::log_field(self.log, key, value);
 
         self
     }

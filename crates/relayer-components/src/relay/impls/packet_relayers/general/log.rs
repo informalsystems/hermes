@@ -19,7 +19,7 @@ where
 {
     async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error> {
         relay.log(
-            Relay::Logger::LEVEL_INFO,
+            Relay::Logger::LEVEL_DEBUG,
             "starting to relay packet",
             |log| {
                 log.field("packet", Relay::log_packet(packet));
@@ -39,7 +39,7 @@ where
             );
         } else {
             relay.log(
-                Relay::Logger::LEVEL_INFO,
+                Relay::Logger::LEVEL_DEBUG,
                 "successfully relayed packet",
                 |log| {
                     log.field("packet", Relay::log_packet(packet));

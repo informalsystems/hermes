@@ -27,35 +27,35 @@ impl BaseLogger for TracingLogger {
         match level {
             LogLevel::Trace => {
                 if event_enabled!(Level::TRACE) {
-                    let log = Log::new();
+                    let log = Log::default();
                     build_log(&log);
                     trace!(message = message, details = log.to_string())
                 }
             }
             LogLevel::Debug => {
                 if event_enabled!(Level::DEBUG) {
-                    let log = Log::new();
+                    let log = Log::default();
                     build_log(&log);
                     debug!(message = message, details = log.to_string())
                 }
             }
             LogLevel::Info => {
                 if event_enabled!(Level::INFO) {
-                    let log = Log::new();
+                    let log = Log::default();
                     build_log(&log);
                     info!(message = message, details = log.to_string())
                 }
             }
             LogLevel::Warn => {
                 if event_enabled!(Level::WARN) {
-                    let log = Log::new();
+                    let log = Log::default();
                     build_log(&log);
                     warn!(warning = message, details = log.to_string())
                 }
             }
             LogLevel::Error => {
                 if event_enabled!(Level::ERROR) {
-                    let log = Log::new();
+                    let log = Log::default();
                     build_log(&log);
                     error!(message = message, details = log.to_string())
                 }
@@ -70,14 +70,14 @@ impl BaseLogger for TracingLogger {
         log.fields.borrow_mut().push((key, value))
     }
 
-    fn display_value<'a, T>(value: &'a T) -> LogValue<'a>
+    fn display_value<T>(value: &T) -> LogValue<'_>
     where
         T: Display,
     {
         LogValue::Display(value)
     }
 
-    fn debug_value<'a, T>(value: &'a T) -> LogValue<'a>
+    fn debug_value<T>(value: &T) -> LogValue<'_>
     where
         T: Debug,
     {

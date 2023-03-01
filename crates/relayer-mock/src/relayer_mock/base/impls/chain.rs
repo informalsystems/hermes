@@ -86,8 +86,8 @@ impl OfaBaseChain for MockChainContext {
         &TracingLogger
     }
 
-    fn log_event<'a>(event: &'a Event) -> LogValue<'a> {
-        LogValue::Str(format!("{:?}", event))
+    fn log_event(event: &Event) -> LogValue<'_> {
+        LogValue::Str(format!("{event:?}",))
     }
 
     // Only single messages are sent by the Mock Chain
@@ -200,12 +200,12 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         &packet.timeout_timestamp
     }
 
-    fn log_incoming_packet<'a>(packet: &'a PacketKey) -> LogValue<'a> {
-        LogValue::Str(format!("{:?}", packet))
+    fn log_incoming_packet(packet: &PacketKey) -> LogValue<'_> {
+        LogValue::Str(format!("{packet:?}"))
     }
 
-    fn log_outgoing_packet<'a>(packet: &'a PacketKey) -> LogValue<'a> {
-        LogValue::Str(format!("{:?}", packet))
+    fn log_outgoing_packet(packet: &PacketKey) -> LogValue<'_> {
+        LogValue::Str(format!("{packet:?}"))
     }
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
