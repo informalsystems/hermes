@@ -7,6 +7,7 @@ use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::tx_msg::Msg;
@@ -27,6 +28,8 @@ where
     type Error = Error;
 
     type Runtime = TokioRuntimeContext;
+
+    type Logger = TracingLogger;
 
     type Packet = Packet;
 
@@ -93,6 +96,10 @@ where
 
     fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
         self.relay.runtime()
+    }
+
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
     }
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId {
