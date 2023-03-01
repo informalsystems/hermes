@@ -4,6 +4,7 @@
 
 use alloc::sync::Arc;
 use core::fmt::Debug;
+use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
@@ -30,6 +31,8 @@ pub trait OfaChainTypes: Async {
        [`HasRuntime::Runtime`](ibc_relayer_components::runtime::traits::runtime::HasRuntime::Runtime).
     */
     type Runtime: OfaBaseRuntime;
+
+    type Logger: HasBaseLogLevels;
 
     /**
        Corresponds to
@@ -117,6 +120,8 @@ pub trait OfaBaseChain: OfaChainTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
+
+    fn logger(&self) -> &Self::Logger;
 
     fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
 

@@ -19,6 +19,7 @@ use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
@@ -54,6 +55,8 @@ where
 
     type Runtime = TokioRuntimeContext;
 
+    type Logger = TracingLogger;
+
     type Height = Height;
 
     type Timestamp = Timestamp;
@@ -88,8 +91,16 @@ impl<Chain> OfaBaseChain for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChain,
 {
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+        self.chain.runtime()
+    }
+
     fn runtime_error(e: TokioError) -> Error {
         BaseError::tokio(e).into()
+    }
+
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
     }
 
     fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
@@ -121,10 +132,6 @@ where
         } else {
             None
         }
-    }
-
-    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
-        self.chain.runtime()
     }
 
     fn chain_id(&self) -> &Self::ChainId {

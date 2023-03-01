@@ -19,6 +19,7 @@ use ibc_relayer_all_in_one::base::one_for_all::traits::chain::{
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 
 use crate::relayer_mock::base::error::{BaseError, Error};
 use crate::relayer_mock::base::types::aliases::{
@@ -38,6 +39,8 @@ impl OfaChainTypes for MockChainContext {
     type Error = Error;
 
     type Runtime = MockRuntimeContext;
+
+    type Logger = TracingLogger;
 
     type Height = MockHeight;
 
@@ -76,6 +79,10 @@ impl OfaBaseChain for MockChainContext {
 
     fn runtime_error(e: TokioError) -> Self::Error {
         BaseError::tokio(e).into()
+    }
+
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
     }
 
     // Only single messages are sent by the Mock Chain
