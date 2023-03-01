@@ -87,7 +87,7 @@ impl Runnable for NewRelayPacketsCmd {
                 .await
                 .map_err(handle_generic_error)?;
 
-            birelay.auto_relay().await;
+            birelay.auto_relay().await.map_err(handle_generic_error)?;
 
             Ok(())
         });

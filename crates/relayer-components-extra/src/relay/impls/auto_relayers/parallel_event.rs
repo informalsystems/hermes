@@ -20,7 +20,7 @@ where
     Target::TargetChain: HasRuntime<Runtime = Runtime> + HasEventSubscription,
     Runtime: HasSpawner,
 {
-    async fn auto_relay_with_target(relay: &Relay) {
+    async fn auto_relay_with_target(relay: &Relay) -> Result<(), Relay::Error> {
         let chain = Target::target_chain(relay);
         let runtime = chain.runtime();
         let subscription = chain.event_subscription();
@@ -45,7 +45,7 @@ where
                     })
                     .await;
             } else {
-                return;
+                return Ok(());
             }
         }
     }

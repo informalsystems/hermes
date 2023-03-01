@@ -11,7 +11,7 @@ where
     BiRelay: OfaBiRelay<Preset = Preset>,
     Preset: OfaBiRelayPreset<BiRelay>,
 {
-    async fn auto_relay(&self) {
+    async fn auto_relay(&self) -> Result<(), BiRelay::Error> {
         Preset::TwoWayAutoRelayer::auto_relay(self).await
     }
 }

@@ -34,7 +34,7 @@ impl BinaryChannelTest for IbcTransferTest {
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
         runtime.spawn(async move {
-            relay_context.auto_relay().await;
+            let _ = relay_context.auto_relay().await;
         });
 
         let denom_a = chains.node_a.denom();
