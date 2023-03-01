@@ -1,5 +1,6 @@
 use ibc_relayer_components::relay::impls::packet_relayers::general::filter_relayer::FilterRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
+use ibc_relayer_components::relay::impls::packet_relayers::general::log::LoggerRelayer;
 use ibc_relayer_components_extra::batch::impls::message_sender::SendMessagesToBatchWorker;
 use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_bidirectional::ParallelBidirectionalRelayer;
 use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
@@ -20,7 +21,7 @@ pub type ConsensusStateQuerier = ConsensusStateTelemetryQuerier<SendConsensusSta
 
 pub type AutoRelayer = ParallelBidirectionalRelayer<ParallelEventSubscriptionRelayer>;
 
-pub type PacketRelayer = FilterRelayer<RetryRelayer<FullCycleRelayer>>;
+pub type PacketRelayer = LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>;
 
 pub type PacketFilter = FilterPacketFromOfa;
 

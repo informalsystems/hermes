@@ -4,25 +4,21 @@ use async_trait::async_trait;
 
 use crate::relay::traits::packet_filter::CanFilterPackets;
 use crate::relay::traits::packet_relayer::PacketRelayer;
-use crate::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 
-pub struct FilterRelayer<InRelay> {
-    pub phantom: PhantomData<InRelay>,
+pub struct FilterRelayer<InRelayer> {
+    pub phantom: PhantomData<InRelayer>,
 }
 
 #[async_trait]
-impl<Context, InRelayer> PacketRelayer<Context> for FilterRelayer<InRelayer>
+impl<Relay, InRelayer> PacketRelayer<Relay> for FilterRelayer<InRelayer>
 where
-    Context: CanFilterPackets,
-    InRelayer: PacketRelayer<Context>,
+    Relay: CanFilterPackets,
+    InRelayer: PacketRelayer<Relay>,
 {
-    async fn relay_packet(
-        context: &Context,
-        packet: &Packet<Context>,
-    ) -> Result<(), Context::Error> {
-        if context.should_relay_packet(packet).await? {
-            InRelayer::relay_packet(context, packet).await
+    async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error> {
+        if relay.should_relay_packet(packet).await? {
+            InRelayer::relay_packet(relay, packet).await
         } else {
             Ok(())
         }
