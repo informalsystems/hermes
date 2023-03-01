@@ -1,64 +1,12 @@
-use core::cell::RefCell;
-use core::fmt::{self, Debug, Display};
+use core::fmt::{Debug, Display};
+use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use tracing::{debug, error, event_enabled, info, trace, warn, Level};
 
-use ibc_relayer_components::logger::traits::types::BaseLogger;
+use crate::tokio::logger::level::LogLevel;
+use crate::tokio::logger::log::Log;
+use crate::tokio::logger::value::LogValue;
 
 pub struct TracingLogger;
-
-#[derive(Clone)]
-pub enum LogLevel {
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-}
-
-impl Default for LogLevel {
-    fn default() -> Self {
-        Self::Info
-    }
-}
-
-pub struct Log<'a> {
-    pub fields: RefCell<Vec<(&'a str, LogValue<'a>)>>,
-}
-
-impl<'a> Log<'a> {
-    pub fn new() -> Self {
-        Self {
-            fields: RefCell::new(Vec::new()),
-        }
-    }
-}
-
-pub enum LogValue<'a> {
-    Display(&'a dyn Display),
-    Debug(&'a dyn Debug),
-}
-
-pub struct LogField<'a> {
-    pub key: &'a str,
-    pub value: LogValue<'a>,
-}
-
-impl<'a> Display for Log<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_map()
-            .entries(self.fields.borrow().iter().map(|&(ref k, ref v)| (*k, v)))
-            .finish()
-    }
-}
-
-impl<'a> Debug for LogValue<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Display(value) => Display::fmt(*value, f),
-            Self::Debug(value) => Debug::fmt(*value, f),
-        }
-    }
-}
 
 impl BaseLogger for TracingLogger {
     type Log<'a, 'r> = Log<'a>;
