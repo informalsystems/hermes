@@ -1,4 +1,4 @@
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 
 use alloc::string::ToString;
 
@@ -12,40 +12,53 @@ pub trait HasLogger: HasLoggerType {
     fn logger(&self) -> &Self::Logger;
 }
 
+pub trait CanLogValue<T>: HasLoggerType {
+    fn log_value<'a>(value: &'a T) -> <Self::Logger as BaseLogger>::LogValue<'a>;
+}
+
 pub trait BaseLogger: Async {
-    type Log<'r>: Async;
+    type Log<'a, 'r>: Async;
 
     type LogLevel: Default + Async;
 
     type LogValue<'a>: Async;
 
-    fn new_log(
-        &self,
+    fn new_log<'a>(
+        &'a self,
         level: Self::LogLevel,
         message: &str,
-        build_log: impl for<'r> FnOnce(Self::Log<'r>),
+        build_log: impl for<'r> FnOnce(Self::Log<'a, 'r>),
     );
 
-    fn log_field<'a, 'r>(log: &Self::Log<'r>, key: &str, value: Self::LogValue<'a>);
+    fn log_field<'a, 'b, 'r>(log: &Self::Log<'a, 'r>, key: &str, value: Self::LogValue<'b>)
+    where
+        'b: 'a;
 
     fn display_value<'a, T>(value: T) -> Self::LogValue<'a>
     where
-        T: Display + ?Sized + 'a;
+        T: Display + ?Sized;
 }
 
-pub struct LogWrapper<'r, Logger>
+pub struct LogWrapper<'a, 'r, Context>
 where
-    Logger: BaseLogger,
+    Context: HasLoggerType,
 {
-    pub log: Logger::Log<'r>,
+    pub log: <Context::Logger as BaseLogger>::Log<'a, 'r>,
 }
 
-impl<'r, Logger> LogWrapper<'r, Logger>
+impl<'a, 'r, Context> LogWrapper<'a, 'r, Context>
 where
-    Logger: BaseLogger,
+    Context: HasLoggerType,
 {
-    pub fn field<'a>(&self, key: &str, value: Logger::LogValue<'a>) -> &Self {
-        Logger::log_field(&self.log, key, value);
+    pub fn field<'b>(
+        &self,
+        key: &str,
+        value: <Context::Logger as BaseLogger>::LogValue<'b>,
+    ) -> &Self
+    where
+        'b: 'a,
+    {
+        Context::Logger::log_field(&self.log, key, value);
 
         self
     }
@@ -54,34 +67,38 @@ where
     where
         T: Display,
     {
-        Logger::log_field(&self.log, key, Logger::display_value(value));
-
-        self
+        self.field(key, Context::Logger::display_value(value))
     }
 
-    pub fn done(&self) {}
+    pub fn debug<T>(&self, key: &str, value: T) -> &Self
+    where
+        T: Debug,
+    {
+        self.display(key, format_args!("{:?}", value))
+    }
 }
 
-pub trait SimpleLogger: BaseLogger {
-    fn log(
-        &self,
-        level: Self::LogLevel,
+pub trait SimpleLogger: HasLoggerType {
+    fn log<'a>(
+        &'a self,
+        level: <Self::Logger as BaseLogger>::LogLevel,
         message: &str,
-        build_log: impl for<'r> FnOnce(LogWrapper<'r, Self>),
+        build_log: impl for<'r> FnOnce(LogWrapper<'a, 'r, Self>),
     );
 }
 
-impl<Logger> SimpleLogger for Logger
+impl<Context, Logger> SimpleLogger for Context
 where
+    Context: HasLogger<Logger = Logger>,
     Logger: BaseLogger,
 {
-    fn log(
-        &self,
-        level: Self::LogLevel,
+    fn log<'a>(
+        &'a self,
+        level: Logger::LogLevel,
         message: &str,
-        build_log: impl for<'r> FnOnce(LogWrapper<'r, Self>),
+        build_log: impl for<'r> FnOnce(LogWrapper<'a, 'r, Self>),
     ) {
-        Logger::new_log(&self, level, message, |log| {
+        self.logger().new_log(level, message, |log| {
             build_log(LogWrapper { log });
         });
     }
@@ -91,21 +108,16 @@ pub trait TestLogger {
     fn test(&self);
 }
 
-impl<Context, Logger> TestLogger for Context
+impl<Context> TestLogger for Context
 where
-    Context: HasLogger<Logger = Logger>,
-    Logger: BaseLogger,
+    Context: HasLogger,
 {
     fn test(&self) {
-        let logger = self.logger();
-
         let foo = "foo".to_string();
         let bar = 42;
 
-        logger.log(Default::default(), "testing", |log| {
-            log.display("foo", &foo)
-                .display("bar", format_args!("{:?}", bar))
-                .done()
+        self.log(Default::default(), "testing", |log| {
+            log.display("foo", &foo).debug("bar", bar);
         });
     }
 }
