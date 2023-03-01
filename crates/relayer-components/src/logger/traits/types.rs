@@ -19,9 +19,7 @@ pub trait BaseLogger: Async {
 
     type LogValue<'a>;
 
-    type LogLevel: Clone + Async;
-
-    fn default_level() -> Self::LogLevel;
+    type LogLevel: Default + Clone + Async;
 
     fn new_log<'a>(
         &'a self,
@@ -142,7 +140,7 @@ where
         let foo = self.foo();
         let bar = 42;
 
-        self.log(Context::Logger::default_level(), "testing", |log| {
+        self.log(Default::default(), "testing", |log| {
             log.value("foo", foo).debug("bar", &bar);
         });
     }

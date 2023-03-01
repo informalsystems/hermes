@@ -38,9 +38,16 @@ pub enum LogValue<'a> {
     Debug(&'a dyn Debug),
 }
 
+pub struct LogField<'a> {
+    pub key: &'a str,
+    pub value: LogValue<'a>,
+}
+
 impl<'a> Display for Log<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_list().entries(self.fields.borrow().iter()).finish()
+        f.debug_map()
+            .entries(self.fields.borrow().iter().map(|&(ref k, ref v)| (*k, v)))
+            .finish()
     }
 }
 
@@ -59,10 +66,6 @@ impl BaseLogger for TracingLogger {
     type LogValue<'a> = LogValue<'a>;
 
     type LogLevel = LogLevel;
-
-    fn default_level() -> LogLevel {
-        Default::default()
-    }
 
     fn new_log<'a>(
         &'a self,
