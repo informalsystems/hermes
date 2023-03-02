@@ -3,6 +3,7 @@ use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
+use std::thread::sleep;
 
 use crate::tests::next::context::build_cosmos_relay_context;
 
@@ -41,6 +42,7 @@ impl BinaryChannelTest for IbcTransferTest {
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
+        let wallet_c = chains.node_a.wallets().user2().cloned();
 
         let balance_a = chains
             .node_a
@@ -92,6 +94,47 @@ impl BinaryChannelTest for IbcTransferTest {
             chains.chain_id_a(),
             chains.chain_id_b(),
         );
+
+        let balance_c = chains
+            .node_a
+            .chain_driver()
+            .query_balance(&wallet_c.address(), &denom_a)?;
+
+        let b_to_a_amount = random_u64_range(500, a_to_b_amount);
+
+        info!(
+            "Sending IBC transfer from chain {} to chain {} with amount of {}",
+            chains.chain_id_b(),
+            chains.chain_id_a(),
+            b_to_a_amount,
+        );
+
+        chains.node_b.chain_driver().ibc_transfer_token(
+            &channel.port_b.as_ref(),
+            &channel.channel_id_b.as_ref(),
+            &wallet_b.as_ref(),
+            &wallet_c.address(),
+            &denom_b.with_amount(b_to_a_amount).as_ref(),
+            None,
+        )?;
+
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            &denom_b.with_amount(a_to_b_amount - b_to_a_amount).as_ref(),
+        )?;
+
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_c.address(),
+            &(balance_c + b_to_a_amount).as_ref(),
+        )?;
+
+        info!(
+            "successfully performed reverse IBC transfer from chain {} back to chain {}",
+            chains.chain_id_b(),
+            chains.chain_id_a(),
+        );
+
+        sleep(Duration::from_secs(30));
 
         Ok(())
     }
