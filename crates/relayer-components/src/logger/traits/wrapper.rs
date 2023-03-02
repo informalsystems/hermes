@@ -1,28 +1,23 @@
 use core::fmt::{Debug, Display};
 
-use crate::logger::traits::has_logger::HasLoggerType;
 use crate::logger::traits::logger::BaseLogger;
 
-pub struct LogWrapper<'a, 'r, Context>
+pub struct LogWrapper<'a, 'r, Logger>
 where
-    Context: HasLoggerType,
+    Logger: BaseLogger,
 {
-    pub log: &'r <Context::Logger as BaseLogger>::Log<'a, 'r>,
+    pub log: &'r Logger::Log<'a, 'r>,
 }
 
-impl<'a, 'r, Context> LogWrapper<'a, 'r, Context>
+impl<'a, 'r, Logger> LogWrapper<'a, 'r, Logger>
 where
-    Context: HasLoggerType,
+    Logger: BaseLogger,
 {
-    pub fn field<'b>(
-        &self,
-        key: &'b str,
-        value: <Context::Logger as BaseLogger>::LogValue<'b>,
-    ) -> &Self
+    pub fn field<'b>(&self, key: &'b str, value: Logger::LogValue<'b>) -> &Self
     where
         'b: 'a,
     {
-        Context::Logger::log_field(self.log, key, value);
+        Logger::log_field(self.log, key, value);
 
         self
     }
@@ -32,7 +27,7 @@ where
         'b: 'a,
         T: Display,
     {
-        self.field(key, Context::Logger::display_value(value))
+        self.field(key, Logger::display_value(value))
     }
 
     pub fn debug<'b, T>(&self, key: &'b str, value: &'b T) -> &Self
@@ -40,6 +35,6 @@ where
         'b: 'a,
         T: Debug,
     {
-        self.field(key, Context::Logger::debug_value(value))
+        self.field(key, Logger::debug_value(value))
     }
 }

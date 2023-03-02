@@ -2,8 +2,8 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::logger::traits::level::{HasBaseLogLevels, HasLoggerWithBaseLevels};
-use crate::logger::traits::simple::SimpleLogger;
+use crate::logger::traits::level::HasBaseLogLevels;
+use crate::logger::traits::log::CanLog;
 use crate::relay::traits::logs::packet::CanLogRelayPacket;
 use crate::relay::traits::packet_relayer::PacketRelayer;
 use crate::relay::traits::types::HasRelayTypes;
@@ -14,17 +14,13 @@ pub struct LoggerRelayer<InRelayer>(pub PhantomData<InRelayer>);
 #[async_trait]
 impl<Relay, InRelayer> PacketRelayer<Relay> for LoggerRelayer<InRelayer>
 where
-    Relay: HasRelayTypes + HasLoggerWithBaseLevels + CanLogRelayPacket,
+    Relay: HasRelayTypes + CanLog + CanLogRelayPacket,
     InRelayer: PacketRelayer<Relay>,
 {
     async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error> {
-        relay.log(
-            Relay::Logger::LEVEL_DEBUG,
-            "starting to relay packet",
-            |log| {
-                log.field("packet", Relay::log_packet(packet));
-            },
-        );
+        relay.log(Default::default(), "starting to relay packet", |log| {
+            log.field("packet", Relay::log_packet(packet));
+        });
 
         let res = InRelayer::relay_packet(relay, packet).await;
 
@@ -38,13 +34,9 @@ where
                 },
             );
         } else {
-            relay.log(
-                Relay::Logger::LEVEL_DEBUG,
-                "successfully relayed packet",
-                |log| {
-                    log.field("packet", Relay::log_packet(packet));
-                },
-            );
+            relay.log(Default::default(), "successfully relayed packet", |log| {
+                log.field("packet", Relay::log_packet(packet));
+            });
         }
 
         res

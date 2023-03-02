@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use futures_util::stream::StreamExt;
 use ibc_relayer_components::chain::traits::event_subscription::HasEventSubscription;
-use ibc_relayer_components::logger::traits::level::{HasBaseLogLevels, HasLoggerWithBaseLevels};
-use ibc_relayer_components::logger::traits::simple::SimpleLogger;
+use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
+use ibc_relayer_components::logger::traits::log::CanLog;
 use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayerWithTarget;
 use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
 use ibc_relayer_components::relay::traits::logs::event::CanLogTargetEvent;
@@ -18,7 +18,7 @@ pub struct ParallelEventSubscriptionRelayer;
 impl<Relay, Target, Runtime> AutoRelayerWithTarget<Relay, Target>
     for ParallelEventSubscriptionRelayer
 where
-    Relay: Clone + CanRelayEvent<Target> + HasLoggerWithBaseLevels + CanLogTargetEvent<Target>,
+    Relay: Clone + CanRelayEvent<Target> + CanLog + CanLogTargetEvent<Target>,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime> + HasEventSubscription,
     Runtime: HasSpawner,

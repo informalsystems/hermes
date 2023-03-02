@@ -1,8 +1,6 @@
 use alloc::collections::VecDeque;
 use core::mem;
-use ibc_relayer_components::logger::traits::has_logger::HasLogger;
-use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
-use ibc_relayer_components::logger::traits::simple::SimpleLogger;
+use ibc_relayer_components::logger::traits::log::CanLog;
 
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::types::chain::HasChainTypes;
@@ -77,12 +75,11 @@ where
 }
 
 #[async_trait]
-impl<Relay, Target, Runtime, Logger> CanRunLoop<Target> for Relay
+impl<Relay, Target, Runtime> CanRunLoop<Target> for Relay
 where
     Relay: CanProcessMessageBatches<Target>,
     Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime<Runtime = Runtime> + HasLogger<Logger = Logger>,
-    Logger: HasBaseLogLevels,
+    Target::TargetChain: CanLog + HasRuntime<Runtime = Runtime>,
     Runtime: HasTime + HasMutex + CanSleep + CanUseChannels + HasChannelOnceTypes,
 {
     async fn run_loop(
@@ -103,7 +100,7 @@ where
             match payload {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
-                        chain.log_message(Logger::LEVEL_DEBUG, "received message batch");
+                        chain.log_message(Default::default(), "received message batch");
                         pending_batches.push_back(batch);
                     }
 
@@ -124,7 +121,7 @@ where
                 }
                 Err(_) => {
                     chain.log_message(
-                        Logger::LEVEL_DEBUG,
+                        Default::default(),
                         "error in try_receive, terminating worker",
                     );
 
@@ -152,12 +149,11 @@ where
 }
 
 #[async_trait]
-impl<Relay, Target, Runtime, Logger> CanProcessMessageBatches<Target> for Relay
+impl<Relay, Target, Runtime> CanProcessMessageBatches<Target> for Relay
 where
     Relay: CanSendReadyBatches<Target>,
     Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime<Runtime = Runtime> + HasLogger<Logger = Logger>,
-    Logger: HasBaseLogLevels,
+    Target::TargetChain: CanLog + HasRuntime<Runtime = Runtime>,
     Target::TargetChain: CanPartitionMessageBatches<Relay::Error>,
     Runtime: HasTime + HasChannelTypes + HasChannelOnceTypes,
 {
@@ -178,11 +174,11 @@ where
         {
             // If the current batch is not full and there is still some time until max delay,
             // return everything and wait until the next batch is full
-            chain.log_message(Logger::LEVEL_DEBUG, "waiting for more batch to arrive");
+            chain.log_message(Default::default(), "waiting for more batch to arrive");
 
             *pending_batches = ready_batches;
         } else {
-            chain.log_message(Logger::LEVEL_DEBUG, "sending reading batches");
+            chain.log_message(Default::default(), "sending reading batches");
             self.send_ready_batches(ready_batches).await;
             *last_sent_time = now;
         }
@@ -269,12 +265,11 @@ where
 }
 
 #[async_trait]
-impl<Relay, Target, Runtime, Logger> CanSendReadyBatches<Target> for Relay
+impl<Relay, Target, Runtime> CanSendReadyBatches<Target> for Relay
 where
     Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime<Runtime = Runtime> + HasLogger<Logger = Logger>,
-    Logger: HasBaseLogLevels,
+    Target::TargetChain: CanLog + HasRuntime<Runtime = Runtime>,
     Runtime: CanUseChannelsOnce + CanUseChannels,
     Relay::Error: Clone,
 {
@@ -295,7 +290,7 @@ where
         let in_messages = messages.into_iter().flatten().collect::<Vec<_>>();
 
         chain.log_message(
-            Logger::LEVEL_DEBUG,
+            Default::default(),
             "sending batched messages to inner sender",
         );
 
