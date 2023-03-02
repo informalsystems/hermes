@@ -4,6 +4,8 @@ Hermes can be configured in order to only relay packets which are incentivized. 
 
 When this filter is configured, Hermes will not relay ignore `send_packet` events when they do not meet the configured requirements. This configuration can be set to be per channel or for a set of channels using regular expression.
 
+> __WARNING__: This configuration is experimental. Packet clearing will be disabled for the channels which have a fee filter configured, and some `send_packet` events might not be relayed if the incentivized event is not in the same batch of events.
+
 ## Examples
 
 ___Channel, amount and denom specific___
