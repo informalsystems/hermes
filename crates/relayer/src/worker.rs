@@ -132,13 +132,38 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     let link = Arc::new(Mutex::new(link));
                     let resubmit = Resubmit::from_clear_interval(packets_config.clear_interval);
 
-                    let packet_task = packet::spawn_packet_cmd_worker(
-                        cmd_rx,
-                        link.clone(),
-                        should_clear_on_start,
-                        packets_config.clear_interval,
-                        path.clone(),
-                    );
+                    let src_chain_config =
+                        config.chains.iter().find(|chain| chain.id == chains.a.id());
+
+                    let fee_filter = match src_chain_config {
+                        Some(chain_config) => {
+                            let mut fee_filter = None;
+                            for (channel, filter) in chain_config.packet_filter.min_fees.iter() {
+                                if channel.matches(&path.src_channel_id) {
+                                    fee_filter = Some(filter.clone())
+                                }
+                            }
+                            fee_filter
+                        }
+                        None => None,
+                    };
+
+                    // Only spawn the incentivized worker if a fee filter is specified in the configuration
+                    let packet_task = match fee_filter {
+                        Some(filter) => packet::spawn_incentivized_packet_cmd_worker(
+                            cmd_rx,
+                            link.clone(),
+                            path.clone(),
+                            filter,
+                        ),
+                        None => packet::spawn_packet_cmd_worker(
+                            cmd_rx,
+                            link.clone(),
+                            should_clear_on_start,
+                            packets_config.clear_interval,
+                            path.clone(),
+                        ),
+                    };
                     task_handles.push(packet_task);
 
                     let link_task = packet::spawn_packet_worker(path.clone(), link, resubmit);

@@ -41,7 +41,6 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         }
     }
 
-    /// TODO introduce incentivized worker
     pub fn spawn_workers(&mut self, scan: ChainsScan) {
         let _span = tracing::error_span!("spawn").entered();
 

@@ -47,13 +47,9 @@ list = [
 
 [chains.packet_filter.min_fees.'*']
 recv    = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
-ack     = [ { amount = 10, denom = 'stake' } ]
-timeout = [ { amount = 1 } ]
 
 [chains.packet_filter.min_fees.'ica*']
 recv    = [ { amount = 0 }]
-ack     = [ { amount = 0 } ]
-timeout = [ { amount = 0 } ]
 
 [[chains]]
 id = 'chain_B'

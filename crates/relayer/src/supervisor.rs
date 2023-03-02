@@ -534,6 +534,14 @@ pub fn collect_events(
                     || Object::for_cross_chain_query_packet(packet, src_chain).ok(),
                 );
             }
+            IbcEvent::IncentivizedPacket(ref packet) => {
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.packets.enabled,
+                    || Object::for_incentivized_packet(packet, src_chain).ok(),
+                );
+            }
             _ => (),
         }
     }

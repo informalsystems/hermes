@@ -2,18 +2,22 @@
 
 use core::fmt;
 use core::str::FromStr;
-use std::collections::HashMap;
-
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use itertools::Itertools;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use std::collections::HashMap;
+use std::hash::Hash;
+
+use ibc_relayer_types::applications::transfer::Coin;
+use ibc_relayer_types::bigint::U256;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer_types::events::IbcEventType;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PacketFilter {
     #[serde(flatten)]
     pub channel_policy: ChannelPolicy,
     #[serde(default)]
-    pub min_fees: HashMap<String, FeesFilters>,
+    pub min_fees: HashMap<ChannelFilterMatch, FeesFilters>,
 }
 
 impl Default for PacketFilter {
@@ -27,7 +31,10 @@ impl Default for PacketFilter {
 }
 
 impl PacketFilter {
-    pub fn new(channel_policy: ChannelPolicy, min_fees: HashMap<String, FeesFilters>) -> Self {
+    pub fn new(
+        channel_policy: ChannelPolicy,
+        min_fees: HashMap<ChannelFilterMatch, FeesFilters>,
+    ) -> Self {
         Self {
             channel_policy,
             min_fees,
@@ -52,17 +59,53 @@ pub enum ChannelPolicy {
     AllowAll,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+// Currently only filtering on `recv_fee` is authorized
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct FeesFilters {
     recv: Vec<FeeInformation>,
-    ack: Vec<FeeInformation>,
-    timeout: Vec<FeeInformation>,
+}
+
+impl FeesFilters {
+    pub fn new(recv: Vec<FeeInformation>) -> Self {
+        Self { recv }
+    }
+
+    pub fn should_relay(&self, event_type: IbcEventType, amounts: Vec<Coin<String>>) -> bool {
+        match event_type {
+            IbcEventType::SendPacket => {
+                for coin in amounts {
+                    if self
+                        .recv
+                        .iter()
+                        .any(|e| e.check_valid_fee(coin.amount.0, coin.denom.clone()))
+                    {
+                        return true;
+                    }
+                }
+                false
+            }
+            _ => true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FeeInformation {
     amount: u64,
     denom: Option<String>,
+}
+
+impl FeeInformation {
+    pub fn new(amount: u64, denom: Option<String>) -> Self {
+        Self { amount, denom }
+    }
+
+    pub fn check_valid_fee(&self, other_amount: U256, other_denom: String) -> bool {
+        match self.denom.clone() {
+            Some(denom) => U256::from(self.amount) <= other_amount && denom.eq(&other_denom),
+            None => U256::from(self.amount) <= other_amount,
+        }
+    }
 }
 
 impl Default for ChannelPolicy {
@@ -235,8 +278,16 @@ impl PartialEq for Wildcard {
     }
 }
 
+impl Eq for Wildcard {}
+
+impl Hash for Wildcard {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.pattern.hash(state);
+    }
+}
+
 /// Represents a single channel to be filtered in a [`ChannelFilters`] list.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum FilterPattern<T> {
     /// A channel specified exactly with its [`PortId`] & [`ChannelId`].
     Exact(T),

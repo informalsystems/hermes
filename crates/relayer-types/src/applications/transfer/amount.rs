@@ -1,3 +1,4 @@
+use core::iter::Sum;
 use core::str::FromStr;
 use derive_more::{Display, From, Into};
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,12 @@ impl Amount {
 
     pub fn checked_sub(self, rhs: impl Into<Amount>) -> Option<Self> {
         self.0.checked_sub(rhs.into().0).map(Self)
+    }
+}
+
+impl Sum for Amount {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self(U256::from(0)), |a, b| a.checked_add(b).unwrap())
     }
 }
 

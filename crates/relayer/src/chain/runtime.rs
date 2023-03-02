@@ -5,6 +5,9 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, Span};
 
+use ibc_proto::ibc::apps::fee::v1::{
+    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+};
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
@@ -337,11 +340,15 @@ where
 
                         ChainRequest::MaybeRegisterCounterpartyPayee { channel_id, port_id, counterparty_payee, reply_to } => {
                             self.maybe_register_counterparty_payee(&channel_id, &port_id, &counterparty_payee, reply_to)?
-                        }
+                        },
 
                         ChainRequest::CrossChainQuery { request, reply_to } => {
                             self.cross_chain_query(request, reply_to)?
-                        }
+                        },
+
+                        ChainRequest::QueryIncentivizedPacket { request, reply_to } => {
+                            self.query_incentivized_packet(request, reply_to)?
+                        },
                     }
                 },
             }
@@ -828,6 +835,17 @@ where
         reply_to: ReplyTo<Vec<CrossChainQueryResponse>>,
     ) -> Result<(), Error> {
         let result = self.chain.cross_chain_query(request);
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_incentivized_packet(
+        &self,
+        request: QueryIncentivizedPacketRequest,
+        reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_incentivized_packet(request);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())
