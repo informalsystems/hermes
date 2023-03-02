@@ -37,4 +37,17 @@ where
     {
         self.field(key, Logger::debug_value(value))
     }
+
+    pub fn nested<'b>(
+        &self,
+        key: &'b str,
+        build_log: impl for<'s> FnOnce(LogWrapper<'b, 's, Logger>),
+    ) where
+        'b: 'a,
+    {
+        let value = Logger::map_values(|log| {
+            build_log(LogWrapper { log });
+        });
+        Logger::log_field(self.log, key, value);
+    }
 }

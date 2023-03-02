@@ -1,7 +1,7 @@
 use crate::logger::traits::has_logger::HasLogger;
 use crate::logger::traits::level::{HasBaseLogLevels, HasLoggerWithBaseLevels};
 use crate::logger::traits::logger::BaseLogger;
-use crate::logger::traits::wrapper::LogWrapper;
+use crate::logger::types::wrapper::LogWrapper;
 
 pub trait CanLog: HasLoggerWithBaseLevels {
     fn log<'a>(

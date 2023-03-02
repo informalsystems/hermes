@@ -16,7 +16,7 @@ pub trait BaseLogger: Async {
         build_log: impl for<'r> FnOnce(&'r Self::Log<'a, 'r>),
     );
 
-    fn log_field<'a, 'b, 'r>(log: &Self::Log<'a, 'r>, key: &'b str, value: Self::LogValue<'b>)
+    fn log_field<'a, 'b, 'c, 'r>(log: &Self::Log<'a, 'r>, key: &'b str, value: Self::LogValue<'b>)
     where
         'b: 'a;
 
@@ -27,4 +27,8 @@ pub trait BaseLogger: Async {
     fn debug_value<'a, T>(value: &'a T) -> Self::LogValue<'a>
     where
         T: Debug;
+
+    fn list_values<'a>(values: &'a [Self::LogValue<'a>]) -> Self::LogValue<'a>;
+
+    fn map_values<'a>(build_log: impl for<'s> FnOnce(&'s Self::Log<'a, 's>)) -> Self::LogValue<'a>;
 }

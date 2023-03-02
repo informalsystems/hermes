@@ -9,6 +9,6 @@ pub enum LogLevel {
 
 impl Default for LogLevel {
     fn default() -> Self {
-        Self::Debug
+        Self::Info
     }
 }

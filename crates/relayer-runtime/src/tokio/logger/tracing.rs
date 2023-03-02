@@ -83,6 +83,17 @@ impl BaseLogger for TracingLogger {
     {
         LogValue::Debug(value)
     }
+
+    fn list_values<'a>(values: &'a [Self::LogValue<'a>]) -> Self::LogValue<'a> {
+        LogValue::List(values)
+    }
+
+    fn map_values<'a>(build_log: impl for<'s> FnOnce(&'s Self::Log<'a, 's>)) -> LogValue<'a> {
+        let in_log = Log::default();
+        build_log(&in_log);
+        let values = in_log.fields.into_inner();
+        LogValue::Nested(values)
+    }
 }
 
 impl HasLogLevel<LevelTrace> for TracingLogger {
