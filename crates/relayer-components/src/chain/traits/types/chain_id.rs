@@ -2,6 +2,8 @@
    Trait definitions for [`HasChainIdType`] and [`HasChainId`].
 */
 
+use core::fmt::Display;
+
 use crate::core::traits::sync::Async;
 
 /**
@@ -17,7 +19,7 @@ pub trait HasChainIdType: Async {
        The ID of a chain, which should implement [`Eq`] to differentiate chain
        ID of two chains with the same type.
     */
-    type ChainId: Eq + Async;
+    type ChainId: Eq + Display + Async;
 }
 
 /**

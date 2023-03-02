@@ -3,7 +3,7 @@
 //! trait.
 
 use alloc::sync::Arc;
-use core::fmt::Debug;
+use core::fmt::{Debug, Display};
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 
@@ -39,13 +39,13 @@ pub trait OfaChainTypes: Async {
        Corresponds to
        [`HasChainTypes::Height`](ibc_relayer_components::chain::traits::types::height::HasHeightType::Height).
     */
-    type Height: Ord + Async;
+    type Height: Ord + Display + Async;
 
     /**
        Corresponds to
        [`HasChainTypes::Timestamp`](ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType::Timestamp).
     */
-    type Timestamp: Ord + Async;
+    type Timestamp: Ord + Display + Async;
 
     /**
        Corresponds to
@@ -63,37 +63,37 @@ pub trait OfaChainTypes: Async {
        Corresponds to
        [`HasChainIdType::ChainId`](ibc_relayer_components::chain::traits::types::chain_id::HasChainIdType::ChainId).
     */
-    type ChainId: Eq + Ord + Clone + Async;
+    type ChainId: Eq + Ord + Display + Clone + Async;
 
     /**
        Corresponds to
        [`HasIbcChainTypes::ClientId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::ClientId).
     */
-    type ClientId: Ord + Clone + Async;
+    type ClientId: Ord + Display + Clone + Async;
 
     /**
        Corresponds to
        [`HasIbcChainTypes::ConnectionId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::ConnectionId).
     */
-    type ConnectionId: Async;
+    type ConnectionId: Display + Async;
 
     /**
        Corresponds to
        [`HasIbcChainTypes::ChannelId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::ChannelId).
     */
-    type ChannelId: Async;
+    type ChannelId: Display + Async;
 
     /**
        Corresponds to
        [`HasIbcChainTypes::PortId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::PortId).
     */
-    type PortId: Async;
+    type PortId: Display + Async;
 
     /**
        Corresponds to
        [`HasIbcChainTypes::Sequence`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::Sequence).
     */
-    type Sequence: Async;
+    type Sequence: Display + Async;
 
     /**
        Corresponds to

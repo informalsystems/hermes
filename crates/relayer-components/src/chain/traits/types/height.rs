@@ -2,6 +2,8 @@
    Trait definition for [`HasHeightType`].
 */
 
+use core::fmt::Display;
+
 use crate::core::traits::sync::Async;
 
 pub trait HasHeightType: Async {
@@ -19,5 +21,5 @@ pub trait HasHeightType: Async {
        `u8` or `u128` as the `Height` type during testing, and use the
        more complex Cosmos height type during production.
     */
-    type Height: Ord + Async;
+    type Height: Ord + Display + Async;
 }

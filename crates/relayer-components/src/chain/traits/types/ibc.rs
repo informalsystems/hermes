@@ -3,6 +3,8 @@
   [`HasCounterpartyMessageHeight`].
 */
 
+use core::fmt::Display;
+
 use crate::chain::traits::types::chain::HasChainTypes;
 use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::message::HasMessageType;
@@ -52,25 +54,25 @@ where
        The client ID of the counterparty chain, that is stored on the self
        chain.
     */
-    type ClientId: Async;
+    type ClientId: Display + Async;
 
     /**
        The connection ID of the counterparty chain, that is stored on the self
        chain.
     */
-    type ConnectionId: Async;
+    type ConnectionId: Display + Async;
 
     /**
        The channel ID of the counterparty chain, that is stored on the self
        chain.
     */
-    type ChannelId: Async;
+    type ChannelId: Display + Async;
 
     /**
        The port ID of the counterparty chain, that is stored on the self
        chain.
     */
-    type PortId: Async;
+    type PortId: Display + Async;
 
     /**
        The IBC packet sequence for the packet that is sent from the self chain
@@ -79,7 +81,7 @@ where
        Note that for sequences of packets that are sent from the counterparty
        chain to self, the `Counterparty::Sequence` will be used.
     */
-    type Sequence: Async;
+    type Sequence: Display + Async;
 }
 
 pub trait HasCounterpartyMessageHeight<Counterparty>: HasMessageType
