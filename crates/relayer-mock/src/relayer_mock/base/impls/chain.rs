@@ -87,7 +87,7 @@ impl OfaBaseChain for MockChainContext {
     }
 
     fn log_event(event: &Event) -> LogValue<'_> {
-        LogValue::Str(format!("{event:?}",))
+        LogValue::Debug(event)
     }
 
     // Only single messages are sent by the Mock Chain
@@ -201,11 +201,11 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
     }
 
     fn log_incoming_packet(packet: &PacketKey) -> LogValue<'_> {
-        LogValue::Str(format!("{packet:?}"))
+        LogValue::Display(packet)
     }
 
     fn log_outgoing_packet(packet: &PacketKey) -> LogValue<'_> {
-        LogValue::Str(format!("{packet:?}"))
+        LogValue::Display(packet)
     }
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {

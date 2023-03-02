@@ -3,7 +3,6 @@ use core::fmt::{self, Debug, Display};
 pub enum LogValue<'a> {
     Display(&'a dyn Display),
     Debug(&'a dyn Debug),
-    Str(String),
 }
 
 impl<'a> Debug for LogValue<'a> {
@@ -11,7 +10,6 @@ impl<'a> Debug for LogValue<'a> {
         match self {
             Self::Display(value) => Display::fmt(*value, f),
             Self::Debug(value) => Debug::fmt(*value, f),
-            Self::Str(value) => Display::fmt(value, f),
         }
     }
 }

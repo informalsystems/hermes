@@ -105,7 +105,7 @@ where
     }
 
     fn log_event(event: &Event) -> LogValue<'_> {
-        LogValue::Str(format!("{event:?}",))
+        LogValue::Debug(event)
     }
 
     fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
@@ -239,11 +239,11 @@ where
     }
 
     fn log_incoming_packet(packet: &Packet) -> LogValue<'_> {
-        LogValue::Str(format!("{packet:?}",))
+        LogValue::Display(packet)
     }
 
     fn log_outgoing_packet(packet: &Packet) -> LogValue<'_> {
-        LogValue::Str(format!("{packet:?}",))
+        LogValue::Display(packet)
     }
 
     fn counterparty_message_height(message: &CosmosIbcMessage) -> Option<Height> {
