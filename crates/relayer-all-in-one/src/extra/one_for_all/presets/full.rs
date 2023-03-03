@@ -27,6 +27,7 @@ pub type PacketRelayer = LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelay
 
 pub type PacketFilter = FilterPacketFromOfa;
 
+// pub type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
 pub type IbcMessageSender = SendMessagesToBatchWorker;
 
 pub type IbcMessageSenderForBatchWorker = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;

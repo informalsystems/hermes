@@ -126,6 +126,8 @@ pub trait OfaBaseChain: OfaChainTypes {
 
     fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a>;
 
+    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error>;
+
     fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
 
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;

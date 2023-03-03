@@ -108,6 +108,10 @@ where
         LogValue::Debug(event)
     }
 
+    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error> {
+        Ok(height.increment())
+    }
+
     fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
         let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(BaseError::encode)?;
 

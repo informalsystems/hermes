@@ -142,7 +142,7 @@ where
     DstChain: ChainHandle,
 {
     let messages = foreign_client
-        .build_update_client_with_trusted(height.increment(), None)
+        .build_update_client_with_trusted(*height, None)
         .map_err(BaseError::foreign_client)?;
 
     let ibc_messages = messages

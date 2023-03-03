@@ -54,7 +54,7 @@ where
 
 impl<Relay, Target> CanLogRelayTarget<Target> for Relay
 where
-    Relay: CanLog + HasRelayTypes,
+    Relay: CanLogRelay + HasRelayTypes,
     Target::TargetChain: HasChainId,
     Target::CounterpartyChain: HasChainId,
     Target: ChainTarget<Relay>,
@@ -65,7 +65,7 @@ where
         message: &str,
         build_log: impl for<'r> FnOnce(LogWrapper<'a, 'r, Self::Logger>),
     ) {
-        self.log(level, message, |log| {
+        self.log_relay(level, message, |log| {
             log.nested("relay_context", |log| {
                 log.display("target_chain_id", Target::target_chain(self).chain_id());
                 log.display(

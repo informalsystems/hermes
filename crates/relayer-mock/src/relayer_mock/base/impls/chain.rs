@@ -90,6 +90,10 @@ impl OfaBaseChain for MockChainContext {
         LogValue::Debug(event)
     }
 
+    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error> {
+        Ok(height.increment())
+    }
+
     // Only single messages are sent by the Mock Chain
     fn estimate_message_size(_message: &Self::Message) -> Result<usize, Self::Error> {
         Ok(1)
