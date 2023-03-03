@@ -7,7 +7,7 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use ibc_relayer_types::applications::transfer::Coin;
+use ibc_relayer_types::applications::transfer::{Coin, RawCoin};
 use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::events::IbcEventType;
@@ -69,11 +69,11 @@ pub enum ChannelPolicy {
 // Currently only filtering on `recv_fee` is authorized
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct FeePolicy {
-    recv: Vec<FeeInformation>,
+    recv: Vec<MinFee>,
 }
 
 impl FeePolicy {
-    pub fn new(recv: Vec<FeeInformation>) -> Self {
+    pub fn new(recv: Vec<MinFee>) -> Self {
         Self { recv }
     }
 
@@ -81,11 +81,7 @@ impl FeePolicy {
         match event_type {
             IbcEventType::SendPacket => {
                 for coin in amounts {
-                    if self
-                        .recv
-                        .iter()
-                        .any(|e| e.is_enough(coin.amount.0, coin.denom.clone()))
-                    {
+                    if self.recv.iter().any(|e| e.is_enough(&coin)) {
                         return true;
                     }
                 }
@@ -97,20 +93,20 @@ impl FeePolicy {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct FeeInformation {
+pub struct MinFee {
     amount: u64,
     denom: Option<String>,
 }
 
-impl FeeInformation {
+impl MinFee {
     pub fn new(amount: u64, denom: Option<String>) -> Self {
         Self { amount, denom }
     }
 
-    pub fn is_enough(&self, other_amount: U256, other_denom: String) -> bool {
+    pub fn is_enough(&self, fee: &RawCoin) -> bool {
         match self.denom.clone() {
-            Some(denom) => U256::from(self.amount) <= other_amount && denom.eq(&other_denom),
-            None => U256::from(self.amount) <= other_amount,
+            Some(denom) => U256::from(self.amount) <= fee.amount.into() && denom.eq(&fee.denom),
+            None => U256::from(self.amount) <= fee.amount.into(),
         }
     }
 }
