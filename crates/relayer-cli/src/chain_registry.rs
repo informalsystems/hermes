@@ -15,7 +15,7 @@ use http::Uri;
 
 use ibc_relayer::{
     config::{
-        filter::{ChannelFilters, FilterPattern, PacketFilter},
+        filter::{FilterPattern, PacketFilter},
         gas_multiplier::GasMultiplier,
         types::{MaxMsgNum, MaxTxSize, Memo},
         {default, AddressType, ChainConfig, GasPrice},
@@ -57,7 +57,7 @@ fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFi
 
     packet_filters
         .into_iter()
-        .map(|(k, v)| (k, PacketFilter::Allow(ChannelFilters::new(v))))
+        .map(|(k, v)| (k, PacketFilter::allow(v)))
         .collect()
 }
 
@@ -242,6 +242,7 @@ pub async fn get_configs(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ibc_relayer::config::filter::ChannelPolicy;
     use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
     use std::str::FromStr;
 
@@ -249,8 +250,8 @@ mod tests {
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
         let configs = get_configs(test_chains, None).await?;
         for config in configs {
-            match config.packet_filter {
-                PacketFilter::AllowAll => {}
+            match config.packet_filter.channel_policy {
+                ChannelPolicy::AllowAll => {}
                 _ => panic!("PacketFilter not allowed"),
             }
         }
@@ -270,8 +271,8 @@ mod tests {
         let configs = get_configs(test_chains, None).await?;
 
         for config in configs {
-            match config.packet_filter {
-                PacketFilter::Allow(channel_filter) => {
+            match config.packet_filter.channel_policy {
+                ChannelPolicy::Allow(channel_filter) => {
                     if config.id.as_str().contains("cosmoshub") {
                         assert!(channel_filter.is_exact());
 

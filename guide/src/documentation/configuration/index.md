@@ -11,3 +11,6 @@ This section includes everything you need to know to configure Hermes.
 
 * **[Description of the parameters](./description.md)**
     * Detailed description of every parameter of Hermes
+
+* **[Filter incentivized packets](./filter-incentivized.md)**
+    * Examples on how to configure Hermes in order to filter incentivized packets
