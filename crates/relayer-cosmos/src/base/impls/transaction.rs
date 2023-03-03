@@ -25,6 +25,7 @@ use tendermint::abci::Event;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tokio::sync::Mutex;
+use tracing::info;
 
 use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;
@@ -112,7 +113,7 @@ where
     }
 
     fn poll_backoff(&self) -> Duration {
-        Duration::from_secs(1)
+        Duration::from_millis(200)
     }
 
     async fn encode_tx(
@@ -143,6 +144,10 @@ where
         let response = broadcast_tx_sync(&tx_config.rpc_client, &tx_config.rpc_address, tx.clone())
             .await
             .map_err(BaseError::relayer)?;
+
+        if response.code.is_err() {
+            return Err(BaseError::check_tx(response).into());
+        }
 
         Ok(response.hash)
     }

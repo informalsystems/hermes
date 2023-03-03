@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
 
 use async_trait::async_trait;
-use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -18,7 +17,6 @@ use ibc_relayer_all_in_one::base::one_for_all::traits::chain::{
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
-use ibc_relayer_components::transaction::impls::nonces::naive::HasMutexForNonceAllocation;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
