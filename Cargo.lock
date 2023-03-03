@@ -4040,8 +4040,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.29.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#fe4c0abccb6ae021efb5d5ea26a7089b4f44a1c9"
+version = "0.29.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c017fe1c35486d8dfc9da3d2b5e37306a1385b5d"
 dependencies = [
  "bytes",
  "digest 0.10.6",
@@ -4070,8 +4070,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.29.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#fe4c0abccb6ae021efb5d5ea26a7089b4f44a1c9"
+version = "0.29.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c017fe1c35486d8dfc9da3d2b5e37306a1385b5d"
 dependencies = [
  "flex-error",
  "serde",
@@ -4083,8 +4083,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.29.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#fe4c0abccb6ae021efb5d5ea26a7089b4f44a1c9"
+version = "0.29.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c017fe1c35486d8dfc9da3d2b5e37306a1385b5d"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -4104,8 +4104,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-verifier"
-version = "0.29.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#fe4c0abccb6ae021efb5d5ea26a7089b4f44a1c9"
+version = "0.29.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c017fe1c35486d8dfc9da3d2b5e37306a1385b5d"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -4116,8 +4116,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.29.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#fe4c0abccb6ae021efb5d5ea26a7089b4f44a1c9"
+version = "0.29.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c017fe1c35486d8dfc9da3d2b5e37306a1385b5d"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4133,8 +4133,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.29.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#fe4c0abccb6ae021efb5d5ea26a7089b4f44a1c9"
+version = "0.29.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c017fe1c35486d8dfc9da3d2b5e37306a1385b5d"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4167,8 +4167,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-testgen"
-version = "0.29.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#fe4c0abccb6ae021efb5d5ea26a7089b4f44a1c9"
+version = "0.29.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c017fe1c35486d8dfc9da3d2b5e37306a1385b5d"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
