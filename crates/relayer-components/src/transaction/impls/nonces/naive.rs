@@ -79,7 +79,9 @@ where
                 |_| {},
             );
 
-            Ok(res?)
+            let res = res?;
+
+            Ok(res)
         })
     }
 }

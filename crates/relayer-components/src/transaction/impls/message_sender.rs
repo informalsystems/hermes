@@ -71,7 +71,7 @@ where
             Context::Logger::LEVEL_TRACE,
             "encoding tx for simulation",
             |log| {
-                log.field("none", Context::log_nonce(&nonce));
+                log.field("none", Context::log_nonce(nonce));
             },
         );
 
@@ -85,7 +85,7 @@ where
             Context::Logger::LEVEL_TRACE,
             "estimating fee with tx for simulation",
             |log| {
-                log.field("none", Context::log_nonce(&nonce));
+                log.field("none", Context::log_nonce(nonce));
             },
         );
 
@@ -95,7 +95,7 @@ where
             Context::Logger::LEVEL_TRACE,
             "encoding tx for submission",
             |log| {
-                log.field("none", Context::log_nonce(&nonce));
+                log.field("none", Context::log_nonce(nonce));
             },
         );
 
@@ -105,7 +105,7 @@ where
             Context::Logger::LEVEL_TRACE,
             "submitting tx to chain",
             |log| {
-                log.field("none", Context::log_nonce(&nonce));
+                log.field("none", Context::log_nonce(nonce));
             },
         );
 
@@ -115,7 +115,7 @@ where
             Context::Logger::LEVEL_TRACE,
             "waiting for tx hash response",
             |log| {
-                log.field("none", Context::log_nonce(&nonce));
+                log.field("none", Context::log_nonce(nonce));
             },
         );
 
@@ -125,7 +125,7 @@ where
             Context::Logger::LEVEL_TRACE,
             "received tx hash response",
             |log| {
-                log.field("none", Context::log_nonce(&nonce));
+                log.field("none", Context::log_nonce(nonce));
             },
         );
 
