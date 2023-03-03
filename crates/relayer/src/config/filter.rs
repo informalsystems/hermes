@@ -12,6 +12,7 @@ use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::events::IbcEventType;
 
+/// Represents all the filtering policies for packets.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PacketFilter {
     #[serde(flatten)]
@@ -66,7 +67,8 @@ pub enum ChannelPolicy {
     AllowAll,
 }
 
-// Currently only filtering on `recv_fee` is authorized
+/// Represents the policy used to filter incentivized packets.
+/// Currently only filtering on `recv_fee` is authorized.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct FeePolicy {
     recv: Vec<MinFee>,
@@ -92,6 +94,8 @@ impl FeePolicy {
     }
 }
 
+/// Represents the minimum fee authorized when filtering.
+/// If no denom is specified, any denom is allowed.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MinFee {
     amount: u64,
