@@ -40,6 +40,13 @@ impl PacketFilter {
             min_fees,
         }
     }
+
+    pub fn allow(filters: Vec<(PortFilterMatch, ChannelFilterMatch)>) -> PacketFilter {
+        PacketFilter::new(
+            ChannelPolicy::Allow(ChannelFilters::new(filters)),
+            HashMap::new(),
+        )
+    }
 }
 
 /// Represents the ways in which packets can be filtered.

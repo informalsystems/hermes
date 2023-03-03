@@ -15,7 +15,7 @@ use http::Uri;
 
 use ibc_relayer::{
     config::{
-        filter::{ChannelFilters, ChannelPolicy, FilterPattern, PacketFilter},
+        filter::{FilterPattern, PacketFilter},
         gas_multiplier::GasMultiplier,
         types::{MaxMsgNum, MaxTxSize, Memo},
         {default, AddressType, ChainConfig, GasPrice},
@@ -57,12 +57,7 @@ fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFi
 
     packet_filters
         .into_iter()
-        .map(|(k, v)| {
-            (
-                k,
-                PacketFilter::new(ChannelPolicy::Allow(ChannelFilters::new(v)), HashMap::new()),
-            )
-        })
+        .map(|(k, v)| (k, PacketFilter::allow(v)))
         .collect()
 }
 
@@ -247,6 +242,7 @@ pub async fn get_configs(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ibc_relayer::config::filter::ChannelPolicy;
     use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
     use std::str::FromStr;
 
