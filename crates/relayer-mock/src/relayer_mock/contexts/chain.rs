@@ -216,7 +216,8 @@ impl MockChainContext {
                 )
             })?;
 
-        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
+        let client_consensus =
+            self.query_consensus_state_at_height(client_id, height.increment())?;
 
         if !client_consensus.check_sent((
             packet.src_port_id.clone(),
@@ -278,7 +279,8 @@ impl MockChainContext {
                 )
             })?;
 
-        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
+        let client_consensus =
+            self.query_consensus_state_at_height(client_id, height.increment())?;
 
         if !client_consensus.check_received((
             packet.dst_port_id.clone(),
@@ -324,7 +326,8 @@ impl MockChainContext {
                 )
             })?;
 
-        let client_consensus = self.query_consensus_state_at_height(client_id, height)?;
+        let client_consensus =
+            self.query_consensus_state_at_height(client_id, height.increment())?;
 
         if client_consensus.check_received((
             packet.dst_port_id.clone(),

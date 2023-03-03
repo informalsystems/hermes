@@ -55,10 +55,10 @@ where
 
             let current_height = CounterpartyChain::chain_status_height(&current_status);
 
-            if current_height > height {
+            if current_height >= height {
                 relay.log_relay_target(
                     Relay::Logger::LEVEL_TRACE,
-                    "counterparty chain's height is now greater than target height",
+                    "counterparty chain's height is now greater than or equal to target height",
                     |log| {
                         log.display("target_height", height)
                             .display("currrent_height", &current_height);

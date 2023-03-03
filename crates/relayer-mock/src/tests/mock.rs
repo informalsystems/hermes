@@ -464,7 +464,7 @@ async fn test_mock_chain_process_recv_packet() -> Result<(), Error> {
     let src_state = src_chain.chain.get_current_state();
 
     let recv_packet_message = vec![
-        MockMessage::UpdateClient(src_client_id, src_height, src_state),
+        MockMessage::UpdateClient(src_client_id, src_height.increment(), src_state),
         MockMessage::RecvPacket(src_height, packet),
     ];
 
