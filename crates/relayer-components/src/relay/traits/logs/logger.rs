@@ -6,15 +6,13 @@ use crate::logger::types::wrapper::LogWrapper;
 use crate::relay::traits::target::ChainTarget;
 use crate::relay::traits::types::HasRelayTypes;
 
-pub trait CanLogRelay: HasRelayTypes + HasLoggerWithBaseLevels {
+pub trait CanLogRelay: HasLoggerWithBaseLevels {
     fn log_relay<'a>(
         &'a self,
         level: <Self::Logger as BaseLogger>::LogLevel,
         message: &str,
         build_log: impl for<'r> FnOnce(LogWrapper<'a, 'r, Self::Logger>),
     );
-
-    fn log_relay_message(&self, level: <Self::Logger as BaseLogger>::LogLevel, message: &str);
 }
 
 impl<Relay> CanLogRelay for Relay
@@ -39,10 +37,6 @@ where
 
             build_log(log);
         })
-    }
-
-    fn log_relay_message(&self, level: <Self::Logger as BaseLogger>::LogLevel, message: &str) {
-        self.log_relay(level, message, |_| {})
     }
 }
 

@@ -18,6 +18,8 @@ use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
+use ibc_relayer_runtime::tokio::logger::value::LogValue;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use prost::Message as _;
 use tendermint::abci::Event;
 use tendermint::Hash as TxHash;
@@ -38,6 +40,8 @@ where
     type Runtime = TokioRuntimeContext;
 
     type Logger = TracingLogger;
+
+    type ChainId = ChainId;
 
     type Message = CosmosIbcMessage;
 
@@ -73,6 +77,10 @@ where
         &TracingLogger
     }
 
+    fn log_nonce(nonce: &Account) -> LogValue<'_> {
+        LogValue::Debug(nonce)
+    }
+
     fn tx_no_response_error(tx_hash: &TxHash) -> Self::Error {
         BaseError::tx_no_response(*tx_hash).into()
     }
@@ -85,6 +93,10 @@ where
         };
 
         tx_raw.encoded_len()
+    }
+
+    fn chain_id(&self) -> &Self::ChainId {
+        &self.chain.tx_config().chain_id
     }
 
     fn get_signer(&self) -> &Self::Signer {

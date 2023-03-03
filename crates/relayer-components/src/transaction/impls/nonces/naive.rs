@@ -2,9 +2,12 @@ use core::future::Future;
 use core::pin::Pin;
 
 use crate::core::traits::sync::Async;
+use crate::logger::traits::level::HasBaseLogLevels;
 use crate::runtime::traits::mutex::HasMutex;
 use crate::runtime::traits::runtime::HasRuntime;
 use crate::std_prelude::*;
+use crate::transaction::traits::logs::logger::CanLogTx;
+use crate::transaction::traits::logs::nonce::CanLogNonce;
 use crate::transaction::traits::nonce::{CanQueryNonce, NonceAllocator};
 use crate::transaction::traits::types::HasTxTypes;
 
@@ -32,7 +35,7 @@ pub struct NaiveNonceAllocator;
 
 impl<Context> NonceAllocator<Context> for NaiveNonceAllocator
 where
-    Context: CanQueryNonce + HasMutexForNonceAllocation,
+    Context: CanLogTx + CanLogNonce + CanQueryNonce + HasMutexForNonceAllocation,
     Context::Runtime: HasMutex,
 {
     fn with_allocated_nonce<'a, R, Cont>(
@@ -50,15 +53,33 @@ where
             + 'a,
     {
         Box::pin(async move {
+            context.log_tx(
+                Context::Logger::LEVEL_TRACE,
+                "acquiring nonce mutex",
+                |_| {},
+            );
+
             let mutex = context.mutex_for_nonce_allocation(signer);
 
             let _guard = Context::Runtime::acquire_mutex(mutex).await;
 
+            context.log_tx(Context::Logger::LEVEL_TRACE, "acquired nonce mutex", |_| {});
+
             let nonce = context.query_nonce(signer).await?;
 
-            let res = cont(nonce).await?;
+            context.log_tx(Context::Logger::LEVEL_TRACE, "assigned nonce", |log| {
+                log.field("nonce", Context::log_nonce(&nonce));
+            });
 
-            Ok(res)
+            let res = cont(nonce).await;
+
+            context.log_tx(
+                Context::Logger::LEVEL_TRACE,
+                "releasing nonce mutex",
+                |_| {},
+            );
+
+            Ok(res?)
         })
     }
 }
