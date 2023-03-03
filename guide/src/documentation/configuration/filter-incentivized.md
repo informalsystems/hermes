@@ -28,18 +28,17 @@ This example will configure Hermes so it will ignore `send_packet` events from a
 
 ___Amount only___
 
-This example will configure Hermes so it will ignore `send_packet` events from any channel which do not have at least 10 of any token as the `recv_fee`.
-
+This example will configure Hermes so it will only relay `send_packet` events sent with incentivized events.
 ```
 [chains.packet_filter.min_fees.'*']
-  recv    = [{ amount = 10 }]
+  recv    = [{ amount = 0 }]
 ```
 
 ___Multiple filters___
 
-This example will configure Hermes so it will ignore `send_packet` events from any channel which starts with `ics`, does not have at least `10 uatom`, `20 stake` or 50 of any token as the `recv_fee`.
+This example will configure Hermes so it will ignore `send_packet` events from any channel which starts with `ics`, does not have at least `10 uatom` or `20 stake` as the `recv_fee`.
 
 ```
 [chains.packet_filter.min_fees.'ics*']
-  recv    = [{ amount = 10, denom = 'uatom' }, { amount = 20, denom = 'stake' }, { amount = 50}]
+  recv    = [{ amount = 10, denom = 'uatom' }, { amount = 20, denom = 'stake' }]
 ```
