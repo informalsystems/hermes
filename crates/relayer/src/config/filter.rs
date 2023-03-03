@@ -77,11 +77,11 @@ impl FeePolicy {
         Self { recv }
     }
 
-    pub fn should_relay(&self, event_type: IbcEventType, amounts: Vec<Coin<String>>) -> bool {
+    pub fn should_relay(&self, event_type: IbcEventType, fees: Vec<Coin<String>>) -> bool {
         match event_type {
             IbcEventType::SendPacket => {
-                for coin in amounts {
-                    if self.recv.iter().any(|e| e.is_enough(&coin)) {
+                for fee in fees {
+                    if self.recv.iter().any(|e| e.is_enough(&fee)) {
                         return true;
                     }
                 }
