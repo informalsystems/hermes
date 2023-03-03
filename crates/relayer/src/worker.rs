@@ -136,15 +136,13 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                         config.chains.iter().find(|chain| chain.id == chains.a.id());
 
                     let fee_filter = match src_chain_config {
-                        Some(chain_config) => {
-                            let mut fee_filter = None;
-                            for (channel, filter) in chain_config.packet_filter.min_fees.iter() {
-                                if channel.matches(&path.src_channel_id) {
-                                    fee_filter = Some(filter.clone())
-                                }
-                            }
-                            fee_filter
-                        }
+                        Some(chain_config) => chain_config
+                            .packet_filter
+                            .min_fees
+                            .iter()
+                            .find(|(channel, _)| channel.matches(&path.src_channel_id))
+                            .map(|(_, filter)| filter)
+                            .cloned(),
                         None => None,
                     };
 

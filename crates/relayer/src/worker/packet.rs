@@ -30,6 +30,9 @@ use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use super::error::RunError;
 use super::WorkerCmd;
 
+const INCENTIVIZED_CACHE_TTL: Duration = Duration::from_secs(1);
+const INCENTIVIZED_CACHE_MAX_CAPACITY: u64 = 1000;
+
 fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     if e.is_expired_or_frozen_error() {
         // If the client is expired or frozen, terminate the packet worker
@@ -126,8 +129,8 @@ pub fn spawn_incentivized_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHa
     // to verify if a SendPacket event is incentivized.
     let incentivized_recv_cache: RwArc<Cache<Sequence, IncentivizedPacket>> = RwArc::new_lock(
         moka::sync::Cache::builder()
-            .time_to_live(Duration::from_secs(10 * 60))
-            .max_capacity(1000)
+            .time_to_live(INCENTIVIZED_CACHE_TTL)
+            .max_capacity(INCENTIVIZED_CACHE_MAX_CAPACITY)
             .build(),
     );
 
