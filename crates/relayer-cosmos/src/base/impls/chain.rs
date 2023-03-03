@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 
 use async_trait::async_trait;
+use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -15,8 +16,8 @@ use ibc_relayer_all_in_one::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
+use ibc_relayer_components::transaction::impls::nonces::naive::HasMutexForNonceAllocation;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
@@ -40,6 +41,7 @@ use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event;
+use tracing::info;
 
 use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;
@@ -147,7 +149,32 @@ where
         &self,
         messages: Vec<CosmosIbcMessage>,
     ) -> Result<Vec<Vec<Event>>, Error> {
-        self.tx_context.send_messages(messages).await
+        let signer = self.chain.signer();
+        let tx_config = self.chain.tx_config();
+        let key_entry = self.chain.key_entry();
+
+        info!("acquiring send tx mutex");
+
+        let mutex = self.tx_context.mutex_for_nonce_allocation(key_entry);
+        let _guard = mutex.lock().await;
+
+        info!("acquired send tx mutex");
+
+        info!(message = "sending messages using simple_send_tx", chain_id = %tx_config.chain_id);
+
+        let raw_messages = messages
+            .iter()
+            .map(|message| (message.to_protobuf_fn)(&signer).map_err(BaseError::encode))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let events = simple_send_tx(tx_config, key_entry, raw_messages)
+            .await
+            .map_err(BaseError::relayer)?;
+
+        info!("sent messages with {} events", events.len());
+
+        Ok(events)
+        // self.tx_context.send_messages(messages).await
     }
 
     async fn query_chain_status(&self) -> Result<ChainStatus, Self::Error> {
