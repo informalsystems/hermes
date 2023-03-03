@@ -31,7 +31,7 @@ use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use super::error::RunError;
 use super::WorkerCmd;
 
-const INCENTIVIZED_CACHE_TTL: Duration = Duration::from_secs(1);
+const INCENTIVIZED_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const INCENTIVIZED_CACHE_MAX_CAPACITY: u64 = 1000;
 
 fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
