@@ -143,7 +143,10 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                             .find(|(channel, _)| channel.matches(&path.src_channel_id))
                             .map(|(_, filter)| filter)
                             .cloned(),
-                        None => None,
+                        None => {
+                            error!("configuration for chain {} not found", chains.a.id());
+                            None
+                        }
                     };
 
                     // Only spawn the incentivized worker if a fee filter is specified in the configuration

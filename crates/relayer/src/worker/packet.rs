@@ -232,7 +232,6 @@ fn handle_incentivized_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         // which will be used to confirm if a SendPacket event is incentivized.
         for event in batch.events.clone() {
             if let IbcEvent::IncentivizedPacket(packet) = event.event {
-                tracing::warn!("Storing for sequence {}", packet.sequence);
                 incentivized_recv_cache
                     .acquire_write()
                     .insert(packet.sequence, packet.clone());
