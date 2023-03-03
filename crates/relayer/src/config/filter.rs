@@ -7,7 +7,7 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use ibc_relayer_types::applications::transfer::{Coin, RawCoin};
+use ibc_relayer_types::applications::transfer::RawCoin;
 use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::events::IbcEventType;
@@ -79,16 +79,11 @@ impl FeePolicy {
         Self { recv }
     }
 
-    pub fn should_relay(&self, event_type: IbcEventType, fees: Vec<Coin<String>>) -> bool {
+    pub fn should_relay(&self, event_type: IbcEventType, fees: &[RawCoin]) -> bool {
         match event_type {
-            IbcEventType::SendPacket => {
-                for fee in fees {
-                    if self.recv.iter().any(|e| e.is_enough(&fee)) {
-                        return true;
-                    }
-                }
-                false
-            }
+            IbcEventType::SendPacket => fees
+                .iter()
+                .any(|fee| self.recv.iter().any(|e| e.is_enough(fee))),
             _ => true,
         }
     }

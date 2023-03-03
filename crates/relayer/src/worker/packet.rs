@@ -309,7 +309,7 @@ fn filter_batch(
                 let grouped_amounts =
                     retrieve_all_fees_from_incentivized_packet(incentivized_event);
 
-                fee_filter.should_relay(IbcEventType::SendPacket, grouped_amounts)
+                fee_filter.should_relay(IbcEventType::SendPacket, &grouped_amounts)
             }),
         _ => true,
     });
