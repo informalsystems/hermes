@@ -84,7 +84,7 @@ impl FeePolicy {
                     if self
                         .recv
                         .iter()
-                        .any(|e| e.check_valid_fee(coin.amount.0, coin.denom.clone()))
+                        .any(|e| e.is_enough(coin.amount.0, coin.denom.clone()))
                     {
                         return true;
                     }
@@ -107,7 +107,7 @@ impl FeeInformation {
         Self { amount, denom }
     }
 
-    pub fn check_valid_fee(&self, other_amount: U256, other_denom: String) -> bool {
+    pub fn is_enough(&self, other_amount: U256, other_denom: String) -> bool {
         match self.denom.clone() {
             Some(denom) => U256::from(self.amount) <= other_amount && denom.eq(&other_denom),
             None => U256::from(self.amount) <= other_amount,
