@@ -62,8 +62,7 @@ where
 
         let relay_cache = Arc::new(Builder::Runtime::new_mutex(BTreeMap::new()));
 
-        let batch_sender_cache_a = Arc::new(Builder::Runtime::new_mutex(BTreeMap::new()));
-        let batch_sender_cache_b = Arc::new(Builder::Runtime::new_mutex(BTreeMap::new()));
+        let batch_sender_cache = Arc::new(Builder::Runtime::new_mutex(BTreeMap::new()));
 
         Self {
             builder: Arc::new(builder),
@@ -71,8 +70,8 @@ where
             chain_b_cache: chain_cache,
             relay_a_to_b_cache: relay_cache.clone(),
             relay_b_to_a_cache: relay_cache,
-            batch_sender_cache_a,
-            batch_sender_cache_b,
+            batch_sender_cache_a: batch_sender_cache.clone(),
+            batch_sender_cache_b: batch_sender_cache,
         }
     }
 }
