@@ -322,17 +322,16 @@ fn filter_batch(
 fn retrieve_all_fees_from_incentivized_packet(
     incentivized_packet: IncentivizedPacket,
 ) -> Vec<RawCoin> {
-    let mut grouped_amounts = vec![];
-    let grouped_fees = incentivized_packet
+    incentivized_packet
         .total_recv_fee
         .iter()
-        .group_by(|a| a.denom.clone());
-    for (key, group) in grouped_fees.into_iter() {
-        let total_amount: Amount = group.map(|v| v.amount).sum::<Amount>();
-        let coin_value = Coin::new(key, total_amount);
-        grouped_amounts.push(coin_value);
-    }
-    grouped_amounts
+        .group_by(|a| &a.denom)
+        .into_iter()
+        .map(|(key, group)| {
+            let total_amount: Amount = group.map(|v| v.amount).sum::<Amount>();
+            Coin::new(key.to_owned(), total_amount)
+        })
+        .collect()
 }
 
 /// Whether or not to clear pending packets at this `step` for some height.
