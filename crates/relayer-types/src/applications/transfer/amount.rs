@@ -1,4 +1,5 @@
 use core::iter::Sum;
+use core::ops::Add;
 use core::str::FromStr;
 use derive_more::{Display, From, Into};
 use serde::{Deserialize, Serialize};
@@ -23,9 +24,17 @@ impl Amount {
     }
 }
 
+impl Add for Amount {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
+
 impl Sum for Amount {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self(U256::from(0)), |a, b| a.checked_add(b).unwrap())
+        iter.fold(Self(U256::from(0)), |a, b| a + b)
     }
 }
 
