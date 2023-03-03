@@ -1,6 +1,7 @@
 use core::time::Duration;
 use itertools::Itertools;
 use moka::sync::Cache;
+use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 
@@ -8,7 +9,7 @@ use crossbeam_channel::Receiver;
 use ibc_proto::ibc::apps::fee::v1::{IdentifiedPacketFees, QueryIncentivizedPacketRequest};
 use ibc_proto::ibc::core::channel::v1::PacketId;
 use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
-use ibc_relayer_types::applications::transfer::{Amount, Coin};
+use ibc_relayer_types::applications::transfer::{Amount, Coin, RawCoin};
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
@@ -140,8 +141,8 @@ pub fn spawn_incentivized_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHa
                 &mut link.lock().unwrap(),
                 &path,
                 cmd,
-                incentivized_recv_cache.clone(),
-                fee_filter.clone(),
+                &incentivized_recv_cache,
+                &fee_filter,
             )?;
         }
 
@@ -222,11 +223,11 @@ fn handle_incentivized_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
     path: &Packet,
     cmd: WorkerCmd,
-    incentivized_recv_cache: RwArc<Cache<Sequence, IncentivizedPacket>>,
-    fee_filter: FeePolicy,
+    incentivized_recv_cache: &RwArc<Cache<Sequence, IncentivizedPacket>>,
+    fee_filter: &FeePolicy,
 ) -> Result<(), TaskError<RunError>> {
     // Handle command-specific task
-    if let WorkerCmd::IbcEvents { batch } = cmd {
+    if let WorkerCmd::IbcEvents { mut batch } = cmd {
         // Iterate through the batch in order to retrieve the IncentivizedPacket
         // which will be used to confirm if a SendPacket event is incentivized.
         for event in batch.events.clone() {
@@ -244,8 +245,8 @@ fn handle_incentivized_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
             // In addition if the WriteAcknowledgment are not relayed, no fees will be paid.
             //IbcEvent::WriteAcknowledgement(ack) => get_incentivized_for_write_acknowledgement(link, ack, event.height.revision_height(), incentivized_ack_cache.clone()),
         }
-        let filtered_batch = filter_batch(batch, incentivized_recv_cache, fee_filter);
-        handle_update_schedule(link, 0, path, filtered_batch)
+        filter_batch(batch.borrow_mut(), incentivized_recv_cache, fee_filter);
+        handle_update_schedule(link, 0, path, batch)
     } else {
         Ok(())
     }
@@ -278,10 +279,11 @@ fn _get_incentivized_for_write_acknowledgement<ChainA: ChainHandle, ChainB: Chai
     match dst_chain.query_incentivized_packet(request) {
         Ok(ev) => {
             if let Some(identifier_packet_fees) = ev.incentivized_packet {
-                let sequence = identifier_packet_fees.packet_id.clone().unwrap().sequence;
-                incentivized_ack_cache
-                    .acquire_write()
-                    .insert(sequence.into(), identifier_packet_fees);
+                if let Some(packet) = &identifier_packet_fees.packet_id {
+                    incentivized_ack_cache
+                        .acquire_write()
+                        .insert(packet.sequence.into(), identifier_packet_fees);
+                }
             }
         }
         // If the query failed it could mean that the packet is not incentivized.
@@ -296,43 +298,47 @@ fn _get_incentivized_for_write_acknowledgement<ChainA: ChainHandle, ChainB: Chai
 /// incentivized packets, determine if the SendPacket and WriteAcknowledgement events
 /// should be relayed or not.
 fn filter_batch(
-    batch: EventBatch,
-    incentivized_recv_cache: RwArc<Cache<Sequence, IncentivizedPacket>>,
-    fee_filter: FeePolicy,
-) -> EventBatch {
-    let mut filtered_batch = batch.clone();
-    let mut filtered_events = vec![];
-    for event in batch.events {
-        match &event.event {
-            IbcEvent::SendPacket(packet) => {
-                tracing::warn!("Searching for sequence {}", packet.packet.sequence);
-                if let Some(incentivized_event) = incentivized_recv_cache
-                    .acquire_read()
-                    .get(&packet.packet.sequence)
-                {
-                    tracing::warn!("Found");
-                    // Multiple fees with different denoms can be specified as rewards,
-                    // so the rewards are grouped by denom.
-                    let mut grouped_amounts = vec![];
-                    let grouped_fees = incentivized_event
-                        .total_recv_fee
-                        .iter()
-                        .group_by(|a| a.denom.clone());
-                    for (key, group) in grouped_fees.into_iter() {
-                        let total_amount: Amount = group.map(|v| v.amount).sum::<Amount>();
-                        let coin_value = Coin::new(key, total_amount);
-                        grouped_amounts.push(coin_value);
-                    }
-                    if fee_filter.should_relay(IbcEventType::SendPacket, grouped_amounts) {
-                        filtered_events.push(event);
-                    }
+    batch: &mut EventBatch,
+    incentivized_recv_cache: &RwArc<Cache<Sequence, IncentivizedPacket>>,
+    fee_filter: &FeePolicy,
+) {
+    batch.events.retain(|e| match &e.event {
+        IbcEvent::SendPacket(packet) => {
+            if let Some(incentivized_event) = incentivized_recv_cache
+                .acquire_read()
+                .get(&packet.packet.sequence)
+            {
+                let grouped_amounts =
+                    retrieve_all_fees_from_incentivized_packet(incentivized_event);
+                if fee_filter.should_relay(IbcEventType::SendPacket, grouped_amounts) {
+                    return true;
                 }
+                false
+            } else {
+                false
             }
-            _ => filtered_events.push(event),
         }
+        _ => true,
+    });
+}
+
+/// Multiple fees with different denoms can be specified as rewards,
+/// in an `IncentivizedPacket`. This method extract all and groups all
+/// the fees with the same denom.
+fn retrieve_all_fees_from_incentivized_packet(
+    incentivized_packet: IncentivizedPacket,
+) -> Vec<RawCoin> {
+    let mut grouped_amounts = vec![];
+    let grouped_fees = incentivized_packet
+        .total_recv_fee
+        .iter()
+        .group_by(|a| a.denom.clone());
+    for (key, group) in grouped_fees.into_iter() {
+        let total_amount: Amount = group.map(|v| v.amount).sum::<Amount>();
+        let coin_value = Coin::new(key, total_amount);
+        grouped_amounts.push(coin_value);
     }
-    filtered_batch.events = filtered_events;
-    filtered_batch
+    grouped_amounts
 }
 
 /// Whether or not to clear pending packets at this `step` for some height.
