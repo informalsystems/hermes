@@ -40,7 +40,6 @@ use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event;
-use tracing::info;
 
 use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;
@@ -148,37 +147,7 @@ where
         &self,
         messages: Vec<CosmosIbcMessage>,
     ) -> Result<Vec<Vec<Event>>, Error> {
-        // let signer = self.chain.signer();
-        // let tx_config = self.chain.tx_config();
-        // let key_entry = self.chain.key_entry();
-
-        // info!("acquiring send tx mutex");
-
-        // let mutex = self.tx_context.mutex_for_nonce_allocation(key_entry);
-        // let _guard = mutex.lock().await;
-
-        // info!("acquired send tx mutex");
-
-        // info!(message = "sending messages using simple_send_tx", chain_id = %tx_config.chain_id);
-
-        // let raw_messages = messages
-        //     .iter()
-        //     .map(|message| (message.to_protobuf_fn)(&signer).map_err(BaseError::encode))
-        //     .collect::<Result<Vec<_>, _>>()?;
-
-        // let events = simple_send_tx(tx_config, key_entry, raw_messages)
-        //     .await
-        //     .map_err(BaseError::relayer)?;
-
-        // info!("sent messages with {} events", events.len());
-
-        // Ok(events)
-
-        info!(message = "sending messages using tx_context", chain_id = %self.chain.tx_config().chain_id);
-
         let events = self.tx_context.send_messages(messages).await?;
-
-        info!(message = "sent messages", events_count = %events.len(), chain_id = %self.chain.tx_config().chain_id);
 
         Ok(events)
     }

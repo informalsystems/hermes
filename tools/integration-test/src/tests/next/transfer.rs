@@ -134,7 +134,7 @@ impl BinaryChannelTest for IbcTransferTest {
             chains.chain_id_a(),
         );
 
-        sleep(Duration::from_secs(10));
+        sleep(Duration::from_secs(2));
 
         Ok(())
     }

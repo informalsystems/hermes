@@ -25,7 +25,6 @@ use tendermint::abci::Event;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tokio::sync::Mutex;
-use tracing::info;
 
 use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;
