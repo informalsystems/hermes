@@ -109,8 +109,8 @@ impl MinFee {
 
     pub fn is_enough(&self, fee: &RawCoin) -> bool {
         match self.denom.clone() {
-            Some(denom) => U256::from(self.amount) <= fee.amount.into() && denom.eq(&fee.denom),
-            None => U256::from(self.amount) <= fee.amount.into(),
+            Some(denom) => fee.amount.0 >= U256::from(self.amount) && denom.eq(&fee.denom),
+            None => fee.amount.0 >= U256::from(self.amount),
         }
     }
 }
