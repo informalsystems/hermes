@@ -290,8 +290,9 @@ memo_prefix = ''
 # [chains.packet_filter.min_fees.'*']
 # recv = [ { amount = 0 } ]
 #
-# Example configuration of a filter which will only relay packets with
-# a specified minimum amount of fee if they are destined for 'channel-0'.
+# Example configuration of a filter which will only relay packets if they are
+# from the channel 'channel-0', and they have a `recv_fee` of at least 20 stake
+# or 10 uatom.
 #
 # [chains.packet_filter.min_fees.'channel-0']
 # recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
