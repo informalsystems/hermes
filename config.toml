@@ -288,13 +288,13 @@ memo_prefix = ''
 # packets, with no regards for channel and amount.
 #
 # [chains.packet_filter.min_fees.'*']
-# recv    = [ { amount = 0 } ]
+# recv = [ { amount = 0 } ]
 #
 # Example configuration of a filter which will only relay packets with
 # a specified minimum amount of fee if they are destined for 'channel-0'.
 #
 # [chains.packet_filter.min_fees.'channel-0']
-# recv    = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
+# recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
 
 # Specify that the transaction fees should be payed from this fee granter's account.
 # Optional. If unspecified (the default behavior), then no fee granter is used, and

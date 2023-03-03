@@ -1,8 +1,8 @@
 # Filter incentivized packets
 
-Hermes can be configured in order to only relay packets which are incentivized. This is done by using the `[[chain.packet_filter.min_fee]]` configuration.
+Hermes can be configured in order to only relay packets which are incentivized. This is done by using the `[[chain.packet_filter.min_fees]]` setting.
 
-When this filter is configured, Hermes will not relay ignore `send_packet` events when they do not meet the configured requirements. This configuration can be set to be per channel or for a set of channels using regular expression.
+When this filter is configured, Hermes will only relay `send_packet` events when they  meet the configured requirements. This configuration can be set per channel or for a set of channels using a wildcard expression.
 
 > __WARNING__: This configuration is experimental. Packet clearing will be disabled for the channels which have a fee filter configured, and some `send_packet` events might not be relayed if the incentivized event is not in the same batch of events.
 
@@ -14,7 +14,7 @@ This example will configure Hermes so it will ignore `send_packet` events from `
 
 ```
 [chains.packet_filter.min_fees.'channel-0']
-  recv    = [{ amount = 10, denom = 'uatom' }]
+  recv = [{ amount = 10, denom = 'uatom' }]
 ```
 
 ___Amount and denom specific___
@@ -23,7 +23,7 @@ This example will configure Hermes so it will ignore `send_packet` events from a
 
 ```
 [chains.packet_filter.min_fees.'*']
-  recv    = [{ amount = 10, denom = 'uatom' }]
+  recv = [{ amount = 10, denom = 'uatom' }]
 ```
 
 ___Amount only___

@@ -46,10 +46,10 @@ list = [
 ]
 
 [chains.packet_filter.min_fees.'*']
-recv    = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
+recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
 
 [chains.packet_filter.min_fees.'ica*']
-recv    = [ { amount = 0 }]
+recv = [ { amount = 0 }]
 
 [[chains]]
 id = 'chain_B'
