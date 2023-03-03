@@ -184,22 +184,12 @@ where
         {
             // If the current batch is not full and there is still some time until max delay,
             // return everything and wait until the next batch is full
-            self.log_relay_target(
-                Relay::Logger::LEVEL_TRACE,
-                "waiting for more batch to arrive",
-                |_| {},
-            );
-
             *pending_batches = ready_batches;
         } else {
             let batch_size = ready_batches.len();
-            self.log_relay_target(
-                Relay::Logger::LEVEL_TRACE,
-                "sending reading batches",
-                |log| {
-                    log.display("batch_size", &batch_size);
-                },
-            );
+            self.log_relay_target(Relay::Logger::LEVEL_TRACE, "sending ready batches", |log| {
+                log.display("batch_size", &batch_size);
+            });
 
             self.send_ready_batches(ready_batches).await;
             *last_sent_time = now;
