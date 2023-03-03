@@ -17,7 +17,7 @@ pub struct PacketFilter {
     #[serde(flatten)]
     pub channel_policy: ChannelPolicy,
     #[serde(default)]
-    pub min_fees: HashMap<ChannelFilterMatch, FeesFilters>,
+    pub min_fees: HashMap<ChannelFilterMatch, FeePolicy>,
 }
 
 impl Default for PacketFilter {
@@ -33,7 +33,7 @@ impl Default for PacketFilter {
 impl PacketFilter {
     pub fn new(
         channel_policy: ChannelPolicy,
-        min_fees: HashMap<ChannelFilterMatch, FeesFilters>,
+        min_fees: HashMap<ChannelFilterMatch, FeePolicy>,
     ) -> Self {
         Self {
             channel_policy,
@@ -68,11 +68,11 @@ pub enum ChannelPolicy {
 
 // Currently only filtering on `recv_fee` is authorized
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct FeesFilters {
+pub struct FeePolicy {
     recv: Vec<FeeInformation>,
 }
 
-impl FeesFilters {
+impl FeePolicy {
     pub fn new(recv: Vec<FeeInformation>) -> Self {
         Self { recv }
     }

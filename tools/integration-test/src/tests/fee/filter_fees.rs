@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ibc_relayer::config::filter::{ChannelPolicy, FeeInformation, FeesFilters, FilterPattern};
+use ibc_relayer::config::filter::{ChannelPolicy, FeeInformation, FeePolicy, FilterPattern};
 use ibc_relayer::config::PacketFilter;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::prelude::*;
@@ -27,7 +27,7 @@ impl TestOverrides for FilterIncentivizedFeesRelayerTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.auto_register_counterparty_payee = true;
         let recv_fee = FeeInformation::new(50, Some("samoleans".to_owned()));
-        let fees_filters = FeesFilters::new(vec![recv_fee]);
+        let fees_filters = FeePolicy::new(vec![recv_fee]);
         let min_fees =
             HashMap::from([(FilterPattern::Wildcard("*".parse().unwrap()), fees_filters)]);
         let packet_filter = PacketFilter::new(ChannelPolicy::default(), min_fees);
@@ -173,7 +173,7 @@ impl TestOverrides for FilterByChannelIncentivizedFeesRelayerTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.auto_register_counterparty_payee = true;
         let recv_fee = FeeInformation::new(50, Some("samoleans".to_owned()));
-        let fees_filters = FeesFilters::new(vec![recv_fee]);
+        let fees_filters = FeePolicy::new(vec![recv_fee]);
         let min_fees = HashMap::from([(
             FilterPattern::Wildcard("other-channel*".parse().unwrap()),
             fees_filters,

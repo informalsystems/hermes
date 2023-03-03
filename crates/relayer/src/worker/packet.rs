@@ -17,7 +17,7 @@ use tracing::{error, error_span, trace};
 use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::config::filter::FeesFilters;
+use crate::config::filter::FeePolicy;
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::HasExpiredOrFrozenError;
 use crate::link::Resubmit;
@@ -109,7 +109,7 @@ pub fn spawn_incentivized_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHa
     // Mutex is used to prevent race condition between the packet workers
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
     path: Packet,
-    fee_filter: FeesFilters,
+    fee_filter: FeePolicy,
 ) -> TaskHandle {
     let span = {
         let relay_path = &link.lock().unwrap().a_to_b;
@@ -220,7 +220,7 @@ fn handle_incentivized_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: &Packet,
     cmd: WorkerCmd,
     incentivized_recv_cache: RwArc<Cache<Sequence, IncentivizedPacket>>,
-    fee_filter: FeesFilters,
+    fee_filter: FeePolicy,
 ) -> Result<(), TaskError<RunError>> {
     // Handle command-specific task
     if let WorkerCmd::IbcEvents { batch } = cmd {
@@ -295,7 +295,7 @@ fn _get_incentivized_for_write_acknowledgement<ChainA: ChainHandle, ChainB: Chai
 fn filter_batch(
     batch: EventBatch,
     incentivized_recv_cache: RwArc<Cache<Sequence, IncentivizedPacket>>,
-    fee_filter: FeesFilters,
+    fee_filter: FeePolicy,
 ) -> EventBatch {
     let mut filtered_batch = batch.clone();
     let mut filtered_events = vec![];
