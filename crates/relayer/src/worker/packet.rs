@@ -303,21 +303,15 @@ fn filter_batch(
     fee_filter: &FeePolicy,
 ) {
     batch.events.retain(|e| match &e.event {
-        IbcEvent::SendPacket(packet) => {
-            if let Some(incentivized_event) = incentivized_recv_cache
-                .acquire_read()
-                .get(&packet.packet.sequence)
-            {
+        IbcEvent::SendPacket(packet) => incentivized_recv_cache
+            .acquire_read()
+            .get(&packet.packet.sequence)
+            .map_or(false, |incentivized_event| {
                 let grouped_amounts =
                     retrieve_all_fees_from_incentivized_packet(incentivized_event);
-                if fee_filter.should_relay(IbcEventType::SendPacket, grouped_amounts) {
-                    return true;
-                }
-                false
-            } else {
-                false
-            }
-        }
+
+                fee_filter.should_relay(IbcEventType::SendPacket, grouped_amounts)
+            }),
         _ => true,
     });
 }
