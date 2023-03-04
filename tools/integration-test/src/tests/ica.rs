@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use serde::Serialize;
 
 use ibc_relayer::config::{
-    filter::{ChannelFilters, FilterPattern},
+    filter::{ChannelFilters, ChannelPolicy, FilterPattern},
     PacketFilter,
 };
 use ibc_relayer_types::core::ics04_channel::channel::State;
@@ -21,11 +22,12 @@ fn test_ica_filter_default() -> Result<(), Error> {
 
 #[test]
 fn test_ica_filter_allow() -> Result<(), Error> {
-    run_binary_connection_test(&IcaFilterTestAllow::new(PacketFilter::Allow(
-        ChannelFilters::new(vec![(
+    run_binary_connection_test(&IcaFilterTestAllow::new(PacketFilter::new(
+        ChannelPolicy::Allow(ChannelFilters::new(vec![(
             FilterPattern::Wildcard("ica*".parse().unwrap()),
             FilterPattern::Wildcard("*".parse().unwrap()),
-        )]),
+        )])),
+        HashMap::new(),
     )))
 }
 
@@ -179,7 +181,7 @@ impl TestOverrides for IcaFilterTestDeny {
         config.mode.channels.enabled = true;
 
         for chain in &mut config.chains {
-            chain.packet_filter = PacketFilter::Deny(ChannelFilters::new(vec![(
+            chain.packet_filter.channel_policy = ChannelPolicy::Deny(ChannelFilters::new(vec![(
                 FilterPattern::Wildcard("ica*".parse().unwrap()),
                 FilterPattern::Wildcard("*".parse().unwrap()),
             )]));

@@ -1,0 +1,67 @@
+[global]
+log_level = 'error'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+tx_confirmation = true
+
+[[chains]]
+id = 'chain_A'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26657/websocket'
+rpc_timeout = '10s'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+max_gas = 200000
+gas_price = { price = 0.001, denom = 'stake' }
+max_msg_num = 4
+max_tx_size = 1048576
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+address_type = { derivation = 'cosmos' }
+
+[chains.packet_filter]
+policy = 'allow'
+list = [
+  ['ica*', '*'],
+  ['transfer', 'channel-0'],
+]
+
+[chains.packet_filter.min_fees.'*']
+recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
+
+[chains.packet_filter.min_fees.'ica*']
+recv = [ { amount = 0 }]
+
+[[chains]]
+id = 'chain_B'
+rpc_addr = 'http://127.0.0.1:26557'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26557/websocket'
+rpc_timeout = '10s'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas_price = { price = 0.001, denom = 'stake' }
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+address_type = { derivation = 'ethermint', proto_type = { pk_type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
