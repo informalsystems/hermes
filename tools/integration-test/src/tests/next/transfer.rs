@@ -28,7 +28,7 @@ impl BinaryChannelTest for IbcTransferTest {
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let pf: PacketFilter = PacketFilter::AllowAll;
+        let pf: PacketFilter = PacketFilter::default();
 
         let relay_context = build_cosmos_relay_context(&relayer.config, &chains, pf)?;
 

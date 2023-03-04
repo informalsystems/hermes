@@ -23,6 +23,7 @@ where
         Ok(self
             .relay
             .packet_filter()
+            .channel_policy
             .is_allowed(&packet.source_port, &packet.source_channel))
     }
 
