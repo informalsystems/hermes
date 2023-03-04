@@ -118,6 +118,11 @@ impl BinaryChannelTest for IbcTransferTest {
             None,
         )?;
 
+        info!(
+            "Waiting for user on chain A to receive IBC transferred amount of {} {}",
+            b_to_a_amount, denom_a
+        );
+
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
             &denom_b.with_amount(a_to_b_amount - b_to_a_amount).as_ref(),
