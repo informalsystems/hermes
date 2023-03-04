@@ -16,20 +16,22 @@ where
     BiRelay::RelayAToB: CanAutoRelay + HasRuntime<Runtime = Runtime> + Clone,
     BiRelay::RelayBToA: CanAutoRelay + Clone,
 {
-    async fn auto_relay(birelay: &BiRelay) {
+    async fn auto_relay(birelay: &BiRelay) -> Result<(), BiRelay::Error> {
         let relay_a_to_b = birelay.relay_a_to_b().clone();
         let relay_b_to_a = birelay.relay_b_to_a().clone();
         let spawner = relay_a_to_b.runtime().spawner();
 
         let handle1 = spawner.spawn(async move {
-            BiRelay::RelayAToB::auto_relay(&relay_a_to_b).await;
+            let _ = BiRelay::RelayAToB::auto_relay(&relay_a_to_b).await;
         });
 
         let handle2 = spawner.spawn(async move {
-            BiRelay::RelayBToA::auto_relay(&relay_b_to_a).await;
+            let _ = BiRelay::RelayBToA::auto_relay(&relay_b_to_a).await;
         });
 
         handle1.into_future().await;
         handle2.into_future().await;
+
+        Ok(())
     }
 }

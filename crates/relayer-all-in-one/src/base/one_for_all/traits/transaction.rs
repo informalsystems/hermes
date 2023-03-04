@@ -1,8 +1,10 @@
-use core::fmt::Debug;
+use core::fmt::{Debug, Display};
 use core::time::Duration;
 
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
+use ibc_relayer_components::logger::traits::logger::BaseLogger;
 
 use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
 use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -12,6 +14,10 @@ pub trait OfaTxTypes: Async {
     type Error: Async + Debug;
 
     type Runtime: OfaBaseRuntime;
+
+    type Logger: HasBaseLogLevels;
+
+    type ChainId: Display + Eq + Ord + Async;
 
     /**
        Corresponds to
@@ -44,9 +50,15 @@ pub trait OfaTxContext: OfaTxTypes {
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
 
+    fn logger(&self) -> &Self::Logger;
+
+    fn log_nonce<'a>(event: &'a Self::Nonce) -> <Self::Logger as BaseLogger>::LogValue<'a>;
+
     fn tx_no_response_error(tx_hash: &Self::TxHash) -> Self::Error;
 
     fn tx_size(tx: &Self::Transaction) -> usize;
+
+    fn chain_id(&self) -> &Self::ChainId;
 
     fn get_signer(&self) -> &Self::Signer;
 

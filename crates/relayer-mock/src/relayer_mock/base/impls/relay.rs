@@ -1,6 +1,7 @@
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use alloc::vec::Vec;
+use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use std::vec;
 
 use async_trait::async_trait;
@@ -24,6 +25,8 @@ impl OfaRelayTypes for MockRelayContext {
     type Error = Error;
 
     type Runtime = MockRuntimeContext;
+
+    type Logger = TracingLogger;
 
     type Packet = PacketKey;
 
@@ -84,6 +87,10 @@ impl OfaBaseRelay for MockRelayContext {
 
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
         &self.runtime
+    }
+
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
     }
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId {

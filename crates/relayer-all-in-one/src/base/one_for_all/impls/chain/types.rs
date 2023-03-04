@@ -1,6 +1,6 @@
 use ibc_relayer_components::chain::traits::types::chain_id::{HasChainId, HasChainIdType};
 use ibc_relayer_components::chain::traits::types::event::HasEventType;
-use ibc_relayer_components::chain::traits::types::height::HasHeightType;
+use ibc_relayer_components::chain::traits::types::height::{CanIncrementHeight, HasHeightType};
 use ibc_relayer_components::chain::traits::types::ibc::{
     HasCounterpartyMessageHeight, HasIbcChainTypes,
 };
@@ -51,6 +51,12 @@ impl<Chain: OfaChainTypes> HasEventType for OfaChainWrapper<Chain> {
 
 impl<Chain: OfaBaseChain> HasHeightType for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
+}
+
+impl<Chain: OfaBaseChain> CanIncrementHeight for OfaChainWrapper<Chain> {
+    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error> {
+        Chain::increment_height(height)
+    }
 }
 
 impl<Chain: OfaBaseChain> HasChainIdType for OfaChainWrapper<Chain> {

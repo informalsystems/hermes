@@ -17,17 +17,19 @@ where
     BiRelay::RelayAToB: CanAutoRelay,
     BiRelay::RelayBToA: CanAutoRelay,
 {
-    async fn auto_relay(birelay: &BiRelay) {
+    async fn auto_relay(birelay: &BiRelay) -> Result<(), BiRelay::Error> {
         let a_to_b_task: Pin<Box<dyn Future<Output = ()> + Send>> = Box::pin(async move {
-            BiRelay::RelayAToB::auto_relay(birelay.relay_a_to_b()).await;
+            let _ = BiRelay::RelayAToB::auto_relay(birelay.relay_a_to_b()).await;
         });
 
         let b_to_a_task: Pin<Box<dyn Future<Output = ()> + Send>> = Box::pin(async move {
-            BiRelay::RelayBToA::auto_relay(birelay.relay_b_to_a()).await;
+            let _ = BiRelay::RelayBToA::auto_relay(birelay.relay_b_to_a()).await;
         });
 
         stream::iter([a_to_b_task, b_to_a_task])
             .for_each_concurrent(None, |task| task)
             .await;
+
+        Ok(())
     }
 }

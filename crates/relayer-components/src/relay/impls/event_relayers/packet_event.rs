@@ -68,6 +68,10 @@ where
         height: &Height<Relay::DstChain>,
         event: &Event<Relay::DstChain>,
     ) -> Result<(), Relay::Error> {
+        // TODO: Implement ack lock to prevent two ack packets being relayed simultaneously.
+        // AckPackets can be relayed via a PacketRelayer that relayed the RecvPacket,
+        // or this event relayer which reacts on Ack events.
+
         let m_ack_event = Relay::DstChain::try_extract_write_acknowledgement_event(event);
 
         if let Some(ack_event) = m_ack_event {

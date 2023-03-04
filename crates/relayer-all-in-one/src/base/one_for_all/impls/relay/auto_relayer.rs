@@ -11,7 +11,7 @@ where
     Relay: OfaBaseRelay<Preset = Preset>,
     Preset: OfaRelayPreset<Relay>,
 {
-    async fn auto_relay(&self) {
+    async fn auto_relay(&self) -> Result<(), Relay::Error> {
         Preset::AutoRelayer::auto_relay(self).await
     }
 }

@@ -19,6 +19,8 @@ use ibc_relayer_all_in_one::base::one_for_all::traits::chain::{
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
+use ibc_relayer_runtime::tokio::logger::value::LogValue;
 
 use crate::relayer_mock::base::error::{BaseError, Error};
 use crate::relayer_mock::base::types::aliases::{
@@ -38,6 +40,8 @@ impl OfaChainTypes for MockChainContext {
     type Error = Error;
 
     type Runtime = MockRuntimeContext;
+
+    type Logger = TracingLogger;
 
     type Height = MockHeight;
 
@@ -76,6 +80,18 @@ impl OfaBaseChain for MockChainContext {
 
     fn runtime_error(e: TokioError) -> Self::Error {
         BaseError::tokio(e).into()
+    }
+
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
+    }
+
+    fn log_event(event: &Event) -> LogValue<'_> {
+        LogValue::Debug(event)
+    }
+
+    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error> {
+        Ok(height.increment())
     }
 
     // Only single messages are sent by the Mock Chain
@@ -186,6 +202,14 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
 
     fn outgoing_packet_timeout_timestamp(packet: &PacketKey) -> &MockTimestamp {
         &packet.timeout_timestamp
+    }
+
+    fn log_incoming_packet(packet: &PacketKey) -> LogValue<'_> {
+        LogValue::Display(packet)
+    }
+
+    fn log_outgoing_packet(packet: &PacketKey) -> LogValue<'_> {
+        LogValue::Display(packet)
     }
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {

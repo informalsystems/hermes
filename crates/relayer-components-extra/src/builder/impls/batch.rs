@@ -165,6 +165,9 @@ where
         ),
         Self::Error,
     > {
+        // let (sender, receiver) = Runtime::new_channel();
+        // Ok((sender, Some(receiver)))
+
         let mutex = self.batch_sender_cache(target);
 
         let mut sender_cache = Build::Runtime::acquire_mutex(mutex).await;

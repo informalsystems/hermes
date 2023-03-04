@@ -2,6 +2,8 @@
    Trait definition for [`HasTimestampType`].
 */
 
+use core::fmt::Display;
+
 use crate::core::traits::sync::Async;
 
 pub trait HasTimestampType: Async {
@@ -27,5 +29,5 @@ pub trait HasTimestampType: Async {
        concrete context implementers to decide which exact time type
        they would like to use.
     */
-    type Timestamp: Ord + Async;
+    type Timestamp: Ord + Display + Async;
 }

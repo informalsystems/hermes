@@ -1,6 +1,7 @@
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use core::fmt::Debug;
+use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
@@ -21,6 +22,8 @@ pub trait OfaBuilderTypes: Async {
 
     type Runtime: OfaBaseRuntime;
 
+    type Logger: HasBaseLogLevels;
+
     type BiRelay: OfaBiRelay<Preset = Self::Preset>;
 }
 
@@ -29,6 +32,8 @@ pub trait OfaBuilder: OfaBuilderTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
+
+    fn logger(&self) -> &Self::Logger;
 
     async fn build_chain_a(&self, chain_id: &ChainIdA<Self>) -> Result<ChainA<Self>, Self::Error>;
 

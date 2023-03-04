@@ -17,6 +17,9 @@ use ibc_relayer_all_in_one::base::one_for_all::traits::transaction::{OfaTxContex
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
+use ibc_relayer_runtime::tokio::logger::value::LogValue;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use prost::Message as _;
 use tendermint::abci::Event;
 use tendermint::Hash as TxHash;
@@ -35,6 +38,10 @@ where
     type Error = Error;
 
     type Runtime = TokioRuntimeContext;
+
+    type Logger = TracingLogger;
+
+    type ChainId = ChainId;
 
     type Message = CosmosIbcMessage;
 
@@ -66,6 +73,14 @@ where
         BaseError::tokio(e).into()
     }
 
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
+    }
+
+    fn log_nonce(nonce: &Account) -> LogValue<'_> {
+        LogValue::Debug(nonce)
+    }
+
     fn tx_no_response_error(tx_hash: &TxHash) -> Self::Error {
         BaseError::tx_no_response(*tx_hash).into()
     }
@@ -78,6 +93,10 @@ where
         };
 
         tx_raw.encoded_len()
+    }
+
+    fn chain_id(&self) -> &Self::ChainId {
+        &self.chain.tx_config().chain_id
     }
 
     fn get_signer(&self) -> &Self::Signer {
@@ -93,7 +112,7 @@ where
     }
 
     fn poll_backoff(&self) -> Duration {
-        Duration::from_secs(1)
+        Duration::from_millis(200)
     }
 
     async fn encode_tx(
@@ -124,6 +143,10 @@ where
         let response = broadcast_tx_sync(&tx_config.rpc_client, &tx_config.rpc_address, tx.clone())
             .await
             .map_err(BaseError::relayer)?;
+
+        if response.code.is_err() {
+            return Err(BaseError::check_tx(response).into());
+        }
 
         Ok(response.hash)
     }

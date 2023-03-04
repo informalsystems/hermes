@@ -40,7 +40,7 @@ concurrency:
 jobs:
   integration-test:
     runs-on: ubuntu-20.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -99,7 +99,8 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - uses: nick-fields/retry@v2
+      - name: run integration tests
+        uses: nick-fields/retry@v2
         env:
           RUST_LOG: info
           RUST_BACKTRACE: 1

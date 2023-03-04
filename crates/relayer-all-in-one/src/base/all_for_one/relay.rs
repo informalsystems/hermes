@@ -1,4 +1,5 @@
 use ibc_relayer_components::chain::types::aliases::{IncomingPacket, OutgoingPacket};
+use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
 use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
 use ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages;
@@ -19,6 +20,7 @@ use crate::base::all_for_one::runtime::HasAfoBaseRuntime;
 pub trait AfoBaseRelay:
     Clone
     + HasAfoBaseRuntime
+    + HasLoggerWithBaseLevels
     + HasRelayTypes<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
     + CanBuildUpdateClientMessage<SourceTarget>
     + CanBuildUpdateClientMessage<DestinationTarget>
@@ -48,6 +50,7 @@ where
     DstChain: AfoBaseChain<SrcChain, IncomingPacket = Packet, OutgoingPacket = ReversePacket>,
     Relay: Clone
         + HasAfoBaseRuntime
+        + HasLoggerWithBaseLevels
         + HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain>
         + CanBuildUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>

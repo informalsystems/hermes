@@ -16,7 +16,7 @@ where
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasEventSubscription,
 {
-    async fn auto_relay_with_target(relay: &Relay) {
+    async fn auto_relay_with_target(relay: &Relay) -> Result<(), Relay::Error> {
         let subscription = Target::target_chain(relay).event_subscription();
 
         loop {
@@ -31,7 +31,7 @@ where
                     })
                     .await;
             } else {
-                return;
+                return Ok(());
             }
         }
     }

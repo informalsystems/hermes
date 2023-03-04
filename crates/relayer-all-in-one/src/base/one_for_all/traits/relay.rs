@@ -6,6 +6,7 @@ use core::fmt::Debug;
 
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayer;
 use ibc_relayer_components::relay::traits::ibc_message_sender::IbcMessageSender;
 use ibc_relayer_components::relay::traits::packet_filter::PacketFilter;
@@ -30,13 +31,21 @@ pub trait OfaRelayTypes: Async {
 
     type Runtime: OfaBaseRuntime;
 
+    type Logger: HasBaseLogLevels;
+
     type Packet: Async;
 
-    type SrcChain: OfaIbcChain<Self::DstChain, Preset = Self::Preset, OutgoingPacket = Self::Packet>;
+    type SrcChain: OfaIbcChain<
+        Self::DstChain,
+        Preset = Self::Preset,
+        Logger = Self::Logger,
+        OutgoingPacket = Self::Packet,
+    >;
 
     type DstChain: OfaIbcChain<
         Self::SrcChain,
         Preset = Self::Preset,
+        Logger = Self::Logger,
         IncomingPacket = Self::Packet,
         OutgoingPacket = <Self::SrcChain as OfaIbcChain<Self::DstChain>>::IncomingPacket,
     >;
@@ -73,6 +82,8 @@ pub trait OfaBaseRelay: OfaRelayTypes {
     ) -> &<Self::DstChain as OfaChainTypes>::Timestamp;
 
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
+
+    fn logger(&self) -> &Self::Logger;
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId;
 

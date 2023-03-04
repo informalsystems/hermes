@@ -19,16 +19,17 @@ where
     InRelayer: AutoRelayerWithTarget<Relay, SourceTarget>,
     InRelayer: AutoRelayerWithTarget<Relay, DestinationTarget>,
 {
-    async fn auto_relay(relay: &Relay) {
+    async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error> {
         let src_task: Pin<Box<dyn Future<Output = ()> + Send>> = Box::pin(async move {
-            <InRelayer as AutoRelayerWithTarget<Relay, SourceTarget>>::auto_relay_with_target(
-                relay,
-            )
-            .await;
+            let _ =
+                <InRelayer as AutoRelayerWithTarget<Relay, SourceTarget>>::auto_relay_with_target(
+                    relay,
+                )
+                .await;
         });
 
         let dst_task: Pin<Box<dyn Future<Output = ()> + Send>> = Box::pin(async move {
-            <InRelayer as AutoRelayerWithTarget<Relay, DestinationTarget>>::auto_relay_with_target(
+            let _ = <InRelayer as AutoRelayerWithTarget<Relay, DestinationTarget>>::auto_relay_with_target(
                 relay,
             )
             .await;
@@ -37,5 +38,7 @@ where
         stream::iter([src_task, dst_task])
             .for_each_concurrent(None, |task| task)
             .await;
+
+        Ok(())
     }
 }

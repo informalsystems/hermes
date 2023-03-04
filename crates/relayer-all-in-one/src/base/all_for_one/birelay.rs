@@ -1,10 +1,15 @@
+use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
 use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 
 use crate::base::all_for_one::relay::AfoBaseRelay;
+use crate::base::all_for_one::runtime::HasAfoBaseRuntime;
 
 pub trait AfoBaseBiRelay:
-    CanAutoRelay + HasTwoWayRelay<RelayAToB = Self::AfoRelayAToB, RelayBToA = Self::AfoRelayBToA>
+    HasAfoBaseRuntime
+    + HasLoggerWithBaseLevels
+    + CanAutoRelay
+    + HasTwoWayRelay<RelayAToB = Self::AfoRelayAToB, RelayBToA = Self::AfoRelayBToA>
 {
     type AfoRelayAToB: AfoBaseRelay;
 
@@ -18,7 +23,10 @@ impl<BiRelay, RelayAToB, RelayBToA> AfoBaseBiRelay for BiRelay
 where
     RelayAToB: AfoBaseRelay,
     RelayBToA: AfoBaseRelay<AfoSrcChain = RelayAToB::DstChain, AfoDstChain = RelayAToB::SrcChain>,
-    BiRelay: CanAutoRelay + HasTwoWayRelay<RelayAToB = RelayAToB, RelayBToA = RelayBToA>,
+    BiRelay: HasAfoBaseRuntime
+        + HasLoggerWithBaseLevels
+        + CanAutoRelay
+        + HasTwoWayRelay<RelayAToB = RelayAToB, RelayBToA = RelayBToA>,
 {
     type AfoRelayAToB = RelayAToB;
 

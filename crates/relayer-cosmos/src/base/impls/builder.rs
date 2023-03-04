@@ -7,6 +7,7 @@ use ibc_relayer_all_in_one::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioRuntimeError;
+use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
 use crate::base::traits::builder::{
@@ -27,6 +28,8 @@ where
 
     type Runtime = TokioRuntimeContext;
 
+    type Logger = TracingLogger;
+
     type BiRelay = CosmosBiRelayWrapper<Builder::BiRelay>;
 }
 
@@ -41,6 +44,10 @@ where
 
     fn runtime_error(e: TokioRuntimeError) -> Builder::Error {
         Builder::runtime_error(e)
+    }
+
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
     }
 
     async fn build_chain_a(

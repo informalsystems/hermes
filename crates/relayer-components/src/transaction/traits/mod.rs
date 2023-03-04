@@ -2,6 +2,7 @@ pub mod encode;
 pub mod estimate;
 pub mod event;
 pub mod fee;
+pub mod logs;
 pub mod message;
 pub mod nonce;
 pub mod response;

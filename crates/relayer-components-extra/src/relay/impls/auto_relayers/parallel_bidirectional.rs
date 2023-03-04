@@ -19,26 +19,29 @@ where
     InRelayer: AutoRelayerWithTarget<Relay, DestinationTarget>,
     Runtime: HasSpawner,
 {
-    async fn auto_relay(relay: &Relay) {
+    async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error> {
         let src_relay = relay.clone();
         let dst_relay = relay.clone();
         let spawner = src_relay.runtime().spawner();
 
         let handle1 = spawner.spawn(async move {
-            <InRelayer as AutoRelayerWithTarget<Relay, DestinationTarget>>::auto_relay_with_target(
+            let _ = <InRelayer as AutoRelayerWithTarget<Relay, DestinationTarget>>::auto_relay_with_target(
                 &dst_relay,
             )
             .await;
         });
 
         let handle2 = spawner.spawn(async move {
-            <InRelayer as AutoRelayerWithTarget<Relay, SourceTarget>>::auto_relay_with_target(
-                &src_relay,
-            )
-            .await
+            let _ =
+                <InRelayer as AutoRelayerWithTarget<Relay, SourceTarget>>::auto_relay_with_target(
+                    &src_relay,
+                )
+                .await;
         });
 
         handle1.into_future().await;
         handle2.into_future().await;
+
+        Ok(())
     }
 }

@@ -10,7 +10,9 @@ use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
 use prost::EncodeError;
 use tendermint::Hash as TxHash;
+use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::Error as TendermintRpcError;
+use tokio::task::JoinError;
 
 pub type Error = Arc<BaseError>;
 
@@ -66,5 +68,13 @@ define_error! {
 
         MissingSimulateGasInfo
             | _ | { "missing gas info returned from send_tx_simulate" },
+
+        CheckTx
+            { response: Response }
+            | e | { format_args!("check tx error: {:?}", e.response) },
+
+        Join
+            [ TraceError<JoinError> ]
+            | _ | { "error joining tokio tasks" },
     }
 }
