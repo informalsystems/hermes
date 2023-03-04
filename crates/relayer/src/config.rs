@@ -217,7 +217,10 @@ impl Config {
         channel_id: &ChannelId,
     ) -> bool {
         match self.find_chain(chain_id) {
-            Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
+            Some(chain_config) => chain_config
+                .packet_filter
+                .channel_policy
+                .is_allowed(port_id, channel_id),
             None => false,
         }
     }
@@ -549,6 +552,18 @@ mod tests {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests/config/fixtures/relayer_conf_example.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_fee_filter_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_fee_filter.toml"
         );
 
         let config = load(path).expect("could not parse config");

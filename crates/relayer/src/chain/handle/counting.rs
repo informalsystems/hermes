@@ -5,6 +5,9 @@ use std::sync::{Arc, RwLock, RwLockReadGuard};
 use crossbeam_channel as channel;
 use tracing::{debug, Span};
 
+use ibc_proto::ibc::apps::fee::v1::{
+    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+};
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
@@ -491,5 +494,13 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     ) -> Result<Vec<CrossChainQueryResponse>, Error> {
         self.inc_metric("cross_chain_query");
         self.inner.cross_chain_query(request)
+    }
+
+    fn query_incentivized_packet(
+        &self,
+        request: QueryIncentivizedPacketRequest,
+    ) -> Result<QueryIncentivizedPacketResponse, Error> {
+        self.inc_metric("query_incentivized_packet");
+        self.inner.query_incentivized_packet(request)
     }
 }

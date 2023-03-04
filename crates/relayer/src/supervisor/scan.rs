@@ -25,7 +25,10 @@ use crate::{
         },
     },
     client_state::IdentifiedAnyClientState,
-    config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
+    config::{
+        filter::{ChannelFilters, ChannelPolicy},
+        ChainConfig, Config,
+    },
     path::PathIdentifiers,
     registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
@@ -576,8 +579,8 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
             return None;
         }
 
-        match chain_config.packet_filter {
-            PacketFilter::Allow(ref filters) if filters.is_exact() => Some(filters),
+        match chain_config.packet_filter.channel_policy {
+            ChannelPolicy::Allow(ref filters) if filters.is_exact() => Some(filters),
             _ => None,
         }
     }

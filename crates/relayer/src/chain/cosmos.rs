@@ -14,8 +14,12 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, trace, warn};
 
-use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
-use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+use ibc_proto::cosmos::{
+    base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
+};
+use ibc_proto::ibc::apps::fee::v1::{
+    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+};
 use ibc_proto::protobuf::Protobuf;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
@@ -68,6 +72,7 @@ use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
 use crate::chain::cosmos::query::consensus_state::query_consensus_state_heights;
 use crate::chain::cosmos::query::custom::cross_chain_query_via_rpc;
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
+use crate::chain::cosmos::query::fee::query_incentivized_packet;
 use crate::chain::cosmos::query::packet_query;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::{
@@ -1889,6 +1894,15 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect::<Vec<CrossChainQueryResponse>>();
 
         Ok(responses)
+    }
+
+    fn query_incentivized_packet(
+        &self,
+        request: QueryIncentivizedPacketRequest,
+    ) -> Result<QueryIncentivizedPacketResponse, Error> {
+        let incentivized_response =
+            self.block_on(query_incentivized_packet(&self.grpc_addr, request))?;
+        Ok(incentivized_response)
     }
 }
 
