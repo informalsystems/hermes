@@ -272,7 +272,8 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
         ```
     The tokens were successfully received by `ibc-1` under the denomination `ibc/8F3...` while they should be recognized as samoleans. Indeed, **it is impossible to transfer back tokens from a different channel than the one they were received from**.
 
-    Let's forget about these tokens.
+    You could get the tokens back to samoleans by transferring them back via the route you sent
+    them from, but instead let's forget about these tokens.
 
 ### The right way
 
