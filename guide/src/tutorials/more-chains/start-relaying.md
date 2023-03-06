@@ -315,7 +315,7 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
         next_key: null
         total: "0"
         ```
-    The tokens were correctly received by `ibc-0` under the denomination `ibc/C184...`. The tokens retrieved the denomination they had before they were transferred to ibc-3.
+    The tokens were correctly received by `ibc-2` under the denomination `ibc/C184...`. The tokens retrieved the denomination they had before they were transferred to ibc-3.
 
 - Transfer the `ibc/C184...` tokens from ibc-2 to ibc-1:
     ```shell
