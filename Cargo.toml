@@ -16,10 +16,10 @@ members = [
 ]
 
 [patch.crates-io]
-ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs.git", branch = "mikhail/explicit-tendermint-core-ver" }
-tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "mikhail/multi-tc-version-support" }
-tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "mikhail/multi-tc-version-support" }
-tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "mikhail/multi-tc-version-support" }
-tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "mikhail/multi-tc-version-support" }
-tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "mikhail/multi-tc-version-support" }
-tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "mikhail/multi-tc-version-support" }
+# ibc-proto               = { git = "https://github.com/cosmos/ibc-proto-rs.git", branch = "mikhail/explicit-tendermint-core-ver" }
+tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
+tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
+tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
+tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
+tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
+tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }

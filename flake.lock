@@ -88,11 +88,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1674208980,
-        "narHash": "sha256-A2h6+ZzoPx2eP0RjZcxEtnrPFBST6PJLPtR5+la/15U=",
+        "lastModified": 1675778336,
+        "narHash": "sha256-rrxSLRdMInR/Bjz/O2egGgnMT6nESY566yZZPeAX+IQ=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "c6b7d2e8a24aad64cef4e311a0ce6348c502c420",
+        "rev": "baf12ceb6278c574d9521580474748220d18271e",
         "type": "github"
       },
       "original": {
@@ -621,11 +621,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1673947312,
-        "narHash": "sha256-xx/2nRwRy3bXrtry6TtydKpJpqHahjuDB5sFkQ/XNDE=",
+        "lastModified": 1675698036,
+        "narHash": "sha256-BgsQkQewdlQi8gapJN4phpxkI/FCE/2sORBaFcYbp/A=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "2d38b664b4400335086a713a0036aafaa002c003",
+        "rev": "1046c7b92e908a1202c0f1ba3fc21d19e1cf1b62",
         "type": "github"
       },
       "original": {
@@ -892,16 +892,16 @@
     "stride-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1669073860,
-        "narHash": "sha256-3C1pmWVDFLuSofU27H58Y5bKloZh+EivW0T5ng7Y0IM=",
+        "lastModified": 1674783729,
+        "narHash": "sha256-hTrfuVzmuSAhBnKk24yV2u6yekpf4DzOfB9l4WHDLZg=",
         "owner": "Stride-Labs",
         "repo": "stride",
-        "rev": "613e85711485d3bebeeb5777ba35e701cc795a43",
+        "rev": "bf9dc8d6badcf97e6b9c01aa8bfc09516036db1e",
         "type": "github"
       },
       "original": {
         "owner": "Stride-Labs",
-        "ref": "v3.0.1",
+        "ref": "v5.1.1",
         "repo": "stride",
         "type": "github"
       }

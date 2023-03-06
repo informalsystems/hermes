@@ -20,7 +20,9 @@
 //!     example_test
 //! ```
 //!
-//! The environment variable RUST_LOG controls the log level. The RUST_BACKTRACE variable
+//! The environment variable `RUST_LOG` controls log filtering for Hermes and,
+//! besides the global log level, can be used to pass more elaborate directives
+//! for the tracing framework. The `RUST_BACKTRACE` variable
 //! displays a backtrace when errors occur in a test. The test flag `--test-threads=1` is
 //! set so that tests are run serially (this makes it easier to follow what is going on
 //! via the log output). Take a look at the [`TestConfig`](crate::types::config::TestConfig)

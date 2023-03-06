@@ -82,7 +82,9 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         timeout_fee: &TaggedTokenRef<'_, Chain>,
         timeout: Duration,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(ibc_token_transfer_with_fee(
+            rpc_client.as_ref(),
             &self.tx_config(),
             port_id,
             channel_id,
@@ -106,7 +108,9 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(pay_packet_fee(
+            rpc_client.as_ref(),
             &self.tx_config(),
             port_id,
             channel_id,
@@ -125,7 +129,9 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
         port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
     ) -> Result<(), Error> {
+        let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(register_counterparty_payee(
+            rpc_client.as_ref(),
             &self.tx_config(),
             wallet,
             counterparty_payee,
@@ -141,7 +147,9 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
         port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
     ) -> Result<(), Error> {
+        let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(register_payee(
+            rpc_client.as_ref(),
             &self.tx_config(),
             wallet,
             payee,

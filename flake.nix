@@ -45,6 +45,7 @@
               ibc-go-v7-simapp
               apalache
               evmos
+              stride-no-admin
             ;
 
             python = nixpkgs.python3.withPackages (p: [
