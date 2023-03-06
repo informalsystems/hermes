@@ -1,9 +1,12 @@
+use core::time::Duration;
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
+
 use crate::chain::cli::transfer::local_transfer_token;
 use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
-use crate::relayer::transfer::ibc_token_transfer;
+use crate::relayer::transfer::{batched_ibc_token_transfer, ibc_token_transfer};
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -36,7 +39,8 @@ pub trait ChainTransferMethodsExt<Chain> {
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
-    ) -> Result<(), Error>;
+        timeout: Option<Duration>,
+    ) -> Result<Packet, Error>;
 
     fn ibc_transfer_token_multiple<Counterparty>(
         &self,
@@ -64,7 +68,8 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
-    ) -> Result<(), Error> {
+        timeout: Option<Duration>,
+    ) -> Result<Packet, Error> {
         self.value().runtime.block_on(ibc_token_transfer(
             &self.tx_config(),
             port_id,
@@ -72,7 +77,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             sender,
             recipient,
             token,
-            1,
+            timeout,
         ))
     }
 
@@ -85,7 +90,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         token: &TaggedTokenRef<Chain>,
         num_msgs: usize,
     ) -> Result<(), Error> {
-        self.value().runtime.block_on(ibc_token_transfer(
+        self.value().runtime.block_on(batched_ibc_token_transfer(
             &self.tx_config(),
             port_id,
             channel_id,

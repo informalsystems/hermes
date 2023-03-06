@@ -121,6 +121,7 @@ impl BinaryChainTest for SupervisorTest {
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &denom_a.with_amount(1000u64).as_ref(),
+            None,
         )?;
 
         // During the test, you should see error logs showing "account sequence mismatch".

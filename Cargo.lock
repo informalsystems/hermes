@@ -802,6 +802,16 @@ dependencies = [
 
 [[package]]
 name = "dashmap"
+version = "4.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e77a43b28d0668df09411cb0bc9a8c2adc40f9a048afe863e05fd43251e8e39c"
+dependencies = [
+ "cfg-if 1.0.0",
+ "num_cpus",
+]
+
+[[package]]
+name = "dashmap"
 version = "5.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "907076dfda823b0b36d2a1bb5f90c96660a5bbcd7729e10727f07858f22c4edc"
@@ -1745,15 +1755,21 @@ dependencies = [
 name = "ibc-integration-test"
 version = "0.22.0"
 dependencies = [
+ "async-trait",
+ "eyre",
  "http",
+ "ibc-proto",
  "ibc-relayer",
+ "ibc-relayer-cli",
  "ibc-relayer-types",
  "ibc-test-framework",
+ "opentelemetry 0.17.0",
  "prost",
  "serde",
  "serde_json",
  "tempfile",
  "time 0.3.17",
+ "tokio",
  "toml",
  "tonic",
 ]
@@ -1930,11 +1946,11 @@ dependencies = [
 name = "ibc-telemetry"
 version = "0.22.0"
 dependencies = [
- "dashmap",
+ "dashmap 5.4.0",
  "ibc-relayer-types",
  "moka",
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.18.0",
  "opentelemetry-prometheus",
  "prometheus",
  "rouille",
@@ -1967,6 +1983,7 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.6",
  "subtle-encoding",
+ "tendermint",
  "tendermint-rpc",
  "tokio",
  "toml",
@@ -2663,6 +2680,27 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "opentelemetry"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6105e89802af13fdf48c49d7646d3b533a70e536d818aae7e78ba0433d01acb8"
+dependencies = [
+ "async-trait",
+ "crossbeam-channel 0.5.6",
+ "dashmap 4.0.2",
+ "fnv",
+ "futures-channel",
+ "futures-executor",
+ "futures-util",
+ "js-sys",
+ "lazy_static",
+ "percent-encoding",
+ "pin-project",
+ "rand 0.8.5",
+ "thiserror",
+]
+
+[[package]]
+name = "opentelemetry"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69d6c3d7288a106c0a363e4b0e8d308058d56902adefb16f4936f417ffef086e"
@@ -2677,7 +2715,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06c3d833835a53cf91331d2cfb27e9121f5a95261f31f08a1f79ab31688b8da8"
 dependencies = [
- "opentelemetry",
+ "opentelemetry 0.18.0",
  "prometheus",
  "protobuf",
 ]
@@ -2706,7 +2744,7 @@ checksum = "1ca41c4933371b61c2a2f214bf16931499af4ec90543604ec828f7a625c09113"
 dependencies = [
  "async-trait",
  "crossbeam-channel 0.5.6",
- "dashmap",
+ "dashmap 5.4.0",
  "fnv",
  "futures-channel",
  "futures-executor",
@@ -3761,7 +3799,7 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "538c30747ae860d6fb88330addbbd3e0ddbe46d662d032855596d8a8ca260611"
 dependencies = [
- "dashmap",
+ "dashmap 5.4.0",
  "futures",
  "lazy_static",
  "log",

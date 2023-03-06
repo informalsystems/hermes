@@ -66,17 +66,19 @@ use crate::chain::cosmos::batch::{
 use crate::chain::cosmos::encode::key_pair_to_signer;
 use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
+use crate::chain::cosmos::query::abci::{abci_query, QueryResponse};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
 use crate::chain::cosmos::query::consensus_state::query_consensus_state_heights;
 use crate::chain::cosmos::query::custom::cross_chain_query_via_rpc;
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::fee::query_incentivized_packet;
+use crate::chain::cosmos::query::packet_query;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::{
     filter_matching_event, query_packets_from_block, query_packets_from_txs, query_txs,
 };
-use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
+use crate::chain::cosmos::query::version::fetch_version_specs;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{
@@ -106,6 +108,7 @@ pub mod client;
 pub mod compatibility;
 pub mod encode;
 pub mod estimate;
+pub mod event;
 pub mod fee;
 pub mod gas;
 pub mod query;
@@ -428,7 +431,7 @@ impl CosmosSdkChain {
     ) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
-        let path = IBC_QUERY_PATH.into();
+        let path = IBC_QUERY_PATH.to_string();
 
         let height = TmHeight::try_from(height_query)?;
 
@@ -474,7 +477,7 @@ impl CosmosSdkChain {
         query_data: ClientUpgradePath,
         query_height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let path = SDK_UPGRADE_QUERY_PATH.into();
+        let path = SDK_UPGRADE_QUERY_PATH.to_string();
 
         let response: QueryResponse = self.block_on(abci_query(
             &self.rpc_client,

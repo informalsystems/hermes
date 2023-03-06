@@ -17,7 +17,7 @@ use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::link::operational_data::{OperationalData, TrackedEvents};
 use crate::link::packet_events::{
-    query_packet_events_with, query_send_packet_events, query_write_ack_events,
+    query_packet_events_with, query_send_packet_events, query_write_acknowledgement_events,
 };
 use crate::link::relay_path::RelayPath;
 use crate::link::relay_sender::SyncSender;
@@ -161,7 +161,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         self.relay_packet_messages(
             sequences,
             query_height,
-            query_write_ack_events,
+            query_write_acknowledgement_events,
             TrackingId::new_static("packet-ack"),
         )
     }

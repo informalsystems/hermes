@@ -155,6 +155,9 @@ define_error! {
         InvalidAcknowledgement
             | _ | { "Acknowledgment cannot be empty" },
 
+        InvalidAcknowledgementEvent
+            | _ | { "IBC event is not a write acknowledgement event" },
+
         AcknowledgementExists
             { sequence: Sequence }
             | e | {

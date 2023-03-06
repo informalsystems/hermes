@@ -90,6 +90,7 @@ impl BinaryChannelTest for NonFeeChannelTest {
             &user_a,
             &user_b.address(),
             &denom_a.with_amount(send_amount).as_ref(),
+            None,
         )?;
 
         let denom_b = derive_ibc_denom(

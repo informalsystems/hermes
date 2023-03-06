@@ -393,7 +393,7 @@ fn channel_extract_attributes_from_tx(
     Ok(attr)
 }
 
-fn extract_packet_and_write_ack_from_tx(
+pub fn extract_packet_and_write_ack_from_tx(
     event: &AbciEvent,
 ) -> Result<(Packet, Vec<u8>), ChannelError> {
     let mut packet = Packet::default();
