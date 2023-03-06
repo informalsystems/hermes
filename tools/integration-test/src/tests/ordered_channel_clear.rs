@@ -97,6 +97,7 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             &wallet_b.address(),
             &token.as_ref(),
             num_msgs,
+            "",
         )?;
 
         sleep(Duration::from_secs(10));

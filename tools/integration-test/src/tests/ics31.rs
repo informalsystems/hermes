@@ -98,6 +98,7 @@ impl BinaryChannelTest for ICS31Test {
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &denom_a.with_amount(a_to_b_amount).as_ref(),
+            "",
         )?;
 
         let denom_b = derive_ibc_denom(

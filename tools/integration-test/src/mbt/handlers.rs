@@ -196,6 +196,7 @@ pub fn ibc_transfer_send_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
         &wallet_source,
         &wallet_target.address(),
         &denom_source.with_amount(amount_source_to_target).as_ref(),
+        "",
     )?;
 
     node_source.chain_driver().assert_eventual_wallet_amount(

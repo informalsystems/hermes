@@ -114,7 +114,7 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
         )?;
 
         let wallets_a = node_a.wallets();
-        let wallet_a = wallets_a.user1();
+        let wallet_a = wallets_a.user1().cloned();
 
         let wallets_b = node_b.wallets();
         let wallet_b = wallets_b.user1();
@@ -135,9 +135,9 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
-        let binding = node_a.chain_driver();
-        let driver = binding.value();
-        match transfer_with_memo(
+        //let binding = node_a.chain_driver();
+        //let driver = binding.value();
+        /*match transfer_with_memo(
             driver.chain_id.as_str(),
             &driver.command_path,
             &driver.home_path,
@@ -155,7 +155,16 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
             Err(e) => {
                 info!("error with memo CLI : {}", e);
             }
-        }
+        }*/
+
+        node_a.chain_driver().ibc_transfer_token(
+            &channel_a_to_b.port_a.as_ref(),
+            &channel_a_to_b.channel_id_a.as_ref(),
+            &wallet_a.as_ref(),
+            &wallet_b.address(),
+            &denom_a.with_amount(a_to_c_amount).as_ref(),
+            &memo,
+        )?;
 
         info!(
             "waiting for user on chain C to receive IBC transferred amount of {}",

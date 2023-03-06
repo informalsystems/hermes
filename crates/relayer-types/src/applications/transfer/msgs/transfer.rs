@@ -41,6 +41,8 @@ pub struct MsgTransfer<C = Coin> {
     /// Timeout timestamp relative to the current block timestamp.
     /// The timeout is disabled when set to 0.
     pub timeout_timestamp: Timestamp,
+    /// optional memo
+    pub memo: String,
 }
 
 impl Msg for MsgTransfer {
@@ -81,6 +83,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             receiver: raw_msg.receiver.parse().map_err(Error::signer)?,
             timeout_height,
             timeout_timestamp,
+            memo: raw_msg.memo,
         })
     }
 }
@@ -95,6 +98,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             receiver: domain_msg.receiver.to_string(),
             timeout_height: domain_msg.timeout_height.into(),
             timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
+            memo: domain_msg.memo,
         }
     }
 }
@@ -125,6 +129,7 @@ impl From<MsgTransfer> for Any {
 
 #[cfg(test)]
 pub mod test_util {
+    use alloc::borrow::ToOwned;
     use core::ops::Add;
     use core::time::Duration;
 
@@ -149,6 +154,7 @@ pub mod test_util {
         timeout_timestamp: Option<Timestamp>,
     ) -> MsgTransfer<PrefixedCoin> {
         let address: Signer = get_dummy_bech32_account().as_str().parse().unwrap();
+        let memo = "".to_owned();
         MsgTransfer {
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
@@ -162,6 +168,7 @@ pub mod test_util {
             timeout_timestamp: timeout_timestamp
                 .unwrap_or_else(|| Timestamp::now().add(Duration::from_secs(10)).unwrap()),
             timeout_height,
+            memo,
         }
     }
 

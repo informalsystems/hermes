@@ -66,6 +66,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
                 &chains.node_a.wallets().user1(),
                 &chains.node_b.wallets().user1().address(),
                 &chains.node_a.denom().with_amount(amount1).as_ref(),
+                "",
             )?;
 
             relay_path_a_to_b.schedule_packet_clearing(None)?;

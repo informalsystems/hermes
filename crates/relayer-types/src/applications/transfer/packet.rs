@@ -39,6 +39,7 @@ impl From<PacketData> for RawPacketData {
             amount: pkt_data.token.amount.to_string(),
             sender: pkt_data.sender.to_string(),
             receiver: pkt_data.receiver.to_string(),
+            memo: "".to_string(),
         }
     }
 }
