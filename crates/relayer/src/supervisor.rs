@@ -147,6 +147,10 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     // If telemetry is enabled, for each chain register the relayer's address
     // in the list of visible fee addresses.
     if config.telemetry.enabled {
+        telemetry!(
+            add_visible_fee_address,
+            "cosmos10h9stc5v6ntgeygf5xf945njqq5h32r53uquvw".to_owned()
+        );
         for chain in registry.read().chains() {
             if let Ok(key) = chain.get_key() {
                 telemetry!(add_visible_fee_address, key.account());

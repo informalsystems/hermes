@@ -66,7 +66,8 @@ const QUERY_TYPES: [&str; 26] = [
 // Constant value used to define the number of seconds
 // the rewarded fees Cache value live.
 // Current value is 7 days.
-const FEE_LIFETIME: u64 = 60 * 60 * 24 * 7;
+//const FEE_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 7);
+const FEE_LIFETIME: Duration = Duration::from_secs(30);
 
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
@@ -812,7 +813,7 @@ impl TelemetryState {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
             KeyValue::new("receiver", receiver.to_string()),
-            KeyValue::new("denom", fee_amounts.denom),
+            KeyValue::new("denom", fee_amounts.denom.to_string()),
         ];
 
         let fee_amount = fee_amounts.amount.0.as_u64();
@@ -820,15 +821,33 @@ impl TelemetryState {
         self.fee_amounts.add(&cx, fee_amount, labels);
 
         let ephemeral_fee: moka::sync::Cache<String, u64> = moka::sync::Cache::builder()
-            .time_to_live(Duration::from_secs(FEE_LIFETIME)) // Remove entries after 1 hour without insert
-            .time_to_idle(Duration::from_secs(FEE_LIFETIME)) // Remove entries if they have been idle for 30 minutes without get or insert
+            .time_to_live(FEE_LIFETIME) // Remove entries after 1 hour without insert
+            .time_to_idle(FEE_LIFETIME) // Remove entries if they have been idle for 30 minutes without get or insert
             .build();
 
-        let key = "fee_amount".to_owned();
+        let key = format!("fee_amount:{chain_id}/{receiver}/{}", fee_amounts.denom);
         ephemeral_fee.insert(key.clone(), fee_amount);
 
         let mut cached_fees = self.cached_fees.lock().unwrap();
         cached_fees.push(ephemeral_fee);
+
+        let sum: u64 = cached_fees.iter().filter_map(|e| e.get(&key)).sum();
+
+        self.temporal_fees.observe(&cx, sum, labels);
+    }
+
+    pub fn update_temporal_fees(&self, chain_id: &ChainId, receiver: &String, denom: &String) {
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("receiver", receiver.to_string()),
+            KeyValue::new("denom", denom.to_string()),
+        ];
+
+        let key = format!("fee_amount:{chain_id}/{receiver}/{}", denom);
+
+        let cached_fees = self.cached_fees.lock().unwrap();
 
         let sum: u64 = cached_fees.iter().filter_map(|e| e.get(&key)).sum();
 
@@ -869,7 +888,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "tx_latency_confirmed" => Some(Arc::new(histogram(&[
                 1000.0, 5000.0, 9000.0, 13000.0, 17000.0, 20000.0,
             ]))),
-            "observed_temporal_fee" => Some(Arc::new(last_value())),
+            "temporal_fees" => Some(Arc::new(last_value())),
             _ => Some(Arc::new(sum())),
         }
     }
