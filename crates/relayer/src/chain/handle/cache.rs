@@ -2,6 +2,8 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use tracing::Span;
 
+use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketRequest;
+use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketResponse;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
@@ -500,5 +502,12 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: Vec<CrossChainQueryRequest>,
     ) -> Result<Vec<CrossChainQueryResponse>, Error> {
         self.inner.cross_chain_query(request)
+    }
+
+    fn query_incentivized_packet(
+        &self,
+        request: QueryIncentivizedPacketRequest,
+    ) -> Result<QueryIncentivizedPacketResponse, Error> {
+        self.inner.query_incentivized_packet(request)
     }
 }

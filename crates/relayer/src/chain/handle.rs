@@ -4,6 +4,9 @@ use core::fmt::{self, Debug, Display};
 use crossbeam_channel as channel;
 use tracing::Span;
 
+use ibc_proto::ibc::apps::fee::v1::{
+    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+};
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
@@ -359,6 +362,11 @@ pub enum ChainRequest {
         request: Vec<CrossChainQueryRequest>,
         reply_to: ReplyTo<Vec<CrossChainQueryResponse>>,
     },
+
+    QueryIncentivizedPacket {
+        request: QueryIncentivizedPacketRequest,
+        reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -665,4 +673,9 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         &self,
         request: Vec<CrossChainQueryRequest>,
     ) -> Result<Vec<CrossChainQueryResponse>, Error>;
+
+    fn query_incentivized_packet(
+        &self,
+        request: QueryIncentivizedPacketRequest,
+    ) -> Result<QueryIncentivizedPacketResponse, Error>;
 }

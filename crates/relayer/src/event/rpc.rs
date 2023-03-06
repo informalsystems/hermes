@@ -179,6 +179,10 @@ pub fn get_all_events(
                     {
                         tracing::trace!("extracted cross chain queries {}", ibc_event);
                         events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+                    } else if query == queries::ibc_channel().to_string()
+                        && event_is_type_incentivized(&ibc_event)
+                    {
+                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
                     }
                 }
             }
@@ -229,6 +233,10 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
 
 fn event_is_type_cross_chain_query(ev: &IbcEvent) -> bool {
     matches!(ev, IbcEvent::CrossChainQueryPacket(_))
+}
+
+fn event_is_type_incentivized(ev: &IbcEvent) -> bool {
+    matches!(ev, IbcEvent::IncentivizedPacket(_))
 }
 
 fn extract_block_events(
