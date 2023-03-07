@@ -140,7 +140,7 @@ pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> 
     let max_deposit_period = genesis
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
-        .and_then(|gov| gov.get_mut("deposit_params"))
+        .and_then(|gov| get_mut_with_fallback(gov, "params", "deposit_params"))
         .and_then(|deposit_params| deposit_params.as_object_mut())
         .ok_or_else(|| eyre!("failed to update max_deposit_period in genesis file"))?;
 
@@ -233,7 +233,7 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
     let voting_period = genesis
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
-        .and_then(|gov| gov.get_mut("voting_params"))
+        .and_then(|gov| get_mut_with_fallback(gov, "params", "voting_params"))
         .and_then(|voting_params| voting_params.as_object_mut())
         .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
 
@@ -245,4 +245,31 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
         .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
 
     Ok(())
+}
+
+/// Look up a key in a JSON object, falling back to the second key if the first one cannot be found.
+///
+/// This lets us support both Tendermint 0.34 and 0.37, which sometimes use different keys for the
+/// same configuration object in the genesis file.
+///
+/// Eg. in 0.34, the voting params are at `app_state.gov.voting_params`,
+/// but in 0.37 they are at `app_state.gov.params`.
+///
+/// Note: This function is needed to avoid having to inline its code every time we need it.
+/// The more obvious way to write it inline would be:
+///
+/// value.get_mut(key_034).or_else(|| value.get_mut(key_037))
+///
+/// but that does not work because of the first `get_mut` borrows `value` mutably, which
+/// prevents the second `get_mut` from borrowing it again.
+fn get_mut_with_fallback<'a>(
+    value: &'a mut serde_json::Value,
+    key: &str,
+    fallback_key: &str,
+) -> Option<&'a mut serde_json::Value> {
+    let key = match value.get(key) {
+        Some(value) if !value.is_null() => key,
+        _ => fallback_key,
+    };
+    value.get_mut(key)
 }

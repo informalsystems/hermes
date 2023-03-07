@@ -1,6 +1,6 @@
 use flex_error::{define_error, TraceError};
 
-use tendermint_rpc::{Error as RpcError, Url};
+use tendermint_rpc::{Error as RpcError, WebSocketClientUrl};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
@@ -12,7 +12,7 @@ define_error! {
             |_| { "WebSocket driver failed" },
 
         ClientCreationFailed
-            { chain_id: ChainId, address: Url }
+            { chain_id: ChainId, address: WebSocketClientUrl }
             |e| { format!("failed to create WebSocket driver for chain {0} with address {1}", e.chain_id, e.address) },
 
         ClientTerminationFailed

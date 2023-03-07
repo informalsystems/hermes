@@ -68,7 +68,9 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         token: &TaggedTokenRef<Chain>,
         memo: &str,
     ) -> Result<(), Error> {
+        let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(ibc_token_transfer(
+            rpc_client.as_ref(),
             &self.tx_config(),
             port_id,
             channel_id,
@@ -90,7 +92,9 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         num_msgs: usize,
         memo: &str,
     ) -> Result<(), Error> {
+        let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(ibc_token_transfer(
+            rpc_client.as_ref(),
             &self.tx_config(),
             port_id,
             channel_id,

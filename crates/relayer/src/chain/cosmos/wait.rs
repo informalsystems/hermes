@@ -9,7 +9,7 @@ use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{HttpClient, Url};
 use tokio::time::sleep;
-use tracing::{debug, trace};
+use tracing::{debug, debug_span, trace};
 
 use crate::chain::cosmos::query::tx::query_tx_response;
 use crate::chain::cosmos::types::events::from_tx_response_event;
@@ -33,6 +33,8 @@ pub async fn wait_for_block_commits(
         return Ok(());
     }
 
+    let _span = debug_span!("wait_for_block_commits", id = %chain_id).entered();
+
     let start_time = Instant::now();
 
     let hashes = tx_sync_results
@@ -40,33 +42,31 @@ pub async fn wait_for_block_commits(
         .map(|res| res.response.hash.to_string())
         .join(", ");
 
-    debug!(
-        id = %chain_id,
-        "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
-        hashes
-    );
+    debug!("waiting for commit of tx hashes(s) {}", hashes);
 
     loop {
         let elapsed = start_time.elapsed();
 
         if all_tx_results_found(tx_sync_results) {
             trace!(
-                id = %chain_id,
-                "wait_for_block_commits: retrieved {} tx results after {}ms",
+                "retrieved {} tx results after {} ms",
                 tx_sync_results.len(),
                 elapsed.as_millis(),
             );
 
             return Ok(());
         } else if &elapsed > rpc_timeout {
+            debug!("timed out after {} ms", elapsed.as_millis());
             return Err(Error::tx_no_confirmation());
         } else {
             thread::sleep(WAIT_BACKOFF);
 
             for tx_sync_result in tx_sync_results.iter_mut() {
-                // ignore error
-                let _ =
+                let res =
                     update_tx_sync_result(chain_id, rpc_client, rpc_address, tx_sync_result).await;
+                if let Err(e) = res {
+                    debug!("update_tx_sync_result failed: {e}");
+                }
             }
         }
     }

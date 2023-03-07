@@ -160,7 +160,7 @@ Let's use packet filters to relay only on the green paths specified in the chart
     [chains.packet_filter]
     policy = 'allow'
     list = [
-        ['transfer', 'channel-0'],
+        ['transfer', 'channel-1'],
         ['transfer', 'channel-2'],
     ]
     ```
