@@ -22,7 +22,7 @@ prometheus               = "0.13.2"
 rouille                  = "3.6.1"
 moka                     = "0.9.7"
 dashmap                  = "5.4.0"
-serde_json = "1.0.93"
+serde_json = "1.0.94"
 serde = "1.0.149"
 
 [dependencies.tendermint]
