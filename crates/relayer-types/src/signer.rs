@@ -18,6 +18,12 @@ define_error! {
 pub struct Signer(String);
 
 impl Signer {
+    /*
+     Unfallably generates a dummy signer for estimating the encoded message size.
+
+     This helps bypass the `from_str` construction for `Signer`, which may
+     return an error if an empty string is given.
+    */
     pub fn dummy() -> Self {
         Self("cosmos000000000000000000000000000000000000000".to_string())
     }
@@ -38,11 +44,5 @@ impl FromStr for Signer {
 impl AsRef<str> for Signer {
     fn as_ref(&self) -> &str {
         self.0.as_str()
-    }
-}
-
-impl Default for Signer {
-    fn default() -> Self {
-        Self::dummy()
     }
 }
