@@ -15,7 +15,6 @@ pub mod connection_delay;
 pub mod consensus_states;
 pub mod denom_trace;
 pub mod error_events;
-pub mod events;
 pub mod execute_schedule;
 pub mod handshake_on_start;
 pub mod memo;

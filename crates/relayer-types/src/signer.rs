@@ -40,9 +40,3 @@ impl AsRef<str> for Signer {
         self.0.as_str()
     }
 }
-
-impl Default for Signer {
-    fn default() -> Self {
-        Self::dummy()
-    }
-}
