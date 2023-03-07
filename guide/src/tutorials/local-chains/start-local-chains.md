@@ -229,7 +229,7 @@ The `$HOME/.gm` directory has a tree structure similar to the one below:
     └── pid
 ```
 
-> __Tip__: You can use the command `tree ./data/ -L 2` to view the folder structure above
+> __Tip__: You can use the command `tree $HOME/.gm/ -L 2` to view the folder structure above
 
 ### The `$HOME/.hermes` directory
 
@@ -245,10 +245,14 @@ $HOME/.hermes/
 └── keys
     ├── ibc-0
     │   └── keyring-test
-    │       └── testkey.json
+    │       └── wallet.json
+    |       └── wallet1.json
+    |       └── wallet2.json
     └── ibc-1
         └── keyring-test
-            └── testkey.json
+            └── wallet.json
+            └── wallet1.json
+            └── wallet2.json
 ```
 
 ---
