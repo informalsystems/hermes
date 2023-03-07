@@ -84,12 +84,17 @@ define_error! {
             [ TraceError<tendermint_rpc::Error> ]
             |e| { format_args!("Error when parsing URL: {}", e.url) },
 
+        WebsocketUrlParseError
+            { url: String }
+            [ TraceError<tendermint_rpc::Error> ]
+            |e| { format_args!("Error when parsing URL: {}", e.url) },
+
         StatusError
             { url: String, status : u16}
             |e| { format_args!("Incorrect HTTP response status ({}) for URL: {}", e.status, e.url) },
 
         UnableToBuildWebsocketEndpoint
-            {rpc: String }
+            { rpc: String }
             [ TraceError<http::Error> ]
             |e| { format_args!("Unable to build WebSocket endpoint for RPC: {}", e.rpc) },
 

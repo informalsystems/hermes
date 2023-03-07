@@ -100,12 +100,16 @@ where
 
     let rpc_data = RpcQuerier::query_healthy(chain_name.to_string(), rpc_endpoints).await?;
     let grpc_address = GrpcQuerier::query_healthy(chain_name.to_string(), grpc_endpoints).await?;
+    let websocket_address =
+        rpc_data.websocket.clone().try_into().map_err(|e| {
+            RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
+        })?;
 
     Ok(ChainConfig {
         id: chain_data.chain_id,
         r#type: default::chain_type(),
         rpc_addr: rpc_data.rpc_address,
-        websocket_addr: rpc_data.websocket,
+        websocket_addr: websocket_address,
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         account_prefix: chain_data.bech32_prefix,

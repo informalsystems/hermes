@@ -6,6 +6,7 @@ use tracing::{debug, error, instrument, warn};
 use ibc_proto::google::protobuf::Any;
 use tendermint::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use tendermint_rpc::HttpClient;
 
 use crate::chain::cosmos::query::account::refresh_account;
 use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
@@ -45,6 +46,7 @@ const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
     ),
 )]
 pub async fn send_tx_with_account_sequence_retry(
+    rpc_client: &HttpClient,
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     account: &mut Account,
@@ -55,8 +57,10 @@ pub async fn send_tx_with_account_sequence_retry(
 
     let _message_count = messages.len() as u64;
 
-    let response =
-        do_send_tx_with_account_sequence_retry(config, key_pair, account, tx_memo, messages).await;
+    let response = do_send_tx_with_account_sequence_retry(
+        rpc_client, config, key_pair, account, tx_memo, messages,
+    )
+    .await;
 
     if response.is_ok() {
         telemetry!(total_messages_submitted, &config.chain_id, _message_count);
@@ -66,13 +70,14 @@ pub async fn send_tx_with_account_sequence_retry(
 }
 
 async fn do_send_tx_with_account_sequence_retry(
+    rpc_client: &HttpClient,
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
     messages: &[Any],
 ) -> Result<Response, Error> {
-    match estimate_fee_and_send_tx(config, key_pair, account, tx_memo, messages).await {
+    match estimate_fee_and_send_tx(rpc_client, config, key_pair, account, tx_memo, messages).await {
         // Gas estimation failed with account sequence mismatch during gas estimation.
         // It indicates that the account sequence cached by hermes is stale (got < expected).
         // This can happen when the same account is used by another agent.
@@ -84,7 +89,7 @@ async fn do_send_tx_with_account_sequence_retry(
             );
 
             refresh_account_and_retry_send_tx_with_account_sequence(
-                config, key_pair, account, tx_memo, messages,
+                rpc_client, config, key_pair, account, tx_memo, messages,
             )
             .await
         }
@@ -98,7 +103,7 @@ async fn do_send_tx_with_account_sequence_retry(
             );
 
             refresh_account_and_retry_send_tx_with_account_sequence(
-                config, key_pair, account, tx_memo, messages,
+                rpc_client, config, key_pair, account, tx_memo, messages,
             )
             .await
         }
@@ -152,6 +157,7 @@ async fn do_send_tx_with_account_sequence_retry(
 }
 
 async fn refresh_account_and_retry_send_tx_with_account_sequence(
+    rpc_client: &HttpClient,
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     account: &mut Account,
@@ -165,7 +171,7 @@ async fn refresh_account_and_retry_send_tx_with_account_sequence(
     // Retry after delay
     thread::sleep(Duration::from_millis(ACCOUNT_SEQUENCE_RETRY_DELAY));
 
-    estimate_fee_and_send_tx(config, key_pair, account, tx_memo, messages).await
+    estimate_fee_and_send_tx(rpc_client, config, key_pair, account, tx_memo, messages).await
 }
 
 /// Determine whether the given error yielded by `tx_simulate`
