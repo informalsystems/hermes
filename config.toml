@@ -276,6 +276,27 @@ memo_prefix = ''
 #   ['transfer', 'channel-0'],
 # ]
 
+# This section specifies the filters for incentivized packet relaying.
+# Default: no filters, will relay all packets even if they
+# are not incentivized.
+#
+# It is possible to specify the channel or use wildcards for the
+# channels.
+# The only fee which can be parametrized is the `recv_fee`.
+#
+# Example configuration of a filter which will only relay incentivized
+# packets, with no regards for channel and amount.
+#
+# [chains.packet_filter.min_fees.'*']
+# recv = [ { amount = 0 } ]
+#
+# Example configuration of a filter which will only relay packets if they are
+# from the channel 'channel-0', and they have a `recv_fee` of at least 20 stake
+# or 10 uatom.
+#
+# [chains.packet_filter.min_fees.'channel-0']
+# recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
+
 # Specify that the transaction fees should be payed from this fee granter's account.
 # Optional. If unspecified (the default behavior), then no fee granter is used, and
 # the account specified in `key_name` will pay the tx fees for all transactions

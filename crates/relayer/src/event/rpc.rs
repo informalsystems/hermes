@@ -151,9 +151,6 @@ pub fn get_all_events(
 
             for abci_event in &tx_result.result.events {
                 if let Ok(ibc_event) = ibc_event_try_from_abci_event(abci_event) {
-                    if let IbcEvent::IncentivizedPacket(ip) = ibc_event.clone() {
-                        telemetry!(fee_packets, chain_id, &ip.channel_id, &ip.port_id,);
-                    }
                     if query == queries::ibc_client().to_string()
                         && event_is_type_client(&ibc_event)
                     {
@@ -183,6 +180,10 @@ pub fn get_all_events(
                         && event_is_type_cross_chain_query(&ibc_event)
                     {
                         tracing::trace!("extracted cross chain queries {}", ibc_event);
+                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+                    } else if query == queries::ibc_channel().to_string()
+                        && event_is_type_incentivized(&ibc_event)
+                    {
                         events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
                     } else if query == queries::ibc_channel().to_string()
                         && event_is_type_distribute_fee(&ibc_event)
@@ -245,6 +246,10 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
 
 fn event_is_type_cross_chain_query(ev: &IbcEvent) -> bool {
     matches!(ev, IbcEvent::CrossChainQueryPacket(_))
+}
+
+fn event_is_type_incentivized(ev: &IbcEvent) -> bool {
+    matches!(ev, IbcEvent::IncentivizedPacket(_))
 }
 
 fn event_is_type_distribute_fee(ev: &IbcEvent) -> bool {

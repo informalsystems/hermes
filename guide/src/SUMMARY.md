@@ -39,6 +39,7 @@
     - [Configuration](./documentation/configuration/index.md)
         - [Configure Hermes](./documentation/configuration/configure-hermes.md)
         - [Description of the parameters](./documentation/configuration/description.md)
+        - [Filter incentivized packets](./documentation/configuration/filter-incentivized.md)
     - [Telemetry](./documentation/telemetry/index.md)
         - [Operators guide](./documentation/telemetry/operators.md)
         - [Integration](./documentation/telemetry/integration.md)
