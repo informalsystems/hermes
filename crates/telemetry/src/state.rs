@@ -181,9 +181,6 @@ pub struct TelemetryState {
     /// Timeout event.
     backlogs: DashMap<PathIdentifier, DashMap<u64, u64>>,
 
-    /// Number of packets containing ICS29 fees.
-    fee_packets: Counter<u64>,
-
     /// Total amount of fees received from ICS29 fees.
     fee_amounts: Counter<u64>,
 
@@ -788,18 +785,6 @@ impl TelemetryState {
         }
     }
 
-    pub fn fee_packets(&self, chain_id: &ChainId, channel_id: &ChannelId, port_id: &PortId) {
-        let cx = Context::current();
-
-        let labels = &[
-            KeyValue::new("chain", chain_id.to_string()),
-            KeyValue::new("channel", channel_id.to_string()),
-            KeyValue::new("port", port_id.to_string()),
-        ];
-
-        self.fee_packets.add(&cx, 1, labels);
-    }
-
     /// Record the rewarded fee from ICS29 if the address is in the registered addresses
     /// list.
     pub fn fees_amount(&self, chain_id: &ChainId, receiver: &Signer, fee_amounts: Coin<String>) {
@@ -1038,11 +1023,6 @@ impl Default for TelemetryState {
             backlog_size: meter
                 .u64_observable_gauge("backlog_size")
                 .with_description("Total number of SendPacket events in the backlog")
-                .init(),
-
-            fee_packets: meter
-                .u64_counter("ics29_packets")
-                .with_description("Number of packets with ICS29 fees")
                 .init(),
 
             fee_amounts: meter
