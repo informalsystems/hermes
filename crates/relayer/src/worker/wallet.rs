@@ -31,7 +31,7 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
                 );
                 trace!(%amount, denom = %balance.denom, account = %key.account(), "wallet balance");
                 telemetry!(
-                    update_temporal_fees,
+                    update_period_fees,
                     &chain.id(),
                     &key.account(),
                     &balance.denom

@@ -66,8 +66,7 @@ const QUERY_TYPES: [&str; 26] = [
 // Constant value used to define the number of seconds
 // the rewarded fees Cache value live.
 // Current value is 7 days.
-//const FEE_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 7);
-const FEE_LIFETIME: Duration = Duration::from_secs(30);
+const FEE_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 7);
 
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
@@ -194,8 +193,8 @@ pub struct TelemetryState {
     /// Vector of rewarded fees stored in a moka Cache value
     cached_fees: Mutex<Vec<moka::sync::Cache<String, u64>>>,
 
-    /// Sum of rewarded fees for the last FEE_LIFETIME days
-    temporal_fees: ObservableGauge<u64>,
+    /// Sum of rewarded fees for the last FEE_LIFETIME seconds
+    period_fees: ObservableGauge<u64>,
 }
 
 impl TelemetryState {
@@ -833,10 +832,10 @@ impl TelemetryState {
 
         let sum: u64 = cached_fees.iter().filter_map(|e| e.get(&key)).sum();
 
-        self.temporal_fees.observe(&cx, sum, labels);
+        self.period_fees.observe(&cx, sum, labels);
     }
 
-    pub fn update_temporal_fees(&self, chain_id: &ChainId, receiver: &String, denom: &String) {
+    pub fn update_period_fees(&self, chain_id: &ChainId, receiver: &String, denom: &String) {
         let cx = Context::current();
 
         let labels = &[
@@ -851,7 +850,7 @@ impl TelemetryState {
 
         let sum: u64 = cached_fees.iter().filter_map(|e| e.get(&key)).sum();
 
-        self.temporal_fees.observe(&cx, sum, labels);
+        self.period_fees.observe(&cx, sum, labels);
     }
 
     // Add an address to the list of addresses which will record
@@ -888,7 +887,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "tx_latency_confirmed" => Some(Arc::new(histogram(&[
                 1000.0, 5000.0, 9000.0, 13000.0, 17000.0, 20000.0,
             ]))),
-            "temporal_fees" => Some(Arc::new(last_value())),
+            "ics29_period_fees" => Some(Arc::new(last_value())),
             _ => Some(Arc::new(sum())),
         }
     }
@@ -1055,9 +1054,9 @@ impl Default for TelemetryState {
 
             cached_fees: Mutex::new(Vec::new()),
 
-            temporal_fees: meter
-                .u64_observable_gauge("temporal_fees")
-                .with_description("Amount of ICS29 fees rewarded last 7 days since latest fee has been rewarded. Please note that if no fees have been received, the value is outdated.")
+            period_fees: meter
+                .u64_observable_gauge("ics29_period_fees")
+                .with_description("Amount of ICS29 fees rewarded last 7 days.")
                 .init(),
         }
     }
