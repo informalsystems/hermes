@@ -52,6 +52,7 @@
 //!             &chains.node_a.wallets().user1(),
 //!             &chains.node_b.wallets().user1().address(),
 //!             &denom_a.with_amount(a_to_b_amount).as_ref(),
+//!             "",
 //!         )?;
 //!
 //!         let denom_b = derive_ibc_denom(
