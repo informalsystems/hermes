@@ -305,9 +305,9 @@ memo_prefix = ''
 
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'http://127.0.0.1:26557'
-grpc_addr = 'http://127.0.0.1:9091'
-websocket_addr = 'ws://127.0.0.1:26557/websocket'
+rpc_addr = 'http://127.0.0.1:26457'
+grpc_addr = 'http://127.0.0.1:9092'
+websocket_addr = 'ws://127.0.0.1:26457/websocket'
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
