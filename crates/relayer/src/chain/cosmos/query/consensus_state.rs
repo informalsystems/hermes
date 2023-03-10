@@ -1,5 +1,5 @@
 use http::Uri;
-use tracing::warn;
+use tracing::{debug, warn};
 
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, Height};
 
@@ -40,7 +40,7 @@ pub async fn query_consensus_state_heights(
 
     if let Err(ref e) = grpc_response {
         if is_unsupported(e) {
-            warn!("QueryConsensusStateHeights is not supported by the chain, falling back on QueryConsensusStates");
+            debug!("QueryConsensusStateHeights is not supported by the chain, falling back on QueryConsensusStates");
 
             let states = query_consensus_states(
                 chain_id,
