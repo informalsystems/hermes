@@ -130,7 +130,7 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
             &wallet_a,
             &wallet_b.address(),
             &denom_a.with_amount(a_to_c_amount).as_ref(),
-            &memo,
+            Some(memo),
         )?;
 
         info!(
@@ -262,7 +262,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
                 &wallet_a,
                 &wallet_b.address(),
                 &denom_a.with_amount(a_to_c_amount).as_ref(),
-                &memo1,
+                Some(memo1),
             )?;
 
             // Wait before checking the balances
@@ -296,7 +296,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
                 &wallet_a,
                 &wallet_b.address(),
                 &denom_a.with_amount(a_to_c_amount).as_ref(),
-                &memo2,
+                Some(memo2),
             )?;
 
             // Wait before checking the balances
@@ -330,7 +330,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
                 &wallet_a,
                 &wallet_b.address(),
                 &denom_a.with_amount(a_to_c_amount).as_ref(),
-                &memo3,
+                Some(memo3),
             )?;
 
             info!("checking that the sender was refunded and other chains didn't receive tokens");
@@ -364,7 +364,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
                 &wallet_a,
                 &wallet_b.address(),
                 &denom_a.with_amount(a_to_c_amount).as_ref(),
-                &memo4,
+                Some(memo4),
             )?;
 
             info!(
@@ -484,7 +484,7 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
                 &wallet_a,
                 &wallet_b.address(),
                 &denom_a.with_amount(a_to_c_amount).as_ref(),
-                &memo2,
+                Some(memo2),
             )?;
 
             // Wait before checking the balances
@@ -519,7 +519,7 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
                 &wallet_a,
                 &wallet_b.address(),
                 &denom_a.with_amount(a_to_c_amount).as_ref(),
-                &memo3,
+                Some(memo3),
             )?;
 
             // Wait before checking the balances
@@ -554,7 +554,7 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
                 &wallet_a,
                 &wallet_b.address(),
                 &denom_a.with_amount(a_to_c_amount).as_ref(),
-                &memo1,
+                Some(memo1),
             )?;
 
             // Wait before checking the balances

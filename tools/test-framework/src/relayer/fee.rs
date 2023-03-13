@@ -43,7 +43,7 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
         recipient,
         send_amount,
         timeout,
-        "",
+        None,
     )?;
 
     let pay_message = build_pay_packet_message(

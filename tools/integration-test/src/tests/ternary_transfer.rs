@@ -59,7 +59,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             &wallet_a1.as_ref(),
             &wallet_b1.address(),
             &denom_a.with_amount(a_to_b_amount).as_ref(),
-            "",
+            None,
         )?;
 
         let denom_a_to_b = derive_ibc_denom(
@@ -107,7 +107,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             &wallet_b1.as_ref(),
             &wallet_c1.address(),
             &denom_a_to_b.with_amount(b_to_c_amount).as_ref(),
-            "",
+            None,
         )?;
 
         // Chain C will receive ibc/port-c/channel-c/port-b/channel-b/denom
@@ -145,7 +145,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             &wallet_c1.as_ref(),
             &wallet_a1.address(),
             &denom_a_to_c.with_amount(c_to_a_amount).as_ref(),
-            "",
+            None,
         )?;
 
         // Chain A will receive ibc/port-a/channel-a/port-c/channel-c/port-b/channel-b/denom
@@ -175,7 +175,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             &wallet_c1.as_ref(),
             &wallet_b2.address(),
             &denom_a_to_c.with_amount(c_to_b_amount).as_ref(),
-            "",
+            None,
         )?;
 
         // Chain B will receive ibc/port-b/channel-b/denom

@@ -36,7 +36,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
-        memo: &str,
+        memo: Option<String>,
     ) -> Result<(), Error>;
 
     fn ibc_transfer_token_multiple<Counterparty>(
@@ -47,7 +47,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
         num_msgs: usize,
-        memo: &str,
+        memo: Option<String>,
     ) -> Result<(), Error>;
 
     fn local_transfer_token(
@@ -66,7 +66,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
-        memo: &str,
+        memo: Option<String>,
     ) -> Result<(), Error> {
         let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(ibc_token_transfer(
@@ -90,7 +90,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
         num_msgs: usize,
-        memo: &str,
+        memo: Option<String>,
     ) -> Result<(), Error> {
         let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(ibc_token_transfer(

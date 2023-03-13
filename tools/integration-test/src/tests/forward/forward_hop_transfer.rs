@@ -124,7 +124,7 @@ impl NaryChannelTest<4> for IbcForwardHopTransferTest {
             &wallet_a,
             &wallet_b.address(),
             &denom_a.with_amount(a_to_d_amount).as_ref(),
-            &memo,
+            Some(memo),
         )?;
 
         info!(
@@ -242,7 +242,7 @@ impl NaryChannelTest<4> for AtomicIbcForwardHopTransferTest {
             &wallet_a,
             &wallet_b.address(),
             &denom_a.with_amount(a_to_d_amount).as_ref(),
-            &memo,
+            Some(memo),
         )?;
 
         info!("checking that the sender was refunded and other chains didn't receive tokens");

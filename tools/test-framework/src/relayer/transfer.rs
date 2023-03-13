@@ -30,7 +30,7 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     recipient: &MonoTagged<DstChain, &WalletAddress>,
     token: &TaggedTokenRef<'_, SrcChain>,
     timeout: Duration,
-    memo: &str,
+    memo: Option<String>,
 ) -> Result<Any, Error> {
     let timeout_timestamp = Timestamp::now()
         .add(timeout)
@@ -88,7 +88,7 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     recipient: &MonoTagged<DstChain, &WalletAddress>,
     token: &TaggedTokenRef<'_, SrcChain>,
     num_msgs: usize,
-    memo: &str,
+    memo: Option<String>,
 ) -> Result<(), Error> {
     let messages = std::iter::repeat_with(|| {
         build_transfer_message(
@@ -98,7 +98,7 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
             recipient,
             token,
             Duration::from_secs(60),
-            memo,
+            memo.clone(),
         )
     })
     .take(num_msgs)
