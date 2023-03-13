@@ -1987,23 +1987,34 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
     let relayer_gas_price = &chain.config.gas_price;
     let node_min_gas_prices = chain.min_gas_price()?;
-    let mut found_matching_denom = false;
 
-    for price in node_min_gas_prices {
-        match relayer_gas_price.partial_cmp(&price) {
-            Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
-            Some(_) => {
-                found_matching_denom = true;
-                break;
+    if !node_min_gas_prices.is_empty() {
+        let mut found_matching_denom = false;
+
+        for price in node_min_gas_prices {
+            match relayer_gas_price.partial_cmp(&price) {
+                Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
+                Some(_) => {
+                    found_matching_denom = true;
+                    break;
+                }
+                None => continue,
             }
-            None => continue,
         }
-    }
 
-    if !found_matching_denom {
+        if !found_matching_denom {
+            warn!(
+                "Chain '{}' has no minimum gas price of denomination '{}' 
+                that is strictly less than the `gas_price` configured in 
+                Hermes' config.toml",
+                chain_id, relayer_gas_price.denom
+            );
+        }
+    } else {
         warn!(
             "Chain '{}' has no minimum gas price value configured for denomination '{}'. \
-            This is usually a sign of misconfiguration, please check your config.toml",
+            This is usually a sign of misconfiguration, please check your chain and 
+            relayer configurations",
             chain_id, relayer_gas_price.denom
         );
     }
