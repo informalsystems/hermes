@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use std::collections::HashMap;
+use tendermint_rpc::HttpClient;
 
 use async_trait::async_trait;
 use eyre::eyre;
@@ -196,13 +197,17 @@ impl CosmosRelayBuilder {
         let signer = key_pair_to_signer(&key).map_err(BaseError::relayer)?;
 
         let chain_config = handle.config().map_err(BaseError::relayer)?;
-        let websocket_addr = chain_config.websocket_addr.clone();
+        let websocket_addr = chain_config.websocket_addr.clone().into();
         let tx_config = TxConfig::try_from(&chain_config).map_err(BaseError::relayer)?;
+
+        let rpc_client =
+            HttpClient::new(tx_config.rpc_address.clone()).map_err(BaseError::tendermint_rpc)?;
 
         let context = FullCosmosChainContext::new(
             handle,
             signer,
             tx_config,
+            rpc_client,
             websocket_addr,
             key,
             self.runtime.clone(),

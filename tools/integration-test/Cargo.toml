@@ -21,7 +21,7 @@ ibc-relayer-all-in-one = { path = "../../crates/relayer-all-in-one" }
 ibc-relayer-components = { version = "0.1.0", path = "../../crates/relayer-components" }
 ibc-relayer-runtime    = { path = "../../crates/relayer-runtime" }
 ibc-relayer-cosmos     = { path = "../../crates/relayer-cosmos" }
-ibc-proto          = { version = "0.24.1" }
+ibc-proto          = { version = "0.27.0" }
 ibc-test-framework = { path = "../test-framework" }
 
 async-trait = "0.1.56"

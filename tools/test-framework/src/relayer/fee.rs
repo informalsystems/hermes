@@ -15,6 +15,7 @@ use ibc_relayer_types::applications::ics29_fee::msgs::register_payee::{
 use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::events::IbcEvent;
+use tendermint_rpc::HttpClient;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::token::{TaggedTokenExt, TaggedTokenRef};
@@ -24,6 +25,7 @@ use crate::types::tagged::{DualTagged, MonoTagged};
 use crate::types::wallet::{Wallet, WalletAddress};
 
 pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
+    rpc_client: MonoTagged<SrcChain, &HttpClient>,
     tx_config: &MonoTagged<SrcChain, &TxConfig>,
     port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
@@ -55,7 +57,13 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
 
     let messages = vec![pay_message, transfer_message];
 
-    let abci_events = simple_send_tx(tx_config.value(), &sender.value().key, messages).await?;
+    let abci_events = simple_send_tx(
+        rpc_client.value(),
+        tx_config.value(),
+        &sender.value().key,
+        messages,
+    )
+    .await?;
 
     let events = abci_events
         .iter()
@@ -70,6 +78,7 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
 }
 
 pub async fn pay_packet_fee<Chain, Counterparty>(
+    rpc_client: MonoTagged<Chain, &HttpClient>,
     tx_config: &MonoTagged<Chain, &TxConfig>,
     port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
     channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
@@ -95,9 +104,14 @@ pub async fn pay_packet_fee<Chain, Counterparty>(
     )
     .map_err(handle_generic_error)?;
 
-    let abci_events = simple_send_tx(tx_config.value(), &payer.value().key, vec![message])
-        .await
-        .map_err(Error::relayer)?;
+    let abci_events = simple_send_tx(
+        rpc_client.value(),
+        tx_config.value(),
+        &payer.value().key,
+        vec![message],
+    )
+    .await
+    .map_err(Error::relayer)?;
 
     let events = abci_events[0]
         .iter()
@@ -108,6 +122,7 @@ pub async fn pay_packet_fee<Chain, Counterparty>(
 }
 
 pub async fn register_counterparty_payee<Chain, Counterparty>(
+    rpc_client: MonoTagged<Chain, &HttpClient>,
     tx_config: &MonoTagged<Chain, &TxConfig>,
     wallet: &MonoTagged<Chain, &Wallet>,
     counterparty_payee: &MonoTagged<Counterparty, &WalletAddress>,
@@ -133,12 +148,19 @@ pub async fn register_counterparty_payee<Chain, Counterparty>(
 
     let messages = vec![message];
 
-    simple_send_tx(tx_config.value(), &wallet.value().key, messages).await?;
+    simple_send_tx(
+        rpc_client.value(),
+        tx_config.value(),
+        &wallet.value().key,
+        messages,
+    )
+    .await?;
 
     Ok(())
 }
 
 pub async fn register_payee<Chain, Counterparty>(
+    rpc_client: MonoTagged<Chain, &HttpClient>,
     tx_config: &MonoTagged<Chain, &TxConfig>,
     wallet: &MonoTagged<Chain, &Wallet>,
     payee: &MonoTagged<Chain, &WalletAddress>,
@@ -160,7 +182,13 @@ pub async fn register_payee<Chain, Counterparty>(
 
     let messages = vec![message];
 
-    simple_send_tx(tx_config.value(), &wallet.value().key, messages).await?;
+    simple_send_tx(
+        rpc_client.value(),
+        tx_config.value(),
+        &wallet.value().key,
+        messages,
+    )
+    .await?;
 
     Ok(())
 }

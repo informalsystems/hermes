@@ -139,8 +139,9 @@ where
 
     async fn submit_tx(&self, tx: &SignedTx) -> Result<TxHash, Error> {
         let tx_config = self.chain.tx_config();
+        let rpc_client = self.chain.rpc_client();
 
-        let response = broadcast_tx_sync(&tx_config.rpc_client, &tx_config.rpc_address, tx.clone())
+        let response = broadcast_tx_sync(rpc_client, &tx_config.rpc_address, tx.clone())
             .await
             .map_err(BaseError::relayer)?;
 
@@ -169,8 +170,9 @@ where
 
     async fn query_tx_response(&self, tx_hash: &TxHash) -> Result<Option<TxResponse>, Error> {
         let tx_config = self.chain.tx_config();
+        let rpc_client = self.chain.rpc_client();
 
-        let response = query_tx_response(&tx_config.rpc_client, &tx_config.rpc_address, tx_hash)
+        let response = query_tx_response(rpc_client, &tx_config.rpc_address, tx_hash)
             .await
             .map_err(BaseError::relayer)?;
 

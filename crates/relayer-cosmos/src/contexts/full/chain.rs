@@ -6,7 +6,7 @@ use ibc_relayer_all_in_one::extra::one_for_all::presets::full::FullPreset;
 use ibc_relayer_all_in_one::extra::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::signer::Signer;
-use tendermint_rpc::Url;
+use tendermint_rpc::{HttpClient, Url};
 
 use crate::base::traits::chain::CosmosChain;
 use crate::full::traits::chain::CosmosFullChain;
@@ -17,6 +17,7 @@ pub struct FullCosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,
     pub tx_config: TxConfig,
+    pub rpc_client: HttpClient,
     pub key_entry: Secp256k1KeyPair,
     pub websocket_url: Url,
     pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
@@ -28,6 +29,7 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
         handle: Handle,
         signer: Signer,
         tx_config: TxConfig,
+        rpc_client: HttpClient,
         websocket_url: Url,
         key_entry: Secp256k1KeyPair,
         runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
@@ -36,6 +38,7 @@ impl<Handle: ChainHandle> FullCosmosChainContext<Handle> {
         let chain = Self {
             handle,
             signer,
+            rpc_client,
             tx_config,
             websocket_url,
             key_entry,
@@ -69,6 +72,10 @@ where
 
     fn tx_config(&self) -> &TxConfig {
         &self.tx_config
+    }
+
+    fn rpc_client(&self) -> &HttpClient {
+        &self.rpc_client
     }
 
     fn websocket_url(&self) -> &Url {

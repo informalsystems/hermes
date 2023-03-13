@@ -21,6 +21,7 @@ use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
 use super::batch::send_batched_messages_and_wait_commit;
 
 pub async fn estimate_fee_and_send_tx(
+    rpc_client: &HttpClient,
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     account: &Account,
@@ -29,10 +30,14 @@ pub async fn estimate_fee_and_send_tx(
 ) -> Result<Response, Error> {
     let fee = estimate_tx_fees(config, key_pair, account, tx_memo, messages).await?;
 
-    send_tx_with_fee(config, key_pair, account, tx_memo, messages, &fee).await
+    send_tx_with_fee(
+        rpc_client, config, key_pair, account, tx_memo, messages, &fee,
+    )
+    .await
 }
 
 async fn send_tx_with_fee(
+    rpc_client: &HttpClient,
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     account: &Account,
@@ -42,7 +47,7 @@ async fn send_tx_with_fee(
 ) -> Result<Response, Error> {
     let tx = sign_tx(config, key_pair, account, tx_memo, messages, fee)?;
 
-    let response = broadcast_tx_sync(&config.rpc_client, &config.rpc_address, tx).await?;
+    let response = broadcast_tx_sync(rpc_client, &config.rpc_address, tx).await?;
 
     Ok(response)
 }
@@ -76,6 +81,7 @@ pub async fn broadcast_tx_sync(
    error event.
 */
 pub async fn simple_send_tx(
+    rpc_client: &HttpClient,
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     messages: Vec<Any>,
@@ -106,14 +112,14 @@ pub async fn simple_send_tx(
 
     let tx = sign_tx(config, key_pair, &account, &tx_memo, &messages, &fee)?;
 
-    let response = broadcast_tx_sync(&config.rpc_client, &config.rpc_address, tx).await?;
+    let response = broadcast_tx_sync(rpc_client, &config.rpc_address, tx).await?;
 
     if response.code.is_err() {
         return Err(Error::check_tx(response));
     }
 
     let response = wait_tx_succeed(
-        &config.rpc_client,
+        rpc_client,
         &config.rpc_address,
         &config.rpc_timeout,
         &response.hash,
@@ -126,6 +132,7 @@ pub async fn simple_send_tx(
 }
 
 pub async fn batched_send_tx(
+    rpc_client: &HttpClient,
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     messages: Vec<Any>,
@@ -136,9 +143,8 @@ pub async fn batched_send_tx(
         .into();
 
     let events = send_batched_messages_and_wait_commit(
+        rpc_client,
         config,
-        config.max_msg_num,
-        config.max_tx_size,
         key_pair,
         &mut account,
         &Memo::default(),

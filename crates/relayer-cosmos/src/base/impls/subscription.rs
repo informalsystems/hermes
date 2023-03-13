@@ -12,8 +12,7 @@ use ibc_relayer_types::core::ics02_client::height::Height;
 use tendermint::abci::Event as AbciEvent;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 use tendermint_rpc::query::Query;
-use tendermint_rpc::Url;
-use tendermint_rpc::{SubscriptionClient, WebSocketClient};
+use tendermint_rpc::{SubscriptionClient, Url, WebSocketClient};
 
 use crate::base::error::{BaseError, Error};
 

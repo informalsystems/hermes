@@ -272,7 +272,8 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
         ```
     The tokens were successfully received by `ibc-1` under the denomination `ibc/8F3...` while they should be recognized as samoleans. Indeed, **it is impossible to transfer back tokens from a different channel than the one they were received from**.
 
-    Let's forget about these tokens.
+    You could get the tokens back to samoleans by transferring them back via the route you sent
+    them from, but instead let's forget about these tokens.
 
 ### The right way
 
@@ -315,7 +316,7 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
         next_key: null
         total: "0"
         ```
-    The tokens were correctly received by `ibc-0` under the denomination `ibc/C184...`. The tokens retrieved the denomination they had before they were transferred to ibc-3.
+    The tokens were correctly received by `ibc-2` under the denomination `ibc/C184...`. The tokens retrieved the denomination they had before they were transferred to ibc-3.
 
 - Transfer the `ibc/C184...` tokens from ibc-2 to ibc-1:
     ```shell
