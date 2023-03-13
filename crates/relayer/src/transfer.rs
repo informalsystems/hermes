@@ -126,6 +126,7 @@ pub struct TransferOptions {
     pub timeout_height_offset: u64,
     pub timeout_duration: Duration,
     pub number_msgs: usize,
+    pub memo: Option<String>,
 }
 
 pub fn build_transfer_message(

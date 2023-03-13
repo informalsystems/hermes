@@ -140,6 +140,13 @@ pub struct FeeTransferCmd {
         default_value = "0"
     )]
     timeout_fee: Amount,
+
+    #[clap(
+        long = "memo",
+        value_name = "MEMO",
+        help = "Optional memo included in the transfer"
+    )]
+    memo: Option<String>,
 }
 
 impl Override<Config> for FeeTransferCmd {
@@ -196,6 +203,7 @@ impl FeeTransferCmd {
             receive_fee: self.receive_fee,
             ack_fee: self.ack_fee,
             timeout_fee: self.timeout_fee,
+            memo: self.memo.clone(),
         };
 
         Ok(opts)
@@ -233,6 +241,7 @@ pub struct FeeTransferOptions {
     pub receive_fee: Amount,
     pub ack_fee: Amount,
     pub timeout_fee: Amount,
+    pub memo: Option<String>,
 }
 
 impl From<FeeTransferOptions> for TransferOptions {
@@ -246,6 +255,7 @@ impl From<FeeTransferOptions> for TransferOptions {
             timeout_height_offset: f.timeout_height_offset,
             timeout_duration: f.timeout_duration,
             number_msgs: f.number_msgs,
+            memo: f.memo,
         }
     }
 }
@@ -323,6 +333,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -358,6 +369,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -393,6 +405,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -430,6 +443,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -467,6 +481,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -504,6 +519,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -541,6 +557,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -578,6 +595,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -615,6 +633,7 @@ mod tests {
                 receive_fee: Amount::from(51u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -651,6 +670,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(52u64),
                 timeout_fee: Amount::from(0u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -688,6 +708,7 @@ mod tests {
                 receive_fee: Amount::from(0u64),
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(53u64),
+                memo: None,
             },
             FeeTransferCmd::parse_from([
                 "test",
@@ -703,6 +724,44 @@ mod tests {
                 "1000",
                 "--timeout-fee",
                 "53"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_memo() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+                memo: Some("test memo".to_owned()),
+            },
+            FeeTransferCmd::parse_from([
+                "test",
+                "--dst-chain",
+                "chain_b",
+                "--src-chain",
+                "chain_a",
+                "--src-port",
+                "port_a",
+                "--src-channel",
+                "channel_a",
+                "--amount",
+                "1000",
+                "--memo",
+                "test memo"
             ])
         )
     }
