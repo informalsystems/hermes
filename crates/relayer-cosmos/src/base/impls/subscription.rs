@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::pin::Pin;
+use tendermint_rpc::client::CompatMode;
 
 use async_trait::async_trait;
 use futures::stream::{self, Stream, StreamExt, TryStreamExt};
@@ -12,7 +13,7 @@ use ibc_relayer_types::core::ics02_client::height::Height;
 use tendermint::abci::Event as AbciEvent;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 use tendermint_rpc::query::Query;
-use tendermint_rpc::{SubscriptionClient, Url, WebSocketClient};
+use tendermint_rpc::{SubscriptionClient, WebSocketClient, WebSocketClientUrl};
 
 use crate::base::error::{BaseError, Error};
 
@@ -20,7 +21,8 @@ pub trait CanCreateAbciEventSubscription: Async {
     fn new_abci_event_subscription(
         &self,
         chain_version: u64,
-        websocket_url: Url,
+        websocket_url: WebSocketClientUrl,
+        compat_mode: CompatMode,
         queries: Vec<Query>,
     ) -> Arc<dyn Subscription<Item = (Height, AbciEvent)>>;
 }
@@ -33,7 +35,8 @@ where
     fn new_abci_event_subscription(
         &self,
         chain_version: u64,
-        websocket_url: Url,
+        websocket_url: WebSocketClientUrl,
+        compat_mode: CompatMode,
         queries: Vec<Query>,
     ) -> Arc<dyn Subscription<Item = (Height, AbciEvent)>> {
         let base_subscription = {
@@ -42,12 +45,13 @@ where
             Runtime::new_closure_subscription(move || {
                 let runtime = runtime.clone();
                 let websocket_url = websocket_url.clone();
+                let compat_mode = compat_mode.clone();
                 let queries = queries.clone();
 
                 Box::pin(async move {
                     // TODO: log error
                     let rpc_event_stream = runtime
-                        .new_rpc_event_stream(&websocket_url, &queries)
+                        .new_rpc_event_stream(websocket_url.clone(), compat_mode.clone(), &queries)
                         .await
                         .ok()?;
 
@@ -97,7 +101,8 @@ pub fn rpc_event_to_abci_event_stream(
 pub trait CanCreateRpcEventStream: Async {
     async fn new_rpc_event_stream(
         &self,
-        websocket_url: &Url,
+        websocket_url: WebSocketClientUrl,
+        compat_mode: CompatMode,
         queries: &[Query],
     ) -> Result<Pin<Box<dyn Stream<Item = RpcEvent> + Send + 'static>>, Error>;
 }
@@ -109,12 +114,13 @@ where
 {
     async fn new_rpc_event_stream(
         &self,
-        websocket_url: &Url,
+        websocket_url: WebSocketClientUrl,
+        compat_mode: CompatMode,
         queries: &[Query],
     ) -> Result<Pin<Box<dyn Stream<Item = RpcEvent> + Send + 'static>>, Error> {
-        let (client, driver) = WebSocketClient::new(websocket_url.clone())
-            .await
-            .map_err(BaseError::tendermint_rpc)?;
+        let builder = WebSocketClient::builder(websocket_url).compat_mode(compat_mode);
+
+        let (client, driver) = builder.build().await.map_err(BaseError::tendermint_rpc)?;
 
         let spawner = self.spawner();
         spawner.spawn(async move {

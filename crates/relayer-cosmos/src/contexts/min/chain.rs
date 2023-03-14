@@ -5,7 +5,8 @@ use ibc_relayer_all_in_one::base::one_for_all::presets::min::MinimalPreset;
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::signer::Signer;
-use tendermint_rpc::{HttpClient, Url};
+use tendermint_rpc::client::CompatMode;
+use tendermint_rpc::{HttpClient, WebSocketClientUrl};
 
 use crate::base::traits::chain::CosmosChain;
 
@@ -14,7 +15,8 @@ pub struct MinCosmosChainContext<Handle: ChainHandle> {
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub rpc_client: HttpClient,
-    pub websocket_url: Url,
+    pub compat_mode: CompatMode,
+    pub websocket_url: WebSocketClientUrl,
     pub key_entry: Secp256k1KeyPair,
     pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
 }
@@ -25,7 +27,8 @@ impl<Handle: ChainHandle> MinCosmosChainContext<Handle> {
         signer: Signer,
         tx_config: TxConfig,
         rpc_client: HttpClient,
-        websocket_url: Url,
+        compat_mode: CompatMode,
+        websocket_url: WebSocketClientUrl,
         key_entry: Secp256k1KeyPair,
         runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
     ) -> Self {
@@ -34,6 +37,7 @@ impl<Handle: ChainHandle> MinCosmosChainContext<Handle> {
             signer,
             tx_config,
             rpc_client,
+            compat_mode,
             websocket_url,
             key_entry,
             runtime,
@@ -69,7 +73,11 @@ where
         &self.rpc_client
     }
 
-    fn websocket_url(&self) -> &Url {
+    fn compat_mode(&self) -> &CompatMode {
+        &self.compat_mode
+    }
+
+    fn websocket_url(&self) -> &WebSocketClientUrl {
         &self.websocket_url
     }
 

@@ -220,6 +220,7 @@ impl CosmosRelayBuilder {
             signer,
             tx_config,
             rpc_client,
+            compat_mode,
             websocket_addr,
             key,
             self.runtime.clone(),

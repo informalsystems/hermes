@@ -25,6 +25,7 @@ where
         let subscription = chain.runtime().new_abci_event_subscription(
             chain_version,
             chain.websocket_url().clone(),
+            chain.compat_mode().clone(),
             all(),
         );
 

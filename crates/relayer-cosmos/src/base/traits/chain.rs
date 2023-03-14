@@ -5,7 +5,8 @@ use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::signer::Signer;
-use tendermint_rpc::{HttpClient, Url};
+use tendermint_rpc::client::CompatMode;
+use tendermint_rpc::{HttpClient, WebSocketClientUrl};
 
 pub trait CosmosChain: Async {
     type Preset: Async;
@@ -22,7 +23,9 @@ pub trait CosmosChain: Async {
 
     fn rpc_client(&self) -> &HttpClient;
 
-    fn websocket_url(&self) -> &Url;
+    fn compat_mode(&self) -> &CompatMode;
+
+    fn websocket_url(&self) -> &WebSocketClientUrl;
 
     fn key_entry(&self) -> &Secp256k1KeyPair;
 }
