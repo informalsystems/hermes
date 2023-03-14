@@ -2005,8 +2005,9 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         if !found_matching_denom {
             warn!(
                 "Chain '{}' has no minimum gas price of denomination '{}' 
-                that is strictly less than the `gas_price` configured in 
-                Hermes' config.toml",
+                that is strictly less than the `gas_price` specified for
+                that chain in the Hermes configuration.
+                This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
                 chain_id, relayer_gas_price.denom
             );
         }
