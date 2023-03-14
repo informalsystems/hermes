@@ -69,11 +69,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             Error::invalid_packet_timeout_height(format!("invalid timeout height {e}"))
         })?;
 
-        let memo = if raw_msg.memo.is_empty() {
-            None
-        } else {
-            Some(raw_msg.memo)
-        };
+        let memo = Some(raw_msg.memo).filter(|m| !m.is_empty());
 
         Ok(MsgTransfer {
             source_port: raw_msg
@@ -96,10 +92,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
 
 impl From<MsgTransfer> for RawMsgTransfer {
     fn from(domain_msg: MsgTransfer) -> Self {
-        let memo = match domain_msg.memo {
-            Some(memo) => memo,
-            None => "".to_owned(),
-        };
+        let memo = domain_msg.memo.unwrap_or_default();
 
         RawMsgTransfer {
             source_port: domain_msg.source_port.to_string(),
@@ -192,6 +185,7 @@ pub mod test_util {
                 token: coin,
                 sender: msg.sender.clone(),
                 receiver: msg.receiver.clone(),
+                memo: None,
             };
             serde_json::to_vec(&data).expect("PacketData's infallible Serialize impl failed")
         };
