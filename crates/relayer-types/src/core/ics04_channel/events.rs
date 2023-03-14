@@ -639,17 +639,6 @@ impl From<WriteAcknowledgement> for IbcEvent {
     }
 }
 
-impl TryFrom<IbcEvent> for WriteAcknowledgement {
-    type Error = Error;
-
-    fn try_from(event: IbcEvent) -> Result<Self, Error> {
-        match event {
-            IbcEvent::WriteAcknowledgement(ev) => Ok(ev),
-            _ => Err(Error::invalid_acknowledgement_event()),
-        }
-    }
-}
-
 impl TryFrom<WriteAcknowledgement> for abci::Event {
     type Error = Error;
 
