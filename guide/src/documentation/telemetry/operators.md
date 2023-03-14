@@ -146,5 +146,5 @@ Note that this metrics is disabled if `misbehaviour = false` in your Hermes conf
 
 | Name                | Description                                                                 | OpenTelemetry type  | Configuration Dependencies |
 | ------------------- | --------------------------------------------------------------------------- | ------------------- | -------------------------- |
-| `ics29_fee_amounts` | Total amount received from ICS29 feestype                                   | `u64` Counter       | None                       |
+| `ics29_fee_amounts` | Total amount received from ICS29 fees                                       | `u64` Counter       | None                       |
 | `ics29_period_fees` | Amount of ICS29 fees rewarded over the past 7 days type                     | `u64` ValueRecorder | None                       |
