@@ -40,7 +40,6 @@ use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event;
-use tracing::info;
 
 use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;
