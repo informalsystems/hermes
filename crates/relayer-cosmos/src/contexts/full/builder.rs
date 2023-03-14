@@ -1,6 +1,9 @@
 use alloc::sync::Arc;
 use std::collections::HashMap;
+use tendermint_rpc::client::CompatMode;
+use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
+use tokio::task;
 
 use async_trait::async_trait;
 use eyre::eyre;
@@ -76,18 +79,16 @@ impl CosmosFullBuilder for CosmosRelayBuilder {
         &self,
         chain_id: &ChainId,
     ) -> Result<FullCosmosChainContext<BaseChainHandle>, Error> {
-        tokio::task::block_in_place(|| {
-            self.build_chain(chain_id, self.runtime.runtime.runtime.clone())
-        })
+        self.build_chain(chain_id, self.runtime.runtime.runtime.clone())
+            .await
     }
 
     async fn build_chain_b(
         &self,
         chain_id: &ChainId,
     ) -> Result<FullCosmosChainContext<BaseChainHandle>, Self::Error> {
-        tokio::task::block_in_place(|| {
-            self.build_chain(chain_id, self.runtime.runtime.runtime.clone())
-        })
+        self.build_chain(chain_id, self.runtime.runtime.runtime.clone())
+            .await
     }
 
     async fn build_relay_a_to_b(
@@ -184,24 +185,35 @@ impl CosmosRelayBuilder {
         )))
     }
 
-    pub fn build_chain(
+    pub async fn build_chain(
         &self,
         chain_id: &ChainId,
         runtime: Arc<TokioRuntime>,
     ) -> Result<FullCosmosChainContext<BaseChainHandle>, Error> {
-        let handle = spawn_chain_runtime::<BaseChainHandle>(&self.config, chain_id, runtime)
-            .map_err(BaseError::spawn)?;
+        let (handle, key, signer, chain_config) = task::block_in_place(|| -> Result<_, Error> {
+            let handle = spawn_chain_runtime::<BaseChainHandle>(&self.config, chain_id, runtime)
+                .map_err(BaseError::spawn)?;
 
-        let key = get_keypair(chain_id, &handle, &self.key_map)?;
+            let key = get_keypair(chain_id, &handle, &self.key_map)?;
 
-        let signer = key_pair_to_signer(&key).map_err(BaseError::relayer)?;
+            let signer = key_pair_to_signer(&key).map_err(BaseError::relayer)?;
 
-        let chain_config = handle.config().map_err(BaseError::relayer)?;
+            let chain_config = handle.config().map_err(BaseError::relayer)?;
+
+            Ok((handle, key, signer, chain_config))
+        })?;
+
         let websocket_addr = chain_config.websocket_addr.clone().into();
+
         let tx_config = TxConfig::try_from(&chain_config).map_err(BaseError::relayer)?;
 
-        let rpc_client =
+        let mut rpc_client =
             HttpClient::new(tx_config.rpc_address.clone()).map_err(BaseError::tendermint_rpc)?;
+
+        let status = rpc_client.status().await.unwrap();
+        let compat_mode = CompatMode::from_version(status.node_info.version).unwrap();
+
+        rpc_client.set_compat_mode(compat_mode);
 
         let context = FullCosmosChainContext::new(
             handle,
