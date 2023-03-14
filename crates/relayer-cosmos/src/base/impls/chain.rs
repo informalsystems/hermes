@@ -265,16 +265,10 @@ where
     }
 
     fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
-        info!("trying to extract send packet event from {:?}", event);
-
         let event_type = event.kind.parse().ok()?;
-
-        info!("event type: {:?}", event_type);
 
         if let IbcEventType::SendPacket = event_type {
             let (packet, _) = extract_packet_and_write_ack_from_tx(event).ok()?;
-
-            info!("packet: {:?}", packet);
 
             let send_packet_event = SendPacket { packet };
 

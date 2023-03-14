@@ -45,13 +45,12 @@ where
             Runtime::new_closure_subscription(move || {
                 let runtime = runtime.clone();
                 let websocket_url = websocket_url.clone();
-                let compat_mode = compat_mode.clone();
                 let queries = queries.clone();
 
                 Box::pin(async move {
                     // TODO: log error
                     let rpc_event_stream = runtime
-                        .new_rpc_event_stream(websocket_url.clone(), compat_mode.clone(), &queries)
+                        .new_rpc_event_stream(websocket_url.clone(), compat_mode, &queries)
                         .await
                         .ok()?;
 

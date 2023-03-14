@@ -203,7 +203,7 @@ impl CosmosRelayBuilder {
             Ok((handle, key, signer, chain_config))
         })?;
 
-        let websocket_addr = chain_config.websocket_addr.clone().into();
+        let websocket_addr = chain_config.websocket_addr.clone();
 
         let tx_config = TxConfig::try_from(&chain_config).map_err(BaseError::relayer)?;
 

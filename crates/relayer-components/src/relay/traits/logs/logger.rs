@@ -66,7 +66,7 @@ where
         build_log: impl for<'r> FnOnce(LogWrapper<'a, 'r, Self::Logger>),
     ) {
         self.log_relay(level, message, |log| {
-            log.nested("relay_context", |log| {
+            log.nested("target_relay_context", |log| {
                 log.display("target_chain_id", Target::target_chain(self).chain_id());
                 log.display(
                     "counterparty_chain_id",
