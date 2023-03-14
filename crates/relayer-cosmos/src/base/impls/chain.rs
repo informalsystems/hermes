@@ -9,7 +9,7 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
-use ibc_relayer::link::packet_events::query_write_acknowledgement_events;
+use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer_all_in_one::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
@@ -401,7 +401,7 @@ where
             .runtime
             .runtime
             .spawn_blocking(move || {
-                let ibc_events = query_write_acknowledgement_events(
+                let ibc_events = query_write_ack_events(
                     &chain_handle,
                     &path_ident,
                     &[packet.sequence],

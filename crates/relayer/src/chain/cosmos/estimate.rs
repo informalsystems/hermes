@@ -1,4 +1,4 @@
-use ibc_proto::cosmos::tx::v1beta1::Fee;
+use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx};
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tonic::codegen::http::Uri;
@@ -10,7 +10,6 @@ use crate::chain::cosmos::simulate::send_tx_simulate;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::GasConfig;
-use crate::chain::cosmos::types::tx::SignedTx;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::Secp256k1KeyPair;
@@ -30,7 +29,7 @@ pub async fn estimate_tx_fees(
         PrettyFee(&gas_config.max_fee)
     );
 
-    let tx = sign_tx(
+    let signed_tx = sign_tx(
         config,
         key_pair,
         account,
@@ -39,17 +38,23 @@ pub async fn estimate_tx_fees(
         &gas_config.max_fee,
     )?;
 
+    let tx = Tx {
+        body: Some(signed_tx.body),
+        auth_info: Some(signed_tx.auth_info),
+        signatures: signed_tx.signatures,
+    };
+
     let estimated_fee =
         estimate_fee_with_tx(gas_config, &config.grpc_address, &config.chain_id, tx).await?;
 
     Ok(estimated_fee)
 }
 
-pub async fn estimate_fee_with_tx(
+async fn estimate_fee_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,
     chain_id: &ChainId,
-    tx: SignedTx,
+    tx: Tx,
 ) -> Result<Fee, Error> {
     let estimated_gas = estimate_gas_with_tx(gas_config, grpc_address, tx).await?;
 
@@ -89,7 +94,7 @@ pub async fn estimate_fee_with_tx(
 async fn estimate_gas_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,
-    tx: SignedTx,
+    tx: Tx,
 ) -> Result<u64, Error> {
     let simulated_gas = send_tx_simulate(grpc_address, tx)
         .await

@@ -49,7 +49,7 @@ use crate::link::operational_data::{
 };
 use crate::link::packet_events::query_packet_events_with;
 use crate::link::packet_events::query_send_packet_events;
-use crate::link::packet_events::query_write_acknowledgement_events;
+use crate::link::packet_events::query_write_ack_events;
 use crate::link::pending::PendingTxs;
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
@@ -1186,7 +1186,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Qualified::SmallerEqual(query_height),
             self.src_chain(),
             &self.path_id,
-            query_write_acknowledgement_events,
+            query_write_ack_events,
         ) {
             telemetry!(self.record_cleared_acknowledgments(events_chunk.iter()));
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;

@@ -9,7 +9,6 @@ extern crate alloc;
 pub mod base;
 pub mod contexts;
 pub mod full;
-pub mod transaction;
 
 #[cfg(test)]
 pub mod tests;

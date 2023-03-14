@@ -1,21 +1,19 @@
-use crate::event::IbcEventWithHeight;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::events::IbcEvent;
-use tendermint::abci::Event;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{Client, HttpClient, Url};
 
-use crate::chain::cosmos::encode::{encode_tx_raw, sign_tx};
-use crate::chain::cosmos::estimate::{estimate_fee_with_tx, estimate_tx_fees};
-use crate::chain::cosmos::event::split_events_by_messages;
+use crate::chain::cosmos::encode::sign_and_encode_tx;
+use crate::chain::cosmos::estimate::estimate_tx_fees;
 use crate::chain::cosmos::query::account::query_account;
+use crate::chain::cosmos::query::tx::all_ibc_events_from_tx_search_response;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::tx::SignedTx;
 use crate::chain::cosmos::wait::wait_tx_succeed;
 use crate::config::types::Memo;
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
 
 use super::batch::send_batched_messages_and_wait_commit;
@@ -45,9 +43,9 @@ async fn send_tx_with_fee(
     messages: &[Any],
     fee: &Fee,
 ) -> Result<Response, Error> {
-    let tx = sign_tx(config, key_pair, account, tx_memo, messages, fee)?;
+    let tx_bytes = sign_and_encode_tx(config, key_pair, account, tx_memo, messages, fee)?;
 
-    let response = broadcast_tx_sync(rpc_client, &config.rpc_address, tx).await?;
+    let response = broadcast_tx_sync(rpc_client, &config.rpc_address, tx_bytes).await?;
 
     Ok(response)
 }
@@ -56,10 +54,8 @@ async fn send_tx_with_fee(
 pub async fn broadcast_tx_sync(
     rpc_client: &HttpClient,
     rpc_address: &Url,
-    tx: SignedTx,
+    data: Vec<u8>,
 ) -> Result<Response, Error> {
-    let data = encode_tx_raw(tx)?;
-
     let response = rpc_client
         .broadcast_tx_sync(data)
         .await
@@ -85,34 +81,21 @@ pub async fn simple_send_tx(
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     messages: Vec<Any>,
-) -> Result<Vec<Vec<Event>>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     let key_account = key_pair.account();
-    let account: Account = query_account(&config.grpc_address, &key_account)
+    let account = query_account(&config.grpc_address, &key_account)
         .await?
         .into();
 
-    let tx_memo = Memo::default();
-
-    let simulate_tx = sign_tx(
+    let response = estimate_fee_and_send_tx(
+        rpc_client,
         config,
         key_pair,
         &account,
-        &tx_memo,
+        &Memo::default(),
         &messages,
-        &config.gas_config.max_fee,
-    )?;
-
-    let fee = estimate_fee_with_tx(
-        &config.gas_config,
-        &config.grpc_address,
-        &config.chain_id,
-        simulate_tx,
     )
     .await?;
-
-    let tx = sign_tx(config, key_pair, &account, &tx_memo, &messages, &fee)?;
-
-    let response = broadcast_tx_sync(rpc_client, &config.rpc_address, tx).await?;
 
     if response.code.is_err() {
         return Err(Error::check_tx(response));
@@ -126,7 +109,7 @@ pub async fn simple_send_tx(
     )
     .await?;
 
-    let events = split_events_by_messages(response.tx_result.events);
+    let events = all_ibc_events_from_tx_search_response(&config.chain_id, response);
 
     Ok(events)
 }

@@ -327,7 +327,7 @@ pub enum ConsensusStateTrusted {
 }
 
 #[derive(Clone, Debug)]
-pub struct ForeignClient<DstChain, SrcChain> {
+pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
     /// The identifier of this client. The host chain determines this id upon client creation,
     /// so we may be using the default value temporarily.
     pub id: ClientId,

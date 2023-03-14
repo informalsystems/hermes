@@ -1,9 +1,8 @@
 use core::time::Duration;
 
 use async_trait::async_trait;
-use ibc_proto::cosmos::tx::v1beta1::{Fee, TxRaw};
+use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx, TxRaw};
 use ibc_relayer::chain::cosmos::encode::{key_pair_to_signer, sign_tx};
-use ibc_relayer::chain::cosmos::event::split_events_by_messages;
 use ibc_relayer::chain::cosmos::gas::gas_amount_to_fee;
 use ibc_relayer::chain::cosmos::query::account::query_account;
 use ibc_relayer::chain::cosmos::query::tx::query_tx_response;
@@ -138,10 +137,12 @@ where
     }
 
     async fn submit_tx(&self, tx: &SignedTx) -> Result<TxHash, Error> {
+        let data = encode_tx_raw(tx)?;
+
         let tx_config = self.chain.tx_config();
         let rpc_client = self.chain.rpc_client();
 
-        let response = broadcast_tx_sync(rpc_client, &tx_config.rpc_address, tx.clone())
+        let response = broadcast_tx_sync(rpc_client, &tx_config.rpc_address, data)
             .await
             .map_err(BaseError::relayer)?;
 
@@ -153,9 +154,15 @@ where
     }
 
     async fn estimate_tx_fee(&self, tx: &SignedTx) -> Result<Fee, Error> {
+        let tx = Tx {
+            body: Some(tx.body.clone()),
+            auth_info: Some(tx.auth_info.clone()),
+            signatures: tx.signatures.clone(),
+        };
+
         let tx_config = self.chain.tx_config();
 
-        let response = send_tx_simulate(&tx_config.grpc_address, tx.clone())
+        let response = send_tx_simulate(&tx_config.grpc_address, tx)
             .await
             .map_err(BaseError::relayer)?;
 
@@ -199,4 +206,46 @@ where
 
         Ok(events)
     }
+}
+
+fn split_events_by_messages(in_events: Vec<Event>) -> Vec<Vec<Event>> {
+    let mut out_events = Vec::new();
+    let mut current_events = Vec::new();
+    let mut first_message_event_found = false;
+
+    for event in in_events.into_iter() {
+        if event.kind == "message"
+            && event.attributes.len() == 1
+            && &event.attributes[0].key == "action"
+        {
+            if first_message_event_found {
+                out_events.push(current_events);
+            } else {
+                first_message_event_found = true;
+            }
+
+            current_events = vec![event];
+        } else if first_message_event_found {
+            current_events.push(event);
+        }
+    }
+
+    if !current_events.is_empty() {
+        out_events.push(current_events);
+    }
+
+    out_events
+}
+
+fn encode_tx_raw(signed_tx: &SignedTx) -> Result<Vec<u8>, Error> {
+    let tx_raw = TxRaw {
+        body_bytes: signed_tx.body_bytes.clone(),
+        auth_info_bytes: signed_tx.auth_info_bytes.clone(),
+        signatures: signed_tx.signatures.clone(),
+    };
+
+    let mut tx_bytes = Vec::new();
+    prost::Message::encode(&tx_raw, &mut tx_bytes).map_err(BaseError::encode)?;
+
+    Ok(tx_bytes)
 }
