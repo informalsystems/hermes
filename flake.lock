@@ -88,11 +88,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1675778336,
-        "narHash": "sha256-rrxSLRdMInR/Bjz/O2egGgnMT6nESY566yZZPeAX+IQ=",
+        "lastModified": 1678710116,
+        "narHash": "sha256-GyBl2CIfL7ehGr2C2ZP8Jmm+cZF2XPBRjona4yeXXEM=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "baf12ceb6278c574d9521580474748220d18271e",
+        "rev": "260fcecf378a252419b5888262eaeb650269cece",
         "type": "github"
       },
       "original": {
@@ -200,11 +200,11 @@
     },
     "flake-utils_3": {
       "locked": {
-        "lastModified": 1667395993,
-        "narHash": "sha256-nuEHfE/LcWyuSWnS8t12N1wc105Qtau+/OdUAjtQ0rA=",
+        "lastModified": 1676283394,
+        "narHash": "sha256-XX2f9c3iySLCw54rJ/CZs+ZK6IQy7GXNY4nSOyu2QG4=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "5aed5285a952e0b949eb3ba02c12fa4fcfef535f",
+        "rev": "3db36a8b464d0c4532ba1c7dda728f4576d6d073",
         "type": "github"
       },
       "original": {
@@ -621,11 +621,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1675698036,
-        "narHash": "sha256-BgsQkQewdlQi8gapJN4phpxkI/FCE/2sORBaFcYbp/A=",
+        "lastModified": 1678631509,
+        "narHash": "sha256-+eyd+CJUAZbk0KqqhyJtai+BmiM2/K54xE91fI2eGD0=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "1046c7b92e908a1202c0f1ba3fc21d19e1cf1b62",
+        "rev": "b38db2c901b30a37d345751f4f6418d416e7e46e",
         "type": "github"
       },
       "original": {
@@ -638,16 +638,16 @@
     "osmosis-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1664825894,
-        "narHash": "sha256-AiGjvTxWt03ccNVgYfb/t2xXNdBDhw9y5eapGR8kxCI=",
+        "lastModified": 1673971085,
+        "narHash": "sha256-u14TpwHMheenEjdwXYZdW9HoG1/iktEPwjnluKyOlNk=",
         "owner": "osmosis-labs",
         "repo": "osmosis",
-        "rev": "8329e9e7dfdd232430602d7f6a2b7df0e4acc1bd",
+        "rev": "62587bfa0db9309804ca84cfceca6a19ac0aae44",
         "type": "github"
       },
       "original": {
         "owner": "osmosis-labs",
-        "ref": "v12.1.0",
+        "ref": "v14.0.0",
         "repo": "osmosis",
         "type": "github"
       }

@@ -403,15 +403,13 @@ impl Default for RestConfig {
     content = "proto_type",
     deny_unknown_fields
 )]
+#[derive(Default)]
 pub enum AddressType {
+    #[default]
     Cosmos,
-    Ethermint { pk_type: String },
-}
-
-impl Default for AddressType {
-    fn default() -> Self {
-        AddressType::Cosmos
-    }
+    Ethermint {
+        pk_type: String,
+    },
 }
 
 impl Display for AddressType {
