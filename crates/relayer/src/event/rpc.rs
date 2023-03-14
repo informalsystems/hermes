@@ -191,9 +191,7 @@ pub fn get_all_events(
                         if let IbcEvent::DistributeFeePacket(dist) = ibc_event {
                             // Only record rewarded fees
                             if let DistributionType::Reward = dist.distribution_type {
-                                let amount = dist.fee;
-                                let receiver = dist.receiver;
-                                telemetry!(fees_amount, chain_id, &receiver, amount,);
+                                telemetry!(fees_amount, chain_id, &dist.receiver, dist.fee);
                             }
                         }
                     }

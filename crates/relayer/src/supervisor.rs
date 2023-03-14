@@ -148,8 +148,8 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     // in the list of visible fee addresses.
     if config.telemetry.enabled {
         for chain in registry.read().chains() {
-            if let Ok(key) = chain.get_key() {
-                telemetry!(add_visible_fee_address, key.account());
+            if let Ok(_key) = chain.get_key() {
+                telemetry!(add_visible_fee_address, _key.account());
             }
         }
     }

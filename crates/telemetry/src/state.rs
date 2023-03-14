@@ -1036,7 +1036,7 @@ impl Default for TelemetryState {
 
             period_fees: meter
                 .u64_observable_gauge("ics29_period_fees")
-                .with_description("Amount of ICS29 fees rewarded last 7 days")
+                .with_description("Amount of ICS29 fees rewarded over the past 7 days")
                 .init(),
         }
     }
