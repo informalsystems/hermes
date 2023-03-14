@@ -6,16 +6,16 @@
 use core::ops::Add;
 use core::time::Duration;
 use eyre::eyre;
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::events::IbcEvent;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::batched_send_tx;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
 use ibc_relayer::transfer::TransferError;
 use ibc_relayer_types::applications::transfer::error::Error as Ics20Error;
-use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::timestamp::Timestamp;
 use tendermint_rpc::HttpClient;
@@ -107,14 +107,11 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     )
     .await?;
 
-    let (packet, _) = events[0]
-        .iter()
-        .find_map(|event| {
-            if event.kind == "send_packet" {
-                extract_packet_and_write_ack_from_tx(event).ok()
-            } else {
-                None
-            }
+    let packet = events
+        .into_iter()
+        .find_map(|event| match event.event {
+            IbcEvent::SendPacket(ev) => Some(ev.packet),
+            _ => None,
         })
         .ok_or_else(|| eyre!("failed to find send packet event"))?;
 

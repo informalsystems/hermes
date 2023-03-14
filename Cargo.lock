@@ -1768,25 +1768,19 @@ dependencies = [
 name = "ibc-integration-test"
 version = "0.22.0"
 dependencies = [
- "async-trait",
- "eyre",
  "http",
- "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-all-in-one",
- "ibc-relayer-cli",
  "ibc-relayer-components",
  "ibc-relayer-cosmos",
  "ibc-relayer-runtime",
  "ibc-relayer-types",
  "ibc-test-framework",
- "opentelemetry 0.17.0",
  "prost",
  "serde",
  "serde_json",
  "tempfile",
  "time",
- "tokio",
  "toml",
  "tonic",
 ]
@@ -2096,7 +2090,6 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.6",
  "subtle-encoding",
- "tendermint",
  "tendermint-rpc",
  "tokio",
  "toml",

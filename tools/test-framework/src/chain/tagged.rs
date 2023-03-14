@@ -5,8 +5,8 @@
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
+use ibc_relayer::event::IbcEventWithHeight;
 use serde_json as json;
-use tendermint::abci::Event;
 use tendermint_rpc::client::{Client, CompatMode, HttpClient};
 
 use crate::chain::cli::query::query_recipient_transactions;
@@ -43,7 +43,7 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
         messages: Vec<Any>,
-    ) -> Result<Vec<Vec<Event>>, Error>;
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     /**
        Tagged version of [`ChainDriver::query_balance`].
@@ -108,7 +108,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
         messages: Vec<Any>,
-    ) -> Result<Vec<Vec<Event>>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         let rpc_client = self.rpc_client()?;
 
         self.value()

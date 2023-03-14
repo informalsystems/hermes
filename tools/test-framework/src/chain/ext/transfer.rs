@@ -1,4 +1,5 @@
 use core::time::Duration;
+
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
 use crate::chain::cli::transfer::local_transfer_token;
@@ -39,6 +40,15 @@ pub trait ChainTransferMethodsExt<Chain> {
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
+    ) -> Result<Packet, Error>;
+
+    fn ibc_transfer_token_with_timeout<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        token: &TaggedTokenRef<Chain>,
         timeout: Option<Duration>,
     ) -> Result<Packet, Error>;
 
@@ -62,6 +72,27 @@ pub trait ChainTransferMethodsExt<Chain> {
 
 impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
     fn ibc_transfer_token<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        token: &TaggedTokenRef<Chain>,
+    ) -> Result<Packet, Error> {
+        let rpc_client = self.rpc_client()?;
+        self.value().runtime.block_on(ibc_token_transfer(
+            rpc_client.as_ref(),
+            &self.tx_config(),
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            token,
+            None,
+        ))
+    }
+
+    fn ibc_transfer_token_with_timeout<Counterparty>(
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,

@@ -1,7 +1,7 @@
 use core::time::Duration;
+use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
@@ -27,7 +27,7 @@ pub trait ChainFeeMethodsExt<Chain> {
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
         timeout: Duration,
-    ) -> Result<Vec<IbcEvent>, Error>;
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn pay_packet_fee<Counterparty>(
         &self,
@@ -38,7 +38,7 @@ pub trait ChainFeeMethodsExt<Chain> {
         receive_fee: &TaggedTokenRef<'_, Chain>,
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
-    ) -> Result<Vec<IbcEvent>, Error>;
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn register_counterparty_payee<Counterparty>(
         &self,
@@ -81,7 +81,7 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
         timeout: Duration,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(ibc_token_transfer_with_fee(
             rpc_client.as_ref(),
@@ -107,7 +107,7 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         receive_fee: &TaggedTokenRef<'_, Chain>,
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(pay_packet_fee(
             rpc_client.as_ref(),

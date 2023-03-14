@@ -8,7 +8,7 @@ keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
 repository = "https://github.com/informalsystems/hermes"
 authors    = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.68"
+rust-version = "1.65"
 description = """
   Integration tests for IBC Relayer
 """
@@ -16,25 +16,19 @@ description = """
 [dependencies]
 ibc-relayer-types  = { path = "../../crates/relayer-types" }
 ibc-relayer        = { path = "../../crates/relayer" }
-ibc-relayer-cli    = { path = "../../crates/relayer-cli" }
 ibc-relayer-all-in-one = { path = "../../crates/relayer-all-in-one" }
 ibc-relayer-components = { version = "0.1.0", path = "../../crates/relayer-components" }
 ibc-relayer-runtime    = { path = "../../crates/relayer-runtime" }
 ibc-relayer-cosmos     = { path = "../../crates/relayer-cosmos" }
-ibc-proto          = { version = "0.27.0" }
 ibc-test-framework = { path = "../test-framework" }
 
-async-trait = "0.1.56"
-eyre = "0.6.8"
 http = "0.2.9"
 prost = { version = "0.11" }
 serde_json = "1"
 time = "0.3"
-tokio = "1.19.2"
 toml = "0.5"
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 serde = "1.0.149"
-opentelemetry = { version = "0.17.0", features = ["metrics"] }
 
 [features]
 default = []

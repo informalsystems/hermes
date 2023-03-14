@@ -65,7 +65,6 @@ impl BinaryChannelTest for IbcTransferTest {
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &denom_a.with_amount(a_to_b_amount).as_ref(),
-            None,
         )?;
 
         let denom_b = derive_ibc_denom(
@@ -115,7 +114,6 @@ impl BinaryChannelTest for IbcTransferTest {
             &wallet_b.as_ref(),
             &wallet_c.address(),
             &denom_b.with_amount(b_to_a_amount).as_ref(),
-            None,
         )?;
 
         info!(

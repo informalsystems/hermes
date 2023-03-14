@@ -66,7 +66,6 @@ impl BinaryChannelTest for ChannelFilterTest {
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &denom_a.with_amount(a_to_b_amount).as_ref(),
-            None,
         )?;
 
         info!("running relayer");
