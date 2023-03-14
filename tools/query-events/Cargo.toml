@@ -8,7 +8,7 @@ tendermint     = { version  = "0.30.0" }
 tendermint-rpc = { version  = "0.30.0", features = ["http-client"] }
 
 clap               = { version = "3.2", features = ["derive"] }
-futures            = "0.3.26"
+futures            = "0.3.27"
 itertools          = "0.10.5"
 tokio              = { version = "1.21.2", features = ["full"] }
 tracing            = "0.1.37"
