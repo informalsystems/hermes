@@ -190,7 +190,7 @@ pub struct TelemetryState {
     /// Vector of rewarded fees stored in a moka Cache value
     cached_fees: Mutex<Vec<moka::sync::Cache<String, u64>>>,
 
-    /// Sum of rewarded fees for the last FEE_LIFETIME seconds
+    /// Sum of rewarded fees over the past FEE_LIFETIME seconds
     period_fees: ObservableGauge<u64>,
 }
 
