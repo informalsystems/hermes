@@ -169,7 +169,7 @@ fn detect_compatibility_mode(
     let status = rt.block_on(client.status())?;
     let compat_mode = CompatMode::from_version(status.node_info.version).unwrap_or_else(|e| {
         warn!("Unsupported tendermint version, will use v0.34 compatibility mode but relaying might not work as desired: {e}");
-        CompatMode::V0_34
+        CompatMode::V0_37
     });
     Ok(compat_mode)
 }
