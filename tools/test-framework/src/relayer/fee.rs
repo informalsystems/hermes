@@ -36,8 +36,15 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
     timeout_fee: &TaggedTokenRef<'_, SrcChain>,
     timeout: Duration,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
-    let transfer_message =
-        build_transfer_message(port_id, channel_id, sender, recipient, send_amount, timeout)?;
+    let transfer_message = build_transfer_message(
+        port_id,
+        channel_id,
+        sender,
+        recipient,
+        send_amount,
+        timeout,
+        None,
+    )?;
 
     let pay_message = build_pay_packet_message(
         port_id.value(),

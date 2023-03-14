@@ -74,6 +74,7 @@ impl BinaryChannelTest for ClearPacketTest {
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &amount1.as_ref(),
+            None,
         )?;
 
         sleep(Duration::from_secs(1));
@@ -95,6 +96,7 @@ impl BinaryChannelTest for ClearPacketTest {
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
                 &amount2.as_ref(),
+                None,
             )?;
 
             sleep(Duration::from_secs(1));
@@ -150,6 +152,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &denom_a.with_amount(amount1).as_ref(),
+            None,
         )?;
 
         let denom_b2 = derive_ibc_denom(
