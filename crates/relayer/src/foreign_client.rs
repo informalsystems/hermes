@@ -13,12 +13,13 @@ use itertools::Itertools;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use flex_error::define_error;
+use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
+use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics02_client::header::Header;
 use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
-use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc_relayer_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc_relayer_types::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
@@ -38,7 +39,7 @@ use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
-use crate::misbehaviour::MisbehaviourEvidence;
+use crate::misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence};
 use crate::telemetry;
 use crate::util::collate::CollatedIterExt;
 use crate::util::pretty::{PrettyDuration, PrettySlice};
@@ -1618,11 +1619,30 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             );
         }
 
+        // msgs.push(
+        //     MsgSubmitMisbehaviour {
+        //         misbehaviour: evidence.misbehaviour.into(),
+        //         client_id: self.id.clone(),
+        //         signer,
+        //     }
+
+        let tm_misbehaviour = match evidence.misbehaviour {
+            AnyMisbehaviour::Tendermint(tm_misbehaviour) => Some(tm_misbehaviour),
+            #[cfg(test)]
+            AnyMisbehaviour::Mock(_) => None,
+        }
+        .unwrap();
+
+        let msg_misbehaviour = Misbehaviour {
+            client_id: self.id.clone(),
+            header1: tm_misbehaviour.header1.clone(),
+            header2: tm_misbehaviour.header2.clone(),
+        };
+
         msgs.push(
-            MsgSubmitMisbehaviour {
-                misbehaviour: evidence.misbehaviour.into(),
-                client_id: self.id.clone(),
-                signer,
+            MsgSubmitIcsConsumerMisbehaviour {
+                submitter: signer,
+                misbehaviour: msg_misbehaviour,
             }
             .to_any(),
         );
