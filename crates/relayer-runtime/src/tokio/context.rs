@@ -2,9 +2,6 @@ use alloc::sync::Arc;
 use core::future::Future;
 use core::pin::Pin;
 use core::time::Duration;
-use futures::channel::{mpsc, oneshot};
-use futures::lock::{Mutex, MutexGuard};
-use futures::stream::StreamExt;
 use std::time::Instant;
 
 use async_trait::async_trait;
@@ -15,8 +12,10 @@ use ibc_relayer_all_in_one::extra::one_for_all::traits::runtime::OfaFullRuntime;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components_extra::runtime::traits::spawn::TaskHandle;
 use tokio::runtime::Runtime;
+use tokio::sync::{mpsc, oneshot, Mutex, MutexGuard};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use tracing;
 
 use super::error::Error as TokioError;
@@ -107,32 +106,31 @@ impl OfaFullRuntime for TokioRuntimeContext {
     where
         T: Async,
     {
-        mpsc::unbounded()
+        mpsc::unbounded_channel()
     }
 
     fn send<T>(sender: &Self::Sender<T>, value: T) -> Result<(), Self::Error>
     where
         T: Async,
     {
-        sender
-            .unbounded_send(value)
-            .map_err(|_| TokioError::channel_closed())
+        sender.send(value).map_err(|_| TokioError::channel_closed())
     }
 
     async fn receive<T>(receiver: &mut Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async,
     {
-        receiver.next().await.ok_or_else(TokioError::channel_closed)
+        receiver.recv().await.ok_or_else(TokioError::channel_closed)
     }
 
     fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
     where
         T: Async,
     {
-        match receiver.try_next() {
-            Ok(batch) => Ok(batch),
-            Err(_) => Err(TokioError::channel_closed()),
+        match receiver.try_recv() {
+            Ok(batch) => Ok(Some(batch)),
+            Err(mpsc::error::TryRecvError::Empty) => Ok(None),
+            Err(mpsc::error::TryRecvError::Disconnected) => Err(TokioError::channel_closed()),
         }
     }
 
@@ -142,7 +140,7 @@ impl OfaFullRuntime for TokioRuntimeContext {
     where
         T: Async,
     {
-        Box::pin(receiver)
+        Box::pin(UnboundedReceiverStream::new(receiver))
     }
 
     fn new_channel_once<T>() -> (Self::SenderOnce<T>, Self::ReceiverOnce<T>)

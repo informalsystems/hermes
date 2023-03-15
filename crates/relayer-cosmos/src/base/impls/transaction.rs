@@ -1,7 +1,6 @@
 use core::time::Duration;
 
 use async_trait::async_trait;
-use futures::lock::Mutex;
 use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx, TxRaw};
 use ibc_relayer::chain::cosmos::encode::{key_pair_to_signer, sign_tx};
 use ibc_relayer::chain::cosmos::gas::gas_amount_to_fee;
@@ -24,6 +23,7 @@ use prost::Message as _;
 use tendermint::abci::Event;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
+use tokio::sync::Mutex;
 
 use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;

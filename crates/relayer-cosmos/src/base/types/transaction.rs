@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 
-use futures::lock::Mutex;
+use tokio::sync::Mutex;
 
 pub struct CosmosTxWrapper<Chain> {
     pub chain: Arc<Chain>,

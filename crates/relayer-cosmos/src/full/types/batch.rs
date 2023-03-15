@@ -1,6 +1,6 @@
-use futures::channel::mpsc::{UnboundedReceiver, UnboundedSender};
-use futures::channel::oneshot::Sender as SenderOnce;
 use tendermint::abci::Event;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::oneshot::Sender as SenderOnce;
 
 use crate::base::error::Error;
 use crate::base::types::message::CosmosIbcMessage;
