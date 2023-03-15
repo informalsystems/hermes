@@ -1,9 +1,14 @@
+use std::collections::HashSet;
+
+use alloc::sync::Arc;
+use futures::lock::Mutex;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_all_in_one::base::one_for_all::presets::min::MinimalPreset;
 use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::base::traits::chain::CosmosChain;
 use crate::base::traits::relay::CosmosRelay;
@@ -20,6 +25,7 @@ where
     pub dst_chain: OfaChainWrapper<CosmosChainWrapper<MinCosmosChainContext<DstChain>>>,
     pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
+    pub packet_lock_mutex: Arc<Mutex<HashSet<(ChannelId, PortId, ChannelId, PortId)>>>,
 }
 
 impl<SrcChain, DstChain> MinCosmosRelayContext<SrcChain, DstChain>
@@ -40,6 +46,7 @@ where
             dst_chain,
             src_to_dst_client,
             dst_to_src_client,
+            packet_lock_mutex: Arc::new(Mutex::new(HashSet::new())),
         };
 
         relay
@@ -85,5 +92,9 @@ where
         <Self::DstChain as CosmosChain>::ChainHandle,
     > {
         &self.dst_to_src_client
+    }
+
+    fn packet_lock_mutex(&self) -> &Arc<Mutex<HashSet<(ChannelId, PortId, ChannelId, PortId)>>> {
+        &self.packet_lock_mutex
     }
 }
