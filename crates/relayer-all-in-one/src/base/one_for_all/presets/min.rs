@@ -5,6 +5,7 @@ use ibc_relayer_components::relay::impls::message_senders::chain_sender::SendIbc
 use ibc_relayer_components::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use ibc_relayer_components::relay::impls::packet_filters::allow_all::AllowAll;
 use ibc_relayer_components::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
+use ibc_relayer_components::relay::impls::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::general::log::LoggerRelayer;
 
 use crate::base::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
@@ -18,7 +19,7 @@ pub type ConsensusStateQuerier = SendConsensusStateQueryToOfa;
 
 pub type AutoRelayer = ConcurrentBidirectionalRelayer<ConcurrentEventSubscriptionRelayer>;
 
-pub type PacketRelayer = LoggerRelayer<FullCycleRelayer>;
+pub type PacketRelayer = LockPacketRelayer<LoggerRelayer<FullCycleRelayer>>;
 
 pub type PacketFilter = AllowAll;
 

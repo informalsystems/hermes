@@ -49,6 +49,8 @@ pub trait OfaRelayTypes: Async {
         IncomingPacket = Self::Packet,
         OutgoingPacket = <Self::SrcChain as OfaIbcChain<Self::DstChain>>::IncomingPacket,
     >;
+
+    type PacketLock<'a>: Send;
 }
 
 #[async_trait]
@@ -102,6 +104,11 @@ pub trait OfaBaseRelay: OfaRelayTypes {
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error>;
+
+    async fn try_acquire_packet_lock<'a>(
+        &'a self,
+        packet: &'a Self::Packet,
+    ) -> Option<Self::PacketLock<'a>>;
 }
 
 pub trait OfaRelayPreset<Relay>:

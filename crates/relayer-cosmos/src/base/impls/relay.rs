@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use futures::channel::oneshot::{channel, Sender};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_all_in_one::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
@@ -20,6 +21,18 @@ use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::message::CosmosIbcMessage;
 use crate::base::types::relay::CosmosRelayWrapper;
 
+pub struct PacketLock {
+    pub release_sender: Option<Sender<()>>,
+}
+
+impl Drop for PacketLock {
+    fn drop(&mut self) {
+        if let Some(sender) = self.release_sender.take() {
+            let _ = sender.send(());
+        }
+    }
+}
+
 impl<Relay> OfaRelayTypes for CosmosRelayWrapper<Relay>
 where
     Relay: CosmosRelay,
@@ -37,6 +50,8 @@ where
     type SrcChain = CosmosChainWrapper<Relay::SrcChain>;
 
     type DstChain = CosmosChainWrapper<Relay::DstChain>;
+
+    type PacketLock<'a> = PacketLock;
 }
 
 #[async_trait]
@@ -139,6 +154,42 @@ where
             .spawn_blocking(move || build_update_client_messages(&client, height))
             .await
             .map_err(BaseError::join)?
+    }
+
+    async fn try_acquire_packet_lock<'a>(&'a self, packet: &'a Packet) -> Option<PacketLock> {
+        let packet_key = (
+            packet.source_channel.clone(),
+            packet.source_port.clone(),
+            packet.destination_channel.clone(),
+            packet.destination_port.clone(),
+            packet.sequence,
+        );
+
+        let mutex = self.relay.packet_lock_mutex();
+
+        let mut lock_table = mutex.lock().await;
+
+        if lock_table.contains(&packet_key) {
+            None
+        } else {
+            lock_table.insert(packet_key.clone());
+
+            let runtime = &self.runtime().runtime.runtime;
+
+            let (sender, receiver) = channel();
+
+            let mutex = mutex.clone();
+
+            runtime.spawn(async move {
+                let _ = receiver.await;
+                let mut lock_table = mutex.lock().await;
+                lock_table.remove(&packet_key);
+            });
+
+            Some(PacketLock {
+                release_sender: Some(sender),
+            })
+        }
     }
 }
 
