@@ -124,14 +124,17 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
-        node_a.chain_driver().ibc_transfer_token(
-            &channel_a_to_b.port_a.as_ref(),
-            &channel_a_to_b.channel_id_a.as_ref(),
-            &wallet_a,
-            &wallet_b.address(),
-            &denom_a.with_amount(a_to_c_amount).as_ref(),
-            Some(memo),
-        )?;
+        node_a
+            .chain_driver()
+            .ibc_transfer_token_with_memo_and_timeout(
+                &channel_a_to_b.port_a.as_ref(),
+                &channel_a_to_b.channel_id_a.as_ref(),
+                &wallet_a,
+                &wallet_b.address(),
+                &denom_a.with_amount(a_to_c_amount).as_ref(),
+                Some(memo),
+                None,
+            )?;
 
         info!(
             "waiting for user on chain C to receive IBC transferred amount of {}",
@@ -256,14 +259,17 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         {
             info!("forward transfer with invalid `port` field");
 
-            node_a.chain_driver().ibc_transfer_token(
-                &channel_a_to_b.port_a.as_ref(),
-                &channel_a_to_b.channel_id_a.as_ref(),
-                &wallet_a,
-                &wallet_b.address(),
-                &denom_a.with_amount(a_to_c_amount).as_ref(),
-                Some(memo1),
-            )?;
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo1),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));
@@ -290,14 +296,17 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         {
             info!("forward transfer with invalid `channel` field");
 
-            node_a.chain_driver().ibc_transfer_token(
-                &channel_a_to_b.port_a.as_ref(),
-                &channel_a_to_b.channel_id_a.as_ref(),
-                &wallet_a,
-                &wallet_b.address(),
-                &denom_a.with_amount(a_to_c_amount).as_ref(),
-                Some(memo2),
-            )?;
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo2),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));
@@ -324,14 +333,17 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         {
             info!("forward transfer with invalid `receiver` field");
 
-            node_a.chain_driver().ibc_transfer_token(
-                &channel_a_to_b.port_a.as_ref(),
-                &channel_a_to_b.channel_id_a.as_ref(),
-                &wallet_a,
-                &wallet_b.address(),
-                &denom_a.with_amount(a_to_c_amount).as_ref(),
-                Some(memo3),
-            )?;
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo3),
+                    None,
+                )?;
 
             info!("checking that the sender was refunded and other chains didn't receive tokens");
 
@@ -358,14 +370,17 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         {
             info!("forward transfer with invalid `forward` field");
 
-            node_a.chain_driver().ibc_transfer_token(
-                &channel_a_to_b.port_a.as_ref(),
-                &channel_a_to_b.channel_id_a.as_ref(),
-                &wallet_a,
-                &wallet_b.address(),
-                &denom_a.with_amount(a_to_c_amount).as_ref(),
-                Some(memo4),
-            )?;
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo4),
+                    None,
+                )?;
 
             info!(
                 "check that only the sender lost {} tokens and the intemediary chain received {} tokens",
@@ -478,14 +493,17 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
         {
             info!("forward transfer with invalid port");
 
-            node_a.chain_driver().ibc_transfer_token(
-                &channel_a_to_b.port_a.as_ref(),
-                &channel_a_to_b.channel_id_a.as_ref(),
-                &wallet_a,
-                &wallet_b.address(),
-                &denom_a.with_amount(a_to_c_amount).as_ref(),
-                Some(memo2),
-            )?;
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo2),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));
@@ -513,14 +531,17 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
         {
             info!("forward transfer with invalid channel");
 
-            node_a.chain_driver().ibc_transfer_token(
-                &channel_a_to_b.port_a.as_ref(),
-                &channel_a_to_b.channel_id_a.as_ref(),
-                &wallet_a,
-                &wallet_b.address(),
-                &denom_a.with_amount(a_to_c_amount).as_ref(),
-                Some(memo3),
-            )?;
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo3),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));
@@ -548,14 +569,17 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
         {
             info!("forward transfer with invalid receiver address");
 
-            node_a.chain_driver().ibc_transfer_token(
-                &channel_a_to_b.port_a.as_ref(),
-                &channel_a_to_b.channel_id_a.as_ref(),
-                &wallet_a,
-                &wallet_b.address(),
-                &denom_a.with_amount(a_to_c_amount).as_ref(),
-                Some(memo1),
-            )?;
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo1),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));
