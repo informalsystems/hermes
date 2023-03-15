@@ -9,6 +9,7 @@ use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_all_in_one::extra::one_for_all::presets::full::FullPreset;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::base::traits::relay::CosmosRelay;
@@ -28,7 +29,7 @@ where
     pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     pub packet_filter: PacketFilter,
-    pub packet_lock_mutex: Arc<Mutex<HashSet<(ChannelId, PortId, ChannelId, PortId)>>>,
+    pub packet_lock_mutex: Arc<Mutex<HashSet<(ChannelId, PortId, ChannelId, PortId, Sequence)>>>,
     pub src_chain_message_batch_sender: CosmosBatchSender,
     pub dst_chain_message_batch_sender: CosmosBatchSender,
 }
@@ -95,7 +96,9 @@ where
         &self.dst_to_src_client
     }
 
-    fn packet_lock_mutex(&self) -> &Arc<Mutex<HashSet<(ChannelId, PortId, ChannelId, PortId)>>> {
+    fn packet_lock_mutex(
+        &self,
+    ) -> &Arc<Mutex<HashSet<(ChannelId, PortId, ChannelId, PortId, Sequence)>>> {
         &self.packet_lock_mutex
     }
 }

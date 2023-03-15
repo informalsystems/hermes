@@ -4,15 +4,21 @@ use async_trait::async_trait;
 
 use crate::relay::traits::packet_relayer::PacketRelayer;
 use crate::relay::traits::packet_relayers::lock::HasPacketLock;
-use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
+/**
+   Call the inner relayer only if the packet lock provided by [`HasPacketLock`]
+   is acquired.
+
+   This is to avoid race condition where multiple packet relayers try to
+   relay the same packet at the same time.
+*/
 pub struct LockPacketRelayer<InRelayer>(pub PhantomData<InRelayer>);
 
 #[async_trait]
 impl<Relay, InRelayer> PacketRelayer<Relay> for LockPacketRelayer<InRelayer>
 where
-    Relay: HasRelayTypes + HasPacketLock,
+    Relay: HasPacketLock,
     InRelayer: PacketRelayer<Relay>,
 {
     async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error> {

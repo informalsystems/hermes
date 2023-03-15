@@ -162,6 +162,7 @@ where
             packet.source_port.clone(),
             packet.destination_channel.clone(),
             packet.destination_port.clone(),
+            packet.sequence,
         );
 
         let mutex = self.relay.packet_lock_mutex();

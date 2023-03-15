@@ -10,6 +10,7 @@ use crate::relay::traits::event_relayer::EventRelayer;
 use crate::relay::traits::packet_filter::{CanFilterPackets, PacketFilter};
 use crate::relay::traits::packet_relayer::CanRelayPacket;
 use crate::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
+use crate::relay::traits::packet_relayers::lock::HasPacketLock;
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
@@ -59,7 +60,7 @@ where
 #[async_trait]
 impl<Relay> EventRelayer<Relay, DestinationTarget> for PacketEventRelayer
 where
-    Relay: CanRelayAckPacket + CanFilterPackets,
+    Relay: CanRelayAckPacket + CanFilterPackets + HasPacketLock,
     Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
     MatchPacketSourceChain: PacketFilter<Relay>,
 {
@@ -68,25 +69,43 @@ where
         height: &Height<Relay::DstChain>,
         event: &Event<Relay::DstChain>,
     ) -> Result<(), Relay::Error> {
-        // TODO: Implement ack lock to prevent two ack packets being relayed simultaneously.
-        // AckPackets can be relayed via a PacketRelayer that relayed the RecvPacket,
-        // or this event relayer which reacts on Ack events.
-
         let m_ack_event = Relay::DstChain::try_extract_write_acknowledgement_event(event);
 
         if let Some(ack_event) = m_ack_event {
             let packet =
                 Relay::DstChain::extract_packet_from_write_acknowledgement_event(&ack_event);
 
-            // First check whether the packet is targetted for the destination chain,
-            // then use the packet filter in the relay context, as we skip `CanRelayPacket`
-            // which would have done the packet filtering.
+            /*
+               First check whether the packet is targetted for the destination chain,
+               then use the packet filter in the relay context, as we skip `CanRelayPacket`
+               which would have done the packet filtering.
+            */
             if MatchPacketSourceChain::should_relay_packet(relay, packet).await?
                 && relay.should_relay_packet(packet).await?
             {
-                // TODO: Add a middleware for Ack relayer so that it does not
-                // relay ack twice. (another time inside `FullCycleRelayer`)
-                relay.relay_ack_packet(height, packet, &ack_event).await?;
+                let m_lock = relay.try_acquire_packet_lock(packet).await;
+
+                /*
+                   Only relay the ack packet if there isn't another packet relayer
+                   trying to relay the same packet. This may happen because packet
+                   relayers like `FullCycleRelayer` also relay the ack packet right
+                   after it relays the recv packet.
+
+                   On the other hand, this event relayer relays based on the ack
+                   event that is fired, which is independent of the main packet
+                   relayer. Hence it has to use the packet lock to synchronize
+                   with the other packet worker.
+
+                   Note that it is still necessary to handle event-based ack
+                   relaying here, as we cannot just rely on the main packet
+                   worker to relay the ack packet. It is also possible that the
+                   relayer missed the send packet event, which gets relayed by
+                   another relayer. In that case, we can still relay the ack
+                   packet here based on the ack event.
+                */
+                if let Some(_lock) = m_lock {
+                    relay.relay_ack_packet(height, packet, &ack_event).await?;
+                }
             }
         }
 
