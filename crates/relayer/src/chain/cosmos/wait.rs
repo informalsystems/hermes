@@ -117,7 +117,7 @@ async fn update_tx_sync_result(
     Ok(())
 }
 
-fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
+pub fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
     tx_sync_results
         .iter()
         .all(|r| matches!(r.status, TxStatus::ReceivedResponse))

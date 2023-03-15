@@ -6,7 +6,7 @@ use ibc_relayer_types::core::{
 };
 
 use crate::{
-    chain::{counterparty::connection_state_on_destination, handle::ChainHandle},
+    chain::{counterparty::connection_state_on_destination, handle::ChainHandle, ChainType},
     client_state::IdentifiedAnyClientState,
     config::Config,
     object::{Channel, Client, Connection, Object, Packet, Wallet},
@@ -281,8 +281,16 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                         .is_empty()
                 };
 
+                // TODO Spawn a packet worker for Namada now.
+                // Incompatibility with Namada tendermint-rs causes an issue with monitoring IBC
+                // events. If using the same tendermint-rs, we can revert.
+                let has_namada = self
+                    .config
+                    .chains
+                    .iter()
+                    .any(|c| matches!(c.r#type, ChainType::Namada));
                 // If there are any outstanding packets or acks to send, spawn the worker
-                if has_packets() || has_acks() {
+                if has_packets() || has_acks() || has_namada {
                     // Create the Packet object and spawn worker
                     let path_object = Object::Packet(Packet {
                         dst_chain_id: counterparty_chain.id(),

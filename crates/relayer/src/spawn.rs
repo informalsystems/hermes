@@ -6,7 +6,10 @@ use tokio::runtime::Runtime as TokioRuntime;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::{
-    chain::{cosmos::CosmosSdkChain, handle::ChainHandle, runtime::ChainRuntime, ChainType},
+    chain::{
+        cosmos::CosmosSdkChain, handle::ChainHandle, namada::NamadaChain, runtime::ChainRuntime,
+        ChainType,
+    },
     config::Config,
     error::Error as RelayerError,
 };
@@ -54,6 +57,7 @@ pub fn spawn_chain_runtime<Handle: ChainHandle>(
 
     let handle = match chain_config.r#type {
         ChainType::CosmosSdk => ChainRuntime::<CosmosSdkChain>::spawn::<Handle>(chain_config, rt),
+        ChainType::Namada => ChainRuntime::<NamadaChain>::spawn::<Handle>(chain_config, rt),
     }
     .map_err(SpawnError::relayer)?;
 

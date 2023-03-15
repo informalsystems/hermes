@@ -22,13 +22,13 @@ def passive_packets(
 
     # 1. create some unreceived acks
 
-    # hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 10000 --timeout-height-offset 1000 --number-msgs 2
+    # hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 100 --timeout-height-offset 1000 --number-msgs 2
     packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
-                       src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=2)
+                       src_channel=ibc0_channel_id, amount=100, height_offset=1000, number_msgs=2)
 
     # hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 10000 --timeout-height-offset 1000 --number-msgs 2
     packet.packet_send(c, src=ibc1, dst=ibc0, src_port=port_id,
-                       src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=2)
+                       src_channel=ibc1_channel_id, amount=100, height_offset=1000, number_msgs=2)
     sleep(5.0)
 
     # hermes tx packet-recv --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0
@@ -41,13 +41,13 @@ def passive_packets(
 
     # 2. create some unreceived packets
 
-    # hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 10000 --timeout-height-offset 1000 --number-msgs 3
+    # hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 100 --timeout-height-offset 1000 --number-msgs 3
     packet.packet_send(c, src=ibc1, dst=ibc0, src_port=port_id,
-                       src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=3)
+                       src_channel=ibc1_channel_id, amount=100, height_offset=1000, number_msgs=3)
 
-    # hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 10000 --timeout-height-offset 1000 --number-msgs 4
+    # hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 100 --timeout-height-offset 1000 --number-msgs 4
     packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
-                       src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=4)
+                       src_channel=ibc0_channel_id, amount=100, height_offset=1000, number_msgs=4)
 
     sleep(10.0)
 
@@ -81,7 +81,7 @@ def passive_packets(
     proc = relayer.start(c)
 
     # 5. wait for the relayer to initialize and pick up pending packets
-    sleep(20.0)
+    sleep(40.0)
 
     # 6. verify that there are no pending packets
     # hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-1
@@ -113,15 +113,15 @@ def passive_packets(
                                     "unreceived acks mismatch (expected 0)")
 
     # 7. send some packets
-    # hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 10000 --timeout-height-offset 1000 --number-msgs 3
+    # hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 100 --timeout-height-offset 1000 --number-msgs 3
     packet.packet_send(c, src=ibc1, dst=ibc0, src_port=port_id,
-                       src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=3)
+                       src_channel=ibc1_channel_id, amount=100, height_offset=1000, number_msgs=3)
 
-    # hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 10000 --timeout-height-offset 1000 --number-msgs 4
+    # hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 100 --timeout-height-offset 1000 --number-msgs 4
     packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
-                       src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=4)
+                       src_channel=ibc0_channel_id, amount=100, height_offset=1000, number_msgs=4)
 
-    sleep(20.0)
+    sleep(40.0)
 
     # 8. verify that there are no pending packets
     # hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-1

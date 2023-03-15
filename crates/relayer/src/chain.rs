@@ -3,6 +3,7 @@ pub mod cosmos;
 pub mod counterparty;
 pub mod endpoint;
 pub mod handle;
+pub mod namada;
 pub mod requests;
 pub mod runtime;
 pub mod tracking;
@@ -18,6 +19,8 @@ use serde::{de::Error, Deserialize, Serialize};
 pub enum ChainType {
     /// Chains based on the Cosmos SDK
     CosmosSdk,
+    /// Chains based on Namada
+    Namada,
 }
 
 impl<'de> Deserialize<'de> for ChainType {
@@ -30,6 +33,7 @@ impl<'de> Deserialize<'de> for ChainType {
 
         match s.as_str() {
             "cosmossdk" => Ok(Self::CosmosSdk),
+            "namada" => Ok(Self::Namada),
 
             // NOTE(new): Add a case here
             _ => Err(D::Error::unknown_variant(&original, &["cosmos-sdk"])), // NOTE(new): mention the new variant here
@@ -57,6 +61,8 @@ mod tests {
         assert!(matches!(parse("CosmosSdk"), Ok(CosmosSdk)));
         assert!(matches!(parse("cosmossdk"), Ok(CosmosSdk)));
         assert!(matches!(parse("cosmos-sdk"), Ok(CosmosSdk)));
+        assert!(matches!(parse("Namada"), Ok(Namada)));
+        assert!(matches!(parse("namada"), Ok(Namada)));
 
         // NOTE(new): Add tests here
 
