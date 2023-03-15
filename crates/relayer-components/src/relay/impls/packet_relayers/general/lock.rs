@@ -2,6 +2,9 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
+use crate::logger::traits::level::HasBaseLogLevels;
+use crate::relay::traits::logs::logger::CanLogRelay;
+use crate::relay::traits::logs::packet::CanLogRelayPacket;
 use crate::relay::traits::packet_relayer::PacketRelayer;
 use crate::relay::traits::packet_relayers::lock::HasPacketLock;
 use crate::std_prelude::*;
@@ -18,7 +21,7 @@ pub struct LockPacketRelayer<InRelayer>(pub PhantomData<InRelayer>);
 #[async_trait]
 impl<Relay, InRelayer> PacketRelayer<Relay> for LockPacketRelayer<InRelayer>
 where
-    Relay: HasPacketLock,
+    Relay: HasPacketLock + CanLogRelay + CanLogRelayPacket,
     InRelayer: PacketRelayer<Relay>,
 {
     async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error> {
@@ -26,7 +29,17 @@ where
 
         match m_lock {
             Some(_lock) => InRelayer::relay_packet(relay, packet).await,
-            None => Ok(()),
+            None => {
+                relay.log_relay(
+                    Relay::Logger::LEVEL_TRACE,
+                    "skip relaying packet, as another packet relayer has acquired the packet lock",
+                    |log| {
+                        log.field("packet", Relay::log_packet(packet));
+                    },
+                );
+
+                Ok(())
+            }
         }
     }
 }

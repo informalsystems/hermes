@@ -3,10 +3,13 @@ use async_trait::async_trait;
 use crate::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::types::aliases::{Event, Height};
+use crate::logger::traits::level::HasBaseLogLevels;
 use crate::relay::impls::packet_filters::chain::{
     MatchPacketDestinationChain, MatchPacketSourceChain,
 };
 use crate::relay::traits::event_relayer::EventRelayer;
+use crate::relay::traits::logs::logger::CanLogRelay;
+use crate::relay::traits::logs::packet::CanLogRelayPacket;
 use crate::relay::traits::packet_filter::{CanFilterPackets, PacketFilter};
 use crate::relay::traits::packet_relayer::CanRelayPacket;
 use crate::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
@@ -60,7 +63,7 @@ where
 #[async_trait]
 impl<Relay> EventRelayer<Relay, DestinationTarget> for PacketEventRelayer
 where
-    Relay: CanRelayAckPacket + CanFilterPackets + HasPacketLock,
+    Relay: CanRelayAckPacket + CanFilterPackets + HasPacketLock + CanLogRelay + CanLogRelayPacket,
     Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
     MatchPacketSourceChain: PacketFilter<Relay>,
 {
@@ -103,8 +106,19 @@ where
                    another relayer. In that case, we can still relay the ack
                    packet here based on the ack event.
                 */
-                if let Some(_lock) = m_lock {
-                    relay.relay_ack_packet(height, packet, &ack_event).await?;
+                match m_lock {
+                    Some(_lock) => {
+                        relay.relay_ack_packet(height, packet, &ack_event).await?;
+                    }
+                    None => {
+                        relay.log_relay(
+                            Relay::Logger::LEVEL_TRACE,
+                            "skip relaying ack packet, as another packet relayer has acquired the packet lock",
+                            |log| {
+                                log.field("packet", Relay::log_packet(packet));
+                            },
+                        );
+                    }
                 }
             }
         }
