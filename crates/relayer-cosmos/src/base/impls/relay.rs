@@ -1,15 +1,16 @@
 use async_trait::async_trait;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_all_in_one::base::one_for_all::traits::chain::OfaChainTypes;
 use ibc_relayer_all_in_one::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
 use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
-use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
+use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
@@ -55,42 +56,34 @@ where
         e
     }
 
-    fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::PortId {
+    fn packet_src_port(packet: &Packet) -> &PortId {
         &packet.source_port
     }
 
-    fn packet_src_channel_id(
-        packet: &Self::Packet,
-    ) -> &<Self::SrcChain as OfaChainTypes>::ChannelId {
+    fn packet_src_channel_id(packet: &Packet) -> &ChannelId {
         &packet.source_channel
     }
 
-    fn packet_dst_port(packet: &Self::Packet) -> &<Self::DstChain as OfaChainTypes>::PortId {
+    fn packet_dst_port(packet: &Packet) -> &PortId {
         &packet.destination_port
     }
 
-    fn packet_dst_channel_id(
-        packet: &Self::Packet,
-    ) -> &<Self::DstChain as OfaChainTypes>::ChannelId {
+    fn packet_dst_channel_id(packet: &Packet) -> &ChannelId {
         &packet.destination_channel
     }
 
-    fn packet_sequence(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::Sequence {
+    fn packet_sequence(packet: &Packet) -> &Sequence {
         &packet.sequence
     }
 
-    fn packet_timeout_height(
-        packet: &Self::Packet,
-    ) -> Option<&<Self::DstChain as OfaChainTypes>::Height> {
+    fn packet_timeout_height(packet: &Packet) -> Option<&Height> {
         match &packet.timeout_height {
             TimeoutHeight::Never => None,
             TimeoutHeight::At(h) => Some(h),
         }
     }
 
-    fn packet_timeout_timestamp(
-        packet: &Self::Packet,
-    ) -> &<Self::DstChain as OfaChainTypes>::Timestamp {
+    fn packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
         &packet.timeout_timestamp
     }
 
@@ -102,11 +95,11 @@ where
         &TracingLogger
     }
 
-    fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId {
+    fn src_client_id(&self) -> &ClientId {
         &self.relay.dst_to_src_client().id
     }
 
-    fn dst_client_id(&self) -> &<Self::DstChain as OfaChainTypes>::ClientId {
+    fn dst_client_id(&self) -> &ClientId {
         &self.relay.src_to_dst_client().id
     }
 
@@ -120,35 +113,51 @@ where
 
     async fn build_src_update_client_messages(
         &self,
-        height: &<Self::DstChain as OfaChainTypes>::Height,
-    ) -> Result<Vec<<Self::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        build_update_client_messages(self.relay.dst_to_src_client(), height)
+        height: &Height,
+    ) -> Result<Vec<CosmosIbcMessage>, Self::Error> {
+        let height = *height;
+        let client = self.relay.dst_to_src_client().clone();
+
+        self.runtime()
+            .runtime
+            .runtime
+            .spawn_blocking(move || build_update_client_messages(&client, height))
+            .await
+            .map_err(BaseError::join)?
     }
 
     async fn build_dst_update_client_messages(
         &self,
-        height: &<Self::SrcChain as OfaChainTypes>::Height,
-    ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
-        build_update_client_messages(self.relay.src_to_dst_client(), height)
+        height: &Height,
+    ) -> Result<Vec<CosmosIbcMessage>, Self::Error> {
+        let height = *height;
+        let client = self.relay.src_to_dst_client().clone();
+
+        self.runtime()
+            .runtime
+            .runtime
+            .spawn_blocking(move || build_update_client_messages(&client, height))
+            .await
+            .map_err(BaseError::join)?
     }
 }
 
 fn build_update_client_messages<DstChain, SrcChain>(
     foreign_client: &ForeignClient<DstChain, SrcChain>,
-    height: &Height,
+    height: Height,
 ) -> Result<Vec<CosmosIbcMessage>, Error>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
     let messages = foreign_client
-        .build_update_client_with_trusted(*height, None)
+        .build_update_client_with_trusted(height, None)
         .map_err(BaseError::foreign_client)?;
 
     let ibc_messages = messages
         .into_iter()
         .map(|update_message| {
-            CosmosIbcMessage::new(Some(*height), move |signer| {
+            CosmosIbcMessage::new(Some(height), move |signer| {
                 let mut update_message = update_message.clone();
                 update_message.signer = signer.clone();
                 Ok(update_message.to_any())
