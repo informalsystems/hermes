@@ -12,5 +12,3 @@ pub mod full;
 
 #[cfg(test)]
 pub mod tests;
-
-pub mod docs;
