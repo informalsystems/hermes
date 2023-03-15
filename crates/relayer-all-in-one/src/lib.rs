@@ -18,8 +18,7 @@
     ## Context-Generic Programming
 
     The IBC relayer framework is implemented using a new design pattern we
-    developed, known as
-    [context-generic programming](https://informalsystems.github.io/context-generic-programming/).
+    developed, known as _context-generic programming_.
 
     For a quick introduction, check here for a
     [crash course on context-generic programming](crate::docs::context_generic_programming)
@@ -66,9 +65,6 @@
     of context-generic programming to implement their own all-in-one
     traits, or to implement the relay context directly by implementing
     the individual traits.
-
-    A tutorial is available on
-    [how to implement a custom relayer using the relayer framework](crate::docs::tutorials::implementing_new_relayer).
 
     ## Relayer Framework Internals
 
