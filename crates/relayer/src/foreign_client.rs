@@ -1688,10 +1688,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             }
 
             Ok(misbehaviour_detection_result) => {
-                info!(
-                    "evidence submission result: {}",
-                    PrettySlice(&misbehaviour_detection_result)
-                );
                 if !misbehaviour_detection_result.is_empty() {
                     info!(
                         "evidence submission result: {}",
