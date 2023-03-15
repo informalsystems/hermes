@@ -7,7 +7,6 @@
 //!   hop between chain C and D fails. In this case the sender is still refunded.
 
 use ibc_relayer::config::{self, Config, ModeConfig};
-use ibc_test_framework::chain::cli::transfer::transfer_with_memo;
 use ibc_test_framework::prelude::*;
 
 use crate::tests::forward::memo::HopMemoField;
@@ -119,27 +118,17 @@ impl NaryChannelTest<4> for IbcForwardHopTransferTest {
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
-        let binding = node_a.chain_driver();
-        let driver = binding.value();
-        match transfer_with_memo(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-            wallet_a.address().value().as_str(),
-            wallet_b.address().value().as_str(),
-            &denom_a.with_amount(a_to_d_amount).to_string(),
-            channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-            &channel_a_to_b.port_a.to_string(),
-            &memo,
-        ) {
-            Ok(_) => {
-                info!("CLI for transfer with memo successful");
-            }
-            Err(e) => {
-                info!("error with memo CLI : {}", e);
-            }
-        }
+        node_a
+            .chain_driver()
+            .ibc_transfer_token_with_memo_and_timeout(
+                &channel_a_to_b.port_a.as_ref(),
+                &channel_a_to_b.channel_id_a.as_ref(),
+                &wallet_a,
+                &wallet_b.address(),
+                &denom_a.with_amount(a_to_d_amount).as_ref(),
+                Some(memo),
+                None,
+            )?;
 
         info!(
             "waiting for user on chain D to receive IBC transferred amount of {}",
@@ -250,27 +239,17 @@ impl NaryChannelTest<4> for AtomicIbcForwardHopTransferTest {
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
-        let binding = node_a.chain_driver();
-        let driver = binding.value();
-        match transfer_with_memo(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-            wallet_a.address().value().as_str(),
-            wallet_b.address().value().as_str(),
-            &denom_a.with_amount(a_to_d_amount).to_string(),
-            channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-            &channel_a_to_b.port_a.to_string(),
-            &memo,
-        ) {
-            Ok(_) => {
-                info!("CLI for transfer with memo successful");
-            }
-            Err(e) => {
-                info!("error with memo CLI : {}", e);
-            }
-        }
+        node_a
+            .chain_driver()
+            .ibc_transfer_token_with_memo_and_timeout(
+                &channel_a_to_b.port_a.as_ref(),
+                &channel_a_to_b.channel_id_a.as_ref(),
+                &wallet_a,
+                &wallet_b.address(),
+                &denom_a.with_amount(a_to_d_amount).as_ref(),
+                Some(memo),
+                None,
+            )?;
 
         info!("checking that the sender was refunded and other chains didn't receive tokens");
 

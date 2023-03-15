@@ -61,6 +61,7 @@
         - [Testing client upgrade](./documentation/commands/upgrade/test.md)
       - [Packet Forwarding](./documentation/forwarding/index.md)
         - [Testing packet forwarding](./documentation/forwarding/test.md)
+        - [Testing legacy packet forwarding](./documentation/forwarding/legacy_test.md)
       - [Misbehaviour](./documentation/commands/misbehaviour/index.md)
       - [Queries](./documentation/commands/queries/index.md)
         - [Client](./documentation/commands/queries/client.md)

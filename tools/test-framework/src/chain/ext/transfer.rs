@@ -42,13 +42,14 @@ pub trait ChainTransferMethodsExt<Chain> {
         token: &TaggedTokenRef<Chain>,
     ) -> Result<Packet, Error>;
 
-    fn ibc_transfer_token_with_timeout<Counterparty>(
+    fn ibc_transfer_token_with_memo_and_timeout<Counterparty>(
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
+        memo: Option<String>,
         timeout: Option<Duration>,
     ) -> Result<Packet, Error>;
 
@@ -60,6 +61,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
         num_msgs: usize,
+        memo: Option<String>,
     ) -> Result<(), Error>;
 
     fn local_transfer_token(
@@ -89,16 +91,18 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             recipient,
             token,
             None,
+            None,
         ))
     }
 
-    fn ibc_transfer_token_with_timeout<Counterparty>(
+    fn ibc_transfer_token_with_memo_and_timeout<Counterparty>(
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
+        memo: Option<String>,
         timeout: Option<Duration>,
     ) -> Result<Packet, Error> {
         let rpc_client = self.rpc_client()?;
@@ -110,6 +114,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             sender,
             recipient,
             token,
+            memo,
             timeout,
         ))
     }
@@ -122,6 +127,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
         num_msgs: usize,
+        memo: Option<String>,
     ) -> Result<(), Error> {
         let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(batched_ibc_token_transfer(
@@ -133,6 +139,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             recipient,
             token,
             num_msgs,
+            memo,
         ))
     }
 

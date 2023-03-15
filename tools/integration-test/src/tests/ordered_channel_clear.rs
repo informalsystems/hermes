@@ -97,6 +97,7 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             &wallet_b.address(),
             &token.as_ref(),
             num_msgs,
+            None,
         )?;
 
         sleep(Duration::from_secs(10));
@@ -219,6 +220,7 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
             timeout_height_offset: 1000,
             timeout_duration: Duration::from_secs(0),
             number_msgs: num_msgs,
+            memo: None,
         };
 
         let events_with_heights = build_and_send_transfer_messages(

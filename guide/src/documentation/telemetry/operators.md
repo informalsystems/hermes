@@ -18,6 +18,7 @@ Hermes' metrics are designed to be able to answer four basic questions:
 2. Are Hermes transactions successful (i.e., *confirmed* and included in the network)?
 3. What is the overall IBC status of each network?
 4. How efficient, and how secure is the IBC status on each network?
+5. Am I getting fee rewards from ICS29 incentivized packets?
 
 For each of this question, there is a dedicated subsection:
 
@@ -140,3 +141,10 @@ Note that this metrics is disabled if `misbehaviour = false` in your Hermes conf
 | Name                             | Description                                                                                   | OpenTelemetry type | Configuration Dependencies |
 | -------------------------------- | --------------------------------------------------------------------------------------------- | ------------------ | -------------------------- |
 | `client_misbehaviours_submitted` | Number of misbehaviours detected and submitted, per sending chain, receiving chain and client | `u64` Counter      | Client workers enabled and Clients misbehaviour detection enabled |
+
+## Am I getting fee rewards?
+
+| Name                | Description                                                                 | OpenTelemetry type  | Configuration Dependencies |
+| ------------------- | --------------------------------------------------------------------------- | ------------------- | -------------------------- |
+| `ics29_fee_amounts` | Total amount received from ICS29 fees                                       | `u64` Counter       | None                       |
+| `ics29_period_fees` | Amount of ICS29 fees rewarded over the past 7 days type                     | `u64` ValueRecorder | None                       |
