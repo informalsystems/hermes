@@ -162,11 +162,11 @@ where
 #[async_trait]
 impl<Relay, Target, Runtime> CanProcessMessageBatches<Target> for Relay
 where
-    Relay: CanLogRelayTarget<Target> + CanSendReadyBatches<Target>,
+    Relay: CanLogRelayTarget<Target> + CanSendReadyBatches<Target> + Clone,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
     Target::TargetChain: CanPartitionMessageBatches<Relay::Error>,
-    Runtime: HasTime + HasChannelTypes + HasChannelOnceTypes,
+    Runtime: HasTime + HasSpawner + HasChannelTypes + HasChannelOnceTypes,
 {
     async fn process_message_batches(
         &self,
@@ -191,7 +191,13 @@ where
                 log.display("batch_size", &batch_size);
             });
 
-            self.send_ready_batches(ready_batches).await;
+            let spawner = Target::target_chain(self).runtime().spawner();
+            let relay = self.clone();
+
+            spawner.spawn(async move {
+                relay.send_ready_batches(ready_batches).await;
+            });
+
             *last_sent_time = now;
         }
     }
