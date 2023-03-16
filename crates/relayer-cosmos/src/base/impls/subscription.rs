@@ -23,9 +23,6 @@ use crate::base::error::{BaseError, Error};
 
 /**
    Creates a new ABCI event subscription that automatically reconnects.
-
-   Note: The returned event stream may contain duplicate events, depending
-   on the input `queries` parameter.
 */
 pub trait CanCreateAbciEventSubscription: Async {
     fn new_abci_event_subscription(
