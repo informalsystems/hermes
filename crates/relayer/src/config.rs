@@ -147,6 +147,10 @@ pub mod default {
         ChainType::CosmosSdk
     }
 
+    pub fn ccv_consumer_chain() -> bool {
+        false
+    }
+
     pub fn tx_confirmation() -> bool {
         false
     }
@@ -467,9 +471,9 @@ pub struct ChainConfig {
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
 
-    /// CCV only
-    #[serde(default, with = "humantime_serde")]
-    pub unbonding_period: Option<Duration>,
+    /// CCV chain
+    #[serde(default = "default::ccv_consumer_chain")]
+    pub ccv_consumer_chain: bool,
 
     #[serde(default)]
     pub memo_prefix: Memo,

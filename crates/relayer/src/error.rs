@@ -534,6 +534,19 @@ define_error! {
                 )
             },
 
+        InvalidHistoricalEntries
+            {
+                chain_id: ChainId,
+                entries: i64,
+            }
+            |e| {
+                format_args!(
+                    "staking module for chain '{}' reports invalid historical entries value \
+                    (`historical_entries` staking params is set to '{}')",
+                    e.chain_id,
+                    e.entries,
+                )
+            },
         GasPriceTooLow
             { chain_id: ChainId }
             |e| { format!("Hermes gas price is lower than the minimum gas price set by node operator'{}'", e.chain_id) },
