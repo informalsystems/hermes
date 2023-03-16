@@ -19,7 +19,6 @@ use ibc_relayer::link::error::LinkError;
 use ibc_relayer::spawn::SpawnError;
 use ibc_relayer::supervisor::Error as SupervisorError;
 use ibc_relayer::transfer::TransferError;
-use ibc_relayer::upgrade_chain::UpgradeChainError;
 
 define_error! {
     /// An error raised within the relayer CLI
@@ -107,10 +106,6 @@ define_error! {
         Link
             [ LinkError ]
             |_| { "link error" },
-
-        UpgradeChain
-            [ UpgradeChainError ]
-            |_| { "upgrade chain error" },
 
         Signer
             [ SignerError ]
