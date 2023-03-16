@@ -1,5 +1,7 @@
 use alloc::sync::Arc;
 use core::pin::Pin;
+use core::time::Duration;
+use futures::lock::Mutex;
 use tendermint_rpc::client::CompatMode;
 use tracing::error;
 
@@ -11,12 +13,15 @@ use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_components_extra::runtime::impls::subscription::multiplex::CanMultiplexSubscription;
 use ibc_relayer_components_extra::runtime::traits::spawn::{HasSpawner, Spawner};
 use ibc_relayer_types::core::ics02_client::height::Height;
+use moka::future::Cache;
 use tendermint::abci::Event as AbciEvent;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{SubscriptionClient, WebSocketClient, WebSocketClientUrl};
 
 use crate::base::error::{BaseError, Error};
+
+type EventCache = Cache<u64, Arc<Mutex<Vec<Arc<AbciEvent>>>>>;
 
 /**
    Creates a new ABCI event subscription that automatically reconnects.
@@ -130,8 +135,14 @@ async fn new_abci_event_stream_with_queries(
     websocket_client: &WebSocketClient,
     queries: &[Query],
 ) -> Result<Pin<Box<dyn Stream<Item = (Height, Arc<AbciEvent>)> + Send + 'static>>, Error> {
+    let cache = Cache::builder()
+        .time_to_live(Duration::from_secs(5 * 60))
+        .build();
+
     let event_streams = stream::iter(queries)
-        .then(|query| new_abci_event_stream_with_query(chain_version, websocket_client, query))
+        .then(|query| {
+            new_abci_event_stream_with_query(cache.clone(), chain_version, websocket_client, query)
+        })
         .try_collect::<Vec<_>>()
         .await?;
 
@@ -141,6 +152,7 @@ async fn new_abci_event_stream_with_queries(
 }
 
 async fn new_abci_event_stream_with_query(
+    cache: EventCache,
     chain_version: u64,
     websocket_client: &WebSocketClient,
     query: &Query,
@@ -148,22 +160,37 @@ async fn new_abci_event_stream_with_query(
     let rpc_stream = new_rpc_event_stream(websocket_client, query).await?;
 
     let abci_stream = rpc_stream
-        .filter_map(move |rpc_event| async move {
-            match rpc_event.data {
-                RpcEventData::Tx { tx_result } => {
-                    // TODO: log error
-                    let height = Height::new(chain_version, tx_result.height as u64).ok()?;
+        .filter_map(move |rpc_event| {
+            let cache = cache.clone();
 
-                    let events_with_height = tx_result
-                        .result
-                        .events
-                        .into_iter()
-                        .map(|event| (height, Arc::new(event)))
-                        .collect::<Vec<_>>();
+            async move {
+                match rpc_event.data {
+                    RpcEventData::Tx { tx_result } => {
+                        let raw_height = tx_result.height as u64;
+                        let height = Height::new(chain_version, raw_height).ok()?;
 
-                    Some(stream::iter(events_with_height))
+                        let cache_entry = cache.entry(raw_height).or_default().await;
+                        let mut events_cache = cache_entry.value().lock().await;
+
+                        let events_with_height = tx_result
+                            .result
+                            .events
+                            .into_iter()
+                            .filter_map(|event| {
+                                let event = Arc::new(event);
+                                if events_cache.contains(&event) {
+                                    None
+                                } else {
+                                    events_cache.push(event.clone());
+                                    Some((height, event))
+                                }
+                            })
+                            .collect::<Vec<_>>();
+
+                        Some(stream::iter(events_with_height))
+                    }
+                    _ => None,
                 }
-                _ => None,
             }
         })
         .flatten();
