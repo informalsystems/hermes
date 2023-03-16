@@ -1,5 +1,6 @@
 use core::time::Duration;
 
+use alloc::sync::Arc;
 use async_trait::async_trait;
 use futures::lock::Mutex;
 use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx, TxRaw};
@@ -21,7 +22,7 @@ use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_runtime::tokio::logger::value::LogValue;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use prost::Message as _;
-use tendermint::abci::Event;
+use tendermint::abci::Event as AbciEvent;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 
@@ -44,7 +45,7 @@ where
 
     type Message = CosmosIbcMessage;
 
-    type Event = Event;
+    type Event = Arc<AbciEvent>;
 
     type Transaction = SignedTx;
 
@@ -201,14 +202,16 @@ where
         &self.nonce_mutex
     }
 
-    fn parse_tx_response_as_events(response: TxResponse) -> Result<Vec<Vec<Event>>, Error> {
+    fn parse_tx_response_as_events(
+        response: TxResponse,
+    ) -> Result<Vec<Vec<Arc<AbciEvent>>>, Error> {
         let events = split_events_by_messages(response.tx_result.events);
 
         Ok(events)
     }
 }
 
-fn split_events_by_messages(in_events: Vec<Event>) -> Vec<Vec<Event>> {
+fn split_events_by_messages(in_events: Vec<AbciEvent>) -> Vec<Vec<Arc<AbciEvent>>> {
     let mut out_events = Vec::new();
     let mut current_events = Vec::new();
     let mut first_message_event_found = false;
@@ -224,9 +227,9 @@ fn split_events_by_messages(in_events: Vec<Event>) -> Vec<Vec<Event>> {
                 first_message_event_found = true;
             }
 
-            current_events = vec![event];
+            current_events = vec![Arc::new(event)];
         } else if first_message_event_found {
-            current_events.push(event);
+            current_events.push(Arc::new(event));
         }
     }
 

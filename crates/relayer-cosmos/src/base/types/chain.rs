@@ -13,7 +13,7 @@ use crate::base::types::transaction::CosmosTxWrapper;
 pub struct CosmosChainWrapper<Chain> {
     pub chain: Arc<Chain>,
     pub tx_context: OfaTxWrapper<CosmosTxWrapper<Chain>>,
-    pub subscription: Arc<dyn Subscription<Item = (Height, AbciEvent)>>,
+    pub subscription: Arc<dyn Subscription<Item = (Height, Arc<AbciEvent>)>>,
 }
 
 impl<Chain> CosmosChainWrapper<Chain>

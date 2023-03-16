@@ -39,7 +39,7 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use prost::Message as _;
-use tendermint::abci::Event;
+use tendermint::abci::Event as AbciEvent;
 
 use crate::base::error::{BaseError, Error};
 use crate::base::traits::chain::CosmosChain;
@@ -64,7 +64,7 @@ where
 
     type Message = CosmosIbcMessage;
 
-    type Event = Event;
+    type Event = Arc<AbciEvent>;
 
     type ChainId = ChainId;
 
@@ -104,7 +104,7 @@ where
         &TracingLogger
     }
 
-    fn log_event(event: &Event) -> LogValue<'_> {
+    fn log_event(event: &Arc<AbciEvent>) -> LogValue<'_> {
         LogValue::Debug(event)
     }
 
@@ -150,7 +150,7 @@ where
     async fn send_messages(
         &self,
         messages: Vec<CosmosIbcMessage>,
-    ) -> Result<Vec<Vec<Event>>, Error> {
+    ) -> Result<Vec<Vec<Arc<AbciEvent>>>, Error> {
         let events = self.tx_context.send_messages(messages).await?;
 
         Ok(events)

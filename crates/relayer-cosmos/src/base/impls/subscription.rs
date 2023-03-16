@@ -18,6 +18,12 @@ use tendermint_rpc::{SubscriptionClient, WebSocketClient, WebSocketClientUrl};
 
 use crate::base::error::{BaseError, Error};
 
+/**
+   Creates a new ABCI event subscription that automatically reconnects.
+
+   Note: The returned event stream may contain duplicate events, depending
+   on the input `queries` parameter.
+*/
 pub trait CanCreateAbciEventSubscription: Async {
     fn new_abci_event_subscription(
         &self,
@@ -25,7 +31,7 @@ pub trait CanCreateAbciEventSubscription: Async {
         websocket_url: WebSocketClientUrl,
         compat_mode: CompatMode,
         queries: Vec<Query>,
-    ) -> Arc<dyn Subscription<Item = (Height, AbciEvent)>>;
+    ) -> Arc<dyn Subscription<Item = (Height, Arc<AbciEvent>)>>;
 }
 
 impl<Runtime> CanCreateAbciEventSubscription for Runtime
@@ -39,7 +45,7 @@ where
         websocket_url: WebSocketClientUrl,
         compat_mode: CompatMode,
         queries: Vec<Query>,
-    ) -> Arc<dyn Subscription<Item = (Height, AbciEvent)>> {
+    ) -> Arc<dyn Subscription<Item = (Height, Arc<AbciEvent>)>> {
         let base_subscription = {
             let runtime = self.clone();
 
@@ -88,7 +94,7 @@ pub trait CanCreateAbciEventStream: Async {
         websocket_url: &WebSocketClientUrl,
         compat_mode: &CompatMode,
         queries: &[Query],
-    ) -> Result<Pin<Box<dyn Stream<Item = (Height, AbciEvent)> + Send + 'static>>, Error>;
+    ) -> Result<Pin<Box<dyn Stream<Item = (Height, Arc<AbciEvent>)> + Send + 'static>>, Error>;
 }
 
 #[async_trait]
@@ -102,7 +108,7 @@ where
         websocket_url: &WebSocketClientUrl,
         compat_mode: &CompatMode,
         queries: &[Query],
-    ) -> Result<Pin<Box<dyn Stream<Item = (Height, AbciEvent)> + Send + 'static>>, Error> {
+    ) -> Result<Pin<Box<dyn Stream<Item = (Height, Arc<AbciEvent>)> + Send + 'static>>, Error> {
         let builder = WebSocketClient::builder(websocket_url.clone()).compat_mode(*compat_mode);
 
         let (client, driver) = builder.build().await.map_err(BaseError::tendermint_rpc)?;
@@ -123,7 +129,7 @@ async fn new_abci_event_stream_with_queries(
     chain_version: u64,
     websocket_client: &WebSocketClient,
     queries: &[Query],
-) -> Result<Pin<Box<dyn Stream<Item = (Height, AbciEvent)> + Send + 'static>>, Error> {
+) -> Result<Pin<Box<dyn Stream<Item = (Height, Arc<AbciEvent>)> + Send + 'static>>, Error> {
     let event_streams = stream::iter(queries)
         .then(|query| new_abci_event_stream_with_query(chain_version, websocket_client, query))
         .try_collect::<Vec<_>>()
@@ -138,7 +144,7 @@ async fn new_abci_event_stream_with_query(
     chain_version: u64,
     websocket_client: &WebSocketClient,
     query: &Query,
-) -> Result<Pin<Box<dyn Stream<Item = (Height, AbciEvent)> + Send + 'static>>, Error> {
+) -> Result<Pin<Box<dyn Stream<Item = (Height, Arc<AbciEvent>)> + Send + 'static>>, Error> {
     let rpc_stream = new_rpc_event_stream(websocket_client, query).await?;
 
     let abci_stream = rpc_stream
@@ -152,7 +158,7 @@ async fn new_abci_event_stream_with_query(
                         .result
                         .events
                         .into_iter()
-                        .map(|event| (height, event))
+                        .map(|event| (height, Arc::new(event)))
                         .collect::<Vec<_>>();
 
                     Some(stream::iter(events_with_height))

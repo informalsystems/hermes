@@ -1,3 +1,4 @@
+use alloc::sync::Arc;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer_all_in_one::base::all_for_one::chain::{AfoBaseChain, AfoCounterpartyChain};
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -9,7 +10,7 @@ use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
-use tendermint::abci::Event;
+use tendermint::abci::Event as AbciEvent;
 
 use crate::base::error::Error;
 use crate::base::types::message::CosmosIbcMessage;
@@ -22,7 +23,7 @@ pub trait AfoCosmosBaseChain<Counterparty>:
     Height = Height,
     Timestamp = Timestamp,
     Message = CosmosIbcMessage,
-    Event = Event,
+    Event = Arc<AbciEvent>,
     ClientId = ClientId,
     ConnectionId = ConnectionId,
     ChannelId = ChannelId,
@@ -48,7 +49,7 @@ where
         Height = Height,
         Timestamp = Timestamp,
         Message = CosmosIbcMessage,
-        Event = Event,
+        Event = Arc<AbciEvent>,
         ClientId = ClientId,
         ConnectionId = ConnectionId,
         ChannelId = ChannelId,
