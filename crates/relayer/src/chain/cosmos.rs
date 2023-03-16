@@ -18,7 +18,7 @@ use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
 };
 
-use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvStakingParams;
+use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvConsumerParams;
 
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
@@ -450,11 +450,12 @@ impl CosmosSdkChain {
     pub fn historical_entries(&self) -> Result<u32, Error> {
         crate::time!("historical_entries");
         if self.config.ccv_consumer_chain {
-            let params = self.query_ccv_consumer_chain_params()?;
-            let he = params.historical_entries.try_into().map_err(|_| {
-                Error::invalid_historical_entries(self.id().clone(), params.historical_entries)
-            });
-            he
+            self.query_ccv_consumer_chain_params()?
+                .historical_entries
+                .try_into()
+                .map_err(|_| {
+                    Error::invalid_historical_entries(self.id().clone(), params.historical_entries)
+                })
         } else {
             self.query_staking_params().map(|p| p.historical_entries)
         }

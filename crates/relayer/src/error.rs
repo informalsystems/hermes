@@ -528,8 +528,8 @@ define_error! {
             { chain_id: ChainId }
             |e| {
                 format_args!(
-                    "staking module for chain '{}' does not maintain any historical entries \
-                    (`historical_entries` staking params is set to 0)",
+                    "chain '{}' does not maintain any historical entries \
+                    (`historical_entries` params is set to 0)",
                     e.chain_id
                 )
             },
@@ -541,8 +541,8 @@ define_error! {
             }
             |e| {
                 format_args!(
-                    "staking module for chain '{}' reports invalid historical entries value \
-                    (`historical_entries` staking params is set to '{}')",
+                    "chain '{}' reports invalid historical entries value \
+                    (`historical_entries` params is set to '{}')",
                     e.chain_id,
                     e.entries,
                 )

@@ -471,7 +471,7 @@ pub struct ChainConfig {
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
 
-    /// CCV chain
+    /// CCV consumer chain
     #[serde(default = "default::ccv_consumer_chain")]
     pub ccv_consumer_chain: bool,
 
