@@ -202,6 +202,11 @@ async fn new_abci_event_stream_with_query(
                         let cache_entry = cache.entry(raw_height).or_default().await;
                         let mut events_cache = cache_entry.value().lock().await;
 
+                        // Store events from the current RPC event in a new vector
+                        // to avoid duplication checks in the next statement.
+                        // We assume that all events in an RPC event is unique.
+                        let mut new_events = Vec::new();
+
                         let events_with_height = tx_result
                             .result
                             .events
@@ -215,11 +220,13 @@ async fn new_abci_event_stream_with_query(
                                 if events_cache.contains(&event) {
                                     None
                                 } else {
-                                    events_cache.push(event.clone());
+                                    new_events.push(event.clone());
                                     Some((height, event))
                                 }
                             })
                             .collect::<Vec<_>>();
+
+                        events_cache.append(&mut new_events);
 
                         Some(stream::iter(events_with_height))
                     }
