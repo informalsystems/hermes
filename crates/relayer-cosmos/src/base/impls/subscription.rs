@@ -135,7 +135,7 @@ async fn new_abci_event_stream_with_queries(
         .try_collect::<Vec<_>>()
         .await?;
 
-    let event_stream = stream::iter(event_streams).flatten();
+    let event_stream = stream::select_all(event_streams);
 
     Ok(Box::pin(event_stream))
 }
