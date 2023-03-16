@@ -21,8 +21,6 @@ use tendermint_rpc::{SubscriptionClient, WebSocketClient, WebSocketClientUrl};
 
 use crate::base::error::{BaseError, Error};
 
-type EventCache = Cache<u64, Arc<Mutex<Vec<Arc<AbciEvent>>>>>;
-
 /**
    Creates a new ABCI event subscription that automatically reconnects.
 
@@ -130,6 +128,29 @@ where
     }
 }
 
+/**
+   A shared cache used for deduplicating events from multiple RPC event streams.
+
+   With the current behavior of Cosmos chains, subscribing to RPC events with
+   multiple query parameters may result in duplicate ABCI events found in the
+   separate RPC event streams.
+
+   To deduplicate the events, we need a shared cache that can be used to record
+   which event has been emitted before, and filter out the events that have been
+   emitted.
+
+   We use a `moka` cache with TTL of 5 minutes, indexed by the event height.
+   This ensures the the event cache for a given height is cleared after 5
+   minutes.
+
+   Each cache entry contains a `Vec` of ABCI events, and duplication detection
+   is done inefficiently by looking through the whole list and comparing for
+   equality. Unfortunately, there is currently no better way to determine if
+   two ABCI events are the same, as `AbciEvent` does not implement `Ord` or
+   `Hash`.
+*/
+type EventCache = Cache<u64, Arc<Mutex<Vec<Arc<AbciEvent>>>>>;
+
 async fn new_abci_event_stream_with_queries(
     chain_version: u64,
     websocket_client: &WebSocketClient,
@@ -167,7 +188,19 @@ async fn new_abci_event_stream_with_query(
                 match rpc_event.data {
                     RpcEventData::Tx { tx_result } => {
                         let raw_height = tx_result.height as u64;
-                        let height = Height::new(chain_version, raw_height).ok()?;
+
+                        let height = Height::new(chain_version, raw_height)
+                            .map_err(|e| {
+                                error!(
+                                    error = "error creating new height, skipping event",
+                                    details = %e,
+                                    raw_height = raw_height,
+                                    chain_version = chain_version,
+                                );
+
+                                e
+                            })
+                            .ok()?;
 
                         let cache_entry = cache.entry(raw_height).or_default().await;
                         let mut events_cache = cache_entry.value().lock().await;
@@ -178,6 +211,10 @@ async fn new_abci_event_stream_with_query(
                             .into_iter()
                             .filter_map(|event| {
                                 let event = Arc::new(event);
+
+                                // Checks if the event has already been emitted
+                                // through other event streams. If so, skip
+                                // emitting the given event.
                                 if events_cache.contains(&event) {
                                     None
                                 } else {
