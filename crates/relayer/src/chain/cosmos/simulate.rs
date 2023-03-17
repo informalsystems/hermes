@@ -11,6 +11,7 @@ pub async fn send_tx_simulate(grpc_address: &Uri, tx: Tx) -> Result<SimulateResp
     prost::Message::encode(&tx, &mut tx_bytes)
         .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
+    // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
     #[allow(deprecated)]
     let req = SimulateRequest { tx: None, tx_bytes };
 
