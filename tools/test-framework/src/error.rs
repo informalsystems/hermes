@@ -13,6 +13,7 @@ use ibc_relayer::foreign_client::ForeignClientError;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::supervisor::error::Error as SupervisorError;
 use ibc_relayer::transfer::TransferError;
+use ibc_relayer::upgrade_chain::UpgradeChainError;
 
 define_error! {
     Error {
@@ -69,6 +70,10 @@ define_error! {
                     e.task_name
                 )
             },
+
+        UpgradeChain
+            [ UpgradeChainError ]
+            | _ | { "upgrade chain error" },
 
         ForeignClient
             [ ForeignClientError ]

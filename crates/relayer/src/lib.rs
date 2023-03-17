@@ -47,5 +47,6 @@ pub mod spawn;
 pub mod supervisor;
 pub mod telemetry;
 pub mod transfer;
+pub mod upgrade_chain;
 pub mod util;
 pub mod worker;

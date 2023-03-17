@@ -8,6 +8,7 @@ pub(crate) mod client;
 mod connection;
 mod packet;
 mod transfer;
+mod upgrade;
 
 /// `tx` subcommand
 #[allow(clippy::large_enum_variant)]
@@ -51,6 +52,9 @@ pub enum TxCmd {
 
     /// Relay acknowledgment packets
     PacketAck(packet::TxPacketAckCmd),
+
+    /// Send an IBC upgrade plan
+    UpgradeChain(upgrade::TxIbcUpgradeChainCmd),
 }
 
 impl Override<Config> for TxCmd {
