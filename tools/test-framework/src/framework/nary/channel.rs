@@ -4,6 +4,19 @@
    as well as connected IBC channels with completed handshakes.
 */
 
+#[cfg(feature = "next")]
+use {
+    crate::framework::binary::next::TestContextV2, crate::prelude::handle_generic_error,
+    ibc_relayer::keyring::Secp256k1KeyPair,
+    ibc_relayer_all_in_one::extra::all_for_one::builder::CanBuildAfoFullBiRelay,
+    ibc_relayer_cosmos::contexts::full::builder::CosmosRelayBuilder,
+    ibc_relayer_types::core::ics24_host::identifier::ChainId, std::collections::HashMap,
+    std::sync::Arc, tokio::runtime::Runtime as TokioRuntime,
+};
+
+#[cfg(not(feature = "next"))]
+use crate::framework::binary::next::TestContextV1;
+
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use tracing::info;
@@ -204,8 +217,72 @@ where
         chains: NaryConnectedChains<Handle, 2>,
         channels: ConnectedChannels<Handle, 2>,
     ) -> Result<(), Error> {
-        self.test
-            .run(config, relayer, chains.into(), channels.into())
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "next")] {
+
+                let runtime = Arc::new(TokioRuntime::new().unwrap());
+
+                let connected_chains = chains.connected_chains_at::<0, 1>()?;
+                let connected_channel = channels.channel_at::<0, 1>()?;
+
+                // Build key map from existing keys in ChainHandle
+                let mut key_map: HashMap<ChainId, Secp256k1KeyPair> = HashMap::new();
+                let key_a = connected_chains.handle_a().get_key().unwrap();
+                if let ibc_relayer::keyring::AnySigningKeyPair::Secp256k1(secp256k1_a) = key_a {
+                    let chain_a_id = connected_chains.handle_a().id();
+                    key_map.insert(chain_a_id, secp256k1_a);
+                }
+                let key_b = connected_chains.handle_b().get_key().unwrap();
+                if let ibc_relayer::keyring::AnySigningKeyPair::Secp256k1(secp256k1_b) = key_b {
+                    let chain_b_id = connected_chains.handle_b().id();
+                    key_map.insert(chain_b_id, secp256k1_b);
+                }
+
+                let builder = CosmosRelayBuilder::new_wrapped(
+                    relayer.config.clone(),
+                    runtime.clone(),
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    key_map,
+                );
+                let chain_a_id = connected_chains.chain_id_a().0;
+                let chain_b_id = connected_chains.chain_id_b().0;
+                let client_a_id = connected_chains.client_id_a().0;
+                let client_b_id = connected_chains.client_id_b().0;
+
+                let birelay = runtime.block_on(async {builder
+                        .build_afo_full_birelay(
+                            chain_a_id,
+                            chain_b_id,
+                            client_a_id,
+                            client_b_id,
+                        )
+                        .await
+                        .map_err(handle_generic_error).unwrap()
+                    });
+
+                let context_next = TestContextV2 {
+                    context_id: "relayer_next".to_owned(),
+                    config: config.clone(),
+                    relayer: birelay,
+                    chains: connected_chains.clone(),
+                    channel: connected_channel,
+                };
+
+                self.test.run(relayer, &context_next)
+            } else {
+                let context_current = TestContextV1 {
+                    context_id: "current_relayer".to_owned(),
+                    config: config.clone(),
+                    relayer: relayer.clone(),
+                    chains: chains.into(),
+                    channel: channels.into(),
+                };
+
+                self.test.run(relayer, &context_current)
+            }
+        }
     }
 }
 

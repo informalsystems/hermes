@@ -41,6 +41,7 @@ experimental = []
 mbt = []
 forward-packet = []
 ics31 = []
+next = ["ibc-test-framework/next"]
 
 [[bin]]
 name = "test_setup_with_binary_channel"

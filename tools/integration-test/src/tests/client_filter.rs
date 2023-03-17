@@ -27,6 +27,7 @@ use ibc_relayer::foreign_client::CreateOptions;
 use ibc_relayer::object::ObjectType;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 
+use ibc_test_framework::framework::next::chain::HasTwoChains;
 use ibc_test_framework::prelude::*;
 
 struct ClientFilterBlocksConnectionTest;
@@ -79,13 +80,11 @@ impl TestOverrides for ClientFilterAllowsConnectionTest {
 }
 
 impl BinaryChannelTest for ClientFilterBlocksConnectionTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        _channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains,
+    {
+        let chains = context.chains().clone();
         let mut policy = FilterPolicy::default();
 
         let client_id = chains.foreign_clients.client_a_to_b.id();
@@ -116,13 +115,11 @@ impl BinaryChannelTest for ClientFilterBlocksConnectionTest {
 }
 
 impl BinaryChannelTest for ClientFilterAllowsConnectionTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        _channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains,
+    {
+        let chains = context.chains().clone();
         let mut policy = FilterPolicy::default();
 
         let client_id = chains.foreign_clients.client_a_to_b.id();

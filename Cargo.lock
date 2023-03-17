@@ -2070,6 +2070,7 @@ dependencies = [
 name = "ibc-test-framework"
 version = "0.22.0"
 dependencies = [
+ "cfg-if 1.0.0",
  "color-eyre",
  "crossbeam-channel 0.5.7",
  "eyre",
@@ -2079,7 +2080,10 @@ dependencies = [
  "http",
  "ibc-proto",
  "ibc-relayer",
+ "ibc-relayer-all-in-one",
  "ibc-relayer-cli",
+ "ibc-relayer-components",
+ "ibc-relayer-cosmos",
  "ibc-relayer-types",
  "itertools",
  "prost",

@@ -20,6 +20,7 @@
 
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::events::IbcEvent;
+use ibc_test_framework::framework::next::chain::HasTwoChains;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
@@ -41,13 +42,12 @@ impl TestOverrides for PayPacketFeeAsyncTest {
 }
 
 impl BinaryChannelTest for PayPacketFeeAsyncTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let chain_driver_a = chains.node_a.chain_driver();
         let chain_driver_b = chains.node_b.chain_driver();
 

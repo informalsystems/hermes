@@ -54,13 +54,7 @@ impl TestOverrides for Test {
 }
 
 impl BinaryChannelTest for Test {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        _chains: ConnectedChains<ChainA, ChainB>,
-        _channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, _context: &Context) -> Result<(), Error> {
         suspend()
     }
 }

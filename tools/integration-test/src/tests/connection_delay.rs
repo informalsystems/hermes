@@ -1,4 +1,5 @@
 use core::time::Duration;
+use ibc_test_framework::framework::next::chain::HasTwoChains;
 use time::OffsetDateTime;
 
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
@@ -21,13 +22,12 @@ impl TestOverrides for ConnectionDelayTest {
 }
 
 impl BinaryChannelTest for ConnectionDelayTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         relayer.with_supervisor(|| {
             let denom_a = chains.node_a.denom();
 

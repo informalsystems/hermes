@@ -15,6 +15,7 @@ use core::time::Duration;
 use ibc_relayer::config::{types::MaxMsgNum, Config};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 use ibc_relayer_types::events::IbcEvent;
+use ibc_test_framework::framework::next::chain::HasTwoChains;
 use ibc_test_framework::prelude::*;
 
 #[test]
@@ -35,17 +36,16 @@ impl TestOverrides for SimulationTest {
 }
 
 impl BinaryChannelTest for SimulationTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         tx_raw_ft_transfer(
             chains.handle_a(),
             chains.handle_b(),
-            &channel,
+            channel,
             &chains.node_b.wallets().user1().address(),
             &chains.node_a.denom(),
             9999,
