@@ -20,6 +20,7 @@ use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics02_client::header::Header;
 use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
+use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc_relayer_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc_relayer_types::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
@@ -1619,33 +1620,47 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             );
         }
 
-        // msgs.push(
-        //     MsgSubmitMisbehaviour {
-        //         misbehaviour: evidence.misbehaviour.into(),
-        //         client_id: self.id.clone(),
-        //         signer,
-        //     }
-
-        let tm_misbehaviour = match evidence.misbehaviour {
-            AnyMisbehaviour::Tendermint(tm_misbehaviour) => Some(tm_misbehaviour),
-            #[cfg(test)]
-            AnyMisbehaviour::Mock(_) => None,
-        }
-        .unwrap();
-
-        let msg_misbehaviour = Misbehaviour {
-            client_id: self.id.clone(),
-            header1: tm_misbehaviour.header1.clone(),
-            header2: tm_misbehaviour.header2.clone(),
-        };
-
-        msgs.push(
-            MsgSubmitIcsConsumerMisbehaviour {
-                submitter: signer,
-                misbehaviour: msg_misbehaviour,
+        if self
+            .dst_chain()
+            .config()
+            .map_err(|e| {
+                ForeignClientError::misbehaviour(
+                    format!("failed querying configureation of dst chain {}", self.id),
+                    e,
+                )
+            })?
+            .ccv_consumer_chain
+        {
+            let tm_misbehaviour = match evidence.misbehaviour {
+                AnyMisbehaviour::Tendermint(tm_misbehaviour) => Some(tm_misbehaviour),
+                #[cfg(test)]
+                AnyMisbehaviour::Mock(_) => None,
             }
-            .to_any(),
-        );
+            .unwrap();
+
+            let msg_misbehaviour = Misbehaviour {
+                client_id: self.id.clone(),
+                header1: tm_misbehaviour.header1.clone(),
+                header2: tm_misbehaviour.header2.clone(),
+            };
+
+            msgs.push(
+                MsgSubmitIcsConsumerMisbehaviour {
+                    submitter: signer,
+                    misbehaviour: msg_misbehaviour,
+                }
+                .to_any(),
+            );
+        } else {
+            msgs.push(
+                MsgSubmitMisbehaviour {
+                    misbehaviour: evidence.misbehaviour.into(),
+                    client_id: self.id.clone(),
+                    signer,
+                }
+                .to_any(),
+            );
+        }
 
         let tm = TrackedMsgs::new_static(msgs, "evidence");
 
