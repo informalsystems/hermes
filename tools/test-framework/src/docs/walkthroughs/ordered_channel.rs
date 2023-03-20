@@ -43,6 +43,7 @@
 //! impl BinaryChannelTest for OrderedChannelTest {
 //!     fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
 //!     where
+//!         Context: HasTwoChains + HasTwoChannels,
 //!     {
 //!         let chains = context.chains();
 //!         let channel = context.channel();
