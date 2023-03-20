@@ -13,6 +13,7 @@
 //! The test in most of its entirety (some parts omitted for brevity) looks like this:
 //!
 //! ```no_run
+//! # use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 //! # use ibc_test_framework::ibc::denom::derive_ibc_denom;
 //! # use ibc_test_framework::prelude::*;
 //! # use ibc_test_framework::util::random::random_u128_range;

@@ -5,18 +5,21 @@
    will pick up the definition by default.
 */
 
+#[cfg(not(feature = "next"))]
 pub mod clear_packet;
 pub mod client_expiration;
 pub mod client_filter;
 pub mod client_refresh;
 pub mod client_settings;
 pub mod client_upgrade;
+#[cfg(not(feature = "next"))]
 pub mod connection_delay;
 pub mod consensus_states;
 pub mod denom_trace;
 pub mod error_events;
 pub mod execute_schedule;
 pub mod handshake_on_start;
+#[cfg(not(feature = "next"))]
 pub mod memo;
 pub mod next;
 pub mod python;

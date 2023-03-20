@@ -11,6 +11,7 @@
 //! ```no_run
 //! # use serde_json as json;
 //! # use ibc_relayer::config::{types::Memo, Config};
+//! # use ibc_test_framework::framework::next::chain::{CanSpawnRelayer, HasTwoChains, HasTwoChannels};
 //! # use ibc_test_framework::ibc::denom::derive_ibc_denom;
 //! # use ibc_test_framework::prelude::*;
 //! # use ibc_test_framework::util::random::{random_string, random_u128_range};
