@@ -2,7 +2,7 @@ use ibc_relayer::config::types::MaxMsgNum;
 use ibc_relayer::link::{Link, LinkParameters};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 use ibc_relayer_types::events::IbcEvent;
-use ibc_test_framework::framework::next::chain::HasTwoChains;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
@@ -65,7 +65,7 @@ impl TestOverrides for OrderedChannelClearTest {
 impl BinaryChannelTest for OrderedChannelClearTest {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains();
         let channel = context.channel();
@@ -199,7 +199,7 @@ impl TestOverrides for OrderedChannelClearEqualCLITest {
 impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains().clone();
         let channel = context.channel().clone();

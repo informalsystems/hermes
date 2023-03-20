@@ -15,7 +15,7 @@ use core::time::Duration;
 use ibc_relayer::config::{types::MaxMsgNum, Config};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 use ibc_relayer_types::events::IbcEvent;
-use ibc_test_framework::framework::next::chain::HasTwoChains;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 
 #[test]
@@ -38,7 +38,7 @@ impl TestOverrides for SimulationTest {
 impl BinaryChannelTest for SimulationTest {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains();
         let channel = context.channel();

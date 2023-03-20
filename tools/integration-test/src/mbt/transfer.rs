@@ -6,7 +6,7 @@ use ibc_relayer::config::{
     ModeConfig, Packets as ConfigPackets,
 };
 
-use ibc_test_framework::framework::next::chain::HasTwoChains;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::types::tagged::mono::Tagged;
 
@@ -171,7 +171,7 @@ impl TestOverrides for IbcTransferMBT {
 impl BinaryChannelTest for IbcTransferMBT {
     fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains();
         let channels = context.channel();

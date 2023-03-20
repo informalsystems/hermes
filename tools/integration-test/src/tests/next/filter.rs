@@ -1,7 +1,7 @@
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
-use ibc_test_framework::framework::next::chain::HasTwoChains;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
@@ -24,7 +24,7 @@ impl TestOverrides for ChannelFilterTest {
 impl BinaryChannelTest for ChannelFilterTest {
     fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains();
         let channel = context.channel();

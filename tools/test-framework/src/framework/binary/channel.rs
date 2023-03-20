@@ -38,7 +38,9 @@ use crate::framework::binary::connection::{
 use crate::framework::binary::node::{
     run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
 };
-use crate::framework::next::chain::{CanSpawnRelayer, HasContextId, HasTwoChains, HasTwoChannels};
+use crate::framework::next::chain::{
+    CanSpawnRelayer, HasContextId, HasTestConfig, HasTwoChains, HasTwoChannels, HasTwoNodes,
+};
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
@@ -104,7 +106,12 @@ pub trait BinaryChannelTest {
     /// Test runner
     fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer + HasContextId;
+        Context: HasTwoChains
+            + HasTwoChannels
+            + HasTwoNodes
+            + HasTestConfig
+            + CanSpawnRelayer
+            + HasContextId;
 }
 
 /**
@@ -296,7 +303,7 @@ where
 impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTest<'a, Test> {
     fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels + HasTestConfig,
     {
         let config = context.config();
         let chains = context.chains().clone();
@@ -453,7 +460,12 @@ where
 {
     fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer + HasContextId,
+        Context: HasTwoChains
+            + HasTwoChannels
+            + HasTwoNodes
+            + HasTestConfig
+            + CanSpawnRelayer
+            + HasContextId,
     {
         let config = context.config();
         if self.get_overrides().should_spawn_supervisor() {

@@ -12,7 +12,7 @@
 //! later found in the pending queue), but all of the subsequent messages should
 //! exist in the pending queue.
 
-use ibc_test_framework::framework::next::chain::HasTwoChains;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
@@ -37,7 +37,7 @@ impl TestOverrides for ExecuteScheduleTest {
 impl BinaryChannelTest for ExecuteScheduleTest {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains();
         let channel = context.channel();

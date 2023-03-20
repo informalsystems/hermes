@@ -13,23 +13,25 @@ pub trait HasTwoChains {
 
     fn chain_b(&self) -> &Self::ChainB;
 
-    fn node_a(&self) -> &MonoTagged<Self::ChainA, FullNode>;
-
-    fn node_b(&self) -> &MonoTagged<Self::ChainB, FullNode>;
-
     fn foreign_client_a_to_b(&self) -> &ForeignClient<Self::ChainB, Self::ChainA>;
 
     fn foreign_client_b_to_a(&self) -> &ForeignClient<Self::ChainA, Self::ChainB>;
 
-    fn config(&self) -> &TestConfig;
-
     fn chains(&self) -> &ConnectedChains<Self::ChainA, Self::ChainB>;
+}
 
-    fn channel(&self) -> &ConnectedChannel<Self::ChainA, Self::ChainB>;
+pub trait HasTwoNodes: HasTwoChains {
+    fn node_a(&self) -> &MonoTagged<Self::ChainA, FullNode>;
+
+    fn node_b(&self) -> &MonoTagged<Self::ChainB, FullNode>;
+}
+
+pub trait HasTestConfig {
+    fn config(&self) -> &TestConfig;
 }
 
 pub trait HasTwoChannels: HasTwoChains {
-    fn channel_a_to_b(&self) -> &ConnectedChannel<Self::ChainA, Self::ChainB>;
+    fn channel(&self) -> &ConnectedChannel<Self::ChainA, Self::ChainB>;
 }
 
 pub trait CanSpawnRelayer {

@@ -1,4 +1,4 @@
-use ibc_test_framework::framework::next::chain::HasTwoChains;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
@@ -47,7 +47,7 @@ impl TestOverrides for ClearPacketRecoveryTest {
 impl BinaryChannelTest for ClearPacketTest {
     fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains();
         let channel = context.channel();
@@ -122,7 +122,7 @@ impl BinaryChannelTest for ClearPacketTest {
 impl BinaryChannelTest for ClearPacketRecoveryTest {
     fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains();
         let channel = context.channel();

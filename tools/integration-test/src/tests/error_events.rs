@@ -1,6 +1,6 @@
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer_types::events::IbcEvent;
-use ibc_test_framework::framework::next::chain::HasTwoChains;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::transfer::build_transfer_message;
 
@@ -16,7 +16,7 @@ impl TestOverrides for ErrorEventsTest {}
 impl BinaryChannelTest for ErrorEventsTest {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains();
         let channel = context.channel();

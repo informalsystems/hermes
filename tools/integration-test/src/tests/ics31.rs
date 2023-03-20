@@ -11,17 +11,20 @@
 
 use ibc_relayer::config::{self, ModeConfig};
 
-use ibc_test_framework::chain::{
-    cli::host_zone::register_host_zone,
-    config::{
-        set_crisis_denom, set_mint_mint_denom, set_staking_bond_denom, set_staking_max_entries,
-        set_voting_period,
-    },
-    ext::crosschainquery::CrossChainQueryMethodsExt,
-};
 use ibc_test_framework::framework::next::chain::HasTwoChains;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
+use ibc_test_framework::{
+    chain::{
+        cli::host_zone::register_host_zone,
+        config::{
+            set_crisis_denom, set_mint_mint_denom, set_staking_bond_denom, set_staking_max_entries,
+            set_voting_period,
+        },
+        ext::crosschainquery::CrossChainQueryMethodsExt,
+    },
+    framework::next::chain::HasTwoChannels,
+};
 
 #[test]
 fn test_ics31_cross_chain_queries() -> Result<(), Error> {
@@ -75,7 +78,7 @@ impl TestOverrides for ICS31Test {
 impl BinaryChannelTest for ICS31Test {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains,
+        Context: HasTwoChains + HasTwoChannels,
     {
         let chains = context.chains();
         let channel = context.channel();
