@@ -10,7 +10,7 @@ use super::version;
 /// # Note: Should be consistent with [features] guide page.
 ///
 /// [features]: https://hermes.informal.systems/features.html
-const SDK_MODULE_VERSION_REQ: &str = ">=0.41, <0.47";
+const SDK_MODULE_VERSION_REQ: &str = ">=0.41, <0.48";
 
 /// Specifies the IBC-go module version requirement.
 /// At the moment, we support both chains with and without
