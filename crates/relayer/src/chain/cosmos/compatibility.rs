@@ -9,7 +9,7 @@ use super::version;
 ///
 /// # Note: Should be consistent with [features] guide page.
 ///
-/// [features]: https://hermes.informal.systems/features.html
+/// [features]: https://hermes.informal.systems/advanced/features.html
 const SDK_MODULE_VERSION_REQ: &str = ">=0.41, <0.48";
 
 /// Specifies the IBC-go module version requirement.
@@ -19,7 +19,7 @@ const SDK_MODULE_VERSION_REQ: &str = ">=0.41, <0.48";
 ///
 /// # Note: Should be consistent with [features] guide page.
 ///
-/// [features]: https://hermes.informal.systems/features.html
+/// [features]: https://hermes.informal.systems/advanced/features.html
 const IBC_GO_MODULE_VERSION_REQ: &str = ">=1.1, <=7";
 
 #[derive(Error, Debug)]
