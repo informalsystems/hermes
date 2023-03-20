@@ -36,6 +36,8 @@ pub trait HasTwoChannels: HasTwoChains {
 
 pub trait CanSpawnRelayer {
     fn spawn_relayer(&self) -> Result<(), Error>;
+
+    fn with_supervisor<R>(&self, cont: impl FnOnce() -> Result<R, Error>) -> Result<R, Error>;
 }
 
 pub trait HasContextId {

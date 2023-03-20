@@ -59,6 +59,10 @@ impl TestOverrides for ClientFilterBlocksConnectionTest {
             trust_threshold: Some(TrustThreshold::TWO_THIRDS),
         }
     }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
 }
 
 impl TestOverrides for ClientFilterAllowsConnectionTest {
@@ -76,6 +80,10 @@ impl TestOverrides for ClientFilterAllowsConnectionTest {
             trusting_period: Some(Duration::from_secs(340_000)),
             trust_threshold: Some(TrustThreshold::ONE_THIRD),
         }
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
     }
 }
 

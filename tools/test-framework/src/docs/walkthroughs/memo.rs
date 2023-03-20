@@ -35,13 +35,14 @@
 //! }
 //!
 //! impl BinaryChannelTest for MemoTest {
-//!     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-//!         &self,
-//!         _config: &TestConfig,
-//!         _relayer: RelayerDriver,
-//!         chains: ConnectedChains<ChainA, ChainB>,
-//!         channel: ConnectedChannel<ChainA, ChainB>,
-//!     ) -> Result<(), Error> {
+//!     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+//!     where
+//!         Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
+//!     {
+//!         let _res = context.spawn_relayer();
+//!         let chains = context.chains();
+//!         let channel = context.channel();
+//!
 //!         let denom_a = chains.node_a.denom();
 //!
 //!         let a_to_b_amount = random_u128_range(1000, 5000);

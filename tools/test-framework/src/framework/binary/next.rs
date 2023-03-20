@@ -13,6 +13,7 @@ use crate::framework::next::chain::{
 };
 use crate::prelude::{ConnectedChains, ConnectedChannel, FullNode, RelayerDriver, TestConfig};
 use crate::types::tagged::*;
+use crate::util::suspend::hang_on_error;
 
 /// Test context for the current relayer.
 /// Uses a RelayerDriver.
@@ -82,6 +83,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> CanSpawnRelayer for TestContextV1
         });
 
         Ok(())
+    }
+
+    fn with_supervisor<R>(&self, cont: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
+        self.relayer.with_supervisor(cont)
     }
 }
 
@@ -161,6 +166,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> CanSpawnRelayer for TestContextV2
         });
 
         Ok(())
+    }
+
+    fn with_supervisor<R>(&self, cont: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
+        self.spawn_relayer()?;
+
+        hang_on_error(false, cont)
     }
 }
 

@@ -11,7 +11,11 @@ fn test_error_events() -> Result<(), Error> {
 
 pub struct ErrorEventsTest;
 
-impl TestOverrides for ErrorEventsTest {}
+impl TestOverrides for ErrorEventsTest {
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
 
 impl BinaryChannelTest for ErrorEventsTest {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>

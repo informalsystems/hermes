@@ -40,13 +40,11 @@
 //! }
 //!
 //! impl BinaryChannelTest for OrderedChannelTest {
-//!     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-//!         &self,
-//!         _config: &TestConfig,
-//!         relayer: RelayerDriver,
-//!         chains: ConnectedChains<ChainA, ChainB>,
-//!         channel: ConnectedChannel<ChainA, ChainB>,
-//!     ) -> Result<(), Error> {
+//!     fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+//!     where
+//!     {
+//!         let chains = context.chains();
+//!         let channel = context.channel();
 //!         let denom_a = chains.node_a.denom();
 //!
 //!         let wallet_a = chains.node_a.wallets().user1().cloned();

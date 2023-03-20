@@ -5,7 +5,7 @@
 //! `tools/test-framework/src/docs/walkthroughs/memo.rs`.
 
 use ibc_relayer::config::{types::Memo, Config};
-use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
+use ibc_test_framework::framework::next::chain::{CanSpawnRelayer, HasTwoChains, HasTwoChannels};
 use serde_json as json;
 
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
@@ -29,13 +29,18 @@ impl TestOverrides for MemoTest {
             chain.memo_prefix = self.memo.clone();
         }
     }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
 }
 
 impl BinaryChannelTest for MemoTest {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains + HasTwoChannels,
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
     {
+        let _res = context.spawn_relayer();
         let chains = context.chains();
         let channel = context.channel();
         info!(

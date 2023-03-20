@@ -1,4 +1,4 @@
-use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
+use ibc_test_framework::framework::next::chain::{CanSpawnRelayer, HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
@@ -45,9 +45,9 @@ impl TestOverrides for ClearPacketRecoveryTest {
 }
 
 impl BinaryChannelTest for ClearPacketTest {
-    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains + HasTwoChannels,
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
     {
         let chains = context.chains();
         let channel = context.channel();
@@ -79,7 +79,7 @@ impl BinaryChannelTest for ClearPacketTest {
         sleep(Duration::from_secs(1));
 
         // Spawn the supervisor only after the first IBC trasnfer
-        relayer.with_supervisor(|| {
+        context.with_supervisor(|| {
             sleep(Duration::from_secs(1));
 
             let amount2 = denom_a.with_amount(random_u128_range(1000, 5000));
@@ -120,9 +120,9 @@ impl BinaryChannelTest for ClearPacketTest {
 }
 
 impl BinaryChannelTest for ClearPacketRecoveryTest {
-    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains + HasTwoChannels,
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
     {
         let chains = context.chains();
         let channel = context.channel();
@@ -157,7 +157,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
             &denom_a,
         )?;
 
-        relayer.with_supervisor(|| {
+        context.with_supervisor(|| {
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
                 &wallet_b.address(),
                 &denom_b2.with_amount(amount1).as_ref(),

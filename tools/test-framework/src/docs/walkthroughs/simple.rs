@@ -16,12 +16,10 @@
 //! impl TestOverrides for ExampleTest {}
 //!
 //! impl BinaryChannelTest for ExampleTest {
-//!     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+//!     fn run<Context>(
 //!         &self,
-//!         _config: &TestConfig,
 //!         _relayer: RelayerDriver,
-//!         _chains: ConnectedChains<ChainA, ChainB>,
-//!         _channel: ConnectedChannel<ChainA, ChainB>,
+//!         _context: &Context
 //!     ) -> Result<(), Error> {
 //!         suspend()
 //!     }
