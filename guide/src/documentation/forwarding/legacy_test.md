@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Gaiad at least `(v8.0.0)`. The version can be checked with:
+- Gaiad `(v6.*.*)`. The version can be checked with:
 
 ```shell
 gaiad version --log_level error --long | head -n4
@@ -278,7 +278,7 @@ gaiad version --log_level error --long | head -n4
 6. Transfer token using the special receiver:
 
     ```shell
-    hermes tx ft-transfer --denom samoleans --receiver cosmos1jwr34yvnkqkc0ddndnh9y8t94hlhn7rapfyags --memo '{"forward": {"receiver": "cosmos1al3csagycya3l7ze3dk4345czw9vwgtjtsezut", "port": "transfer", "channel": "channel-1"}}' --timeout-seconds 120  --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 2500
+    {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=2500 OPTIONS= --denom samoleans --receiver 'cosmos1jwr34yvnkqkc0ddndnh9y8t94hlhn7rapfyags|transfer/channel-1:cosmos1nsztzzhl553avufxhqa204908l4dndafqph4tw' --timeout-seconds 120}}
     ```
 
     ```json

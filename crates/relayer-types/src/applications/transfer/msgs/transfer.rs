@@ -41,6 +41,8 @@ pub struct MsgTransfer<C = Coin> {
     /// Timeout timestamp relative to the current block timestamp.
     /// The timeout is disabled when set to 0.
     pub timeout_timestamp: Timestamp,
+    /// optional memo
+    pub memo: Option<String>,
 }
 
 impl Msg for MsgTransfer {
@@ -67,6 +69,8 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             Error::invalid_packet_timeout_height(format!("invalid timeout height {e}"))
         })?;
 
+        let memo = Some(raw_msg.memo).filter(|m| !m.is_empty());
+
         Ok(MsgTransfer {
             source_port: raw_msg
                 .source_port
@@ -81,12 +85,15 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             receiver: raw_msg.receiver.parse().map_err(Error::signer)?,
             timeout_height,
             timeout_timestamp,
+            memo,
         })
     }
 }
 
 impl From<MsgTransfer> for RawMsgTransfer {
     fn from(domain_msg: MsgTransfer) -> Self {
+        let memo = domain_msg.memo.unwrap_or_default();
+
         RawMsgTransfer {
             source_port: domain_msg.source_port.to_string(),
             source_channel: domain_msg.source_channel.to_string(),
@@ -95,6 +102,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             receiver: domain_msg.receiver.to_string(),
             timeout_height: domain_msg.timeout_height.into(),
             timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
+            memo,
         }
     }
 }
@@ -162,6 +170,7 @@ pub mod test_util {
             timeout_timestamp: timeout_timestamp
                 .unwrap_or_else(|| Timestamp::now().add(Duration::from_secs(10)).unwrap()),
             timeout_height,
+            memo: None,
         }
     }
 
@@ -176,6 +185,7 @@ pub mod test_util {
                 token: coin,
                 sender: msg.sender.clone(),
                 receiver: msg.receiver.clone(),
+                memo: None,
             };
             serde_json::to_vec(&data).expect("PacketData's infallible Serialize impl failed")
         };

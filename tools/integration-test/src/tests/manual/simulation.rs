@@ -52,6 +52,7 @@ impl BinaryChannelTest for SimulationTest {
             1000,
             Duration::from_secs(0),
             MAX_MSGS,
+            None,
         )?;
 
         suspend()
@@ -80,6 +81,7 @@ fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     timeout_height_offset: u64,
     timeout_duration: Duration,
     number_messages: usize,
+    memo: Option<String>,
 ) -> Result<Vec<IbcEvent>, Error> {
     let transfer_options = TransferOptions {
         src_port_id: channel.port_a.value().clone(),
@@ -90,6 +92,7 @@ fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
         timeout_height_offset,
         timeout_duration,
         number_msgs: number_messages,
+        memo,
     };
 
     let events_with_heights =

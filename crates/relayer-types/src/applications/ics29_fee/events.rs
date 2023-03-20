@@ -1,3 +1,4 @@
+use core::fmt::Display;
 use core::str::FromStr;
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
@@ -9,6 +10,7 @@ use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::IbcEventType;
 use crate::prelude::*;
+use crate::signer::Signer;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct IncentivizedPacket {
@@ -82,6 +84,77 @@ impl<'a> TryFrom<&'a [abci::EventAttribute]> for IncentivizedPacket {
             total_recv_fee,
             total_ack_fee,
             total_timeout_fee,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+pub enum DistributionType {
+    Reward,
+    Refund,
+}
+
+impl Display for DistributionType {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            DistributionType::Reward => write!(f, "reward"),
+            DistributionType::Refund => write!(f, "refund"),
+        }
+    }
+}
+
+impl TryFrom<&str> for DistributionType {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "reward" => Ok(DistributionType::Reward),
+            "refund" => Ok(DistributionType::Refund),
+            _ => Err(Error::empty_fee()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+pub struct DistributeFeePacket {
+    pub receiver: Signer,
+    pub fee: RawCoin,
+    pub distribution_type: DistributionType,
+}
+
+impl From<DistributeFeePacket> for abci::Event {
+    fn from(event: DistributeFeePacket) -> Self {
+        let attributes = vec![
+            ("receiver", event.receiver.to_string()).into(),
+            ("fee", event.fee.denom.as_str()).into(),
+            ("distribution_type", event.distribution_type.to_string()).into(),
+        ];
+
+        Self {
+            kind: IbcEventType::DistributionFee.as_str().to_owned(),
+            attributes,
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a [abci::EventAttribute]> for DistributeFeePacket {
+    type Error = Error;
+
+    fn try_from(entries: &'a [abci::EventAttribute]) -> Result<Self, Error> {
+        let receiver_str = find_value("receiver", entries)?;
+        let fee_str = find_value("fee", entries)?;
+        let distribution_type_str = find_value("distribution_type", entries)?;
+
+        let receiver = Signer::from_str(receiver_str).map_err(Error::signer)?;
+
+        let fee = RawCoin::from_str(fee_str).map_err(Error::transfer)?;
+
+        let distribution_type = DistributionType::try_from(distribution_type_str)?;
+
+        Ok(DistributeFeePacket {
+            receiver,
+            fee,
+            distribution_type,
         })
     }
 }

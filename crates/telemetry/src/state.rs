@@ -1,7 +1,10 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
-use std::time::{Duration, Instant};
+use std::{
+    sync::Mutex,
+    time::{Duration, Instant},
+};
 
-use dashmap::DashMap;
+use dashmap::{DashMap, DashSet};
 use opentelemetry::{
     global,
     metrics::{Counter, ObservableGauge, UpDownCounter},
@@ -10,7 +13,11 @@ use opentelemetry::{
 use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use ibc_relayer_types::{
+    applications::transfer::Coin,
+    core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
+    signer::Signer,
+};
 
 use tendermint::Time;
 
@@ -55,6 +62,11 @@ const QUERY_TYPES: [&str; 26] = [
     "query_latest_height",
     "query_staking_params",
 ];
+
+// Constant value used to define the number of seconds
+// the rewarded fees Cache value live.
+// Current value is 7 days.
+const FEE_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 7);
 
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
@@ -168,6 +180,18 @@ pub struct TelemetryState {
     /// that the relayer observed, and for which there was no associated Acknowledgement or
     /// Timeout event.
     backlogs: DashMap<PathIdentifier, DashMap<u64, u64>>,
+
+    /// Total amount of fees received from ICS29 fees.
+    fee_amounts: Counter<u64>,
+
+    /// List of addresses for which rewarded fees from ICS29 should be recorded.
+    visible_fee_addresses: DashSet<String>,
+
+    /// Vector of rewarded fees stored in a moka Cache value
+    cached_fees: Mutex<Vec<moka::sync::Cache<String, u64>>>,
+
+    /// Sum of rewarded fees over the past FEE_LIFETIME seconds
+    period_fees: ObservableGauge<u64>,
 }
 
 impl TelemetryState {
@@ -760,6 +784,65 @@ impl TelemetryState {
             }
         }
     }
+
+    /// Record the rewarded fee from ICS29 if the address is in the registered addresses
+    /// list.
+    pub fn fees_amount(&self, chain_id: &ChainId, receiver: &Signer, fee_amounts: Coin<String>) {
+        // If the address isn't in the filter list, don't record the metric.
+        if !self.visible_fee_addresses.contains(&receiver.to_string()) {
+            return;
+        }
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("receiver", receiver.to_string()),
+            KeyValue::new("denom", fee_amounts.denom.to_string()),
+        ];
+
+        let fee_amount = fee_amounts.amount.0.as_u64();
+
+        self.fee_amounts.add(&cx, fee_amount, labels);
+
+        let ephemeral_fee: moka::sync::Cache<String, u64> = moka::sync::Cache::builder()
+            .time_to_live(FEE_LIFETIME) // Remove entries after 1 hour without insert
+            .time_to_idle(FEE_LIFETIME) // Remove entries if they have been idle for 30 minutes without get or insert
+            .build();
+
+        let key = format!("fee_amount:{chain_id}/{receiver}/{}", fee_amounts.denom);
+        ephemeral_fee.insert(key.clone(), fee_amount);
+
+        let mut cached_fees = self.cached_fees.lock().unwrap();
+        cached_fees.push(ephemeral_fee);
+
+        let sum: u64 = cached_fees.iter().filter_map(|e| e.get(&key)).sum();
+
+        self.period_fees.observe(&cx, sum, labels);
+    }
+
+    pub fn update_period_fees(&self, chain_id: &ChainId, receiver: &String, denom: &String) {
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("receiver", receiver.to_string()),
+            KeyValue::new("denom", denom.to_string()),
+        ];
+
+        let key = format!("fee_amount:{chain_id}/{receiver}/{}", denom);
+
+        let cached_fees = self.cached_fees.lock().unwrap();
+
+        let sum: u64 = cached_fees.iter().filter_map(|e| e.get(&key)).sum();
+
+        self.period_fees.observe(&cx, sum, labels);
+    }
+
+    // Add an address to the list of addresses which will record
+    // the rewarded fees from ICS29.
+    pub fn add_visible_fee_address(&self, address: String) {
+        self.visible_fee_addresses.insert(address);
+    }
 }
 
 use std::sync::Arc;
@@ -789,6 +872,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "tx_latency_confirmed" => Some(Arc::new(histogram(&[
                 1000.0, 5000.0, 9000.0, 13000.0, 17000.0, 20000.0,
             ]))),
+            "ics29_period_fees" => Some(Arc::new(last_value())),
             _ => Some(Arc::new(sum())),
         }
     }
@@ -939,6 +1023,20 @@ impl Default for TelemetryState {
             backlog_size: meter
                 .u64_observable_gauge("backlog_size")
                 .with_description("Total number of SendPacket events in the backlog")
+                .init(),
+
+            fee_amounts: meter
+                .u64_counter("ics29_fee_amounts")
+                .with_description("Total amount received from ICS29 fees")
+                .init(),
+
+            visible_fee_addresses: DashSet::new(),
+
+            cached_fees: Mutex::new(Vec::new()),
+
+            period_fees: meter
+                .u64_observable_gauge("ics29_period_fees")
+                .with_description("Amount of ICS29 fees rewarded over the past 7 days")
                 .init(),
         }
     }

@@ -43,6 +43,7 @@ impl BinaryChannelTest for ErrorEventsTest {
             &wallet_b.address(),
             &denom_a.with_amount((balance_a_amount / 3) + 1).as_ref(),
             Duration::from_secs(30),
+            None,
         )?;
 
         let messages = TrackedMsgs::new_static(vec![transfer_message; 4], "test_error_events");

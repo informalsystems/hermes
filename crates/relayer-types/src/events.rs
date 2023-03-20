@@ -10,7 +10,7 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci;
 
 use crate::applications::ics29_fee::error::Error as FeeError;
-use crate::applications::ics29_fee::events::IncentivizedPacket;
+use crate::applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket};
 use crate::applications::ics31_icq::error::Error as QueryPacketError;
 use crate::applications::ics31_icq::events::CrossChainQueryPacket;
 use crate::core::ics02_client::error as client_error;
@@ -140,6 +140,8 @@ const TIMEOUT_ON_CLOSE_EVENT: &str = "timeout_packet_on_close";
 const INCENTIVIZED_PACKET_EVENT: &str = "incentivized_ibc_packet";
 /// CrossChainQuery event type
 const CROSS_CHAIN_QUERY_PACKET_EVENT: &str = "cross_chain_query";
+/// Distribution fee event type
+const DISTRIBUTION_FEE_PACKET_EVENT: &str = "distribute_fee";
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -170,6 +172,7 @@ pub enum IbcEventType {
     AppModule,
     Empty,
     ChainError,
+    DistributionFee,
 }
 
 impl IbcEventType {
@@ -201,6 +204,7 @@ impl IbcEventType {
             IbcEventType::AppModule => APP_MODULE_EVENT,
             IbcEventType::Empty => EMPTY_EVENT,
             IbcEventType::ChainError => CHAIN_ERROR_EVENT,
+            IbcEventType::DistributionFee => DISTRIBUTION_FEE_PACKET_EVENT,
         }
     }
 }
@@ -235,6 +239,7 @@ impl FromStr for IbcEventType {
             CROSS_CHAIN_QUERY_PACKET_EVENT => Ok(IbcEventType::CrossChainQuery),
             EMPTY_EVENT => Ok(IbcEventType::Empty),
             CHAIN_ERROR_EVENT => Ok(IbcEventType::ChainError),
+            DISTRIBUTION_FEE_PACKET_EVENT => Ok(IbcEventType::DistributionFee),
             // from_str() for `APP_MODULE_EVENT` MUST fail because a `ModuleEvent`'s type isn't constant
             _ => Err(Error::incorrect_event_type(s.to_string())),
         }
@@ -273,6 +278,8 @@ pub enum IbcEvent {
     IncentivizedPacket(IncentivizedPacket),
     CrossChainQueryPacket(CrossChainQueryPacket),
 
+    DistributeFeePacket(DistributeFeePacket),
+
     AppModule(ModuleEvent),
 
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
@@ -310,6 +317,8 @@ impl Display for IbcEvent {
             IbcEvent::IncentivizedPacket(ev) => write!(f, "IncenvitizedPacket({ev:?}"),
             IbcEvent::CrossChainQueryPacket(ev) => write!(f, "CrosschainPacket({ev:?})"),
 
+            IbcEvent::DistributeFeePacket(ev) => write!(f, "DistributionFeePacket({ev:?})"),
+
             IbcEvent::AppModule(ev) => write!(f, "AppModule({ev})"),
 
             IbcEvent::ChainError(ev) => write!(f, "ChainError({ev})"),
@@ -344,6 +353,7 @@ impl TryFrom<IbcEvent> for abci::Event {
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::IncentivizedPacket(event) => event.into(),
             IbcEvent::CrossChainQueryPacket(event) => event.into(),
+            IbcEvent::DistributeFeePacket(event) => event.into(),
             IbcEvent::AppModule(event) => event.try_into()?,
             IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
                 return Err(Error::incorrect_event_type(event.to_string()));
@@ -385,6 +395,7 @@ impl IbcEvent {
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
             IbcEvent::IncentivizedPacket(_) => IbcEventType::IncentivizedPacket,
             IbcEvent::CrossChainQueryPacket(_) => IbcEventType::CrossChainQuery,
+            IbcEvent::DistributeFeePacket(_) => IbcEventType::DistributionFee,
             IbcEvent::AppModule(_) => IbcEventType::AppModule,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
         }

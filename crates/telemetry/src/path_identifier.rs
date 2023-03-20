@@ -1,7 +1,7 @@
 /// Structure used by the telemetry in order to define a UID
 /// to track the SendPacket and WriteAcknowledgement and Timeouts for a given
 /// chain, channel and port.
-#[derive(Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct PathIdentifier {
     chain_id: String,
     channel_id: String,

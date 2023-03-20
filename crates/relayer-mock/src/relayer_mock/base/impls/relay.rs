@@ -33,6 +33,8 @@ impl OfaRelayTypes for MockRelayContext {
     type SrcChain = MockChainContext;
 
     type DstChain = MockChainContext;
+
+    type PacketLock<'a> = ();
 }
 
 #[async_trait]
@@ -131,5 +133,12 @@ impl OfaBaseRelay for MockRelayContext {
             *height,
             state,
         )])
+    }
+
+    async fn try_acquire_packet_lock<'a>(
+        &'a self,
+        _packet: &'a Self::Packet,
+    ) -> Option<Self::PacketLock<'a>> {
+        Some(())
     }
 }
