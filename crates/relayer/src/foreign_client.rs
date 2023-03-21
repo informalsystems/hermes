@@ -1441,6 +1441,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         mut update: Option<&UpdateClient>,
     ) -> Result<Option<MisbehaviourEvidence>, ForeignClientError> {
+        // FIXME: Why do we need this, and shouldn't we wait somewhere else up the call stack?
         thread::sleep(Duration::from_millis(200));
 
         // Get the latest client state on destination.
@@ -1523,10 +1524,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // Check for misbehaviour according to the specific source chain type.
             // In case of Tendermint client, this will also check the BFT time violation if
             // a header for the event height cannot be retrieved from the witness.
-            let misbehavior = match self
+            let result = self
                 .src_chain
-                .check_misbehaviour(update_event.clone(), client_state.clone())
-            {
+                .check_misbehaviour(update_event.clone(), client_state.clone());
+
+            let misbehavior = match result {
                 // Misbehavior check passed.
                 Ok(evidence_opt) => evidence_opt,
 
@@ -1560,7 +1562,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 return Ok(misbehavior);
             }
 
-            // Exit the loop if more than MAX_MISBEHAVIOUR_CHECK_TIME was spent here.
+            // Exit the loop if more than MAX_MISBEHAVIOUR_CHECK_DURATION was spent here.
             if start_time.elapsed() > MAX_MISBEHAVIOUR_CHECK_DURATION {
                 trace!(
                     "finished misbehaviour verification after {:?}",
@@ -1681,22 +1683,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Even if some states may have failed to verify, e.g. if they were expired, just
         // warn the user and continue.
         match result {
-            Err(ForeignClientError(ForeignClientErrorDetail::MisbehaviourExit(s), _)) => {
-                warn!("misbehaviour checking is being disabled, reason: {}", s);
+            Ok(events) => {
+                if !events.is_empty() {
+                    info!("evidence submission result: {}", PrettySlice(&events));
 
-                MisbehaviourResults::CannotExecute
-            }
-
-            Ok(misbehaviour_detection_result) => {
-                if !misbehaviour_detection_result.is_empty() {
-                    info!(
-                        "evidence submission result: {}",
-                        PrettySlice(&misbehaviour_detection_result)
-                    );
-
-                    MisbehaviourResults::EvidenceSubmitted(misbehaviour_detection_result)
+                    MisbehaviourResults::EvidenceSubmitted(events)
                 } else {
-                    info!("client is valid",);
+                    info!("client is valid");
 
                     MisbehaviourResults::ValidClient
                 }
@@ -1708,14 +1701,17 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
                     MisbehaviourResults::CannotExecute
                 }
+
                 ForeignClientErrorDetail::ExpiredOrFrozen(_) => {
                     error!("cannot check misbehavior on frozen or expired client",);
 
                     MisbehaviourResults::CannotExecute
                 }
 
+                // FIXME: This is fishy
                 _ if update_event.is_some() => MisbehaviourResults::CannotExecute,
 
+                // FIXME: This is fishy
                 _ => {
                     warn!("misbehaviour checking result: {}", e);
 
