@@ -118,6 +118,86 @@ jobs:
               test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2
 
+  relayer-next-integration-test:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: gaia6
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia7
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia8
+            command: gaiad
+            account_prefix: cosmos
+          - package: ibc-go-v2-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v3-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v4-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v5-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v6-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v7-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: wasmd
+            command: wasmd
+            account_prefix: wasm
+          - package: evmos
+            command: evmosd
+            account_prefix: evmos
+          - package: osmosis
+            command: osmosisd
+            account_prefix: osmo
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v18
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --no-fail-fast --no-run
+      - name: run integration tests
+        uses: nick-fields/retry@v2
+        env:
+          RUST_LOG: info,ibc_relayer_runtime=trace
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+        with:
+          max_attempts: 3
+          timeout_minutes: 45
+          command: |
+            nix shell .#python .#${{ matrix.chain.package }} -c cargo \
+              test -p ibc-integration-test --features next --no-fail-fast -- \
+              --nocapture --test-threads=2
+
   ordered-channel-test:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
