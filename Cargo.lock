@@ -3991,8 +3991,6 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b90c3c1e32352551f0f1639ce765e4c66ce250c733d4b9ba1aff81130437465c"
 dependencies = [
  "bytes",
  "digest 0.10.6",
@@ -4022,8 +4020,6 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74efd33bcb53413b77cbe90ccb2cf0403930a5c1f300725deb87a61f7c4fab90"
 dependencies = [
  "flex-error",
  "serde",
@@ -4036,8 +4032,6 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac7f5273471fbeaad69e196146dd459f3857c021141a67287aedd0504429e4f0"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -4047,19 +4041,19 @@ dependencies = [
  "serde",
  "serde_cbor",
  "serde_derive",
+ "serde_json",
  "static_assertions",
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-rpc",
  "time",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f36e9193521a81e4c824faedc5eb31926f8918ebb21a1fa9cee9b3dbe5164a93"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -4071,8 +4065,6 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e553ed65874c3f35a71eb60d255edfea956274b5af37a0297d54bba039fe45e3"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4089,8 +4081,6 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d79bd426571d6a805be5c0b6749707ede6c6ee5e55dd45baef46857a1baa9f54"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4124,8 +4114,6 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23d2a14868d694e25443ae9dd8b8a49c77a835a191a51b727134c2418ae110ec"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",

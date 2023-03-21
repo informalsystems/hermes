@@ -17,9 +17,9 @@ members = [
 
 [patch.crates-io]
 # ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "main" }
-# tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
+tendermint                       = { path = "../tendermint-rs/tendermint" }
+tendermint-rpc                   = { path = "../tendermint-rs/rpc" }
+tendermint-proto                 = { path = "../tendermint-rs/proto" }
+tendermint-light-client          = { path = "../tendermint-rs/light-client" }
+tendermint-light-client-verifier = { path = "../tendermint-rs/light-client-verifier" }
+tendermint-testgen               = { path = "../tendermint-rs/testgen" }
