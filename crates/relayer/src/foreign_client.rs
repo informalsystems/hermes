@@ -1441,7 +1441,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         mut update: Option<&UpdateClient>,
     ) -> Result<Option<MisbehaviourEvidence>, ForeignClientError> {
-        // FIXME: Why do we need this, and shouldn't we wait somewhere else up the call stack?
+        // FIXME(romac): Why do we need this, and shouldn't we wait somewhere else up the call stack?
         thread::sleep(Duration::from_millis(200));
 
         // Get the latest client state on destination.
@@ -1655,10 +1655,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     )]
     pub fn detect_misbehaviour_and_submit_evidence(
         &self,
-        update_event: Option<&UpdateClient>,
+        update_event: Option<UpdateClient>,
     ) -> MisbehaviourResults {
         // check evidence of misbehaviour for all updates or one
-        let result = match self.detect_misbehaviour(update_event) {
+        let result = match self.detect_misbehaviour(update_event.as_ref()) {
             Err(e) => Err(e),
             Ok(None) => Ok(vec![]), // no evidence found
             Ok(Some(detected)) => {

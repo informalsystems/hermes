@@ -109,7 +109,7 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
                 trace!("received batch: {:?}", batch);
 
                 for event_with_height in batch.events {
-                    if let IbcEvent::UpdateClient(ref update) = event_with_height.event {
+                    if let IbcEvent::UpdateClient(update) = event_with_height.event {
                         match on_client_update(&client, update) {
                             Next::Continue => continue,
                             Next::Abort => return Ok(Next::Abort),
@@ -127,7 +127,7 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
 
 fn on_client_update<ChainA: ChainHandle, ChainB: ChainHandle>(
     client: &ForeignClient<ChainB, ChainA>,
-    update: &UpdateClient,
+    update: UpdateClient,
 ) -> Next {
     let _span = debug_span!(
         "on_client_update",
