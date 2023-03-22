@@ -831,8 +831,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .map(|v| v.target)
     }
 
-    /// Given a client update event that includes the header used in a client update,
-    /// look for misbehaviour by fetching a header at same or latest height.
+    /// Perform misbehavior detection for the given client state and update event.
     fn check_misbehaviour(
         &mut self,
         update: &UpdateClient,

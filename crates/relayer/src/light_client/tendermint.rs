@@ -1,3 +1,7 @@
+#![allow(unused)]
+
+mod detector;
+
 use itertools::Itertools;
 
 use tendermint_light_client::{
@@ -34,6 +38,7 @@ use super::Verified;
 pub struct LightClient {
     chain_id: ChainId,
     peer_id: PeerId,
+    rpc_client: rpc::HttpClient,
     io: components::io::ProdIo,
 }
 
@@ -90,11 +95,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         self.fetch_light_block(AtHeight::At(height))
     }
 
-    /// Given a client update event that includes the header used in a client update,
-    /// look for misbehaviour by fetching a header at same or latest height.
-    ///
-    /// ## TODO
-    /// - [ ] Return intermediate headers as well
+    /// Perform misbehavior detection on the given client state and update client event.
     fn check_misbehaviour(
         &mut self,
         update: &UpdateClient,
@@ -102,7 +103,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
         crate::time!("light client check_misbehaviour");
 
-        let update_header = update.header.clone().ok_or_else(|| {
+        let update_header = update.header.as_ref().ok_or_else(|| {
             Error::misbehaviour(format!(
                 "missing header in update client event {}",
                 self.chain_id
@@ -117,16 +118,25 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 ))
             })?;
 
+        let client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Error::misbehaviour(format!(
+                    "client type incompatible for chain {}",
+                    self.chain_id
+                ))
+            })?;
+
         let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
+
         let latest_chain_height =
             ICSHeight::new(self.chain_id.version(), latest_chain_block.height().into())
                 .map_err(|_| Error::invalid_height_no_source())?;
 
-        // set the target height to the minimum between the update height and latest chain height
+        // Set the target height to the minimum between the update height and latest chain height
         let target_height = core::cmp::min(update.consensus_height(), latest_chain_height);
         let trusted_height = update_header.trusted_height;
 
-        // TODO - check that a consensus state at trusted_height still exists on-chain,
+        // TODO: Check that a consensus state at trusted_height still exists on-chain,
         // currently we don't have access to Cosmos chain query from here
 
         if trusted_height >= latest_chain_height {
@@ -139,26 +149,20 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             return Ok(None);
         }
 
-        let Verified { target, supporting } =
-            self.verify(trusted_height, target_height, client_state)?;
+        let target_block: LightBlock = todo!(); // FIXME: How do I compute this?
+        let trusted_block = self.fetch(trusted_height)?; // FIXME: Is that ok?
+        let now = latest_chain_block.time(); // FIXME: Is that right?
 
-        if !headers_compatible(&target.signed_header, &update_header.signed_header) {
-            let (witness, supporting) = self.adjust_headers(trusted_height, target, supporting)?;
+        detector::detect(
+            self.peer_id,
+            self.rpc_client.clone(),
+            target_block,
+            trusted_block,
+            client_state,
+            now,
+        );
 
-            let misbehaviour = TmMisbehaviour {
-                client_id: update.client_id().clone(),
-                header1: update_header.clone(),
-                header2: witness,
-            }
-            .into();
-
-            Ok(Some(MisbehaviourEvidence {
-                misbehaviour,
-                supporting_headers: supporting.into_iter().map(Into::into).collect(),
-            }))
-        } else {
-            Ok(None)
-        }
+        todo!()
     }
 }
 
@@ -167,11 +171,12 @@ impl LightClient {
         let rpc_client = rpc::HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
-        let io = components::io::ProdIo::new(peer_id, rpc_client, Some(config.rpc_timeout));
+        let io = components::io::ProdIo::new(peer_id, rpc_client.clone(), Some(config.rpc_timeout));
 
         Ok(Self {
             chain_id: config.id.clone(),
             peer_id,
+            rpc_client,
             io,
         })
     }
@@ -186,18 +191,9 @@ impl LightClient {
                 Error::client_type_mismatch(ClientType::Tendermint, client_state.client_type())
             })?;
 
-        let params = TmOptions {
-            trust_threshold: client_state
-                .trust_threshold
-                .try_into()
-                .map_err(Error::light_client_state)?,
-            trusting_period: client_state.trusting_period,
-            clock_drift: client_state.max_clock_drift,
-        };
-
         Ok(TmLightClient::new(
             self.peer_id,
-            params,
+            client_state.as_light_client_options(),
             clock,
             scheduler,
             verifier,

@@ -1480,6 +1480,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         );
 
         let start_time = Instant::now();
+
         for target_height in consensus_state_heights {
             // Start with specified update event or the one for latest consensus height
             let update_event = if let Some(event) = update {
