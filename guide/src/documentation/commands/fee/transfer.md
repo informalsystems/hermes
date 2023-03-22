@@ -8,7 +8,7 @@ Use the `fee transfer` command to send an `IncentivizedPacket`.
 
 __Example__
 
-Send a transfer packets from the `transfer` module and `channel-0` of `ibc-0` to `ibc-1`. Each transfer if for `9999` `samoleans` (default denomination), ICS29 fees of 50 `samoleans` for `recv_fee`, 25 `samoleans` for `ack_fee`, `10` `samoleans` for `timeout_fee and a timeout offset of `10` blocks. The transfer fee is paid by the associated account on `ibc-1`.
+Send a transfer packet from the `transfer` module and `channel-0` of `ibc-0` to `ibc-1`. Each transfer is for `9999` `samoleans` (default denomination), ICS29 fees of 50 `samoleans` for `recv_fee`, 25 `samoleans` for `ack_fee`, `10` `samoleans` for `timeout_fee` and a timeout offset of `10` blocks. The transfer fee is paid by the associated account on `ibc-1`.
 
 ```shell
 {{#template ../../../templates/commands/hermes/fee/transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=9999 OPTIONS=  --receive-fee 50 --ack-fee 25 --timeout-fee 10 --timeout-height-offset 1000}}
