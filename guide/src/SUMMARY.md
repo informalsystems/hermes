@@ -76,5 +76,9 @@
         - [Channel Close](./documentation/commands/tx/channel-close.md)
         - [Packet](./documentation/commands/tx/packet.md)
         - [Upgrade](./documentation/commands/tx/upgrade.md)
+      - [ICS29 Fee](./documentation/commands/fee/index.md)
+        - [Register Counterparty Payee](./documentation/commands/fee/register-counterparty-payee.md)
+        - [Register Payee](./documentation/commands/fee/register-payee.md)
+        - [Transfer](./documentation/commands/fee/transfer.md)
 - [Glossary](./glossary.md)
 ---
