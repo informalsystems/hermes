@@ -58,20 +58,8 @@ jobs:
       fail-fast: false
       matrix:
         first-package:
-          - package: gaia8
-            chain_command_path: gaiad
-            account_prefix: cosmos
           - package: gaia9
             chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: ibc-go-v4-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v5-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v6-simapp
-            chain_command_path: simd
             account_prefix: cosmos
           - package: ibc-go-v7-simapp
             chain_command_path: simd
@@ -89,19 +77,10 @@ jobs:
             command: strided
             account_prefix: stride
         second-package:
-          - package: gaia8
-            chain_command_path: gaiad
-            account_prefix: cosmos
           - package: gaia9
             chain_command_path: gaiad
             account_prefix: cosmos
-          - package: ibc-go-v4-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v5-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v6-simapp
+          - package: ibc-go-v7-simapp
             chain_command_path: simd
             account_prefix: cosmos
           - package: wasmd
