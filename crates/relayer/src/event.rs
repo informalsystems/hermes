@@ -1,6 +1,6 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use ibc_relayer_types::{
-    applications::ics29_fee::events::IncentivizedPacket,
+    applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
     applications::ics31_icq::events::CrossChainQueryPacket,
     core::ics02_client::{
         error::Error as ClientError,
@@ -124,6 +124,10 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
         )),
         Ok(IbcEventType::IncentivizedPacket) => Ok(IbcEvent::IncentivizedPacket(
             IncentivizedPacket::try_from(&abci_event.attributes[..]).map_err(IbcEventError::fee)?,
+        )),
+        Ok(IbcEventType::DistributionFee) => Ok(IbcEvent::DistributeFeePacket(
+            DistributeFeePacket::try_from(&abci_event.attributes[..])
+                .map_err(IbcEventError::fee)?,
         )),
         Ok(IbcEventType::CrossChainQuery) => Ok(IbcEvent::CrossChainQueryPacket(
             CrossChainQueryPacket::try_from(&abci_event.attributes[..])
@@ -393,7 +397,7 @@ fn channel_extract_attributes_from_tx(
     Ok(attr)
 }
 
-fn extract_packet_and_write_ack_from_tx(
+pub fn extract_packet_and_write_ack_from_tx(
     event: &AbciEvent,
 ) -> Result<(Packet, Vec<u8>), ChannelError> {
     let mut packet = Packet::default();

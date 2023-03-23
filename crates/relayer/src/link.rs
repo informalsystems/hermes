@@ -14,8 +14,8 @@ use crate::link::error::LinkError;
 pub mod cli;
 pub mod error;
 pub mod operational_data;
+pub mod packet_events;
 
-mod packet_events;
 mod pending;
 mod relay_path;
 mod relay_sender;

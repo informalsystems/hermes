@@ -42,7 +42,7 @@ dialoguer                = "0.10.3"
 dirs-next                = "2.0.0"
 eyre                     = "0.6.8"
 flex-error               = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
-futures                  = "0.3.26"
+futures                  = "0.3.27"
 hdpath                   = "0.6.1"
 http                     = "0.2"
 humantime                = "2.1"
@@ -58,15 +58,15 @@ tracing                  = "0.1.36"
 tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
 
 [dependencies.tendermint]
-version = "0.28.0"
+version = "0.30.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "0.28.0"
+version = "0.30.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.28.0"
+version = "0.30.0"
 
 [dependencies.abscissa_core]
 version = "=0.6.0"

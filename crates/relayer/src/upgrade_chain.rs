@@ -1,5 +1,4 @@
 //! Chain upgrade plans for triggering IBC-breaking upgrades.
-#![allow(deprecated)] // TODO(hu55a1n1): remove this when we don't need legacy upgrade support
 
 use core::time::Duration;
 use std::ops::Add;

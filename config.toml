@@ -234,6 +234,12 @@ max_block_time = '30s'
 # Default: 2/3 of the `unbonding period` for Cosmos SDK chains
 trusting_period = '14days'
 
+# Unbonding period for this chain.
+# Required for ICS consumer chains, as they currently do not expose the staking module.
+# WARNING: Only specifiy this for ICS consumer chain, but NOT for any other type of chain.
+# For other chains, this is fetched via gRPC from the staking parameters.
+unbonding_period = '21days'
+
 # Specify the trust threshold for the light client, ie. the minimum fraction of validators
 # which must overlap across two blocks during light client verification.
 # Default: { numerator = '2', denominator = '3' }, ie. 2/3.
@@ -269,6 +275,27 @@ memo_prefix = ''
 #   ['ica*', '*'],
 #   ['transfer', 'channel-0'],
 # ]
+
+# This section specifies the filters for incentivized packet relaying.
+# Default: no filters, will relay all packets even if they
+# are not incentivized.
+#
+# It is possible to specify the channel or use wildcards for the
+# channels.
+# The only fee which can be parametrized is the `recv_fee`.
+#
+# Example configuration of a filter which will only relay incentivized
+# packets, with no regards for channel and amount.
+#
+# [chains.packet_filter.min_fees.'*']
+# recv = [ { amount = 0 } ]
+#
+# Example configuration of a filter which will only relay packets if they are
+# from the channel 'channel-0', and they have a `recv_fee` of at least 20 stake
+# or 10 uatom.
+#
+# [chains.packet_filter.min_fees.'channel-0']
+# recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
 
 # Specify that the transaction fees should be payed from this fee granter's account.
 # Optional. If unspecified (the default behavior), then no fee granter is used, and

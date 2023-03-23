@@ -9,7 +9,7 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
 use ibc_relayer::config::{AddressType, GasPrice};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use tendermint_rpc::{HttpClient, Url};
+use tendermint_rpc::Url;
 
 use crate::error::{handle_generic_error, Error};
 
@@ -45,8 +45,6 @@ pub fn new_tx_config_for_test(
     address_type: AddressType,
 ) -> Result<TxConfig, Error> {
     let rpc_address = Url::from_str(&raw_rpc_address).map_err(handle_generic_error)?;
-
-    let rpc_client = HttpClient::new(rpc_address.clone()).map_err(handle_generic_error)?;
     let grpc_address = Uri::from_str(&raw_grpc_address).map_err(handle_generic_error)?;
     let gas_config = gas_config_for_test();
     let rpc_timeout = Duration::from_secs(30);
@@ -57,7 +55,6 @@ pub fn new_tx_config_for_test(
     Ok(TxConfig {
         chain_id,
         gas_config,
-        rpc_client,
         rpc_address,
         grpc_address,
         rpc_timeout,

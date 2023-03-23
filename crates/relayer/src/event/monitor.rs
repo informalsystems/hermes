@@ -12,8 +12,8 @@ use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
 use tendermint_rpc::{
-    event::Event as RpcEvent, query::Query, Error as RpcError, SubscriptionClient, Url,
-    WebSocketClient, WebSocketClientDriver,
+    client::CompatMode, event::Event as RpcEvent, query::Query, Error as RpcError,
+    SubscriptionClient, WebSocketClient, WebSocketClientDriver, WebSocketClientUrl,
 };
 
 use ibc_relayer_types::{
@@ -116,7 +116,9 @@ pub struct EventMonitor {
     /// Channel where to receive commands
     rx_cmd: channel::Receiver<MonitorCmd>,
     /// Node Address
-    node_addr: Url,
+    ws_url: WebSocketClientUrl,
+    /// RPC compatibility mode
+    rpc_compat: CompatMode,
     /// Queries
     event_queries: Vec<Query>,
     /// All subscriptions combined in a single stream
@@ -169,20 +171,22 @@ impl EventMonitor {
         name = "event_monitor.create",
         level = "error",
         skip_all,
-        fields(chain = %chain_id, addr = %node_addr)
+        fields(chain = %chain_id, url = %ws_url)
     )]
     pub fn new(
         chain_id: ChainId,
-        node_addr: Url,
+        ws_url: WebSocketClientUrl,
+        rpc_compat: CompatMode,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, TxMonitorCmd)> {
         let event_bus = EventBus::new();
         let (tx_cmd, rx_cmd) = channel::unbounded();
 
-        let ws_addr = node_addr.clone();
+        let builder = WebSocketClient::builder(ws_url.clone()).compat_mode(rpc_compat);
+
         let (client, driver) = rt
-            .block_on(async move { WebSocketClient::new(ws_addr).await })
-            .map_err(|_| Error::client_creation_failed(chain_id.clone(), node_addr.clone()))?;
+            .block_on(builder.build())
+            .map_err(|_| Error::client_creation_failed(chain_id.clone(), ws_url.clone()))?;
 
         let (tx_err, rx_err) = mpsc::unbounded_channel();
         let driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
@@ -200,7 +204,8 @@ impl EventMonitor {
             rx_err,
             tx_err,
             rx_cmd,
-            node_addr,
+            ws_url,
+            rpc_compat,
             subscriptions: Box::new(futures::stream::empty()),
         };
 
@@ -242,18 +247,14 @@ impl EventMonitor {
         fields(chain = %self.chain_id)
     )]
     fn try_reconnect(&mut self) -> Result<()> {
-        trace!(
-            "trying to reconnect to WebSocket endpoint {}",
-            self.node_addr
-        );
+        trace!("trying to reconnect to WebSocket endpoint {}", self.ws_url);
 
         // Try to reconnect
-        let (mut client, driver) = self
-            .rt
-            .block_on(WebSocketClient::new(self.node_addr.clone()))
-            .map_err(|_| {
-                Error::client_creation_failed(self.chain_id.clone(), self.node_addr.clone())
-            })?;
+        let builder = WebSocketClient::builder(self.ws_url.clone()).compat_mode(self.rpc_compat);
+
+        let (mut client, driver) = self.rt.block_on(builder.build()).map_err(|_| {
+            Error::client_creation_failed(self.chain_id.clone(), self.ws_url.clone())
+        })?;
 
         let mut driver_handle = self.rt.spawn(run_driver(driver, self.tx_err.clone()));
 
@@ -262,7 +263,7 @@ impl EventMonitor {
         core::mem::swap(&mut self.client, &mut client);
         core::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
-        trace!("reconnected to WebSocket endpoint {}", self.node_addr);
+        trace!("reconnected to WebSocket endpoint {}", self.ws_url);
 
         // Shut down previous client
         trace!("gracefully shutting down previous client",);
@@ -320,11 +321,11 @@ impl EventMonitor {
         match result {
             Ok(()) => info!(
                 "successfully reconnected to WebSocket endpoint {}",
-                self.node_addr
+                self.ws_url
             ),
             Err(e) => error!(
                 "failed to reconnect to {} after {} retries",
-                self.node_addr, e.tries
+                self.ws_url, e.tries
             ),
         }
     }
@@ -375,6 +376,7 @@ impl EventMonitor {
         let rt = self.rt.clone();
 
         loop {
+            // Process any shutdown or subscription commands
             if let Ok(cmd) = self.rx_cmd.try_recv() {
                 match cmd {
                     MonitorCmd::Shutdown => return Next::Abort,
@@ -392,6 +394,18 @@ impl EventMonitor {
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
                 }
             });
+
+            // Before handling the batch, check if there are any pending shutdown or subscribe commands.
+            if let Ok(cmd) = self.rx_cmd.try_recv() {
+                match cmd {
+                    MonitorCmd::Shutdown => return Next::Abort,
+                    MonitorCmd::Subscribe(tx) => {
+                        if let Err(e) = tx.send(self.event_bus.subscribe()) {
+                            error!("failed to send back subscription: {e}");
+                        }
+                    }
+                }
+            }
 
             match result {
                 Ok(batch) => self.process_batch(batch),

@@ -323,17 +323,12 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, Default)]
 pub enum Order {
     None = 0,
+    #[default]
     Unordered = 1,
     Ordered = 2,
-}
-
-impl Default for Order {
-    fn default() -> Self {
-        Order::Unordered
-    }
 }
 
 impl Display for Order {

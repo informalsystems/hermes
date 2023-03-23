@@ -1,5 +1,6 @@
 use alloc::collections::BTreeMap as HashMap;
 use core::convert::TryFrom;
+use ibc_relayer_types::applications::ics29_fee::events::DistributionType;
 
 use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
 
@@ -11,6 +12,7 @@ use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::cosmos::types::events::channel::RawObject;
 use crate::event::monitor::queries;
+use crate::telemetry;
 
 use super::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
@@ -179,6 +181,19 @@ pub fn get_all_events(
                     {
                         tracing::trace!("extracted cross chain queries {}", ibc_event);
                         events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+                    } else if query == queries::ibc_channel().to_string()
+                        && event_is_type_incentivized(&ibc_event)
+                    {
+                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+                    } else if query == queries::ibc_channel().to_string()
+                        && event_is_type_distribute_fee(&ibc_event)
+                    {
+                        if let IbcEvent::DistributeFeePacket(dist) = ibc_event {
+                            // Only record rewarded fees
+                            if let DistributionType::Reward = dist.distribution_type {
+                                telemetry!(fees_amount, chain_id, &dist.receiver, dist.fee);
+                            }
+                        }
                     }
                 }
             }
@@ -229,6 +244,14 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
 
 fn event_is_type_cross_chain_query(ev: &IbcEvent) -> bool {
     matches!(ev, IbcEvent::CrossChainQueryPacket(_))
+}
+
+fn event_is_type_incentivized(ev: &IbcEvent) -> bool {
+    matches!(ev, IbcEvent::IncentivizedPacket(_))
+}
+
+fn event_is_type_distribute_fee(ev: &IbcEvent) -> bool {
+    matches!(ev, IbcEvent::DistributeFeePacket(_))
 }
 
 fn extract_block_events(

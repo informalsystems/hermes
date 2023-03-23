@@ -15,7 +15,7 @@ use http::Uri;
 
 use ibc_relayer::{
     config::{
-        filter::{ChannelFilters, FilterPattern, PacketFilter},
+        filter::{FilterPattern, PacketFilter},
         gas_multiplier::GasMultiplier,
         types::{MaxMsgNum, MaxTxSize, Memo},
         {default, AddressType, ChainConfig, GasPrice},
@@ -57,7 +57,7 @@ fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFi
 
     packet_filters
         .into_iter()
-        .map(|(k, v)| (k, PacketFilter::Allow(ChannelFilters::new(v))))
+        .map(|(k, v)| (k, PacketFilter::allow(v)))
         .collect()
 }
 
@@ -100,12 +100,16 @@ where
 
     let rpc_data = RpcQuerier::query_healthy(chain_name.to_string(), rpc_endpoints).await?;
     let grpc_address = GrpcQuerier::query_healthy(chain_name.to_string(), grpc_endpoints).await?;
+    let websocket_address =
+        rpc_data.websocket.clone().try_into().map_err(|e| {
+            RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
+        })?;
 
     Ok(ChainConfig {
         id: chain_data.chain_id,
         r#type: default::chain_type(),
         rpc_addr: rpc_data.rpc_address,
-        websocket_addr: rpc_data.websocket,
+        websocket_addr: websocket_address,
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         account_prefix: chain_data.bech32_prefix,
@@ -122,6 +126,7 @@ where
         clock_drift: default::clock_drift(),
         max_block_time: default::max_block_time(),
         trusting_period: None,
+        unbonding_period: None,
         memo_prefix: Memo::default(),
         proof_specs: Default::default(),
         trust_threshold: TrustThreshold::default(),
@@ -241,6 +246,7 @@ pub async fn get_configs(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ibc_relayer::config::filter::ChannelPolicy;
     use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
     use std::str::FromStr;
 
@@ -248,8 +254,8 @@ mod tests {
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
         let configs = get_configs(test_chains, None).await?;
         for config in configs {
-            match config.packet_filter {
-                PacketFilter::AllowAll => {}
+            match config.packet_filter.channel_policy {
+                ChannelPolicy::AllowAll => {}
                 _ => panic!("PacketFilter not allowed"),
             }
         }
@@ -269,8 +275,8 @@ mod tests {
         let configs = get_configs(test_chains, None).await?;
 
         for config in configs {
-            match config.packet_filter {
-                PacketFilter::Allow(channel_filter) => {
+            match config.packet_filter.channel_policy {
+                ChannelPolicy::Allow(channel_filter) => {
                     if config.id.as_str().contains("cosmoshub") {
                         assert!(channel_filter.is_exact());
 

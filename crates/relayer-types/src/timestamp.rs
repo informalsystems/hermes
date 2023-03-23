@@ -21,14 +21,14 @@ pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 /// a `u64` value and a raw timestamp. In protocol buffer, the timestamp is
 /// represented as a `u64` Unix timestamp in nanoseconds, with 0 representing the absence
 /// of timestamp.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Default, Deserialize, Serialize, PartialOrd, Ord)]
 pub struct Timestamp {
     time: Option<Time>,
 }
 
 // TODO: derive when tendermint::Time supports it:
 // https://github.com/informalsystems/tendermint-rs/pull/1054
-#[allow(clippy::derive_hash_xor_eq)]
+#[allow(clippy::derived_hash_with_manual_eq)]
 impl Hash for Timestamp {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let odt: Option<OffsetDateTime> = self.time.map(Into::into);

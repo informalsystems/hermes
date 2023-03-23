@@ -83,7 +83,8 @@ Now, let's exchange `samoleans` between two chains.
         next_key: null
         total: "0"
         ```
-    The samoleans were transferred to ibc-1 and are visible under the denomination `ibc/C1840...`. 
+    The samoleans were transferred to ibc-1 and are visible under the denomination `ibc/C1840...`.
+    The exact denomination you see might be different, make sure to use the denomination assigned in your case in the following.
 
 - Transfer back these tokens to ibc-0:
     ```shell

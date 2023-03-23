@@ -446,7 +446,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         fields(client = %self)
     )]
     pub fn upgrade(&self, src_upgrade_height: Height) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        let mut msgs = self
+        let msgs = self
             .build_update_client_with_trusted(src_upgrade_height, None)
             .map_err(|_| {
                 ForeignClientError::client_upgrade_no_source(
@@ -459,6 +459,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     ),
                 )
             })?;
+
+        let mut msgs: Vec<Any> = msgs.into_iter().map(Msg::to_any).collect();
 
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
@@ -1064,7 +1066,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             thread::sleep(Duration::from_millis(100));
         }
 
-        self.build_update_client_with_trusted(target_height, trusted_height)
+        let messages = self.build_update_client_with_trusted(target_height, trusted_height)?;
+
+        let encoded_messages = messages.into_iter().map(Msg::to_any).collect();
+
+        Ok(encoded_messages)
     }
 
     #[instrument(
@@ -1077,7 +1083,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         target_height: Height,
         maybe_trusted_height: Option<Height>,
-    ) -> Result<Vec<Any>, ForeignClientError> {
+    ) -> Result<Vec<MsgUpdateClient>, ForeignClientError> {
         // Get the latest client state on destination.
         let (client_state, _) = self.validated_client_state()?;
 
@@ -1151,14 +1157,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 header.height(),
             );
 
-            msgs.push(
-                MsgUpdateClient {
-                    header: header.into(),
-                    client_id: self.id.clone(),
-                    signer: signer.clone(),
-                }
-                .to_any(),
-            );
+            msgs.push(MsgUpdateClient {
+                header: header.into(),
+                client_id: self.id.clone(),
+                signer: signer.clone(),
+            });
         }
 
         debug!(
@@ -1167,14 +1170,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             header.height(),
         );
 
-        msgs.push(
-            MsgUpdateClient {
-                header: header.into(),
-                signer,
-                client_id: self.id.clone(),
-            }
-            .to_any(),
-        );
+        msgs.push(MsgUpdateClient {
+            header: header.into(),
+            signer,
+            client_id: self.id.clone(),
+        });
 
         telemetry!(
             client_updates_submitted,

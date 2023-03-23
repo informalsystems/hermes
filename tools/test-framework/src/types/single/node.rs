@@ -12,6 +12,7 @@ use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use std::sync::{Arc, RwLock};
 use tendermint_rpc::Url;
+use tendermint_rpc::WebSocketClientUrl;
 
 use crate::chain::chain_type::ChainType as TestedChainType;
 use crate::chain::driver::ChainDriver;
@@ -127,7 +128,7 @@ impl FullNode {
             id: self.chain_driver.chain_id.clone(),
             r#type: ChainType::CosmosSdk,
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
-            websocket_addr: Url::from_str(&self.chain_driver.websocket_address())?,
+            websocket_addr: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
             rpc_timeout: Duration::from_secs(10),
             account_prefix: self.chain_driver.account_prefix.clone(),
@@ -149,6 +150,7 @@ impl FullNode {
             max_block_time: Duration::from_secs(30),
             clock_drift: Duration::from_secs(5),
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
+            unbonding_period: None,
             trust_threshold: Default::default(),
             gas_price: config::GasPrice::new(0.001, "stake".to_string()),
             packet_filter: Default::default(),

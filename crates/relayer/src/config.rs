@@ -14,6 +14,7 @@ use core::{
     time::Duration,
 };
 use std::{fs, fs::File, io::Write, path::Path};
+use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
 use serde_derive::{Deserialize, Serialize};
@@ -217,7 +218,10 @@ impl Config {
         channel_id: &ChannelId,
     ) -> bool {
         match self.find_chain(chain_id) {
-            Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
+            Some(chain_config) => chain_config
+                .packet_filter
+                .channel_policy
+                .is_allowed(port_id, channel_id),
             None => false,
         }
     }
@@ -399,15 +403,13 @@ impl Default for RestConfig {
     content = "proto_type",
     deny_unknown_fields
 )]
+#[derive(Default)]
 pub enum AddressType {
+    #[default]
     Cosmos,
-    Ethermint { pk_type: String },
-}
-
-impl Default for AddressType {
-    fn default() -> Self {
-        AddressType::Cosmos
-    }
+    Ethermint {
+        pk_type: String,
+    },
 }
 
 impl Display for AddressType {
@@ -425,9 +427,9 @@ pub struct ChainConfig {
     pub id: ChainId,
     #[serde(default = "default::chain_type")]
     pub r#type: ChainType,
-    pub rpc_addr: tendermint_rpc::Url,
-    pub websocket_addr: tendermint_rpc::Url,
-    pub grpc_addr: tendermint_rpc::Url,
+    pub rpc_addr: Url,
+    pub websocket_addr: WebSocketClientUrl,
+    pub grpc_addr: Url,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
     pub account_prefix: String,
@@ -465,8 +467,20 @@ pub struct ChainConfig {
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
 
+    /// CCV only
+    #[serde(default, with = "humantime_serde")]
+    pub unbonding_period: Option<Duration>,
+
     #[serde(default)]
     pub memo_prefix: Memo,
+
+    // This is an undocumented and hidden config to make the relayer wait for
+    // DeliverTX before sending the next transaction when sending messages in
+    // multiple batches. We will instruct relayer operators to turn this on
+    // in case relaying failed in a chain with priority mempool enabled.
+    // Warning: turning this on may cause degradation in performance.
+    #[serde(default)]
+    pub sequential_batch_tx: bool,
 
     // Note: These last few need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML.
     //       That's because these are all tables and have to come last when serializing.
@@ -477,15 +491,7 @@ pub struct ChainConfig {
     )]
     pub proof_specs: Option<ProofSpecs>,
 
-    // This is an undocumented and hidden config to make the relayer wait for
-    // DeliverTX before sending the next transaction when sending messages in
-    // multiple batches. We will instruct relayer operators to turn this on
-    // in case relaying failed in a chain with priority mempool enabled.
-    // Warning: turning this on may cause degradation in performance.
-    #[serde(default)]
-    pub sequential_batch_tx: bool,
-
-    // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
+    // These last few need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     /// The trust threshold defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
     #[serde(default)]
@@ -545,6 +551,18 @@ mod tests {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests/config/fixtures/relayer_conf_example.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_fee_filter_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_fee_filter.toml"
         );
 
         let config = load(path).expect("could not parse config");

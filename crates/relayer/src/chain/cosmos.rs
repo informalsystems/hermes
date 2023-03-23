@@ -14,8 +14,12 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, trace, warn};
 
-use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
-use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+use ibc_proto::cosmos::{
+    base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
+};
+use ibc_proto::ibc::apps::fee::v1::{
+    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+};
 use ibc_proto::protobuf::Protobuf;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
@@ -47,8 +51,9 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 
 use tendermint::block::Height as TmHeight;
-use tendermint::node::info::TxIndexStatus;
+use tendermint::node::{self, info::TxIndexStatus};
 use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
+use tendermint_rpc::client::CompatMode;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::endpoint::status;
 use tendermint_rpc::{Client, HttpClient, Order};
@@ -67,6 +72,7 @@ use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
 use crate::chain::cosmos::query::consensus_state::query_consensus_state_heights;
 use crate::chain::cosmos::query::custom::cross_chain_query_via_rpc;
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
+use crate::chain::cosmos::query::fee::query_incentivized_packet;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::{
     filter_matching_event, query_packets_from_block, query_packets_from_txs, query_txs,
@@ -130,6 +136,7 @@ pub struct CosmosSdkChain {
     config: ChainConfig,
     tx_config: TxConfig,
     rpc_client: HttpClient,
+    compat_mode: CompatMode,
     grpc_addr: Uri,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
@@ -281,6 +288,7 @@ impl CosmosSdkChain {
         let (mut event_monitor, monitor_tx) = EventMonitor::new(
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
+            self.compat_mode,
             self.rt.clone(),
         )
         .map_err(Error::event_monitor)?;
@@ -387,6 +395,10 @@ impl CosmosSdkChain {
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
+
+        if let Some(unbonding_period) = self.config.unbonding_period {
+            return Ok(unbonding_period);
+        }
 
         let unbonding_time = self.query_staking_params()?.unbonding_time.ok_or_else(|| {
             Error::grpc_response_param("no unbonding time in staking params".to_string())
@@ -542,9 +554,8 @@ impl CosmosSdkChain {
 
         if self.config.sequential_batch_tx {
             sequential_send_batched_messages_and_wait_commit(
+                &self.rpc_client,
                 &self.tx_config,
-                self.config.max_msg_num,
-                self.config.max_tx_size,
                 &key_pair,
                 account,
                 &self.config.memo_prefix,
@@ -553,9 +564,8 @@ impl CosmosSdkChain {
             .await
         } else {
             send_batched_messages_and_wait_commit(
+                &self.rpc_client,
                 &self.tx_config,
-                self.config.max_msg_num,
-                self.config.max_tx_size,
                 &key_pair,
                 account,
                 &self.config.memo_prefix,
@@ -589,9 +599,8 @@ impl CosmosSdkChain {
             get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
         send_batched_messages_and_wait_check_tx(
+            &self.rpc_client,
             &self.tx_config,
-            self.config.max_msg_num,
-            self.config.max_tx_size,
             &key_pair,
             account,
             &self.config.memo_prefix,
@@ -710,10 +719,16 @@ impl ChainEndpoint for CosmosSdkChain {
     type SigningKeyPair = Secp256k1KeyPair;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
-        let rpc_client = HttpClient::new(config.rpc_addr.clone())
+        let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
-        let light_client = rt.block_on(init_light_client(&rpc_client, &config))?;
+        let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
+
+        let compat_mode = CompatMode::from_version(node_info.version)
+            .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+        rpc_client.set_compat_mode(compat_mode);
+
+        let light_client = TmLightClient::from_config(&config, node_info.id)?;
 
         // Initialize key store and load key
         let keybase =
@@ -730,6 +745,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let chain = Self {
             config,
             rpc_client,
+            compat_mode,
             grpc_addr,
             light_client,
             rt,
@@ -1854,6 +1870,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let key_pair = self.key()?;
 
         self.rt.block_on(maybe_register_counterparty_payee(
+            &self.rpc_client,
             &self.tx_config,
             &key_pair,
             &mut self.account,
@@ -1883,6 +1900,15 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok(responses)
     }
+
+    fn query_incentivized_packet(
+        &self,
+        request: QueryIncentivizedPacketRequest,
+    ) -> Result<QueryIncentivizedPacketResponse, Error> {
+        let incentivized_response =
+            self.block_on(query_incentivized_packet(&self.grpc_addr, request))?;
+        Ok(incentivized_response)
+    }
 }
 
 fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
@@ -1895,25 +1921,16 @@ fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
     });
 }
 
-/// Initialize the light client for the given chain using the given HTTP client
-/// to fetch the node identifier to be used as peer id in the light client.
-async fn init_light_client(
+async fn fetch_node_info(
     rpc_client: &HttpClient,
     config: &ChainConfig,
-) -> Result<TmLightClient, Error> {
-    use tendermint_light_client_verifier::types::PeerId;
-
-    crate::time!("init_light_client");
-
-    let peer_id: PeerId = rpc_client
+) -> Result<node::Info, Error> {
+    crate::time!("fetch_node_info");
+    rpc_client
         .status()
         .await
-        .map(|s| s.node_info.id)
-        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
-
-    let light_client = TmLightClient::from_config(config, peer_id)?;
-
-    Ok(light_client)
+        .map(|s| s.node_info)
+        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))
 }
 
 /// Returns the suffix counter for a CosmosSDK client id.
@@ -1953,10 +1970,6 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         )
     })?;
 
-    if chain.historical_entries()? == 0 {
-        return Err(Error::no_historical_entries(chain_id.clone()));
-    }
-
     let status = chain.chain_status()?;
 
     if status.node_info.other.tx_index != TxIndexStatus::On {
@@ -1974,23 +1987,35 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
     let relayer_gas_price = &chain.config.gas_price;
     let node_min_gas_prices = chain.min_gas_price()?;
-    let mut found_matching_denom = false;
 
-    for price in node_min_gas_prices {
-        match relayer_gas_price.partial_cmp(&price) {
-            Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
-            Some(_) => {
-                found_matching_denom = true;
-                break;
+    if !node_min_gas_prices.is_empty() {
+        let mut found_matching_denom = false;
+
+        for price in node_min_gas_prices {
+            match relayer_gas_price.partial_cmp(&price) {
+                Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
+                Some(_) => {
+                    found_matching_denom = true;
+                    break;
+                }
+                None => continue,
             }
-            None => continue,
         }
-    }
 
-    if !found_matching_denom {
+        if !found_matching_denom {
+            warn!(
+                "Chain '{}' has no minimum gas price of denomination '{}' 
+                that is strictly less than the `gas_price` specified for
+                that chain in the Hermes configuration.
+                This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
+                chain_id, relayer_gas_price.denom
+            );
+        }
+    } else {
         warn!(
             "Chain '{}' has no minimum gas price value configured for denomination '{}'. \
-            This is usually a sign of misconfiguration, please check your config.toml",
+            This is usually a sign of misconfiguration, please check your chain and 
+            relayer configurations",
             chain_id, relayer_gas_price.denom
         );
     }
@@ -2003,6 +2028,43 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             grpc_address,
             diagnostic.to_string(),
         ));
+    }
+
+    let unbonding_period = chain
+        .query_staking_params()
+        .map(|params| params.unbonding_time);
+
+    match unbonding_period {
+        Ok(Some(unbonding_period)) if chain.config.unbonding_period.is_some() => {
+            warn!(
+                "Chain '{}' has an unbonding period configured in the config.toml, \
+                but this is not required as this information can be fetched from the staking parameters. \
+                Please remove the `unbonding_period` setting from the chain configuration. \
+                Unbonding period in configuration: {:?}, unbonding period in staking parameters: {:?}",
+                chain_id, chain.config.unbonding_period.unwrap(), unbonding_period
+            );
+        }
+        Ok(None) if chain.config.unbonding_period.is_none() => {
+            warn!(
+                "Hermes was unable to fetch the unbonding period from the staking parameters for chain '{}'. \
+                If this is an ICS customer chain, please add the `unbonding_period` setting \
+                to the chain configuration.",
+                chain_id,
+            );
+        }
+        Err(e) if chain.config.unbonding_period.is_none() => {
+            warn!(
+                "Hermes was unable to fetch the unbonding period from the staking parameters for chain '{}'. \
+                If this is an ICS customer chain, please add the `unbonding_period` setting \
+                to the chain configuration. Otherwise, inspect the following error for more information: {}",
+                chain_id, e
+            );
+        }
+        _ => (),
+    }
+
+    if chain.historical_entries()? == 0 {
+        return Err(Error::no_historical_entries(chain_id.clone()));
     }
 
     Ok(())
