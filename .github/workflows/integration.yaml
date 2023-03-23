@@ -45,20 +45,11 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia6
-            command: gaiad
-            account_prefix: cosmos
-          - package: gaia7
-            command: gaiad
-            account_prefix: cosmos
           - package: gaia8
             command: gaiad
             account_prefix: cosmos
-          - package: ibc-go-v2-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: ibc-go-v3-simapp
-            command: simd
+          - package: gaia9
+            command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v4-simapp
             command: simd
@@ -81,6 +72,9 @@ jobs:
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
+          - package: stride
+            command: strided
+            account_prefix: stride
 
     steps:
       - uses: actions/checkout@v2
@@ -234,6 +228,9 @@ jobs:
       matrix:
         chain:
           - package: gaia8
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia9
             command: gaiad
             account_prefix: cosmos
     steps:

@@ -58,20 +58,11 @@ jobs:
       fail-fast: false
       matrix:
         first-package:
-          - package: gaia6
-            chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: gaia7
-            chain_command_path: gaiad
-            account_prefix: cosmos
           - package: gaia8
             chain_command_path: gaiad
             account_prefix: cosmos
-          - package: ibc-go-v2-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v3-simapp
-            chain_command_path: simd
+          - package: gaia9
+            chain_command_path: gaiad
             account_prefix: cosmos
           - package: ibc-go-v4-simapp
             chain_command_path: simd
@@ -94,21 +85,15 @@ jobs:
           - package: osmosis
             chain_command_path: osmosisd
             account_prefix: osmo
+          - package: stride
+            command: strided
+            account_prefix: stride
         second-package:
-          - package: gaia6
-            chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: gaia7
-            chain_command_path: gaiad
-            account_prefix: cosmos
           - package: gaia8
             chain_command_path: gaiad
             account_prefix: cosmos
-          - package: ibc-go-v2-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v3-simapp
-            chain_command_path: simd
+          - package: gaia9
+            chain_command_path: gaiad
             account_prefix: cosmos
           - package: ibc-go-v4-simapp
             chain_command_path: simd
@@ -128,6 +113,9 @@ jobs:
           - package: osmosis
             chain_command_path: osmosisd
             account_prefix: osmo
+          - package: stride
+            command: strided
+            account_prefix: stride
 
     steps:
       - uses: actions/checkout@v2
