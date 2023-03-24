@@ -409,7 +409,7 @@ impl Runnable for QueryClientConnectionsCmd {
 mod tests {
     use super::{
         QueryClientConnectionsCmd, QueryClientConsensusCmd, QueryClientHeaderCmd,
-        QueryClientStateCmd,
+        QueryClientStateCmd, QueryClientStatusCmd,
     };
 
     use std::str::FromStr;
@@ -664,5 +664,32 @@ mod tests {
     #[test]
     fn test_query_client_state_no_chain() {
         assert!(QueryClientStateCmd::try_parse_from(["test", "--client", "client_id"]).is_err())
+    }
+
+    #[test]
+    fn test_query_client_status_required_only() {
+        assert_eq!(
+            QueryClientStatusCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+            },
+            QueryClientStatusCmd::parse_from([
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_client_status_no_chain() {
+        assert!(QueryClientStatusCmd::try_parse_from(["test", "--client", "client_id"]).is_err())
+    }
+
+    #[test]
+    fn test_query_client_status_no_client() {
+        assert!(QueryClientStatusCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err())
     }
 }
