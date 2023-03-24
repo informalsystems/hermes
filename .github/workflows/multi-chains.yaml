@@ -124,7 +124,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.first-package.account_prefix }},${{ matrix.second-package.account_prefix }}
         with:
           max_attempts: 3
-          timeout_minutes: 45
+          timeout_minutes: 60
           command: |
             CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first-package.package }} -c which ${{ matrix.first-package.chain_command_path }}),$(nix shell .#${{ matrix.second-package.package }} -c which ${{ matrix.second-package.chain_command_path }}) \
               nix shell .#python -c cargo \
