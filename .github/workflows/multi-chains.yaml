@@ -74,7 +74,7 @@ jobs:
             chain_command_path: osmosisd
             account_prefix: osmo
           - package: stride
-            command: strided
+            chain_command_path: strided
             account_prefix: stride
         second-package:
           - package: gaia9
@@ -93,7 +93,7 @@ jobs:
             chain_command_path: osmosisd
             account_prefix: osmo
           - package: stride
-            command: strided
+            chain_command_path: strided
             account_prefix: stride
 
     steps:
