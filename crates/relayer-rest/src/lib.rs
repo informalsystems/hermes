@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate rouille;
-
 mod config;
 pub use config::Config;
 

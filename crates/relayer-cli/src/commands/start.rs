@@ -138,21 +138,33 @@ fn spawn_telemetry_server(config: &Config) -> Result<(), Box<dyn Error + Send + 
     let _span = tracing::error_span!("telemetry").entered();
 
     let state = ibc_telemetry::global();
-
     let telemetry = config.telemetry.clone();
+
     if telemetry.enabled {
-        match ibc_telemetry::spawn((telemetry.host, telemetry.port), state.clone()) {
-            Ok((addr, _)) => {
-                info!(
-                    "telemetry service running, exposing metrics at http://{}/metrics",
-                    addr
-                );
-            }
-            Err(e) => {
-                error!("telemetry service failed to start: {}", e);
-                return Err(e);
-            }
-        }
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+
+            rt.block_on(async move {
+                let result =
+                    ibc_telemetry::spawn((telemetry.host, telemetry.port), state.clone()).await;
+
+                match result {
+                    Ok((addr, handle)) => {
+                        info!(
+                            "telemetry service running, exposing metrics at http://{addr}/metrics"
+                        );
+
+                        if let Err(e) = handle.await {
+                            error!("telemetry service crashed with errror: {e}");
+                        }
+                    }
+                    Err(e) => error!("telemetry service failed to start: {e}"),
+                }
+            });
+        });
     }
 
     Ok(())

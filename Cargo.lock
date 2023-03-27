@@ -214,7 +214,11 @@ dependencies = [
  "pin-project-lite",
  "rustversion",
  "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "serde_urlencoded",
  "sync_wrapper",
+ "tokio",
  "tower",
  "tower-layer",
  "tower-service",
@@ -1935,6 +1939,7 @@ dependencies = [
 name = "ibc-telemetry"
 version = "0.23.0"
 dependencies = [
+ "axum",
  "dashmap",
  "ibc-relayer-types",
  "moka",
@@ -1942,10 +1947,10 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-prometheus",
  "prometheus",
- "rouille",
  "serde",
  "serde_json",
  "tendermint",
+ "tokio",
 ]
 
 [[package]]
@@ -3580,6 +3585,15 @@ checksum = "1c533a59c9d8a93a09c6ab31f0fd5e5f4dd1b8fc9434804029839884765d04ea"
 dependencies = [
  "itoa",
  "ryu",
+ "serde",
+]
+
+[[package]]
+name = "serde_path_to_error"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7f05c1d5476066defcdfacce1f52fc3cae3af1d3089727100c02ae92e5abbe0"
+dependencies = [
  "serde",
 ]
 

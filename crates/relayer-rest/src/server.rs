@@ -1,3 +1,4 @@
+use rouille::router;
 use std::thread;
 
 use crossbeam_channel as channel;
