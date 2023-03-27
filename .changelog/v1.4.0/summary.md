@@ -1,3 +1,5 @@
+*March 27th, 2023*
+
 Hermes v1.4.0 brings compatibility with chains based on Tendermint/CometBFT 0.37,
 while retaining compatiblity with Tendermint/CometBFT 0.34. This is transparent
 and does not require any additional configuration.
@@ -20,3 +22,14 @@ This release includes a new `query client status` CLI to quickly check whether a
 [fee-guide]: https://hermes.informal.systems/documentation/configuration/filter-incentivized.html
 [fee-metrics]: https://hermes.informal.systems/documentation/telemetry/operators.html#am-i-getting-fee-rewards
 
+### Crates versions
+
+| Crate                                                               | Version |
+| ------------------------------------------------------------------- | ------- |
+| [`ibc-relayer-cli`](https://crates.io/crates/ibc-relayer-cli)       | v1.4.0  |
+| [`ibc-relayer`](https://crates.io/crates/ibc-relayer)               | v0.23.0 |
+| [`ibc-relayer-types`](https://crates.io/crates/ibc-relayer-types)   | v0.23.0 |
+| [`ibc-relayer-rest`](https://crates.io/crates/ibc-relayer-rest)     | v0.23.0 |
+| [`ibc-telemetry`](https://crates.io/crates/ibc-telemetry)           | v0.23.0 |
+| [`ibc-chain-registry`](https://crates.io/crates/ibc-chain-registry) | v0.23.0 |
+| [`ibc-test-framework`](https://crates.io/crates/ibc-test-framework) | v0.23.0 |
