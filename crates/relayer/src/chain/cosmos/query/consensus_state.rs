@@ -58,7 +58,7 @@ pub async fn query_consensus_state_heights(
 
     let response = grpc_response.map_err(Error::grpc_status)?.into_inner();
 
-    let heights: Vec<_> = response
+    let mut heights: Vec<_> = response
         .consensus_state_heights
         .into_iter()
         .filter_map(|h| {
@@ -73,6 +73,8 @@ pub async fn query_consensus_state_heights(
                 .ok()
         })
         .collect();
+
+    heights.sort_unstable();
 
     Ok(heights)
 }
@@ -96,7 +98,7 @@ pub async fn query_consensus_states(
         .map_err(Error::grpc_status)?
         .into_inner();
 
-    let consensus_states: Vec<_> = response
+    let mut consensus_states: Vec<_> = response
         .consensus_states
         .into_iter()
         .filter_map(|cs| {
@@ -111,6 +113,8 @@ pub async fn query_consensus_states(
                 .ok()
         })
         .collect();
+
+    consensus_states.sort_unstable_by_key(|cs| cs.height);
 
     Ok(consensus_states)
 }
