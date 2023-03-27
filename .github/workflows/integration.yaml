@@ -45,20 +45,11 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia6
-            command: gaiad
-            account_prefix: cosmos
-          - package: gaia7
-            command: gaiad
-            account_prefix: cosmos
           - package: gaia8
             command: gaiad
             account_prefix: cosmos
-          - package: ibc-go-v2-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: ibc-go-v3-simapp
-            command: simd
+          - package: gaia9
+            command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v4-simapp
             command: simd
@@ -81,6 +72,9 @@ jobs:
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
+          - package: stride
+            command: strided
+            account_prefix: stride
 
     steps:
       - uses: actions/checkout@v2
@@ -102,20 +96,16 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - uses: nick-fields/retry@v2
-        env:
+      - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        with:
-          max_attempts: 3
-          timeout_minutes: 45
-          command: |
-            nix shell .#python .#${{ matrix.chain.package }} -c cargo \
-              test -p ibc-integration-test --no-fail-fast -- \
-              --nocapture --test-threads=2
+        run: |
+          nix shell .#python .#${{ matrix.chain.package }} -c cargo \
+            test -p ibc-integration-test --no-fail-fast -- \
+            --nocapture --test-threads=2
 
   ordered-channel-test:
     runs-on: ubuntu-20.04
@@ -234,6 +224,9 @@ jobs:
       matrix:
         chain:
           - package: gaia8
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia9
             command: gaiad
             account_prefix: cosmos
     steps:
