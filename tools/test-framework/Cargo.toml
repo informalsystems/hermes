@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-test-framework"
-version    = "0.22.0"
+version    = "0.23.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -14,8 +14,8 @@ description = """
 """
 
 [dependencies]
-ibc-relayer-types = { version = "=0.22.0",     path = "../../crates/relayer-types" }
-ibc-relayer       = { version = "=0.22.0",     path = "../../crates/relayer" }
+ibc-relayer-types = { version = "=0.23.0",     path = "../../crates/relayer-types" }
+ibc-relayer       = { version = "=0.23.0",     path = "../../crates/relayer" }
 ibc-relayer-cli   = { version = "=1.4.0",      path = "../../crates/relayer-cli" }
 ibc-proto         = { version = "0.28.0" }
 tendermint-rpc    = { version = "0.30.0", features = ["http-client", "websocket-client"] }
