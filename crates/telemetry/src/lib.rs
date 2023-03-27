@@ -24,7 +24,7 @@ pub fn global() -> &'static Arc<TelemetryState> {
 
 pub type BoxError = Box<dyn Error + Send + Sync>;
 
-pub async fn spawn<A>(
+pub fn spawn<A>(
     addr: A,
     state: Arc<TelemetryState>,
 ) -> Result<(SocketAddr, JoinHandle<Result<(), BoxError>>), BoxError>

@@ -104,13 +104,39 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
 #[cfg(feature = "rest-server")]
 fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
     let _span = tracing::error_span!("rest").entered();
-
     let rest = config.rest.clone();
 
     if rest.enabled {
-        let rest_config = ibc_relayer_rest::Config::new(rest.host, rest.port);
-        let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
-        Some(rest_receiver)
+        let (tx, rx) = crossbeam_channel::unbounded();
+
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+
+            rt.block_on(async move {
+                let result = ibc_relayer_rest::spawn((rest.host.as_str(), rest.port), tx);
+
+                match result {
+                    Ok(handle) => {
+                        info!(
+                            "REST service running, exposing REST API at http://{}:{}",
+                            rest.host, rest.port
+                        );
+
+                        if let Err(e) = handle.await {
+                            error!("REST service crashed with errror: {e}");
+                        }
+                    }
+                    Err(e) => {
+                        error!("REST service failed to start: {e}");
+                    }
+                }
+            });
+        });
+
+        Some(rx)
     } else {
         info!("REST server disabled");
         None
@@ -148,8 +174,7 @@ fn spawn_telemetry_server(config: &Config) -> Result<(), Box<dyn Error + Send + 
                 .unwrap();
 
             rt.block_on(async move {
-                let result =
-                    ibc_telemetry::spawn((telemetry.host, telemetry.port), state.clone()).await;
+                let result = ibc_telemetry::spawn((telemetry.host, telemetry.port), state.clone());
 
                 match result {
                     Ok((addr, handle)) => {
