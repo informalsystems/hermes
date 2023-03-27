@@ -2,6 +2,7 @@
    Helper functions for bootstrapping a single full node.
 */
 use core::time::Duration;
+use eyre::eyre;
 use std::sync::{Arc, RwLock};
 use toml;
 use tracing::info;
@@ -58,6 +59,10 @@ pub fn bootstrap_single_node(
     let initial_amount = random_u128_range(1_000_000_000_000_000_000, 2_000_000_000_000_000_000);
 
     let initial_stake = Token::new(stake_denom, initial_amount);
+    let half_initial_stake = initial_stake
+        .clone()
+        .checked_sub(initial_amount / 2)
+        .ok_or(Error::generic(eyre!("error halfing initial stake amount")))?;
     let initial_coin = Token::new(denom.clone(), initial_amount);
 
     let chain_driver = builder.new_chain(prefix, use_random_id, chain_number)?;
@@ -73,7 +78,8 @@ pub fn bootstrap_single_node(
 
     chain_driver.add_genesis_account(&validator.address, &[&initial_stake])?;
 
-    chain_driver.add_genesis_validator(&validator.id, &initial_stake)?;
+    // Only half the amount is used for genesis validator as some stake are required to vote on upgrade chain
+    chain_driver.add_genesis_validator(&validator.id, &half_initial_stake)?;
 
     chain_driver.add_genesis_account(&user1.address, &[&initial_stake, &initial_coin])?;
 
