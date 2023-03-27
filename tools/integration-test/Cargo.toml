@@ -1,17 +1,16 @@
 [package]
-name       = "ibc-integration-test"
-version    = "0.23.0"
-edition    = "2021"
-license    = "Apache-2.0"
-readme     = "README.md"
-keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-homepage   = "https://hermes.informal.systems/"
-repository = "https://github.com/informalsystems/hermes"
-authors    = ["Informal Systems <hello@informal.systems>"]
+name         = "ibc-integration-test"
+version      = "0.23.0"
+edition      = "2021"
 rust-version = "1.65"
-description = """
-  Integration tests for IBC Relayer
-"""
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+homepage     = "https://hermes.informal.systems/"
+repository   = "https://github.com/informalsystems/hermes"
+authors      = ["Informal Systems <hello@informal.systems>"]
+description  = "Integration tests for Hermes"
+publish      = false
 
 [dependencies]
 ibc-relayer-types  = { path = "../../crates/relayer-types" }
