@@ -71,10 +71,12 @@
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -82,7 +84,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Hermes v1.3.0</li><li class="spacer"></li><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quick-start/index.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="quick-start/pre-requisites.html"><strong aria-hidden="true">2.1.</strong> Prerequisites</a></li><li class="chapter-item expanded "><a href="quick-start/installation.html"><strong aria-hidden="true">2.2.</strong> Installation</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials/index.html"><strong aria-hidden="true">3.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/pre-requisites/index.html"><strong aria-hidden="true">3.1.</strong> Prerequisites for local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/pre-requisites/gaia.html"><strong aria-hidden="true">3.1.1.</strong> Install Gaia</a></li><li class="chapter-item expanded "><a href="tutorials/pre-requisites/gaiad-manager.html"><strong aria-hidden="true">3.1.2.</strong> Install Gaiad Manager</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials/local-chains/index.html"><strong aria-hidden="true">3.2.</strong> Local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/local-chains/start-local-chains.html"><strong aria-hidden="true">3.2.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="tutorials/local-chains/add-a-new-relay-path.html"><strong aria-hidden="true">3.2.2.</strong> Add a new relay path</a></li><li class="chapter-item expanded "><a href="tutorials/local-chains/start-relaying.html"><strong aria-hidden="true">3.2.3.</strong> Start relaying</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials/more-chains/index.html"><strong aria-hidden="true">3.3.</strong> More Local Chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/more-chains/start-local-chains.html"><strong aria-hidden="true">3.3.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="tutorials/more-chains/build-the-topology.html"><strong aria-hidden="true">3.3.2.</strong> Build the topology</a></li><li class="chapter-item expanded "><a href="tutorials/more-chains/start-relaying.html"><strong aria-hidden="true">3.3.3.</strong> Start relaying</a></li><li class="chapter-item expanded "><a href="tutorials/more-chains/concurrent-instances.html"><strong aria-hidden="true">3.3.4.</strong> Add new instances of Hermes</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials/production/index.html"><strong aria-hidden="true">3.4.</strong> Relaying in production</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/production/setup-grafana.html"><strong aria-hidden="true">3.4.1.</strong> Set up the monitoring platform</a></li><li class="chapter-item expanded "><a href="tutorials/production/setup-hermes.html"><strong aria-hidden="true">3.4.2.</strong> Set up Hermes</a></li><li class="chapter-item expanded "><a href="tutorials/production/start-relaying.html"><strong aria-hidden="true">3.4.3.</strong> Start relaying</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="advanced/index.html"><strong aria-hidden="true">4.</strong> Advanced</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="advanced/features.html"><strong aria-hidden="true">4.1.</strong> Features</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/index.html"><strong aria-hidden="true">4.2.</strong> Troubleshooting</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="advanced/troubleshooting/help-command.html"><strong aria-hidden="true">4.2.1.</strong> Help Command</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/profiling.html"><strong aria-hidden="true">4.2.2.</strong> Profiling</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/log-level.html"><strong aria-hidden="true">4.2.3.</strong> Log level</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/patch-gaia.html"><strong aria-hidden="true">4.2.4.</strong> Patch Gaia</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/inspect.html"><strong aria-hidden="true">4.2.5.</strong> Inspecting the relayer's state</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/cross-comp-config.html"><strong aria-hidden="true">4.2.6.</strong> Cross Stack Misconfiguration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="documentation/index.html"><strong aria-hidden="true">5.</strong> Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/configuration/index.html"><strong aria-hidden="true">5.1.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/configuration/configure-hermes.html"><strong aria-hidden="true">5.1.1.</strong> Configure Hermes</a></li><li class="chapter-item expanded "><a href="documentation/configuration/description.html"><strong aria-hidden="true">5.1.2.</strong> Description of the parameters</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/telemetry/index.html"><strong aria-hidden="true">5.2.</strong> Telemetry</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/telemetry/operators.html"><strong aria-hidden="true">5.2.1.</strong> Operators guide</a></li><li class="chapter-item expanded "><a href="documentation/telemetry/integration.html"><strong aria-hidden="true">5.2.2.</strong> Integration</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/rest-api.html"><strong aria-hidden="true">5.3.</strong> REST API</a></li><li class="chapter-item expanded "><a href="documentation/commands/index.html"><strong aria-hidden="true">5.4.</strong> Commands Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/global.html"><strong aria-hidden="true">5.4.1.</strong> Global options and JSON output</a></li><li class="chapter-item expanded "><a href="documentation/commands/keys/index.html"><strong aria-hidden="true">5.4.2.</strong> Keys</a></li><li class="chapter-item expanded "><a href="documentation/commands/config.html"><strong aria-hidden="true">5.4.3.</strong> Config</a></li><li class="chapter-item expanded "><a href="documentation/commands/path-setup/index.html"><strong aria-hidden="true">5.4.4.</strong> Path setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/path-setup/clients.html"><strong aria-hidden="true">5.4.4.1.</strong> Clients</a></li><li class="chapter-item expanded "><a href="documentation/commands/path-setup/connections.html"><strong aria-hidden="true">5.4.4.2.</strong> Connections</a></li><li class="chapter-item expanded "><a href="documentation/commands/path-setup/channels.html"><strong aria-hidden="true">5.4.4.3.</strong> Channels</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/commands/relaying/index.html"><strong aria-hidden="true">5.4.5.</strong> Relaying</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/relaying/packets.html"><strong aria-hidden="true">5.4.5.1.</strong> Packet Messages</a></li><li class="chapter-item expanded "><a href="documentation/commands/relaying/handshakes.html"><strong aria-hidden="true">5.4.5.2.</strong> Handshake Messages</a></li><li class="chapter-item expanded "><a href="documentation/commands/relaying/clear.html"><strong aria-hidden="true">5.4.5.3.</strong> Clearing Packets</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/commands/listen/index.html"><strong aria-hidden="true">5.4.6.</strong> Listen mode</a></li><li class="chapter-item expanded "><a href="documentation/commands/upgrade/index.html"><strong aria-hidden="true">5.4.7.</strong> Client upgrade</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/upgrade/test.html"><strong aria-hidden="true">5.4.7.1.</strong> Testing client upgrade</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/forwarding/index.html"><strong aria-hidden="true">5.4.8.</strong> Packet Forwarding</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/forwarding/test.html"><strong aria-hidden="true">5.4.8.1.</strong> Testing packet forwarding</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/commands/misbehaviour/index.html"><strong aria-hidden="true">5.4.9.</strong> Misbehaviour</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/index.html"><strong aria-hidden="true">5.4.10.</strong> Queries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/queries/client.html"><strong aria-hidden="true">5.4.10.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/connection.html"><strong aria-hidden="true">5.4.10.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/channel.html"><strong aria-hidden="true">5.4.10.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/packet.html"><strong aria-hidden="true">5.4.10.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/tx.html"><strong aria-hidden="true">5.4.10.5.</strong> Tx</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/transfer.html"><strong aria-hidden="true">5.4.10.6.</strong> Transfer</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/commands/tx/index.html"><strong aria-hidden="true">5.4.11.</strong> Transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/tx/connection.html"><strong aria-hidden="true">5.4.11.1.</strong> Connection</a></li><li class="chapter-item expanded "><a href="documentation/commands/tx/channel-open.html"><strong aria-hidden="true">5.4.11.2.</strong> Channel Open</a></li><li class="chapter-item expanded "><a href="documentation/commands/tx/channel-close.html"><strong aria-hidden="true">5.4.11.3.</strong> Channel Close</a></li><li class="chapter-item expanded "><a href="documentation/commands/tx/packet.html"><strong aria-hidden="true">5.4.11.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="documentation/commands/tx/upgrade.html"><strong aria-hidden="true">5.4.11.5.</strong> Upgrade</a></li></ol></li></ol></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">6.</strong> Glossary</a></li><li class="spacer"></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Hermes v1.4.0</li><li class="spacer"></li><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quick-start/index.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="quick-start/pre-requisites.html"><strong aria-hidden="true">2.1.</strong> Prerequisites</a></li><li class="chapter-item expanded "><a href="quick-start/installation.html"><strong aria-hidden="true">2.2.</strong> Installation</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials/index.html"><strong aria-hidden="true">3.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/pre-requisites/index.html"><strong aria-hidden="true">3.1.</strong> Prerequisites for local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/pre-requisites/gaia.html"><strong aria-hidden="true">3.1.1.</strong> Install Gaia</a></li><li class="chapter-item expanded "><a href="tutorials/pre-requisites/gaiad-manager.html"><strong aria-hidden="true">3.1.2.</strong> Install Gaiad Manager</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials/local-chains/index.html"><strong aria-hidden="true">3.2.</strong> Local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/local-chains/start-local-chains.html"><strong aria-hidden="true">3.2.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="tutorials/local-chains/add-a-new-relay-path.html"><strong aria-hidden="true">3.2.2.</strong> Add a new relay path</a></li><li class="chapter-item expanded "><a href="tutorials/local-chains/start-relaying.html"><strong aria-hidden="true">3.2.3.</strong> Start relaying</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials/more-chains/index.html"><strong aria-hidden="true">3.3.</strong> More Local Chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/more-chains/start-local-chains.html"><strong aria-hidden="true">3.3.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="tutorials/more-chains/build-the-topology.html"><strong aria-hidden="true">3.3.2.</strong> Build the topology</a></li><li class="chapter-item expanded "><a href="tutorials/more-chains/start-relaying.html"><strong aria-hidden="true">3.3.3.</strong> Start relaying</a></li><li class="chapter-item expanded "><a href="tutorials/more-chains/concurrent-instances.html"><strong aria-hidden="true">3.3.4.</strong> Add new instances of Hermes</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials/production/index.html"><strong aria-hidden="true">3.4.</strong> Relaying in production</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/production/setup-grafana.html"><strong aria-hidden="true">3.4.1.</strong> Set up the monitoring platform</a></li><li class="chapter-item expanded "><a href="tutorials/production/setup-hermes.html"><strong aria-hidden="true">3.4.2.</strong> Set up Hermes</a></li><li class="chapter-item expanded "><a href="tutorials/production/start-relaying.html"><strong aria-hidden="true">3.4.3.</strong> Start relaying</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="advanced/index.html"><strong aria-hidden="true">4.</strong> Advanced</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="advanced/features.html"><strong aria-hidden="true">4.1.</strong> Features</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/index.html"><strong aria-hidden="true">4.2.</strong> Troubleshooting</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="advanced/troubleshooting/help-command.html"><strong aria-hidden="true">4.2.1.</strong> Help Command</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/profiling.html"><strong aria-hidden="true">4.2.2.</strong> Profiling</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/log-level.html"><strong aria-hidden="true">4.2.3.</strong> Log level</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/patch-gaia.html"><strong aria-hidden="true">4.2.4.</strong> Patch Gaia</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/inspect.html"><strong aria-hidden="true">4.2.5.</strong> Inspecting the relayer's state</a></li><li class="chapter-item expanded "><a href="advanced/troubleshooting/cross-comp-config.html"><strong aria-hidden="true">4.2.6.</strong> Cross Stack Misconfiguration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="documentation/index.html"><strong aria-hidden="true">5.</strong> Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/configuration/index.html"><strong aria-hidden="true">5.1.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/configuration/configure-hermes.html"><strong aria-hidden="true">5.1.1.</strong> Configure Hermes</a></li><li class="chapter-item expanded "><a href="documentation/configuration/description.html"><strong aria-hidden="true">5.1.2.</strong> Description of the parameters</a></li><li class="chapter-item expanded "><a href="documentation/configuration/filter-incentivized.html"><strong aria-hidden="true">5.1.3.</strong> Filter incentivized packets</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/telemetry/index.html"><strong aria-hidden="true">5.2.</strong> Telemetry</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/telemetry/operators.html"><strong aria-hidden="true">5.2.1.</strong> Operators guide</a></li><li class="chapter-item expanded "><a href="documentation/telemetry/integration.html"><strong aria-hidden="true">5.2.2.</strong> Integration</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/rest-api.html"><strong aria-hidden="true">5.3.</strong> REST API</a></li><li class="chapter-item expanded "><a href="documentation/commands/index.html"><strong aria-hidden="true">5.4.</strong> Commands Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/global.html"><strong aria-hidden="true">5.4.1.</strong> Global options and JSON output</a></li><li class="chapter-item expanded "><a href="documentation/commands/keys/index.html"><strong aria-hidden="true">5.4.2.</strong> Keys</a></li><li class="chapter-item expanded "><a href="documentation/commands/config.html"><strong aria-hidden="true">5.4.3.</strong> Config</a></li><li class="chapter-item expanded "><a href="documentation/commands/path-setup/index.html"><strong aria-hidden="true">5.4.4.</strong> Path setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/path-setup/clients.html"><strong aria-hidden="true">5.4.4.1.</strong> Clients</a></li><li class="chapter-item expanded "><a href="documentation/commands/path-setup/connections.html"><strong aria-hidden="true">5.4.4.2.</strong> Connections</a></li><li class="chapter-item expanded "><a href="documentation/commands/path-setup/channels.html"><strong aria-hidden="true">5.4.4.3.</strong> Channels</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/commands/relaying/index.html"><strong aria-hidden="true">5.4.5.</strong> Relaying</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/relaying/packets.html"><strong aria-hidden="true">5.4.5.1.</strong> Packet Messages</a></li><li class="chapter-item expanded "><a href="documentation/commands/relaying/handshakes.html"><strong aria-hidden="true">5.4.5.2.</strong> Handshake Messages</a></li><li class="chapter-item expanded "><a href="documentation/commands/relaying/clear.html"><strong aria-hidden="true">5.4.5.3.</strong> Clearing Packets</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/commands/listen/index.html"><strong aria-hidden="true">5.4.6.</strong> Listen mode</a></li><li class="chapter-item expanded "><a href="documentation/commands/upgrade/index.html"><strong aria-hidden="true">5.4.7.</strong> Client upgrade</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/upgrade/test.html"><strong aria-hidden="true">5.4.7.1.</strong> Testing client upgrade</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/forwarding/index.html"><strong aria-hidden="true">5.4.8.</strong> Packet Forwarding</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/forwarding/test.html"><strong aria-hidden="true">5.4.8.1.</strong> Testing packet forwarding</a></li><li class="chapter-item expanded "><a href="documentation/forwarding/legacy_test.html"><strong aria-hidden="true">5.4.8.2.</strong> Testing legacy packet forwarding</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/commands/misbehaviour/index.html"><strong aria-hidden="true">5.4.9.</strong> Misbehaviour</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/index.html"><strong aria-hidden="true">5.4.10.</strong> Queries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/queries/client.html"><strong aria-hidden="true">5.4.10.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/connection.html"><strong aria-hidden="true">5.4.10.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/channel.html"><strong aria-hidden="true">5.4.10.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/packet.html"><strong aria-hidden="true">5.4.10.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/tx.html"><strong aria-hidden="true">5.4.10.5.</strong> Tx</a></li><li class="chapter-item expanded "><a href="documentation/commands/queries/transfer.html"><strong aria-hidden="true">5.4.10.6.</strong> Transfer</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/commands/tx/index.html"><strong aria-hidden="true">5.4.11.</strong> Transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/tx/connection.html"><strong aria-hidden="true">5.4.11.1.</strong> Connection</a></li><li class="chapter-item expanded "><a href="documentation/commands/tx/channel-open.html"><strong aria-hidden="true">5.4.11.2.</strong> Channel Open</a></li><li class="chapter-item expanded "><a href="documentation/commands/tx/channel-close.html"><strong aria-hidden="true">5.4.11.3.</strong> Channel Close</a></li><li class="chapter-item expanded "><a href="documentation/commands/tx/packet.html"><strong aria-hidden="true">5.4.11.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="documentation/commands/tx/upgrade.html"><strong aria-hidden="true">5.4.11.5.</strong> Upgrade</a></li></ol></li><li class="chapter-item expanded "><a href="documentation/commands/fee/index.html"><strong aria-hidden="true">5.4.12.</strong> ICS29 Fee</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="documentation/commands/fee/register-counterparty-payee.html"><strong aria-hidden="true">5.4.12.1.</strong> Register Counterparty Payee</a></li><li class="chapter-item expanded "><a href="documentation/commands/fee/register-payee.html"><strong aria-hidden="true">5.4.12.2.</strong> Register Payee</a></li><li class="chapter-item expanded "><a href="documentation/commands/fee/transfer.html"><strong aria-hidden="true">5.4.12.3.</strong> Transfer</a></li></ol></li></ol></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">6.</strong> Glossary</a></li><li class="spacer"></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -143,7 +145,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="hermes-guide-v130"><a class="header" href="#hermes-guide-v130">Hermes Guide (v1.3.0)</a></h1>
+                        <h1 id="hermes-guide-v140"><a class="header" href="#hermes-guide-v140">Hermes Guide (v1.4.0)</a></h1>
 <h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
 <p>Hermes is an open-source Rust implementation of a relayer for the
 <a href="https://ibc.cosmos.network">Inter-Blockchain Communication protocol</a> (<strong>IBC</strong>) released under the <a href="https://crates.io/crates/ibc-relayer-cli">ibc-relayer-cli</a> crate. It provides a CLI to relay packets between Cosmos SDK chains, exposes <a href="https://prometheus.io/">Prometheus</a> metrics and offers a REST API. </p>
@@ -363,8 +365,8 @@ option is to <a href="quick-start/installation.html#install-by-downloading">down
 <p>Simply head to the GitHub <a href="https://github.com/informalsystems/hermes/releases">Releases</a> page and download the latest
 version of Hermes binary matching your platform:</p>
 <ul>
-<li>macOS: <code>hermes-v1.3.0-x86_64-apple-darwin.tar.gz</code> (or .zip),</li>
-<li>Linux: <code>hermes-v1.3.0-x86_64-unknown-linux-gnu.tar.gz</code> (or .zip).</li>
+<li>macOS: <code>hermes-v1.4.0-x86_64-apple-darwin.tar.gz</code> (or .zip),</li>
+<li>Linux: <code>hermes-v1.4.0-x86_64-unknown-linux-gnu.tar.gz</code> (or .zip).</li>
 </ul>
 <p>The step-by-step instruction below should carry you through the whole process:</p>
 <ol>
@@ -395,7 +397,7 @@ if that is the case.</p>
 <pre><code class="language-shell">hermes version
 </code></pre>
 <p>Which should be:</p>
-<pre><code>hermes v1.3.0
+<pre><code>hermes v1.4.0
 </code></pre>
 <h2 id="install-via-cargo"><a class="header" href="#install-via-cargo">Install via Cargo</a></h2>
 <blockquote>
@@ -420,7 +422,7 @@ For most shells, this can be done by adding the following line to your
 <pre><code class="language-shell">hermes version
 </code></pre>
 <p>Which should be:</p>
-<pre><code>hermes v1.3.0
+<pre><code>hermes v1.4.0
 </code></pre>
 <h2 id="build-from-source"><a class="header" href="#build-from-source">Build from source</a></h2>
 <h3 id="clone-the-repository"><a class="header" href="#clone-the-repository">Clone the repository</a></h3>
@@ -433,8 +435,8 @@ For most shells, this can be done by adding the following line to your
 </code></pre>
 <h3 id="checkout-the-latest-release"><a class="header" href="#checkout-the-latest-release">Checkout the latest release</a></h3>
 <p>Go to the <a href="https://github.com/informalsystems/hermes/releases">ibc-rs releases</a> page to see what is the most recent release.</p>
-<p>Then checkout the release, for example if the most recent release is <code>v1.3.0 </code> then execute the command:</p>
-<pre><code class="language-shell">git checkout v1.3.0
+<p>Then checkout the release, for example if the most recent release is <code>v1.4.0 </code> then execute the command:</p>
+<pre><code class="language-shell">git checkout v1.4.0
 </code></pre>
 <h3 id="building-with-cargo-build"><a class="header" href="#building-with-cargo-build">Building with <code>cargo build</code></a></h3>
 <p>This command builds all the crates from the <a href="https://github.com/informalsystems/hermes"><strong><code>ibc-rs</code></strong></a> repository, namely: the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer"><strong><code>ibc-relayer</code></strong></a> crate, and the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli"><strong><code>ibc-relayer-cli</code></strong></a> crate.
@@ -974,7 +976,7 @@ SUCCESS Added key 'wallet1' (cosmos1dsrj2uqjvtssenkwperuvfkgkg2xvmydvpzswy) on c
     └── pid
 </code></pre>
 <blockquote>
-<p><strong>Tip</strong>: You can use the command <code>tree ./data/ -L 2</code> to view the folder structure above</p>
+<p><strong>Tip</strong>: You can use the command <code>tree $HOME/.gm/ -L 2</code> to view the folder structure above</p>
 </blockquote>
 <h3 id="the-homehermes-directory"><a class="header" href="#the-homehermes-directory">The <code>$HOME/.hermes</code> directory</a></h3>
 <p>By the default <code>hermes</code> expects the configuration file to be in the <strong><code>$HOME/.hermes</code></strong> folder.</p>
@@ -985,10 +987,14 @@ SUCCESS Added key 'wallet1' (cosmos1dsrj2uqjvtssenkwperuvfkgkg2xvmydvpzswy) on c
 └── keys
     ├── ibc-0
     │   └── keyring-test
-    │       └── testkey.json
+    │       └── wallet.json
+    |       └── wallet1.json
+    |       └── wallet2.json
     └── ibc-1
         └── keyring-test
-            └── testkey.json
+            └── wallet.json
+            └── wallet1.json
+            └── wallet2.json
 </code></pre>
 <hr />
 <h2 id="next-steps-4"><a class="header" href="#next-steps-4">Next Steps</a></h2>
@@ -1599,7 +1605,8 @@ total: &quot;0&quot;
 </code></pre>
 </li>
 </ul>
-<p>The samoleans were transferred to ibc-1 and are visible under the denomination <code>ibc/C1840...</code>. </p>
+<p>The samoleans were transferred to ibc-1 and are visible under the denomination <code>ibc/C1840...</code>.
+The exact denomination you see might be different, make sure to use the denomination assigned in your case in the following.</p>
 </li>
 <li>
 <p>Transfer back these tokens to ibc-0:</p>
@@ -2015,7 +2022,7 @@ SUCCESS Added key 'wallet1' (cosmos15jxyjskrx7s8yqpfn3xddlrx7qcq0f8r69mp4g) on c
 
 </code></pre>
 <blockquote>
-<p><strong>Tip</strong>: You can use the command <code>tree ./data/ -L 2</code> to view the folder structure above</p>
+<p><strong>Tip</strong>: You can use the command <code>tree $HOME/.gm/ -L 2</code> to view the folder structure above</p>
 </blockquote>
 <h3 id="the-homehermes-directory-1"><a class="header" href="#the-homehermes-directory-1">The <code>$HOME/.hermes</code> directory</a></h3>
 <p>By default, <code>hermes</code> expects the configuration file to be in the <strong><code>$HOME/.hermes</code></strong> folder.</p>
@@ -2185,7 +2192,7 @@ list = [
 <pre><code>[chains.packet_filter]
 policy = 'allow'
 list = [
-    ['transfer', 'channel-0'],
+    ['transfer', 'channel-1'],
     ['transfer', 'channel-2'],
 ]
 </code></pre>
@@ -2607,7 +2614,8 @@ total: &quot;0&quot;
 </li>
 </ul>
 <p>The tokens were successfully received by <code>ibc-1</code> under the denomination <code>ibc/8F3...</code> while they should be recognized as samoleans. Indeed, <strong>it is impossible to transfer back tokens from a different channel than the one they were received from</strong>.</p>
-<p>Let's forget about these tokens.</p>
+<p>You could get the tokens back to samoleans by transferring them back via the route you sent
+them from, but instead let's forget about these tokens.</p>
 </li>
 </ul>
 <h3 id="the-right-way"><a class="header" href="#the-right-way">The right way</a></h3>
@@ -2652,7 +2660,7 @@ total: &quot;0&quot;
 </code></pre>
 </li>
 </ul>
-<p>The tokens were correctly received by <code>ibc-0</code> under the denomination <code>ibc/C184...</code>. The tokens retrieved the denomination they had before they were transferred to ibc-3.</p>
+<p>The tokens were correctly received by <code>ibc-2</code> under the denomination <code>ibc/C184...</code>. The tokens retrieved the denomination they had before they were transferred to ibc-3.</p>
 </li>
 <li>
 <p>Transfer the <code>ibc/C184...</code> tokens from ibc-2 to ibc-1:</p>
@@ -3368,8 +3376,8 @@ sudo chown $(whoami) /var/log/hermes.log
 <blockquote>
 <p><strong>Cosmos SDK &amp; IBC compatibility:</strong>
 Hermes supports Cosmos SDK chains implementing the <a href="https://github.com/cosmos/ibc">IBC protocol v1</a> protocol specification.
-Cosmos SDK versions <code>0.41.3</code> through <code>0.45.x</code> are officially supported.
-IBC-go versions <code>1.1.*</code> thorough <code>3.*</code> are officially supported.
+Cosmos SDK versions <code>0.44.0</code> through <code>0.47.x</code> are officially supported.
+IBC-go versions <code>1.1.*</code> thorough <code>7.*</code> are officially supported.
 In case Hermes finds an incompatible SDK or IBC-go version, it will output a log warning upon initialization as part of the <code>start</code> command or upon <code>health-check</code> command.</p>
 </blockquote>
 <hr />
@@ -4317,6 +4325,12 @@ pruning-interval = y
 <li>Detailed description of every parameter of Hermes</li>
 </ul>
 </li>
+<li>
+<p><strong><a href="documentation/configuration/./filter-incentivized.html">Filter incentivized packets</a></strong></p>
+<ul>
+<li>Examples on how to configure Hermes in order to filter incentivized packets</li>
+</ul>
+</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="configure-hermes"><a class="header" href="#configure-hermes">Configure Hermes</a></h1>
 <p>In order to run Hermes, you will need to have a configuration file.</p>
@@ -4343,7 +4357,7 @@ You will need to use a text editor to create the file and add content to it.</p>
 <!-- markdown-link-check-disable -->
 <blockquote>
 <p><strong>Note:</strong> As of 0.6.0, the Hermes configuration file is self-documented.
-Please read the configuration file <a href="https://github.com/informalsystems/hermes/blob/v1.3.0/config.toml"><code>config.toml</code></a>
+Please read the configuration file <a href="https://github.com/informalsystems/hermes/blob/v1.4.0/config.toml"><code>config.toml</code></a>
 itself for the most up-to-date documentation of parameters.</p>
 </blockquote>
 <p>By default, Hermes will relay on all channels available between all the configured chains.
@@ -4352,7 +4366,7 @@ and as a destination (to relay packets that others chains have sent).</p>
 <p>For example, if there are only two chains configured, then Hermes will only relay packets between those two,
 i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
 Hermes will ignore all events that pertain to chains which are unknown (i.e. not present in config.toml).</p>
-<p>To restrict relaying on specific channels, or uni-directionally, you can use <a href="https://github.com/informalsystems/hermes/blob/v1.3.0/config.toml#L209-L231">packet filtering policies</a>.</p>
+<p>To restrict relaying on specific channels, or uni-directionally, you can use <a href="https://github.com/informalsystems/hermes/blob/v1.4.0/config.toml#L209-L231">packet filtering policies</a>.</p>
 <!-- markdown-link-check-enabled -->
 <h2 id="adding-private-keys"><a class="header" href="#adding-private-keys">Adding private keys</a></h2>
 <p>For each chain configured you need to add a private key for that chain in order to submit <a href="documentation/configuration/../commands/tx/index.html">transactions</a>,
@@ -4662,6 +4676,12 @@ max_block_time = '30s'
 # Default: 2/3 of the `unbonding period` for Cosmos SDK chains
 trusting_period = '14days'
 
+# Unbonding period for this chain.
+# Required for ICS consumer chains, as they currently do not expose the staking module.
+# WARNING: Only specifiy this for ICS consumer chain, but NOT for any other type of chain.
+# For other chains, this is fetched via gRPC from the staking parameters.
+unbonding_period = '21days'
+
 # Specify the trust threshold for the light client, ie. the minimum fraction of validators
 # which must overlap across two blocks during light client verification.
 # Default: { numerator = '2', denominator = '3' }, ie. 2/3.
@@ -4698,6 +4718,27 @@ memo_prefix = ''
 #   ['transfer', 'channel-0'],
 # ]
 
+# This section specifies the filters for incentivized packet relaying.
+# Default: no filters, will relay all packets even if they
+# are not incentivized.
+#
+# It is possible to specify the channel or use wildcards for the
+# channels.
+# The only fee which can be parametrized is the `recv_fee`.
+#
+# Example configuration of a filter which will only relay incentivized
+# packets, with no regards for channel and amount.
+#
+# [chains.packet_filter.min_fees.'*']
+# recv = [ { amount = 0 } ]
+#
+# Example configuration of a filter which will only relay packets if they are
+# from the channel 'channel-0', and they have a `recv_fee` of at least 20 stake
+# or 10 uatom.
+#
+# [chains.packet_filter.min_fees.'channel-0']
+# recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
+
 # Specify that the transaction fees should be payed from this fee granter's account.
 # Optional. If unspecified (the default behavior), then no fee granter is used, and
 # the account specified in `key_name` will pay the tx fees for all transactions
@@ -4724,6 +4765,33 @@ max_block_time = '30s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="filter-incentivized-packets"><a class="header" href="#filter-incentivized-packets">Filter incentivized packets</a></h1>
+<p>Hermes can be configured in order to only relay packets which are incentivized. This is done by using the <code>[[chain.packet_filter.min_fees]]</code> setting.</p>
+<p>When this filter is configured, Hermes will only relay <code>send_packet</code> events when they  meet the configured requirements. This configuration can be set per channel or for a set of channels using a wildcard expression.</p>
+<blockquote>
+<p><strong>WARNING</strong>: This configuration is experimental. Packet clearing will be disabled for the channels which have a fee filter configured, and some <code>send_packet</code> events might not be relayed if the incentivized event is not in the same batch of events.</p>
+</blockquote>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<p><em><strong>Channel, amount and denom specific</strong></em></p>
+<p>This example will configure Hermes so it will ignore <code>send_packet</code> events from <code>channel-0</code> which do not have at least <code>10 uatoms</code> as the <code>recv_fee</code>.</p>
+<pre><code>[chains.packet_filter.min_fees.'channel-0']
+  recv = [{ amount = 10, denom = 'uatom' }]
+</code></pre>
+<p><em><strong>Amount and denom specific</strong></em></p>
+<p>This example will configure Hermes so it will ignore <code>send_packet</code> events from any channel which do not have at least <code>10 uatoms</code> as the <code>recv_fee</code>.</p>
+<pre><code>[chains.packet_filter.min_fees.'*']
+  recv = [{ amount = 10, denom = 'uatom' }]
+</code></pre>
+<p><em><strong>Amount only</strong></em></p>
+<p>This example will configure Hermes so it will only relay <code>send_packet</code> events sent with incentivized events.</p>
+<pre><code>[chains.packet_filter.min_fees.'*']
+  recv    = [{ amount = 0 }]
+</code></pre>
+<p><em><strong>Multiple filters</strong></em></p>
+<p>This example will configure Hermes so it will ignore <code>send_packet</code> events from any channel which starts with <code>ics</code>, does not have at least <code>10 uatom</code> or <code>20 stake</code> as the <code>recv_fee</code>.</p>
+<pre><code>[chains.packet_filter.min_fees.'ics*']
+  recv    = [{ amount = 10, denom = 'uatom' }, { amount = 20, denom = 'stake' }]
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="telemetry"><a class="header" href="#telemetry">Telemetry</a></h1>
 <p>To gain a better understanding of the status and activity of the relayer,
@@ -4756,6 +4824,7 @@ Metrics are automatically reset if the service is restarted.</li>
 <li>Are Hermes transactions successful (i.e., <em>confirmed</em> and included in the network)?</li>
 <li>What is the overall IBC status of each network?</li>
 <li>How efficient, and how secure is the IBC status on each network?</li>
+<li>Am I getting fee rewards from ICS29 incentivized packets?</li>
 </ol>
 <p>For each of this question, there is a dedicated subsection:</p>
 <ul>
@@ -4763,6 +4832,7 @@ Metrics are automatically reset if the service is restarted.</li>
 <li><a href="documentation/telemetry/operators.html#are-hermes-transactions-successful">Are Hermes transactions successful?</a></li>
 <li><a href="documentation/telemetry/operators.html#what-is-the-overall-ibc-status-of-each-network">What is the overall IBC status of each network?</a></li>
 <li><a href="documentation/telemetry/operators.html#how-efficient-and-how-secure-is-the-ibc-status-on-each-network">How efficient and how secure is the IBC status on each network?</a></li>
+<li><a href="documentation/telemetry/operators.html#am-i-getting-fee-rewards">Am I getting fee rewards?</a></li>
 </ul>
 <h2 id="is-hermes-active"><a class="header" href="#is-hermes-active">Is Hermes active?</a></h2>
 <p>By <em>active</em>, we mean specifically: is Hermes <em>submitting</em> any transactions to any network?
@@ -4875,6 +4945,12 @@ finds packets to clear (i.e., unblock).</li>
 Note that this metrics is disabled if <code>misbehaviour = false</code> in your Hermes config.toml.</p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Description</th><th>OpenTelemetry type</th><th>Configuration Dependencies</th></tr></thead><tbody>
 <tr><td><code>client_misbehaviours_submitted</code></td><td>Number of misbehaviours detected and submitted, per sending chain, receiving chain and client</td><td><code>u64</code> Counter</td><td>Client workers enabled and Clients misbehaviour detection enabled</td></tr>
+</tbody></table>
+</div>
+<h2 id="am-i-getting-fee-rewards"><a class="header" href="#am-i-getting-fee-rewards">Am I getting fee rewards?</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Description</th><th>OpenTelemetry type</th><th>Configuration Dependencies</th></tr></thead><tbody>
+<tr><td><code>ics29_fee_amounts</code></td><td>Total amount received from ICS29 fees                                       </td><td><code>u64</code> Counter       </td><td>None</td></tr>
+<tr><td> <code>ics29_period_fees</code></td><td>Amount of ICS29 fees rewarded over the past 7 days type</td><td><code>u64</code> ValueRecorder </td><td>None</td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="integration-with-prometheus"><a class="header" href="#integration-with-prometheus">Integration with Prometheus</a></h1>
 <p>With the <code>enabled = true</code> setting for <code>telemetry</code> in your config.toml, the telemetry service will be enabled and will serve the metrics using
@@ -5054,7 +5130,7 @@ as the version of the REST server itself (under the <code>ibc-relayer-rest</code
 <pre><code class="language-json">[
   {
     &quot;name&quot;: &quot;ibc-relayer&quot;,
-    &quot;version&quot;: &quot;v1.3.0&quot;
+    &quot;version&quot;: &quot;v1.4.0&quot;
   },
   {
     &quot;name&quot;: &quot;ibc-relayer-rest&quot;,
@@ -5231,7 +5307,7 @@ of all the workers which are currently active.</p>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="global-options"><a class="header" href="#global-options">Global options</a></h1>
 <p>Hermes accepts <em>global</em> options which affect all commands.</p>
-<pre><code class="language-shell">hermes v1.3.0
+<pre><code class="language-shell">hermes v1.4.0
 Informal Systems &lt;hello@informal.systems&gt;
 Implementation of `hermes`, an IBC Relayer developed in Rust.
 
@@ -5854,7 +5930,7 @@ FLAGS:
         --b-client &lt;B_CLIENT_ID&gt;    Identifier of client hosted on chain `b`; default: None (creates
                                     a new client)
 </code></pre>
-<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<h2 id="examples-1"><a class="header" href="#examples-1">Examples</a></h2>
 <h3 id="new-connection-over-new-clients"><a class="header" href="#new-connection-over-new-clients">New connection over new clients</a></h3>
 <p>Create a new connection between <code>ibc-0</code> and <code>ibc-1</code> over new clients:</p>
 <pre><code class="language-shell">hermes create connection --a-chain ibc-0 --b-chain ibc-1
@@ -6092,7 +6168,7 @@ FLAGS:
         --b-port &lt;B_PORT_ID&gt;
             Identifier of the side `b` port for the new channel
 </code></pre>
-<h2 id="examples-1"><a class="header" href="#examples-1">Examples</a></h2>
+<h2 id="examples-2"><a class="header" href="#examples-2">Examples</a></h2>
 <h3 id="new-channel-over-an-existing-connection"><a class="header" href="#new-channel-over-an-existing-connection">New channel over an existing connection</a></h3>
 <p>This is the preferred way to create a new channel, by leveraging an existing
 connection.</p>
@@ -7519,28 +7595,66 @@ The <code>--upgrade-height 65</code> value is taken from the <code>height</code>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ibc-packet-forwarding"><a class="header" href="#ibc-packet-forwarding">IBC Packet Forwarding</a></h1>
 <p>This section covers IBC packet forwarding introduced in Gaia v6.0.x</p>
 <h2 id="overview-1"><a class="header" href="#overview-1">Overview</a></h2>
+<p><strong>v3.0.0+</strong></p>
+<p>Packet forwarding middleware introduced</p>
 <p>Packet forwarding allows a Chain to send a packet to another chain without having a direct channel. This means that if there are three Chains A, B and C, with the following channels:</p>
 <pre class="mermaid">flowchart LR
     A((ibc-0))---B((ibc-1))---C((ibc-2))
 </pre>
-<p>Then if the IBC packet forward middleware is active, Chain A can send a packet to Chain C, by setting the receiver of the packet as following:</p>
+<p>Then if the IBC packet forward middleware is active, Chain A can send a packet to Chain C, by including the following memo:</p>
+<pre><code class="language-json">{
+  &quot;forward&quot;: {
+    &quot;receiver&quot;: &quot;chain-c-bech32-address&quot;,
+    &quot;port&quot;: &quot;transfer&quot;,
+    &quot;channel&quot;: &quot;channel-123&quot;
+  }
+}
+</code></pre>
+<p>If there are four Chains A, B, C and D, with the following channels:</p>
+<pre class="mermaid">flowchart LR
+    A((ibc-0))---B((ibc-1))---C((ibc-2))---D((ibc-3))
+</pre>
+<p>Then if the IBC packet forward middleware is active, Chain A can send a packet to Chain D, by including the following memo:</p>
+<pre><code class="language-json">{
+  &quot;forward&quot;: {
+    &quot;receiver&quot;: &quot;chain-c-bech32-address&quot;,
+    &quot;port&quot;: &quot;transfer&quot;,
+    &quot;channel&quot;: &quot;channel-a-to-b&quot;,
+    &quot;timeout&quot;: &quot;10m&quot;,
+    &quot;retries&quot;: 2,
+    &quot;next&quot;: {
+      &quot;forward&quot;: {
+        &quot;receiver&quot;: &quot;chain-d-bech32-address&quot;,
+        &quot;port&quot;: &quot;transfer&quot;,
+        &quot;channel&quot;:&quot;channel-c-to-d&quot;,
+        &quot;timeout&quot;:&quot;10m&quot;,
+        &quot;retries&quot;: 2
+      }
+    }
+  }
+}
+</code></pre>
+<h2 id="legacy-method"><a class="header" href="#legacy-method">Legacy method</a></h2>
+<p>Before the packet forward middleware <code>v3.0.0</code> the receiver address was used to forward packets. In order for Chain A to send a packet to Chain C, the receiver of the packet had to be set as following:</p>
 <pre><code>{intermediate_refund_address}|{foward_port}/{forward_channel}:{final_destination_address}
 </code></pre>
-<p>As specified in the packet-forward-middleware module implementation, <a href="https://github.com/strangelove-ventures/packet-forward-middleware">packet-forward-middleware</a>.</p>
+<p>As specified in the packet-forward-middleware module implementation, <a href="https://github.com/strangelove-ventures/packet-forward-middleware/tree/v2.1.3#example">packet-forward-middleware</a>.</p>
 <h2 id="important-notice"><a class="header" href="#important-notice">Important notice</a></h2>
 <p>Depending on which major version of Gaia is used, the behaviour of packet forwarding will change.</p>
 <p><strong>Gaia v7.0.x</strong></p>
 <p>The IBC packet forward middleware is disabled on this version. This will cause the sender to be refunded when trying to transfer tokens using packet forwarding.</p>
 <p><strong>Gaia v6.0.x</strong></p>
-<p>Since this version uses the packet-forward-middleware v1.0.1 and the atomic forward feature was only introduced in v3, if the destination address is invalid, then the intermediary chain will be refunded instead of the sender.</p>
+<p>Since this version uses the packet-forward-middleware v1.0.1 and the atomic forward feature was only introduced in v3, if the destination address is invalid, then the intermediary chain will be refunded instead of the sender. And it uses the overloaded receiver method to forward packets.</p>
 <p><strong>Gaia v8.0.x</strong></p>
-<p>Everything seems to be working as expected in this version.</p>
+<p>Everything seems to be working as expected in this version, using the <code>memo</code> field to forward packets.</p>
 <p><strong>Example</strong></p>
-<p>Here is <a href="documentation/forwarding/./test.html">an example</a> of token transfer from Chain A to Chain C, going through Chain B.</p>
+<p>Here is <a href="documentation/forwarding/./test.html">an example</a> of token transfer from Chain A to Chain C, going through Chain B using the <code>memo</code> field.</p>
+<p><strong>Legacy Example</strong></p>
+<p>Here is <a href="documentation/forwarding/./legacy_test.html">an example</a> of token transfer from Chain A to Chain C, going through Chain B using the overloaded receiver.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="testing-packet-forwarding"><a class="header" href="#testing-packet-forwarding">Testing Packet Forwarding</a></h1>
 <h2 id="prerequisites-1"><a class="header" href="#prerequisites-1">Prerequisites</a></h2>
 <ul>
-<li>Gaiad <code>(v6.0.*)</code> or <code>(v8.0.*)</code>. The version can be checked with:</li>
+<li>Gaiad at least <code>(v8.0.0)</code>. The version can be checked with:</li>
 </ul>
 <pre><code class="language-shell">gaiad version --log_level error --long | head -n4
 </code></pre>
@@ -7582,6 +7696,311 @@ The <code>--upgrade-height 65</code> value is taken from the <code>height</code>
 <li>Run the commands: <code>gm hermes config</code> and <code>gm hermes keys</code></li>
 </ul>
 <h3 id="test-packet-forwarding"><a class="header" href="#test-packet-forwarding">Test packet forwarding</a></h3>
+<ol>
+<li>
+<p>Create a channel between <code>ibc-0</code> and <code>ibc-1</code>, and another between <code>ibc-1</code> and <code>ibc-2</code>:</p>
+<pre><code class="language-shell">hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection
+</code></pre>
+<pre><code class="language-json">SUCCESS Channel {
+    ordering: Unordered,
+    a_side: ChannelSide {
+        chain: BaseChainHandle {
+            chain_id: ChainId {
+                id: &quot;ibc-0&quot;,
+                version: 0,
+            },
+            runtime_sender: Sender { .. },
+        },
+        client_id: ClientId(
+            &quot;07-tendermint-0&quot;,
+        ),
+        connection_id: ConnectionId(
+            &quot;connection-0&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+        channel_id: Some(
+            ChannelId(
+                &quot;channel-0&quot;,
+            ),
+        ),
+        version: None,
+    },
+    b_side: ChannelSide {
+        chain: BaseChainHandle {
+            chain_id: ChainId {
+                id: &quot;ibc-1&quot;,
+                version: 1,
+            },
+            runtime_sender: Sender { .. },
+        },
+        client_id: ClientId(
+            &quot;07-tendermint-0&quot;,
+        ),
+        connection_id: ConnectionId(
+            &quot;connection-0&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+        channel_id: Some(
+            ChannelId(
+                &quot;channel-0&quot;,
+            ),
+        ),
+        version: None,
+    },
+    connection_delay: 0ns,
+}
+</code></pre>
+<pre><code class="language-shell">hermes create channel --a-chain ibc-1 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-connection
+</code></pre>
+<pre><code class="language-json">SUCCESS Channel {
+    ordering: Unordered,
+    a_side: ChannelSide {
+        chain: BaseChainHandle {
+            chain_id: ChainId {
+                id: &quot;ibc-1&quot;,
+                version: 1,
+            },
+            runtime_sender: Sender { .. },
+        },
+        client_id: ClientId(
+            &quot;07-tendermint-1&quot;,
+        ),
+        connection_id: ConnectionId(
+            &quot;connection-1&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+        channel_id: Some(
+            ChannelId(
+                &quot;channel-1&quot;,
+            ),
+        ),
+        version: None,
+    },
+    b_side: ChannelSide {
+        chain: BaseChainHandle {
+            chain_id: ChainId {
+                id: &quot;ibc-2&quot;,
+                version: 2,
+            },
+            runtime_sender: Sender { .. },
+        },
+        client_id: ClientId(
+            &quot;07-tendermint-0&quot;,
+        ),
+        connection_id: ConnectionId(
+            &quot;connection-0&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+        channel_id: Some(
+            ChannelId(
+                &quot;channel-0&quot;,
+            ),
+        ),
+        version: None,
+    },
+    connection_delay: 0ns,
+}
+</code></pre>
+</li>
+<li>
+<p>Obtain the addresses of the wallets on each chain:</p>
+<pre><code class="language-shell">hermes keys list --chain ibc-0
+</code></pre>
+<pre><code class="language-json">SUCCESS 
+- wallet2 (cosmos179ld56nmany7nqmsdjz684rx5t4r5gxspn6hgr)
+- wallet (cosmos1gz507egejvz3ukg3xwr3v04n3xcny7vcnkjw32)
+- wallet1 (cosmos14cgtalvczzm6xuaa086g5tx6sss6e85j55vqrd)
+</code></pre>
+<pre><code class="language-shell">hermes keys list --chain ibc-1
+</code></pre>
+<pre><code class="language-json">SUCCESS 
+- wallet2 (cosmos1pmzq62tewxla9z7gpntcnvszyrkygnk4mesauy)
+- wallet (cosmos1jwr34yvnkqkc0ddndnh9y8t94hlhn7rapfyags)
+- wallet1 (cosmos1at4nj238c3ltlj0wymwgfjmdjctlvstwj8xl2s)
+</code></pre>
+<pre><code class="language-shell">hermes keys list --chain ibc-2
+</code></pre>
+<pre><code class="language-json">SUCCESS 
+- wallet2 (cosmos1xpezl2vvwg9fhdmksvne6lygd7dwz4vf65v6ye)
+- wallet (cosmos1nsztzzhl553avufxhqa204908l4dndafqph4tw)
+- wallet1 (cosmos1csdnmydggcyvjd7z8l64z9lpdgmgyr4v7hw5r8)
+</code></pre>
+</li>
+<li>
+<p>(Optional) Check the balance of the wallets before transfering tokens:</p>
+<pre><code class="language-shell">hermes keys balance --all --chain ibc-0
+</code></pre>
+<pre><code class="language-json">SUCCESS Balances for key `wallet`:
+        100000000 samoleans
+        99992294 stake
+</code></pre>
+<pre><code class="language-shell">hermes keys balance --all --chain ibc-1
+</code></pre>
+<pre><code class="language-json">SUCCESS Balances for key `wallet`:
+        100000000 samoleans
+        99983377 stake
+</code></pre>
+<pre><code class="language-shell">hermes keys balance --all --chain ibc-2
+</code></pre>
+<pre><code class="language-json">SUCCESS Balances for key `wallet`:
+        100000000 samoleans
+        99990916 stake
+</code></pre>
+</li>
+<li>
+<p>(Optional) Confirm the name of the channels used for the transfer:</p>
+<pre><code class="language-shell">hermes query channels --counterparty-chain ibc-1 --chain ibc-0
+</code></pre>
+<pre><code class="language-json">SUCCESS [
+    PortChannelId {
+        channel_id: ChannelId(
+            &quot;channel-0&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+    },
+]
+</code></pre>
+<pre><code class="language-shell">hermes query channels --counterparty-chain ibc-2 --chain ibc-1
+</code></pre>
+<pre><code class="language-json">SUCCESS [
+    PortChannelId {
+        channel_id: ChannelId(
+            &quot;channel-1&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+    },
+]
+</code></pre>
+</li>
+<li>
+<p>In a separate terminal, start an instance of Hermes:</p>
+<pre><code class="language-shell">hermes start
+</code></pre>
+</li>
+<li>
+<p>Transfer token using the special receiver:</p>
+<pre><code class="language-shell">hermes tx ft-transfer --denom samoleans --receiver cosmos1jwr34yvnkqkc0ddndnh9y8t94hlhn7rapfyags --memo '{&quot;forward&quot;: {&quot;receiver&quot;: &quot;cosmos1al3csagycya3l7ze3dk4345czw9vwgtjtsezut&quot;, &quot;port&quot;: &quot;transfer&quot;, &quot;channel&quot;: &quot;channel-1&quot;}}' --timeout-seconds 120  --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 2500
+</code></pre>
+<pre><code class="language-json">SUCCESS [
+    IbcEventWithHeight {
+        event: SendPacket(
+            SendPacket {
+                packet: Packet {
+                    sequence: Sequence(
+                        2,
+                    ),
+                    source_port: PortId(
+                        &quot;transfer&quot;,
+                    ),
+                    source_channel: ChannelId(
+                        &quot;channel-0&quot;,
+                    ),
+                    destination_port: PortId(
+                        &quot;transfer&quot;,
+                    ),
+                    destination_channel: ChannelId(
+                        &quot;channel-0&quot;,
+                    ),
+                    data: [123, 34, 97, 109, 111, 117, 110, 116, 34, 58, 34, 50, 53, 48, 48, 34, 44, 34, 100, 101, 110, 111, 109, 34, 58, 34, 115, 97, 109, 111, 108, 101, 97, 110, 115, 34, 44, 34, 114, 101, 99, 101, 105, 118, 101, 114, 34, 58, 34, 99, 111, 115, 109, 111, 115, 49, 106, 119, 114, 51, 52, 121, 118, 110, 107, 113, 107, 99, 48, 100, 100, 110, 100, 110, 104, 57, 121, 56, 116, 57, 52, 104, 108, 104, 110, 55, 114, 97, 112, 102, 121, 97, 103, 115, 124, 116, 114, 97, 110, 115, 102, 101, 114, 47, 99, 104, 97, 110, 110, 101, 108, 45, 49, 58, 99, 111, 115, 109, 111, 115, 49, 110, 115, 122, 116, 122, 122, 104, 108, 53, 53, 51, 97, 118, 117, 102, 120, 104, 113, 97, 50, 48, 52, 57, 48, 56, 108, 52, 100, 110, 100, 97, 102, 113, 112, 104, 52, 116, 120, 34, 44, 34, 115, 101, 110, 100, 101, 114, 34, 58, 34, 99, 111, 115, 109, 111, 115, 49, 103, 122, 53, 48, 55, 101, 103, 101, 106, 118, 122, 51, 117, 107, 103, 51, 120, 119, 114, 51, 118, 48, 52, 110, 51, 120, 99, 110, 121, 55, 118, 99, 110, 107, 106, 119, 51, 50, 34, 125],
+                    timeout_height: Never,
+                    timeout_timestamp: Timestamp {
+                        time: Some(
+                            Time(
+                                2022-11-10 16:05:13.409228,
+                            ),
+                        ),
+                    },
+                },
+            },
+        ),
+        height: Height {
+            revision: 0,
+            height: 59,
+        },
+    },
+]
+</code></pre>
+</li>
+<li>
+<p>(Optional) Check the balances:</p>
+<pre><code class="language-shell">hermes keys balance --all --chain ibc-0
+</code></pre>
+<pre><code class="language-json">SUCCESS Balances for key `wallet`:
+        99997500 samoleans
+        99985136 stake
+</code></pre>
+<pre><code class="language-shell">hermes keys balance --all --chain ibc-1
+</code></pre>
+<pre><code class="language-json">SUCCESS Balances for key `wallet`:
+        100000000 samoleans
+        99972551 stake
+</code></pre>
+<pre><code class="language-shell">hermes keys balance --all --chain ibc-2
+</code></pre>
+<pre><code class="language-json">SUCCESS Balances for key `wallet`:
+        2500 ibc/F47F0D7C9B4F7D971DF647A75A80CB8D905D3230262FEF2996340664D3A12D48
+        100000000 samoleans
+        99987055 stake
+</code></pre>
+</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="testing-packet-forwarding-1"><a class="header" href="#testing-packet-forwarding-1">Testing Packet Forwarding</a></h1>
+<h2 id="prerequisites-2"><a class="header" href="#prerequisites-2">Prerequisites</a></h2>
+<ul>
+<li>Gaiad <code>(v6.*.*)</code>. The version can be checked with:</li>
+</ul>
+<pre><code class="language-shell">gaiad version --log_level error --long | head -n4
+</code></pre>
+<h2 id="testing-procedure-2"><a class="header" href="#testing-procedure-2">Testing procedure</a></h2>
+<h3 id="setup-using-gaia-manager-2"><a class="header" href="#setup-using-gaia-manager-2">Setup using Gaia manager</a></h3>
+<blockquote>
+<p>Note: The <code>gm.toml</code> file that we're using here looks like this:</p>
+</blockquote>
+<pre><code>[global]
+  add_to_hermes = true
+  auto_maintain_config = true
+  extra_wallets = 2
+  gaiad_binary = &quot;/Users/luca/go/bin/gaiad&quot;
+  hdpath = &quot;&quot;
+  home_dir = &quot;/Users/luca/.gm&quot;
+  ports_start_at = 27000
+  validator_mnemonic = &quot;&quot;
+  wallet_mnemonic = &quot;&quot;
+
+  [global.hermes]
+    binary = &quot;$HOME/.hermes/bin/hermes&quot;
+    config = &quot;$HOME/.hermes/config.toml&quot;
+    log_level = &quot;trace&quot;
+    telemetry_enabled = true
+    telemetry_host = &quot;127.0.0.1&quot;
+    telemetry_port = 3001
+
+[ibc-0]
+  ports_start_at = 27000
+
+[ibc-1]
+  ports_start_at = 27010
+
+[ibc-2]
+  ports_start_at = 27020
+</code></pre>
+<ul>
+<li>Run the command <code>gm start</code></li>
+<li>Run the commands: <code>gm hermes config</code> and <code>gm hermes keys</code></li>
+</ul>
+<h3 id="test-packet-forwarding-1"><a class="header" href="#test-packet-forwarding-1">Test packet forwarding</a></h3>
 <ol>
 <li>
 <p>Create a channel between <code>ibc-0</code> and <code>ibc-1</code>, and another between <code>ibc-1</code> and <code>ibc-2</code>:</p>
@@ -8011,6 +8430,7 @@ SUBCOMMANDS:
 <li><a href="documentation/commands/queries/client.html#query-the-client-consensus-state">Query the client consensus state</a></li>
 <li><a href="documentation/commands/queries/client.html#query-the-identifiers-of-all-connections-associated-with-a-given-client">Query the identifiers of all connections associated with a given client</a></li>
 <li><a href="documentation/commands/queries/client.html#query-for-the-header-used-in-a-client-update-at-a-certain-height">Query for the header used in a client update at a certain height</a></li>
+<li><a href="documentation/commands/queries/client.html#query-for-the-status-of-client-active-frozen-or-expired">Query for the status of client (active, frozen, or expired)</a></li>
 </ul>
 </li>
 </ul>
@@ -8087,6 +8507,7 @@ SUBCOMMANDS:
     header         Query for the header used in a client update at a certain height
     help           Print this message or the help of the given subcommand(s)
     state          Query the client state
+    status         Query the client status (frozen, expired or active)
 </code></pre>
 <h2 id="query-the-client-state"><a class="header" href="#query-the-client-state">Query the client state</a></h2>
 <p>Use the <code>query client state</code> command to query the client state of a client:</p>
@@ -8273,6 +8694,27 @@ REQUIRED:
         },
     ),
 ]
+</code></pre>
+<h2 id="query-for-the-status-of-client-active-frozen-or-expired"><a class="header" href="#query-for-the-status-of-client-active-frozen-or-expired">Query for the status of client (active, frozen, or expired)</a></h2>
+<p>This command queries the status of a client, ie. whether it is active, frozen or expired.</p>
+<pre><code>DESCRIPTION:
+Query the client status (frozen, expired or active)
+
+USAGE:
+    hermes query client status --chain &lt;CHAIN_ID&gt; --client &lt;CLIENT_ID&gt;
+
+OPTIONS:
+    -h, --help    Print help information
+
+REQUIRED:
+        --chain &lt;CHAIN_ID&gt;      Identifier of the chain to query
+        --client &lt;CLIENT_ID&gt;    Identifier of the client to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query for the status of the client <code>07-tendermint-0</code> on <code>ibc-0</code>:</p>
+<pre><code class="language-shell">hermes query client status --chain ibc-0 --client 07-tendermint-0
+</code></pre>
+<pre><code>SUCCESS Active
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="table-of-contents-9"><a class="header" href="#table-of-contents-9">Table of Contents</a></h1>
 <ul>
@@ -9986,6 +10428,9 @@ OPTIONS:
         --key-name &lt;KEY_NAME&gt;
             Use the given signing key name (default: `key_name` config)
 
+        --memo &lt;MEMO&gt;
+            Optional memo included in the transfer
+
         --number-msgs &lt;NUMBER_MSGS&gt;
             Number of messages to send
 
@@ -10284,6 +10729,231 @@ REQUIRED:
 <pre><code class="language-shell">hermes tx upgrade-chain --reference-chain ibc-0 --host-chain ibc-1 --host-client 07-tendermint-0 --amount 10000000 --height-offset 300
 </code></pre>
 <pre><code>Success: transaction::Hash(779713508B6103E37FADE60483BEE964A90BD67E5F20037B2CC4AE0E90B707C3)
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="fee"><a class="header" href="#fee">Fee</a></h1>
+<p>Hermes supports querying for different objects that exist on a configured chain.</p>
+<p>The <code>query</code> command provides the following sub-commands:</p>
+<div class="table-wrapper"><table><thead><tr><th>CLI name</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>register-counterparty-payee</code></td><td><a href="documentation/commands/fee/./register-counterparty-payee.html">Register a counterparty payee for a channel</a></td></tr>
+<tr><td><code>register-payee</code></td><td><a href="documentation/commands/fee/./register-payee.html">Register a payee for a channel</a></td></tr>
+<tr><td><code>transfer</code></td><td><a href="documentation/commands/fee/./transfer.html">Perform a token transfer supported with a fee</a></td></tr>
+</tbody></table>
+</div>
+<h2 id="usage-3"><a class="header" href="#usage-3">Usage</a></h2>
+<pre><code>DESCRIPTION:
+Interact with the fee middleware
+
+USAGE:
+    hermes fee &lt;SUBCOMMAND&gt;
+
+OPTIONS:
+    -h, --help    Print help information
+
+SUBCOMMANDS:
+    help                           Print this message or the help of the given subcommand(s)
+    register-counterparty-payee    Register a counterparty payee for a channel
+    register-payee                 Register a payee for a channel
+    transfer                       Perform a token transfer supported with a fee
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="register-counterparty-payee"><a class="header" href="#register-counterparty-payee">Register Counterparty Payee</a></h1>
+<p>Use this command in order to specify the address which will receive the <code>recv_fee</code> from incentivised packets relayed by the specified chain on the specified channel.</p>
+<p><strong>NOTE:</strong> If the Hermes configuration parameter <code>auto_register_counterpary_payee = true</code> is set, make sure to use the <code>hermes fee register-counterparty-payee</code> command after calling <code>hermes start</code>, otherwise <code>auto_register_counterparty_payee</code> will overwrite the address registered using <code>hermes fee register-counterparty-payee</code>.</p>
+<pre><code class="language-shell">DESCRIPTION:
+Register a counterparty payee for a channel
+
+USAGE:
+    hermes fee register-counterparty-payee --chain &lt;CHAIN_ID&gt; --channel &lt;CHANNEL_ID&gt; --port &lt;PORT_ID&gt; --counterparty-payee &lt;COUNTERPARTY_PAYEE_ADDRESS&gt;
+
+OPTIONS:
+    -h, --help    Print help information
+
+FLAGS:
+        --chain &lt;CHAIN_ID&gt;
+            Identifier of the chain
+
+        --channel &lt;CHANNEL_ID&gt;
+            Identifier of the channel [aliases: chan]
+
+        --counterparty-payee &lt;COUNTERPARTY_PAYEE_ADDRESS&gt;
+            Address of the counterparty payee
+
+        --port &lt;PORT_ID&gt;
+            Identifier of the port
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Register the address <code>cosmos10h9stc5v6ntgeygf5xf945njqq5h32r53uquvw</code> for the chain <code>ibc-1</code> on channel <code>channel-0</code>:</p>
+<pre><code class="language-shell">hermes fee register-counterparty-payee --chain ibc-1 --channel channel-0 --port transfer --counterparty-payee cosmos10h9stc5v6ntgeygf5xf945njqq5h32r53uquvw
+</code></pre>
+<pre><code class="language-json">SUCCESS Successfully registered counterparty payee
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="register-payee"><a class="header" href="#register-payee">Register Payee</a></h1>
+<p>Use this command in order to specify the address which will receive the <code>ack_fee</code> and <code>timeout_fee</code> from incentivised packets relayed by the specified chain on the specified channel. By default this is the address of the reverse relayer's wallet.</p>
+<p><strong>WARNING:</strong> Use this command with caution as some chains do not allow relayer address and payee to be equal. So reverting the payee address to the relayer address might be difficult after using this command.</p>
+<pre><code class="language-shell">DESCRIPTION:
+Register a payee for a channel
+
+USAGE:
+    hermes fee register-payee --chain &lt;CHAIN_ID&gt; --channel &lt;CHANNEL_ID&gt; --port &lt;PORT_ID&gt; --payee &lt;PAYEE_ADDRESS&gt;
+
+OPTIONS:
+    -h, --help    Print help information
+
+FLAGS:
+        --chain &lt;CHAIN_ID&gt;         Identifier of the chain
+        --channel &lt;CHANNEL_ID&gt;     Identifier of the channel [aliases: chan]
+        --payee &lt;PAYEE_ADDRESS&gt;    Address of the payee
+        --port &lt;PORT_ID&gt;           Identifier of the port
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Register the address <code>cosmos10h9stc5v6ntgeygf5xf945njqq5h32r53uquvw</code> for the chain <code>ibc-1</code> on channel <code>channel-0</code>:</p>
+<pre><code class="language-shell">hermes fee register-payee --chain ibc-1 --channel channel-0 --port transfer --payee cosmos10h9stc5v6ntgeygf5xf945njqq5h32r53uquvw
+</code></pre>
+<pre><code class="language-json">SUCCESS Successfully registered payee
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="fungible-token-transfer-with-fees"><a class="header" href="#fungible-token-transfer-with-fees">Fungible token transfer with fees</a></h1>
+<p>Use the <code>fee transfer</code> command to send an <code>IncentivizedPacket</code>.</p>
+<pre><code class="language-shell">DESCRIPTION:
+Perform a token transfer supported with a fee
+
+USAGE:
+    hermes fee transfer [OPTIONS] --dst-chain &lt;DST_CHAIN_ID&gt; --src-chain &lt;SRC_CHAIN_ID&gt; --src-port &lt;SRC_PORT_ID&gt; --src-channel &lt;SRC_CHANNEL_ID&gt; --amount &lt;AMOUNT&gt;
+
+OPTIONS:
+        --ack-fee &lt;ACK_FEE&gt;
+            Fee to pay for the Ack message. Default: 0 [default: 0]
+
+        --denom &lt;DENOM&gt;
+            Denomination of the coins to send. Default: samoleans [default: samoleans]
+
+    -h, --help
+            Print help information
+
+        --key-name &lt;KEY_NAME&gt;
+            Use the given signing key name (default: `key_name` config)
+
+        --memo &lt;MEMO&gt;
+            Optional memo included in the transfer
+
+        --number-msgs &lt;NUMBER_MSGS&gt;
+            Number of messages to send
+
+        --receive-fee &lt;RECEIVE_FEE&gt;
+            Fee to pay for the Recv message. Default: 0 [default: 0]
+
+        --recipient &lt;RECIPIENT&gt;
+            The account address on the destination chain which will receive the tokens. If omitted,
+            the relayer's wallet on the destination chain will be used
+
+        --timeout-fee &lt;TIMEOUT_FEE&gt;
+            Fee to pay for the Timeout message. Default: 0 [default: 0]
+
+        --timeout-height-offset &lt;TIMEOUT_HEIGHT_OFFSET&gt;
+            Timeout in number of blocks since current. Default: 0 [default: 0]
+
+        --timeout-seconds &lt;TIMEOUT_SECONDS&gt;
+            Timeout in seconds since current. Default: 0 [default: 0]
+
+FLAGS:
+        --amount &lt;AMOUNT&gt;
+            Amount of coins (samoleans, by default) to send (e.g. `100000`)
+
+        --dst-chain &lt;DST_CHAIN_ID&gt;
+            Identifier of the destination chain
+
+        --src-chain &lt;SRC_CHAIN_ID&gt;
+            Identifier of the source chain
+
+        --src-channel &lt;SRC_CHANNEL_ID&gt;
+            Identifier of the source channel [aliases: src-chan]
+
+        --src-port &lt;SRC_PORT_ID&gt;
+            Identifier of the source port
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Send a transfer packet from the <code>transfer</code> module and <code>channel-0</code> of <code>ibc-0</code> to <code>ibc-1</code>. Each transfer is for <code>9999</code> <code>samoleans</code> (default denomination), ICS29 fees of 50 <code>samoleans</code> for <code>recv_fee</code>, 25 <code>samoleans</code> for <code>ack_fee</code>, <code>10</code> <code>samoleans</code> for <code>timeout_fee</code> and a timeout offset of <code>10</code> blocks. The transfer fee is paid by the associated account on <code>ibc-1</code>.</p>
+<pre><code class="language-shell">hermes fee transfer  --receive-fee 50 --ack-fee 25 --timeout-fee 10 --timeout-height-offset 1000 --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 9999
+</code></pre>
+<pre><code class="language-json">SUCCESS [
+    IbcEventWithHeight {
+        event: IncentivizedPacket(
+            IncentivizedPacket {
+                port_id: PortId(
+                    &quot;transfer&quot;,
+                ),
+                channel_id: ChannelId(
+                    &quot;channel-0&quot;,
+                ),
+                sequence: Sequence(
+                    8,
+                ),
+                total_recv_fee: [
+                    Coin {
+                        denom: &quot;stake&quot;,
+                        amount: Amount(
+                            50,
+                        ),
+                    },
+                ],
+                total_ack_fee: [
+                    Coin {
+                        denom: &quot;stake&quot;,
+                        amount: Amount(
+                            25,
+                        ),
+                    },
+                ],
+                total_timeout_fee: [
+                    Coin {
+                        denom: &quot;stake&quot;,
+                        amount: Amount(
+                            10,
+                        ),
+                    },
+                ],
+            },
+        ),
+        height: Height {
+            revision: 1,
+            height: 1574,
+        },
+    },
+    IbcEventWithHeight {
+        event: SendPacket(
+            SendPacket {
+                packet: Packet {
+                    sequence: Sequence(
+                        8,
+                    ),
+                    source_port: PortId(
+                        &quot;transfer&quot;,
+                    ),
+                    source_channel: ChannelId(
+                        &quot;channel-0&quot;,
+                    ),
+                    destination_port: PortId(
+                        &quot;transfer&quot;,
+                    ),
+                    destination_channel: ChannelId(
+                        &quot;channel-0&quot;,
+                    ),
+                    data: [123, 34, 97, 109, 111, 117, 110, 116, 34, 58, 34, 49, 48, 48, 48, 34, 44, 34, 100, 101, 110, 111, 109, 34, 58, 34, 115, 116, 97, 107, 101, 34, 44, 34, 114, 101, 99, 101, 105, 118, 101, 114, 34, 58, 34, 99, 111, 115, 109, 111, 115, 49, 52, 122, 115, 50, 120, 51, 56, 108, 109, 107, 119, 52, 101, 113, 118, 108, 51, 108, 112, 109, 108, 53, 108, 56, 99, 114, 122, 97, 120, 110, 54, 109, 55, 119, 117, 122, 110, 120, 34, 44, 34, 115, 101, 110, 100, 101, 114, 34, 58, 34, 99, 111, 115, 109, 111, 115, 49, 109, 57, 108, 51, 53, 56, 120, 117, 110, 104, 104, 119, 100, 115, 48, 53, 54, 56, 122, 97, 52, 57, 109, 122, 104, 118, 117, 120, 120, 57, 117, 120, 114, 101, 53, 116, 117, 100, 34, 125],
+                    timeout_height: Never,
+                    timeout_timestamp: Timestamp {
+                        time: Some(
+                            Time(
+                                2023-03-22 11:49:54.491498,
+                            ),
+                        ),
+                    },
+                },
+            },
+        ),
+        height: Height {
+            revision: 1,
+            height: 1574,
+        },
+    },
+]
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
 <p>These are some definitions used in this guide:</p>
