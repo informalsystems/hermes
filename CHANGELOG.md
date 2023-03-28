@@ -1,5 +1,92 @@
 # CHANGELOG
 
+## v1.4.0
+*March 27th, 2023*
+
+Hermes v1.4.0 brings compatibility with chains based on Tendermint/CometBFT 0.37,
+while retaining compatiblity with Tendermint/CometBFT 0.34. This is transparent
+and does not require any additional configuration.
+
+The relayer now supports ICS consumer chains, which only requires operators
+to specify the `unbonding_period` parameter in the chain settings. This is only
+a temporary requirement, in the future Hermes will seamlessy support consumer
+chains with minimal changes to the configuration.
+
+This release also deprecates support for chains based on Cosmos SDK 0.43.x and lower,
+and bumps the compatiblity to Cosmos SDK 0.47.x.
+
+The relayer now also allows operators to filter out packets to relay based on whether
+or not they contain a fee, and the minimal amount of such fee.
+Please check the relevant [documentation in the Hermes guide](fee-guide) for more information.
+Additionnaly, Hermes now also tracks [metrics for ICS29 fees](fee-metrics).
+
+This release includes a new `query client status` CLI to quickly check whether a client is active, expired or frozen.
+
+[fee-guide]: https://hermes.informal.systems/documentation/configuration/filter-incentivized.html
+[fee-metrics]: https://hermes.informal.systems/documentation/telemetry/operators.html#am-i-getting-fee-rewards
+
+### Crates versions
+
+| Crate                                                               | Version |
+| ------------------------------------------------------------------- | ------- |
+| [`ibc-relayer-cli`](https://crates.io/crates/ibc-relayer-cli)       | v1.4.0  |
+| [`ibc-relayer`](https://crates.io/crates/ibc-relayer)               | v0.23.0 |
+| [`ibc-relayer-types`](https://crates.io/crates/ibc-relayer-types)   | v0.23.0 |
+| [`ibc-relayer-rest`](https://crates.io/crates/ibc-relayer-rest)     | v0.23.0 |
+| [`ibc-telemetry`](https://crates.io/crates/ibc-telemetry)           | v0.23.0 |
+| [`ibc-chain-registry`](https://crates.io/crates/ibc-chain-registry) | v0.23.0 |
+| [`ibc-test-framework`](https://crates.io/crates/ibc-test-framework) | v0.23.0 |
+
+### FEATURES
+
+- [Integration Test Framework](tools/test-framework)
+  - Add integration tests for incentivized packet filtering
+    ([#1966](https://github.com/informalsystems/hermes/issues/1966))
+- [Relayer Library](relayer)
+  - Add configuration to filter packet relaying with the `recv_fee` as criteria
+    ([#1966](https://github.com/informalsystems/hermes/issues/1966))
+  - Add automatic version detection and compatibility with both Tendermint/Comet
+    0.34 and 0.47 ([\#2971](https://github.com/informalsystems/hermes/issues/2971))
+- [Relayer CLI](relayer-cli)
+  - Add a `query client status` command to query whether a client is active, frozen
+    or expired ([\#3124](https://github.com/informalsystems/hermes/issues/3124))
+- [Telemetry & Metrics](telemetry)
+  - Added metrics `ics29_fee_amounts` and `ics29_period_fees` to track
+    fees rewarded to relayers.
+    ([#3090](https://github.com/informalsystems/hermes/issues/3090))
+
+### IMPROVEMENTS
+
+- General
+  - Deprecate support for SDK 0.43.
+    ([#2347](https://github.com/informalsystems/hermes/issues/2347))
+  - Update `ibc-proto-rs` to `v0.28.0`.
+    ([#3155](https://github.com/informalsystems/hermes/issues/3155))
+- [Guide](guide)
+  - Add a section for ICS29 commands in Hermes guide
+    ([#3185](https://github.com/informalsystems/hermes/issues/3185))
+- [Integration Test Framework](tools/test-framework)
+  - Use Rust structure instead of Chain's CLI for the packet forward tests
+    ([#3037](https://github.com/informalsystems/hermes/issues/3037))
+- [Relayer CLI](relayer-cli)
+  - Add `unbonding_period` setting to the chain configuration to
+    enable relaying between ICS consumer chains and other chains
+    ([\#3112](https://github.com/informalsystems/hermes/issues/3112))
+
+### BUG FIXES
+
+- General
+  - Rename `prometheus.yaml` to `prometheus.yml` to fix docker-compose
+    used when setting up the monitoring platform.
+    ([#3106](https://github.com/informalsystems/hermes/issues/3106))
+- [Relayer Library](relayer)
+  - Ensure the event monitor is shut down cleanly
+    ([\#3120](https://github.com/informalsystems/hermes/issues/3120))
+- [Relayer CLI](relayer-cli)
+  - Fix `query client consensus` to sort the consensus states by height
+    ([\#3041](https://github.com/informalsystems/hermes/issues/3041))
+
+
 ## 1.3.0
 *February 17th, 2023*
 
