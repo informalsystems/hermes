@@ -15,7 +15,7 @@ and bumps the compatiblity to Cosmos SDK 0.47.x.
 The relayer now also allows operators to filter out packets to relay based on whether
 or not they contain a fee, and the minimal amount of such fee.
 Please check the relevant [documentation in the Hermes guide](fee-guide) for more information.
-Additionnaly, Hermes now also tracks [metrics for ICS29 fees](fee-metrics).
+Additionally, Hermes now also tracks [metrics for ICS29 fees](fee-metrics).
 
 This release includes a new `query client status` CLI to quickly check whether a client is active, expired or frozen.
 
