@@ -53,8 +53,8 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
     ) -> Result<Verified<C::LightBlock>, error::Error>;
 
     /// Given a client update event that includes the header used in a client update,
-    /// look for misbehaviour by fetching a header at same or latest height.
-    fn check_misbehaviour(
+    /// run the light client attack detector.
+    fn detect_misbehaviour(
         &mut self,
         update: &UpdateClient,
         client_state: &AnyClientState,

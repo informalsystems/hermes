@@ -1,8 +1,7 @@
-#![allow(unused)]
-
 mod detector;
 
 use itertools::Itertools;
+use tracing::{debug, error, trace, warn};
 
 use tendermint_light_client::{
     components::{self, io::AtHeight},
@@ -10,15 +9,13 @@ use tendermint_light_client::{
     state::State as LightClientState,
     store::{memory::MemoryStore, LightStore},
 };
-use tendermint_light_client_verifier::options::Options as TmOptions;
 use tendermint_light_client_verifier::types::{Height as TMHeight, LightBlock, PeerId, Status};
 use tendermint_light_client_verifier::ProdVerifier;
 use tendermint_rpc as rpc;
 
 use ibc_relayer_types::{
     clients::ics07_tendermint::{
-        header::{headers_compatible, Header as TmHeader},
-        misbehaviour::Misbehaviour as TmMisbehaviour,
+        header::Header as TmHeader, misbehaviour::Misbehaviour as TmMisbehaviour,
     },
     core::{
         ics02_client::{client_type::ClientType, events::UpdateClient, header::downcast_header},
@@ -26,11 +23,13 @@ use ibc_relayer_types::{
     },
     downcast, Height as ICSHeight,
 };
-use tracing::trace;
 
 use crate::{
-    chain::cosmos::CosmosSdkChain, client_state::AnyClientState, config::ChainConfig, error::Error,
-    misbehaviour::MisbehaviourEvidence,
+    chain::cosmos::CosmosSdkChain,
+    client_state::AnyClientState,
+    config::ChainConfig,
+    error::Error,
+    misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
 };
 
 use super::Verified;
@@ -96,7 +95,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     }
 
     /// Perform misbehavior detection on the given client state and update client event.
-    fn check_misbehaviour(
+    fn detect_misbehaviour(
         &mut self,
         update: &UpdateClient,
         client_state: &AnyClientState,
@@ -128,41 +127,92 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
 
-        let latest_chain_height =
-            ICSHeight::new(self.chain_id.version(), latest_chain_block.height().into())
-                .map_err(|_| Error::invalid_height_no_source())?;
+        // let latest_chain_height =
+        //     ICSHeight::new(self.chain_id.version(), latest_chain_block.height().into())
+        //         .map_err(|_| Error::invalid_height_no_source())?;
 
-        // Set the target height to the minimum between the update height and latest chain height
-        let target_height = core::cmp::min(update.consensus_height(), latest_chain_height);
-        let trusted_height = update_header.trusted_height;
+        // // Set the target height to the minimum between the update height and latest chain height
+        // let target_height = core::cmp::min(update.consensus_height(), latest_chain_height);
+        // let trusted_height = update_header.trusted_height;
 
         // TODO: Check that a consensus state at trusted_height still exists on-chain,
         // currently we don't have access to Cosmos chain query from here
 
-        if trusted_height >= latest_chain_height {
-            // Can happen with multiple FLA attacks, we return no evidence and hope to catch this in
-            // the next iteration. e.g:
-            // existing consensus states: 1000, 900, 300, 200 (only known by the caller)
-            // latest_chain_height = 300
-            // target_height = 1000
-            // trusted_height = 900
-            return Ok(None);
-        }
+        // if trusted_height >= latest_chain_height {
+        //     // Can happen with multiple FLA attacks, we return no evidence and hope to catch this in
+        //     // the next iteration. e.g:
+        //     // existing consensus states: 1000, 900, 300, 200 (only known by the caller)
+        //     // latest_chain_height = 300
+        //     // target_height = 1000
+        //     // trusted_height = 900
+        //     return Ok(None);
+        // }
 
-        let target_block: LightBlock = todo!(); // FIXME: How do I compute this?
-        let trusted_block = self.fetch(trusted_height)?; // FIXME: Is that ok?
+        let next_validators = self
+            .io
+            .fetch_validator_set(
+                AtHeight::At(update_header.signed_header.header.height.increment()),
+                Some(update_header.signed_header.header.proposer_address),
+            )
+            .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e))?;
+
+        let target_block: LightBlock = LightBlock {
+            signed_header: update_header.signed_header.clone(),
+            validators: update_header.validator_set.clone(),
+            next_validators,
+            provider: self.peer_id,
+        };
+
         let now = latest_chain_block.time(); // FIXME: Is that right?
 
-        detector::detect(
+        let trusted_block = self.fetch(update_header.trusted_height)?; // FIXME: Is that ok?
+                                                                       // TODO: Check validator sets match
+
+        let attack = detector::detect(
             self.peer_id,
             self.rpc_client.clone(),
             target_block,
-            trusted_block,
+            trusted_block.clone(),
             client_state,
             now,
         );
 
-        todo!()
+        dbg!(&attack);
+
+        match attack {
+            Ok(None) => {
+                debug!("no misbehavior detected");
+                Ok(None)
+            }
+            Ok(Some(attack)) => {
+                warn!("misbehavior detected, reporting evidence to RPC witness node and primary chain");
+
+                match detector::report_evidence(self.rpc_client.clone(), attack.clone()) {
+                    Ok(hash) => warn!("evidence reported to RPC witness node with hash: {hash}"),
+                    Err(e) => error!("failed to report evidence to RPC witness node: {}", e),
+                }
+
+                let evidence = MisbehaviourEvidence {
+                    misbehaviour: AnyMisbehaviour::Tendermint(TmMisbehaviour {
+                        client_id: update.client_id().clone(),
+                        header1: update_header.clone(),
+                        header2: TmHeader {
+                            signed_header: attack.conflicting_block.signed_header,
+                            validator_set: attack.conflicting_block.validator_set,
+                            trusted_height: update_header.trusted_height,
+                            trusted_validator_set: trusted_block.next_validators,
+                        },
+                    }),
+                    supporting_headers: vec![], // FIXME: What do we put here?
+                };
+
+                Ok(Some(evidence))
+            }
+            Err(e) => {
+                error!("could not detect misbehavior: {}", e);
+                Err(e)
+            }
+        }
     }
 }
 

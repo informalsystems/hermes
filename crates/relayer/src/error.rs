@@ -114,7 +114,6 @@ define_error! {
             [ LightClientBuilderError ]
             |_| { "light client builder error" },
 
-
         LightClientVerification
             { chain_id: String }
             [ LightClientError ]

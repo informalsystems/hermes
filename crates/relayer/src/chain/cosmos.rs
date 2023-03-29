@@ -837,7 +837,7 @@ impl ChainEndpoint for CosmosSdkChain {
         update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
-        self.light_client.check_misbehaviour(update, client_state)
+        self.light_client.detect_misbehaviour(update, client_state)
     }
 
     // Queries
