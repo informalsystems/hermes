@@ -8,7 +8,11 @@ use crate::core::traits::sync::Async;
 use crate::relay::traits::two_way::HasTwoWayRelay;
 use crate::std_prelude::*;
 
+/// Trait for types that have access to a bi-directional relayer
+/// that can relay between two connected chains in both directions.
 pub trait HasBiRelayType: Async {
+    /// A relay context that can relay between two chains in a bi-
+    /// directional fashion.
     type BiRelay: HasTwoWayRelay;
 }
 
