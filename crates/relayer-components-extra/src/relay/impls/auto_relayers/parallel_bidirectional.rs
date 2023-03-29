@@ -10,8 +10,8 @@ use crate::runtime::traits::spawn::{HasSpawner, Spawner};
 use crate::std_prelude::*;
 
 /// A parallel variant of [`ConcurrentBidirectionalRelayer`] that spawns two separate
-/// tasks, each responsible for relaying for one of the targets. As such, it has an 
-/// additional `HasSpawner` constraint that the concurrent variant does not require. 
+/// tasks, each responsible for relaying for one of the targets. As such, it has an
+/// additional `HasSpawner` constraint that the concurrent variant does not require.
 pub struct ParallelBidirectionalRelayer<InRelayer>(pub PhantomData<InRelayer>);
 
 #[async_trait]

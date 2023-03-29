@@ -8,7 +8,7 @@ use crate::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
 /// A one-way auto-relayer type that is responsible for listening for a
-/// particular event subscription and relaying messages to a target 
+/// particular event subscription and relaying messages to a target
 /// chain in response to those events in a concurrent fashion.
 pub struct ConcurrentEventSubscriptionRelayer;
 
