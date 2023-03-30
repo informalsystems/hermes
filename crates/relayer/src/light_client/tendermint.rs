@@ -55,17 +55,19 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
     fn verify(
         &mut self,
-        trusted: ICSHeight,
-        target: ICSHeight,
+        trusted_height: ICSHeight,
+        target_height: ICSHeight,
         client_state: &AnyClientState,
     ) -> Result<Verified<LightBlock>, Error> {
-        trace!(%trusted, %target, "light client verification");
-
-        let target_height =
-            TMHeight::try_from(target.revision_height()).map_err(Error::invalid_height)?;
+        trace!(%trusted_height, %target_height, "light client verification");
 
         let client = self.prepare_client(client_state)?;
-        let mut state = self.prepare_state(trusted)?;
+        let mut state = self.prepare_state(trusted_height)?;
+
+        let target_height =
+            TMHeight::try_from(target_height.revision_height()).map_err(Error::invalid_height)?;
+        let trusted_height =
+            TMHeight::try_from(trusted_height.revision_height()).map_err(Error::invalid_height)?;
 
         // Verify the target header
         let target = client
@@ -75,10 +77,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         // Collect the verification trace for the target block
         let target_trace = state.get_trace(target.height());
 
-        // Compute the minimal supporting set, sorted by ascending height
+        // Compute the minimal supporting set, sorted by ascending height,
+        // skip the target header and the trusted header if present in the trace
         let supporting = target_trace
             .into_iter()
-            .filter(|lb| lb.height() != target.height())
+            .filter(|lb| lb.height() != target.height() && lb.height() != trusted_height)
             .unique_by(LightBlock::height)
             .sorted_by_key(LightBlock::height)
             .collect_vec();
