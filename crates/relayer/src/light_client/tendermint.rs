@@ -6,6 +6,7 @@ use tracing::{debug, error, trace, warn};
 use tendermint_light_client::{
     components::{self, io::AtHeight},
     light_client::LightClient as TmLightClient,
+    misbehavior::Divergence,
     state::State as LightClientState,
     store::{memory::MemoryStore, LightStore},
 };
@@ -130,27 +131,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
 
-        // let latest_chain_height =
-        //     ICSHeight::new(self.chain_id.version(), latest_chain_block.height().into())
-        //         .map_err(|_| Error::invalid_height_no_source())?;
-
-        // // Set the target height to the minimum between the update height and latest chain height
-        // let target_height = core::cmp::min(update.consensus_height(), latest_chain_height);
-        // let trusted_height = update_header.trusted_height;
-
-        // TODO: Check that a consensus state at trusted_height still exists on-chain,
-        // currently we don't have access to Cosmos chain query from here
-
-        // if trusted_height >= latest_chain_height {
-        //     // Can happen with multiple FLA attacks, we return no evidence and hope to catch this in
-        //     // the next iteration. e.g:
-        //     // existing consensus states: 1000, 900, 300, 200 (only known by the caller)
-        //     // latest_chain_height = 300
-        //     // target_height = 1000
-        //     // trusted_height = 900
-        //     return Ok(None);
-        // }
-
         let next_validators = self
             .io
             .fetch_validator_set(
@@ -171,7 +151,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         let trusted_block = self.fetch(update_header.trusted_height)?; // FIXME: Is that ok?
                                                                        // TODO: Check validator sets match
 
-        let attack = detector::detect(
+        let divergence = detector::detect(
             self.peer_id,
             self.rpc_client.clone(),
             target_block,
@@ -180,17 +160,20 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             now,
         );
 
-        dbg!(&attack);
+        dbg!(&divergence);
 
-        match attack {
+        match divergence {
             Ok(None) => {
                 debug!("no misbehavior detected");
                 Ok(None)
             }
-            Ok(Some(attack)) => {
+            Ok(Some(Divergence {
+                evidence,
+                challenging_block,
+            })) => {
                 warn!("misbehavior detected, reporting evidence to RPC witness node and primary chain");
 
-                match detector::report_evidence(self.rpc_client.clone(), attack.clone()) {
+                match detector::report_evidence(self.rpc_client.clone(), evidence) {
                     Ok(hash) => warn!("evidence reported to RPC witness node with hash: {hash}"),
                     Err(e) => error!("failed to report evidence to RPC witness node: {}", e),
                 }
@@ -200,10 +183,10 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                         client_id: update.client_id().clone(),
                         header1: update_header.clone(),
                         header2: TmHeader {
-                            signed_header: attack.conflicting_block.signed_header,
-                            validator_set: attack.conflicting_block.validator_set,
+                            signed_header: challenging_block.signed_header,
+                            validator_set: challenging_block.validators,
                             trusted_height: update_header.trusted_height,
-                            trusted_validator_set: trusted_block.next_validators,
+                            trusted_validator_set: trusted_block.validators,
                         },
                     }),
                     supporting_headers: vec![], // FIXME: What do we put here?

@@ -8,7 +8,7 @@ use tendermint::{
 use tendermint_light_client::{
     builder::LightClientBuilder,
     components::{clock::FixedClock, io::ProdIo, scheduler},
-    misbehavior::{detect_divergence, Provider},
+    misbehavior::{detect_divergence, Divergence, Provider},
     predicates::ProdPredicates,
     store::memory::MemoryStore,
     types::{LightBlock, PeerId},
@@ -25,19 +25,19 @@ pub fn detect(
     trusted_block: LightBlock,
     client_state: &ClientState,
     now: Time,
-) -> Result<Option<LightClientAttackEvidence>, Error> {
+) -> Result<Option<Divergence>, Error> {
     let primary_trace = vec![trusted_block.clone(), target_block];
     let options = client_state.as_light_client_options();
     let mut provider = make_provider(peer_id, rpc_client, client_state, trusted_block, now)?;
 
-    let evidence = block_on(detect_divergence(
+    let divergence = block_on(detect_divergence(
         &mut provider,
         primary_trace,
         options.clock_drift,
         options.trusting_period,
     ));
 
-    match evidence {
+    match divergence {
         Ok(None) => {
             info!(
                 "No evidence of misbehavior detected for chain {}",
@@ -46,13 +46,13 @@ pub fn detect(
 
             Ok(None)
         }
-        Ok(Some(evidence)) => {
+        Ok(Some(divergence)) => {
             info!(
                 "Evidence of misbehavior detected for chain {}",
                 client_state.chain_id
             );
 
-            Ok(Some(evidence))
+            Ok(Some(divergence))
         }
         Err(e) => {
             error!(
