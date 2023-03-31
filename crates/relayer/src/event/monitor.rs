@@ -21,7 +21,9 @@ use tendermint_rpc::{
 };
 
 use ibc_relayer_types::{
-    core::ics02_client::height::Height, core::ics24_host::identifier::ChainId,
+    core::ics02_client::height::Height,
+    core::{ics02_client::events::NewBlock, ics24_host::identifier::ChainId},
+    events::IbcEvent,
 };
 
 use crate::{
@@ -132,61 +134,11 @@ pub mod queries {
     use tendermint_rpc::query::{EventType, Query};
 
     pub fn all() -> Vec<Query> {
-        // Note: Tendermint-go supports max 5 query specifiers!
-        vec![
-            new_block(),
-            // ibc_client(),
-            // ibc_connection(),
-            // ibc_channel(),
-            // interchain_query(),
-            // This will be needed when we send misbehavior evidence to full node
-            // Query::eq("message.module", "evidence"),
-        ]
-
-        // let keys = [
-        //     "create_client",
-        //     "update_client",
-        //     "client_misbehaviour",
-        //     "connection_open_init",
-        //     "connection_open_try",
-        //     "connection_open_ack",
-        //     "connection_open_confirm",
-        //     "channel_open_init",
-        //     "channel_open_try",
-        //     "channel_open_ack",
-        //     "channel_open_confirm",
-        //     "channel_close_init",
-        //     "channel_close_confirm",
-        //     "send_packet",
-        //     "recv_packet",
-        //     "acknowledge_packet",
-        //     "timeout_packet",
-        //     "submit_evidence",
-        // ];
-
-        // let mut queries = vec![new_block()];
-        // queries.extend(keys.iter().map(Query::exists));
-        // queries
+        vec![new_block()]
     }
 
     pub fn new_block() -> Query {
         Query::from(EventType::NewBlock)
-    }
-
-    pub fn ibc_client() -> Query {
-        Query::eq("message.module", "ibc_client")
-    }
-
-    pub fn ibc_connection() -> Query {
-        Query::eq("message.module", "ibc_connection")
-    }
-
-    pub fn ibc_channel() -> Query {
-        Query::eq("message.module", "ibc_channel")
-    }
-
-    pub fn interchain_query() -> Query {
-        Query::eq("message.module", "interchainquery")
     }
 }
 
@@ -216,7 +168,6 @@ impl EventMonitor {
         let (tx_err, rx_err) = mpsc::unbounded_channel();
         let driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
 
-        // TODO: move them to config file(?)
         let event_queries = queries::all();
 
         let monitor = Self {
@@ -501,14 +452,15 @@ async fn collect_events(
         block: Some(block), ..
     } = event.data
     {
-        let events = fetch_all_events(client, block.header.height).await?;
+        let abci_events = fetch_all_events(client, block.header.height).await?;
 
         let height = Height::from_tm(block.header.height, chain_id);
-        let mut events = get_all_events(chain_id, height, &events).unwrap_or_default();
-        sort_events(&mut events);
+        let new_block_event =
+            IbcEventWithHeight::new(IbcEvent::NewBlock(NewBlock::new(height)), height);
 
-        // FIXME: Do we need to add the NewBlock events ourselves, or is it already
-        //        included in the block results?
+        let mut events = vec![new_block_event];
+        let mut block_events = get_all_events(chain_id, height, &abci_events).unwrap_or_default();
+        events.append(&mut block_events);
 
         Ok(Some(EventBatch {
             chain_id: chain_id.clone(),
@@ -547,17 +499,6 @@ async fn fetch_all_events(
     }
 
     Ok(events)
-}
-/// Sort the given events by putting the NewBlock event first,
-/// and leaving the other events as is.
-fn sort_events(events: &mut [IbcEventWithHeight]) {
-    use ibc_relayer_types::events::IbcEvent;
-    use std::cmp::Ordering;
-
-    events.sort_by(|a, b| match (&a.event, &b.event) {
-        (IbcEvent::NewBlock(_), _) => Ordering::Less,
-        _ => Ordering::Equal,
-    })
 }
 
 async fn run_driver(

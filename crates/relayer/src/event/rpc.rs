@@ -1,15 +1,10 @@
-// use alloc::collections::BTreeMap as HashMap;
-// use core::convert::TryFrom;
 use ibc_relayer_types::applications::ics29_fee::events::DistributionType;
 use tendermint::abci;
 
-// use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
 use ibc_relayer_types::core::ics02_client::height::Height;
-// use ibc_relayer_types::core::ics04_channel::events as ChannelEvents;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
 
-// use crate::chain::cosmos::types::events::channel::RawObject;
 use crate::telemetry;
 
 use super::{ibc_event_try_from_abci_event, IbcEventWithHeight};
@@ -119,49 +114,49 @@ pub fn get_all_events(
     height: Height,
     events: &[abci::Event],
 ) -> Result<Vec<IbcEventWithHeight>, String> {
-    let mut events_with_height: Vec<IbcEventWithHeight> = vec![];
+    let mut events_with_height = vec![];
 
     for abci_event in events {
-        if let Ok(ibc_event) = ibc_event_try_from_abci_event(abci_event) {
-            if event_is_type_client(&ibc_event)
-            // query == queries::ibc_client().to_string()
-            {
-                tracing::trace!("extracted ibc_client event {}", ibc_event);
-                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-            } else if event_is_type_connection(&ibc_event)
-            //query == queries::ibc_connection().to_string()
-            {
-                tracing::trace!("extracted ibc_connection event {}", ibc_event);
-                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-            } else if event_is_type_channel(&ibc_event)
-            // query == queries::ibc_channel().to_string()
-            {
-                tracing::trace!("extracted ibc_channel event{}", ibc_event);
-                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-            } else if event_is_type_cross_chain_query(&ibc_event)
-            // query == queries::interchain_query().to_string()
-            {
-                tracing::trace!("extracted ics26_interchain_query event {}", ibc_event);
-                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-            } else if event_is_type_incentivized(&ibc_event)
-            // query == queries::ibc_channel().to_string()
-            {
-                tracing::trace!("extracted ics29_fee event {}", ibc_event);
-                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-            } else if event_is_type_distribute_fee(&ibc_event)
-            // query == queries::ibc_channel().to_string()
-            {
-                if let IbcEvent::DistributeFeePacket(dist) = ibc_event {
+        match ibc_event_try_from_abci_event(abci_event) {
+            Ok(event) if should_collect_event(&event) => {
+                if let IbcEvent::DistributeFeePacket(dist) = &event {
                     // Only record rewarded fees
                     if let DistributionType::Reward = dist.distribution_type {
-                        telemetry!(fees_amount, chain_id, &dist.receiver, dist.fee);
+                        telemetry!(fees_amount, chain_id, &dist.receiver, dist.fee.clone());
                     }
                 }
+
+                events_with_height.push(IbcEventWithHeight { height, event });
             }
+
+            _ => {}
         }
     }
 
     Ok(events_with_height)
+}
+
+fn should_collect_event(e: &IbcEvent) -> bool {
+    // Ordered from most frequent to least frequent
+    event_is_type_packet(e)
+        || event_is_type_incentivized(e)
+        || event_is_type_distribute_fee(e)
+        || event_is_type_cross_chain_query(e)
+        || event_is_type_channel(e)
+        || event_is_type_connection(e)
+        || event_is_type_client(e)
+}
+
+fn event_is_type_packet(ev: &IbcEvent) -> bool {
+    matches!(
+        ev,
+        IbcEvent::SendPacket(_)
+            | IbcEvent::ReceivePacket(_)
+            | IbcEvent::WriteAcknowledgement(_)
+            | IbcEvent::AcknowledgePacket(_)
+            | IbcEvent::TimeoutPacket(_)
+            | IbcEvent::TimeoutOnClosePacket(_)
+    )
 }
 
 fn event_is_type_client(ev: &IbcEvent) -> bool {
@@ -193,12 +188,6 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
             | IbcEvent::OpenConfirmChannel(_)
             | IbcEvent::CloseInitChannel(_)
             | IbcEvent::CloseConfirmChannel(_)
-            | IbcEvent::SendPacket(_)
-            | IbcEvent::ReceivePacket(_)
-            | IbcEvent::WriteAcknowledgement(_)
-            | IbcEvent::AcknowledgePacket(_)
-            | IbcEvent::TimeoutPacket(_)
-            | IbcEvent::TimeoutOnClosePacket(_)
     )
 }
 
@@ -214,6 +203,12 @@ fn event_is_type_distribute_fee(ev: &IbcEvent) -> bool {
     matches!(ev, IbcEvent::DistributeFeePacket(_))
 }
 
+// use alloc::collections::BTreeMap as HashMap;
+// use core::convert::TryFrom;
+// use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
+// use ibc_relayer_types::core::ics04_channel::events as ChannelEvents;
+// use crate::chain::cosmos::types::events::channel::RawObject;
+//
 // fn extract_block_events(
 //     height: Height,
 //     block_events: &HashMap<String, Vec<String>>,
