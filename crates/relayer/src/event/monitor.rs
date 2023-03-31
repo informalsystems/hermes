@@ -1,32 +1,33 @@
 use alloc::sync::Arc;
-use core::cmp::Ordering;
 
 use crossbeam_channel as channel;
 use futures::{
     pin_mut,
-    stream::{self, select_all, StreamExt},
-    Stream, TryStreamExt,
+    stream::{select_all, StreamExt},
+    Stream,
 };
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
+use tendermint::abci;
+use tendermint::block::Height as BlockHeight;
 use tendermint_rpc::{
-    client::CompatMode, event::Event as RpcEvent, query::Query, Error as RpcError,
-    SubscriptionClient, WebSocketClient, WebSocketClientDriver, WebSocketClientUrl,
+    client::CompatMode,
+    event::{Event as RpcEvent, EventData},
+    query::Query,
+    Client, Error as RpcError, SubscriptionClient, WebSocketClient, WebSocketClientDriver,
+    WebSocketClientUrl,
 };
 
 use ibc_relayer_types::{
-    core::ics02_client::height::Height, core::ics24_host::identifier::ChainId, events::IbcEvent,
+    core::ics02_client::height::Height, core::ics24_host::identifier::ChainId,
 };
 
 use crate::{
     chain::{handle::Subscription, tracking::TrackingId},
     telemetry,
-    util::{
-        retry::{retry_with_index, RetryResult},
-        stream::try_group_while,
-    },
+    util::retry::{retry_with_index, RetryResult},
 };
 
 mod error;
@@ -127,7 +128,6 @@ pub struct EventMonitor {
     rt: Arc<TokioRuntime>,
 }
 
-// TODO: These are SDK specific, should be eventually moved.
 pub mod queries {
     use tendermint_rpc::query::{EventType, Query};
 
@@ -135,13 +135,38 @@ pub mod queries {
         // Note: Tendermint-go supports max 5 query specifiers!
         vec![
             new_block(),
-            ibc_client(),
-            ibc_connection(),
-            ibc_channel(),
-            ibc_query(),
+            // ibc_client(),
+            // ibc_connection(),
+            // ibc_channel(),
+            // interchain_query(),
             // This will be needed when we send misbehavior evidence to full node
             // Query::eq("message.module", "evidence"),
         ]
+
+        // let keys = [
+        //     "create_client",
+        //     "update_client",
+        //     "client_misbehaviour",
+        //     "connection_open_init",
+        //     "connection_open_try",
+        //     "connection_open_ack",
+        //     "connection_open_confirm",
+        //     "channel_open_init",
+        //     "channel_open_try",
+        //     "channel_open_ack",
+        //     "channel_open_confirm",
+        //     "channel_close_init",
+        //     "channel_close_confirm",
+        //     "send_packet",
+        //     "recv_packet",
+        //     "acknowledge_packet",
+        //     "timeout_packet",
+        //     "submit_evidence",
+        // ];
+
+        // let mut queries = vec![new_block()];
+        // queries.extend(keys.iter().map(Query::exists));
+        // queries
     }
 
     pub fn new_block() -> Query {
@@ -160,7 +185,7 @@ pub mod queries {
         Query::eq("message.module", "ibc_channel")
     }
 
-    pub fn ibc_query() -> Query {
+    pub fn interchain_query() -> Query {
         Query::eq("message.module", "interchainquery")
     }
 }
@@ -366,11 +391,8 @@ impl EventMonitor {
         let subscriptions =
             core::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
 
-        // Convert the stream of RPC events into a stream of event batches.
-        let batches = stream_batches(subscriptions, self.chain_id.clone());
-
         // Needed to be able to poll the stream
-        pin_mut!(batches);
+        pin_mut!(subscriptions);
 
         // Work around double borrow
         let rt = self.rt.clone();
@@ -390,7 +412,10 @@ impl EventMonitor {
 
             let result = rt.block_on(async {
                 tokio::select! {
-                    Some(batch) = batches.next() => batch,
+                    Some(event) = subscriptions.next() => match event {
+                        Ok(event) => collect_events(&self.client, &self.chain_id, event).await,
+                        Err(e) => Err(Error::web_socket_driver(e)),
+                    },
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
                 }
             });
@@ -408,7 +433,8 @@ impl EventMonitor {
             }
 
             match result {
-                Ok(batch) => self.process_batch(batch),
+                Ok(Some(batch)) => self.process_batch(batch),
+                Ok(None) => { /* Nothing to do */ }
                 Err(e) => {
                     if let ErrorDetail::SubscriptionCancelled(reason) = e.detail() {
                         error!("subscription cancelled, reason: {}", reason);
@@ -464,51 +490,70 @@ impl EventMonitor {
 }
 
 /// Collect the IBC events from an RPC event
-fn collect_events(
+async fn collect_events(
+    client: &WebSocketClient,
     chain_id: &ChainId,
     event: RpcEvent,
-) -> impl Stream<Item = Result<IbcEventWithHeight>> {
-    let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
-    stream::iter(events).map(Ok)
-}
+) -> Result<Option<EventBatch>> {
+    use crate::event::rpc::get_all_events;
 
-/// Convert a stream of RPC event into a stream of event batches
-fn stream_batches(
-    subscriptions: Box<SubscriptionStream>,
-    chain_id: ChainId,
-) -> impl Stream<Item = Result<EventBatch>> {
-    let id = chain_id.clone();
+    if let EventData::NewBlock {
+        block: Some(block), ..
+    } = event.data
+    {
+        let events = fetch_all_events(client, block.header.height).await?;
 
-    // Collect IBC events from each RPC event
-    let events = subscriptions
-        .map_ok(move |rpc_event| collect_events(&id, rpc_event))
-        .map_err(Error::canceled_or_generic)
-        .try_flatten();
+        let height = Height::from_tm(block.header.height, chain_id);
+        let mut events = get_all_events(chain_id, height, &events).unwrap_or_default();
+        sort_events(&mut events);
 
-    // Group events by height
-    let grouped = try_group_while(events, |ev0, ev1| ev0.height == ev1.height);
+        // FIXME: Do we need to add the NewBlock events ourselves, or is it already
+        //        included in the block results?
 
-    // Convert each group to a batch
-    grouped.map_ok(move |mut events_with_heights| {
-        let height = events_with_heights
-            .first()
-            .map(|ev_with_height| ev_with_height.height)
-            .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
-
-        sort_events(&mut events_with_heights);
-
-        EventBatch {
-            height,
-            events: events_with_heights,
+        Ok(Some(EventBatch {
             chain_id: chain_id.clone(),
             tracking_id: TrackingId::new_uuid(),
-        }
-    })
+            height,
+            events,
+        }))
+    } else {
+        Ok(None)
+    }
 }
 
+async fn fetch_all_events(
+    client: &WebSocketClient,
+    height: BlockHeight,
+) -> Result<Vec<abci::Event>> {
+    let mut response = client
+        .block_results(height)
+        .await
+        .map_err(Error::web_socket_driver)?;
+
+    let mut events = vec![];
+
+    if let Some(begin_block_events) = &mut response.begin_block_events {
+        events.append(begin_block_events);
+    }
+
+    if let Some(txs_results) = &mut response.txs_results {
+        for tx_result in txs_results {
+            events.append(&mut tx_result.events);
+        }
+    }
+
+    if let Some(end_block_events) = &mut response.end_block_events {
+        events.append(end_block_events);
+    }
+
+    Ok(events)
+}
 /// Sort the given events by putting the NewBlock event first,
 /// and leaving the other events as is.
 fn sort_events(events: &mut [IbcEventWithHeight]) {
+    use ibc_relayer_types::events::IbcEvent;
+    use std::cmp::Ordering;
+
     events.sort_by(|a, b| match (&a.event, &b.event) {
         (IbcEvent::NewBlock(_), _) => Ordering::Less,
         _ => Ordering::Equal,

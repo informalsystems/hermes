@@ -1,17 +1,15 @@
-use alloc::collections::BTreeMap as HashMap;
-use core::convert::TryFrom;
+// use alloc::collections::BTreeMap as HashMap;
+// use core::convert::TryFrom;
 use ibc_relayer_types::applications::ics29_fee::events::DistributionType;
+use tendermint::abci;
 
-use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
-
-use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
-use ibc_relayer_types::core::ics02_client::{events as ClientEvents, height::Height};
-use ibc_relayer_types::core::ics04_channel::events as ChannelEvents;
+// use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
+use ibc_relayer_types::core::ics02_client::height::Height;
+// use ibc_relayer_types::core::ics04_channel::events as ChannelEvents;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
 
-use crate::chain::cosmos::types::events::channel::RawObject;
-use crate::event::monitor::queries;
+// use crate::chain::cosmos::types::events::channel::RawObject;
 use crate::telemetry;
 
 use super::{ibc_event_try_from_abci_event, IbcEventWithHeight};
@@ -118,87 +116,49 @@ use super::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 /// OpenInit -> OpenTry -> OpenAck -> OpenConfirm -> SendPacket -> CloseInit -> CloseConfirm.
 pub fn get_all_events(
     chain_id: &ChainId,
-    result: RpcEvent,
+    height: Height,
+    events: &[abci::Event],
 ) -> Result<Vec<IbcEventWithHeight>, String> {
     let mut events_with_height: Vec<IbcEventWithHeight> = vec![];
-    let RpcEvent {
-        data,
-        events,
-        query,
-    } = result;
-    let events = events.ok_or("missing events")?;
 
-    match data {
-        RpcEventData::NewBlock { block, .. } if query == queries::new_block().to_string() => {
-            let height = Height::new(
-                ChainId::chain_version(chain_id.to_string().as_str()),
-                u64::from(block.as_ref().ok_or("tx.height")?.header.height),
-            )
-            .map_err(|_| String::from("tx.height: invalid header height of 0"))?;
-
-            events_with_height.push(IbcEventWithHeight::new(
-                ClientEvents::NewBlock::new(height).into(),
-                height,
-            ));
-            events_with_height.append(&mut extract_block_events(height, &events));
-        }
-        RpcEventData::Tx { tx_result } => {
-            let height = Height::new(
-                ChainId::chain_version(chain_id.to_string().as_str()),
-                tx_result.height as u64,
-            )
-            .map_err(|_| String::from("tx_result.height: invalid header height of 0"))?;
-
-            for abci_event in &tx_result.result.events {
-                if let Ok(ibc_event) = ibc_event_try_from_abci_event(abci_event) {
-                    if query == queries::ibc_client().to_string()
-                        && event_is_type_client(&ibc_event)
-                    {
-                        tracing::trace!("extracted ibc_client event {}", ibc_event);
-                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-                    } else if query == queries::ibc_connection().to_string()
-                        && event_is_type_connection(&ibc_event)
-                    {
-                        tracing::trace!("extracted ibc_connection event {}", ibc_event);
-                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-                    } else if query == queries::ibc_channel().to_string()
-                        && event_is_type_channel(&ibc_event)
-                    {
-                        let _span = tracing::trace_span!("ibc_channel event").entered();
-                        tracing::trace!("extracted {}", ibc_event);
-                        if matches!(ibc_event, IbcEvent::SendPacket(_)) {
-                            // Should be the same as the hash of tx_result.tx?
-                            if let Some(hash) =
-                                events.get("tx.hash").and_then(|values| values.get(0))
-                            {
-                                tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
-                            }
-                        }
-
-                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-                    } else if query == queries::ibc_query().to_string()
-                        && event_is_type_cross_chain_query(&ibc_event)
-                    {
-                        tracing::trace!("extracted cross chain queries {}", ibc_event);
-                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-                    } else if query == queries::ibc_channel().to_string()
-                        && event_is_type_incentivized(&ibc_event)
-                    {
-                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-                    } else if query == queries::ibc_channel().to_string()
-                        && event_is_type_distribute_fee(&ibc_event)
-                    {
-                        if let IbcEvent::DistributeFeePacket(dist) = ibc_event {
-                            // Only record rewarded fees
-                            if let DistributionType::Reward = dist.distribution_type {
-                                telemetry!(fees_amount, chain_id, &dist.receiver, dist.fee);
-                            }
-                        }
+    for abci_event in events {
+        if let Ok(ibc_event) = ibc_event_try_from_abci_event(abci_event) {
+            if event_is_type_client(&ibc_event)
+            // query == queries::ibc_client().to_string()
+            {
+                tracing::trace!("extracted ibc_client event {}", ibc_event);
+                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+            } else if event_is_type_connection(&ibc_event)
+            //query == queries::ibc_connection().to_string()
+            {
+                tracing::trace!("extracted ibc_connection event {}", ibc_event);
+                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+            } else if event_is_type_channel(&ibc_event)
+            // query == queries::ibc_channel().to_string()
+            {
+                tracing::trace!("extracted ibc_channel event{}", ibc_event);
+                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+            } else if event_is_type_cross_chain_query(&ibc_event)
+            // query == queries::interchain_query().to_string()
+            {
+                tracing::trace!("extracted ics26_interchain_query event {}", ibc_event);
+                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+            } else if event_is_type_incentivized(&ibc_event)
+            // query == queries::ibc_channel().to_string()
+            {
+                tracing::trace!("extracted ics29_fee event {}", ibc_event);
+                events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+            } else if event_is_type_distribute_fee(&ibc_event)
+            // query == queries::ibc_channel().to_string()
+            {
+                if let IbcEvent::DistributeFeePacket(dist) = ibc_event {
+                    // Only record rewarded fees
+                    if let DistributionType::Reward = dist.distribution_type {
+                        telemetry!(fees_amount, chain_id, &dist.receiver, dist.fee);
                     }
                 }
             }
         }
-        _ => {}
     }
 
     Ok(events_with_height)
@@ -254,83 +214,83 @@ fn event_is_type_distribute_fee(ev: &IbcEvent) -> bool {
     matches!(ev, IbcEvent::DistributeFeePacket(_))
 }
 
-fn extract_block_events(
-    height: Height,
-    block_events: &HashMap<String, Vec<String>>,
-) -> Vec<IbcEventWithHeight> {
-    #[inline]
-    fn extract_events<'a, T: TryFrom<RawObject<'a>>>(
-        height: Height,
-        block_events: &'a HashMap<String, Vec<String>>,
-        event_type: &str,
-        event_field: &str,
-    ) -> Vec<T> {
-        block_events
-            .get(&format!("{event_type}.{event_field}"))
-            .unwrap_or(&vec![])
-            .iter()
-            .enumerate()
-            .filter_map(|(i, _)| {
-                let raw_obj = RawObject::new(height, event_type.to_owned(), i, block_events);
-                T::try_from(raw_obj).ok()
-            })
-            .collect()
-    }
+// fn extract_block_events(
+//     height: Height,
+//     block_events: &HashMap<String, Vec<String>>,
+// ) -> Vec<IbcEventWithHeight> {
+//     #[inline]
+//     fn extract_events<'a, T: TryFrom<RawObject<'a>>>(
+//         height: Height,
+//         block_events: &'a HashMap<String, Vec<String>>,
+//         event_type: &str,
+//         event_field: &str,
+//     ) -> Vec<T> {
+//         block_events
+//             .get(&format!("{event_type}.{event_field}"))
+//             .unwrap_or(&vec![])
+//             .iter()
+//             .enumerate()
+//             .filter_map(|(i, _)| {
+//                 let raw_obj = RawObject::new(height, event_type.to_owned(), i, block_events);
+//                 T::try_from(raw_obj).ok()
+//             })
+//             .collect()
+//     }
 
-    #[inline]
-    fn append_events<T: Into<IbcEvent>>(
-        events: &mut Vec<IbcEventWithHeight>,
-        chan_events: Vec<T>,
-        height: Height,
-    ) {
-        events.append(
-            &mut chan_events
-                .into_iter()
-                .map(|ev| IbcEventWithHeight::new(ev.into(), height))
-                .collect(),
-        );
-    }
+//     #[inline]
+//     fn append_events<T: Into<IbcEvent>>(
+//         events: &mut Vec<IbcEventWithHeight>,
+//         chan_events: Vec<T>,
+//         height: Height,
+//     ) {
+//         events.append(
+//             &mut chan_events
+//                 .into_iter()
+//                 .map(|ev| IbcEventWithHeight::new(ev.into(), height))
+//                 .collect(),
+//         );
+//     }
 
-    let mut events: Vec<IbcEventWithHeight> = vec![];
-    append_events::<ChannelEvents::OpenInit>(
-        &mut events,
-        extract_events(height, block_events, "channel_open_init", "channel_id"),
-        height,
-    );
-    append_events::<ChannelEvents::OpenTry>(
-        &mut events,
-        extract_events(height, block_events, "channel_open_try", "channel_id"),
-        height,
-    );
-    append_events::<ChannelEvents::OpenAck>(
-        &mut events,
-        extract_events(height, block_events, "channel_open_ack", "channel_id"),
-        height,
-    );
-    append_events::<ChannelEvents::OpenConfirm>(
-        &mut events,
-        extract_events(height, block_events, "channel_open_confirm", "channel_id"),
-        height,
-    );
-    append_events::<ChannelEvents::SendPacket>(
-        &mut events,
-        extract_events(height, block_events, "send_packet", "packet_data"),
-        height,
-    );
-    append_events::<ChannelEvents::CloseInit>(
-        &mut events,
-        extract_events(height, block_events, "channel_close_init", "channel_id"),
-        height,
-    );
-    append_events::<ChannelEvents::CloseConfirm>(
-        &mut events,
-        extract_events(height, block_events, "channel_close_confirm", "channel_id"),
-        height,
-    );
-    // extract cross chain query event from block_events
-    if let Ok(ccq) = CrossChainQueryPacket::extract_query_event(block_events) {
-        events.push(IbcEventWithHeight::new(ccq, height));
-    }
+//     let mut events: Vec<IbcEventWithHeight> = vec![];
+//     append_events::<ChannelEvents::OpenInit>(
+//         &mut events,
+//         extract_events(height, block_events, "channel_open_init", "channel_id"),
+//         height,
+//     );
+//     append_events::<ChannelEvents::OpenTry>(
+//         &mut events,
+//         extract_events(height, block_events, "channel_open_try", "channel_id"),
+//         height,
+//     );
+//     append_events::<ChannelEvents::OpenAck>(
+//         &mut events,
+//         extract_events(height, block_events, "channel_open_ack", "channel_id"),
+//         height,
+//     );
+//     append_events::<ChannelEvents::OpenConfirm>(
+//         &mut events,
+//         extract_events(height, block_events, "channel_open_confirm", "channel_id"),
+//         height,
+//     );
+//     append_events::<ChannelEvents::SendPacket>(
+//         &mut events,
+//         extract_events(height, block_events, "send_packet", "packet_data"),
+//         height,
+//     );
+//     append_events::<ChannelEvents::CloseInit>(
+//         &mut events,
+//         extract_events(height, block_events, "channel_close_init", "channel_id"),
+//         height,
+//     );
+//     append_events::<ChannelEvents::CloseConfirm>(
+//         &mut events,
+//         extract_events(height, block_events, "channel_close_confirm", "channel_id"),
+//         height,
+//     );
+//     // extract cross chain query event from block_events
+//     if let Ok(ccq) = CrossChainQueryPacket::extract_query_event(block_events) {
+//         events.push(IbcEventWithHeight::new(ccq, height));
+//     }
 
-    events
-}
+//     events
+// }
