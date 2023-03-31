@@ -19,7 +19,7 @@ use crate::{
     chain::{endpoint::HealthCheck, handle::ChainHandle, tracking::TrackingId},
     config::Config,
     event::{
-        monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+        monitor::{self, EventBatch},
         IbcEventWithHeight,
     },
     object::Object,
@@ -853,8 +853,6 @@ fn handle_batch<Chain: ChainHandle>(
     chain: Chain,
     batch: ArcBatch,
 ) {
-    let chain_id = chain.id();
-
     match batch.deref() {
         Ok(batch) => {
             if let Err(e) =
@@ -862,12 +860,6 @@ fn handle_batch<Chain: ChainHandle>(
             {
                 error!("error during batch processing: {}", e);
             }
-        }
-        Err(EventError(EventErrorDetail::SubscriptionCancelled(_), _)) => {
-            warn!("event subscription was cancelled, clearing pending packets");
-
-            let _ = clear_pending_packets(workers, &chain_id)
-                .map_err(|e| error!("error during clearing pending packets: {}", e));
         }
         Err(e) => {
             error!("error when receiving event batch: {}", e)

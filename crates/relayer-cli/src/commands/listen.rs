@@ -12,7 +12,7 @@ use eyre::eyre;
 use itertools::Itertools;
 use tendermint_rpc::{client::CompatMode, Client, HttpClient};
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::{error, info, instrument};
+use tracing::{error, info};
 
 use ibc_relayer::{chain::handle::Subscription, config::ChainConfig, event::monitor::EventMonitor};
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
@@ -97,19 +97,14 @@ impl Runnable for ListenCmd {
     }
 }
 
-/// Listen to events
-#[instrument(skip_all, level = "error", fields(chain = %config.id))]
 pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()> {
     let rt = Arc::new(TokioRuntime::new()?);
-    let compat_mode = detect_compatibility_mode(config, rt.clone())?;
-    let rx = subscribe(config, compat_mode, rt)?;
+    let rpc_client = detect_compatibility_mode(config, rt.clone())?;
+    let rx = subscribe(config, rpc_client, rt)?;
 
     while let Ok(event_batch) = rx.recv() {
         match event_batch.as_ref() {
             Ok(batch) => {
-                let _span =
-                    tracing::error_span!("event_batch", batch_height = %batch.height).entered();
-
                 let matching_events = batch
                     .events
                     .iter()
@@ -137,38 +132,28 @@ fn event_match(event: &IbcEvent, filters: &[EventFilter]) -> bool {
 
 fn subscribe(
     chain_config: &ChainConfig,
-    compat_mode: CompatMode,
+    rpc_client: HttpClient,
     rt: Arc<TokioRuntime>,
 ) -> eyre::Result<Subscription> {
-    let (mut event_monitor, tx_cmd) = EventMonitor::new(
-        chain_config.id.clone(),
-        chain_config.websocket_addr.clone(),
-        compat_mode,
-        rt,
-    )
-    .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;
+    let (event_monitor, tx_cmd) = EventMonitor::new(chain_config.id.clone(), rpc_client, rt)
+        .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;
 
-    event_monitor
-        .init_subscriptions()
-        .map_err(|e| eyre!("could not initialize subscriptions: {}", e))?;
-
-    let queries = event_monitor.queries();
-    info!("listening for queries: {}", queries.iter().format(", "),);
+    info!("listening for events...");
 
     thread::spawn(|| event_monitor.run());
 
-    let subscription = tx_cmd.subscribe()?;
-    Ok(subscription)
+    Ok(tx_cmd.subscribe()?)
 }
 
 fn detect_compatibility_mode(
     config: &ChainConfig,
     rt: Arc<TokioRuntime>,
-) -> eyre::Result<CompatMode> {
-    let client = HttpClient::new(config.rpc_addr.clone())?;
+) -> eyre::Result<HttpClient> {
+    let mut client = HttpClient::new(config.rpc_addr.clone())?;
     let status = rt.block_on(client.status())?;
     let compat_mode = CompatMode::from_version(status.node_info.version)?;
-    Ok(compat_mode)
+    client.set_compat_mode(compat_mode);
+    Ok(client)
 }
 
 #[cfg(test)]
