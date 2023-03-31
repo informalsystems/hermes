@@ -371,6 +371,12 @@ impl FromStr for Order {
     }
 }
 
+/// The possible state variants that a channel can exhibit.
+/// 
+/// These are encoded with integer discriminants so that there is 
+/// an easy way to compare channel states against one another. More 
+/// explicitly, there is a partial ordering around the channel state
+/// variants, with the `Uninitialized` state being the smallest. 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum State {
     Uninitialized = 0,
@@ -378,6 +384,8 @@ pub enum State {
     TryOpen = 2,
     Open = 3,
     Closed = 4,
+    InitUpgrade = 5,
+    TryUpgrade = 6,
 }
 
 impl State {
@@ -389,6 +397,8 @@ impl State {
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
             Self::Closed => "CLOSED",
+            Self::InitUpgrade => "INITUPGRADE",
+            Self::TryUpgrade => "TRYUPGRADE",
         }
     }
 
@@ -400,6 +410,8 @@ impl State {
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
             4 => Ok(Self::Closed),
+            5 => Ok(Self::InitUpgrade),
+            6 => Ok(Self::TryUpgrade),
             _ => Err(Error::unknown_state(s)),
         }
     }
