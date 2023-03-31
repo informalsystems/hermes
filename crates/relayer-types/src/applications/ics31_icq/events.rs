@@ -12,8 +12,6 @@ const EVENT_TYPE_PREFIX: &str = "query_request";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CrossChainQueryPacket {
-    pub module: String,
-    pub action: String,
     pub query_id: String,
     pub chain_id: ChainId,
     pub connection_id: ConnectionId,
@@ -46,8 +44,6 @@ fn new_attr(key: &str, value: &str) -> abci::EventAttribute {
 impl From<CrossChainQueryPacket> for abci::Event {
     fn from(packet: CrossChainQueryPacket) -> Self {
         let attributes: Vec<abci::EventAttribute> = vec![
-            new_attr("module", packet.module.as_str()),
-            new_attr("action", packet.action.as_str()),
             new_attr("query_id", packet.query_id.as_str()),
             new_attr("chain_id", packet.chain_id.as_str()),
             new_attr("connection_id", packet.connection_id.as_str()),
@@ -67,8 +63,6 @@ impl<'a> TryFrom<&'a [abci::EventAttribute]> for CrossChainQueryPacket {
     type Error = Error;
 
     fn try_from(entries: &'a [abci::EventAttribute]) -> Result<Self, Error> {
-        let module = find_value("module", entries)?.to_string();
-        let action = find_value("action", entries)?.to_string();
         let query_id = find_value("query_id", entries)?.to_string();
         let chain_id_str = find_value("chain_id", entries)?;
         let connection_id_str = find_value("connection_id", entries)?;
@@ -81,8 +75,6 @@ impl<'a> TryFrom<&'a [abci::EventAttribute]> for CrossChainQueryPacket {
         let height = Height::from_str(height_str)?;
 
         Ok(Self {
-            module,
-            action,
             query_id,
             chain_id,
             connection_id,
@@ -132,14 +124,6 @@ impl CrossChainQueryPacket {
         )?;
 
         Ok(IbcEvent::CrossChainQueryPacket(CrossChainQueryPacket {
-            module: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "module"),
-            )?,
-            action: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "action"),
-            )?,
             query_id: fetch_first_element_from_events(
                 block_events,
                 &format!("{}.{}", EVENT_TYPE_PREFIX, "query_id"),

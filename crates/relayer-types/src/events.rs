@@ -275,9 +275,9 @@ pub enum IbcEvent {
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
-    IncentivizedPacket(IncentivizedPacket),
     CrossChainQueryPacket(CrossChainQueryPacket),
 
+    IncentivizedPacket(IncentivizedPacket),
     DistributeFeePacket(DistributeFeePacket),
 
     AppModule(ModuleEvent),

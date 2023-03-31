@@ -60,6 +60,8 @@ impl Display for IbcEventWithHeight {
 /// in the relayer crate, but can't because neither AbciEvent nor IbcEvent are
 /// defined in this crate. Hence, we are forced to make an ad-hoc function for
 /// it.
+///
+/// TODO: Re-order the cases so that the most common events are first.
 pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent, IbcEventError> {
     match abci_event.kind.parse() {
         Ok(IbcEventType::CreateClient) => Ok(IbcEvent::CreateClient(

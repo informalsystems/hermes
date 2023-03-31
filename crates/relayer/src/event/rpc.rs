@@ -137,14 +137,12 @@ pub fn get_all_events(
 }
 
 fn should_collect_event(e: &IbcEvent) -> bool {
-    // Ordered from most frequent to least frequent
     event_is_type_packet(e)
-        || event_is_type_incentivized(e)
-        || event_is_type_distribute_fee(e)
-        || event_is_type_cross_chain_query(e)
         || event_is_type_channel(e)
         || event_is_type_connection(e)
         || event_is_type_client(e)
+        || event_is_type_fee(e)
+        || event_is_type_cross_chain_query(e)
 }
 
 fn event_is_type_packet(ev: &IbcEvent) -> bool {
@@ -195,12 +193,11 @@ fn event_is_type_cross_chain_query(ev: &IbcEvent) -> bool {
     matches!(ev, IbcEvent::CrossChainQueryPacket(_))
 }
 
-fn event_is_type_incentivized(ev: &IbcEvent) -> bool {
-    matches!(ev, IbcEvent::IncentivizedPacket(_))
-}
-
-fn event_is_type_distribute_fee(ev: &IbcEvent) -> bool {
-    matches!(ev, IbcEvent::DistributeFeePacket(_))
+fn event_is_type_fee(ev: &IbcEvent) -> bool {
+    matches!(
+        ev,
+        IbcEvent::IncentivizedPacket(_) | IbcEvent::DistributeFeePacket(_)
+    )
 }
 
 // use alloc::collections::BTreeMap as HashMap;
