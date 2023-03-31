@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use itertools::Itertools;
 
+use rpc::Url;
 use tendermint_light_client::{
     components::{self, io::AtHeight},
     light_client::LightClient as TmLightClient,
@@ -43,8 +46,10 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         trusted: ICSHeight,
         target: ICSHeight,
         client_state: &AnyClientState,
+        archive_address: Option<String>,
     ) -> Result<Verified<TmHeader>, Error> {
-        let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
+        let Verified { target, supporting } =
+            self.verify(trusted, target, client_state, archive_address)?;
         let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
         Ok(Verified { target, supporting })
     }
@@ -54,6 +59,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         trusted: ICSHeight,
         target: ICSHeight,
         client_state: &AnyClientState,
+        archive_address: Option<String>,
     ) -> Result<Verified<LightBlock>, Error> {
         trace!(%trusted, %target, "light client verification");
 
@@ -61,7 +67,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             TMHeight::try_from(target.revision_height()).map_err(Error::invalid_height)?;
 
         let client = self.prepare_client(client_state)?;
-        let mut state = self.prepare_state(trusted)?;
+        let mut state = self.prepare_state(trusted, archive_address)?;
 
         // Verify the target header
         let target = client
@@ -87,7 +93,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let height = TMHeight::try_from(height.revision_height()).map_err(Error::invalid_height)?;
 
-        self.fetch_light_block(AtHeight::At(height))
+        self.fetch_light_block(AtHeight::At(height), None)
     }
 
     /// Given a client update event that includes the header used in a client update,
@@ -117,7 +123,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 ))
             })?;
 
-        let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
+        let latest_chain_block = self.fetch_light_block(AtHeight::Highest, None)?;
         let latest_chain_height =
             ICSHeight::new(self.chain_id.version(), latest_chain_block.height().into())
                 .map_err(|_| Error::invalid_height_no_source())?;
@@ -140,7 +146,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         }
 
         let Verified { target, supporting } =
-            self.verify(trusted_height, target_height, client_state)?;
+            self.verify(trusted_height, target_height, client_state, None)?;
 
         if !headers_compatible(&target.signed_header, &update_header.signed_header) {
             let (witness, supporting) = self.adjust_headers(trusted_height, target, supporting)?;
@@ -205,11 +211,21 @@ impl LightClient {
         ))
     }
 
-    fn prepare_state(&self, trusted: ICSHeight) -> Result<LightClientState, Error> {
+    fn prepare_state(
+        &self,
+        trusted: ICSHeight,
+        archive_address: Option<String>,
+    ) -> Result<LightClientState, Error> {
+        tracing::warn!("src light_client tendermint.rs prepare_state() with trusted: {trusted}");
         let trusted_height =
             TMHeight::try_from(trusted.revision_height()).map_err(Error::invalid_height)?;
 
-        let trusted_block = self.fetch_light_block(AtHeight::At(trusted_height))?;
+        tracing::warn!("got trusted_height");
+
+        let trusted_block =
+            self.fetch_light_block(AtHeight::At(trusted_height), archive_address)?;
+
+        tracing::warn!("got trusted_block");
 
         let mut store = MemoryStore::new();
         store.insert(trusted_block, Status::Trusted);
@@ -217,12 +233,42 @@ impl LightClient {
         Ok(LightClientState::new(store))
     }
 
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, Error> {
+    fn fetch_light_block(
+        &self,
+        height: AtHeight,
+        archive_address: Option<String>,
+    ) -> Result<LightBlock, Error> {
+        use core::time::Duration;
         use tendermint_light_client::components::io::Io;
 
-        self.io
-            .fetch_light_block(height)
-            .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e))
+        tracing::warn!("src light_client tendermint.rs fetch_light_block()");
+
+        match archive_address {
+            Some(archive_address) => {
+                let archive_url = Url::from_str(&archive_address)
+                    .map_err(|e| Error::invalid_archive_address(archive_address, e))?;
+                tracing::warn!("archive address: {archive_url}");
+                let archive_rpc_client = rpc::HttpClient::new(archive_url.clone())
+                    .map_err(|e| Error::rpc(archive_url, e))?;
+                let dummy_peer_id_u8: [u8; 20] = [0; 20];
+                let peer_id = PeerId::new(dummy_peer_id_u8);
+                let archive_io = components::io::ProdIo::new(
+                    peer_id,
+                    archive_rpc_client,
+                    Some(Duration::from_secs(20)),
+                );
+
+                tracing::warn!("will fetch light block using archive_io");
+
+                archive_io
+                    .fetch_light_block(height)
+                    .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e))
+            }
+            None => self
+                .io
+                .fetch_light_block(height)
+                .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e)),
+        }
     }
 
     fn adjust_headers(

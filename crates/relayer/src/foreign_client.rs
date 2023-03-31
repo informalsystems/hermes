@@ -447,7 +447,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     )]
     pub fn upgrade(&self, src_upgrade_height: Height) -> Result<Vec<IbcEvent>, ForeignClientError> {
         let msgs = self
-            .build_update_client_with_trusted(src_upgrade_height, None)
+            .build_update_client_with_trusted(src_upgrade_height, None, None)
             .map_err(|_| {
                 ForeignClientError::client_upgrade_no_source(
                     self.id.clone(),
@@ -856,7 +856,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         target_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
-        self.wait_and_build_update_client_with_trusted(target_height, None)
+        self.wait_and_build_update_client_with_trusted(target_height, None, None)
     }
 
     /// Returns a trusted height that is lower than the target height, so
@@ -1050,6 +1050,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         target_height: Height,
         trusted_height: Option<Height>,
+        archive_address: Option<String>,
     ) -> Result<Vec<Any>, ForeignClientError> {
         let src_application_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
@@ -1066,7 +1067,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             thread::sleep(Duration::from_millis(100));
         }
 
-        let messages = self.build_update_client_with_trusted(target_height, trusted_height)?;
+        let messages =
+            self.build_update_client_with_trusted(target_height, trusted_height, archive_address)?;
 
         let encoded_messages = messages.into_iter().map(Msg::to_any).collect();
 
@@ -1083,6 +1085,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         target_height: Height,
         maybe_trusted_height: Option<Height>,
+        archive_address: Option<String>,
     ) -> Result<Vec<MsgUpdateClient>, ForeignClientError> {
         // Get the latest client state on destination.
         let (client_state, _) = self.validated_client_state()?;
@@ -1130,7 +1133,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         let (header, support) = self
             .src_chain()
-            .build_header(trusted_height, target_height, client_state.clone())
+            .build_header(
+                trusted_height,
+                target_height,
+                client_state.clone(),
+                archive_address,
+            )
             .map_err(|e| {
                 ForeignClientError::client_update(
                     self.dst_chain.id(),
@@ -1188,7 +1196,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     }
 
     pub fn build_latest_update_client_and_send(&self) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        self.build_update_client_and_send(QueryHeight::Latest, None)
+        self.build_update_client_and_send(QueryHeight::Latest, None, None)
     }
 
     #[instrument(
@@ -1201,6 +1209,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         target_query_height: QueryHeight,
         trusted_height: Option<Height>,
+        archive_address: Option<String>,
     ) -> Result<Vec<IbcEvent>, ForeignClientError> {
         let target_height = match target_query_height {
             QueryHeight::Latest => self.src_chain.query_latest_height().map_err(|e| {
@@ -1213,8 +1222,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             QueryHeight::Specific(height) => height,
         };
 
-        let new_msgs =
-            self.wait_and_build_update_client_with_trusted(target_height, trusted_height)?;
+        let new_msgs = self.wait_and_build_update_client_with_trusted(
+            target_height,
+            trusted_height,
+            archive_address,
+        )?;
 
         if new_msgs.is_empty() {
             return Err(ForeignClientError::client_already_up_to_date(

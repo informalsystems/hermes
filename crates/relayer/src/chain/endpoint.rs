@@ -385,6 +385,7 @@ pub trait ChainEndpoint: Sized {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
+        archive_address: Option<String>,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error>;
 
     /// Builds the required proofs and the client state for connection handshake messages.

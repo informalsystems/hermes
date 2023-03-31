@@ -827,7 +827,7 @@ impl ChainEndpoint for CosmosSdkChain {
         client_state: &AnyClientState,
     ) -> Result<Self::LightBlock, Error> {
         self.light_client
-            .verify(trusted, target, client_state)
+            .verify(trusted, target, client_state, None)
             .map(|v| v.target)
     }
 
@@ -1847,6 +1847,7 @@ impl ChainEndpoint for CosmosSdkChain {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
+        archive_address: Option<String>,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 
@@ -1855,6 +1856,7 @@ impl ChainEndpoint for CosmosSdkChain {
             trusted_height,
             target_height,
             client_state,
+            archive_address,
         )?;
 
         Ok((target, supporting))

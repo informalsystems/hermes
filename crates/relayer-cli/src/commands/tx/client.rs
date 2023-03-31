@@ -141,6 +141,13 @@ pub struct TxUpdateClientCmd {
         help = "The trusted height of the client update. Leave unspecified for latest height."
     )]
     trusted_height: Option<u64>,
+
+    #[clap(
+        long = "archive-address",
+        value_name = "ARCHIVE_ADDRESS",
+        help = "The archive node address used to update client."
+    )]
+    archive_address: Option<String>,
 }
 
 impl Runnable for TxUpdateClientCmd {
@@ -190,7 +197,11 @@ impl Runnable for TxUpdateClientCmd {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = client
-            .build_update_client_and_send(target_height, trusted_height)
+            .build_update_client_and_send(
+                target_height,
+                trusted_height,
+                self.archive_address.clone(),
+            )
             .map_err(Error::foreign_client);
 
         match res {
@@ -785,7 +796,8 @@ mod tests {
                 dst_chain_id: ChainId::from_string("host_chain"),
                 dst_client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: None,
-                trusted_height: None
+                trusted_height: None,
+                archive_address: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -804,7 +816,8 @@ mod tests {
                 dst_chain_id: ChainId::from_string("host_chain"),
                 dst_client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: Some(42),
-                trusted_height: None
+                trusted_height: None,
+                archive_address: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -825,7 +838,8 @@ mod tests {
                 dst_chain_id: ChainId::from_string("host_chain"),
                 dst_client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: None,
-                trusted_height: Some(42)
+                trusted_height: Some(42),
+                archive_address: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -846,7 +860,8 @@ mod tests {
                 dst_chain_id: ChainId::from_string("host_chain"),
                 dst_client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: Some(21),
-                trusted_height: Some(42)
+                trusted_height: Some(42),
+                archive_address: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
