@@ -383,9 +383,9 @@ pub enum State {
     Init = 1,
     TryOpen = 2,
     Open = 3,
-    Closed = 4,
-    InitUpgrade = 5,
-    TryUpgrade = 6,
+    InitUpgrade = 4,
+    TryUpgrade = 5,
+    Closed = 6,
 }
 
 impl State {
@@ -409,9 +409,9 @@ impl State {
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            4 => Ok(Self::Closed),
-            5 => Ok(Self::InitUpgrade),
-            6 => Ok(Self::TryUpgrade),
+            4 => Ok(Self::InitUpgrade),
+            5 => Ok(Self::TryUpgrade),
+            6 => Ok(Self::Closed),
             _ => Err(Error::unknown_state(s)),
         }
     }
