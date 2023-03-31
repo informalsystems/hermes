@@ -375,8 +375,9 @@ impl FromStr for Order {
 /// 
 /// These are encoded with integer discriminants so that there is 
 /// an easy way to compare channel states against one another. More 
-/// explicitly, there is a partial ordering around the channel state
-/// variants, with the `Uninitialized` state being the smallest. 
+/// explicitly, this is an attempt to capture the lifecycle of a 
+/// channel, beginning from the `Uninitialized` state, through the
+/// `Open` state, before finally being `Closed`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum State {
     Uninitialized = 0,
