@@ -34,6 +34,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 const QUERY_INTERVAL: Duration = Duration::from_secs(5);
 const MAX_QUERY_INTERVAL: Duration = Duration::from_secs(10);
+const SYNC_BATCH_SIZE: u64 = 1;
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -82,6 +83,9 @@ pub struct EventMonitor {
     /// Latest block height
     latest_fetched_height: BlockHeight,
 
+    /// Whether this is the first time we are syncing
+    is_first_sync: bool,
+
     /// RPC client
     rpc_client: HttpClient,
 
@@ -108,6 +112,7 @@ impl EventMonitor {
             rt,
             chain_id,
             latest_fetched_height: BlockHeight::from(0_u32),
+            is_first_sync: true,
             rpc_client,
             event_bus,
             rx_cmd,
@@ -219,8 +224,17 @@ impl EventMonitor {
     }
 
     async fn fetch_batches(&mut self, latest_height: BlockHeight) -> Result<Vec<EventBatch>> {
-        let heights =
-            HeightRangeInclusive::new(self.latest_fetched_height.increment(), latest_height);
+        let start_height = if self.is_first_sync {
+            // If this is the first time we are syncing, we start from the latest height minus the
+            // `SYNC_BATCH_SIZE` to avoid fetching too many events at once.
+            self.is_first_sync = false;
+
+            sub_height(latest_height, SYNC_BATCH_SIZE)
+        } else {
+            self.latest_fetched_height.increment()
+        };
+
+        let heights = HeightRangeInclusive::new(start_height, latest_height);
 
         let mut batches = Vec::with_capacity(heights.len());
 
@@ -304,6 +318,12 @@ async fn collect_events(
     let mut events = Vec::with_capacity(block_events.len() + 1);
     events.push(new_block_event);
     events.append(&mut block_events);
+
+    trace!(
+        "collected {events_len} events at height {height}: {events:#?}",
+        events_len = events.len(),
+        height = height,
+    );
 
     Ok(Some(EventBatch {
         chain_id: chain_id.clone(),
@@ -389,3 +409,7 @@ impl Iterator for HeightRangeInclusive {
 }
 
 impl ExactSizeIterator for HeightRangeInclusive {}
+
+fn sub_height(height: BlockHeight, sub: u64) -> BlockHeight {
+    BlockHeight::try_from(height.value().saturating_sub(sub)).unwrap_or_default()
+}
