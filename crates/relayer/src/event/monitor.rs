@@ -32,8 +32,8 @@ use super::{bus::EventBus, IbcEventWithHeight};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-const QUERY_INTERVAL: Duration = Duration::from_secs(5);
-const MAX_QUERY_INTERVAL: Duration = Duration::from_secs(10);
+const QUERY_INTERVAL: Duration = Duration::from_secs(1);
+const MAX_QUERY_INTERVAL: Duration = Duration::from_secs(5);
 const SYNC_BATCH_SIZE: u64 = 1;
 
 /// A batch of events from a chain at a specific height
@@ -186,14 +186,14 @@ impl EventMonitor {
                 self.latest_fetched_height
             );
 
-            self.fetch_batches(latest_height).await?
+            self.fetch_batches(latest_height).await.map(Some)?
         } else {
             trace!(
                 "latest height ({latest_height}) <= latest fetched height ({})",
                 self.latest_fetched_height
             );
 
-            vec![]
+            None
         };
 
         // Before handling the batch, check if there are any pending shutdown or subscribe commands.
@@ -201,7 +201,7 @@ impl EventMonitor {
             return Ok(next);
         }
 
-        for batch in batches {
+        for batch in batches.unwrap_or_default() {
             self.broadcast_batch(batch);
         }
 
@@ -234,8 +234,9 @@ impl EventMonitor {
             self.latest_fetched_height.increment()
         };
 
-        let heights = HeightRangeInclusive::new(start_height, latest_height);
+        trace!("fetching blocks from {start_height} to {latest_height}");
 
+        let heights = HeightRangeInclusive::new(start_height, latest_height);
         let mut batches = Vec::with_capacity(heights.len());
 
         for height in heights {
@@ -252,7 +253,7 @@ impl EventMonitor {
                     }
                 }
                 Err(e) => {
-                    error!("failed to collect events: {e}");
+                    error!(%height, "failed to collect events: {e}");
                 }
             }
         }
@@ -306,9 +307,11 @@ async fn collect_events(
 ) -> Result<Option<EventBatch>> {
     use crate::event::rpc::get_all_events;
 
-    let abci_events = fetch_all_events(rpc_client, latest_block_height)
-        .await
-        .map(dedupe)?;
+    let abci_events = fetch_all_events(rpc_client, latest_block_height).await?;
+    trace!("Found {} ABCI events before dedupe", abci_events.len());
+
+    let abci_events = dedupe(abci_events);
+    trace!("Found {} ABCI events after dedupe", abci_events.len());
 
     let height = Height::from_tm(latest_block_height, chain_id);
     let new_block_event =
