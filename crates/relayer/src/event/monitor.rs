@@ -238,21 +238,28 @@ fn monitor_backoff() -> impl Iterator<Item = Duration> {
 
 fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {
     use itertools::Itertools;
-    use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
 
-    fn hash_event(event: &abci::Event) -> u64 {
-        let mut state = DefaultHasher::new();
-        event.kind.hash(&mut state);
-        for attr in &event.attributes {
-            attr.key.hash(&mut state);
-            attr.value.hash(&mut state);
-            attr.index.hash(&mut state);
+    #[derive(Clone, PartialEq, Eq)]
+    struct HashEvent(abci::Event);
+
+    impl Hash for HashEvent {
+        fn hash<H: Hasher>(&self, state: &mut H) {
+            self.0.kind.hash(state);
+            for attr in &self.0.attributes {
+                attr.key.hash(state);
+                attr.value.hash(state);
+                attr.index.hash(state);
+            }
         }
-        state.finish()
     }
 
-    events.into_iter().unique_by(hash_event).collect()
+    events
+        .into_iter()
+        .map(HashEvent)
+        .unique()
+        .map(|e| e.0)
+        .collect()
 }
 
 /// Collect the IBC events from an RPC event
