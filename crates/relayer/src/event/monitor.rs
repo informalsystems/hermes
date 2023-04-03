@@ -180,36 +180,47 @@ impl EventMonitor {
             }
         }
 
-        // TODO: Fetch all heights between `latest_fetched_height` and `latest_height`
         let latest_height = latest_height(&self.rpc_client).await?;
 
-        let batch = if latest_height > self.latest_fetched_height {
+        let batches = if latest_height > self.latest_fetched_height {
             trace!(
                 "latest height ({latest_height}) > latest fetched height ({})",
                 self.latest_fetched_height
             );
 
-            let result = collect_events(&self.rpc_client, &self.chain_id, latest_height).await;
+            let heights =
+                HeightRangeInclusive::new(self.latest_fetched_height.increment(), latest_height);
 
-            match result {
-                Ok(batch) => {
-                    // Update the latest block height we fetched
-                    self.latest_fetched_height = latest_height;
+            let mut batches = Vec::with_capacity(heights.len());
 
-                    batch
-                }
-                Err(e) => {
-                    error!("failed to collect events: {e}");
-                    None
+            for height in heights {
+                trace!("collecting events at height {height}");
+
+                let result = collect_events(&self.rpc_client, &self.chain_id, height).await;
+
+                match result {
+                    Ok(batch) => {
+                        // Update the latest block height we fetched
+                        self.latest_fetched_height = latest_height;
+
+                        if let Some(batch) = batch {
+                            batches.push(batch);
+                        }
+                    }
+                    Err(e) => {
+                        error!("failed to collect events: {e}");
+                    }
                 }
             }
+
+            batches
         } else {
             trace!(
                 "latest height ({latest_height}) <= latest fetched height ({})",
                 self.latest_fetched_height
             );
 
-            None
+            vec![]
         };
 
         // Before handling the batch, check if there are any pending shutdown or subscribe commands.
@@ -224,7 +235,7 @@ impl EventMonitor {
             }
         }
 
-        if let Some(batch) = batch {
+        for batch in batches {
             self.broadcast_batch(batch);
         }
 
@@ -339,3 +350,38 @@ pub enum Next {
     Abort,
     Continue,
 }
+
+pub struct HeightRangeInclusive {
+    current: BlockHeight,
+    end: BlockHeight,
+}
+
+impl HeightRangeInclusive {
+    pub fn new(start: BlockHeight, end: BlockHeight) -> Self {
+        Self {
+            current: start,
+            end,
+        }
+    }
+}
+
+impl Iterator for HeightRangeInclusive {
+    type Item = BlockHeight;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current > self.end {
+            None
+        } else {
+            let current = self.current;
+            self.current = self.current.increment();
+            Some(current)
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let size = self.end.value() - self.current.value() + 1;
+        (size as usize, Some(size as usize))
+    }
+}
+
+impl ExactSizeIterator for HeightRangeInclusive {}
