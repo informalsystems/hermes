@@ -30,6 +30,7 @@ pub mod bus;
 pub mod monitor;
 pub mod rpc;
 
+// FIXME: Add PartialEq, Eq, Hash
 #[derive(Clone, Debug, Serialize)]
 pub struct IbcEventWithHeight {
     pub event: IbcEvent,

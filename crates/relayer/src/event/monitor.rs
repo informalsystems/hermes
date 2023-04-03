@@ -1,4 +1,4 @@
-use alloc::sync::Arc;
+use std::sync::Arc;
 
 use crossbeam_channel as channel;
 use tokio::{
@@ -222,6 +222,32 @@ impl EventMonitor {
     }
 }
 
+fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {
+    use itertools::Itertools;
+    use std::hash::{Hash, Hasher};
+
+    #[derive(Clone, PartialEq, Eq)]
+    struct HashEq(abci::Event);
+
+    impl Hash for HashEq {
+        fn hash<H: Hasher>(&self, state: &mut H) {
+            self.0.kind.hash(state);
+            for attr in &self.0.attributes {
+                attr.key.hash(state);
+                attr.value.hash(state);
+                attr.index.hash(state);
+            }
+        }
+    }
+
+    events
+        .into_iter()
+        .map(HashEq)
+        .unique()
+        .map(|HashEq(event)| event)
+        .collect()
+}
+
 /// Collect the IBC events from an RPC event
 async fn collect_events(
     rpc_client: &HttpClient,
@@ -230,7 +256,9 @@ async fn collect_events(
 ) -> Result<Option<EventBatch>> {
     use crate::event::rpc::get_all_events;
 
-    let abci_events = fetch_all_events(rpc_client, latest_block_height).await?;
+    let abci_events = fetch_all_events(rpc_client, latest_block_height)
+        .await
+        .map(dedupe)?;
 
     let height = Height::from_tm(latest_block_height, chain_id);
     let new_block_event =
@@ -238,6 +266,7 @@ async fn collect_events(
 
     let mut events = vec![new_block_event];
     let mut block_events = get_all_events(chain_id, height, &abci_events).unwrap_or_default();
+
     events.append(&mut block_events);
 
     Ok(Some(EventBatch {
