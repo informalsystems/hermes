@@ -32,8 +32,8 @@ use super::{bus::EventBus, IbcEventWithHeight};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-const QUERY_INTERVAL: Duration = Duration::from_secs(1);
-const MAX_QUERY_INTERVAL: Duration = Duration::from_secs(5);
+const QUERY_INTERVAL: Duration = Duration::from_secs(5);
+const MAX_QUERY_INTERVAL: Duration = Duration::from_secs(10);
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -169,15 +169,8 @@ impl EventMonitor {
 
     async fn step(&mut self) -> Result<Next> {
         // Process any shutdown or subscription commands before we start doing any work
-        if let Ok(cmd) = self.rx_cmd.try_recv() {
-            match cmd {
-                MonitorCmd::Shutdown => return Ok(Next::Abort),
-                MonitorCmd::Subscribe(tx) => {
-                    if let Err(e) = tx.send(self.event_bus.subscribe()) {
-                        error!("failed to send back subscription: {e}");
-                    }
-                }
-            }
+        if let Some(next) = self.try_process_cmd() {
+            return Ok(next);
         }
 
         let latest_height = latest_height(&self.rpc_client).await?;
@@ -188,32 +181,7 @@ impl EventMonitor {
                 self.latest_fetched_height
             );
 
-            let heights =
-                HeightRangeInclusive::new(self.latest_fetched_height.increment(), latest_height);
-
-            let mut batches = Vec::with_capacity(heights.len());
-
-            for height in heights {
-                trace!("collecting events at height {height}");
-
-                let result = collect_events(&self.rpc_client, &self.chain_id, height).await;
-
-                match result {
-                    Ok(batch) => {
-                        // Update the latest block height we fetched
-                        self.latest_fetched_height = latest_height;
-
-                        if let Some(batch) = batch {
-                            batches.push(batch);
-                        }
-                    }
-                    Err(e) => {
-                        error!("failed to collect events: {e}");
-                    }
-                }
-            }
-
-            batches
+            self.fetch_batches(latest_height).await?
         } else {
             trace!(
                 "latest height ({latest_height}) <= latest fetched height ({})",
@@ -224,9 +192,21 @@ impl EventMonitor {
         };
 
         // Before handling the batch, check if there are any pending shutdown or subscribe commands.
+        if let Some(next) = self.try_process_cmd() {
+            return Ok(next);
+        }
+
+        for batch in batches {
+            self.broadcast_batch(batch);
+        }
+
+        Ok(Next::Continue)
+    }
+
+    fn try_process_cmd(&mut self) -> Option<Next> {
         if let Ok(cmd) = self.rx_cmd.try_recv() {
             match cmd {
-                MonitorCmd::Shutdown => return Ok(Next::Abort),
+                MonitorCmd::Shutdown => return Some(Next::Abort),
                 MonitorCmd::Subscribe(tx) => {
                     if let Err(e) = tx.send(self.event_bus.subscribe()) {
                         error!("failed to send back subscription: {e}");
@@ -235,11 +215,35 @@ impl EventMonitor {
             }
         }
 
-        for batch in batches {
-            self.broadcast_batch(batch);
+        None
+    }
+
+    async fn fetch_batches(&mut self, latest_height: BlockHeight) -> Result<Vec<EventBatch>> {
+        let heights =
+            HeightRangeInclusive::new(self.latest_fetched_height.increment(), latest_height);
+
+        let mut batches = Vec::with_capacity(heights.len());
+
+        for height in heights {
+            trace!("collecting events at height {height}");
+
+            let result = collect_events(&self.rpc_client, &self.chain_id, height).await;
+
+            match result {
+                Ok(batch) => {
+                    self.latest_fetched_height = latest_height;
+
+                    if let Some(batch) = batch {
+                        batches.push(batch);
+                    }
+                }
+                Err(e) => {
+                    error!("failed to collect events: {e}");
+                }
+            }
         }
 
-        Ok(Next::Continue)
+        Ok(batches)
     }
 
     /// Collect the IBC events from the subscriptions
