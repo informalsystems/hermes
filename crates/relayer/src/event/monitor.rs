@@ -311,6 +311,11 @@ async fn fetch_all_events(
 
     if let Some(txs_results) = &mut response.txs_results {
         for tx_result in txs_results {
+            if tx_result.code != abci::Code::Ok {
+                // Transaction failed, skip it
+                continue;
+            }
+
             events.append(&mut tx_result.events);
         }
     }
