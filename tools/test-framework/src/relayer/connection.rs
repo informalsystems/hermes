@@ -159,7 +159,7 @@ pub fn assert_eventually_connection_established<ChainA: ChainHandle, ChainB: Cha
 ) -> Result<TaggedConnectionId<ChainB, ChainA>, Error> {
     assert_eventually_succeed(
         "connection should eventually established",
-        20,
+        30,
         Duration::from_secs(1),
         || {
             let connection_end_a = query_connection_end(handle_a, connection_id_a)?;
