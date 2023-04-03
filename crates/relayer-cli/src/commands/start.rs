@@ -23,9 +23,6 @@ pub struct StartCmd {
         help = "Force a full scan of the chains for clients, connections and channels"
     )]
     full_scan: bool,
-
-    #[clap(long = "no-health-check", help = "Disable the health check at startup")]
-    no_health_check: bool,
 }
 
 impl Runnable for StartCmd {
@@ -34,7 +31,7 @@ impl Runnable for StartCmd {
 
         let options = SupervisorOptions {
             force_full_scan: self.full_scan,
-            health_check: !self.no_health_check,
+            health_check: true,
         };
 
         let supervisor_handle = make_supervisor::<CachingChainHandle>(config, options)
@@ -225,10 +222,7 @@ mod tests {
     #[test]
     fn test_start_required_only() {
         assert_eq!(
-            StartCmd {
-                full_scan: false,
-                no_health_check: false
-            },
+            StartCmd { full_scan: false },
             StartCmd::parse_from(["test"])
         )
     }
@@ -236,22 +230,8 @@ mod tests {
     #[test]
     fn test_start_full_scan() {
         assert_eq!(
-            StartCmd {
-                full_scan: true,
-                no_health_check: false
-            },
+            StartCmd { full_scan: true },
             StartCmd::parse_from(["test", "--full-scan"])
-        )
-    }
-
-    #[test]
-    fn test_start_no_health_check() {
-        assert_eq!(
-            StartCmd {
-                full_scan: false,
-                no_health_check: true
-            },
-            StartCmd::parse_from(["test", "--no-health-check"])
         )
     }
 }

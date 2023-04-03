@@ -12,6 +12,3 @@ OPTIONS:
 
     -h, --help
             Print help information
-
-        --no-health-check
-            Disable the health check at startup
