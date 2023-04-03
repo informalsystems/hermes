@@ -5,7 +5,7 @@ use tokio::{
     runtime::Runtime as TokioRuntime,
     time::{sleep, Duration, Instant},
 };
-use tracing::{debug, error, trace};
+use tracing::{debug, error, error_span, trace};
 
 use tendermint::abci;
 use tendermint::block::Height as BlockHeight;
@@ -80,7 +80,7 @@ pub struct EventMonitor {
     chain_id: ChainId,
 
     /// Latest block height
-    latest_block_height: BlockHeight,
+    latest_fetched_height: BlockHeight,
 
     /// RPC client
     rpc_client: HttpClient,
@@ -107,7 +107,7 @@ impl EventMonitor {
         let monitor = Self {
             rt,
             chain_id,
-            latest_block_height: BlockHeight::from(0_u32),
+            latest_fetched_height: BlockHeight::from(0_u32),
             rpc_client,
             event_bus,
             rx_cmd,
@@ -117,12 +117,18 @@ impl EventMonitor {
     }
 
     pub fn run(mut self) {
+        let _span = error_span!("event_monitor", chain.id = %self.chain_id).entered();
+
         debug!("starting event monitor");
 
         let rt = self.rt.clone();
 
         rt.block_on(async {
             let mut backoff = monitor_backoff();
+
+            if let Ok(latest_height) = latest_height(&self.rpc_client).await {
+                self.latest_fetched_height = latest_height;
+            }
 
             // Continuously run the event loop, so that when it aborts
             // because of WebSocket client restart, we pick up the work again.
@@ -174,32 +180,33 @@ impl EventMonitor {
             }
         }
 
-        let latest_height = self
-            .rpc_client
-            .status()
-            .await
-            .map_err(Error::rpc)?
-            .sync_info
-            .latest_block_height;
+        // TODO: Fetch all heights between `latest_fetched_height` and `latest_height`
+        let latest_height = latest_height(&self.rpc_client).await?;
 
-        let batch = if latest_height > self.latest_block_height {
+        let batch = if latest_height > self.latest_fetched_height {
             trace!(
-                "latest height ({latest_height}) > latest block height ({})",
-                self.latest_block_height
+                "latest height ({latest_height}) > latest fetched height ({})",
+                self.latest_fetched_height
             );
-
-            self.latest_block_height = latest_height;
 
             let result = collect_events(&self.rpc_client, &self.chain_id, latest_height).await;
 
-            result.unwrap_or_else(|e| {
-                error!("failed to collect events: {e}");
-                None
-            })
+            match result {
+                Ok(batch) => {
+                    // Update the latest block height we fetched
+                    self.latest_fetched_height = latest_height;
+
+                    batch
+                }
+                Err(e) => {
+                    error!("failed to collect events: {e}");
+                    None
+                }
+            }
         } else {
             trace!(
-                "latest height ({latest_height}) <= latest block height ({})",
-                self.latest_block_height
+                "latest height ({latest_height}) <= latest fetched height ({})",
+                self.latest_fetched_height
             );
 
             None
@@ -278,9 +285,9 @@ async fn collect_events(
     let new_block_event =
         IbcEventWithHeight::new(IbcEvent::NewBlock(NewBlock::new(height)), height);
 
-    let mut events = vec![new_block_event];
     let mut block_events = get_all_events(chain_id, height, &abci_events).unwrap_or_default();
-
+    let mut events = Vec::with_capacity(block_events.len() + 1);
+    events.push(new_block_event);
     events.append(&mut block_events);
 
     Ok(Some(EventBatch {
@@ -313,6 +320,14 @@ async fn fetch_all_events(
     }
 
     Ok(events)
+}
+
+async fn latest_height(rpc_client: &HttpClient) -> Result<BlockHeight> {
+    rpc_client
+        .status()
+        .await
+        .map(|status| status.sync_info.latest_block_height)
+        .map_err(Error::rpc)
 }
 
 pub enum Next {
