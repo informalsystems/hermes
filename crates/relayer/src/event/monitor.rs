@@ -224,28 +224,21 @@ impl EventMonitor {
 
 fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {
     use itertools::Itertools;
+    use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
 
-    #[derive(Clone, PartialEq, Eq)]
-    struct HashEq(abci::Event);
-
-    impl Hash for HashEq {
-        fn hash<H: Hasher>(&self, state: &mut H) {
-            self.0.kind.hash(state);
-            for attr in &self.0.attributes {
-                attr.key.hash(state);
-                attr.value.hash(state);
-                attr.index.hash(state);
-            }
+    fn hash_event(event: &abci::Event) -> u64 {
+        let mut state = DefaultHasher::new();
+        event.kind.hash(&mut state);
+        for attr in &event.attributes {
+            attr.key.hash(&mut state);
+            attr.value.hash(&mut state);
+            attr.index.hash(&mut state);
         }
+        state.finish()
     }
 
-    events
-        .into_iter()
-        .map(HashEq)
-        .unique()
-        .map(|HashEq(event)| event)
-        .collect()
+    events.into_iter().unique_by(hash_event).collect()
 }
 
 /// Collect the IBC events from an RPC event
