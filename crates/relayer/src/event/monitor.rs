@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crossbeam_channel as channel;
 use tokio::{
     runtime::Runtime as TokioRuntime,
-    time::{Duration, Instant},
+    time::{sleep, Duration, Instant},
 };
 use tracing::{debug, error, trace};
 
@@ -22,6 +22,7 @@ use ibc_relayer_types::{
 use crate::{
     chain::{handle::Subscription, tracking::TrackingId},
     telemetry,
+    util::retry::ConstantGrowth,
 };
 
 mod error;
@@ -32,6 +33,7 @@ use super::{bus::EventBus, IbcEventWithHeight};
 pub type Result<T> = core::result::Result<T, Error>;
 
 const QUERY_INTERVAL: Duration = Duration::from_secs(1);
+const MAX_QUERY_INTERVAL: Duration = Duration::from_secs(5);
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -120,6 +122,8 @@ impl EventMonitor {
         let rt = self.rt.clone();
 
         rt.block_on(async {
+            let mut backoff = monitor_backoff();
+
             // Continuously run the event loop, so that when it aborts
             // because of WebSocket client restart, we pick up the work again.
             loop {
@@ -129,11 +133,13 @@ impl EventMonitor {
                     Ok(Next::Abort) => break,
 
                     Ok(Next::Continue) => {
-                        // Check if we need to wait some more before the next iteration.
-                        let delay_remaining = QUERY_INTERVAL.checked_sub(before_step.elapsed());
+                        // Reset the backoff
+                        backoff = monitor_backoff();
 
-                        if let Some(delay_remaining) = delay_remaining {
-                            tokio::time::sleep(delay_remaining).await;
+                        // Check if we need to wait some more before the next iteration.
+                        let delay = QUERY_INTERVAL.checked_sub(before_step.elapsed());
+                        if let Some(delay_remaining) = delay {
+                            sleep(delay_remaining).await;
                         }
 
                         continue;
@@ -142,8 +148,11 @@ impl EventMonitor {
                     Err(e) => {
                         error!("event monitor encountered an error: {e}");
 
-                        // Let's sleep a bit before the next iteration.
-                        tokio::time::sleep(QUERY_INTERVAL).await;
+                        // Let's backoff the little bit to give the chain some time to recover.
+                        let delay = backoff.next().expect("backoff is an infinite iterator");
+
+                        error!("retrying in {delay:?}...");
+                        sleep(delay).await;
                     }
                 }
             }
@@ -220,6 +229,11 @@ impl EventMonitor {
         telemetry!(ws_events, &batch.chain_id, batch.events.len() as u64);
         self.event_bus.broadcast(Arc::new(Ok(batch)));
     }
+}
+
+fn monitor_backoff() -> impl Iterator<Item = Duration> {
+    ConstantGrowth::new(QUERY_INTERVAL, Duration::from_secs(1))
+        .clamp(MAX_QUERY_INTERVAL, usize::MAX)
 }
 
 fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {
