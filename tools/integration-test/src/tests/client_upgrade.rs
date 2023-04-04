@@ -116,7 +116,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal()?;
+        driver.vote_proposal("1200stake")?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         let target_reference_application_height = client_upgrade_height
@@ -234,7 +234,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal()?;
+        driver.vote_proposal("1200stake")?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         let target_reference_application_height = client_upgrade_height
@@ -316,7 +316,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal()?;
+        driver.vote_proposal("1200stake")?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         let target_reference_application_height = client_upgrade_height
