@@ -357,9 +357,9 @@ async fn fetch_all_events(
 
 async fn latest_height(rpc_client: &HttpClient) -> Result<BlockHeight> {
     rpc_client
-        .status()
+        .abci_info()
         .await
-        .map(|status| status.sync_info.latest_block_height)
+        .map(|status| status.last_block_height)
         .map_err(Error::rpc)
 }
 
