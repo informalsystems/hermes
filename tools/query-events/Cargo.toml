@@ -2,6 +2,7 @@
 name    = "query-events"
 version = "0.1.0"
 edition = "2021"
+publish = false
 
 [dependencies]
 tendermint     = { version  = "0.30.0" }

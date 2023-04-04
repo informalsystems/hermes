@@ -19,7 +19,7 @@ pub trait ChainProposalMethodsExt {
         proposal_id: u64,
     ) -> Result<u64, Error>;
 
-    fn vote_proposal(&self) -> Result<(), Error>;
+    fn vote_proposal(&self, fees: &str) -> Result<(), Error>;
 }
 
 impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDriver> {
@@ -33,12 +33,13 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             .block_on(query_upgrade_proposal_height(grpc_address, proposal_id))
     }
 
-    fn vote_proposal(&self) -> Result<(), Error> {
+    fn vote_proposal(&self, fees: &str) -> Result<(), Error> {
         vote_proposal(
             self.value().chain_id.as_str(),
             &self.value().command_path,
             &self.value().home_path,
             &self.value().rpc_listen_address(),
+            fees,
         )?;
         Ok(())
     }

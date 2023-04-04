@@ -238,3 +238,23 @@ Success: [
     ),
 ]
 ```
+
+## Query for the status of client (active, frozen, or expired)
+
+This command queries the status of a client, ie. whether it is active, frozen or expired.
+
+```
+{{#include ../../../templates/help_templates/query/client/status.md}}
+```
+
+__Example__
+
+Query for the status of the client `07-tendermint-0` on `ibc-0`:
+
+```shell
+{{#template ../../../templates/commands/hermes/query/client/status_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0}}
+```
+
+```
+SUCCESS Active
+```

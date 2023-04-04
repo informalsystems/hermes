@@ -1,0 +1,21 @@
+name: Publish (dry-run)
+
+on:
+  push:
+    branches:
+      - 'release/*'
+
+jobs:
+  publish:
+    name: Publish (dry-run)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: katyo/publish-crates@v2
+        with:
+          dry-run: true
+

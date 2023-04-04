@@ -1,5 +1,6 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use color_eyre::eyre::eyre;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
@@ -258,6 +259,104 @@ impl Runnable for QueryClientHeaderCmd {
     }
 }
 
+/// Query client status command
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
+pub struct QueryClientStatusCmd {
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain to query"
+    )]
+    chain_id: ChainId,
+
+    #[clap(
+        long = "client",
+        required = true,
+        value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the client to query"
+    )]
+    client_id: ClientId,
+}
+
+impl Runnable for QueryClientStatusCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        let status =
+            client_status(&chain, &self.client_id).unwrap_or_else(exit_with_unrecoverable_error);
+
+        Output::success(status).exit()
+    }
+}
+
+#[derive(Debug, serde::Serialize)]
+enum Status {
+    Frozen,
+    Expired,
+    Active,
+}
+
+fn client_status(
+    chain: &impl ChainHandle,
+    client_id: &ClientId,
+) -> Result<Status, color_eyre::Report> {
+    let (client_state, _) = chain.query_client_state(
+        QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
+
+    if client_state.is_frozen() {
+        return Ok(Status::Frozen);
+    }
+
+    let consensus_state_heights =
+        chain.query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+            client_id: client_id.clone(),
+            pagination: Some(PageRequest::all()),
+        })?;
+
+    let latest_consensus_height = consensus_state_heights.last().copied().ok_or_else(|| {
+        eyre!(
+            "no consensus state found for client '{}' on chain '{}'",
+            client_id,
+            chain.id()
+        )
+    })?;
+
+    let (latest_consensus_state, _) = chain.query_consensus_state(
+        QueryConsensusStateRequest {
+            client_id: client_id.clone(),
+            consensus_height: latest_consensus_height,
+            query_height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
+
+    // Fetch the application status, for the network time
+    let app_status = chain.query_application_status()?;
+    let current_src_network_time = app_status.timestamp;
+
+    // Compute the duration of time elapsed since this consensus state was installed
+    let elapsed = current_src_network_time
+        .duration_since(&latest_consensus_state.timestamp())
+        .unwrap_or_default();
+
+    if client_state.expired(elapsed) {
+        Ok(Status::Expired)
+    } else {
+        Ok(Status::Active)
+    }
+}
+
 /// Query client connections command
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryClientConnectionsCmd {
@@ -310,7 +409,7 @@ impl Runnable for QueryClientConnectionsCmd {
 mod tests {
     use super::{
         QueryClientConnectionsCmd, QueryClientConsensusCmd, QueryClientHeaderCmd,
-        QueryClientStateCmd,
+        QueryClientStateCmd, QueryClientStatusCmd,
     };
 
     use std::str::FromStr;
@@ -565,5 +664,32 @@ mod tests {
     #[test]
     fn test_query_client_state_no_chain() {
         assert!(QueryClientStateCmd::try_parse_from(["test", "--client", "client_id"]).is_err())
+    }
+
+    #[test]
+    fn test_query_client_status_required_only() {
+        assert_eq!(
+            QueryClientStatusCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+            },
+            QueryClientStatusCmd::parse_from([
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_client_status_no_chain() {
+        assert!(QueryClientStatusCmd::try_parse_from(["test", "--client", "client_id"]).is_err())
+    }
+
+    #[test]
+    fn test_query_client_status_no_client() {
+        assert!(QueryClientStatusCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err())
     }
 }
