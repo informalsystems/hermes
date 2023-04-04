@@ -33,8 +33,7 @@ use super::{bus::EventBus, IbcEventWithHeight};
 pub type Result<T> = core::result::Result<T, Error>;
 
 const QUERY_INTERVAL: Duration = Duration::from_secs(1);
-const MAX_QUERY_INTERVAL: Duration = Duration::from_secs(5);
-const SYNC_BATCH_SIZE: u64 = 1;
+const MAX_QUERY_INTERVAL: Duration = Duration::from_secs(2);
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -80,12 +79,6 @@ pub struct EventMonitor {
     /// Chain identifier
     chain_id: ChainId,
 
-    /// Latest block height
-    latest_fetched_height: BlockHeight,
-
-    /// Whether this is the first time we are syncing
-    is_first_sync: bool,
-
     /// RPC client
     rpc_client: HttpClient,
 
@@ -97,6 +90,9 @@ pub struct EventMonitor {
 
     /// Tokio runtime
     rt: Arc<TokioRuntime>,
+
+    /// Last fetched block height
+    last_fetched_height: BlockHeight,
 }
 
 impl EventMonitor {
@@ -111,11 +107,10 @@ impl EventMonitor {
         let monitor = Self {
             rt,
             chain_id,
-            latest_fetched_height: BlockHeight::from(0_u32),
-            is_first_sync: true,
             rpc_client,
             event_bus,
             rx_cmd,
+            last_fetched_height: BlockHeight::from(0_u32),
         };
 
         Ok((monitor, TxMonitorCmd(tx_cmd)))
@@ -131,8 +126,9 @@ impl EventMonitor {
         rt.block_on(async {
             let mut backoff = monitor_backoff();
 
+            // Initialize the latest fetched height
             if let Ok(latest_height) = latest_height(&self.rpc_client).await {
-                self.latest_fetched_height = latest_height;
+                self.last_fetched_height = latest_height;
             }
 
             // Continuously run the event loop, so that when it aborts
@@ -149,6 +145,7 @@ impl EventMonitor {
 
                         // Check if we need to wait some more before the next iteration.
                         let delay = QUERY_INTERVAL.checked_sub(before_step.elapsed());
+
                         if let Some(delay_remaining) = delay {
                             sleep(delay_remaining).await;
                         }
@@ -180,17 +177,17 @@ impl EventMonitor {
 
         let latest_height = latest_height(&self.rpc_client).await?;
 
-        let batches = if latest_height > self.latest_fetched_height {
+        let batches = if latest_height > self.last_fetched_height {
             trace!(
                 "latest height ({latest_height}) > latest fetched height ({})",
-                self.latest_fetched_height
+                self.last_fetched_height
             );
 
             self.fetch_batches(latest_height).await.map(Some)?
         } else {
             trace!(
                 "latest height ({latest_height}) <= latest fetched height ({})",
-                self.latest_fetched_height
+                self.last_fetched_height
             );
 
             None
@@ -224,15 +221,7 @@ impl EventMonitor {
     }
 
     async fn fetch_batches(&mut self, latest_height: BlockHeight) -> Result<Vec<EventBatch>> {
-        let start_height = if self.is_first_sync {
-            // If this is the first time we are syncing, we start from the latest height minus the
-            // `SYNC_BATCH_SIZE` to avoid fetching too many events at once.
-            self.is_first_sync = false;
-
-            sub_height(latest_height, SYNC_BATCH_SIZE)
-        } else {
-            self.latest_fetched_height.increment()
-        };
+        let start_height = self.last_fetched_height.increment();
 
         trace!("fetching blocks from {start_height} to {latest_height}");
 
@@ -246,7 +235,7 @@ impl EventMonitor {
 
             match result {
                 Ok(batch) => {
-                    self.latest_fetched_height = latest_height;
+                    self.last_fetched_height = latest_height;
 
                     if let Some(batch) = batch {
                         batches.push(batch);
@@ -269,7 +258,7 @@ impl EventMonitor {
 }
 
 fn monitor_backoff() -> impl Iterator<Item = Duration> {
-    ConstantGrowth::new(QUERY_INTERVAL, Duration::from_secs(1))
+    ConstantGrowth::new(QUERY_INTERVAL, Duration::from_millis(500))
         .clamp(MAX_QUERY_INTERVAL, usize::MAX)
 }
 
@@ -412,7 +401,3 @@ impl Iterator for HeightRangeInclusive {
 }
 
 impl ExactSizeIterator for HeightRangeInclusive {}
-
-fn sub_height(height: BlockHeight, sub: u64) -> BlockHeight {
-    BlockHeight::try_from(height.value().saturating_sub(sub)).unwrap_or_default()
-}
