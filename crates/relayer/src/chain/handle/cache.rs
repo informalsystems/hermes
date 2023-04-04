@@ -347,9 +347,15 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         target_height: Height,
         client_state: AnyClientState,
         archive_address: Option<String>,
+        halted_height: Option<Height>,
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
-        self.inner()
-            .build_header(trusted_height, target_height, client_state, archive_address)
+        self.inner().build_header(
+            trusted_height,
+            target_height,
+            client_state,
+            archive_address,
+            halted_height,
+        )
     }
 
     /// Constructs a client state at the given height

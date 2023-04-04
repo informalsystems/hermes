@@ -148,6 +148,13 @@ pub struct TxUpdateClientCmd {
         help = "The archive node address used to update client."
     )]
     archive_address: Option<String>,
+
+    #[clap(
+        long = "halted-height",
+        value_name = "HALTED_HEIGHT",
+        help = "The height that the chain halted."
+    )]
+    halted_height: Option<u64>,
 }
 
 impl Runnable for TxUpdateClientCmd {
@@ -193,6 +200,11 @@ impl Runnable for TxUpdateClientCmd {
                 .unwrap_or_else(exit_with_unrecoverable_error)
         });
 
+        let halted_height = self.halted_height.map(|height| {
+            Height::new(src_chain.id().version(), height)
+                .unwrap_or_else(exit_with_unrecoverable_error)
+        });
+
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
@@ -201,6 +213,7 @@ impl Runnable for TxUpdateClientCmd {
                 target_height,
                 trusted_height,
                 self.archive_address.clone(),
+                halted_height,
             )
             .map_err(Error::foreign_client);
 
@@ -798,6 +811,7 @@ mod tests {
                 target_height: None,
                 trusted_height: None,
                 archive_address: None,
+                halted_height: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -818,6 +832,7 @@ mod tests {
                 target_height: Some(42),
                 trusted_height: None,
                 archive_address: None,
+                halted_height: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -840,6 +855,7 @@ mod tests {
                 target_height: None,
                 trusted_height: Some(42),
                 archive_address: None,
+                halted_height: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -862,6 +878,7 @@ mod tests {
                 target_height: Some(21),
                 trusted_height: Some(42),
                 archive_address: None,
+                halted_height: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",

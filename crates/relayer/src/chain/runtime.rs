@@ -190,8 +190,8 @@ where
                             self.ibc_version(reply_to)?
                         },
 
-                        ChainRequest::BuildHeader { trusted_height, target_height, client_state, archive_address, reply_to } => {
-                            self.build_header(trusted_height, target_height, client_state, archive_address, reply_to)?
+                        ChainRequest::BuildHeader { trusted_height, target_height, client_state, archive_address, halted_height, reply_to } => {
+                            self.build_header(trusted_height, target_height, client_state, archive_address, halted_height, reply_to)?
                         },
 
                         ChainRequest::BuildClientState { height, settings, reply_to } => {
@@ -456,6 +456,7 @@ where
         target_height: Height,
         client_state: AnyClientState,
         archive_address: Option<String>,
+        halted_height: Option<Height>,
         reply_to: ReplyTo<(AnyHeader, Vec<AnyHeader>)>,
     ) -> Result<(), Error> {
         let result = self
@@ -465,6 +466,7 @@ where
                 target_height,
                 &client_state,
                 archive_address,
+                halted_height,
             )
             .map(|(header, support)| {
                 let header = header.into();

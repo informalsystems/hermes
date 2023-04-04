@@ -4,7 +4,10 @@ use itertools::Itertools;
 
 use rpc::Url;
 use tendermint_light_client::{
-    components::{self, io::AtHeight},
+    components::{
+        self,
+        io::{AtHeight, Io},
+    },
     light_client::LightClient as TmLightClient,
     state::State as LightClientState,
     store::{memory::MemoryStore, LightStore},
@@ -20,7 +23,9 @@ use ibc_relayer_types::{
         misbehaviour::Misbehaviour as TmMisbehaviour,
     },
     core::{
-        ics02_client::{client_type::ClientType, events::UpdateClient, header::downcast_header},
+        ics02_client::{
+            client_type::ClientType, events::UpdateClient, header::downcast_header, height::Height,
+        },
         ics24_host::identifier::ChainId,
     },
     downcast, Height as ICSHeight,
@@ -46,11 +51,18 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         trusted: ICSHeight,
         target: ICSHeight,
         client_state: &AnyClientState,
-        archive_address: Option<String>,
+        archive_addr: Option<String>,
+        halted_height: Option<Height>,
     ) -> Result<Verified<TmHeader>, Error> {
-        let Verified { target, supporting } =
-            self.verify(trusted, target, client_state, archive_address)?;
-        let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
+        let Verified { target, supporting } = self.verify(
+            trusted,
+            target,
+            client_state,
+            archive_addr.clone(),
+            halted_height,
+        )?;
+        let (target, supporting) =
+            self.adjust_headers(trusted, target, supporting, archive_addr)?;
         Ok(Verified { target, supporting })
     }
 
@@ -59,15 +71,34 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         trusted: ICSHeight,
         target: ICSHeight,
         client_state: &AnyClientState,
-        archive_address: Option<String>,
+        archive_addr: Option<String>,
+        halted_height: Option<ICSHeight>,
     ) -> Result<Verified<LightBlock>, Error> {
         trace!(%trusted, %target, "light client verification");
 
         let target_height =
             TMHeight::try_from(target.revision_height()).map_err(Error::invalid_height)?;
 
-        let client = self.prepare_client(client_state)?;
-        let mut state = self.prepare_state(trusted, archive_address)?;
+        let addr = if let Some(halted_height) = halted_height {
+            if trusted <= halted_height {
+                archive_addr.clone()
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        let addr2 = if let Some(halted_height) = halted_height {
+            if target <= halted_height {
+                archive_addr
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        let client = self.prepare_client(client_state, addr2)?;
+        let mut state = self.prepare_state(trusted, addr)?;
 
         // Verify the target header
         let target = client
@@ -88,12 +119,16 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         Ok(Verified { target, supporting })
     }
 
-    fn fetch(&mut self, height: ICSHeight) -> Result<LightBlock, Error> {
+    fn fetch(
+        &mut self,
+        height: ICSHeight,
+        archive_addr: Option<String>,
+    ) -> Result<LightBlock, Error> {
         trace!(%height, "fetching header");
 
         let height = TMHeight::try_from(height.revision_height()).map_err(Error::invalid_height)?;
 
-        self.fetch_light_block(AtHeight::At(height), None)
+        self.fetch_light_block(AtHeight::At(height), archive_addr)
     }
 
     /// Given a client update event that includes the header used in a client update,
@@ -146,10 +181,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         }
 
         let Verified { target, supporting } =
-            self.verify(trusted_height, target_height, client_state, None)?;
+            self.verify(trusted_height, target_height, client_state, None, None)?;
 
         if !headers_compatible(&target.signed_header, &update_header.signed_header) {
-            let (witness, supporting) = self.adjust_headers(trusted_height, target, supporting)?;
+            let (witness, supporting) =
+                self.adjust_headers(trusted_height, target, supporting, None)?;
 
             let misbehaviour = TmMisbehaviour {
                 client_id: update.client_id().clone(),
@@ -182,7 +218,11 @@ impl LightClient {
         })
     }
 
-    fn prepare_client(&self, client_state: &AnyClientState) -> Result<TmLightClient, Error> {
+    fn prepare_client(
+        &self,
+        client_state: &AnyClientState,
+        archive_addr: Option<String>,
+    ) -> Result<TmLightClient, Error> {
         let clock = components::clock::SystemClock;
         let verifier = ProdVerifier::default();
         let scheduler = components::scheduler::basic_bisecting_schedule;
@@ -207,7 +247,7 @@ impl LightClient {
             clock,
             scheduler,
             verifier,
-            self.io.clone(),
+            self.prepare_io(archive_addr)?,
         ))
     }
 
@@ -216,16 +256,11 @@ impl LightClient {
         trusted: ICSHeight,
         archive_address: Option<String>,
     ) -> Result<LightClientState, Error> {
-        tracing::warn!("src light_client tendermint.rs prepare_state() with trusted: {trusted}");
         let trusted_height =
             TMHeight::try_from(trusted.revision_height()).map_err(Error::invalid_height)?;
 
-        tracing::warn!("got trusted_height");
-
         let trusted_block =
             self.fetch_light_block(AtHeight::At(trusted_height), archive_address)?;
-
-        tracing::warn!("got trusted_block");
 
         let mut store = MemoryStore::new();
         store.insert(trusted_block, Status::Trusted);
@@ -236,38 +271,24 @@ impl LightClient {
     fn fetch_light_block(
         &self,
         height: AtHeight,
-        archive_address: Option<String>,
+        archive_addr: Option<String>,
     ) -> Result<LightBlock, Error> {
-        use core::time::Duration;
-        use tendermint_light_client::components::io::Io;
+        self.prepare_io(archive_addr)?
+            .fetch_light_block(height)
+            .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e))
+    }
 
-        tracing::warn!("src light_client tendermint.rs fetch_light_block()");
+    fn prepare_io(&self, archive_addr: Option<String>) -> Result<components::io::ProdIo, Error> {
+        if let Some(archive_addr) = archive_addr {
+            let archive_url = Url::from_str(&archive_addr)
+                .map_err(|e| Error::invalid_archive_address(archive_addr, e))?;
 
-        match archive_address {
-            Some(archive_address) => {
-                let archive_url = Url::from_str(&archive_address)
-                    .map_err(|e| Error::invalid_archive_address(archive_address, e))?;
-                tracing::warn!("archive address: {archive_url}");
-                let archive_rpc_client = rpc::HttpClient::new(archive_url.clone())
-                    .map_err(|e| Error::rpc(archive_url, e))?;
-                let dummy_peer_id_u8: [u8; 20] = [0; 20];
-                let peer_id = PeerId::new(dummy_peer_id_u8);
-                let archive_io = components::io::ProdIo::new(
-                    peer_id,
-                    archive_rpc_client,
-                    Some(Duration::from_secs(20)),
-                );
+            let rpc_client = rpc::HttpClient::new(archive_url.clone())
+                .map_err(|e| Error::rpc(archive_url, e))?;
 
-                tracing::warn!("will fetch light block using archive_io");
-
-                archive_io
-                    .fetch_light_block(height)
-                    .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e))
-            }
-            None => self
-                .io
-                .fetch_light_block(height)
-                .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e)),
+            Ok(components::io::ProdIo::new(self.peer_id, rpc_client, None))
+        } else {
+            Ok(self.io.clone())
         }
     }
 
@@ -276,6 +297,7 @@ impl LightClient {
         trusted_height: ICSHeight,
         target: LightBlock,
         supporting: Vec<LightBlock>,
+        archive_addr: Option<String>,
     ) -> Result<(TmHeader, Vec<TmHeader>), Error> {
         use super::LightClient;
 
@@ -288,7 +310,9 @@ impl LightClient {
         //
         // NOTE: This is needed to get the next validator set. While there is a next validator set
         //       in the light block at trusted height, the proposer is not known/set in this set.
-        let trusted_validator_set = self.fetch(trusted_height.increment())?.validators;
+        let trusted_validator_set = self
+            .fetch(trusted_height.increment(), archive_addr.clone())?
+            .validators;
 
         let mut supporting_headers = Vec::with_capacity(supporting.len());
 
@@ -307,7 +331,9 @@ impl LightClient {
             current_trusted_height = header.height();
 
             // Therefore we can now trust the next validator set, see NOTE above.
-            current_trusted_validators = self.fetch(header.height().increment())?.validators;
+            current_trusted_validators = self
+                .fetch(header.height().increment(), archive_addr.clone())?
+                .validators;
 
             supporting_headers.push(header);
         }
@@ -320,7 +346,7 @@ impl LightClient {
         let (latest_trusted_height, latest_trusted_validator_set) = match supporting_headers.last()
         {
             Some(prev_header) => {
-                let prev_succ = self.fetch(prev_header.height().increment())?;
+                let prev_succ = self.fetch(prev_header.height().increment(), archive_addr)?;
                 (prev_header.height(), prev_succ.validators)
             }
             None => (trusted_height, trusted_validator_set),

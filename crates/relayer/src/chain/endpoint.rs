@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
+use ibc_relayer_types::core::ics02_client::height::Height;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -386,6 +387,7 @@ pub trait ChainEndpoint: Sized {
         target_height: ICSHeight,
         client_state: &AnyClientState,
         archive_address: Option<String>,
+        halted_height: Option<Height>,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error>;
 
     /// Builds the required proofs and the client state for connection handshake messages.
