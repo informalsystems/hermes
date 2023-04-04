@@ -12,7 +12,7 @@ flex_error::define_error! {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct GasMultiplier(f64);
 
 impl GasMultiplier {
