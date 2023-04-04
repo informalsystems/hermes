@@ -235,7 +235,7 @@ impl EventMonitor {
 
             match result {
                 Ok(batch) => {
-                    self.last_fetched_height = latest_height;
+                    self.last_fetched_height = height;
 
                     if let Some(batch) = batch {
                         batches.push(batch);
@@ -243,6 +243,7 @@ impl EventMonitor {
                 }
                 Err(e) => {
                     error!(%height, "failed to collect events: {e}");
+                    break;
                 }
             }
         }
