@@ -610,7 +610,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         );
 
         match (a_state, b_state) {
-            // send the Init message to chain a (source)
+            // send the Init message to chain A (source)
             (State::Uninitialized, State::Uninitialized) => {
                 let event = self
                     .flipped()
@@ -623,7 +623,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.a_side.channel_id = Some(channel_id.clone());
             }
 
-            // send the Try message to chain a (source)
+            // send the Try message to chain A (source)
             (State::Uninitialized, State::Init) | (State::Init, State::Init) => {
                 let event = self.flipped().build_chan_open_try_and_send().map_err(|e| {
                     error!("failed ChanOpenTry {}: {}", self.a_side, e);
@@ -634,7 +634,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.a_side.channel_id = Some(channel_id.clone());
             }
 
-            // send the Try message to chain b (destination)
+            // send the Try message to chain B (destination)
             (State::Init, State::Uninitialized) => {
                 let event = self.build_chan_open_try_and_send().map_err(|e| {
                     error!("failed ChanOpenTry {}: {}", self.b_side, e);
@@ -645,7 +645,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.b_side.channel_id = Some(channel_id.clone());
             }
 
-            // send the Ack message to chain a (source)
+            // send the Ack message to chain A (source)
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                 self.flipped().build_chan_open_ack_and_send().map_err(|e| {
                     error!("failed ChanOpenAck {}: {}", self.a_side, e);
@@ -653,7 +653,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 })?;
             }
 
-            // send the Ack message to chain b (destination)
+            // send the Ack message to chain B (destination)
             (State::TryOpen, State::Init) => {
                 self.build_chan_open_ack_and_send().map_err(|e| {
                     error!("failed ChanOpenAck {}: {}", self.b_side, e);
@@ -661,7 +661,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 })?;
             }
 
-            // send the Confirm message to chain b (destination)
+            // send the Confirm message to chain B (destination)
             (State::Open, State::TryOpen) => {
                 self.build_chan_open_confirm_and_send().map_err(|e| {
                     error!("failed ChanOpenConfirm {}: {}", self.b_side, e);
@@ -669,7 +669,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 })?;
             }
 
-            // send the Confirm message to chain a (source)
+            // send the Confirm message to chain A (source)
             (State::TryOpen, State::Open) => {
                 self.flipped()
                     .build_chan_open_confirm_and_send()
@@ -903,7 +903,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     /// Retrieves the channel from destination and compares it
-    /// against the expected channel. built from the message type [`ChannelMsgType`].
+    /// against the expected channel. Built from the message type [`ChannelMsgType`].
     ///
     /// If the expected and the destination channels are compatible,
     /// returns the expected channel

@@ -666,6 +666,138 @@ impl Runnable for TxChanCloseConfirmCmd {
     }
 }
 
+/// Build and send a `ChanUpgradeInit` message to a destination
+/// chain that the source chain has an already-existing channel open 
+/// with, signaling the intent by the source chain to perform
+/// the channel upgrade handshake.
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
+pub struct TxChanUpgradeInitCmd {
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        value_name = "DST_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination chain"
+    )]
+    dst_chain_id: ChainId,
+
+    #[clap(
+        long = "src-chain",
+        required = true,
+        value_name = "SRC_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source chain"
+    )]
+    src_chain_id: ChainId,
+
+    #[clap(
+        long = "dst-connection",
+        visible_alias = "dst-conn",
+        required = true,
+        value_name = "DST_CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination connection"
+    )]
+    dst_conn_id: ConnectionId,
+
+    #[clap(
+        long = "dst-port",
+        required = true,
+        value_name = "DST_PORT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination port"
+    )]
+    dst_port_id: PortId,
+
+    #[clap(
+        long = "src-port",
+        required = true,
+        value_name = "SRC_PORT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source port"
+    )]
+    src_port_id: PortId,
+}
+
+impl Runnable for TxChanUpgradeInitCmd {
+    fn run(&self) {}
+}
+
+/// Build and send a `ChanUpgradeTry` message in response to
+/// a `ChanUpgradeInnit` message, signaling the chain's intent to 
+/// cooperate with the source chain on upgrading the specified channel
+///  and initiating the upgrade handshake.
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
+pub struct TxChanUpgradeTryCmd {
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        value_name = "DST_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination chain"
+    )]
+    dst_chain_id: ChainId,
+
+    #[clap(
+        long = "src-chain",
+        required = true,
+        value_name = "SRC_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source chain"
+    )]
+    src_chain_id: ChainId,
+
+    #[clap(
+        long = "dst-connection",
+        visible_alias = "dst-conn",
+        required = true,
+        value_name = "DST_CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination connection"
+    )]
+    dst_conn_id: ConnectionId,
+
+    #[clap(
+        long = "dst-port",
+        required = true,
+        value_name = "DST_PORT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination port"
+    )]
+    dst_port_id: PortId,
+
+    #[clap(
+        long = "src-port",
+        required = true,
+        value_name = "SRC_PORT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source port"
+    )]
+    src_port_id: PortId,
+
+    #[clap(
+        long = "src-channel",
+        visible_alias = "src-chan",
+        required = true,
+        value_name = "SRC_CHANNEL_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source channel (required)"
+    )]
+    src_chan_id: ChannelId,
+
+    #[clap(
+        long = "dst-channel",
+        visible_alias = "dst-chan",
+        value_name = "DST_CHANNEL_ID",
+        help = "Identifier of the destination channel (optional)"
+    )]
+    dst_chan_id: Option<ChannelId>,
+}
+
+impl Runnable for TxChanUpgradeTryCmd {
+    fn run(&self) {}
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
