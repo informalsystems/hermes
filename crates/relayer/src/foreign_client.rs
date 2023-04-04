@@ -1640,8 +1640,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
             let msg_misbehaviour = Misbehaviour {
                 client_id: self.id.clone(),
-                header1: tm_misbehaviour.header1.clone(),
-                header2: tm_misbehaviour.header2.clone(),
+                header1: tm_misbehaviour.header1,
+                header2: tm_misbehaviour.header2,
             };
 
             msgs.push(
