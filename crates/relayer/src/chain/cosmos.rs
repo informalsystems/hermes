@@ -306,7 +306,7 @@ impl CosmosSdkChain {
     }
 
     /// Query the chain staking parameters
-    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvStakingParams, Error> {
+    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
         crate::time!("query_ccv_consumer_chain_params");
         crate::telemetry!(query, self.id(), "query_ccv_consumer_chain_params");
 
@@ -450,12 +450,13 @@ impl CosmosSdkChain {
     pub fn historical_entries(&self) -> Result<u32, Error> {
         crate::time!("historical_entries");
         if self.config.ccv_consumer_chain {
-            self.query_ccv_consumer_chain_params()?
-                .historical_entries
-                .try_into()
-                .map_err(|_| {
-                    Error::invalid_historical_entries(self.id().clone(), params.historical_entries)
-                })
+            let ccv_parameters = self.query_ccv_consumer_chain_params()?;
+            ccv_parameters.historical_entries.try_into().map_err(|_| {
+                Error::invalid_historical_entries(
+                    self.id().clone(),
+                    ccv_parameters.historical_entries,
+                )
+            })
         } else {
             self.query_staking_params().map(|p| p.historical_entries)
         }
