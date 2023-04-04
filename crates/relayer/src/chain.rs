@@ -13,7 +13,7 @@ use serde::{de::Error, Deserialize, Serialize};
 //            the `Deserialize` implementation below and the tests.
 //            See the NOTE(new) comments below.
 
-#[derive(Copy, Clone, Debug, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 /// Types of chains the relayer can relay to and from
 pub enum ChainType {
     /// Chains based on the Cosmos SDK

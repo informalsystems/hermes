@@ -29,7 +29,12 @@ impl Runnable for StartCmd {
     fn run(&self) {
         let config = (*app_config()).clone();
 
-        let supervisor_handle = make_supervisor::<CachingChainHandle>(config, self.full_scan)
+        let options = SupervisorOptions {
+            force_full_scan: self.full_scan,
+            health_check: true,
+        };
+
+        let supervisor_handle = make_supervisor::<CachingChainHandle>(config, options)
             .unwrap_or_else(|e| {
                 Output::error(format!("Hermes failed to start, last error: {e}")).exit()
             });
@@ -103,18 +108,40 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
 
 #[cfg(feature = "rest-server")]
 fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
+    use ibc_relayer::util::spawn_blocking;
+
     let _span = tracing::error_span!("rest").entered();
 
     let rest = config.rest.clone();
 
-    if rest.enabled {
-        let rest_config = ibc_relayer_rest::Config::new(rest.host, rest.port);
-        let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
-        Some(rest_receiver)
-    } else {
+    if !rest.enabled {
         info!("REST server disabled");
-        None
+        return None;
     }
+
+    let (tx, rx) = crossbeam_channel::unbounded();
+
+    spawn_blocking(async move {
+        let result = ibc_relayer_rest::spawn((rest.host.as_str(), rest.port), tx);
+
+        match result {
+            Ok(handle) => {
+                info!(
+                    "REST service running, exposing REST API at http://{}:{}",
+                    rest.host, rest.port
+                );
+
+                if let Err(e) = handle.await {
+                    error!("REST service crashed with errror: {e}");
+                }
+            }
+            Err(e) => {
+                error!("REST service failed to start: {e}");
+            }
+        }
+    });
+
+    Some(rx)
 }
 
 #[cfg(not(feature = "rest-server"))]
@@ -134,60 +161,56 @@ fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
 }
 
 #[cfg(feature = "telemetry")]
-fn spawn_telemetry_server(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
+fn spawn_telemetry_server(config: &Config) {
+    use ibc_relayer::util::spawn_blocking;
+
     let _span = tracing::error_span!("telemetry").entered();
 
     let state = ibc_telemetry::global();
-
     let telemetry = config.telemetry.clone();
-    if telemetry.enabled {
-        match ibc_telemetry::spawn((telemetry.host, telemetry.port), state.clone()) {
-            Ok((addr, _)) => {
-                info!(
-                    "telemetry service running, exposing metrics at http://{}/metrics",
-                    addr
-                );
-            }
-            Err(e) => {
-                error!("telemetry service failed to start: {}", e);
-                return Err(e);
-            }
-        }
+
+    if !telemetry.enabled {
+        info!("telemetry disabled");
+        return;
     }
 
-    Ok(())
+    spawn_blocking(async move {
+        let result = ibc_telemetry::spawn((telemetry.host, telemetry.port), state.clone());
+
+        match result {
+            Ok((addr, handle)) => {
+                info!("telemetry service running, exposing metrics at http://{addr}/metrics");
+
+                if let Err(e) = handle.await {
+                    error!("telemetry service crashed with errror: {e}");
+                }
+            }
+            Err(e) => error!("telemetry service failed to start: {e}"),
+        }
+    });
 }
 
 #[cfg(not(feature = "telemetry"))]
-fn spawn_telemetry_server(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
+fn spawn_telemetry_server(config: &Config) {
     if config.telemetry.enabled {
         warn!(
             "telemetry enabled in the config but Hermes was built without telemetry support, \
              build Hermes with --features=telemetry to enable telemetry support."
         );
     }
-
-    Ok(())
 }
 
 fn make_supervisor<Chain: ChainHandle>(
     config: Config,
-    force_full_scan: bool,
+    options: SupervisorOptions,
 ) -> Result<SupervisorHandle, Box<dyn Error + Send + Sync>> {
     let registry = SharedRegistry::<Chain>::new(config.clone());
-    spawn_telemetry_server(&config)?;
 
-    let rest = spawn_rest_server(&config);
+    spawn_telemetry_server(&config);
 
-    Ok(spawn_supervisor(
-        config,
-        registry,
-        rest,
-        SupervisorOptions {
-            health_check: true,
-            force_full_scan,
-        },
-    )?)
+    let rest_rx = spawn_rest_server(&config);
+
+    Ok(spawn_supervisor(config, registry, rest_rx, options)?)
 }
 
 #[cfg(test)]
