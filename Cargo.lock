@@ -3991,6 +3991,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.30.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#d4e10f5bf18b4956bba90fa7cdeaca8971761d88"
 dependencies = [
  "bytes",
  "digest 0.10.6",
@@ -4020,6 +4021,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.30.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#d4e10f5bf18b4956bba90fa7cdeaca8971761d88"
 dependencies = [
  "flex-error",
  "serde",
@@ -4032,6 +4034,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.30.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#d4e10f5bf18b4956bba90fa7cdeaca8971761d88"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -4054,6 +4057,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.30.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#d4e10f5bf18b4956bba90fa7cdeaca8971761d88"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -4065,6 +4069,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.30.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#d4e10f5bf18b4956bba90fa7cdeaca8971761d88"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4081,6 +4086,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.30.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#d4e10f5bf18b4956bba90fa7cdeaca8971761d88"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4114,6 +4120,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.30.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#d4e10f5bf18b4956bba90fa7cdeaca8971761d88"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",

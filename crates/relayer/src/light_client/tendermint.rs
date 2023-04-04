@@ -5,8 +5,8 @@ use tracing::{debug, error, trace, warn};
 
 use tendermint_light_client::{
     components::{self, io::AtHeight},
+    detector::Divergence,
     light_client::LightClient as TmLightClient,
-    misbehavior::Divergence,
     state::State as LightClientState,
     store::{memory::MemoryStore, LightStore},
 };

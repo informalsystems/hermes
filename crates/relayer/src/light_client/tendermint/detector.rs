@@ -8,7 +8,7 @@ use tendermint::{
 use tendermint_light_client::{
     builder::LightClientBuilder,
     components::{clock::FixedClock, io::ProdIo, scheduler},
-    misbehavior::{detect_divergence, Divergence, Provider},
+    detector::{detect_divergence, Divergence, Provider},
     predicates::ProdPredicates,
     store::memory::MemoryStore,
     types::{LightBlock, PeerId},
