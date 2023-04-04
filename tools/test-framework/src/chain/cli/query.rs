@@ -1,6 +1,7 @@
 use core::str::FromStr;
 use eyre::eyre;
 use ibc_relayer_types::applications::transfer::amount::Amount;
+use serde::Deserialize;
 use serde_json as json;
 use serde_yaml as yaml;
 
@@ -102,7 +103,7 @@ pub fn query_cross_chain_query(
     chain_id: &str,
     command_path: &str,
     rpc_listen_address: &str,
-) -> Result<String, Error> {
+) -> Result<ListPendingQueries, Error> {
     let res = simple_exec(
         chain_id,
         command_path,
@@ -118,5 +119,23 @@ pub fn query_cross_chain_query(
     )?
     .stdout;
 
-    Ok(res)
+    serde_json::from_str(&res).map_err(handle_generic_error)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ListPendingQueries {
+    pub pending_queries: Vec<PendingQuery>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+pub struct PendingQuery {
+    pub id: String,
+    pub connection_id: String,
+    pub chain_id: String,
+    pub query_type: String,
+    pub request: String,
+    pub callback_id: String,
+    pub ttl: String,
+    pub request_sent: bool,
 }

@@ -139,6 +139,7 @@ impl BinaryChannelTest for ICS31Test {
             .node_b
             .chain_driver()
             .assert_processed_cross_chain_query()?;
+
         Ok(())
     }
 }
