@@ -707,10 +707,58 @@ pub struct TxChanUpgradeInitCmd {
         help = "Identifier of the source port"
     )]
     src_port_id: PortId,
+
+    #[clap(
+        long = "dst-channel",
+        visible_alias = "dst-chan",
+        required = true,
+        value_name = "DST_CHANNEL_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination channel (required)"
+    )]
+    dst_chan_id: ChannelId,
+
+    #[clap(
+        long = "src-channel",
+        visible_alias = "src-chan",
+        required = true,
+        value_name = "SRC_CHANNEL_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source channel (required)"
+    )]
+    src_chan_id: ChannelId,
 }
 
 impl Runnable for TxChanUpgradeInitCmd {
-    fn run(&self) {}
+    fn run(&self) {
+        tx_chan_cmd!(
+            "ChanUpgradeInit",
+            build_chan_upgrade_init_and_send,
+            self,
+            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
+                Channel {
+                    connection_delay: Default::default(),
+                    ordering: Order::default(),
+                    a_side: ChannelSide::new(
+                        chains.src,
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        Some(self.src_chan_id.clone()),
+                        None,
+                    ),
+                    b_side: ChannelSide::new(
+                        chains.dst,
+                        dst_connection.client_id().clone(),
+                        self.dst_conn_id.clone(),
+                        self.dst_port_id.clone(),
+                        Some(self.dst_chan_id.clone()),
+                        None,
+                    ),
+                }
+            }
+        )
+    }
 }
 
 /// Build and send a `ChanUpgradeTry` message in response to
