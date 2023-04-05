@@ -16,6 +16,19 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
+/// Macro that generates the `Runnable::run` implementation for a 
+/// `tx channel` subcommand.
+/// 
+/// The macro takes the following arguments:
+/// - `$dbg_string`: a string literal that will be used to identify the subcommand
+///  in debug logs
+/// - `$func`: the method that will be called to build and send the `Channel` message
+/// - `$self`: the type that `Runnable` is being implemented for 
+/// - `$chan`: a closure that specifies how to build the `Channel` object
+/// 
+/// The macro spawns a `ChainHandlePair`, fetches the destination connection, 
+/// creates a `Channel` object via the closure, and then calls the `$func` method
+/// with the `Channel` object.
 macro_rules! tx_chan_cmd {
     ($dbg_string:literal, $func:ident, $self:expr, $chan:expr) => {
         let config = app_config();
@@ -110,56 +123,33 @@ pub struct TxChanOpenInitCmd {
 
 impl Runnable for TxChanOpenInitCmd {
     fn run(&self) {
-        let config = app_config();
-
-        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
-            Ok(chains) => chains,
-            Err(e) => Output::error(e).exit(),
-        };
-
-        // Retrieve the connection
-        let dst_connection = match chains.dst.query_connection(
-            QueryConnectionRequest {
-                connection_id: self.dst_conn_id.clone(),
-                height: QueryHeight::Latest,
-            },
-            IncludeProof::No,
-        ) {
-            Ok((connection, _)) => connection,
-            Err(e) => Output::error(e).exit(),
-        };
-
-        let channel = Channel {
-            connection_delay: Default::default(),
-            ordering: self.order,
-            a_side: ChannelSide::new(
-                chains.src,
-                ClientId::default(),
-                ConnectionId::default(),
-                self.src_port_id.clone(),
-                None,
-                None,
-            ),
-            b_side: ChannelSide::new(
-                chains.dst,
-                dst_connection.client_id().clone(),
-                self.dst_conn_id.clone(),
-                self.dst_port_id.clone(),
-                None,
-                None,
-            ),
-        };
-
-        info!("message ChanOpenInit: {}", channel);
-
-        let res: Result<IbcEvent, Error> = channel
-            .build_chan_open_init_and_send()
-            .map_err(Error::channel);
-
-        match res {
-            Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(e).exit(),
-        }
+        tx_chan_cmd!(
+            "ChanOpenInit",
+            build_chan_open_init_and_send,
+            self,
+            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
+                Channel {
+                    connection_delay: Default::default(),
+                    ordering: self.order,
+                    a_side: ChannelSide::new(
+                        chains.src,
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        None,
+                        None,
+                    ),
+                    b_side: ChannelSide::new(
+                        chains.dst,
+                        dst_connection.client_id().clone(),
+                        self.dst_conn_id.clone(),
+                        self.dst_port_id.clone(),
+                        None,
+                        None,
+                    ),
+                }
+            }
+        );
     }
 }
 
