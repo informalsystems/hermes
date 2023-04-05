@@ -309,15 +309,11 @@ impl ChainHandle for BaseChainHandle {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        archive_address: Option<String>,
-        halted_height: Option<Height>,
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
         self.send(|reply_to| ChainRequest::BuildHeader {
             trusted_height,
             target_height,
             client_state,
-            archive_address,
-            halted_height,
             reply_to,
         })
     }

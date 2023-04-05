@@ -174,8 +174,6 @@ pub enum ChainRequest {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        archive_address: Option<String>,
-        halted_height: Option<Height>,
         reply_to: ReplyTo<(AnyHeader, Vec<AnyHeader>)>,
     },
 
@@ -539,8 +537,6 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        archive_address: Option<String>,
-        halted_height: Option<Height>,
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error>;
 
     /// Constructs a client state at the given height

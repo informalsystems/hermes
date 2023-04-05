@@ -1,3 +1,4 @@
+pub mod genesis_restart;
 pub mod tendermint;
 
 use core::ops::Deref;
@@ -42,8 +43,6 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
         trusted: Height,
         target: Height,
         client_state: &AnyClientState,
-        archive_address: Option<String>,
-        halted_height: Option<Height>,
     ) -> Result<Verified<C::Header>, error::Error>;
 
     /// Fetch a header from the chain at the given height and verify it.
@@ -52,8 +51,6 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
         trusted: Height,
         target: Height,
         client_state: &AnyClientState,
-        archive_address: Option<String>,
-        halted_height: Option<Height>,
     ) -> Result<Verified<C::LightBlock>, error::Error>;
 
     /// Given a client update event that includes the header used in a client update,
@@ -65,11 +62,7 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
     ) -> Result<Option<MisbehaviourEvidence>, error::Error>;
 
     /// Fetch a header from the chain at the given height, without verifying it
-    fn fetch(
-        &mut self,
-        height: Height,
-        archive_addr: Option<String>,
-    ) -> Result<C::LightBlock, error::Error>;
+    fn fetch(&mut self, height: Height) -> Result<C::LightBlock, error::Error>;
 }
 
 /// Decodes an encoded header into a known `Header` type,

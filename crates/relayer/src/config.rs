@@ -14,6 +14,7 @@ use core::{
     time::Duration,
 };
 use std::{fs, fs::File, io::Write, path::Path};
+use tendermint::block::Height as BlockHeight;
 use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
@@ -423,6 +424,13 @@ impl Display for AddressType {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+pub struct GenesisRestart {
+    pub halted_height: BlockHeight,
+    pub archive_addr: Url,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     pub id: ChainId,
     #[serde(default = "default::chain_type")]
@@ -439,6 +447,11 @@ pub struct ChainConfig {
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
+
+    // This field is only meant to be set via the `update client` command,
+    // for when we need to ugprade a client across a genesis restart and
+    // therefore need and archive node to fetch blocks from.
+    pub genesis_restart: Option<GenesisRestart>,
 
     // This field is deprecated, use `gas_multiplier` instead
     pub gas_adjustment: Option<f64>,
