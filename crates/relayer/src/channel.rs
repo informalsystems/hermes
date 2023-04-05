@@ -1465,6 +1465,43 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
+    pub fn build_chan_upgrade_init(&self) -> Result<Vec<Any>, ChannelError> {
+        // Destination channel ID must be specified
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        // Channel must exist on destination
+        self.dst_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: self.dst_port_id().clone(),
+                    channel_id: dst_channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        // Build the domain type message
+        let new_msg = MsgChannelUpgradeInit {
+            port_id: self.dst_port_id().clone(),
+            channel_id: dst_channel_id.clone(),
+            signer,
+        };
+
+        Ok(vec![new_msg.to_any()])
+    }
+
+    pub fn build_chan_upgrade_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
+
+    }
+
     pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
         self,
         mapper_a: impl Fn(ChainA) -> ChainC,
