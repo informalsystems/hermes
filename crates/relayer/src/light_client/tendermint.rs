@@ -81,34 +81,27 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         // This is for chains which went through a genesis restart without an
         // IBC upgrade proposal.
-        // If a halted height was given and the trusted height is lower or equal,
-        // the state must be built using a Node containing blocks from before the
-        // restart
-        let addr = if let Some(halted_height) = halted_height {
-            if trusted <= halted_height {
-                archive_addr.clone()
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-        // This is for chains which went through a genesis restart without an
-        // IBC upgrade proposal.
         // If the update is for a height after the chain went through the restart
         // but uses blocks from before the restart, the address used to update must
         // be the one from the chain configuration.
-        let addr2 = if let Some(halted_height) = halted_height {
-            if target <= halted_height {
-                archive_addr
-            } else {
-                None
-            }
+        let rpc_addr_for_client = if halted_height.map_or(false, |height| target <= height) {
+            archive_addr.clone()
         } else {
             None
         };
-        let client = self.prepare_client(client_state, addr2)?;
-        let mut state = self.prepare_state(trusted, addr)?;
+        let client = self.prepare_client(client_state, rpc_addr_for_client)?;
+
+        // This is for chains which went through a genesis restart without an
+        // IBC upgrade proposal.
+        // If a halted height was given and the trusted height is lower or equal,
+        // the state must be built using a Node containing blocks from before the
+        // restart
+        let rpc_addr_for_state = if halted_height.map_or(false, |height| trusted <= height) {
+            archive_addr
+        } else {
+            None
+        };
+        let mut state = self.prepare_state(trusted, rpc_addr_for_state)?;
 
         // Verify the target header
         let target = client
