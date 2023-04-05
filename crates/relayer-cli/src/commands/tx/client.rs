@@ -145,14 +145,19 @@ pub struct TxUpdateClientCmd {
     #[clap(
         long = "archive-address",
         value_name = "ARCHIVE_ADDRESS",
-        help = "The archive node address used to update client."
+        visible_alias = "archive-addr",
+        group = "archive_address",
+        requires = "halted_height",
+        help = "The archive node address used to update client. Requires --halted-height if used."
     )]
     archive_address: Option<String>,
 
     #[clap(
         long = "halted-height",
         value_name = "HALTED_HEIGHT",
-        help = "The height that the chain halted."
+        group = "halted_height",
+        requires = "archive_address",
+        help = "The height that the chain halted. Requires --archive-address if used."
     )]
     halted_height: Option<u64>,
 }
@@ -864,7 +869,34 @@ mod tests {
                 "--client",
                 "client_to_update",
                 "--trusted-height",
-                "42"
+                "42",
+            ])
+        )
+    }
+
+    #[test]
+    fn test_update_client_genesis_restart() {
+        assert_eq!(
+            TxUpdateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                target_height: Some(43),
+                trusted_height: None,
+                archive_address: Some("http://127.0.0.1:28000".to_owned()),
+                halted_height: Some(42),
+            },
+            TxUpdateClientCmd::parse_from([
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--client",
+                "client_to_update",
+                "--height",
+                "43",
+                "--archive-address",
+                "http://127.0.0.1:28000",
+                "--halted-height",
+                "42",
             ])
         )
     }
@@ -918,6 +950,38 @@ mod tests {
             "21",
             "--trusted-height",
             "42"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_update_client_genesis_no_address() {
+        assert!(TxUpdateClientCmd::try_parse_from([
+            "test",
+            "--host-chain",
+            "host_chain",
+            "--client",
+            "client_to_update",
+            "--height",
+            "43",
+            "--halted-height",
+            "42",
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_update_client_genesis_no_halted_height() {
+        assert!(TxUpdateClientCmd::try_parse_from([
+            "test",
+            "--host-chain",
+            "host_chain",
+            "--client",
+            "client_to_update",
+            "--height",
+            "43",
+            "--archive-address",
+            "http://127.0.0.1:28000",
         ])
         .is_err())
     }

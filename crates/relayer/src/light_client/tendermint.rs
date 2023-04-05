@@ -79,6 +79,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         let target_height =
             TMHeight::try_from(target.revision_height()).map_err(Error::invalid_height)?;
 
+        // This is for chains which went through a genesis restart without an
+        // IBC upgrade proposal.
+        // If a halted height was given and the trusted height is lower or equal,
+        // the state must be built using a Node containing blocks from before the
+        // restart
         let addr = if let Some(halted_height) = halted_height {
             if trusted <= halted_height {
                 archive_addr.clone()
@@ -88,6 +93,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         } else {
             None
         };
+        // This is for chains which went through a genesis restart without an
+        // IBC upgrade proposal.
+        // If the update is for a height after the chain went through the restart
+        // but uses blocks from before the restart, the address used to update must
+        // be the one from the chain configuration.
         let addr2 = if let Some(halted_height) = halted_height {
             if target <= halted_height {
                 archive_addr
