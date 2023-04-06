@@ -67,9 +67,6 @@ pub struct ChainRuntime<Endpoint: ChainEndpoint> {
     /// The receiving side of a channel to this runtime. The runtime consumes chain requests coming
     /// in through this channel.
     request_receiver: channel::Receiver<(Span, ChainRequest)>,
-
-    #[allow(dead_code)]
-    rt: Arc<TokioRuntime>, // Making this future-proof, so we keep the runtime around.
 }
 
 impl<Endpoint> ChainRuntime<Endpoint>
@@ -82,41 +79,40 @@ where
         rt: Arc<TokioRuntime>,
     ) -> Result<Handle, Error> {
         // Similar to `from_config`.
-        let chain = Endpoint::bootstrap(config, rt.clone())?;
+        let chain = Endpoint::bootstrap(config, rt)?;
 
         // Instantiate & spawn the runtime
-        let (handle, _) = Self::init(chain, rt);
+        let (handle, _) = Self::init(chain);
 
         Ok(handle)
     }
 
     /// Initializes a runtime for a given chain, and spawns the associated thread
-    fn init<Handle: ChainHandle>(
-        chain: Endpoint,
-        rt: Arc<TokioRuntime>,
-    ) -> (Handle, thread::JoinHandle<()>) {
-        let chain_runtime = Self::new(chain, rt);
+    fn init<Handle: ChainHandle>(chain: Endpoint) -> (Handle, thread::JoinHandle<()>) {
+        let chain_runtime = Self::new(chain);
 
         // Get a handle to the runtime
         let handle: Handle = chain_runtime.handle();
 
         // Spawn the runtime & return
         let id = handle.id();
-        let thread = thread::spawn(move || {
-            if let Err(e) = chain_runtime.run() {
-                error!("failed to start runtime for chain '{}': {}", id, e);
-            }
-        });
+        let thread = thread::Builder::new()
+            .name(format!("chain-runtime/{}", id))
+            .spawn(move || {
+                if let Err(e) = chain_runtime.run() {
+                    error!("chain runtime for '{id}' failed with: {e}");
+                }
+            })
+            .expect("failed to spawn chain runtime thread");
 
         (handle, thread)
     }
 
     /// Basic constructor
-    fn new(chain: Endpoint, rt: Arc<TokioRuntime>) -> Self {
+    fn new(chain: Endpoint) -> Self {
         let (request_sender, request_receiver) = channel::unbounded();
 
         Self {
-            rt,
             chain,
             request_sender,
             request_receiver,

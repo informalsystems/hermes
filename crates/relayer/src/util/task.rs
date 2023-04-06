@@ -97,37 +97,45 @@ pub fn spawn_background_task<E: Display>(
 
     let (shutdown_sender, receiver) = bounded(1);
 
-    let join_handle = thread::spawn(move || {
-        let _entered = span.enter();
-        loop {
-            match receiver.try_recv() {
-                Ok(()) => {
-                    break;
+    let name = span
+        .metadata()
+        .map(|m| format!("task/{}", m.name()))
+        .unwrap_or_else(|| "task".to_string());
+
+    let join_handle = thread::Builder::new()
+        .name(name)
+        .spawn(move || {
+            let _entered = span.enter();
+            loop {
+                match receiver.try_recv() {
+                    Ok(()) => {
+                        break;
+                    }
+                    _ => match step_runner() {
+                        Ok(Next::Continue) => {}
+                        Ok(Next::Abort) => {
+                            debug!("aborting task");
+                            break;
+                        }
+                        Err(TaskError::Ignore(e)) => {
+                            warn!("task encountered ignorable error: {}", e);
+                        }
+                        Err(TaskError::Fatal(e)) => {
+                            error!("task aborting after encountering fatal error: {}", e);
+                            break;
+                        }
+                    },
                 }
-                _ => match step_runner() {
-                    Ok(Next::Continue) => {}
-                    Ok(Next::Abort) => {
-                        debug!("aborting task");
-                        break;
-                    }
-                    Err(TaskError::Ignore(e)) => {
-                        warn!("task encountered ignorable error: {}", e);
-                    }
-                    Err(TaskError::Fatal(e)) => {
-                        error!("task aborting after encountering fatal error: {}", e);
-                        break;
-                    }
-                },
+                if let Some(interval) = interval_pause {
+                    thread::sleep(interval);
+                }
             }
-            if let Some(interval) = interval_pause {
-                thread::sleep(interval);
-            }
-        }
 
-        *write_stopped.acquire_write() = true;
+            *write_stopped.acquire_write() = true;
 
-        debug!("task terminated");
-    });
+            debug!("task terminated");
+        })
+        .expect("failed to spawn background task");
 
     TaskHandle {
         shutdown_sender,

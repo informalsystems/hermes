@@ -1,7 +1,7 @@
 use ibc_relayer::supervisor::SupervisorOptions;
 use ibc_relayer::util::debug_section::DebugSection;
 use std::error::Error;
-use std::io;
+use std::{io, thread};
 
 use abscissa_core::clap::Parser;
 use crossbeam_channel::Sender;
@@ -94,39 +94,45 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
 
     let mut signals = Signals::new(sigs)?;
 
-    std::thread::spawn(move || {
-        for signal in &mut signals {
-            match signal {
-                SIGHUP => warn!(
-                    "configuration reloading via SIGHUP has been disabled, \
-                     the signal handler will be removed in the future"
-                ),
-                SIGUSR1 => {
-                    info!("dumping state (triggered by SIGUSR1)");
+    thread::Builder::new()
+        .name("signal-handler".to_string())
+        .spawn(move || {
+            for signal in &mut signals {
+                match signal {
+                    SIGHUP => warn!(
+                        "configuration reloading via SIGHUP has been disabled, \
+                         the signal handler will be removed in the future"
+                    ),
+                    SIGUSR1 => {
+                        info!("dumping state (triggered by SIGUSR1)");
 
-                    let (tx, rx) = crossbeam_channel::bounded(1);
-                    tx_cmd.try_send(SupervisorCmd::DumpState(tx)).unwrap();
+                        let (tx, rx) = crossbeam_channel::bounded(1);
+                        tx_cmd.try_send(SupervisorCmd::DumpState(tx)).unwrap();
 
-                    std::thread::spawn(move || {
-                        if let Ok(state) = rx.recv() {
-                            if json() {
-                                match serde_json::to_string(&state) {
-                                    Ok(out) => println!("{out}"),
-                                    Err(e) => {
-                                        error!("failed to serialize relayer state to JSON: {}", e)
+                        thread::spawn(move || {
+                            if let Ok(state) = rx.recv() {
+                                if json() {
+                                    match serde_json::to_string(&state) {
+                                        Ok(out) => println!("{out}"),
+                                        Err(e) => {
+                                            error!(
+                                                "failed to serialize relayer state to JSON: {}",
+                                                e
+                                            )
+                                        }
                                     }
+                                } else {
+                                    state.print_info();
                                 }
-                            } else {
-                                state.print_info();
                             }
-                        }
-                    });
-                }
+                        });
+                    }
 
-                _ => (),
+                    _ => (),
+                }
             }
-        }
-    });
+        })
+        .expect("failed to spawn signal handler thread");
 
     Ok(())
 }

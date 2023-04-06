@@ -344,7 +344,10 @@ impl CosmosSdkChain {
         }
         .map_err(Error::event_source)?;
 
-        thread::spawn(move || event_source.run());
+        thread::Builder::new()
+            .name(format!("event-source/{}", self.id()))
+            .spawn(|| event_source.run())
+            .expect("failed to spawn event source thread");
 
         Ok(monitor_tx)
     }
