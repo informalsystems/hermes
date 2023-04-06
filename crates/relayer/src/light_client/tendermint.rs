@@ -205,7 +205,7 @@ impl LightClient {
                 )?;
 
                 AnyIo::RestartAware(RestartAwareIo::new(
-                    genesis_restart.halted_height,
+                    genesis_restart.restart_height,
                     live_io,
                     archive_io,
                 ))

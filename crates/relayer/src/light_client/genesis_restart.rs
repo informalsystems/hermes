@@ -6,15 +6,15 @@ use tendermint_light_client::{
 
 #[derive(Clone, Debug)]
 pub struct RestartAwareIo {
-    halted_height: Height,
+    restart_height: Height,
     live_io: ProdIo,
     archive_io: ProdIo,
 }
 
 impl RestartAwareIo {
-    pub fn new(halted_height: Height, live_io: ProdIo, archive_io: ProdIo) -> Self {
+    pub fn new(restart_height: Height, live_io: ProdIo, archive_io: ProdIo) -> Self {
         Self {
-            halted_height,
+            restart_height,
             live_io,
             archive_io,
         }
@@ -24,7 +24,7 @@ impl RestartAwareIo {
 impl Io for RestartAwareIo {
     fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
         let io = match height {
-            AtHeight::At(height) if height <= self.halted_height => &self.archive_io,
+            AtHeight::At(height) if height <= self.restart_height => &self.archive_io,
             _ => &self.live_io,
         };
 

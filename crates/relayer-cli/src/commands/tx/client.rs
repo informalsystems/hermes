@@ -149,27 +149,27 @@ pub struct TxUpdateClientCmd {
         value_name = "ARCHIVE_ADDRESS",
         visible_alias = "archive-addr",
         group = "archive_address",
-        requires = "halted_height",
-        help = "The archive node address used to update client. Requires --halted-height if used."
+        requires = "restart_height",
+        help = "The RPC address of the archive node to use to fetch headers from before the restart. Requires --restart-height if used."
     )]
     archive_address: Option<Url>,
 
     #[clap(
-        long = "halted-height",
-        value_name = "HALTED_HEIGHT",
-        group = "halted_height",
+        long = "restart-height",
+        value_name = "RESTART_HEIGHT",
+        group = "restart_height",
         requires = "archive_address",
-        help = "The height that the chain halted. Requires --archive-address if used."
+        help = "The height that the chain underwent a genesis restart at. Requires --archive-address if used."
     )]
-    halted_height: Option<BlockHeight>,
+    restart_height: Option<BlockHeight>,
 }
 
 impl TxUpdateClientCmd {
     fn genesis_restart_params(&self) -> Option<GenesisRestart> {
-        self.archive_address.as_ref().zip(self.halted_height).map(
-            |(archive_addr, halted_height)| GenesisRestart {
+        self.archive_address.as_ref().zip(self.restart_height).map(
+            |(archive_addr, restart_height)| GenesisRestart {
                 archive_addr: archive_addr.clone(),
-                halted_height,
+                restart_height,
             },
         )
     }
@@ -825,7 +825,7 @@ mod tests {
                 target_height: None,
                 trusted_height: None,
                 archive_address: None,
-                halted_height: None,
+                restart_height: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -846,7 +846,7 @@ mod tests {
                 target_height: Some(42),
                 trusted_height: None,
                 archive_address: None,
-                halted_height: None,
+                restart_height: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -869,7 +869,7 @@ mod tests {
                 target_height: None,
                 trusted_height: Some(42),
                 archive_address: None,
-                halted_height: None,
+                restart_height: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -892,7 +892,7 @@ mod tests {
                 target_height: Some(43),
                 trusted_height: None,
                 archive_address: "http://127.0.0.1:28000".parse().ok(),
-                halted_height: "42".parse().ok()
+                restart_height: "42".parse().ok()
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -904,7 +904,7 @@ mod tests {
                 "43",
                 "--archive-address",
                 "http://127.0.0.1:28000",
-                "--halted-height",
+                "--restart-height",
                 "42",
             ])
         )
@@ -919,7 +919,7 @@ mod tests {
                 target_height: Some(21),
                 trusted_height: Some(42),
                 archive_address: None,
-                halted_height: None,
+                restart_height: None,
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -973,14 +973,14 @@ mod tests {
             "client_to_update",
             "--height",
             "43",
-            "--halted-height",
+            "--restart-height",
             "42",
         ])
         .is_err())
     }
 
     #[test]
-    fn test_update_client_genesis_no_halted_height() {
+    fn test_update_client_genesis_no_restart_height() {
         assert!(TxUpdateClientCmd::try_parse_from([
             "test",
             "--host-chain",

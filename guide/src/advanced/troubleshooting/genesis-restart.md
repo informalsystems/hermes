@@ -13,7 +13,7 @@ Internal error: height 26 is not available, lowest height is 1101 (code: -32603)
 In this case, to update the client at a height higher than `1101` for example `1102`, the following command can be used.
 
 ```shell
-{{#template ../../templates/commands/hermes/update/client_1.md HOST_CHAIN_ID=ibc-1 CLIENT_ID=07-tendermint-0 OPTIONS= --height 1102 --archive-address http://127.0.0.1:28000 --halted-height 1101}}
+{{#template ../../templates/commands/hermes/update/client_1.md HOST_CHAIN_ID=ibc-1 CLIENT_ID=07-tendermint-0 OPTIONS= --height 1102 --archive-address http://127.0.0.1:28000 --restart-height 1101}}
 ```
 
 Once this command is successful, updating the client should then work as usual.

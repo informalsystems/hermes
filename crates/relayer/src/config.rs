@@ -425,7 +425,7 @@ impl Display for AddressType {
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct GenesisRestart {
-    pub halted_height: BlockHeight,
+    pub restart_height: BlockHeight,
     pub archive_addr: Url,
 }
 

@@ -6,17 +6,18 @@ USAGE:
 
 OPTIONS:
         --archive-address <ARCHIVE_ADDRESS>
-            The archive node address used to update client. Requires --halted-height if used.
-            [aliases: archive-addr]
+            The RPC address of the archive node to use to fetch headers from before the restart.
+            Requires --restart-height if used. [aliases: archive-addr]
 
     -h, --help
             Print help information
 
-        --halted-height <HALTED_HEIGHT>
-            The height that the chain halted. Requires --archive-address if used.
-
         --height <REFERENCE_HEIGHT>
             The target height of the client update. Leave unspecified for latest height.
+
+        --restart-height <RESTART_HEIGHT>
+            The height that the chain underwent a genesis restart at. Requires --archive-address if
+            used.
 
         --trusted-height <REFERENCE_TRUSTED_HEIGHT>
             The trusted height of the client update. Leave unspecified for latest height.
