@@ -15,9 +15,7 @@ use core::str::FromStr;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenTry";
 
-///
 /// Message definition for the second step in the channel open handshake (`ChanOpenTry` datagram).
-///
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelOpenTry {
     pub port_id: PortId,

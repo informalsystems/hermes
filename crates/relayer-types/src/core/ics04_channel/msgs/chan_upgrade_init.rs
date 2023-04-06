@@ -17,7 +17,6 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeInit";
 pub struct MsgChannelUpgradeInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub channel: ChannelEnd,
     pub signer: Signer,
 }
 
@@ -114,7 +113,7 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name "Correct port ID".to_string(),
+                name: "Correct port ID".to_string(),
                 raw: RawMsgChannelUpgradeInit {
                     port_id: "p36".to_string(),
                     ..default_raw_msg.clone()
@@ -137,6 +136,55 @@ mod tests {
                 },
                 want_pass: false,
             },
+            Test {
+                name: "Correct channel ID".to_string(),
+                raw: RawMsgChannelUpgradeInit {
+                    channel_id: "channel-2".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Channel name too short".to_string(),
+                raw: RawMsgChannelUpgradeInit {
+                    channel_id: "c".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Channel name too long".to_string(),
+                raw: RawMsgChannelUpgradeInit {
+                    channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
         ]
+        .into_iter()
+        .collect();
+
+        for test in tests {
+            let res = MsgChannelUpgradeInit::try_from(test.raw.clone());
+
+            assert_eq!(
+                test.want_pass,
+                res.is_ok(),
+                "MsgChannelUpgradeInit::try_from failed for test {}, \nraw msg {:?} with err {:?}",
+                test.name,
+                test.raw,
+                res.err()
+            );
+        }
+    }
+
+    #[test]
+    fn to_and_from() {
+        let raw = get_dummy_raw_msg_chan_upgrade_init();
+        let msg = MsgChannelUpgradeInit::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgChannelUpgradeInit::from(msg.clone());
+        let msg_back = MsgChannelUpgradeInit::try_from(raw_back.clone()).unwrap();
+        assert_eq!(raw, raw_back);
+        assert_eq!(msg, msg_back);
     }
 }
