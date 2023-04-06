@@ -3,9 +3,9 @@
     initializing the logger and loading the test configuration.
 */
 
-use alloc::sync::Arc;
-use tokio::runtime::Runtime;
 use tracing::info;
+
+use ibc_relayer_cli::cli_utils::new_tokio_runtime;
 
 use crate::bootstrap::init::init_test;
 use crate::chain::builder::ChainBuilder;
@@ -93,7 +93,7 @@ where
     fn run(&self) -> Result<(), Error> {
         let mut config = init_test()?;
 
-        let runtime = Arc::new(Runtime::new()?);
+        let runtime = new_tokio_runtime();
 
         self.test.get_overrides().modify_test_config(&mut config);
 

@@ -50,6 +50,15 @@ impl ChainHandlePair<BaseChainHandle> {
     }
 }
 
+pub fn new_tokio_runtime() -> Arc<TokioRuntime> {
+    Arc::new(
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("failed to build Tokio runtime"),
+    )
+}
+
 /// Spawns a chain runtime for the chain in the configuration identified by given a chain identifier.
 ///
 /// This function will use the default [`ChainHandle`] implementation, ie. the [`BaseChainHandle`].
@@ -68,7 +77,7 @@ pub fn spawn_chain_runtime_generic<Handle: ChainHandle>(
     config: &Config,
     chain_id: &ChainId,
 ) -> Result<Handle, Error> {
-    let rt = Arc::new(TokioRuntime::new().unwrap());
+    let rt = new_tokio_runtime();
     spawn::spawn_chain_runtime(config, chain_id, rt).map_err(Error::spawn)
 }
 

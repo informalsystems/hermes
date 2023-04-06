@@ -21,7 +21,7 @@ use ibc_relayer::{
 };
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
-use crate::prelude::*;
+use crate::{cli_utils::new_tokio_runtime, prelude::*};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum EventFilter {
@@ -104,7 +104,8 @@ impl Runnable for ListenCmd {
 /// Listen to events
 #[instrument(skip_all, level = "error", fields(chain = %config.id()))]
 pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()> {
-    let rt = Arc::new(TokioRuntime::new()?);
+    let rt = new_tokio_runtime();
+
     let compat_mode = detect_compatibility_mode(config, rt.clone())?;
     let rx = subscribe(config, compat_mode, rt)?;
 
@@ -164,7 +165,10 @@ fn subscribe(
                 ),
             }?;
 
-            thread::spawn(move || event_source.run());
+            thread::Builder::new()
+                .name("event-source".to_string())
+                .spawn(|| event_source.run())
+                .expect("failed to spawn event source thread");
 
             let subscription = monitor_tx.subscribe()?;
             Ok(subscription)

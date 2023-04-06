@@ -4,7 +4,7 @@ use alloc::collections::btree_map::BTreeMap as HashMap;
 use alloc::sync::Arc;
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use tokio::runtime::Runtime as TokioRuntime;
+use tokio::runtime::{Builder as TokioRuntimeBuilder, Runtime as TokioRuntime};
 use tracing::{trace, warn};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -23,12 +23,20 @@ use crate::{
 pub struct Registry<Chain: ChainHandle> {
     config: Config,
     handles: HashMap<ChainId, Chain>,
-    rt: Arc<TokioRuntime>,
 }
 
 #[derive(Clone)]
 pub struct SharedRegistry<Chain: ChainHandle> {
     pub registry: RwArc<Registry<Chain>>,
+}
+
+fn new_runtime() -> Arc<TokioRuntime> {
+    Arc::new(
+        TokioRuntimeBuilder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("failed to build Tokio runtime"),
+    )
 }
 
 impl<Chain: ChainHandle> Registry<Chain> {
@@ -37,7 +45,6 @@ impl<Chain: ChainHandle> Registry<Chain> {
         Self {
             config,
             handles: HashMap::new(),
-            rt: Arc::new(TokioRuntime::new().unwrap()),
         }
     }
 
@@ -72,7 +79,7 @@ impl<Chain: ChainHandle> Registry<Chain> {
     /// Returns whether or not the runtime was actually spawned.
     pub fn spawn(&mut self, chain_id: &ChainId) -> Result<bool, SpawnError> {
         if !self.handles.contains_key(chain_id) {
-            let handle = spawn_chain_runtime(&self.config, chain_id, self.rt.clone())?;
+            let handle = spawn_chain_runtime(&self.config, chain_id, new_runtime())?;
             self.handles.insert(chain_id.clone(), handle);
             trace!(chain = %chain_id, "spawned chain runtime");
             Ok(true)

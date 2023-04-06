@@ -1,15 +1,16 @@
-use crate::chain_registry::get_configs;
+use std::collections::HashSet;
+use std::path::PathBuf;
+
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use itertools::Itertools;
+use tracing::{info, warn};
 
+use crate::chain_registry::get_configs;
+use crate::cli_utils::new_tokio_runtime;
 use crate::conclude::Output;
 
 use ibc_relayer::config::{store, ChainConfig, Config};
-
-use std::collections::HashSet;
-use std::path::PathBuf;
-use tracing::{info, warn};
 
 fn find_key(chain_config: &ChainConfig) -> Option<String> {
     let keys = chain_config.list_keys().ok()?;
@@ -77,7 +78,7 @@ fn extract_chains_and_keys(chain_names: &[String]) -> Vec<(String, Option<String
 impl Runnable for AutoCmd {
     fn run(&self) {
         // Assert that for every chain, a key name is provided
-        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = new_tokio_runtime();
 
         // Extract keys and sort chains by name
         let names_and_keys = extract_chains_and_keys(&self.chain_names);
