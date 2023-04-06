@@ -119,16 +119,16 @@ pub struct TxUpdateClientCmd {
         help_heading = "REQUIRED",
         help = "Identifier of the chain that hosts the client"
     )]
-    dst_chain_id: ChainId,
+    host_chain_id: ChainId,
 
     #[clap(
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
         help_heading = "REQUIRED",
-        help = "Identifier of the chain targeted by the client"
+        help = "Identifier of the client to update"
     )]
-    dst_client_id: ClientId,
+    client_id: ClientId,
 
     #[clap(
         long = "height",
@@ -179,20 +179,14 @@ impl Runnable for TxUpdateClientCmd {
     fn run(&self) {
         let mut config = (*app_config()).to_owned();
 
-        if let Some(restart_params) = self.genesis_restart_params() {
-            if let Some(c) = config.find_chain_mut(&self.dst_chain_id) {
-                c.genesis_restart = Some(restart_params);
-            }
-        }
-
-        let dst_chain = match spawn_chain_runtime(&config, &self.dst_chain_id) {
+        let dst_chain = match spawn_chain_runtime(&config, &self.host_chain_id) {
             Ok(handle) => handle,
             Err(e) => Output::error(e).exit(),
         };
 
-        let src_chain_id = match dst_chain.query_client_state(
+        let reference_chain_id = match dst_chain.query_client_state(
             QueryClientStateRequest {
-                client_id: self.dst_client_id.clone(),
+                client_id: self.client_id.clone(),
                 height: QueryHeight::Latest,
             },
             IncludeProof::No,
@@ -201,30 +195,36 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => {
                 Output::error(format!(
                     "Query of client '{}' on chain '{}' failed with error: {}",
-                    self.dst_client_id, self.dst_chain_id, e
+                    self.client_id, self.host_chain_id, e
                 ))
                 .exit();
             }
         };
 
-        let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
+        if let Some(restart_params) = self.genesis_restart_params() {
+            if let Some(c) = config.find_chain_mut(&reference_chain_id) {
+                c.genesis_restart = Some(restart_params);
+            }
+        }
+
+        let reference_chain = match spawn_chain_runtime(&config, &reference_chain_id) {
             Ok(handle) => handle,
             Err(e) => Output::error(e).exit(),
         };
 
         let target_height = self.target_height.map_or(QueryHeight::Latest, |height| {
             QueryHeight::Specific(
-                Height::new(src_chain.id().version(), height)
+                Height::new(reference_chain.id().version(), height)
                     .unwrap_or_else(exit_with_unrecoverable_error),
             )
         });
 
         let trusted_height = self.trusted_height.map(|height| {
-            Height::new(src_chain.id().version(), height)
+            Height::new(reference_chain.id().version(), height)
                 .unwrap_or_else(exit_with_unrecoverable_error)
         });
 
-        let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
+        let client = ForeignClient::find(reference_chain, dst_chain, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = client
@@ -820,8 +820,8 @@ mod tests {
     fn test_update_client_required_only() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: None,
                 trusted_height: None,
                 archive_address: None,
@@ -841,8 +841,8 @@ mod tests {
     fn test_update_client_height() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: Some(42),
                 trusted_height: None,
                 archive_address: None,
@@ -864,8 +864,8 @@ mod tests {
     fn test_update_client_trusted_height() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: None,
                 trusted_height: Some(42),
                 archive_address: None,
@@ -887,8 +887,8 @@ mod tests {
     fn test_update_client_genesis_restart() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: Some(43),
                 trusted_height: None,
                 archive_address: "http://127.0.0.1:28000".parse().ok(),
@@ -914,8 +914,8 @@ mod tests {
     fn test_update_client_all_options() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: Some(21),
                 trusted_height: Some(42),
                 archive_address: None,
