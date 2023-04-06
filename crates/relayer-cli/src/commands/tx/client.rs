@@ -7,18 +7,20 @@ use std::thread;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryHeight,
 };
 use ibc_relayer::config::Config;
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
+use ibc_relayer::{chain::handle::ChainHandle, config::GenesisRestart};
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height;
+use tendermint::block::Height as BlockHeight;
 use tendermint_light_client_verifier::types::TrustThreshold;
+use tendermint_rpc::Url;
 use tracing::debug;
 
 use crate::application::app_config;
@@ -117,16 +119,16 @@ pub struct TxUpdateClientCmd {
         help_heading = "REQUIRED",
         help = "Identifier of the chain that hosts the client"
     )]
-    dst_chain_id: ChainId,
+    host_chain_id: ChainId,
 
     #[clap(
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
         help_heading = "REQUIRED",
-        help = "Identifier of the chain targeted by the client"
+        help = "Identifier of the client to update"
     )]
-    dst_client_id: ClientId,
+    client_id: ClientId,
 
     #[clap(
         long = "height",
@@ -150,7 +152,7 @@ pub struct TxUpdateClientCmd {
         requires = "halted_height",
         help = "The archive node address used to update client. Requires --halted-height if used."
     )]
-    archive_address: Option<String>,
+    archive_address: Option<Url>,
 
     #[clap(
         long = "halted-height",
@@ -159,21 +161,32 @@ pub struct TxUpdateClientCmd {
         requires = "archive_address",
         help = "The height that the chain halted. Requires --archive-address if used."
     )]
-    halted_height: Option<u64>,
+    halted_height: Option<BlockHeight>,
+}
+
+impl TxUpdateClientCmd {
+    fn genesis_restart_params(&self) -> Option<GenesisRestart> {
+        self.archive_address.as_ref().zip(self.halted_height).map(
+            |(archive_addr, halted_height)| GenesisRestart {
+                archive_addr: archive_addr.clone(),
+                halted_height,
+            },
+        )
+    }
 }
 
 impl Runnable for TxUpdateClientCmd {
     fn run(&self) {
-        let config = app_config();
+        let mut config = (*app_config()).to_owned();
 
-        let dst_chain = match spawn_chain_runtime(&config, &self.dst_chain_id) {
+        let dst_chain = match spawn_chain_runtime(&config, &self.host_chain_id) {
             Ok(handle) => handle,
             Err(e) => Output::error(e).exit(),
         };
 
-        let src_chain_id = match dst_chain.query_client_state(
+        let reference_chain_id = match dst_chain.query_client_state(
             QueryClientStateRequest {
-                client_id: self.dst_client_id.clone(),
+                client_id: self.client_id.clone(),
                 height: QueryHeight::Latest,
             },
             IncludeProof::No,
@@ -182,44 +195,40 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => {
                 Output::error(format!(
                     "Query of client '{}' on chain '{}' failed with error: {}",
-                    self.dst_client_id, self.dst_chain_id, e
+                    self.client_id, self.host_chain_id, e
                 ))
                 .exit();
             }
         };
 
-        let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
+        if let Some(restart_params) = self.genesis_restart_params() {
+            if let Some(c) = config.find_chain_mut(&reference_chain_id) {
+                c.genesis_restart = Some(restart_params);
+            }
+        }
+
+        let reference_chain = match spawn_chain_runtime(&config, &reference_chain_id) {
             Ok(handle) => handle,
             Err(e) => Output::error(e).exit(),
         };
 
         let target_height = self.target_height.map_or(QueryHeight::Latest, |height| {
             QueryHeight::Specific(
-                Height::new(src_chain.id().version(), height)
+                Height::new(reference_chain.id().version(), height)
                     .unwrap_or_else(exit_with_unrecoverable_error),
             )
         });
 
         let trusted_height = self.trusted_height.map(|height| {
-            Height::new(src_chain.id().version(), height)
+            Height::new(reference_chain.id().version(), height)
                 .unwrap_or_else(exit_with_unrecoverable_error)
         });
 
-        let halted_height = self.halted_height.map(|height| {
-            Height::new(src_chain.id().version(), height)
-                .unwrap_or_else(exit_with_unrecoverable_error)
-        });
-
-        let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
+        let client = ForeignClient::find(reference_chain, dst_chain, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = client
-            .build_update_client_and_send(
-                target_height,
-                trusted_height,
-                self.archive_address.clone(),
-                halted_height,
-            )
+            .build_update_client_and_send(target_height, trusted_height)
             .map_err(Error::foreign_client);
 
         match res {
@@ -811,8 +820,8 @@ mod tests {
     fn test_update_client_required_only() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: None,
                 trusted_height: None,
                 archive_address: None,
@@ -832,8 +841,8 @@ mod tests {
     fn test_update_client_height() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: Some(42),
                 trusted_height: None,
                 archive_address: None,
@@ -855,8 +864,8 @@ mod tests {
     fn test_update_client_trusted_height() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: None,
                 trusted_height: Some(42),
                 archive_address: None,
@@ -878,12 +887,12 @@ mod tests {
     fn test_update_client_genesis_restart() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: Some(43),
                 trusted_height: None,
-                archive_address: Some("http://127.0.0.1:28000".to_owned()),
-                halted_height: Some(42),
+                archive_address: "http://127.0.0.1:28000".parse().ok(),
+                halted_height: "42".parse().ok()
             },
             TxUpdateClientCmd::parse_from([
                 "test",
@@ -905,8 +914,8 @@ mod tests {
     fn test_update_client_all_options() {
         assert_eq!(
             TxUpdateClientCmd {
-                dst_chain_id: ChainId::from_string("host_chain"),
-                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                host_chain_id: ChainId::from_string("host_chain"),
+                client_id: ClientId::from_str("client_to_update").unwrap(),
                 target_height: Some(21),
                 trusted_height: Some(42),
                 archive_address: None,

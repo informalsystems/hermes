@@ -21,6 +21,7 @@ use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
 use ibc_proto::protobuf::Protobuf;
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
@@ -48,9 +49,6 @@ use ibc_relayer_types::core::ics24_host::{
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
-use ibc_relayer_types::{
-    applications::ics31_icq::response::CrossChainQueryResponse, core::ics02_client::height::Height,
-};
 
 use tendermint::block::Height as TmHeight;
 use tendermint::node::{self, info::TxIndexStatus};
@@ -829,7 +827,7 @@ impl ChainEndpoint for CosmosSdkChain {
         client_state: &AnyClientState,
     ) -> Result<Self::LightBlock, Error> {
         self.light_client
-            .verify(trusted, target, client_state, None, None)
+            .verify(trusted, target, client_state)
             .map(|v| v.target)
     }
 
@@ -1844,8 +1842,6 @@ impl ChainEndpoint for CosmosSdkChain {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-        archive_address: Option<String>,
-        halted_height: Option<Height>,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 
@@ -1854,8 +1850,6 @@ impl ChainEndpoint for CosmosSdkChain {
             trusted_height,
             target_height,
             client_state,
-            archive_address,
-            halted_height,
         )?;
 
         Ok((target, supporting))
