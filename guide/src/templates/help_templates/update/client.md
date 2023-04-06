@@ -22,5 +22,5 @@ OPTIONS:
             The trusted height of the client update. Leave unspecified for latest height.
 
 REQUIRED:
-        --client <CLIENT_ID>            Identifier of the chain targeted by the client
+        --client <CLIENT_ID>            Identifier of the client to update
         --host-chain <HOST_CHAIN_ID>    Identifier of the chain that hosts the client
