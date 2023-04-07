@@ -130,6 +130,8 @@ const CHANNEL_OPEN_ACK_EVENT: &str = "channel_open_ack";
 const CHANNEL_OPEN_CONFIRM_EVENT: &str = "channel_open_confirm";
 const CHANNEL_CLOSE_INIT_EVENT: &str = "channel_close_init";
 const CHANNEL_CLOSE_CONFIRM_EVENT: &str = "channel_close_confirm";
+const CHANNEL_UPGRADE_INIT_EVENT: &str = "channel_upgrade_init";
+const CHANNEL_UPGRADE_TRY_EVENT: &str = "channel_upgrade_try";
 /// Packet event types
 const SEND_PACKET_EVENT: &str = "send_packet";
 const RECEIVE_PACKET_EVENT: &str = "receive_packet";

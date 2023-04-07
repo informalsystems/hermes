@@ -471,6 +471,138 @@ impl EventType for CloseConfirm {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct UpgradeInit {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub connection_id: ConnectionId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: ChannelId,
+}
+
+impl Display for UpgradeInit {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match &self.counterparty_channel_id {
+            Some(counterparty_channel_id) => write!(f, "UpgradeInit {{ port_id: {}, channel_id: {}, connection_id: {}, counterparty_port_id: {}, counterparty_channel_id: {} }}", self.port_id, self.channel_id, self.connection_id, self.counterparty_port_id, counterparty_channel_id),
+            None => write!(f, "UpgradeInit {{ port_id: {}, channel_id: {}, connection_id: {}, counterparty_port_id: {}, counterparty_channel_id: None }}", self.port_id, self.channel_id, self.connection_id, self.counterparty_port_id),
+        }
+    }
+}
+
+impl From<UpgradeInit> for Attributes {
+    fn from(ev: UpgradeInit) -> Self {
+        Self {
+            port_id: ev.port_id,
+            channel_id: Some(ev.channel_id),
+            connection_id: ev.connection_id,
+            counterparty_port_id: ev.counterparty_port_id,
+            counterparty_channel_id: Some(ev.counterparty_channel_id),
+        }
+    }
+}
+
+impl UpgradeInit {
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+
+    pub fn counterparty_port_id(&self) -> &PortId {
+        &self.counterparty_port_id
+    }
+
+    pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
+        &self.counterparty_channel_id.as_ref()
+    }
+}
+
+impl TryFrom<Attributes> for UpgradeInit {
+    type Error = EventError;
+
+    fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
+        if let Some(channel_id) = attrs.channel_id {
+            Ok(Self {
+                port_id: attrs.port_id.clone(),
+                channel_id: channel_id.clone(),
+                connection_id: attrs.connection_id.clone(),
+                counterparty_port_id: attrs.counterparty_port_id.clone(),
+                counterparty_channel_id: attrs.counterparty_channel_id,
+            })
+        } else {
+            Err(EventError::channel(Error::missing_channel_id()))
+        }
+    }
+}
+
+impl From<UpgradeInit> for IbcEvent {
+    fn from(v: UpgradeInit) -> Self {
+        IbcEvent::UpgradeInitChannel(v)
+    }
+}
+
+impl EventType for UpgradeInit {
+    fn event_type() -> IbcEventType {
+        IbcEventType::UpgradeInitChannel
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct UpgradeTry {
+    pub port_id: PortId,
+    pub channel_id: Option<ChannelId>,
+    pub connection_id: ConnectionId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: Option<ChannelId>,
+}
+
+impl Display for UpgradeTry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match (&self.channel_id, &self.counterparty_channel_id) {
+            (Some(channel_id), Some(counterparty_channel_id)) => write!(f, "UpgradeTry {{ port_id: {}, channel_id: {}, connection_id: {}, counterparty_port_id: {}, counterparty_channel_id: {} }}", self.port_id, channel_id, self.connection_id, self.counterparty_port_id, counterparty_channel_id),
+            (Some(channel_id), None) => write!(f, "UpgradeTry {{ port_id: {}, channel_id: {}, connection_id: {}, counterparty_port_id: {}, counterparty_channel_id: None }}", self.port_id, channel_id, self.connection_id, self.counterparty_port_id),
+            (None, Some(counterparty_channel_id)) => write!(f, "UpgradeTry {{ port_id: {}, channel_id: None, connection_id: {}, counterparty_port_id: {}, counterparty_channel_id: {} }}", self.port_id, self.connection_id, self.counterparty_port_id, counterparty_channel_id),
+            (None, None) => write!(f, "UpgradeTry {{ port_id: {}, channel_id: None, connection_id: {}, counterparty_port_id: {}, counterparty_channel_id: None }}", self.port_id, self.connection_id, self.counterparty_port_id),
+        }
+    }
+}
+
+impl From<UpgradeTry> for Attributes {
+    fn from(ev: UpgradeTry) -> Self {
+        Self {
+            port_id: ev.port_id,
+            channel_id: ev.channel_id,
+            connection_id: ev.connection_id,
+            counterparty_port_id: ev.counterparty_port_id,
+            counterparty_channel_id: ev.counterparty_channel_id,
+        }
+    }
+}
+
+impl UpgradeTry {
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.channel_id.as_ref()
+    }
+
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+}
+
+impl From<UpgradeTry> for IbcEvent {
+    fn from(v: UpgradeTry) -> Self {
+        IbcEvent::UpgradeTryChannel(v)
+    }
+}
+
+impl EventType for UpgradeTry {
+    fn event_type() -> IbcEventType {
+        IbcEventType::UpgradeTryChannel
+    }
+}
+
 macro_rules! impl_try_from_attribute_for_event {
     ($($event:ty),+) => {
         $(impl TryFrom<Attributes> for $event {
@@ -512,6 +644,8 @@ impl_from_ibc_to_abci_event!(
     OpenConfirm,
     CloseInit,
     CloseConfirm
+    UpgradeInit,
+    UpgradeTry,
 );
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]

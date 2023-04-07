@@ -21,7 +21,7 @@ pub struct MsgChannelUpgradeInit {
 }
 
 impl MsgChannelUpgradeInit {
-    pub fn new(port_id: PortId, channel_id: ChannelId, channel: ChannelEnd, signer: Signer) -> Self {
+    pub fn new(port_id: PortId, channel_id: ChannelId, signer: Signer) -> Self {
         Self {
             port_id,
             channel_id,
