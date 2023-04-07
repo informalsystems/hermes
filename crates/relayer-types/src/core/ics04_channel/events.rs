@@ -477,7 +477,7 @@ pub struct UpgradeInit {
     pub channel_id: ChannelId,
     pub connection_id: ConnectionId,
     pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: ChannelId,
+    pub counterparty_channel_id: Option<ChannelId>,
 }
 
 impl Display for UpgradeInit {
@@ -496,7 +496,7 @@ impl From<UpgradeInit> for Attributes {
             channel_id: Some(ev.channel_id),
             connection_id: ev.connection_id,
             counterparty_port_id: ev.counterparty_port_id,
-            counterparty_channel_id: Some(ev.counterparty_channel_id),
+            counterparty_channel_id: ev.counterparty_channel_id,
         }
     }
 }
@@ -515,7 +515,7 @@ impl UpgradeInit {
     }
 
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
-        &self.counterparty_channel_id.as_ref()
+        self.counterparty_channel_id.as_ref()
     }
 }
 
@@ -523,7 +523,7 @@ impl TryFrom<Attributes> for UpgradeInit {
     type Error = EventError;
 
     fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
-        if let Some(channel_id) = attrs.channel_id {
+        if let Some(channel_id) = attrs.channel_id() {
             Ok(Self {
                 port_id: attrs.port_id.clone(),
                 channel_id: channel_id.clone(),
@@ -644,8 +644,6 @@ impl_from_ibc_to_abci_event!(
     OpenConfirm,
     CloseInit,
     CloseConfirm
-    UpgradeInit,
-    UpgradeTry,
 );
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
