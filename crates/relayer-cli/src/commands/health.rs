@@ -13,7 +13,7 @@ pub struct HealthCheckCmd {}
 
 impl Runnable for HealthCheckCmd {
     fn run(&self) {
-        let config = (*app_config()).clone();
+        let config = app_config();
 
         for ch in &config.chains {
             let _span = tracing::error_span!("health_check", chain = %ch.id).entered();

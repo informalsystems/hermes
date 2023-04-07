@@ -947,33 +947,19 @@ impl ChainEndpoint for CosmosSdkChain {
             .block_on(self.rpc_client.abci_info())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-        // Query `/blockchain` endpoint to pull the block metadata corresponding to
-        // the latest block that the application committed.
-        // TODO: Replace this query with `/header`, once it's available.
-        //  https://github.com/informalsystems/tendermint-rs/pull/1101
-        let blocks = self
-            .block_on(
-                self.rpc_client
-                    .blockchain(abci_info.last_block_height, abci_info.last_block_height),
-            )
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
-            .block_metas;
+        // Query `/header` endpoint to pull the latest block that the application committed.
+        let response = self
+            .block_on(self.rpc_client.header(abci_info.last_block_height))
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-        return if let Some(latest_app_block) = blocks.first() {
-            let height = ICSHeight::new(
-                ChainId::chain_version(latest_app_block.header.chain_id.as_str()),
-                u64::from(abci_info.last_block_height),
-            )
-            .map_err(|_| Error::invalid_height_no_source())?;
-            let timestamp = latest_app_block.header.time.into();
+        let height = ICSHeight::new(
+            ChainId::chain_version(response.header.chain_id.as_str()),
+            u64::from(abci_info.last_block_height),
+        )
+        .map_err(|_| Error::invalid_height_no_source())?;
 
-            Ok(ChainStatus { height, timestamp })
-        } else {
-            // The `/blockchain` query failed to return the header we wanted
-            Err(Error::query(
-                "/blockchain endpoint for latest app. block".to_owned(),
-            ))
-        };
+        let timestamp = response.header.time.into();
+        Ok(ChainStatus { height, timestamp })
     }
 
     fn query_clients(
@@ -1791,15 +1777,24 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         };
 
-        // TODO(hu55a1n1): use the `/header` RPC endpoint instead when we move to tendermint v0.35.x
-        let rpc_call = match height.value() {
-            0 => self.rpc_client.latest_block(),
-            _ => self.rpc_client.block(height),
+        let header = if height.value() == 0 {
+            self.block_on(async {
+                self.rpc_client
+                    .latest_block()
+                    .await
+                    .map(|response| response.block.header)
+            })
+        } else {
+            self.block_on(async {
+                self.rpc_client
+                    .header(height)
+                    .await
+                    .map(|response| response.header)
+            })
         };
-        let response = self
-            .block_on(rpc_call)
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-        Ok(response.block.header.into())
+
+        let header = header.map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        Ok(header.into())
     }
 
     fn build_client_state(

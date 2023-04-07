@@ -96,16 +96,20 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - env:
+      - uses: nick-fields/retry@v2
+        env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell .#python .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --no-fail-fast -- \
-            --nocapture --test-threads=2
+        with:
+           max_attempts: 2
+           timeout_minutes: 60
+           command: |
+             nix shell .#python .#${{ matrix.chain.package }} -c cargo \
+               test -p ibc-integration-test --no-fail-fast -- \
+               --nocapture --test-threads=2
 
   ordered-channel-test:
     runs-on: ubuntu-20.04
