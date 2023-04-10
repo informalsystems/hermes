@@ -42,7 +42,7 @@ crossbeam-channel = "0.5.5"
 hex = "0.4"
 bitcoin = { version = "0.30.0", features = ["serde"] }
 tiny-bip39 = "1.0.0"
-hdpath = "0.6.1"
+hdpath = "0.6.2"
 sha2 = "0.10.6"
 tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = false }
 ripemd = "0.1.3"
