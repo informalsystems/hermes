@@ -37,7 +37,7 @@ clap                     = { version = "3.2", features = ["cargo"] }
 clap_complete            = "3.2"
 color-eyre               = "0.6"
 console                  = "0.15.5"
-crossbeam-channel        = "0.5.5"
+crossbeam-channel        = "0.5.8"
 dialoguer                = "0.10.3"
 dirs-next                = "2.0.0"
 eyre                     = "0.6.8"
