@@ -22,4 +22,5 @@ tendermint-rpc                   = { git = "https://github.com/informalsystems/t
 tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
 tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
 tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
+tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
 tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }

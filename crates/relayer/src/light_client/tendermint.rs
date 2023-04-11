@@ -5,11 +5,11 @@ use tracing::{debug, error, trace, warn};
 
 use tendermint_light_client::{
     components::{self, io::AtHeight},
-    detector::Divergence,
     light_client::LightClient as TmLightClient,
     state::State as LightClientState,
     store::{memory::MemoryStore, LightStore},
 };
+use tendermint_light_client_detector::Divergence;
 use tendermint_light_client_verifier::types::{Height as TMHeight, LightBlock, PeerId, Status};
 use tendermint_light_client_verifier::ProdVerifier;
 use tendermint_rpc as rpc;

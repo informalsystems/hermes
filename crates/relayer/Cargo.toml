@@ -94,6 +94,10 @@ features = ["rpc-client", "secp256k1", "unstable"]
 version = "0.30.0"
 default-features = false
 
+[dependencies.tendermint-light-client-detector]
+version = "0.30.0"
+default-features = false
+
 [dev-dependencies]
 ibc-relayer-types = { version = "0.23.0", path = "../relayer-types", features = ["mocks"] }
 serial_test = "1.0.0"

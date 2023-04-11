@@ -1,6 +1,5 @@
 use tracing::{error, info};
 
-use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 use tendermint::{
     evidence::{Evidence, LightClientAttackEvidence},
     Hash, Time,
@@ -8,13 +7,15 @@ use tendermint::{
 use tendermint_light_client::{
     builder::LightClientBuilder,
     components::{clock::FixedClock, io::ProdIo, scheduler},
-    detector::{detect_divergence, Divergence, Provider},
     predicates::ProdPredicates,
     store::memory::MemoryStore,
     types::{LightBlock, PeerId},
+    verifier::ProdVerifier,
 };
-use tendermint_light_client_verifier::ProdVerifier;
+use tendermint_light_client_detector::{detect_divergence, Divergence, Provider};
 use tendermint_rpc::{Client, HttpClient};
+
+use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 
 use crate::{error::Error, util::block_on};
 
