@@ -1840,7 +1840,6 @@ dependencies = [
  "tendermint",
  "tendermint-light-client",
  "tendermint-light-client-detector",
- "tendermint-light-client-verifier",
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
