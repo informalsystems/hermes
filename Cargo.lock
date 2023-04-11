@@ -1785,7 +1785,6 @@ name = "ibc-relayer"
 version = "0.23.0"
 dependencies = [
  "anyhow",
- "async-stream",
  "bech32",
  "bitcoin",
  "bs58",

@@ -8,5 +8,4 @@ pub mod lock;
 pub mod pretty;
 pub mod queue;
 pub mod retry;
-pub mod stream;
 pub mod task;
