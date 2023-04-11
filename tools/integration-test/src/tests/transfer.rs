@@ -60,7 +60,7 @@ impl BinaryChannelTest for IbcTransferTest {
             + CanShutdown,
     {
         info!("Will run test with {}", context.context_id());
-        let res = context.spawn_relayer()?;
+        let handle = context.spawn_relayer()?;
 
         let node_a = context.node_a();
         let node_b = context.node_b();
@@ -163,7 +163,7 @@ impl BinaryChannelTest for IbcTransferTest {
 
         context.wait_for_dst_acks()?;
 
-        context.shutdown(res);
+        context.shutdown(handle);
 
         Ok(())
     }

@@ -25,7 +25,7 @@ impl BinaryChannelTest for IbcDenomTraceTest {
     where
         Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer + CanShutdown,
     {
-        let res = context.spawn_relayer()?;
+        let handle = context.spawn_relayer()?;
         let chains = context.chains();
         let channel = context.channel();
         let a_to_b_amount: u64 = 1234;
@@ -94,7 +94,7 @@ impl BinaryChannelTest for IbcDenomTraceTest {
             &denom_a.value().as_str().to_string(),
         )?;
 
-        context.shutdown(res);
+        context.shutdown(handle);
 
         Ok(())
     }

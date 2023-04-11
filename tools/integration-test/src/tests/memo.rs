@@ -40,7 +40,7 @@ impl BinaryChannelTest for MemoTest {
     where
         Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
     {
-        let res = context.spawn_relayer()?;
+        let _handle = context.spawn_relayer()?;
         let chains = context.chains();
         let channel = context.channel();
         info!(
@@ -77,8 +77,6 @@ impl BinaryChannelTest for MemoTest {
             .query_recipient_transactions(&chains.node_b.wallets().user1().address())?;
 
         assert_tx_memo_equals(&tx_info, self.memo.as_str())?;
-
-        context.shutdown(res);
 
         Ok(())
     }
