@@ -39,7 +39,8 @@ use crate::framework::binary::node::{
     run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
 };
 use crate::framework::next::chain::{
-    CanSpawnRelayer, HasContextId, HasTestConfig, HasTwoChains, HasTwoChannels, HasTwoNodes,
+    CanShutdown, CanSpawnRelayer, CanWaitForAck, HasContextId, HasTestConfig, HasTwoChains,
+    HasTwoChannels, HasTwoNodes,
 };
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
@@ -111,7 +112,9 @@ pub trait BinaryChannelTest {
             + HasTwoNodes
             + HasTestConfig
             + CanSpawnRelayer
-            + HasContextId;
+            + HasContextId
+            + CanWaitForAck
+            + CanShutdown;
 }
 
 /**
@@ -465,7 +468,9 @@ where
             + HasTwoNodes
             + HasTestConfig
             + CanSpawnRelayer
-            + HasContextId,
+            + HasContextId
+            + CanWaitForAck
+            + CanShutdown,
     {
         let config = context.config();
         if self.get_overrides().should_spawn_supervisor() {

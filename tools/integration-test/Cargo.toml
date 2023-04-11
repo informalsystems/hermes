@@ -21,6 +21,7 @@ ibc-relayer-components = { version = "0.1.0", path = "../../crates/relayer-compo
 ibc-relayer-runtime    = { path = "../../crates/relayer-runtime" }
 ibc-relayer-cosmos     = { path = "../../crates/relayer-cosmos" }
 ibc-test-framework = { path = "../test-framework" }
+tokio = { version = "1.0", features = ["rt"] }
 
 http = "0.2.9"
 prost = { version = "0.11" }

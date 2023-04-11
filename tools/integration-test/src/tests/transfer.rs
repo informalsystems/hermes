@@ -1,5 +1,6 @@
 use ibc_test_framework::framework::next::chain::{
-    CanSpawnRelayer, HasContextId, HasTwoChains, HasTwoChannels, HasTwoNodes,
+    CanShutdown, CanSpawnRelayer, CanWaitForAck, HasContextId, HasTwoChains, HasTwoChannels,
+    HasTwoNodes,
 };
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
@@ -50,10 +51,16 @@ pub struct IbcTransferTest;
 impl BinaryChannelTest for IbcTransferTest {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains + HasTwoChannels + HasTwoNodes + CanSpawnRelayer + HasContextId,
+        Context: HasTwoChains
+            + HasTwoChannels
+            + HasTwoNodes
+            + CanSpawnRelayer
+            + HasContextId
+            + CanWaitForAck
+            + CanShutdown,
     {
         info!("Will run test with {}", context.context_id());
-        let _res = context.spawn_relayer();
+        let res = context.spawn_relayer()?;
 
         let node_a = context.node_a();
         let node_b = context.node_b();
@@ -109,6 +116,8 @@ impl BinaryChannelTest for IbcTransferTest {
             &denom_b.with_amount(a_to_b_amount).as_ref(),
         )?;
 
+        context.wait_for_src_acks()?;
+
         info!(
             "successfully performed IBC transfer from chain {} to chain {}",
             context.chain_a().id(),
@@ -151,6 +160,10 @@ impl BinaryChannelTest for IbcTransferTest {
             context.chain_b().id(),
             context.chain_a().id(),
         );
+
+        context.wait_for_dst_acks()?;
+
+        context.shutdown(res);
 
         Ok(())
     }
