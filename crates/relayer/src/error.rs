@@ -581,6 +581,11 @@ define_error! {
 
         QueriedProofNotFound
             |_| { "Requested proof with query but no proof was returned." },
+
+        InvalidArchiveAddress
+            { address: String }
+            [ TendermintRpcError ]
+            |e| { format!("invalid archive node address {}", e.address) },
     }
 }
 

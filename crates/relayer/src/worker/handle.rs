@@ -19,7 +19,7 @@ use crate::{event::monitor::EventBatch, object::Object};
 
 use super::{WorkerCmd, WorkerId};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum WorkerData {
     Client { misbehaviour: bool, refresh: bool },
