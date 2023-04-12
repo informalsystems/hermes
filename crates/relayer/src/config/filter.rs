@@ -13,7 +13,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::events::IbcEventType;
 
 /// Represents all the filtering policies for packets.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PacketFilter {
     #[serde(flatten)]
     pub channel_policy: ChannelPolicy,
@@ -51,7 +51,7 @@ impl PacketFilter {
 }
 
 /// Represents the ways in which packets can be filtered.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(
     rename_all = "lowercase",
     tag = "policy",
@@ -69,7 +69,7 @@ pub enum ChannelPolicy {
 
 /// Represents the policy used to filter incentivized packets.
 /// Currently only filtering on `recv_fee` is authorized.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FeePolicy {
     recv: Vec<MinFee>,
 }
@@ -91,7 +91,7 @@ impl FeePolicy {
 
 /// Represents the minimum fee authorized when filtering.
 /// If no denom is specified, any denom is allowed.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MinFee {
     amount: u64,
     denom: Option<String>,
@@ -130,7 +130,7 @@ impl ChannelPolicy {
 }
 
 /// The internal representation of channel filter policies.
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChannelFilters(Vec<(PortFilterMatch, ChannelFilterMatch)>);
 
@@ -289,7 +289,7 @@ impl Hash for Wildcard {
 }
 
 /// Represents a single channel to be filtered in a [`ChannelFilters`] list.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum FilterPattern<T> {
     /// A channel specified exactly with its [`PortId`] & [`ChannelId`].
     Exact(T),

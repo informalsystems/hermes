@@ -112,6 +112,7 @@ where
         websocket_addr: websocket_address,
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
+        genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,
         key_name: String::new(),
         key_store_type: Store::default(),

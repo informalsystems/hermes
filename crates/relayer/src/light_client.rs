@@ -1,3 +1,4 @@
+pub mod genesis_restart;
 pub mod tendermint;
 
 use core::ops::Deref;

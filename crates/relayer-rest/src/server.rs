@@ -1,38 +1,29 @@
-use std::thread;
-
-use crossbeam_channel as channel;
-use serde::{Deserialize, Serialize};
-use tracing::{info, trace};
-
-use ibc_relayer::rest::request::Request;
-
-use crate::{
-    handle::{all_chain_ids, assemble_version_info, chain_config, supervisor_state},
-    Config,
+use std::{
+    error::Error,
+    net::{SocketAddr, ToSocketAddrs},
 };
 
-pub struct ServerHandle {
-    join_handle: thread::JoinHandle<()>,
-    tx_stop: std::sync::mpsc::Sender<()>,
-}
+use axum::{extract::Path, response::IntoResponse, routing::get, Extension, Json, Router, Server};
+use crossbeam_channel as channel;
+use serde::{Deserialize, Serialize};
+use tokio::task::JoinHandle;
 
-impl ServerHandle {
-    pub fn join(self) -> std::thread::Result<()> {
-        self.join_handle.join()
-    }
+use ibc_relayer::{
+    rest::{request::Request, RestApiError},
+    supervisor::dump_state::SupervisorState,
+};
 
-    pub fn stop(&self) {
-        self.tx_stop.send(()).unwrap();
-    }
-}
+use crate::handle::{all_chain_ids, assemble_version_info, chain_config, supervisor_state};
 
-pub fn spawn(config: Config) -> (ServerHandle, channel::Receiver<Request>) {
-    let (req_tx, req_rx) = channel::unbounded::<Request>();
+pub type BoxError = Box<dyn Error + Send + Sync>;
 
-    info!("starting REST API server listening at http://{}", config);
-    let handle = run(config, req_tx);
-
-    (handle, req_rx)
+pub fn spawn(
+    addr: impl ToSocketAddrs,
+    sender: channel::Sender<Request>,
+) -> Result<JoinHandle<()>, BoxError> {
+    let addr = addr.to_socket_addrs()?.next().unwrap();
+    let handle = tokio::spawn(run(addr, sender));
+    Ok(handle)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -52,45 +43,43 @@ impl<R, E> From<Result<R, E>> for JsonResult<R, E> {
     }
 }
 
-#[allow(clippy::manual_strip)]
-fn run(config: Config, sender: channel::Sender<Request>) -> ServerHandle {
-    let server = rouille::Server::new(config.address(), move |request| {
-        router!(request,
-            (GET) (/version) => {
-                trace!("[rest/server] GET /version");
-                let result = assemble_version_info(&sender);
-                rouille::Response::json(&result)
-            },
+async fn get_version(Extension(sender): Extension<Sender>) -> impl IntoResponse {
+    let version: Result<_, RestApiError> = Ok(assemble_version_info(&sender));
+    Json(JsonResult::from(version))
+}
 
-            (GET) (/chains) => {
-                // TODO(Soares): Add a `into_detail` to consume the error and obtain
-                //   the underlying detail, so that we avoid doing `e.0`
-                trace!("[rest] GET /chains");
-                let result = all_chain_ids(&sender);
-                rouille::Response::json(&JsonResult::from(result))
-            },
+async fn get_chains(Extension(sender): Extension<Sender>) -> impl IntoResponse {
+    let chain_ids = all_chain_ids(&sender);
+    Json(JsonResult::from(chain_ids))
+}
 
-            (GET) (/chain/{id: String}) => {
-                trace!("[rest] GET /chain/{}", id);
-                let result = chain_config(&sender, &id);
-                rouille::Response::json(&JsonResult::from(result))
-            },
+async fn get_chain(
+    Path(id): Path<String>,
+    Extension(sender): Extension<Sender>,
+) -> impl IntoResponse {
+    let chain = chain_config(&sender, &id);
+    Json(JsonResult::from(chain))
+}
 
-            (GET) (/state) => {
-                trace!("[rest] GET /state");
-                let result = supervisor_state(&sender);
-                rouille::Response::json(&JsonResult::from(result))
-            },
+async fn get_state(
+    Extension(sender): Extension<Sender>,
+) -> Json<JsonResult<SupervisorState, RestApiError>> {
+    let state = supervisor_state(&sender);
+    Json(JsonResult::from(state))
+}
 
-            _ => rouille::Response::empty_404(),
-        )
-    })
-    .unwrap();
+type Sender = channel::Sender<Request>;
 
-    let (join_handle, tx_stop) = server.stoppable();
+async fn run(addr: SocketAddr, sender: Sender) {
+    let app = Router::new()
+        .route("/version", get(get_version))
+        .route("/chains", get(get_chains))
+        .route("/chain/:id", get(get_chain))
+        .route("/state", get(get_state))
+        .layer(Extension(sender));
 
-    ServerHandle {
-        join_handle,
-        tx_stop,
-    }
+    Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }
