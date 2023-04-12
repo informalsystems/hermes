@@ -1,10 +1,12 @@
-use crate::prelude::*;
+use crate::timestamp::Timestamp;
+use crate::{prelude::*, Height};
 
 use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
 
 use crate::core::ics04_channel::error::Error;
+use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -17,14 +19,27 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeInit";
 pub struct MsgChannelUpgradeInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
+    pub proposed_upgrade_channel: Option<ChannelEnd>,
+    pub timeout_height: Option<Height>,
+    pub timeout_timestamp: Timestamp,
     pub signer: Signer,
 }
 
 impl MsgChannelUpgradeInit {
-    pub fn new(port_id: PortId, channel_id: ChannelId, signer: Signer) -> Self {
+    pub fn new(
+        port_id: PortId, 
+        channel_id: ChannelId, 
+        proposed_upgrade_channel: Option<ChannelEnd>, 
+        timeout_height: Option<Height>, 
+        timeout_timestamp: Timestamp,
+        signer: Signer
+    ) -> Self {
         Self {
             port_id,
             channel_id,
+            proposed_upgrade_channel,
+            timeout_height,
+            timeout_timestamp,
             signer,
         }
     }
@@ -41,6 +56,17 @@ impl Msg for MsgChannelUpgradeInit {
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
+
+    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+        self.proposed_upgrade_channel
+            .as_ref()
+            .ok_or(Error::missing_proposed_upgrade_channel())?
+            .validate_basic()?;
+        self.timeout_height
+            .as_ref()
+            .ok_or(Error::missing_timeout_height())?
+            .validate_basic()?
+    }
 }
 
 impl Protobuf<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {}
@@ -49,10 +75,18 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
     type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelUpgradeInit) -> Result<Self, Self::Error> {
+        let channel_end: ChannelEnd = raw_msg
+            .proposed_upgrade_channel
+            .ok_or_else(Error::missing_proposed_upgrade_channel)?
+            .try_into()?;
+
         Ok(MsgChannelUpgradeInit {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
+            proposed_upgrade_channel: Some(channel_end),
+            timeout_height: raw_msg.timeout_height.map(Height::try_from).transpose()?,
+            timeout_timestamp: raw_msg.timeout_timestamp.into(),
         })
     }
 }
@@ -63,12 +97,16 @@ impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
             signer: domain_msg.signer.to_string(),
+            proposed_upgrade_channel: domain_msg.proposed_upgrade_channel.map(Into::into),
+            timeout_height: domain_msg.timeout_height.map(Into::into),
+            timeout_timestamp: domain_msg.timeout_timestamp.into(),
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
 
@@ -81,6 +119,9 @@ pub mod test_util {
             port_id: PortId::default().to_string(),
             channel_id: ChannelId::default().to_string(),
             signer: get_dummy_bech32_account(),
+            proposed_upgrade_channel: Some(get_dummy_raw_channel_end()),
+            timeout_height: Some(Height::new(0, 10).into()),
+            timeout_timestamp: Timestamp::now().into(),
         }
     }
 }

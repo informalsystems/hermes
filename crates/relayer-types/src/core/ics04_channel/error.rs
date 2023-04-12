@@ -94,10 +94,13 @@ define_error! {
             | _ | { "missing counterparty" },
 
         NoCommonVersion
-            | _ | { "no commong version" },
+            | _ | { "no common version" },
 
         MissingChannel
             | _ | { "missing channel end" },
+
+        MissingProposedUpgradeChannel,
+            | _ | { "missing proposed upgrade channel" },
 
         InvalidVersionLengthConnection
             | _ | { "single version must be negociated on connection before opening channel" },
