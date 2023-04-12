@@ -372,10 +372,10 @@ impl FromStr for Order {
 }
 
 /// The possible state variants that a channel can exhibit.
-/// 
-/// These are encoded with integer discriminants so that there is 
-/// an easy way to compare channel states against one another. More 
-/// explicitly, this is an attempt to capture the lifecycle of a 
+///
+/// These are encoded with integer discriminants so that there is
+/// an easy way to compare channel states against one another. More
+/// explicitly, this is an attempt to capture the lifecycle of a
 /// channel, beginning from the `Uninitialized` state, through the
 /// `Open` state, before finally being `Closed`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

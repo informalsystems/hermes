@@ -16,17 +16,17 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
-/// Macro that generates the `Runnable::run` implementation for a 
+/// Macro that generates the `Runnable::run` implementation for a
 /// `tx channel` subcommand.
-/// 
+///
 /// The macro takes the following arguments:
 /// - `$dbg_string`: a string literal that will be used to identify the subcommand
 ///  in debug logs
 /// - `$func`: the method that will be called to build and send the `Channel` message
-/// - `$self`: the type that `Runnable` is being implemented for 
+/// - `$self`: the type that `Runnable` is being implemented for
 /// - `$chan`: a closure that specifies how to build the `Channel` object
-/// 
-/// The macro spawns a `ChainHandlePair`, fetches the destination connection, 
+///
+/// The macro spawns a `ChainHandlePair`, fetches the destination connection,
 /// creates a `Channel` object via the closure, and then calls the `$func` method
 /// with the `Channel` object.
 macro_rules! tx_chan_cmd {
@@ -657,7 +657,7 @@ impl Runnable for TxChanCloseConfirmCmd {
 }
 
 /// Build and send a `ChanUpgradeInit` message to a destination
-/// chain that the source chain has an already-existing channel open 
+/// chain that the source chain has an already-existing channel open
 /// with, signaling the intent by the source chain to perform
 /// the channel upgrade handshake.
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
@@ -762,7 +762,7 @@ impl Runnable for TxChanUpgradeInitCmd {
 }
 
 /// Build and send a `ChanUpgradeTry` message in response to
-/// a `ChanUpgradeInnit` message, signaling the chain's intent to 
+/// a `ChanUpgradeInnit` message, signaling the chain's intent to
 /// cooperate with the source chain on upgrading the specified channel
 ///  and initiating the upgrade handshake.
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]

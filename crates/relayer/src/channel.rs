@@ -1516,7 +1516,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     || matches!(event_with_height.event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
-                ChannelError::missing_event("no channel upgrade init event was in the response".to_string())
+                ChannelError::missing_event(
+                    "no channel upgrade init event was in the response".to_string(),
+                )
             })?;
 
         match &result.event {

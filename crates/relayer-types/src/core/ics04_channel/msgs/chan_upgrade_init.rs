@@ -11,7 +11,7 @@ use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeInit";
 
-/// Message definition for the first step in the channel 
+/// Message definition for the first step in the channel
 /// upgrade handshake (`ChanUpgradeInit` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelUpgradeInit {
