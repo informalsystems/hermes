@@ -124,9 +124,7 @@ impl From<MsgTransfer> for Any {
     fn from(msg: MsgTransfer) -> Self {
         Self {
             type_url: TYPE_URL.to_string(),
-            value: msg
-                .encode_vec()
-                .expect("encoding to `Any` from `MsgTranfer`"),
+            value: msg.encode_vec(),
         }
     }
 }
