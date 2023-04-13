@@ -642,6 +642,8 @@ impl_from_ibc_to_abci_event!(
     OpenTry,
     OpenAck,
     OpenConfirm,
+    UpgradeInit,
+    UpgradeTry,
     CloseInit,
     CloseConfirm
 );

@@ -323,6 +323,8 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
+pub type Ordering = Order;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, Default)]
 pub enum Order {
     None = 0,

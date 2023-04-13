@@ -1,7 +1,6 @@
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::error::Error as ChannelError;
 use crate::core::ics04_channel::version::Version;
-use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 use crate::proofs::Proofs;
@@ -58,11 +57,14 @@ impl Msg for MsgChannelOpenTry {
         TYPE_URL.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), ValidationError> {
-        match self.channel.counterparty().channel_id() {
-            None => Err(ValidationError::invalid_counterparty_channel_id()),
-            Some(_c) => Ok(()),
-        }
+    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+        // TODO: adapt error
+        // match self.channel.counterparty().channel_id() {
+        //     None => Err(ValidationError::invalid_counterparty_channel_id()),
+        //     Some(_c) => Ok(()),
+        // }
+
+        Ok(())
     }
 }
 
@@ -106,8 +108,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             signer: raw_msg.signer.parse().map_err(ChannelError::signer)?,
         };
 
-        msg.validate_basic()
-            .map_err(ChannelError::invalid_counterparty_channel_id)?;
+        msg.validate_basic()?;
 
         Ok(msg)
     }

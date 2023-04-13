@@ -5,13 +5,48 @@ use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
 
-use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeInit";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum UpgradeTimeout {
+    /// Timeout height indicates the height at which the counterparty
+    /// must no longer proceed with the upgrade handshake.
+    /// The chains will then preserve their original channel and the upgrade handshake is aborted
+    Height(Height),
+
+    /// Timeout timestamp indicates the time on the counterparty at which
+    /// the counterparty must no longer proceed with the upgrade handshake.
+    /// The chains will then preserve their original channel and the upgrade handshake is aborted.
+    Timestamp(Timestamp),
+
+    /// Both timeouts are set.
+    Both(Height, Timestamp),
+}
+
+impl UpgradeTimeout {
+    pub fn new(height: Option<Height>, timestamp: Option<Timestamp>) -> Result<Self, Error> {
+        match (height, timestamp) {
+            (Some(height), None) => Ok(UpgradeTimeout::Height(height)),
+            (None, Some(timestamp)) => Ok(UpgradeTimeout::Timestamp(timestamp)),
+            (Some(height), Some(timestamp)) => Ok(UpgradeTimeout::Both(height, timestamp)),
+            (None, None) => Err(Error::missing_upgrade_timeout()),
+        }
+    }
+
+    pub fn into_tuple(self) -> (Option<Height>, Option<Timestamp>) {
+        match self {
+            UpgradeTimeout::Height(height) => (Some(height), None),
+            UpgradeTimeout::Timestamp(timestamp) => (None, Some(timestamp)),
+            UpgradeTimeout::Both(height, timestamp) => (Some(height), Some(timestamp)),
+        }
+    }
+}
 
 /// Message definition for the first step in the channel
 /// upgrade handshake (`ChanUpgradeInit` datagram).
@@ -19,27 +54,24 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeInit";
 pub struct MsgChannelUpgradeInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub proposed_upgrade_channel: Option<ChannelEnd>,
-    pub timeout_height: Option<Height>,
-    pub timeout_timestamp: Timestamp,
+    pub proposed_upgrade_channel: ChannelEnd,
+    pub timeout: UpgradeTimeout,
     pub signer: Signer,
 }
 
 impl MsgChannelUpgradeInit {
     pub fn new(
-        port_id: PortId, 
-        channel_id: ChannelId, 
-        proposed_upgrade_channel: Option<ChannelEnd>, 
-        timeout_height: Option<Height>, 
-        timeout_timestamp: Timestamp,
-        signer: Signer
+        port_id: PortId,
+        channel_id: ChannelId,
+        proposed_upgrade_channel: ChannelEnd,
+        timeout: UpgradeTimeout,
+        signer: Signer,
     ) -> Self {
         Self {
             port_id,
             channel_id,
             proposed_upgrade_channel,
-            timeout_height,
-            timeout_timestamp,
+            timeout,
             signer,
         }
     }
@@ -56,21 +88,6 @@ impl Msg for MsgChannelUpgradeInit {
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
-
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        self.port_id.validate_basic()?;
-        self.channel_id.validate_basic()?;
-        self.signer.validate_basic()?;
-
-        self.proposed_upgrade_channel
-            .as_ref()
-            .ok_or(Error::missing_proposed_upgrade_channel())?
-            .validate_basic()?;
-        self.timeout_height
-            .as_ref()
-            .ok_or(Error::missing_timeout_height())?
-            .validate_basic()?
-    }
 }
 
 impl Protobuf<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {}
@@ -79,47 +96,60 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
     type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelUpgradeInit) -> Result<Self, Self::Error> {
-        let channel_end: ChannelEnd = raw_msg
+        let proposed_upgrade_channel: ChannelEnd = raw_msg
             .proposed_upgrade_channel
-            .ok_or_else(Error::missing_proposed_upgrade_channel)?
             .try_into()?;
 
-        let msg = MsgChannelUpgradeInit {
+        let timeout_height = raw_msg
+            .timeout_height
+            .map(Height::try_from)
+            .transpose()
+            .map_err(|_| Error::invalid_timeout_height())?;
+
+        let timeout_timestamp = Some(raw_msg.timeout_timestamp)
+            .filter(|&ts| ts != 0)
+            .map(|raw_ts| {
+                Timestamp::from_nanoseconds(raw_ts).map_err(Error::invalid_timeout_timestamp)
+            })
+            .transpose()?;
+
+        let timeout = UpgradeTimeout::new(timeout_height, timeout_timestamp)?;
+
+        Ok(MsgChannelUpgradeInit {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
-            proposed_upgrade_channel: Some(channel_end),
-            timeout_height: raw_msg.timeout_height.map(Height::try_from).transpose()?,
-            timeout_timestamp: raw_msg.timeout_timestamp.into(),
-        };
-
-        msg.validate_basic()?;
-
-        Ok(msg)
+            proposed_upgrade_channel,
+            timeout,
+        })
     }
 }
 
 impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
     fn from(domain_msg: MsgChannelUpgradeInit) -> Self {
+        let (timeout_height, timeout_timestamp) = domain_msg.timeout.into_tuple();
+
         Self {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
             signer: domain_msg.signer.to_string(),
-            proposed_upgrade_channel: domain_msg.proposed_upgrade_channel.map(Into::into),
-            timeout_height: domain_msg.timeout_height.map(Into::into),
-            timeout_timestamp: domain_msg.timeout_timestamp.into(),
+            proposed_upgrade_channel: Some(domain_msg.proposed_upgrade_channel.into()),
+            timeout_height: timeout_height.map(Into::into),
+            timeout_timestamp: timeout_timestamp.map(|ts| ts.nanoseconds()).unwrap_or(0),
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
-    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
 
+    use crate::core::ics02_client::height::Height;
+    use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
+    use crate::prelude::*;
     use crate::test_utils::get_dummy_bech32_account;
+    use crate::timestamp::Timestamp;
 
     /// Returns a dummy `RawMsgChannelUpgadeInit`, for testing only!
     pub fn get_dummy_raw_msg_chan_upgrade_init() -> RawMsgChannelUpgradeInit {
@@ -128,8 +158,8 @@ pub mod test_util {
             channel_id: ChannelId::default().to_string(),
             signer: get_dummy_bech32_account(),
             proposed_upgrade_channel: Some(get_dummy_raw_channel_end()),
-            timeout_height: Some(get_dummy_raw_height()),
-            timeout_timestamp: Timestamp::now().into(),
+            timeout_height: Some(Height::new(0, 10).unwrap().into()),
+            timeout_timestamp: Timestamp::now().nanoseconds(),
         }
     }
 }
@@ -205,10 +235,18 @@ mod tests {
                 name: "Channel name too long".to_string(),
                 raw: RawMsgChannelUpgradeInit {
                     channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_msg
                 },
                 want_pass: false,
             },
+            Test {
+                name: "Timeout timestamp is 0".to_string(),
+                raw: RawMsgChannelUpgradeInit {
+                    timeout_timestamp: 0,
+                    ..default_raw_msg
+                },
+                want_pass: false,
+            }
         ]
         .into_iter()
         .collect();

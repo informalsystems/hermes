@@ -656,6 +656,11 @@ impl Runnable for TxChanCloseConfirmCmd {
     }
 }
 
+// FIXME: Since the channel already exists, we don't need both the src and dst chain,
+// only the src/dst chain and src/dst channel.
+//
+// TODO: Add arguments for version, ordering, connection hops and timeouts.
+
 /// Build and send a `ChanUpgradeInit` message to a destination
 /// chain that the source chain has an already-existing channel open
 /// with, signaling the intent by the source chain to perform
@@ -731,33 +736,36 @@ pub struct TxChanUpgradeInitCmd {
 
 impl Runnable for TxChanUpgradeInitCmd {
     fn run(&self) {
-        tx_chan_cmd!(
-            "ChanUpgradeInit",
-            build_chan_upgrade_init_and_send,
-            self,
-            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
-                Channel {
-                    connection_delay: Default::default(),
-                    ordering: Order::default(),
-                    a_side: ChannelSide::new(
-                        chains.src,
-                        ClientId::default(),
-                        ConnectionId::default(),
-                        self.src_port_id.clone(),
-                        Some(self.src_chan_id.clone()),
-                        None,
-                    ),
-                    b_side: ChannelSide::new(
-                        chains.dst,
-                        dst_connection.client_id().clone(),
-                        self.dst_conn_id.clone(),
-                        self.dst_port_id.clone(),
-                        Some(self.dst_chan_id.clone()),
-                        None,
-                    ),
-                }
-            }
-        )
+        // TODO: Take version, connections hops, ordering and timeouts and hops from the arguments
+        // and pass them to build_chan_upgrade_init_and_send
+
+        // tx_chan_cmd!(
+        //     "ChanUpgradeInit",
+        //     build_chan_upgrade_init_and_send,
+        //     self,
+        //     |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
+        //         Channel {
+        //             connection_delay: Default::default(),
+        //             ordering: Order::default(),
+        //             a_side: ChannelSide::new(
+        //                 chains.src,
+        //                 ClientId::default(),
+        //                 ConnectionId::default(),
+        //                 self.src_port_id.clone(),
+        //                 Some(self.src_chan_id.clone()),
+        //                 None,
+        //             ),
+        //             b_side: ChannelSide::new(
+        //                 chains.dst,
+        //                 dst_connection.client_id().clone(),
+        //                 self.dst_conn_id.clone(),
+        //                 self.dst_port_id.clone(),
+        //                 Some(self.dst_chan_id.clone()),
+        //                 None,
+        //             ),
+        //         }
+        //     }
+        // );
     }
 }
 

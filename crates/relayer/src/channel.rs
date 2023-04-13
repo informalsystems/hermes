@@ -1,3 +1,5 @@
+pub use error::ChannelError;
+
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::time::Duration;
 
@@ -5,7 +7,6 @@ use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
-pub use error::ChannelError;
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State,
 };
@@ -15,6 +16,9 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenA
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::{
+    MsgChannelUpgradeInit, UpgradeTimeout,
+};
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -1465,41 +1469,77 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
-    pub fn build_chan_upgrade_init(&self) -> Result<Vec<Any>, ChannelError> {
-        // Destination channel ID must be specified
-        let dst_channel_id = self
+    pub fn build_chan_upgrade_init(
+        &self,
+        new_version: Option<Version>,
+        new_ordering: Option<Order>,
+        new_connection_hops: Option<Vec<ConnectionId>>,
+        timeout: UpgradeTimeout,
+    ) -> Result<Vec<Any>, ChannelError> {
+        // XXX: do we query/upgrade the source or destination channel?
+
+        // Destination channel ID must exist
+        let channel_id = self
             .dst_channel_id()
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
+        let port_id = self.dst_port_id();
+
         // Channel must exist on destination
-        self.dst_chain()
+        let (mut channel_end, _proof) = self
+            .dst_chain()
             .query_channel(
                 QueryChannelRequest {
-                    port_id: self.dst_port_id().clone(),
-                    channel_id: dst_channel_id.clone(),
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
+        // Build the proposed channel end
+        if let Some(new_version) = new_version {
+            channel_end.version = new_version;
+        }
+
+        if let Some(new_ordering) = new_ordering {
+            channel_end.ordering = new_ordering;
+        }
+
+        if let Some(new_connection_hops) = new_connection_hops {
+            channel_end.connection_hops = new_connection_hops;
+        }
+
+        // Build the domain type message
         let signer = self
             .dst_chain()
             .get_signer()
             .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         // Build the domain type message
-        let new_msg = MsgChannelUpgradeInit {
-            port_id: self.dst_port_id().clone(),
-            channel_id: dst_channel_id.clone(),
-            signer,
+        let new_msg = {
+            MsgChannelUpgradeInit {
+                port_id: port_id.clone(),
+                channel_id: channel_id.clone(),
+                proposed_upgrade_channel: channel_end,
+                timeout,
+                signer,
+            }
         };
 
         Ok(vec![new_msg.to_any()])
     }
 
-    pub fn build_chan_upgrade_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = self.build_chan_upgrade_init()?;
+    pub fn build_chan_upgrade_init_and_send(
+        &self,
+        new_version: Option<Version>,
+        new_ordering: Option<Order>,
+        new_connection_hops: Option<Vec<ConnectionId>>,
+        timeout: UpgradeTimeout,
+    ) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs =
+            self.build_chan_upgrade_init(new_version, new_ordering, new_connection_hops, timeout)?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeInit");
 

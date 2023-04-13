@@ -79,7 +79,11 @@ define_error! {
             | _ | { "packet data bytes cannot be empty" },
 
         InvalidTimeoutHeight
-            | _ | { "invalid timeout height for the packet" },
+            | _ | { "invalid timeout height" },
+
+        InvalidTimeoutTimestamp
+            [ crate::timestamp::ParseTimestampError ]
+            | _ | { "invalid timeout timestamp" },
 
         InvalidPacket
             | _ | { "invalid packet" },
@@ -99,7 +103,10 @@ define_error! {
         MissingChannel
             | _ | { "missing channel end" },
 
-        MissingProposedUpgradeChannel,
+        MissingUpgradeTimeout
+            | _ | { "missing upgrade timeout, either a height or a timestamp must be set" },
+
+        MissingProposedUpgradeChannel
             | _ | { "missing proposed upgrade channel" },
 
         InvalidVersionLengthConnection
