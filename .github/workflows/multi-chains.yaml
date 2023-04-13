@@ -76,6 +76,9 @@ jobs:
           - package: stride
             chain_command_path: strided
             account_prefix: stride
+          - package: juno
+            command: junod
+            account_prefix: juno
         second-package:
           - package: gaia9
             chain_command_path: gaiad
@@ -95,6 +98,9 @@ jobs:
           - package: stride
             chain_command_path: strided
             account_prefix: stride
+          - package: juno
+            command: junod
+            account_prefix: juno
 
     steps:
       - uses: actions/checkout@v2
