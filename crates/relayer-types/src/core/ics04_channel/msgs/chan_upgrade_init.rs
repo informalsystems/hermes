@@ -5,8 +5,8 @@ use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
 
-use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -27,12 +27,12 @@ pub struct MsgChannelUpgradeInit {
 
 impl MsgChannelUpgradeInit {
     pub fn new(
-        port_id: PortId, 
-        channel_id: ChannelId, 
-        proposed_upgrade_channel: Option<ChannelEnd>, 
-        timeout_height: Option<Height>, 
+        port_id: PortId,
+        channel_id: ChannelId,
+        proposed_upgrade_channel: Option<ChannelEnd>,
+        timeout_height: Option<Height>,
         timeout_timestamp: Timestamp,
-        signer: Signer
+        signer: Signer,
     ) -> Self {
         Self {
             port_id,
@@ -58,14 +58,18 @@ impl Msg for MsgChannelUpgradeInit {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        self.proposed_upgrade_channel
-            .as_ref()
-            .ok_or(Error::missing_proposed_upgrade_channel())?
-            .validate_basic()?;
-        self.timeout_height
-            .as_ref()
-            .ok_or(Error::missing_timeout_height())?
-            .validate_basic()?
+        // self.proposed_upgrade_channel
+        //     .as_ref()
+        //     .ok_or(Error::missing_proposed_upgrade_channel())?
+        //     .validate_basic()?;
+
+        // TODO: wrap error
+        // self.timeout_height
+        //     .as_ref()
+        //     .ok_or(Error::missing_timeout_height())?
+        //     .validate_basic()?;
+
+        Ok(())
     }
 }
 
@@ -85,8 +89,13 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
             proposed_upgrade_channel: Some(channel_end),
-            timeout_height: raw_msg.timeout_height.map(Height::try_from).transpose()?,
-            timeout_timestamp: raw_msg.timeout_timestamp.into(),
+            timeout_height: raw_msg
+                .timeout_height
+                .map(Height::try_from)
+                .transpose()
+                .map_err(|_| Error::invalid_timeout_height())?,
+            timeout_timestamp: Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
+                .map_err(Error::invalid_timeout_timestamp)?,
         })
     }
 }
@@ -99,19 +108,21 @@ impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
             signer: domain_msg.signer.to_string(),
             proposed_upgrade_channel: domain_msg.proposed_upgrade_channel.map(Into::into),
             timeout_height: domain_msg.timeout_height.map(Into::into),
-            timeout_timestamp: domain_msg.timeout_timestamp.into(),
+            timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
-    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
 
+    use crate::core::ics02_client::height::Height;
+    use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
+    use crate::prelude::*;
     use crate::test_utils::get_dummy_bech32_account;
+    use crate::timestamp::Timestamp;
 
     /// Returns a dummy `RawMsgChannelUpgadeInit`, for testing only!
     pub fn get_dummy_raw_msg_chan_upgrade_init() -> RawMsgChannelUpgradeInit {
@@ -120,8 +131,8 @@ pub mod test_util {
             channel_id: ChannelId::default().to_string(),
             signer: get_dummy_bech32_account(),
             proposed_upgrade_channel: Some(get_dummy_raw_channel_end()),
-            timeout_height: Some(Height::new(0, 10).into()),
-            timeout_timestamp: Timestamp::now().into(),
+            timeout_height: Some(Height::new(0, 10).unwrap().into()),
+            timeout_timestamp: Timestamp::now().nanoseconds(),
         }
     }
 }
@@ -197,7 +208,7 @@ mod tests {
                 name: "Channel name too long".to_string(),
                 raw: RawMsgChannelUpgradeInit {
                     channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_msg
                 },
                 want_pass: false,
             },

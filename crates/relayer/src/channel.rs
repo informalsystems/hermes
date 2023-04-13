@@ -1,3 +1,6 @@
+pub use error::ChannelError;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;
+
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::time::Duration;
 
@@ -5,7 +8,6 @@ use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
-pub use error::ChannelError;
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State,
 };
@@ -1483,16 +1485,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
+        // Build the domain type message
+        #[allow(unused_variables)]
         let signer = self
             .dst_chain()
             .get_signer()
             .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         // Build the domain type message
-        let new_msg = MsgChannelUpgradeInit {
-            port_id: self.dst_port_id().clone(),
-            channel_id: dst_channel_id.clone(),
-            signer,
+        #[allow(clippy::diverging_sub_expression, unreachable_code, unused_variables)]
+        let new_msg = {
+            MsgChannelUpgradeInit {
+                port_id: todo!(),
+                channel_id: todo!(),
+                proposed_upgrade_channel: todo!(),
+                timeout_height: todo!(),
+                timeout_timestamp: todo!(),
+                signer,
+            }
         };
 
         Ok(vec![new_msg.to_any()])
