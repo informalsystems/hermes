@@ -24,7 +24,7 @@ pub mod chan_close_init;
 
 // Upgrade handshake messages.
 pub mod chan_upgrade_init;
-// pub mod chan_upgrade_try;
+pub mod chan_upgrade_try;
 
 // Packet specific messages.
 pub mod acknowledgement;

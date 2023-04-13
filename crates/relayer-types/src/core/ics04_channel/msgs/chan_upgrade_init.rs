@@ -58,6 +58,10 @@ impl Msg for MsgChannelUpgradeInit {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+        self.port_id.validate_basic()?;
+        self.channel_id.validate_basic()?;
+        self.signer.validate_basic()?;
+
         self.proposed_upgrade_channel
             .as_ref()
             .ok_or(Error::missing_proposed_upgrade_channel())?
@@ -80,14 +84,18 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
             .ok_or_else(Error::missing_proposed_upgrade_channel)?
             .try_into()?;
 
-        Ok(MsgChannelUpgradeInit {
+        let msg = MsgChannelUpgradeInit {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
             proposed_upgrade_channel: Some(channel_end),
             timeout_height: raw_msg.timeout_height.map(Height::try_from).transpose()?,
             timeout_timestamp: raw_msg.timeout_timestamp.into(),
-        })
+        };
+
+        msg.validate_basic()?;
+
+        Ok(msg)
     }
 }
 
@@ -120,7 +128,7 @@ pub mod test_util {
             channel_id: ChannelId::default().to_string(),
             signer: get_dummy_bech32_account(),
             proposed_upgrade_channel: Some(get_dummy_raw_channel_end()),
-            timeout_height: Some(Height::new(0, 10).into()),
+            timeout_height: Some(get_dummy_raw_height()),
             timeout_timestamp: Timestamp::now().into(),
         }
     }
