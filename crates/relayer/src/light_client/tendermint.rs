@@ -215,7 +215,7 @@ fn io_for_addr(
     timeout: Option<Duration>,
 ) -> Result<ProdIo, Error> {
     let rpc_client = rpc::HttpClient::new(addr.clone()).map_err(|e| Error::rpc(addr.clone(), e))?;
-    Ok(ProdIo::new(peer_id, rpc_client.clone(), timeout))
+    Ok(ProdIo::new(peer_id, rpc_client, timeout))
 }
 
 impl LightClient {
