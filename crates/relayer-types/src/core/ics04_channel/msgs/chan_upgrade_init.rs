@@ -7,46 +7,12 @@ use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpg
 
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::error::Error;
+use crate::core::ics04_channel::timeout::UpgradeTimeout;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeInit";
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum UpgradeTimeout {
-    /// Timeout height indicates the height at which the counterparty
-    /// must no longer proceed with the upgrade handshake.
-    /// The chains will then preserve their original channel and the upgrade handshake is aborted
-    Height(Height),
-
-    /// Timeout timestamp indicates the time on the counterparty at which
-    /// the counterparty must no longer proceed with the upgrade handshake.
-    /// The chains will then preserve their original channel and the upgrade handshake is aborted.
-    Timestamp(Timestamp),
-
-    /// Both timeouts are set.
-    Both(Height, Timestamp),
-}
-
-impl UpgradeTimeout {
-    pub fn new(height: Option<Height>, timestamp: Option<Timestamp>) -> Result<Self, Error> {
-        match (height, timestamp) {
-            (Some(height), None) => Ok(UpgradeTimeout::Height(height)),
-            (None, Some(timestamp)) => Ok(UpgradeTimeout::Timestamp(timestamp)),
-            (Some(height), Some(timestamp)) => Ok(UpgradeTimeout::Both(height, timestamp)),
-            (None, None) => Err(Error::missing_upgrade_timeout()),
-        }
-    }
-
-    pub fn into_tuple(self) -> (Option<Height>, Option<Timestamp>) {
-        match self {
-            UpgradeTimeout::Height(height) => (Some(height), None),
-            UpgradeTimeout::Timestamp(timestamp) => (None, Some(timestamp)),
-            UpgradeTimeout::Both(height, timestamp) => (Some(height), Some(timestamp)),
-        }
-    }
-}
 
 /// Message definition for the first step in the channel
 /// upgrade handshake (`ChanUpgradeInit` datagram).

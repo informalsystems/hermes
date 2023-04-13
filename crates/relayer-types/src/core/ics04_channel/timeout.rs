@@ -181,3 +181,41 @@ impl<'de> Deserialize<'de> for TimeoutHeight {
         })
     }
 }
+
+/// A composite of timeout height and timeout timestamp types, useful for when 
+/// performing a channel upgrade handshake, as there are cases when only timeout
+/// height is set, only timeout timestamp is set, or both are set.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum UpgradeTimeout {
+    /// Timeout height indicates the height at which the counterparty
+    /// must no longer proceed with the upgrade handshake.
+    /// The chains will then preserve their original channel and the upgrade handshake is aborted
+    Height(Height),
+
+    /// Timeout timestamp indicates the time on the counterparty at which
+    /// the counterparty must no longer proceed with the upgrade handshake.
+    /// The chains will then preserve their original channel and the upgrade handshake is aborted.
+    Timestamp(Timestamp),
+
+    /// Both timeouts are set.
+    Both(Height, Timestamp),
+}
+
+impl UpgradeTimeout {
+    pub fn new(height: Option<Height>, timestamp: Option<Timestamp>) -> Result<Self, Error> {
+        match (height, timestamp) {
+            (Some(height), None) => Ok(UpgradeTimeout::Height(height)),
+            (None, Some(timestamp)) => Ok(UpgradeTimeout::Timestamp(timestamp)),
+            (Some(height), Some(timestamp)) => Ok(UpgradeTimeout::Both(height, timestamp)),
+            (None, None) => Err(Error::missing_upgrade_timeout()),
+        }
+    }
+
+    pub fn into_tuple(self) -> (Option<Height>, Option<Timestamp>) {
+        match self {
+            UpgradeTimeout::Height(height) => (Some(height), None),
+            UpgradeTimeout::Timestamp(timestamp) => (None, Some(timestamp)),
+            UpgradeTimeout::Both(height, timestamp) => (Some(height), Some(timestamp)),
+        }
+    }
+}
