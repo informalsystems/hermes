@@ -5,6 +5,7 @@ set -euo pipefail
 # --- Variables ---
 
 HERMES="cargo run --bin hermes -q --"
+HERMES_LOG="hermes.log"
 DEV_ENV="../../scripts/dev-env"
 
 IBC_1_RPC_PORT=26557
@@ -31,7 +32,7 @@ info "Creating forked chain ibc-1-f"
 bash ./create_fork.sh
 
 info "Starting Hermes for ibc-0 and ibc-1"
-$HERMES --config config.toml start > hermes.log 2>&1 &
+$HERMES --config config.toml start > "$HERMES_LOG" 2>&1 &
 HERMES_PID=$!
 
 info "Waiting for Hermes to start"
@@ -46,12 +47,20 @@ sleep 5
 info "Killing Hermes"
 kill -9 "$HERMES_PID"
 
+info ""
+info "--------------------------------------------------"
+info "Hermes log:"
+info "--------------------------------------------------"
+cat "$HERMES_LOG"
+info "--------------------------------------------------"
+info ""
+
 STOPPED_HEIGHT="$(curl -s http://localhost:$IBC_1_RPC_PORT/status | jq -r .result.sync_info.latest_block_height)"
 
 info "Chain ibc-1 stopped at height $STOPPED_HEIGHT"
 
 info "Fetch evidence from block $STOPPED_HEIGHT on ibc-1"
-EVIDENCE="$(curl -s http://localhost:$IBC_1_RPC_PORT/block?height=$STOPPED_HEIGHT | jq .result.block.evidence)"
+EVIDENCE="$(curl -s "http://localhost:$IBC_1_RPC_PORT/block?height=$STOPPED_HEIGHT" | jq .result.block.evidence)"
 
 info "Found evidence at height $STOPPED_HEIGHT: $EVIDENCE"
 
