@@ -13,6 +13,41 @@ use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeInit";
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum UpgradeTimeout {
+    /// Timeout height indicates the height at which the counterparty
+    /// must no longer proceed with the upgrade handshake.
+    /// The chains will then preserve their original channel and the upgrade handshake is aborted
+    Height(Height),
+
+    /// Timeout timestamp indicates the time on the counterparty at which
+    /// the counterparty must no longer proceed with the upgrade handshake.
+    /// The chains will then preserve their original channel and the upgrade handshake is aborted.
+    Timestamp(Timestamp),
+
+    /// Both timeouts are set.
+    Both(Height, Timestamp),
+}
+
+impl UpgradeTimeout {
+    pub fn new(height: Option<Height>, timestamp: Option<Timestamp>) -> Result<Self, Error> {
+        match (height, timestamp) {
+            (Some(height), None) => Ok(UpgradeTimeout::Height(height)),
+            (None, Some(timestamp)) => Ok(UpgradeTimeout::Timestamp(timestamp)),
+            (Some(height), Some(timestamp)) => Ok(UpgradeTimeout::Both(height, timestamp)),
+            (None, None) => Err(Error::missing_upgrade_timeout()),
+        }
+    }
+
+    pub fn into_tuple(self) -> (Option<Height>, Option<Timestamp>) {
+        match self {
+            UpgradeTimeout::Height(height) => (Some(height), None),
+            UpgradeTimeout::Timestamp(timestamp) => (None, Some(timestamp)),
+            UpgradeTimeout::Both(height, timestamp) => (Some(height), Some(timestamp)),
+        }
+    }
+}
+
 /// Message definition for the first step in the channel
 /// upgrade handshake (`ChanUpgradeInit` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -20,8 +55,7 @@ pub struct MsgChannelUpgradeInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub proposed_upgrade_channel: ChannelEnd,
-    pub timeout_height: Option<Height>,
-    pub timeout_timestamp: Option<Timestamp>,
+    pub timeout: UpgradeTimeout,
     pub signer: Signer,
 }
 
@@ -30,23 +64,14 @@ impl MsgChannelUpgradeInit {
         port_id: PortId,
         channel_id: ChannelId,
         proposed_upgrade_channel: ChannelEnd,
-        timeout_height: Option<Height>,
-        timeout_timestamp: Option<Timestamp>,
+        timeout: UpgradeTimeout,
         signer: Signer,
     ) -> Self {
-        // TODO: Check that either timeout_height or timeout_timestamp is set.
-        // Maybe model them as an enum
-        // enum UpgradeTimout {
-        //   Height(Height),
-        //   Timestamp(Timestamp),
-        // }
-
         Self {
             port_id,
             channel_id,
             proposed_upgrade_channel,
-            timeout_height,
-            timeout_timestamp,
+            timeout,
             signer,
         }
     }
@@ -76,8 +101,6 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
             .ok_or_else(Error::missing_proposed_upgrade_channel)?
             .try_into()?;
 
-        // TODO: Check that either timeout_height or timeout_timestamp is set.
-
         let timeout_height = raw_msg
             .timeout_height
             .map(Height::try_from)
@@ -91,29 +114,29 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
             })
             .transpose()?;
 
+        let timeout = UpgradeTimeout::new(timeout_height, timeout_timestamp)?;
+
         Ok(MsgChannelUpgradeInit {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
             proposed_upgrade_channel,
-            timeout_height,
-            timeout_timestamp,
+            timeout,
         })
     }
 }
 
 impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
     fn from(domain_msg: MsgChannelUpgradeInit) -> Self {
+        let (timeout_height, timeout_timestamp) = domain_msg.timeout.into_tuple();
+
         Self {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
             signer: domain_msg.signer.to_string(),
             proposed_upgrade_channel: Some(domain_msg.proposed_upgrade_channel.into()),
-            timeout_height: domain_msg.timeout_height.map(Into::into),
-            timeout_timestamp: domain_msg
-                .timeout_timestamp
-                .map(|ts| ts.nanoseconds())
-                .unwrap_or(0),
+            timeout_height: timeout_height.map(Into::into),
+            timeout_timestamp: timeout_timestamp.map(|ts| ts.nanoseconds()).unwrap_or(0),
         }
     }
 }

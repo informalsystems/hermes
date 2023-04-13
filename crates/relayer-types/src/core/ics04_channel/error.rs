@@ -103,6 +103,9 @@ define_error! {
         MissingChannel
             | _ | { "missing channel end" },
 
+        MissingUpgradeTimeout
+            | _ | { "missing upgrade timeout, either a height or a timestamp must be set" },
+
         MissingProposedUpgradeChannel
             | _ | { "missing proposed upgrade channel" },
 

@@ -1,6 +1,4 @@
 pub use error::ChannelError;
-use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;
-use ibc_relayer_types::timestamp::Timestamp;
 
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::time::Duration;
@@ -18,6 +16,9 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenA
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::{
+    MsgChannelUpgradeInit, UpgradeTimeout,
+};
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -1473,8 +1474,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         new_version: Option<Version>,
         new_ordering: Option<Order>,
         new_connection_hops: Option<Vec<ConnectionId>>,
-        timeout_height: Option<Height>,
-        timeout_timestamp: Option<Timestamp>,
+        timeout: UpgradeTimeout,
     ) -> Result<Vec<Any>, ChannelError> {
         // XXX: do we query/upgrade the source or destination channel?
 
@@ -1523,8 +1523,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 port_id: port_id.clone(),
                 channel_id: channel_id.clone(),
                 proposed_upgrade_channel: channel_end,
-                timeout_height,
-                timeout_timestamp,
+                timeout,
                 signer,
             }
         };
@@ -1537,16 +1536,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         new_version: Option<Version>,
         new_ordering: Option<Order>,
         new_connection_hops: Option<Vec<ConnectionId>>,
-        timeout_height: Option<Height>,
-        timeout_timestamp: Option<Timestamp>,
+        timeout: UpgradeTimeout,
     ) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = self.build_chan_upgrade_init(
-            new_version,
-            new_ordering,
-            new_connection_hops,
-            timeout_height,
-            timeout_timestamp,
-        )?;
+        let dst_msgs =
+            self.build_chan_upgrade_init(new_version, new_ordering, new_connection_hops, timeout)?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeInit");
 
