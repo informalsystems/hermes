@@ -1,11 +1,14 @@
+use crate::prelude::*;
+
 use core::fmt::{Display, Error as FmtError, Formatter};
 
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
+use crate::timestamp::Timestamp;
+use crate::core::ics04_channel::error::Error as ChannelError;
 use crate::core::ics02_client::{error::Error as ICS2Error, height::Height};
-use crate::prelude::*;
 
 /// Indicates a consensus height on the destination chain after which the packet
 /// will no longer be processed, and will instead count as having timed-out.
@@ -202,12 +205,12 @@ pub enum UpgradeTimeout {
 }
 
 impl UpgradeTimeout {
-    pub fn new(height: Option<Height>, timestamp: Option<Timestamp>) -> Result<Self, Error> {
+    pub fn new(height: Option<Height>, timestamp: Option<Timestamp>) -> Result<Self, ChannelError> {
         match (height, timestamp) {
             (Some(height), None) => Ok(UpgradeTimeout::Height(height)),
             (None, Some(timestamp)) => Ok(UpgradeTimeout::Timestamp(timestamp)),
             (Some(height), Some(timestamp)) => Ok(UpgradeTimeout::Both(height, timestamp)),
-            (None, None) => Err(Error::missing_upgrade_timeout()),
+            (None, None) => Err(ChannelError::missing_upgrade_timeout()),
         }
     }
 

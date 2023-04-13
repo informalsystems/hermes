@@ -62,8 +62,9 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
     type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelUpgradeInit) -> Result<Self, Self::Error> {
-        let proposed_upgrade_channel: ChannelEnd = raw_msg
+        let proposed_upgrade_channel = raw_msg
             .proposed_upgrade_channel
+            .ok_or_else(Error::missing_proposed_upgrade_channel)?
             .try_into()?;
 
         let timeout_height = raw_msg

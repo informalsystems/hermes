@@ -81,12 +81,14 @@ impl TryFrom<RawMsgChannelUpgradeTry> for MsgChannelUpgradeTry {
     type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelUpgradeTry) -> Result<Self, Self::Error> {
-        let counterparty_channel: ChannelEnd = raw_msg
+        let counterparty_channel = raw_msg
             .counterparty_channel
+            .ok_or_else(Error::missing_channel)?
             .try_into()?;
 
-        let proposed_upgrade_channel: ChannelEnd = raw_msg
+        let proposed_upgrade_channel = raw_msg
             .proposed_upgrade_channel
+            .ok_or_else(Error::missing_proposed_upgrade_channel)?
             .try_into()?;
 
         let timeout_height = raw_msg
@@ -104,6 +106,12 @@ impl TryFrom<RawMsgChannelUpgradeTry> for MsgChannelUpgradeTry {
 
         let timeout = UpgradeTimeout::new(timeout_height, timeout_timestamp)?;
 
+        let proof_height = raw_msg
+            .proof_height
+            .ok_or_else(Error::missing_proof_height)?
+            .try_into()
+            .map_err(Error::invalid_proof_height)?;
+
         Ok(MsgChannelUpgradeTry {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
@@ -112,10 +120,10 @@ impl TryFrom<RawMsgChannelUpgradeTry> for MsgChannelUpgradeTry {
             proposed_upgrade_channel: proposed_upgrade_channel,
             counterparty_sequence: raw_msg.counterparty_sequence,
             timeout,
-            proof_channel: raw_msg.proof_channel.into(),
-            proof_upgrade_timeout: raw_msg.proof_upgrade_timeout.into(),
-            proof_upgrade_sequence: raw_msg.proof_upgrade_sequence.into(),
-            proof_height: raw_msg.proof_height.map(Height::from),
+            proof_channel: raw_msg.proof_channel.try_into().map_err(Error::invalid_proof)?,
+            proof_upgrade_timeout: raw_msg.proof_upgrade_timeout.try_into().map_err(Error::invalid_proof)?,
+            proof_upgrade_sequence: raw_msg.proof_upgrade_sequence.try_into().map_err(Error::invalid_proof)?,
+            proof_height,
         })
     }
 }

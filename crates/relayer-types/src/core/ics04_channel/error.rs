@@ -109,6 +109,12 @@ define_error! {
         MissingProposedUpgradeChannel
             | _ | { "missing proposed upgrade channel" },
 
+        MissingProofHeight
+            | _ | { "missing proof height" },
+
+        InvalidProofHeight
+            | _ | { "invalid proof height" },
+
         InvalidVersionLengthConnection
             | _ | { "single version must be negociated on connection before opening channel" },
 
