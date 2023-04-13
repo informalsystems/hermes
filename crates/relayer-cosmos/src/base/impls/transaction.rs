@@ -218,7 +218,8 @@ fn split_events_by_messages(in_events: Vec<AbciEvent>) -> Vec<Vec<Arc<AbciEvent>
 
     for event in in_events.into_iter() {
         if event.kind == "message"
-            && event.attributes.len() == 1
+            // TODO: What is the purpose of this filter ?
+            //&& event.attributes.len() == 1
             && &event.attributes[0].key == "action"
         {
             if first_message_event_found {
