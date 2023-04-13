@@ -1,78 +1,68 @@
-use alloc::sync::Arc;
 use std::error::Error;
-use std::net::ToSocketAddrs;
+use std::net::SocketAddr;
+use std::sync::Arc;
+
+use axum::extract::Query;
+use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::{Extension, Router};
 
 use prometheus::{Encoder, TextEncoder};
-use rouille::{Request, Response, Server};
 
 use crate::encoder::JsonEncoder;
 use crate::state::TelemetryState;
 
+#[derive(Copy, Clone, Debug, Default, serde::Deserialize)]
 enum Format {
+    #[serde(rename = "text")]
+    #[default]
     Text,
+
+    #[serde(rename = "json")]
     Json,
 }
 
-enum Route {
-    Metrics(Format),
-    Other,
+#[derive(Copy, Clone, Debug, serde::Deserialize)]
+struct Metrics {
+    format: Option<Format>,
 }
 
-impl Route {
-    fn from_request(request: &Request) -> Route {
-        if request.url() == "/metrics" {
-            let format = request
-                .get_param("format")
-                .and_then(|f| match f.as_str() {
-                    "json" => Some(Format::Json),
-                    "text" => Some(Format::Text),
-                    _ => None,
-                })
-                .unwrap_or(Format::Text);
+pub async fn listen(
+    addr: SocketAddr,
+    state: Arc<TelemetryState>,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let app = Router::new()
+        .route("/metrics", get(get_metrics))
+        .layer(Extension(state));
 
-            Route::Metrics(format)
-        } else {
-            Route::Other
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await?;
+
+    Ok(())
+}
+
+async fn get_metrics(
+    Extension(state): Extension<Arc<TelemetryState>>,
+    Query(query): Query<Metrics>,
+) -> impl IntoResponse {
+    match query.format.unwrap_or_default() {
+        Format::Text => {
+            let encoder = TextEncoder::new();
+            let mut buffer = Vec::new();
+            encoder.encode(&state.gather(), &mut buffer).unwrap();
+
+            ([("content-type", "text/plain; charset=utf-8")], buffer)
+        }
+        Format::Json => {
+            let encoder = JsonEncoder::new();
+            let mut buffer = Vec::new();
+            encoder.encode(&state.gather(), &mut buffer).unwrap();
+
+            (
+                [("content-type", "application/javascript; charset=utf-8")],
+                buffer,
+            )
         }
     }
-}
-
-pub fn listen(
-    address: impl ToSocketAddrs,
-    telemetry_state: Arc<TelemetryState>,
-) -> Result<Server<impl Fn(&Request) -> Response>, Box<dyn Error + Send + Sync>> {
-    let server = Server::new(address, move |request| {
-        match Route::from_request(request) {
-            // The prometheus endpoint
-            Route::Metrics(format) => {
-                let mut buffer = vec![];
-
-                match format {
-                    Format::Json => {
-                        let encoder = JsonEncoder::new();
-                        encoder
-                            .encode(&telemetry_state.gather(), &mut buffer)
-                            .unwrap();
-
-                        rouille::Response::from_data(encoder.format_type().to_string(), buffer)
-                    }
-
-                    Format::Text => {
-                        let encoder = TextEncoder::new();
-                        encoder
-                            .encode(&telemetry_state.gather(), &mut buffer)
-                            .unwrap();
-
-                        rouille::Response::from_data(encoder.format_type().to_string(), buffer)
-                    }
-                }
-            }
-
-            // Any other route
-            // Return an empty response with a 404 status code.
-            Route::Other => rouille::Response::empty_404(),
-        }
-    })?;
-
-    Ok(server)
 }

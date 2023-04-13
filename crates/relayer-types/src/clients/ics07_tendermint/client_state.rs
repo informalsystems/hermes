@@ -361,8 +361,7 @@ impl From<ClientState> for Any {
     fn from(client_state: ClientState) -> Self {
         Any {
             type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawTmClientState>::encode_vec(&client_state)
-                .expect("encoding to `Any` from `TmClientState`"),
+            value: Protobuf::<RawTmClientState>::encode_vec(&client_state),
         }
     }
 }

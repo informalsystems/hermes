@@ -533,12 +533,25 @@ define_error! {
             { chain_id: ChainId }
             |e| {
                 format_args!(
-                    "staking module for chain '{}' does not maintain any historical entries \
-                    (`historical_entries` staking params is set to 0)",
+                    "chain '{}' does not maintain any historical entries \
+                    (`historical_entries` params is set to 0)",
                     e.chain_id
                 )
             },
 
+        InvalidHistoricalEntries
+            {
+                chain_id: ChainId,
+                entries: i64,
+            }
+            |e| {
+                format_args!(
+                    "chain '{}' reports invalid historical entries value \
+                    (`historical_entries` params is set to '{}')",
+                    e.chain_id,
+                    e.entries,
+                )
+            },
         GasPriceTooLow
             { chain_id: ChainId }
             |e| { format!("Hermes gas price is lower than the minimum gas price set by node operator'{}'", e.chain_id) },
@@ -573,6 +586,11 @@ define_error! {
 
         QueriedProofNotFound
             |_| { "Requested proof with query but no proof was returned." },
+
+        InvalidArchiveAddress
+            { address: String }
+            [ TendermintRpcError ]
+            |e| { format!("invalid archive node address {}", e.address) },
     }
 }
 

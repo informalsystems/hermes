@@ -1,10 +1,15 @@
 mod detector;
 
+use std::time::Duration;
+
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
 use tendermint_light_client::{
-    components::{self, io::AtHeight},
+    components::{
+        self,
+        io::{AtHeight, Io, ProdIo},
+    },
     light_client::LightClient as TmLightClient,
     state::State as LightClientState,
     store::{memory::MemoryStore, LightStore},
@@ -33,13 +38,15 @@ use crate::{
     misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
 };
 
-use super::Verified;
+use super::{
+    io::{AnyIo, RestartAwareIo},
+    Verified,
+};
 
 pub struct LightClient {
     chain_id: ChainId,
     peer_id: PeerId,
-    rpc_client: rpc::HttpClient,
-    io: components::io::ProdIo,
+    io: AnyIo,
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
@@ -51,6 +58,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     ) -> Result<Verified<TmHeader>, Error> {
         let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
         let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
+
         Ok(Verified { target, supporting })
     }
 
@@ -94,7 +102,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         trace!(%height, "fetching header");
 
         let height = TMHeight::try_from(height.revision_height()).map_err(Error::invalid_height)?;
-
         self.fetch_light_block(AtHeight::At(height))
     }
 
@@ -153,7 +160,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let divergence = detector::detect(
             self.peer_id,
-            self.rpc_client.clone(),
+            self.io.rpc_client().clone(),
             target_block,
             trusted_block.clone(),
             client_state,
@@ -173,7 +180,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             })) => {
                 warn!("misbehavior detected, reporting evidence to RPC witness node and primary chain");
 
-                match detector::report_evidence(self.rpc_client.clone(), evidence) {
+                match detector::report_evidence(self.io.rpc_client().clone(), evidence) {
                     Ok(hash) => warn!("evidence reported to RPC witness node with hash: {hash}"),
                     Err(e) => error!("failed to report evidence to RPC witness node: {}", e),
                 }
@@ -202,17 +209,39 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     }
 }
 
+fn io_for_addr(
+    addr: &rpc::Url,
+    peer_id: PeerId,
+    timeout: Option<Duration>,
+) -> Result<ProdIo, Error> {
+    let rpc_client = rpc::HttpClient::new(addr.clone()).map_err(|e| Error::rpc(addr.clone(), e))?;
+    Ok(ProdIo::new(peer_id, rpc_client.clone(), timeout))
+}
+
 impl LightClient {
     pub fn from_config(config: &ChainConfig, peer_id: PeerId) -> Result<Self, Error> {
-        let rpc_client = rpc::HttpClient::new(config.rpc_addr.clone())
-            .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+        let live_io = io_for_addr(&config.rpc_addr, peer_id, Some(config.rpc_timeout))?;
 
-        let io = components::io::ProdIo::new(peer_id, rpc_client.clone(), Some(config.rpc_timeout));
+        let io = match &config.genesis_restart {
+            None => AnyIo::Prod(live_io),
+            Some(genesis_restart) => {
+                let archive_io = io_for_addr(
+                    &genesis_restart.archive_addr,
+                    peer_id,
+                    Some(config.rpc_timeout),
+                )?;
+
+                AnyIo::RestartAware(RestartAwareIo::new(
+                    genesis_restart.restart_height,
+                    live_io,
+                    archive_io,
+                ))
+            }
+        };
 
         Ok(Self {
             chain_id: config.id.clone(),
             peer_id,
-            rpc_client,
             io,
         })
     }
@@ -250,8 +279,6 @@ impl LightClient {
     }
 
     fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, Error> {
-        use tendermint_light_client::components::io::Io;
-
         self.io
             .fetch_light_block(height)
             .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e))

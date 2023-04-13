@@ -864,7 +864,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "backlog_oldest_timestamp" => Some(Arc::new(last_value())),
             "backlog_size" => Some(Arc::new(last_value())),
             // Prometheus' supports only collector for histogram, sum, and last value aggregators.
-            // https://docs.rs/opentelemetry-prometheus/0.11.0/src/opentelemetry_prometheus/lib.rs.html#411-418
+            // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
             // TODO: Once quantile sketches are supported, replace histograms with that.
             "tx_latency_submitted" => Some(Arc::new(histogram(&[
                 200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0,
@@ -883,13 +883,10 @@ impl Default for TelemetryState {
         use opentelemetry::sdk::export::metrics::aggregation;
         use opentelemetry::sdk::metrics::{controllers, processors};
 
-        let controller = controllers::basic(
-            processors::factory(
-                CustomAggregatorSelector,
-                aggregation::cumulative_temporality_selector(),
-            )
-            .with_memory(true),
-        )
+        let controller = controllers::basic(processors::factory(
+            CustomAggregatorSelector,
+            aggregation::cumulative_temporality_selector(),
+        ))
         .build();
 
         let exporter = opentelemetry_prometheus::ExporterBuilder::new(controller).init();
