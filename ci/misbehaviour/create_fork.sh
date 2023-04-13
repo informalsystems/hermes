@@ -4,11 +4,9 @@ set -euo pipefail
 
 # --- Variables ---
 
-HERMES="cargo run -q --"
+HERMES="cargo run --bin hermes -q --"
 
-# IBC_0_RPC_PORT=26657
 IBC_1_RPC_PORT=26557
-IBC_1_COMMIT_FILE="data/ibc-1-commit.json"
 
 # --- Helpers ---
 
@@ -36,11 +34,6 @@ if [ -z "$(which sconfig)" ]; then
 fi
 
 # --- Main ---
-
-info "Fetching the latest block height and hash from ibc-1..."
-curl -s "localhost:$IBC_1_RPC_PORT/commit" | \
-    jq "{height: .result.signed_header.header.height, hash: .result.signed_header.commit.block_id.hash}" | \
-    tee "$IBC_1_COMMIT_FILE"
 
 info "Creating new channel between ibc-0 and ibc-1..."
 $HERMES --config config.toml create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection --yes
