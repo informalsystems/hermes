@@ -19,9 +19,9 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeInit";
 pub struct MsgChannelUpgradeInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub proposed_upgrade_channel: Option<ChannelEnd>,
+    pub proposed_upgrade_channel: ChannelEnd,
     pub timeout_height: Option<Height>,
-    pub timeout_timestamp: Timestamp,
+    pub timeout_timestamp: Option<Timestamp>,
     pub signer: Signer,
 }
 
@@ -29,11 +29,18 @@ impl MsgChannelUpgradeInit {
     pub fn new(
         port_id: PortId,
         channel_id: ChannelId,
-        proposed_upgrade_channel: Option<ChannelEnd>,
+        proposed_upgrade_channel: ChannelEnd,
         timeout_height: Option<Height>,
-        timeout_timestamp: Timestamp,
+        timeout_timestamp: Option<Timestamp>,
         signer: Signer,
     ) -> Self {
+        // TODO: Check that either timeout_height or timeout_timestamp is set.
+        // Maybe model them as an enum
+        // enum UpgradeTimout {
+        //   Height(Height),
+        //   Timestamp(Timestamp),
+        // }
+
         Self {
             port_id,
             channel_id,
@@ -56,21 +63,6 @@ impl Msg for MsgChannelUpgradeInit {
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
-
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // self.proposed_upgrade_channel
-        //     .as_ref()
-        //     .ok_or(Error::missing_proposed_upgrade_channel())?
-        //     .validate_basic()?;
-
-        // TODO: wrap error
-        // self.timeout_height
-        //     .as_ref()
-        //     .ok_or(Error::missing_timeout_height())?
-        //     .validate_basic()?;
-
-        Ok(())
-    }
 }
 
 impl Protobuf<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {}
@@ -79,23 +71,33 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
     type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelUpgradeInit) -> Result<Self, Self::Error> {
-        let channel_end: ChannelEnd = raw_msg
+        let proposed_upgrade_channel: ChannelEnd = raw_msg
             .proposed_upgrade_channel
             .ok_or_else(Error::missing_proposed_upgrade_channel)?
             .try_into()?;
+
+        // TODO: Check that either timeout_height or timeout_timestamp is set.
+
+        let timeout_height = raw_msg
+            .timeout_height
+            .map(Height::try_from)
+            .transpose()
+            .map_err(|_| Error::invalid_timeout_height())?;
+
+        let timeout_timestamp = Some(raw_msg.timeout_timestamp)
+            .filter(|&ts| ts != 0)
+            .map(|raw_ts| {
+                Timestamp::from_nanoseconds(raw_ts).map_err(Error::invalid_timeout_timestamp)
+            })
+            .transpose()?;
 
         Ok(MsgChannelUpgradeInit {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
-            proposed_upgrade_channel: Some(channel_end),
-            timeout_height: raw_msg
-                .timeout_height
-                .map(Height::try_from)
-                .transpose()
-                .map_err(|_| Error::invalid_timeout_height())?,
-            timeout_timestamp: Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
-                .map_err(Error::invalid_timeout_timestamp)?,
+            proposed_upgrade_channel,
+            timeout_height,
+            timeout_timestamp,
         })
     }
 }
@@ -106,9 +108,12 @@ impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
             signer: domain_msg.signer.to_string(),
-            proposed_upgrade_channel: domain_msg.proposed_upgrade_channel.map(Into::into),
+            proposed_upgrade_channel: Some(domain_msg.proposed_upgrade_channel.into()),
             timeout_height: domain_msg.timeout_height.map(Into::into),
-            timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
+            timeout_timestamp: domain_msg
+                .timeout_timestamp
+                .map(|ts| ts.nanoseconds())
+                .unwrap_or(0),
         }
     }
 }
