@@ -1,5 +1,4 @@
 use alloc::string::ToString;
-use core::cmp::Ordering;
 use core::fmt::{Display, Error as FmtError, Formatter};
 
 use bytes::Buf;
