@@ -13,8 +13,6 @@ use itertools::Itertools;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use flex_error::define_error;
-use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
-use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
@@ -40,7 +38,7 @@ use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
-use crate::misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence};
+use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
 use crate::util::collate::CollatedIterExt;
 use crate::util::pretty::{PrettyDuration, PrettySlice};
@@ -1620,47 +1618,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             );
         }
 
-        if self
-            .dst_chain()
-            .config()
-            .map_err(|e| {
-                ForeignClientError::misbehaviour(
-                    format!("failed querying configureation of dst chain {}", self.id),
-                    e,
-                )
-            })?
-            .ccv_consumer_chain
-        {
-            let tm_misbehaviour = match evidence.misbehaviour {
-                AnyMisbehaviour::Tendermint(tm_misbehaviour) => Some(tm_misbehaviour),
-                #[cfg(test)]
-                AnyMisbehaviour::Mock(_) => None,
-            }
-            .unwrap();
-
-            let msg_misbehaviour = Misbehaviour {
+        msgs.push(
+            MsgSubmitMisbehaviour {
+                misbehaviour: evidence.misbehaviour.into(),
                 client_id: self.id.clone(),
-                header1: tm_misbehaviour.header1,
-                header2: tm_misbehaviour.header2,
-            };
-
-            msgs.push(
-                MsgSubmitIcsConsumerMisbehaviour {
-                    submitter: signer,
-                    misbehaviour: msg_misbehaviour,
-                }
-                .to_any(),
-            );
-        } else {
-            msgs.push(
-                MsgSubmitMisbehaviour {
-                    misbehaviour: evidence.misbehaviour.into(),
-                    client_id: self.id.clone(),
-                    signer,
-                }
-                .to_any(),
-            );
-        }
+                signer,
+            }
+            .to_any(),
+        );
 
         let tm = TrackedMsgs::new_static(msgs, "evidence");
 
