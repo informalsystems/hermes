@@ -3,6 +3,7 @@ mod detector;
 use std::time::Duration;
 
 use itertools::Itertools;
+use tendermint::Time;
 use tracing::{debug, error, trace, warn};
 
 use tendermint_light_client::{
@@ -55,8 +56,9 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         trusted: ICSHeight,
         target: ICSHeight,
         client_state: &AnyClientState,
+        now: Time,
     ) -> Result<Verified<TmHeader>, Error> {
-        let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
+        let Verified { target, supporting } = self.verify(trusted, target, client_state, now)?;
         let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
 
         Ok(Verified { target, supporting })
@@ -67,10 +69,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
+        now: Time,
     ) -> Result<Verified<LightBlock>, Error> {
         trace!(%trusted_height, %target_height, "light client verification");
 
-        let client = self.prepare_client(client_state)?;
+        let client = self.prepare_client(client_state, now)?;
         let mut state = self.prepare_state(trusted_height)?;
 
         let target_height =
@@ -110,6 +113,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         &mut self,
         update: &UpdateClient,
         client_state: &AnyClientState,
+        now: Time,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
         crate::time!("light client check_misbehaviour");
 
@@ -136,8 +140,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 ))
             })?;
 
-        let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
-
         let next_validators = self
             .io
             .fetch_validator_set(
@@ -152,8 +154,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             next_validators,
             provider: self.peer_id,
         };
-
-        let now = latest_chain_block.time(); // FIXME: Is that right?
 
         let trusted_block = self.fetch(update_header.trusted_height)?; // FIXME: Is that ok?
                                                                        // TODO: Check validator sets match
@@ -246,8 +246,12 @@ impl LightClient {
         })
     }
 
-    fn prepare_client(&self, client_state: &AnyClientState) -> Result<TmLightClient, Error> {
-        let clock = components::clock::SystemClock;
+    fn prepare_client(
+        &self,
+        client_state: &AnyClientState,
+        now: Time,
+    ) -> Result<TmLightClient, Error> {
+        let clock = components::clock::FixedClock::new(now);
         let verifier = ProdVerifier::default();
         let scheduler = components::scheduler::basic_bisecting_schedule;
 

@@ -28,7 +28,7 @@ use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryRespons
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
-use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
+use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
@@ -55,6 +55,7 @@ use ibc_relayer_types::Height as ICSHeight;
 
 use tendermint::block::Height as TmHeight;
 use tendermint::node::{self, info::TxIndexStatus};
+use tendermint::time::Time as TmTime;
 use tendermint_light_client::verifier::types::LightBlock as TmLightBlock;
 use tendermint_rpc::client::CompatMode;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
@@ -759,8 +760,9 @@ impl CosmosSdkChain {
 impl ChainEndpoint for CosmosSdkChain {
     type LightBlock = TmLightBlock;
     type Header = TmHeader;
-    type ConsensusState = TMConsensusState;
+    type ConsensusState = TmConsensusState;
     type ClientState = TmClientState;
+    type Time = TmTime;
     type SigningKeyPair = Secp256k1KeyPair;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
@@ -871,8 +873,10 @@ impl ChainEndpoint for CosmosSdkChain {
         target: ICSHeight,
         client_state: &AnyClientState,
     ) -> Result<Self::LightBlock, Error> {
+        let now = self.chain_status()?.sync_info.latest_block_time;
+
         self.light_client
-            .verify(trusted, target, client_state)
+            .verify(trusted, target, client_state, now)
             .map(|v| v.target)
     }
 
@@ -882,7 +886,10 @@ impl ChainEndpoint for CosmosSdkChain {
         update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
-        self.light_client.detect_misbehaviour(update, client_state)
+        let now = self.chain_status()?.sync_info.latest_block_time;
+
+        self.light_client
+            .detect_misbehaviour(update, client_state, now)
     }
 
     // Queries
@@ -1878,7 +1885,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<Self::ConsensusState, Error> {
         crate::time!("build_consensus_state");
 
-        Ok(TMConsensusState::from(light_block.signed_header.header))
+        Ok(TmConsensusState::from(light_block.signed_header.header))
     }
 
     fn build_header(
@@ -1889,11 +1896,14 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 
+        let now = self.chain_status()?.sync_info.latest_block_time;
+
         // Get the light block at target_height from chain.
         let Verified { target, supporting } = self.light_client.header_and_minimal_set(
             trusted_height,
             target_height,
             client_state,
+            now,
         )?;
 
         Ok((target, supporting))
