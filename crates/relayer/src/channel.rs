@@ -16,9 +16,8 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenA
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::{
-    MsgChannelUpgradeInit, UpgradeTimeout,
-};
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;
+use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -1476,8 +1475,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         new_connection_hops: Option<Vec<ConnectionId>>,
         timeout: UpgradeTimeout,
     ) -> Result<Vec<Any>, ChannelError> {
-        // XXX: do we query/upgrade the source or destination channel?
-
         // Destination channel ID must exist
         let channel_id = self
             .dst_channel_id()

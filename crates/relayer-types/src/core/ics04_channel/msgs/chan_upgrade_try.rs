@@ -110,7 +110,7 @@ impl TryFrom<RawMsgChannelUpgradeTry> for MsgChannelUpgradeTry {
             .proof_height
             .ok_or_else(Error::missing_proof_height)?
             .try_into()
-            .map_err(Error::invalid_proof_height)?;
+            .map_err(|_| Error::invalid_proof_height())?;
 
         Ok(MsgChannelUpgradeTry {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
