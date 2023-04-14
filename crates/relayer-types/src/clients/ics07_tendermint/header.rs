@@ -51,30 +51,6 @@ impl Header {
         )
         .expect("malformed tendermint header domain type has an illegal height of 0")
     }
-
-    pub fn compatible_with(&self, other_header: &Header) -> bool {
-        headers_compatible(&self.signed_header, &other_header.signed_header)
-    }
-}
-
-pub fn headers_compatible(header: &SignedHeader, other: &SignedHeader) -> bool {
-    let ibc_client_height = other.header.height;
-    let self_header_height = header.header.height;
-
-    match self_header_height.cmp(&ibc_client_height) {
-        Ordering::Equal => {
-            // 1 - fork
-            header.commit.block_id == other.commit.block_id
-        }
-        Ordering::Greater => {
-            // 2 - BFT time violation
-            header.header.time > other.header.time
-        }
-        Ordering::Less => {
-            // 3 - BFT time violation
-            header.header.time < other.header.time
-        }
-    }
 }
 
 impl crate::core::ics02_client::header::Header for Header {
