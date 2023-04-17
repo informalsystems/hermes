@@ -107,7 +107,7 @@ impl BinaryChannelTest for ChannelOpenUpgradeHandshake {
             timeout,
         )?;
 
-        info!("Check that channel A is in INITUPGRADE State and channel B in OPEN State");
+        info!("Check that the step ChanUpgradeInit was correctly executed...");
 
         assert_eventually_channel_upgrade_init(
             &chains.handle_b,
