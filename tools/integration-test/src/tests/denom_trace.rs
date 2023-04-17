@@ -1,4 +1,6 @@
-use ibc_test_framework::framework::next::chain::{CanSpawnRelayer, HasTwoChains, HasTwoChannels};
+use ibc_test_framework::framework::next::chain::{
+    CanShutdown, CanSpawnRelayer, HasTwoChains, HasTwoChannels,
+};
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 
@@ -21,9 +23,9 @@ impl TestOverrides for IbcDenomTraceTest {
 impl BinaryChannelTest for IbcDenomTraceTest {
     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
     where
-        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer + CanShutdown,
     {
-        let _res = context.spawn_relayer();
+        let handle = context.spawn_relayer()?;
         let chains = context.chains();
         let channel = context.channel();
         let a_to_b_amount: u64 = 1234;
@@ -91,6 +93,8 @@ impl BinaryChannelTest for IbcDenomTraceTest {
             &denom_trace.base_denom,
             &denom_a.value().as_str().to_string(),
         )?;
+
+        context.shutdown(handle);
 
         Ok(())
     }

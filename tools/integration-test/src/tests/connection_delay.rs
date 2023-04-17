@@ -30,7 +30,7 @@ impl BinaryChannelTest for ConnectionDelayTest {
     where
         Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
     {
-        let _res = context.spawn_relayer();
+        let _handle = context.spawn_relayer()?;
         let chains = context.chains();
         let channel = context.channel();
 

@@ -1,5 +1,6 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
+use tokio::task::JoinHandle;
 
 use crate::error::Error;
 use crate::prelude::{ConnectedChains, ConnectedChannel, FullNode, TestConfig};
@@ -35,9 +36,19 @@ pub trait HasTwoChannels: HasTwoChains {
 }
 
 pub trait CanSpawnRelayer {
-    fn spawn_relayer(&self) -> Result<(), Error>;
+    fn spawn_relayer(&self) -> Result<Option<JoinHandle<()>>, Error>;
 
     fn with_supervisor<R>(&self, cont: impl FnOnce() -> Result<R, Error>) -> Result<R, Error>;
+}
+
+pub trait CanWaitForAck: HasTwoChains {
+    fn wait_for_src_acks(&self) -> Result<(), Error>;
+
+    fn wait_for_dst_acks(&self) -> Result<(), Error>;
+}
+
+pub trait CanShutdown {
+    fn shutdown(&self, auto_relay_handle: Option<JoinHandle<()>>);
 }
 
 pub trait HasContextId {
