@@ -5,17 +5,17 @@ use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeTry as RawMsgChannelUpgradeTry;
 
-use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::timeout::UpgradeTimeout;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
+use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeTry";
 
-/// Message definition for the second step of the channel upgrade 
+/// Message definition for the second step of the channel upgrade
 /// handshake (the `ChanUpgradeTry` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelUpgradeTry {
@@ -33,9 +33,10 @@ pub struct MsgChannelUpgradeTry {
 }
 
 impl MsgChannelUpgradeTry {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
-        port_id: PortId, 
-        channel_id: ChannelId, 
+        port_id: PortId,
+        channel_id: ChannelId,
         signer: Signer,
         counterparty_channel: ChannelEnd,
         proposed_upgrade_channel: ChannelEnd,
@@ -116,13 +117,22 @@ impl TryFrom<RawMsgChannelUpgradeTry> for MsgChannelUpgradeTry {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
-            counterparty_channel: counterparty_channel,
-            proposed_upgrade_channel: proposed_upgrade_channel,
+            counterparty_channel,
+            proposed_upgrade_channel,
             counterparty_sequence: raw_msg.counterparty_sequence,
             timeout,
-            proof_channel: raw_msg.proof_channel.try_into().map_err(Error::invalid_proof)?,
-            proof_upgrade_timeout: raw_msg.proof_upgrade_timeout.try_into().map_err(Error::invalid_proof)?,
-            proof_upgrade_sequence: raw_msg.proof_upgrade_sequence.try_into().map_err(Error::invalid_proof)?,
+            proof_channel: raw_msg
+                .proof_channel
+                .try_into()
+                .map_err(Error::invalid_proof)?,
+            proof_upgrade_timeout: raw_msg
+                .proof_upgrade_timeout
+                .try_into()
+                .map_err(Error::invalid_proof)?,
+            proof_upgrade_sequence: raw_msg
+                .proof_upgrade_sequence
+                .try_into()
+                .map_err(Error::invalid_proof)?,
             proof_height,
         })
     }
@@ -151,15 +161,16 @@ impl From<MsgChannelUpgradeTry> for RawMsgChannelUpgradeTry {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeTry as RawMsgChannelUpgradeTry;
+    use ibc_proto::ibc::core::client::v1::Height;
 
     use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
+    use crate::prelude::*;
     use crate::test_utils::get_dummy_bech32_account;
 
     /// Returns a dummy `RawMsgChannelUpgradeTry`, for testing only!
-    pub fn get_dummy_raw_chan_upgrade_try() -> RawMsgChannelOpenTry {
+    pub fn get_dummy_raw_msg_chan_upgrade_try() -> RawMsgChannelUpgradeTry {
         RawMsgChannelUpgradeTry {
             port_id: PortId::default().to_string(),
             channel_id: ChannelId::default().to_string(),
@@ -167,8 +178,18 @@ pub mod test_util {
             counterparty_channel: Some(get_dummy_raw_channel_end()),
             counterparty_sequence: 1,
             proposed_upgrade_channel: Some(get_dummy_raw_channel_end()),
-            timeout_height: Some(get_dummy_raw_height()),
-            timeout_timestamp: Timestamp::now().into(),
+            timeout_height: Some(Height {
+                revision_number: 1,
+                revision_height: 1,
+            }),
+            timeout_timestamp: 1681737922,
+            proof_channel: vec![],
+            proof_upgrade_timeout: vec![],
+            proof_upgrade_sequence: vec![],
+            proof_height: Some(Height {
+                revision_number: 1,
+                revision_height: 1,
+            }),
         }
     }
 }
@@ -181,8 +202,8 @@ mod tests {
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeTry as RawMsgChannelUpgradeTry;
 
-    use crate::core::ics04_channel::msgs::chan_upgrade_init::test_util::get_dummy_raw_msg_chan_upgrade_init;
-    use crate::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeTry;
+    use crate::core::ics04_channel::msgs::chan_upgrade_try::test_util::get_dummy_raw_msg_chan_upgrade_try;
+    use crate::core::ics04_channel::msgs::chan_upgrade_try::MsgChannelUpgradeTry;
 
     #[test]
     fn parse_channel_upgrade_init_msg() {
@@ -192,7 +213,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_raw_msg = get_dummy_raw_msg_chan_upgrade_init();
+        let default_raw_msg = get_dummy_raw_msg_chan_upgrade_try();
 
         let tests: Vec<Test> = vec![
             Test {
@@ -244,7 +265,7 @@ mod tests {
                 name: "Channel name too long".to_string(),
                 raw: RawMsgChannelUpgradeTry {
                     channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_msg
                 },
                 want_pass: false,
             },
@@ -268,7 +289,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_raw_msg_chan_upgrade_init();
+        let raw = get_dummy_raw_msg_chan_upgrade_try();
         let msg = MsgChannelUpgradeTry::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgChannelUpgradeTry::from(msg.clone());
         let msg_back = MsgChannelUpgradeTry::try_from(raw_back.clone()).unwrap();

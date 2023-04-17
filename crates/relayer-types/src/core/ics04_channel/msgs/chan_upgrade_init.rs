@@ -202,7 +202,7 @@ mod tests {
                 name: "Channel name too long".to_string(),
                 raw: RawMsgChannelUpgradeInit {
                     channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
-                    ..default_raw_msg
+                    ..default_raw_msg.clone()
                 },
                 want_pass: false,
             },
