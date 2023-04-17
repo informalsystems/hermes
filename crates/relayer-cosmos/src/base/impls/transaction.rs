@@ -217,36 +217,37 @@ fn split_events_by_messages(in_events: Vec<AbciEvent>) -> Vec<Vec<Arc<AbciEvent>
     let mut first_message_event_found = false;
 
     for event in in_events.into_iter() {
-        if event.kind == "message"
-            // TODO: What is the purpose of this filter ?
-            // It seems that the event kind "message" from the Tx Response of some chains
-            // only have 1 event attribute:
-            // event kind: message
-            // event attributes: [
-            // EventAttribute {
-            //    key: "sender",
-            //   value: "cosmos1w2jl4lt77j0u3wuvknmrflp9pmwx5zmrr2j8x7",
-            //  index: true,
-            // },
-            // ]
-            // But others have multiple event attributes:
-            // event kind in send_message: message
-            // event.attributes: [
-            // EventAttribute {
-            // key: "action",
-            //  value: "/ibc.core.channel.v1.MsgAcknowledgement",
-            //   index: true,
-            // },
-            // EventAttribute {
-            //   key: "sender",
-            //   value: "cosmos1zl89j8asalm9s7gd5spskxtmh4l49lzs86auqx",
-            //   index: true,
-            // },
-            // ]
-            //
-            //&& event.attributes.len() == 1
-            && &event.attributes[0].key == "action"
-        {
+        // TODO: What is the purpose of this filter ?
+        // It seems that the event kind "message" from the Tx Response of some chains
+        // only have 1 event attribute:
+        // event kind: message
+        // event attributes: [
+        // EventAttribute {
+        //    key: "sender",
+        //   value: "cosmos1w2jl4lt77j0u3wuvknmrflp9pmwx5zmrr2j8x7",
+        //  index: true,
+        // },
+        // ]
+        // But others have multiple event attributes:
+        // event kind in send_message: message
+        // event.attributes: [
+        // EventAttribute {
+        // key: "action",
+        //  value: "/ibc.core.channel.v1.MsgAcknowledgement",
+        //   index: true,
+        // },
+        // EventAttribute {
+        //   key: "sender",
+        //   value: "cosmos1zl89j8asalm9s7gd5spskxtmh4l49lzs86auqx",
+        //   index: true,
+        // },
+        // ]
+        //
+        //if event.kind == "message"
+        //    && event.attributes.len() == 1
+        //    && &event.attributes[0].key == "action"
+
+        if event.kind == "message" && event.attributes.iter().any(|attr| attr.key == "action") {
             if first_message_event_found {
                 out_events.push(current_events);
             } else {
