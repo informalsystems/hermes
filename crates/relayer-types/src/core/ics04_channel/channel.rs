@@ -394,7 +394,7 @@ pub enum State {
     /// A channel has been closed and can no longer be used to send or receive
     /// packets.
     Closed = 4,
-    /// A channel has just started the upgrade handshake. The chain that is 
+    /// A channel has just started the upgrade handshake. The chain that is
     /// proposing the upgrade should set the channel state from OPEN to INITUPGRADE.
     InitUpgrade = 5,
     /// A channel has acknowledged the upgrade handshake step on the counterparty chain.
@@ -452,7 +452,7 @@ impl State {
     /// ```
     pub fn less_or_equal_progress(self, other: Self) -> bool {
         // TODO: Rewrite this function to explicitly compare the states, not relying
-        // on their integer representations. 
+        // on their integer representations.
         self as u32 <= other as u32
     }
 }

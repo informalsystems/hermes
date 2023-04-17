@@ -7,7 +7,6 @@ use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
-use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State,
 };
@@ -23,6 +22,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
 use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
@@ -1495,7 +1495,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 IncludeProof::No,
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
-        
+
         if channel_end.state != State::Open {
             return Err(ChannelError::invalid_channel_upgrade_state());
         }
