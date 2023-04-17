@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
-use crate::timestamp::Timestamp;
-use crate::core::ics04_channel::error::Error as ChannelError;
 use crate::core::ics02_client::{error::Error as ICS2Error, height::Height};
+use crate::core::ics04_channel::error::Error as ChannelError;
+use crate::timestamp::Timestamp;
 
 /// Indicates a consensus height on the destination chain after which the packet
 /// will no longer be processed, and will instead count as having timed-out.
@@ -185,7 +185,7 @@ impl<'de> Deserialize<'de> for TimeoutHeight {
     }
 }
 
-/// A composite of timeout height and timeout timestamp types, useful for when 
+/// A composite of timeout height and timeout timestamp types, useful for when
 /// performing a channel upgrade handshake, as there are cases when only timeout
 /// height is set, only timeout timestamp is set, or both are set.
 #[derive(Clone, Debug, PartialEq, Eq)]

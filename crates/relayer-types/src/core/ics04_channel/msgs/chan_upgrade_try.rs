@@ -5,17 +5,17 @@ use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeTry as RawMsgChannelUpgradeTry;
 
-use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::timeout::UpgradeTimeout;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
+use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeTry";
 
-/// Message definition for the second step of the channel upgrade 
+/// Message definition for the second step of the channel upgrade
 /// handshake (the `ChanUpgradeTry` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelUpgradeTry {
@@ -34,8 +34,8 @@ pub struct MsgChannelUpgradeTry {
 
 impl MsgChannelUpgradeTry {
     pub fn new(
-        port_id: PortId, 
-        channel_id: ChannelId, 
+        port_id: PortId,
+        channel_id: ChannelId,
         signer: Signer,
         counterparty_channel: ChannelEnd,
         proposed_upgrade_channel: ChannelEnd,
@@ -116,13 +116,22 @@ impl TryFrom<RawMsgChannelUpgradeTry> for MsgChannelUpgradeTry {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
-            counterparty_channel: counterparty_channel,
-            proposed_upgrade_channel: proposed_upgrade_channel,
+            counterparty_channel,
+            proposed_upgrade_channel,
             counterparty_sequence: raw_msg.counterparty_sequence,
             timeout,
-            proof_channel: raw_msg.proof_channel.try_into().map_err(Error::invalid_proof)?,
-            proof_upgrade_timeout: raw_msg.proof_upgrade_timeout.try_into().map_err(Error::invalid_proof)?,
-            proof_upgrade_sequence: raw_msg.proof_upgrade_sequence.try_into().map_err(Error::invalid_proof)?,
+            proof_channel: raw_msg
+                .proof_channel
+                .try_into()
+                .map_err(Error::invalid_proof)?,
+            proof_upgrade_timeout: raw_msg
+                .proof_upgrade_timeout
+                .try_into()
+                .map_err(Error::invalid_proof)?,
+            proof_upgrade_sequence: raw_msg
+                .proof_upgrade_sequence
+                .try_into()
+                .map_err(Error::invalid_proof)?,
             proof_height,
         })
     }
