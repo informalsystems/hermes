@@ -22,7 +22,7 @@ prometheus               = "0.13.2"
 moka                     = "0.10.0"
 dashmap                  = "5.4.0"
 serde_json               = "1.0.94"
-serde                    = "1.0.149"
+serde                    = "1.0.160"
 axum                     = "0.6.12"
 tokio                    = "1.26.0"
 
