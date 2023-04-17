@@ -4,8 +4,12 @@ use abscissa_core::{Command, Runnable};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
 use ibc_relayer::channel::{Channel, ChannelSide};
+
+use ibc_relayer_types::Height;
+use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -656,26 +660,12 @@ impl Runnable for TxChanCloseConfirmCmd {
     }
 }
 
-// FIXME: Since the channel already exists, we don't need both the src and dst chain,
-// only the src/dst chain and src/dst channel.
-//
-// TODO: Add arguments for version, ordering, connection hops and timeouts.
-
 /// Build and send a `ChanUpgradeInit` message to a destination
 /// chain that the source chain has an already-existing channel open
 /// with, signaling the intent by the source chain to perform
 /// the channel upgrade handshake.
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxChanUpgradeInitCmd {
-    #[clap(
-        long = "dst-chain",
-        required = true,
-        value_name = "DST_CHAIN_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the destination chain"
-    )]
-    dst_chain_id: ChainId,
-
     #[clap(
         long = "src-chain",
         required = true,
@@ -684,6 +674,15 @@ pub struct TxChanUpgradeInitCmd {
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
+
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        value_name = "DST_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination chain"
+    )]
+    dst_chain_id: ChainId,
 
     #[clap(
         long = "dst-connection",
@@ -705,67 +704,104 @@ pub struct TxChanUpgradeInitCmd {
     dst_port_id: PortId,
 
     #[clap(
-        long = "src-port",
-        required = true,
-        value_name = "SRC_PORT_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the source port"
-    )]
-    src_port_id: PortId,
-
-    #[clap(
         long = "dst-channel",
         visible_alias = "dst-chan",
         required = true,
         value_name = "DST_CHANNEL_ID",
         help_heading = "REQUIRED",
-        help = "Identifier of the destination channel (required)"
+        help = "Identifier of the destination channel"
     )]
     dst_chan_id: ChannelId,
 
     #[clap(
-        long = "src-channel",
-        visible_alias = "src-chan",
-        required = true,
-        value_name = "SRC_CHANNEL_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the source channel (required)"
+        long = "version",
+        required = false,
+        value_name = "VERSION",
+        help = "Version of the channel that both chains will upgrade to. Defaults to the version of the initiating chain if not specified."
     )]
-    src_chan_id: ChannelId,
+    version: Option<Version>,
+
+    #[clap(
+        long = "ordering",
+        required = false,
+        value_name = "ORDERING",
+        help = "Ordering of the channel that both chains will upgrade to. Note that the a channel may only be upgraded from a stricter ordering to a less strict ordering, i.e., from ORDERED to UNORDERED. Defaults to the ordering of the initiating chain if not specified."
+    )]
+    ordering: Option<Order>,
+
+    #[clap(
+        long = "connection-hops",
+        required = false,
+        value_name = "CONNECTION_HOPS",
+        help = "Set of connection hops for the channel that both chains will upgrade to. Defaults to the connection hops of the initiating chain if not specified."
+    )]
+    connection_hops: Option<Vec<ConnectionId>>,
+
+    #[clap(
+        long = "timeout-height",
+        required = false,
+        value_name = "TIMEOUT_HEIGHT",
+        help = "Height that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout timestamp is specified."
+    )]
+    timeout_height: Option<Height>,
+
+    #[clap(
+        long = "timeout-timestamp",
+        required = false,
+        value_name = "TIMEOUT_TIMESTAMP",
+        help = "Timestamp that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout height is specified."
+    )]
+    timeout_timestamp: Option<Timestamp>,
 }
 
 impl Runnable for TxChanUpgradeInitCmd {
     fn run(&self) {
-        // TODO: Take version, connections hops, ordering and timeouts and hops from the arguments
-        // and pass them to build_chan_upgrade_init_and_send
+        let config = app_config();
 
-        // tx_chan_cmd!(
-        //     "ChanUpgradeInit",
-        //     build_chan_upgrade_init_and_send,
-        //     self,
-        //     |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
-        //         Channel {
-        //             connection_delay: Default::default(),
-        //             ordering: Order::default(),
-        //             a_side: ChannelSide::new(
-        //                 chains.src,
-        //                 ClientId::default(),
-        //                 ConnectionId::default(),
-        //                 self.src_port_id.clone(),
-        //                 Some(self.src_chan_id.clone()),
-        //                 None,
-        //             ),
-        //             b_side: ChannelSide::new(
-        //                 chains.dst,
-        //                 dst_connection.client_id().clone(),
-        //                 self.dst_conn_id.clone(),
-        //                 self.dst_port_id.clone(),
-        //                 Some(self.dst_chan_id.clone()),
-        //                 None,
-        //             ),
-        //         }
-        //     }
-        // );
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
+            Ok(chains) => chains,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
+
+        // Fetch the Channel that will facilitate the communication between the channel ends
+        // being upgraded. This channel is assumed to already exist on the destination chain.
+        let channel = Channel {
+            connection_delay: Default::default(),
+            ordering: Order::default(),
+            a_side: ChannelSide::new(
+                chains.src,
+                ClientId::default(),
+                ConnectionId::default(),
+                PortId::default(),
+                None,
+                None,
+            ),
+            b_side: ChannelSide::new(
+                chains.dst,
+                ClientId::default(),
+                ConnectionId::default(),
+                self.dst_port_id.clone(),
+                Some(self.dst_chan_id.clone()),
+                None,
+            ),
+        };
+
+        info!("message ChanUpgradeInit: {}", channel);
+
+        let res: Result<IbcEvent, Error> = channel
+            .build_chan_upgrade_init_and_send(
+                self.version.clone(),
+                self.ordering.clone(),
+                self.connection_hops.clone(),
+                self.timeout_height.clone(),
+                self.timeout_timestamp.clone(),
+            )
+            .map_err(Error::channel);
+
+        match res {
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(e).exit(),
+        }
     }
 }
 
