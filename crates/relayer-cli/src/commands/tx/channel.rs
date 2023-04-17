@@ -685,16 +685,6 @@ pub struct TxChanUpgradeInitCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "dst-connection",
-        visible_alias = "dst-conn",
-        required = true,
-        value_name = "DST_CONNECTION_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the destination connection"
-    )]
-    dst_conn_id: ConnectionId,
-
-    #[clap(
         long = "dst-port",
         required = true,
         value_name = "DST_PORT_ID",
