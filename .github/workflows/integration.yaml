@@ -75,6 +75,9 @@ jobs:
           - package: stride
             command: strided
             account_prefix: stride
+          - package: juno
+            command: junod
+            account_prefix: juno
 
     steps:
       - uses: actions/checkout@v2
@@ -233,6 +236,9 @@ jobs:
           - package: gaia9
             command: gaiad
             account_prefix: cosmos
+          - package: juno
+            command: junod
+            account_prefix: juno
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
