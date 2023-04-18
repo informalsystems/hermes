@@ -36,6 +36,7 @@ use crate::{
     client_state::AnyClientState,
     config::ChainConfig,
     error::Error,
+    light_client::AnyHeader,
     misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
 };
 
@@ -78,8 +79,8 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let target_height =
             TMHeight::try_from(target_height.revision_height()).map_err(Error::invalid_height)?;
-        let trusted_height =
-            TMHeight::try_from(trusted_height.revision_height()).map_err(Error::invalid_height)?;
+        // let trusted_height =
+        //     TMHeight::try_from(trusted_height.revision_height()).map_err(Error::invalid_height)?;
 
         // Verify the target header
         let target = client
@@ -90,10 +91,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         let target_trace = state.get_trace(target.height());
 
         // Compute the minimal supporting set, sorted by ascending height,
-        // skip the target header and the trusted header if present in the trace
+        // skip the target header if present in the trace
         let supporting = target_trace
             .into_iter()
-            .filter(|lb| lb.height() != target.height() && lb.height() != trusted_height)
+            .filter(
+                |lb| lb.height() != target.height(), /* && lb.height() != trusted_height */
+            )
             .unique_by(LightBlock::height)
             .sorted_by_key(LightBlock::height)
             .collect_vec();
@@ -155,14 +158,13 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             provider: self.peer_id,
         };
 
-        let trusted_block = self.fetch(update_header.trusted_height)?; // FIXME: Is that ok?
-                                                                       // TODO: Check validator sets match
+        let trusted_block = self.fetch(update_header.trusted_height)?; // TODO: Check validator sets match
 
         let divergence = detector::detect(
             self.peer_id,
             self.io.rpc_client().clone(),
             target_block,
-            trusted_block.clone(),
+            trusted_block,
             client_state,
             now,
         );
@@ -185,6 +187,22 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                     Err(e) => error!("failed to report evidence to RPC witness node: {}", e),
                 }
 
+                // We redo verification one more time to get the trace of supporting headers
+                let redo_verif = self.verify(
+                    update_header.trusted_height,
+                    update_header.height(), // FIXME: Is that right?
+                    &AnyClientState::Tendermint(client_state.clone()),
+                    now,
+                )?;
+
+                let (_, trace) = self.adjust_headers(
+                    update_header.trusted_height,
+                    redo_verif.target,
+                    redo_verif.supporting,
+                )?;
+
+                let last_trace_block = trace.last().expect("trace cannot be empty");
+
                 let evidence = MisbehaviourEvidence {
                     misbehaviour: AnyMisbehaviour::Tendermint(TmMisbehaviour {
                         client_id: update.client_id().clone(),
@@ -192,11 +210,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                         header2: TmHeader {
                             signed_header: challenging_block.signed_header,
                             validator_set: challenging_block.validators,
-                            trusted_height: update_header.trusted_height,
-                            trusted_validator_set: trusted_block.validators,
+                            trusted_height: last_trace_block.height(),
+                            trusted_validator_set: last_trace_block.trusted_validator_set.clone(),
                         },
                     }),
-                    supporting_headers: vec![], // FIXME: What do we put here?
+                    supporting_headers: trace.into_iter().map(AnyHeader::Tendermint).collect(),
                 };
 
                 Ok(Some(evidence))
