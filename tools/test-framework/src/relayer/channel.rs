@@ -3,12 +3,11 @@ use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
-use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, Order};
 use ibc_relayer_types::core::ics04_channel::channel::{Ordering, State as ChannelState};
+use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
-use ibc_relayer_types::timestamp::Timestamp;
 
 use crate::error::Error;
 use crate::types::id::{
@@ -271,15 +270,13 @@ pub fn init_channel_upgrade<ChainA: ChainHandle, ChainB: ChainHandle>(
     new_version: Option<Version>,
     new_ordering: Option<Order>,
     new_connection_hops: Option<Vec<ConnectionId>>,
-    timeout_height: Option<Height>,
-    timeout_timestamp: Option<Timestamp>,
+    timeout: UpgradeTimeout,
 ) -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainB, ChainA>), Error> {
     let event = channel.build_chan_upgrade_init_and_send(
         new_version,
         new_ordering,
         new_connection_hops,
-        timeout_height,
-        timeout_timestamp,
+        timeout,
     )?;
     let channel_id = extract_channel_id(&event)?.clone();
     let channel2 = Channel::restore_from_event(handle_b.clone(), handle_a.clone(), event)?;

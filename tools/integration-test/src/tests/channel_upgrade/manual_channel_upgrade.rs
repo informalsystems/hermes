@@ -1,4 +1,5 @@
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
+use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::version::Version};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
@@ -85,6 +86,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
             60,
         )
         .map_err(|e| eyre!("error creating height for timeout height: {e}"))?;
+        let timeout = UpgradeTimeout::Height(timeout_height);
 
         info!("Initialise channel upgrade process...");
 
@@ -95,8 +97,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
             Some(new_version),
             new_ordering,
             new_connection_hops,
-            Some(timeout_height),
-            None,
+            timeout,
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
