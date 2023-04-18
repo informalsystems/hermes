@@ -424,9 +424,9 @@ impl State {
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            4 => Ok(Self::InitUpgrade),
-            5 => Ok(Self::TryUpgrade),
-            6 => Ok(Self::Closed),
+            4 => Ok(Self::Closed),
+            5 => Ok(Self::InitUpgrade),
+            6 => Ok(Self::TryUpgrade),
             _ => Err(Error::unknown_state(s)),
         }
     }
