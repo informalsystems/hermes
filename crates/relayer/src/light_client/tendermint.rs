@@ -54,13 +54,25 @@ pub struct LightClient {
 impl super::LightClient<CosmosSdkChain> for LightClient {
     fn header_and_minimal_set(
         &mut self,
-        trusted: ICSHeight,
-        target: ICSHeight,
+        trusted_height: ICSHeight,
+        target_height: ICSHeight,
         client_state: &AnyClientState,
         now: Time,
     ) -> Result<Verified<TmHeader>, Error> {
-        let Verified { target, supporting } = self.verify(trusted, target, client_state, now)?;
-        let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
+        let Verified { target, supporting } =
+            self.verify(trusted_height, target_height, client_state, now)?;
+
+        let supporting = {
+            let target_height = TMHeight::from(target_height);
+            let trusted_height = TMHeight::from(trusted_height);
+
+            supporting
+                .into_iter()
+                .filter(|lb| lb.height() != target_height && lb.height() != trusted_height)
+                .collect()
+        };
+
+        let (target, supporting) = self.adjust_headers(trusted_height, target, supporting)?;
 
         Ok(Verified { target, supporting })
     }
@@ -77,26 +89,17 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         let client = self.prepare_client(client_state, now)?;
         let mut state = self.prepare_state(trusted_height)?;
 
-        let target_height =
-            TMHeight::try_from(target_height.revision_height()).map_err(Error::invalid_height)?;
-        // let trusted_height =
-        //     TMHeight::try_from(trusted_height.revision_height()).map_err(Error::invalid_height)?;
-
         // Verify the target header
         let target = client
-            .verify_to_target(target_height, &mut state)
+            .verify_to_target(target_height.into(), &mut state)
             .map_err(|e| Error::light_client_verification(self.chain_id.to_string(), e))?;
 
         // Collect the verification trace for the target block
         let target_trace = state.get_trace(target.height());
 
-        // Compute the minimal supporting set, sorted by ascending height,
-        // skip the target header if present in the trace
+        // Compute the supporting set, sorted by ascending height
         let supporting = target_trace
             .into_iter()
-            .filter(
-                |lb| lb.height() != target.height(), /* && lb.height() != trusted_height */
-            )
             .unique_by(LightBlock::height)
             .sorted_by_key(LightBlock::height)
             .collect_vec();
@@ -107,8 +110,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     fn fetch(&mut self, height: ICSHeight) -> Result<LightBlock, Error> {
         trace!(%height, "fetching header");
 
-        let height = TMHeight::try_from(height.revision_height()).map_err(Error::invalid_height)?;
-        self.fetch_light_block(AtHeight::At(height))
+        self.fetch_light_block(AtHeight::At(height.into()))
     }
 
     /// Perform misbehavior detection on the given client state and update client event.
@@ -203,6 +205,14 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
                 let last_trace_block = trace.last().expect("trace cannot be empty");
 
+                debug!("update_header {:#?}", update_header.height());
+                debug!("challenging_block {:#?}", challenging_block.height());
+                debug!(
+                    "trace {:#?}",
+                    trace.iter().map(|x| x.height()).collect::<Vec<_>>()
+                );
+                debug!("last_trace_block {:#?}", last_trace_block.height());
+
                 let evidence = MisbehaviourEvidence {
                     misbehaviour: AnyMisbehaviour::Tendermint(TmMisbehaviour {
                         client_id: update.client_id().clone(),
@@ -288,11 +298,8 @@ impl LightClient {
         ))
     }
 
-    fn prepare_state(&self, trusted: ICSHeight) -> Result<LightClientState, Error> {
-        let trusted_height =
-            TMHeight::try_from(trusted.revision_height()).map_err(Error::invalid_height)?;
-
-        let trusted_block = self.fetch_light_block(AtHeight::At(trusted_height))?;
+    fn prepare_state(&self, trusted_height: ICSHeight) -> Result<LightClientState, Error> {
+        let trusted_block = self.fetch_light_block(AtHeight::At(trusted_height.into()))?;
 
         let mut store = MemoryStore::new();
         store.insert(trusted_block, Status::Trusted);
