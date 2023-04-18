@@ -2,7 +2,7 @@
    Driver for spawning the relayer.
 */
 
-use ibc_relayer::chain::handle::CountingAndCachingChainHandle;
+use ibc_relayer::chain::handle::{BaseChainHandle, CountingChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
@@ -41,7 +41,9 @@ pub struct RelayerDriver {
        Use this shared registry when spawning new supervisor using
        [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
     */
-    pub registry: SharedRegistry<CountingAndCachingChainHandle>,
+    // FIXME: Temporarily disable CachingChainHandle for Chain Upgrade tests as the
+    // caching causes the queried Channel End to not have the correct information.
+    pub registry: SharedRegistry<CountingChainHandle<BaseChainHandle>>,
 
     /**
        Whether the driver should hang the test when the continuation

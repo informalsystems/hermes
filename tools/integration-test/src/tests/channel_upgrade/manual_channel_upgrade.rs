@@ -50,6 +50,19 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
         )?;
 
         let channel_end_a = chains
+            .handle_b
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channels.port_b.0.clone(),
+                    channel_id: channels.channel_id_b.0.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+
+        let channel_end_b = chains
             .handle_a
             .query_channel(
                 QueryChannelRequest {
@@ -60,11 +73,12 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
                 IncludeProof::No,
             )
             .map(|(channel_end, _)| channel_end)
-            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+            .map_err(|e| eyre!("Error querying ChannelEnd B: {e}"))?;
 
         let old_version = channel_end_a.version;
         let old_ordering = channel_end_a.ordering;
-        let old_connection_hops = channel_end_a.connection_hops;
+        let old_connection_hops_a = channel_end_a.connection_hops;
+        let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
         let new_version = Version::ics20_with_fee();
@@ -73,17 +87,19 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
 
         // Only Version is changed in this test.
         let upgrade_attrs = ChannelUpgradeAssertionAttributes::new(
+            old_version.clone(),
+            old_ordering,
+            old_connection_hops_a.clone(),
+            old_connection_hops_b.clone(),
             old_version,
             old_ordering,
-            old_connection_hops.clone(),
-            new_version.clone(),
-            old_ordering,
-            old_connection_hops,
+            old_connection_hops_a,
+            old_connection_hops_b,
         );
 
         let timeout_height = Height::new(
-            ChainId::chain_version(chains.chain_id_a().0.to_string().as_str()),
-            60,
+            ChainId::chain_version(chains.chain_id_b().0.to_string().as_str()),
+            120,
         )
         .map_err(|e| eyre!("error creating height for timeout height: {e}"))?;
         let timeout = UpgradeTimeout::Height(timeout_height);
