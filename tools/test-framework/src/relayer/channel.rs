@@ -250,77 +250,154 @@ pub fn assert_eventually_channel_upgrade_init<ChainA: ChainHandle, ChainB: Chain
         20,
         Duration::from_secs(1),
         || {
-            let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
-
-            if !channel_end_a
-                .value()
-                .state_matches(&ChannelState::InitUpgrade)
-            {
-                return Err(Error::generic(eyre!(
-                    "expected channel end A to be in init upgrade state"
-                )));
-            }
-
-            if !channel_end_a.value().version_matches(new_version) {
-                return Err(Error::generic(eyre!(
-                    "expected channel end A to have new Version"
-                )));
-            }
-
-            if !channel_end_a.value().order_matches(new_ordering) {
-                return Err(Error::generic(eyre!(
-                    "expected channel end A to have new Version"
-                )));
-            }
-
-            if !channel_end_a
-                .value()
-                .connection_hops_matches(new_connection_hops)
-            {
-                return Err(Error::generic(eyre!(
-                    "expected channel end A to have new Version"
-                )));
-            }
-
-            let channel_id_b = channel_end_a
-                .tagged_counterparty_channel_id()
-                .ok_or_else(|| {
-                    eyre!("expected counterparty channel id to present on open channel")
-                })?;
-
-            let port_id_b = channel_end_a.tagged_counterparty_port_id();
-
-            let channel_end_b =
-                query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
-
-            if !channel_end_b.value().state_matches(&ChannelState::Open) {
-                return Err(Error::generic(eyre!(
-                    "expected channel end B to be in open state"
-                )));
-            }
-
-            if !channel_end_b.value().version_matches(old_version) {
-                return Err(Error::generic(eyre!(
-                    "expected channel end A to have new Version"
-                )));
-            }
-
-            if !channel_end_b.value().order_matches(old_ordering) {
-                return Err(Error::generic(eyre!(
-                    "expected channel end A to have new Version"
-                )));
-            }
-
-            if !channel_end_b
-                .value()
-                .connection_hops_matches(old_connection_hops)
-            {
-                return Err(Error::generic(eyre!(
-                    "expected channel end A to have new Version"
-                )));
-            }
-
-            Ok(channel_id_b)
+            assert_eventually_succeed(
+                "channel upgrade should be initialised",
+                20,
+                Duration::from_secs(1),
+                || {
+                    assert_channel_upgrade_state(
+                        ChannelState::InitUpgrade,
+                        ChannelState::Open,
+                        handle_a,
+                        handle_b,
+                        channel_id_a,
+                        port_id_a,
+                        old_version,
+                        old_ordering,
+                        old_connection_hops,
+                        new_version,
+                        new_ordering,
+                        new_connection_hops,
+                    )
+                },
+            )
         },
     )
+}
+
+pub fn try_channel_upgrade<ChainA: ChainHandle, ChainB: ChainHandle>(
+    _handle_a: &ChainA,
+    _handle_b: &ChainB,
+    _channel: Channel<ChainA, ChainB>,
+) { // -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainB, ChainA>), Error> {
+     //let event = channel.build_chan_upgrade_try_and_send()?;
+     //let channel_id = extract_channel_id(&event)?.clone();
+     //let channel2 = Channel::restore_from_event(handle_b.clone(), handle_a.clone(), event)?;
+     //Ok((DualTagged::new(channel_id), channel2))
+}
+
+pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    old_version: &Version,
+    old_ordering: &Ordering,
+    old_connection_hops: &Vec<ConnectionId>,
+    new_version: &Version,
+    new_ordering: &Ordering,
+    new_connection_hops: &Vec<ConnectionId>,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel upgrade should be initialised",
+        20,
+        Duration::from_secs(1),
+        || {
+            assert_channel_upgrade_state(
+                ChannelState::InitUpgrade,
+                ChannelState::TryUpgrade,
+                handle_a,
+                handle_b,
+                channel_id_a,
+                port_id_a,
+                old_version,
+                old_ordering,
+                old_connection_hops,
+                new_version,
+                new_ordering,
+                new_connection_hops,
+            )
+        },
+    )
+}
+
+fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
+    a_side_state: ChannelState,
+    b_side_state: ChannelState,
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    old_version: &Version,
+    old_ordering: &Ordering,
+    old_connection_hops: &Vec<ConnectionId>,
+    new_version: &Version,
+    new_ordering: &Ordering,
+    new_connection_hops: &Vec<ConnectionId>,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
+
+    if !channel_end_a.value().state_matches(&a_side_state) {
+        return Err(Error::generic(eyre!(
+            "expected channel end A to be in init upgrade state"
+        )));
+    }
+
+    if !channel_end_a.value().version_matches(new_version) {
+        return Err(Error::generic(eyre!(
+            "expected channel end A to have new Version"
+        )));
+    }
+
+    if !channel_end_a.value().order_matches(new_ordering) {
+        return Err(Error::generic(eyre!(
+            "expected channel end A to have new Version"
+        )));
+    }
+
+    if !channel_end_a
+        .value()
+        .connection_hops_matches(new_connection_hops)
+    {
+        return Err(Error::generic(eyre!(
+            "expected channel end A to have new Version"
+        )));
+    }
+
+    let channel_id_b = channel_end_a
+        .tagged_counterparty_channel_id()
+        .ok_or_else(|| eyre!("expected counterparty channel id to present on open channel"))?;
+
+    let port_id_b = channel_end_a.tagged_counterparty_port_id();
+
+    let channel_end_b = query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
+
+    if !channel_end_b.value().state_matches(&b_side_state) {
+        return Err(Error::generic(eyre!(
+            "expected channel end B to be in open state"
+        )));
+    }
+
+    if !channel_end_b.value().version_matches(old_version) {
+        return Err(Error::generic(eyre!(
+            "expected channel end A to have new Version"
+        )));
+    }
+
+    if !channel_end_b.value().order_matches(old_ordering) {
+        return Err(Error::generic(eyre!(
+            "expected channel end A to have new Version"
+        )));
+    }
+
+    if !channel_end_b
+        .value()
+        .connection_hops_matches(old_connection_hops)
+    {
+        return Err(Error::generic(eyre!(
+            "expected channel end A to have new Version"
+        )));
+    }
+
+    Ok(channel_id_b)
 }
