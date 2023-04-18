@@ -781,10 +781,10 @@ impl Runnable for TxChanUpgradeInitCmd {
         let res: Result<IbcEvent, Error> = channel
             .build_chan_upgrade_init_and_send(
                 self.version.clone(),
-                self.ordering.clone(),
+                self.ordering,
                 self.connection_hops.clone(),
-                self.timeout_height.clone(),
-                self.timeout_timestamp.clone(),
+                self.timeout_height,
+                self.timeout_timestamp,
             )
             .map_err(Error::channel);
 
