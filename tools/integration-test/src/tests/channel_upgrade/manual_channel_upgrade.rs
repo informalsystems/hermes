@@ -3,7 +3,7 @@ use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::versi
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_init,
-    init_channel_upgrade,
+    init_channel_upgrade, ChannelUpgradeAssertionAttributes,
 };
 
 #[test]
@@ -66,24 +66,20 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
         let old_connection_hops = channel_end_a.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Some(Version::ics20_with_fee());
-        let assert_version = if let Some(version) = new_version.clone() {
-            version
-        } else {
-            old_version.clone()
-        };
+        let new_version = Version::ics20_with_fee();
         let new_ordering = None;
-        let assert_ordering = if let Some(ordering) = new_ordering {
-            ordering
-        } else {
-            old_ordering
-        };
         let new_connection_hops = None;
-        let assert_connection_hops = if let Some(connection_hops) = new_connection_hops.clone() {
-            connection_hops
-        } else {
-            old_connection_hops.clone()
-        };
+
+        // Only Version is changed in this test.
+        let upgrade_attrs = ChannelUpgradeAssertionAttributes::new(
+            old_version,
+            old_ordering,
+            old_connection_hops.clone(),
+            new_version.clone(),
+            old_ordering,
+            old_connection_hops,
+        );
+
         let timeout_height = Height::new(
             ChainId::chain_version(chains.chain_id_a().0.to_string().as_str()),
             60,
@@ -96,7 +92,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
             &chains.handle_a,
             &chains.handle_b,
             channel,
-            new_version,
+            Some(new_version),
             new_ordering,
             new_connection_hops,
             Some(timeout_height),
@@ -110,12 +106,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
             &chains.handle_a,
             &channel_id_on_b.as_ref(),
             &channels.port_b.as_ref(),
-            &old_version,
-            &old_ordering,
-            &old_connection_hops,
-            &assert_version,
-            &assert_ordering,
-            &assert_connection_hops,
+            &upgrade_attrs,
         )?;
 
         Ok(())
