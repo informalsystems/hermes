@@ -36,6 +36,59 @@ impl<ChainA, ChainB> TaggedChannelEndExt<ChainA, ChainB>
     }
 }
 
+pub struct ChannelUpgradeAssertionAttributes {
+    old_version: Version,
+    old_ordering: Ordering,
+    old_connection_hops: Vec<ConnectionId>,
+    new_version: Version,
+    new_ordering: Ordering,
+    new_connection_hops: Vec<ConnectionId>,
+}
+
+impl ChannelUpgradeAssertionAttributes {
+    pub fn new(
+        old_version: Version,
+        old_ordering: Ordering,
+        old_connection_hops: Vec<ConnectionId>,
+        new_version: Version,
+        new_ordering: Ordering,
+        new_connection_hops: Vec<ConnectionId>,
+    ) -> Self {
+        Self {
+            old_version,
+            old_ordering,
+            old_connection_hops,
+            new_version,
+            new_ordering,
+            new_connection_hops,
+        }
+    }
+
+    pub fn old_version(&self) -> &Version {
+        &self.old_version
+    }
+
+    pub fn old_ordering(&self) -> &Ordering {
+        &self.old_ordering
+    }
+
+    pub fn old_connection_hops(&self) -> &Vec<ConnectionId> {
+        &self.old_connection_hops
+    }
+
+    pub fn new_version(&self) -> &Version {
+        &self.new_version
+    }
+
+    pub fn new_ordering(&self) -> &Ordering {
+        &self.new_ordering
+    }
+
+    pub fn new_connection_hops(&self) -> &Vec<ConnectionId> {
+        &self.new_connection_hops
+    }
+}
+
 pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     handle_a: &ChainA,
     handle_b: &ChainB,
@@ -238,12 +291,7 @@ pub fn assert_eventually_channel_upgrade_init<ChainA: ChainHandle, ChainB: Chain
     handle_b: &ChainB,
     channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
     port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
-    old_version: &Version,
-    old_ordering: &Ordering,
-    old_connection_hops: &Vec<ConnectionId>,
-    new_version: &Version,
-    new_ordering: &Ordering,
-    new_connection_hops: &Vec<ConnectionId>,
+    upgrade_attrs: &ChannelUpgradeAssertionAttributes,
 ) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
     assert_eventually_succeed(
         "channel upgrade should be initialised",
@@ -262,12 +310,7 @@ pub fn assert_eventually_channel_upgrade_init<ChainA: ChainHandle, ChainB: Chain
                         handle_b,
                         channel_id_a,
                         port_id_a,
-                        old_version,
-                        old_ordering,
-                        old_connection_hops,
-                        new_version,
-                        new_ordering,
-                        new_connection_hops,
+                        upgrade_attrs,
                     )
                 },
             )
@@ -291,12 +334,7 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
     handle_b: &ChainB,
     channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
     port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
-    old_version: &Version,
-    old_ordering: &Ordering,
-    old_connection_hops: &Vec<ConnectionId>,
-    new_version: &Version,
-    new_ordering: &Ordering,
-    new_connection_hops: &Vec<ConnectionId>,
+    upgrade_attrs: &ChannelUpgradeAssertionAttributes,
 ) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
     assert_eventually_succeed(
         "channel upgrade should be initialised",
@@ -310,12 +348,7 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
                 handle_b,
                 channel_id_a,
                 port_id_a,
-                old_version,
-                old_ordering,
-                old_connection_hops,
-                new_version,
-                new_ordering,
-                new_connection_hops,
+                upgrade_attrs,
             )
         },
     )
@@ -328,12 +361,7 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     handle_b: &ChainB,
     channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
     port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
-    old_version: &Version,
-    old_ordering: &Ordering,
-    old_connection_hops: &Vec<ConnectionId>,
-    new_version: &Version,
-    new_ordering: &Ordering,
-    new_connection_hops: &Vec<ConnectionId>,
+    upgrade_attrs: &ChannelUpgradeAssertionAttributes,
 ) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
     let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
 
@@ -343,13 +371,10 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
         )));
     }
 
-    if !channel_end_a.value().version_matches(new_version) {
-        return Err(Error::generic(eyre!(
-            "expected channel end A to have new Version"
-        )));
-    }
-
-    if !channel_end_a.value().order_matches(new_ordering) {
+    if !channel_end_a
+        .value()
+        .version_matches(upgrade_attrs.new_version())
+    {
         return Err(Error::generic(eyre!(
             "expected channel end A to have new Version"
         )));
@@ -357,7 +382,16 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !channel_end_a
         .value()
-        .connection_hops_matches(new_connection_hops)
+        .order_matches(upgrade_attrs.new_ordering())
+    {
+        return Err(Error::generic(eyre!(
+            "expected channel end A to have new Version"
+        )));
+    }
+
+    if !channel_end_a
+        .value()
+        .connection_hops_matches(upgrade_attrs.new_connection_hops())
     {
         return Err(Error::generic(eyre!(
             "expected channel end A to have new Version"
@@ -378,13 +412,10 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
         )));
     }
 
-    if !channel_end_b.value().version_matches(old_version) {
-        return Err(Error::generic(eyre!(
-            "expected channel end A to have new Version"
-        )));
-    }
-
-    if !channel_end_b.value().order_matches(old_ordering) {
+    if !channel_end_b
+        .value()
+        .version_matches(upgrade_attrs.old_version())
+    {
         return Err(Error::generic(eyre!(
             "expected channel end A to have new Version"
         )));
@@ -392,7 +423,16 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !channel_end_b
         .value()
-        .connection_hops_matches(old_connection_hops)
+        .order_matches(upgrade_attrs.old_ordering())
+    {
+        return Err(Error::generic(eyre!(
+            "expected channel end A to have new Version"
+        )));
+    }
+
+    if !channel_end_b
+        .value()
+        .connection_hops_matches(upgrade_attrs.old_connection_hops())
     {
         return Err(Error::generic(eyre!(
             "expected channel end A to have new Version"
