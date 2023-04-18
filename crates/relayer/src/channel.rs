@@ -1579,7 +1579,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
 
-    pub fn build_chan_upgrade_try(&self) -> Result<Vec<Any>, ChannelError> {}
+    pub fn build_chan_upgrade_try(&self) -> Result<Vec<Any>, ChannelError> {
+        Ok(vec![])
+    }
 
     pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
         self,
