@@ -226,9 +226,8 @@ impl CosmosSdkChain {
             ));
         }
 
-        // Get the latest height and convert to tendermint Height
-        let latest_height = TmHeight::try_from(self.query_chain_latest_height()?.revision_height())
-            .map_err(Error::invalid_height)?;
+        // Get the latest height
+        let latest_height = self.query_chain_latest_height()?;
 
         // Check on the configured max_tx_size against the consensus parameters at latest height
         let result = self
@@ -477,10 +476,6 @@ impl CosmosSdkChain {
     ) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
-        let path = IBC_QUERY_PATH.into();
-
-        let height = TmHeight::try_from(height_query)?;
-
         let data = data.into();
         if !data.is_provable() & prove {
             return Err(Error::private_store());
@@ -489,9 +484,9 @@ impl CosmosSdkChain {
         let response = self.block_on(abci_query(
             &self.rpc_client,
             &self.config.rpc_addr,
-            path,
+            IBC_QUERY_PATH.to_string(),
             data.to_string(),
-            height,
+            height_query.into(),
             prove,
         ))?;
 
@@ -530,7 +525,7 @@ impl CosmosSdkChain {
             &self.config.rpc_addr,
             path,
             Path::Upgrade(query_data).to_string(),
-            TmHeight::try_from(query_height.revision_height()).map_err(Error::invalid_height)?,
+            query_height.into(),
             true,
         ))?;
 
@@ -1409,6 +1404,7 @@ impl ChainEndpoint for CosmosSdkChain {
                     .ok()
             })
             .collect();
+
         Ok(channels)
     }
 
@@ -1823,9 +1819,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<Self::ConsensusState, Error> {
         let height = match request.height {
             QueryHeight::Latest => TmHeight::from(0u32),
-            QueryHeight::Specific(ibc_height) => {
-                TmHeight::try_from(ibc_height.revision_height()).map_err(Error::invalid_height)?
-            }
+            QueryHeight::Specific(ibc_height) => TmHeight::from(ibc_height),
         };
 
         let header = if height.value() == 0 {
