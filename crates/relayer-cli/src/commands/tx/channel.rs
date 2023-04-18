@@ -7,6 +7,7 @@ use ibc_relayer::channel::{Channel, ChannelSide};
 
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
@@ -748,6 +749,14 @@ impl Runnable for TxChanUpgradeInitCmd {
     fn run(&self) {
         let config = app_config();
 
+        // Check that at least one of timeout_height and timeout_timestamp has been provided
+        let Ok(timeout) = UpgradeTimeout::new(self.timeout_height, self.timeout_timestamp) else {
+            Output::error(
+                "At least one of --timeout-height or --timeout-timestamp must be specified.",
+            )
+            .exit();
+        };
+
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -781,10 +790,9 @@ impl Runnable for TxChanUpgradeInitCmd {
         let res: Result<IbcEvent, Error> = channel
             .build_chan_upgrade_init_and_send(
                 self.version.clone(),
-                self.ordering.clone(),
+                self.ordering,
                 self.connection_hops.clone(),
-                self.timeout_height.clone(),
-                self.timeout_timestamp.clone(),
+                timeout,
             )
             .map_err(Error::channel);
 
