@@ -289,7 +289,7 @@ mod tests {
                 name: "Empty proof upgrade sequence".to_string(),
                 raw: RawMsgChannelUpgradeTry {
                     proof_upgrade_sequence: vec![],
-                    ..default_raw_msg.clone()
+                    ..default_raw_msg
                 },
                 want_pass: false,
             }
