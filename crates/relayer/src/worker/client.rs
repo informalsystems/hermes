@@ -156,7 +156,7 @@ fn on_client_update<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
         MisbehaviourResults::EvidenceSubmitted(_) => {
             // if evidence was submitted successfully then exit
-            debug!("misbehavior detected! Evidence succesfully submitted, exiting");
+            debug!("misbehavior detected! Evidence successfully submitted, exiting");
 
             Next::Abort
         }

@@ -62,13 +62,14 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         let Verified { target, supporting } =
             self.verify(trusted_height, target_height, client_state, now)?;
 
+        // Omit the trusted header from the minimal supporting set, as it is not
+        // needed when submitting the update client message.
         let supporting = {
-            let target_height = TMHeight::from(target_height);
             let trusted_height = TMHeight::from(trusted_height);
 
             supporting
                 .into_iter()
-                .filter(|lb| lb.height() != target_height && lb.height() != trusted_height)
+                .filter(|lb| lb.height() != trusted_height)
                 .collect()
         };
 
@@ -97,11 +98,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         // Collect the verification trace for the target block
         let target_trace = state.get_trace(target.height());
 
-        // Compute the supporting set, sorted by ascending height
+        // Compute the supporting set, sorted by ascending height, omitting the target header
         let supporting = target_trace
             .into_iter()
             .unique_by(LightBlock::height)
             .sorted_by_key(LightBlock::height)
+            .filter(|lb| lb.height() != target.height())
             .collect_vec();
 
         Ok(Verified { target, supporting })
@@ -190,28 +192,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 }
 
                 // We redo verification one more time to get the trace of supporting headers
-                let redo_verif = self.verify(
+                let verified = self.header_and_minimal_set(
                     update_header.trusted_height,
-                    update_header.height(), // FIXME: Is that right?
+                    update_header.height(),
                     &AnyClientState::Tendermint(client_state.clone()),
                     now,
                 )?;
-
-                let (_, trace) = self.adjust_headers(
-                    update_header.trusted_height,
-                    redo_verif.target,
-                    redo_verif.supporting,
-                )?;
-
-                let last_trace_block = trace.last().expect("trace cannot be empty");
-
-                debug!("update_header {:#?}", update_header.height());
-                debug!("challenging_block {:#?}", challenging_block.height());
-                debug!(
-                    "trace {:#?}",
-                    trace.iter().map(|x| x.height()).collect::<Vec<_>>()
-                );
-                debug!("last_trace_block {:#?}", last_trace_block.height());
 
                 let evidence = MisbehaviourEvidence {
                     misbehaviour: AnyMisbehaviour::Tendermint(TmMisbehaviour {
@@ -220,11 +206,15 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                         header2: TmHeader {
                             signed_header: challenging_block.signed_header,
                             validator_set: challenging_block.validators,
-                            trusted_height: last_trace_block.trusted_height,
-                            trusted_validator_set: last_trace_block.trusted_validator_set.clone(),
+                            trusted_height: verified.target.trusted_height,
+                            trusted_validator_set: verified.target.trusted_validator_set,
                         },
                     }),
-                    supporting_headers: trace.into_iter().map(AnyHeader::Tendermint).collect(),
+                    supporting_headers: verified
+                        .supporting
+                        .into_iter()
+                        .map(AnyHeader::Tendermint)
+                        .collect(),
                 };
 
                 Ok(Some(evidence))

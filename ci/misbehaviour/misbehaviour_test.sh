@@ -47,13 +47,20 @@ sleep 5
 info "Killing Hermes"
 kill -9 "$HERMES_PID"
 
-info ""
+echo ""
 info "--------------------------------------------------"
 info "Hermes log:"
 info "--------------------------------------------------"
 cat "$HERMES_LOG"
 info "--------------------------------------------------"
-info ""
+echo ""
+
+if grep -q "Evidence succesfully submitted" "$HERMES_LOG"; then
+    warn "Misbehaviour detection failed!"
+    exit 1
+else
+    info "Misbehaviour detected and submitted successfully!"
+fi
 
 STOPPED_HEIGHT="$(curl -s http://localhost:$IBC_1_RPC_PORT/status | jq -r .result.sync_info.latest_block_height)"
 
