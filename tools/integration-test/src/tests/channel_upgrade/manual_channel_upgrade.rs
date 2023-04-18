@@ -1,8 +1,5 @@
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
-use ibc_relayer_types::core::{
-    ics02_client::height::Height,
-    ics04_channel::{timeout::UpgradeTimeout, version::Version},
-};
+use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::version::Version};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_init,
@@ -87,24 +84,23 @@ impl BinaryChannelTest for ChannelOpenUpgradeHandshake {
         } else {
             old_connection_hops.clone()
         };
-        let height = Height::new(
+        let timeout_height = Height::new(
             ChainId::chain_version(chains.chain_id_a().0.to_string().as_str()),
             60,
         )
         .map_err(|e| eyre!("error creating height for timeout height: {e}"))?;
-        let timeout = UpgradeTimeout::new(Some(height), None)
-            .map_err(|e| eyre!("error creating UpgradeTimeout: {e}"))?;
 
         info!("Initialise channel upgrade process...");
 
-        let (channel_id_on_a, _channel_to_b_on_a) = init_channel_upgrade(
+        let (channel_id_on_b, _) = init_channel_upgrade(
             &chains.handle_a,
             &chains.handle_b,
             channel,
             new_version,
             new_ordering,
             new_connection_hops,
-            timeout,
+            Some(timeout_height),
+            None,
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
@@ -112,7 +108,7 @@ impl BinaryChannelTest for ChannelOpenUpgradeHandshake {
         assert_eventually_channel_upgrade_init(
             &chains.handle_b,
             &chains.handle_a,
-            &channel_id_on_a.as_ref(),
+            &channel_id_on_b.as_ref(),
             &channels.port_b.as_ref(),
             &old_version,
             &old_ordering,
