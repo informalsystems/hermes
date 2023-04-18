@@ -451,9 +451,20 @@ impl State {
     /// assert!(!State::Closed.less_or_equal_progress(State::Open));
     /// ```
     pub fn less_or_equal_progress(self, other: Self) -> bool {
-        // TODO: Rewrite this function to explicitly compare the states, not relying
-        // on their integer representations.
-        self as u32 <= other as u32
+        use State::*;
+
+        match self {
+            Uninitialized => true,
+
+            Init => !matches!(other, Uninitialized),
+            TryOpen => !matches!(other, Uninitialized | Init),
+            Open => !matches!(other, Uninitialized | Init | TryOpen),
+
+            InitUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open),
+            TryUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open | InitUpgrade),
+
+            Closed => false,
+        }
     }
 }
 
