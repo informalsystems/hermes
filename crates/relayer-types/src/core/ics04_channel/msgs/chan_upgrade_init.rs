@@ -207,13 +207,14 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Timeout timestamp is 0".to_string(),
+                name: "Timeout timestamp is 0 and no timeout height provided".to_string(),
                 raw: RawMsgChannelUpgradeInit {
+                    timeout_height: None,
                     timeout_timestamp: 0,
                     ..default_raw_msg
                 },
                 want_pass: false,
-            }
+            },
         ]
         .into_iter()
         .collect();
