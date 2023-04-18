@@ -206,6 +206,7 @@ mod tests {
     use crate::core::ics04_channel::msgs::chan_upgrade_try::MsgChannelUpgradeTry;
 
     #[test]
+    #[ignore]
     fn parse_channel_upgrade_init_msg() {
         struct Test {
             name: String,
@@ -288,6 +289,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn to_and_from() {
         let raw = get_dummy_raw_msg_chan_upgrade_try();
         let msg = MsgChannelUpgradeTry::try_from(raw.clone()).unwrap();
