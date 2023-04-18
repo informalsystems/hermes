@@ -7,13 +7,13 @@ use ibc_test_framework::relayer::channel::{
 };
 
 #[test]
-fn test_channel_open_upgrade_handshake() -> Result<(), Error> {
-    run_binary_channel_test(&ChannelOpenUpgradeHandshake)
+fn test_channel_upgrade_init_handshake() -> Result<(), Error> {
+    run_binary_channel_test(&ChannelUpgradeInitHandshake)
 }
 
-pub struct ChannelOpenUpgradeHandshake;
+pub struct ChannelUpgradeInitHandshake;
 
-impl TestOverrides for ChannelOpenUpgradeHandshake {
+impl TestOverrides for ChannelUpgradeInitHandshake {
     fn modify_test_config(&self, config: &mut TestConfig) {
         config.bootstrap_with_random_ids = false;
     }
@@ -31,7 +31,7 @@ impl TestOverrides for ChannelOpenUpgradeHandshake {
     }
 }
 
-impl BinaryChannelTest for ChannelOpenUpgradeHandshake {
+impl BinaryChannelTest for ChannelUpgradeInitHandshake {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
