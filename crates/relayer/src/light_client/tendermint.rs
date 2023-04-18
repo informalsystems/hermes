@@ -63,12 +63,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             self.verify(trusted_height, target_height, client_state, now)?;
 
         let supporting = {
-            let target_height = TMHeight::from(target_height);
             let trusted_height = TMHeight::from(trusted_height);
 
             supporting
                 .into_iter()
-                .filter(|lb| lb.height() != target_height && lb.height() != trusted_height)
+                .filter(|lb| lb.height() != trusted_height)
                 .collect()
         };
 
@@ -97,11 +96,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         // Collect the verification trace for the target block
         let target_trace = state.get_trace(target.height());
 
-        // Compute the supporting set, sorted by ascending height
+        // Compute the supporting set, sorted by ascending height, and filter out the target header
         let supporting = target_trace
             .into_iter()
             .unique_by(LightBlock::height)
             .sorted_by_key(LightBlock::height)
+            .filter(|lb| lb.height() != target.height())
             .collect_vec();
 
         Ok(Verified { target, supporting })
