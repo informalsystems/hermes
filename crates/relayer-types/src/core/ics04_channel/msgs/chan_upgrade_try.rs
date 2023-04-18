@@ -269,6 +269,30 @@ mod tests {
                 },
                 want_pass: false,
             },
+            Test {
+                name: "Empty proof channel".to_string(),
+                raw: RawMsgChannelUpgradeTry {
+                    proof_channel: vec![],
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Empty proof upgrade timeout".to_string(),
+                raw: RawMsgChannelUpgradeTry {
+                    proof_upgrade_timeout: vec![],
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Empty proof upgrade sequence".to_string(),
+                raw: RawMsgChannelUpgradeTry {
+                    proof_upgrade_sequence: vec![],
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            }
         ]
         .into_iter()
         .collect();
