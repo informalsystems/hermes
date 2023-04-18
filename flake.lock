@@ -89,11 +89,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1679572441,
-        "narHash": "sha256-CyA/MR9ZAf0VjcfOnIZR1vcpwLWRtDwFHZm5+5nQ4Tw=",
+        "lastModified": 1681389138,
+        "narHash": "sha256-D2Tmf74uUgD2Nuf2TVAHqLDkGt+9J+P1knUE3Fa95Yk=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "8e7042b2989bae0152288c9ed7fbba061c9617eb",
+        "rev": "2d5bcc841835830534cc615c8952b0238ed59073",
         "type": "github"
       },
       "original": {
@@ -200,12 +200,15 @@
       }
     },
     "flake-utils_3": {
+      "inputs": {
+        "systems": "systems"
+      },
       "locked": {
-        "lastModified": 1678901627,
-        "narHash": "sha256-U02riOqrKKzwjsxc/400XnElV+UtPUQWpANPlyazjH0=",
+        "lastModified": 1681202837,
+        "narHash": "sha256-H+Rh19JDwRtpVPAWp64F+rlEtxUWBAQW28eAi3SRSzg=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "93a2b84fc4b70d9e089d029deacc3583435c2ed6",
+        "rev": "cfacdce06f30d2b68473a46042957675eebb3401",
         "type": "github"
       },
       "original": {
@@ -560,16 +563,16 @@
     "juno-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1647987514,
-        "narHash": "sha256-Mtiin+GOH/dyrr7cO+18er+uwYjCpQDY8xhA+kkzniM=",
+        "lastModified": 1679292088,
+        "narHash": "sha256-9xWOnlqjJWY7dyICYjl1Fmqi27352TF9ihcbZBI/Dps=",
         "owner": "CosmosContracts",
         "repo": "juno",
-        "rev": "9a1c32f508e6314fb73e57db35313cb329639424",
+        "rev": "1f392744afd9829f3f7837fe6f13800a19bad961",
         "type": "github"
       },
       "original": {
         "owner": "CosmosContracts",
-        "ref": "v2.3.0-beta.2",
+        "ref": "v13.0.1",
         "repo": "juno",
         "type": "github"
       }
@@ -639,11 +642,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1679410443,
-        "narHash": "sha256-xDHO/jixWD+y5pmW5+2q4Z4O/I/nA4MAa30svnZKK+M=",
+        "lastModified": 1681358109,
+        "narHash": "sha256-eKyxW4OohHQx9Urxi7TQlFBTDWII+F+x2hklDOQPB50=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "c9ece0059f42e0ab53ac870104ca4049df41b133",
+        "rev": "96ba1c52e54e74c3197f4d43026b3f3d92e83ff9",
         "type": "github"
       },
       "original": {
@@ -921,6 +924,21 @@
         "owner": "Stride-Labs",
         "ref": "v7.0.0",
         "repo": "stride",
+        "type": "github"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
         "type": "github"
       }
     },

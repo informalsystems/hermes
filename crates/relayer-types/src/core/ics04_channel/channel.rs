@@ -325,7 +325,7 @@ impl From<Counterparty> for RawCounterparty {
 
 pub type Ordering = Order;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, Default, PartialOrd, Ord)]
 pub enum Order {
     None = 0,
     #[default]
@@ -382,13 +382,25 @@ impl FromStr for Order {
 /// `Open` state, before finally being `Closed`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum State {
+    /// Default state
     Uninitialized = 0,
+    /// A channel has just started the opening handshake.
     Init = 1,
+    /// A channel has acknowledged the handshake step on the counterparty chain.
     TryOpen = 2,
+    /// A channel has completed the handshake step. Open channels are ready to
+    /// send and receive packets.
     Open = 3,
-    InitUpgrade = 4,
-    TryUpgrade = 5,
-    Closed = 6,
+    /// A channel has been closed and can no longer be used to send or receive
+    /// packets.
+    Closed = 4,
+    /// A channel has just started the upgrade handshake. The chain that is
+    /// proposing the upgrade should set the channel state from OPEN to INITUPGRADE.
+    InitUpgrade = 5,
+    /// A channel has acknowledged the upgrade handshake step on the counterparty chain.
+    /// The counterparty chain that accepts the upgrade should set the channel state from
+    /// OPEN to TRYUPGRADE.
+    TryUpgrade = 6,
 }
 
 impl State {
@@ -439,6 +451,8 @@ impl State {
     /// assert!(!State::Closed.less_or_equal_progress(State::Open));
     /// ```
     pub fn less_or_equal_progress(self, other: Self) -> bool {
+        // TODO: Rewrite this function to explicitly compare the states, not relying
+        // on their integer representations.
         self as u32 <= other as u32
     }
 }

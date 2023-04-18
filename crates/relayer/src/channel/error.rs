@@ -34,6 +34,15 @@ define_error! {
                     e.reason)
             },
 
+        InvalidChannelUpgradeOrdering
+            |_| { "attempted to upgrade a channel to a more strict ordring, which is not allowed" },
+
+        InvalidChannelUpgradeState
+            |_| { "attempted to upgrade a channel that is not in the OPEN state" },
+
+        InvalidChannelUpgradeTimeout
+            |_| { "attempted to upgrade a channel without supplying at least one of timeout height or timeout timestamp" },
+
         MissingLocalChannelId
             |_| { "failed due to missing local channel id" },
 

@@ -22,6 +22,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
 use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
@@ -1495,18 +1496,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
+        if channel_end.state != State::Open {
+            return Err(ChannelError::invalid_channel_upgrade_state());
+        }
+
+        let new_ordering = new_ordering.unwrap_or(Default::default());
+
+        if new_ordering > channel_end.ordering {
+            return Err(ChannelError::invalid_channel_upgrade_ordering());
+        }
+
         // Build the proposed channel end
         if let Some(new_version) = new_version {
             channel_end.version = new_version;
         }
 
-        if let Some(new_ordering) = new_ordering {
-            channel_end.ordering = new_ordering;
-        }
-
         if let Some(new_connection_hops) = new_connection_hops {
             channel_end.connection_hops = new_connection_hops;
         }
+
+        channel_end.state = State::InitUpgrade;
+
+        channel_end.ordering = new_ordering;
 
         // Build the domain type message
         let signer = self
@@ -1533,8 +1544,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         new_version: Option<Version>,
         new_ordering: Option<Order>,
         new_connection_hops: Option<Vec<ConnectionId>>,
-        timeout: UpgradeTimeout,
+        timeout_height: Option<Height>,
+        timeout_timestamp: Option<Timestamp>,
     ) -> Result<IbcEvent, ChannelError> {
+        let timeout = if let Ok(timeout) = UpgradeTimeout::new(timeout_height, timeout_timestamp) {
+            timeout
+        } else {
+            return Err(ChannelError::invalid_channel_upgrade_timeout());
+        };
+
         let dst_msgs =
             self.build_chan_upgrade_init(new_version, new_ordering, new_connection_hops, timeout)?;
 
