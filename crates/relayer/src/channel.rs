@@ -18,6 +18,7 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpen
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;
 use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
+use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -1576,6 +1577,70 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
             _ => Err(ChannelError::invalid_event(result.event)),
         }
+    }
+
+    pub fn build_chan_upgrade_try(&self, timeout: UpgradeTimeout) -> Result<Vec<Any>, ChannelError> {
+        // Source channel ID must exist
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
+
+        // Channel must exist on the souce chain
+        let (channe_end, maybe_channel_proof) = self
+            .src_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: self.src_port_id().clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::Yes
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        if channel_end.counterparty().port_id() != self.dst_port_id() {
+            return Err(ChannelError::mismatch_port(
+                self.dst_chain().id(),
+                self.dst_port_id().clone(),
+                self.src_chain().id(),
+                src_channel.counterparty().port_id().clone(),
+                src_channel_id.clone(),
+            ));
+        }
+
+        let Some(channel_proof) = maybe_channel_proof else {
+            return Err(ChannelError::missing_channel_proof());
+        };
+
+        let channel_proof_bytes = CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?;
+
+        if channel_end.state != State::InitUpgrade {
+            return Err(ChannelError::invalid_channel_upgrade_state());
+        }
+
+        channel_end.state = State::TryUpgrade;
+
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        // Build the domain type message
+        let new_msg = MsgChannelUpgradeTry {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            proposed_upgrade_channel: channel_end,
+            signer,
+            counterparty_channel,
+            counterparty_sequence,
+            timeout,
+            proof_channel: channel_proof_bytes,
+            proof_upgrade_timeout,
+            proof_upgrade_sequence,
+            proof_height,
+        };
+
+        Ok(vec![new_msg.to_any()])
     }
 
     pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
