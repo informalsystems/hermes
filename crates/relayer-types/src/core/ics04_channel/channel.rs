@@ -325,7 +325,7 @@ impl From<Counterparty> for RawCounterparty {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, Default)]
 pub enum Order {
-    None = 0,
+    Uninitialized = 0,
     #[default]
     Unordered = 1,
     Ordered = 2,
@@ -341,7 +341,7 @@ impl Order {
     /// Yields the Order as a string
     pub fn as_str(&self) -> &'static str {
         match self {
-            Self::None => "UNINITIALIZED",
+            Self::Uninitialized => "UNINITIALIZED",
             Self::Unordered => "ORDER_UNORDERED",
             Self::Ordered => "ORDER_ORDERED",
         }
@@ -350,9 +350,10 @@ impl Order {
     // Parses the Order out from a i32.
     pub fn from_i32(nr: i32) -> Result<Self, Error> {
         match nr {
-            0 => Ok(Self::None),
+            0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Unordered),
             2 => Ok(Self::Ordered),
+
             _ => Err(Error::unknown_order_type(nr.to_string())),
         }
     }
@@ -363,7 +364,7 @@ impl FromStr for Order {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().trim_start_matches("order_") {
-            "uninitialized" => Ok(Self::None),
+            "uninitialized" => Ok(Self::Uninitialized),
             "unordered" => Ok(Self::Unordered),
             "ordered" => Ok(Self::Ordered),
             _ => Err(Error::unknown_order_type(s.to_string())),
@@ -570,29 +571,24 @@ mod tests {
 
         struct Test {
             ordering: &'static str,
-            want_res: Order,
-            want_err: bool,
+            want_res: Option<Order>,
         }
         let tests: Vec<Test> = vec![
             Test {
                 ordering: "UNINITIALIZED",
-                want_res: Order::None,
-                want_err: false,
+                want_res: Some(Order::Uninitialized),
             },
             Test {
                 ordering: "UNORDERED",
-                want_res: Order::Unordered,
-                want_err: false,
+                want_res: Some(Order::Unordered),
             },
             Test {
                 ordering: "ORDERED",
-                want_res: Order::Ordered,
-                want_err: false,
+                want_res: Some(Order::Ordered),
             },
             Test {
                 ordering: "UNKNOWN_ORDER",
-                want_res: Order::None,
-                want_err: true,
+                want_res: None,
             },
         ]
         .into_iter()
@@ -600,11 +596,8 @@ mod tests {
 
         for test in tests {
             match Order::from_str(test.ordering) {
-                Ok(res) => {
-                    assert!(!test.want_err);
-                    assert_eq!(test.want_res, res);
-                }
-                Err(_) => assert!(test.want_err, "parse failed"),
+                Ok(res) => assert_eq!(test.want_res, Some(res)),
+                Err(_) => assert!(test.want_res.is_none(), "parse failed"),
             }
         }
     }
