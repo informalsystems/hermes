@@ -4,7 +4,7 @@
 //!   state is correctly set to (INITUPGRADE, OPEN) and that the Version, Ordering and
 //!   ConnectionHops are not yet modified.
 //!
-//! - `ChannelUpgradeInitHandshake` tests that after the `ChanUpgradeInit` and
+//! - `ChannelUpgradeInitHandshake` tests that after the `ChanUpgradeTry` and
 //!   `ChanUpgradeTry` steps, the state is correctly set to (INITUPGRADE, TRYUPGRADE)
 //!   and that the Version, Ordering and ConnectionHops are not yet modified.
 
