@@ -1,3 +1,13 @@
+//! This test covers the intermediary steps of the channel upgrade handshake:
+//!
+//! - `ChannelUpgradeInitHandshake` tests that after the `ChanUpgradeInit` step, the
+//!   state is correctly set to (INITUPGRADE, OPEN) and that the Version, Ordering and
+//!   ConnectionHops are not yet modified.
+//!
+//! - `ChannelUpgradeInitHandshake` tests that after the `ChanUpgradeInit` and
+//!   `ChanUpgradeTry` steps, the state is correctly set to (INITUPGRADE, TRYUPGRADE)
+//!   and that the Version, Ordering and ConnectionHops are not yet modified.
+
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::version::Version};
@@ -5,7 +15,7 @@ use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_init,
     assert_eventually_channel_upgrade_try, init_channel_upgrade, try_channel_upgrade,
-    ChannelUpgradeAssertionAttributes,
+    ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -91,11 +101,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
         let new_ordering = None;
         let new_connection_hops = None;
 
-        let upgrade_attrs = ChannelUpgradeAssertionAttributes::new(
-            old_version.clone(),
-            old_ordering,
-            old_connection_hops_a.clone(),
-            old_connection_hops_b.clone(),
+        let upgrade_attrs = ChannelUpgradableAttributes::new(
             old_version,
             old_ordering,
             old_connection_hops_a,
@@ -208,11 +214,7 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
         let new_ordering = None;
         let new_connection_hops = None;
 
-        let upgrade_attrs = ChannelUpgradeAssertionAttributes::new(
-            old_version.clone(),
-            old_ordering,
-            old_connection_hops_a.clone(),
-            old_connection_hops_b.clone(),
+        let upgrade_attrs = ChannelUpgradableAttributes::new(
             old_version,
             old_ordering,
             old_connection_hops_a,
