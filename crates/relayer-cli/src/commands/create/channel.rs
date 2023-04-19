@@ -13,7 +13,7 @@ use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 
@@ -106,7 +106,7 @@ pub struct CreateChannelCommand {
         help = "The channel ordering, valid options 'unordered' (default) and 'ordered'",
         default_value_t
     )]
-    order: Order,
+    order: Ordering,
 
     #[clap(
         long = "channel-version",
@@ -275,7 +275,7 @@ mod tests {
     use super::CreateChannelCommand;
     use abscissa_core::clap::Parser;
 
-    use ibc_relayer_types::core::ics04_channel::channel::Order;
+    use ibc_relayer_types::core::ics04_channel::channel::Ordering;
     use ibc_relayer_types::core::ics04_channel::version::Version;
     use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 
@@ -288,7 +288,7 @@ mod tests {
                 connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
-                order: Order::Unordered,
+                order: Ordering::Unordered,
                 version: None,
                 new_client_connection: false,
                 yes: false
@@ -316,7 +316,7 @@ mod tests {
                 connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
-                order: Order::Unordered,
+                order: Ordering::Unordered,
                 version: Some(Version::new("v1".to_owned())),
                 new_client_connection: false,
                 yes: false
@@ -346,7 +346,7 @@ mod tests {
                 connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
-                order: Order::Ordered,
+                order: Ordering::Ordered,
                 version: None,
                 new_client_connection: false,
                 yes: false
@@ -376,7 +376,7 @@ mod tests {
                 connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
-                order: Order::Unordered,
+                order: Ordering::Unordered,
                 version: None,
                 new_client_connection: false,
                 yes: false
@@ -462,7 +462,7 @@ mod tests {
                 connection_a: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
-                order: Order::Unordered,
+                order: Ordering::Unordered,
                 version: None,
                 new_client_connection: true,
                 yes: false
@@ -491,7 +491,7 @@ mod tests {
                 connection_a: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
-                order: Order::Unordered,
+                order: Ordering::Unordered,
                 version: None,
                 new_client_connection: true,
                 yes: true
@@ -521,7 +521,7 @@ mod tests {
                 connection_a: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
-                order: Order::Unordered,
+                order: Ordering::Unordered,
                 version: None,
                 new_client_connection: true,
                 yes: false

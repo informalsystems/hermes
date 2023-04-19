@@ -5,7 +5,7 @@
 use eyre::{eyre, Report as Error};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::{Channel, ChannelSide};
-use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use tracing::{debug, info};
@@ -20,7 +20,7 @@ use crate::types::tagged::*;
 use crate::util::random::random_u64_range;
 
 pub struct BootstrapChannelOptions {
-    pub order: Order,
+    pub order: Ordering,
     pub version: Version,
     pub pad_channel_id_a: u64,
     pub pad_channel_id_b: u64,
@@ -171,7 +171,7 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
         );
 
         let channel: Channel<ChainB, ChainA> = Channel {
-            ordering: Order::Unordered,
+            ordering: Ordering::Unordered,
             a_side: ChannelSide::new(
                 chain_b.clone(),
                 client_id_b.value().clone(),
@@ -200,7 +200,7 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
 impl Default for BootstrapChannelOptions {
     fn default() -> Self {
         Self {
-            order: Order::Unordered,
+            order: Ordering::Unordered,
             version: Version::ics20(),
             pad_channel_id_a: 0,
             pad_channel_id_b: 1,
@@ -209,7 +209,7 @@ impl Default for BootstrapChannelOptions {
 }
 
 impl BootstrapChannelOptions {
-    pub fn order(mut self, order: Order) -> Self {
+    pub fn order(mut self, order: Ordering) -> Self {
         self.order = order;
         self
     }
