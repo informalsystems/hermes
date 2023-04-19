@@ -1499,10 +1499,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             return Err(ChannelError::invalid_channel_upgrade_state());
         }
 
-        let new_ordering = new_ordering.unwrap_or(Default::default());
+        if let Some(new_ordering) = new_ordering {
+            if new_ordering == Order::Uninitialized || new_ordering > channel_end.ordering {
+                return Err(ChannelError::invalid_channel_upgrade_ordering());
+            }
 
-        if new_ordering > channel_end.ordering {
-            return Err(ChannelError::invalid_channel_upgrade_ordering());
+            channel_end.ordering = new_ordering;
         }
 
         // Build the proposed channel end
@@ -1515,8 +1517,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         channel_end.state = State::InitUpgrade;
-
-        channel_end.ordering = new_ordering;
 
         // Build the domain type message
         let signer = self
