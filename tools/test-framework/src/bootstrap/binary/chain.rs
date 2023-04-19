@@ -238,7 +238,7 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
 }
 
 /**
-   Create a new [`SharedRegistry`] that uses [`CountingAndCachingChainHandle`]
+   Create a new [`SharedRegistry`] that uses [`ibc_relayer::chain::handle::CountingAndCachingChainHandle`]
    as the [`ChainHandle`] implementation.
 */
 // FIXME: Temporarily disable CachingChainHandle for Chain Upgrade tests as the
