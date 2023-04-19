@@ -338,6 +338,132 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
     )
 }
 
+pub fn ack_channel_upgrade<ChainA: ChainHandle, ChainB: ChainHandle>(
+    _handle_a: &ChainA,
+    _handle_b: &ChainB,
+    _channel: Channel<ChainA, ChainB>,
+) { // -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainB, ChainA>), Error> {
+     //let event = channel.build_chan_upgrade_ack_and_send()?;
+     //let channel_id = extract_channel_id(&event)?.clone();
+     //let channel2 = Channel::restore_from_event(handle_b.clone(), handle_a.clone(), event)?;
+     //Ok((DualTagged::new(channel_id), channel2))
+}
+
+/// The field modified by the channel upgrade is only updated when the channel returns
+/// in the OPEN State
+pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    upgrade_attrs: &ChannelUpgradableAttributes,
+    assert_version: &Version,
+    assert_ordering: &Ordering,
+    assert_connection_hops: &Vec<ConnectionId>,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel upgrade should be initialised",
+        20,
+        Duration::from_secs(1),
+        || {
+            let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
+
+            if !channel_end_a
+                .value()
+                .state_matches(&ChannelState::TryUpgrade)
+            {
+                return Err(Error::generic(eyre!(
+                    "expected channel end A to `OPEN`, but is instead `{}`",
+                    channel_end_a.value().state()
+                )));
+            }
+
+            if !channel_end_a.value().version_matches(assert_version) {
+                return Err(Error::generic(eyre!(
+                    "expected channel end A version to be `{}`, but it is instead `{}`",
+                    assert_version,
+                    channel_end_a.value().version()
+                )));
+            }
+
+            if !channel_end_a.value().order_matches(assert_ordering) {
+                return Err(Error::generic(eyre!(
+                    "expected channel end A ordering to be `{}`, but it is instead `{}`",
+                    assert_ordering,
+                    channel_end_a.value().ordering()
+                )));
+            }
+
+            if !channel_end_a
+                .value()
+                .connection_hops_matches(assert_connection_hops)
+            {
+                return Err(Error::generic(eyre!(
+                    "expected channel end A connection hops to be `{:?}`, but it is instead `{:?}`",
+                    assert_connection_hops,
+                    channel_end_a.value().connection_hops()
+                )));
+            }
+
+            let channel_id_b = channel_end_a
+                .tagged_counterparty_channel_id()
+                .ok_or_else(|| {
+                    eyre!("expected counterparty channel id to present on open channel")
+                })?;
+
+            let port_id_b = channel_end_a.tagged_counterparty_port_id();
+
+            let channel_end_b =
+                query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
+
+            if !channel_end_b
+                .value()
+                .state_matches(&ChannelState::TryUpgrade)
+            {
+                return Err(Error::generic(eyre!(
+                    "expected channel end A to `TRYUPGRADE`, but is instead `{}`",
+                    channel_end_a.value().state()
+                )));
+            }
+
+            if !channel_end_b
+                .value()
+                .version_matches(upgrade_attrs.version())
+            {
+                return Err(Error::generic(eyre!(
+                    "expected channel end B version to be `{}`, but it is instead `{}`",
+                    upgrade_attrs.version(),
+                    channel_end_b.value().version()
+                )));
+            }
+
+            if !channel_end_b
+                .value()
+                .order_matches(upgrade_attrs.ordering())
+            {
+                return Err(Error::generic(eyre!(
+                    "expected channel end B ordering to be `{}`, but it is instead `{}`",
+                    upgrade_attrs.ordering(),
+                    channel_end_b.value().ordering()
+                )));
+            }
+
+            if !channel_end_b
+                .value()
+                .connection_hops_matches(upgrade_attrs.connection_hops_b())
+            {
+                return Err(Error::generic(eyre!(
+                    "expected channel end B connection hops to be `{:?}`, but it is instead `{:?}`",
+                    upgrade_attrs.connection_hops_b(),
+                    channel_end_b.value().connection_hops()
+                )));
+            }
+
+            Ok(channel_id_b)
+        },
+    )
+}
+
 fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     a_side_state: ChannelState,
     b_side_state: ChannelState,
