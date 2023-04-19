@@ -424,9 +424,9 @@ impl State {
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            4 => Ok(Self::InitUpgrade),
-            5 => Ok(Self::TryUpgrade),
-            6 => Ok(Self::Closed),
+            4 => Ok(Self::Closed),
+            5 => Ok(Self::InitUpgrade),
+            6 => Ok(Self::TryUpgrade),
             _ => Err(Error::unknown_state(s)),
         }
     }
@@ -451,9 +451,20 @@ impl State {
     /// assert!(!State::Closed.less_or_equal_progress(State::Open));
     /// ```
     pub fn less_or_equal_progress(self, other: Self) -> bool {
-        // TODO: Rewrite this function to explicitly compare the states, not relying
-        // on their integer representations.
-        self as u32 <= other as u32
+        use State::*;
+
+        match self {
+            Uninitialized => true,
+
+            Init => !matches!(other, Uninitialized),
+            TryOpen => !matches!(other, Uninitialized | Init),
+            Open => !matches!(other, Uninitialized | Init | TryOpen),
+
+            InitUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open),
+            TryUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open | InitUpgrade),
+
+            Closed => false,
+        }
     }
 }
 

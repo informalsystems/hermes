@@ -1,4 +1,5 @@
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
+use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::version::Version};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
@@ -55,6 +56,19 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
         )?;
 
         let channel_end_a = chains
+            .handle_b
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channels.port_b.0.clone(),
+                    channel_id: channels.channel_id_b.0.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+
+        let channel_end_b = chains
             .handle_a
             .query_channel(
                 QueryChannelRequest {
@@ -65,32 +79,35 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
                 IncludeProof::No,
             )
             .map(|(channel_end, _)| channel_end)
-            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+            .map_err(|e| eyre!("Error querying ChannelEnd B: {e}"))?;
 
         let old_version = channel_end_a.version;
         let old_ordering = channel_end_a.ordering;
-        let old_connection_hops = channel_end_a.connection_hops;
+        let old_connection_hops_a = channel_end_a.connection_hops;
+        let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
         let new_version = Version::ics20_with_fee();
         let new_ordering = None;
         let new_connection_hops = None;
 
-        // Only Version is changed in this test.
         let upgrade_attrs = ChannelUpgradeAssertionAttributes::new(
+            old_version.clone(),
+            old_ordering,
+            old_connection_hops_a.clone(),
+            old_connection_hops_b.clone(),
             old_version,
             old_ordering,
-            old_connection_hops.clone(),
-            new_version.clone(),
-            old_ordering,
-            old_connection_hops,
+            old_connection_hops_a,
+            old_connection_hops_b,
         );
 
         let timeout_height = Height::new(
-            ChainId::chain_version(chains.chain_id_a().0.to_string().as_str()),
-            60,
+            ChainId::chain_version(chains.chain_id_b().0.to_string().as_str()),
+            120,
         )
         .map_err(|e| eyre!("error creating height for timeout height: {e}"))?;
+        let timeout = UpgradeTimeout::Height(timeout_height);
 
         info!("Initialise channel upgrade process...");
 
@@ -101,8 +118,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
             Some(new_version),
             new_ordering,
             new_connection_hops,
-            Some(timeout_height),
-            None,
+            timeout,
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
@@ -157,6 +173,19 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
         )?;
 
         let channel_end_a = chains
+            .handle_b
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channels.port_b.0.clone(),
+                    channel_id: channels.channel_id_b.0.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+
+        let channel_end_b = chains
             .handle_a
             .query_channel(
                 QueryChannelRequest {
@@ -167,42 +196,35 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
                 IncludeProof::No,
             )
             .map(|(channel_end, _)| channel_end)
-            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+            .map_err(|e| eyre!("Error querying ChannelEnd B: {e}"))?;
 
         let old_version = channel_end_a.version;
         let old_ordering = channel_end_a.ordering;
-        let old_connection_hops = channel_end_a.connection_hops;
+        let old_connection_hops_a = channel_end_a.connection_hops;
+        let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
         let new_version = Version::ics20_with_fee();
         let new_ordering = None;
         let new_connection_hops = None;
 
-        // Only Version is changed in this test.
-        let init_upgrade_attrs = ChannelUpgradeAssertionAttributes::new(
+        let upgrade_attrs = ChannelUpgradeAssertionAttributes::new(
+            old_version.clone(),
+            old_ordering,
+            old_connection_hops_a.clone(),
+            old_connection_hops_b.clone(),
             old_version,
             old_ordering,
-            old_connection_hops.clone(),
-            new_version.clone(),
-            old_ordering,
-            old_connection_hops.clone(),
-        );
-
-        // Only Version is changed in this test.
-        let try_upgrade_attrs = ChannelUpgradeAssertionAttributes::new(
-            new_version.clone(),
-            old_ordering,
-            old_connection_hops.clone(),
-            new_version.clone(),
-            old_ordering,
-            old_connection_hops,
+            old_connection_hops_a,
+            old_connection_hops_b,
         );
 
         let timeout_height = Height::new(
-            ChainId::chain_version(chains.chain_id_a().0.to_string().as_str()),
-            60,
+            ChainId::chain_version(chains.chain_id_b().0.to_string().as_str()),
+            120,
         )
         .map_err(|e| eyre!("error creating height for timeout height: {e}"))?;
+        let timeout = UpgradeTimeout::Height(timeout_height);
 
         info!("Set channel in (INITUPGRADE, OPEN) state...");
 
@@ -213,8 +235,7 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
             Some(new_version),
             new_ordering,
             new_connection_hops,
-            Some(timeout_height),
-            None,
+            timeout,
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
@@ -224,7 +245,7 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
             &chains.handle_a,
             &channel_id_on_b.as_ref(),
             &channels.port_b.as_ref(),
-            &init_upgrade_attrs,
+            &upgrade_attrs,
         )?;
 
         info!("Set channel in (INITUPGRADE, TRYUPGRADE) state...");
@@ -237,7 +258,7 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
             &chains.handle_a,
             &channel_id_on_b.as_ref(),
             &channels.port_b.as_ref(),
-            &try_upgrade_attrs,
+            &upgrade_attrs,
         )?;
 
         Ok(())

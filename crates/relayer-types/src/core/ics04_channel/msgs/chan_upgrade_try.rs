@@ -167,7 +167,7 @@ pub mod test_util {
     use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
     use crate::prelude::*;
-    use crate::test_utils::get_dummy_bech32_account;
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
     /// Returns a dummy `RawMsgChannelUpgradeTry`, for testing only!
     pub fn get_dummy_raw_msg_chan_upgrade_try() -> RawMsgChannelUpgradeTry {
@@ -183,9 +183,9 @@ pub mod test_util {
                 revision_height: 1,
             }),
             timeout_timestamp: 1681737922,
-            proof_channel: vec![],
-            proof_upgrade_timeout: vec![],
-            proof_upgrade_sequence: vec![],
+            proof_channel: get_dummy_proof(),
+            proof_upgrade_timeout: get_dummy_proof(),
+            proof_upgrade_sequence: get_dummy_proof(),
             proof_height: Some(Height {
                 revision_number: 1,
                 revision_height: 1,
@@ -265,10 +265,34 @@ mod tests {
                 name: "Channel name too long".to_string(),
                 raw: RawMsgChannelUpgradeTry {
                     channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
-                    ..default_raw_msg
+                    ..default_raw_msg.clone()
                 },
                 want_pass: false,
             },
+            Test {
+                name: "Empty proof channel".to_string(),
+                raw: RawMsgChannelUpgradeTry {
+                    proof_channel: vec![],
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Empty proof upgrade timeout".to_string(),
+                raw: RawMsgChannelUpgradeTry {
+                    proof_upgrade_timeout: vec![],
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Empty proof upgrade sequence".to_string(),
+                raw: RawMsgChannelUpgradeTry {
+                    proof_upgrade_sequence: vec![],
+                    ..default_raw_msg
+                },
+                want_pass: false,
+            }
         ]
         .into_iter()
         .collect();

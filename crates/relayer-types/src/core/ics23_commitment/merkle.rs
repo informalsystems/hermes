@@ -28,7 +28,7 @@ impl From<CommitmentRoot> for MerkleRoot {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
 }
