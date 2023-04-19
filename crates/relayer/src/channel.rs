@@ -1598,6 +1598,7 @@ pub fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> 
         IbcEvent::OpenTryChannel(ev) => ev.channel_id(),
         IbcEvent::OpenAckChannel(ev) => ev.channel_id(),
         IbcEvent::OpenConfirmChannel(ev) => ev.channel_id(),
+        IbcEvent::UpgradeInitChannel(ev) => Some(ev.channel_id()),
         _ => None,
     }
     .ok_or_else(|| ChannelError::missing_event("cannot extract channel_id from result".to_string()))
