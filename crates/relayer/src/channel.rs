@@ -17,8 +17,8 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelO
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_try::MsgChannelUpgradeTry;
 use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
-use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -1585,12 +1585,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .src_channel_id()
             .ok_or_else(ChannelError::missing_local_channel_id)?;
 
+        let src_port_id = self.src_port_id();
+
         // Channel must exist on the souce chain
-        let (channe_end, maybe_channel_proof) = self
+        let (channel_end, maybe_channel_proof) = self
             .src_chain()
             .query_channel(
                 QueryChannelRequest {
-                    port_id: self.src_port_id().clone(),
+                    port_id: src_port_id.clone(),
                     channel_id: src_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
@@ -1608,6 +1610,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ));
         }
 
+        let mut proposed_upgrade_channel = channel_end.clone();
+
         let Some(channel_proof) = maybe_channel_proof else {
             return Err(ChannelError::missing_channel_proof());
         };
@@ -1618,7 +1622,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             return Err(ChannelError::invalid_channel_upgrade_state());
         }
 
-        channel_end.state = State::TryUpgrade;
+        proposed_upgrade_channel.state = State::TryUpgrade;
 
         let signer = self
             .dst_chain()
@@ -1627,11 +1631,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Build the domain type message
         let new_msg = MsgChannelUpgradeTry {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            proposed_upgrade_channel: channel_end,
+            port_id: src_port_id.clone(),
+            channel_id: src_channel_id.clone(),
+            proposed_upgrade_channel,
             signer,
-            counterparty_channel,
+            counterparty_channel: channel_end,
             counterparty_sequence,
             timeout,
             proof_channel: channel_proof_bytes,
