@@ -3,8 +3,9 @@ use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, Order};
-use ibc_relayer_types::core::ics04_channel::channel::{Ordering, State as ChannelState};
+use ibc_relayer_types::core::ics04_channel::channel::{
+    ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState,
+};
 use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
@@ -114,7 +115,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainB, ChainA>), Error> {
     let channel = Channel {
         connection_delay: Default::default(),
-        ordering: Order::Unordered,
+        ordering: Ordering::Unordered,
         a_side: ChannelSide::new(
             handle_a.clone(),
             client_id_a.cloned_value(),
@@ -151,7 +152,7 @@ pub fn init_channel_optimistic<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
     let channel = Channel {
         connection_delay: Default::default(),
-        ordering: Order::Unordered,
+        ordering: Ordering::Unordered,
         a_side: ChannelSide::new(
             handle_a.clone(),
             client_id_a.cloned_value(),
@@ -282,7 +283,7 @@ pub fn init_channel_upgrade<ChainA: ChainHandle, ChainB: ChainHandle>(
     handle_b: &ChainB,
     channel: Channel<ChainA, ChainB>,
     new_version: Option<Version>,
-    new_ordering: Option<Order>,
+    new_ordering: Option<Ordering>,
     new_connection_hops: Option<Vec<ConnectionId>>,
     timeout: UpgradeTimeout,
 ) -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainB, ChainA>), Error> {

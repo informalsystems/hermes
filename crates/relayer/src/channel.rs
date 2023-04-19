@@ -8,7 +8,7 @@ use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
 use ibc_relayer_types::core::ics04_channel::channel::{
-    ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State,
+    ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State,
 };
 use ibc_relayer_types::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
@@ -167,7 +167,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
 #[derive(Clone, Debug, Serialize)]
 #[serde(bound(serialize = "(): Serialize"))]
 pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
-    pub ordering: Order,
+    pub ordering: Ordering,
     pub a_side: ChannelSide<ChainA>,
     pub b_side: ChannelSide<ChainB>,
     pub connection_delay: Duration,
@@ -191,7 +191,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     /// set-up on both sides of the connection, this functions also fulfils the channel handshake.
     pub fn new(
         connection: Connection<ChainA, ChainB>,
-        ordering: Order,
+        ordering: Ordering,
         a_port: PortId,
         b_port: PortId,
         version: Option<Version>,
@@ -1471,7 +1471,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_upgrade_init(
         &self,
         new_version: Option<Version>,
-        new_ordering: Option<Order>,
+        new_ordering: Option<Ordering>,
         new_connection_hops: Option<Vec<ConnectionId>>,
         timeout: UpgradeTimeout,
     ) -> Result<Vec<Any>, ChannelError> {
@@ -1500,7 +1500,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         if let Some(new_ordering) = new_ordering {
-            if new_ordering == Order::Uninitialized || new_ordering > channel_end.ordering {
+            if new_ordering == Ordering::Uninitialized || new_ordering > channel_end.ordering {
                 return Err(ChannelError::invalid_channel_upgrade_ordering());
             }
 
@@ -1541,7 +1541,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_upgrade_init_and_send(
         &self,
         new_version: Option<Version>,
-        new_ordering: Option<Order>,
+        new_ordering: Option<Ordering>,
         new_connection_hops: Option<Vec<ConnectionId>>,
         timeout: UpgradeTimeout,
     ) -> Result<IbcEvent, ChannelError> {

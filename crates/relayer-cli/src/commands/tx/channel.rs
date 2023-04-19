@@ -6,7 +6,7 @@ use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHe
 use ibc_relayer::channel::{Channel, ChannelSide};
 
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
-use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::{
@@ -123,7 +123,7 @@ pub struct TxChanOpenInitCmd {
         value_name = "ORDER",
         help = "The channel ordering, valid options 'unordered' (default) and 'ordered'"
     )]
-    order: Order,
+    order: Ordering,
 }
 
 impl Runnable for TxChanOpenInitCmd {
@@ -234,7 +234,7 @@ impl Runnable for TxChanOpenTryCmd {
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
                     connection_delay: Default::default(),
-                    ordering: Order::default(),
+                    ordering: Ordering::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -335,7 +335,7 @@ impl Runnable for TxChanOpenAckCmd {
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
                     connection_delay: Default::default(),
-                    ordering: Order::default(),
+                    ordering: Ordering::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -436,7 +436,7 @@ impl Runnable for TxChanOpenConfirmCmd {
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
                     connection_delay: Default::default(),
-                    ordering: Order::default(),
+                    ordering: Ordering::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -537,7 +537,7 @@ impl Runnable for TxChanCloseInitCmd {
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
                     connection_delay: Default::default(),
-                    ordering: Order::default(),
+                    ordering: Ordering::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -638,7 +638,7 @@ impl Runnable for TxChanCloseConfirmCmd {
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
                     connection_delay: Default::default(),
-                    ordering: Order::default(),
+                    ordering: Ordering::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -718,7 +718,7 @@ pub struct TxChanUpgradeInitCmd {
         value_name = "ORDERING",
         help = "Ordering of the channel that both chains will upgrade to. Note that the a channel may only be upgraded from a stricter ordering to a less strict ordering, i.e., from ORDERED to UNORDERED. Defaults to the ordering of the initiating chain if not specified."
     )]
-    ordering: Option<Order>,
+    ordering: Option<Ordering>,
 
     #[clap(
         long = "connection-hops",
@@ -766,7 +766,7 @@ impl Runnable for TxChanUpgradeInitCmd {
         // being upgraded. This channel is assumed to already exist on the destination chain.
         let channel = Channel {
             connection_delay: Default::default(),
-            ordering: Order::default(),
+            ordering: Ordering::default(),
             a_side: ChannelSide::new(
                 chains.src,
                 ClientId::default(),
@@ -889,7 +889,7 @@ mod tests {
 
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::{
-        ics04_channel::channel::Order,
+        ics04_channel::channel::Ordering,
         ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId},
     };
 
@@ -902,7 +902,7 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 dst_port_id: PortId::from_str("port_b").unwrap(),
                 src_port_id: PortId::from_str("port_a").unwrap(),
-                order: Order::Unordered
+                order: Ordering::Unordered
             },
             TxChanOpenInitCmd::parse_from([
                 "test",
@@ -929,7 +929,7 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 dst_port_id: PortId::from_str("port_b").unwrap(),
                 src_port_id: PortId::from_str("port_a").unwrap(),
-                order: Order::Ordered
+                order: Ordering::Ordered
             },
             TxChanOpenInitCmd::parse_from([
                 "test",
@@ -958,7 +958,7 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 dst_port_id: PortId::from_str("port_b").unwrap(),
                 src_port_id: PortId::from_str("port_a").unwrap(),
-                order: Order::Unordered
+                order: Ordering::Unordered
             },
             TxChanOpenInitCmd::parse_from([
                 "test",
