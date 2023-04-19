@@ -80,11 +80,13 @@ impl From<Ics23ProofSpec> for ProofSpec {
 impl From<ProofSpec> for Ics23ProofSpec {
     fn from(spec: ProofSpec) -> Self {
         let spec = spec.0;
+
         Ics23ProofSpec {
             leaf_spec: spec.leaf_spec.map(|lop| LeafOp(lop).into()),
             inner_spec: spec.inner_spec.map(|ispec| InnerSpec(ispec).into()),
             max_depth: spec.max_depth,
             min_depth: spec.min_depth,
+            prehash_key_before_comparison: false,
         }
     }
 }
