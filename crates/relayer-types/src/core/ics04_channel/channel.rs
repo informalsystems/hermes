@@ -76,7 +76,7 @@ impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelEnd {
     pub state: State,
-    pub ordering: Order,
+    pub ordering: Ordering,
     pub remote: Counterparty,
     pub connection_hops: Vec<ConnectionId>,
     pub version: Version,
@@ -116,7 +116,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             return Ok(ChannelEnd::default());
         }
 
-        let chan_ordering = Order::from_i32(value.ordering)?;
+        let chan_ordering = Ordering::from_i32(value.ordering)?;
 
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
         let remote = value
@@ -164,7 +164,7 @@ impl ChannelEnd {
     /// Creates a new ChannelEnd in state Uninitialized and other fields parametrized.
     pub fn new(
         state: State,
-        ordering: Order,
+        ordering: Ordering,
         remote: Counterparty,
         connection_hops: Vec<ConnectionId>,
         version: Version,
@@ -200,7 +200,7 @@ impl ChannelEnd {
         &self.state
     }
 
-    pub fn ordering(&self) -> &Order {
+    pub fn ordering(&self) -> &Ordering {
         &self.ordering
     }
 
@@ -232,7 +232,7 @@ impl ChannelEnd {
     }
 
     /// Helper function to compare the order of this end with another order.
-    pub fn order_matches(&self, other: &Order) -> bool {
+    pub fn order_matches(&self, other: &Ordering) -> bool {
         self.ordering.eq(other)
     }
 
@@ -324,20 +324,20 @@ impl From<Counterparty> for RawCounterparty {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, Default)]
-pub enum Order {
+pub enum Ordering {
     Uninitialized = 0,
     #[default]
     Unordered = 1,
     Ordered = 2,
 }
 
-impl Display for Order {
+impl Display for Ordering {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.as_str())
     }
 }
 
-impl Order {
+impl Ordering {
     /// Yields the Order as a string
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -359,7 +359,7 @@ impl Order {
     }
 }
 
-impl FromStr for Order {
+impl FromStr for Ordering {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -567,24 +567,24 @@ mod tests {
 
     #[test]
     fn parse_channel_ordering_type() {
-        use super::Order;
+        use super::Ordering;
 
         struct Test {
             ordering: &'static str,
-            want_res: Option<Order>,
+            want_res: Option<Ordering>,
         }
         let tests: Vec<Test> = vec![
             Test {
                 ordering: "UNINITIALIZED",
-                want_res: Some(Order::Uninitialized),
+                want_res: Some(Ordering::Uninitialized),
             },
             Test {
                 ordering: "UNORDERED",
-                want_res: Some(Order::Unordered),
+                want_res: Some(Ordering::Unordered),
             },
             Test {
                 ordering: "ORDERED",
-                want_res: Some(Order::Ordered),
+                want_res: Some(Ordering::Ordered),
             },
             Test {
                 ordering: "UNKNOWN_ORDER",
@@ -595,7 +595,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            match Order::from_str(test.ordering) {
+            match Ordering::from_str(test.ordering) {
                 Ok(res) => assert_eq!(test.want_res, Some(res)),
                 Err(_) => assert!(test.want_res.is_none(), "parse failed"),
             }

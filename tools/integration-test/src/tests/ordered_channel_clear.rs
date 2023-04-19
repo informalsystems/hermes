@@ -56,8 +56,8 @@ impl TestOverrides for OrderedChannelClearTest {
         false
     }
 
-    fn channel_order(&self) -> Order {
-        Order::Ordered
+    fn channel_order(&self) -> Ordering {
+        Ordering::Ordered
     }
 }
 
@@ -183,8 +183,8 @@ impl TestOverrides for OrderedChannelClearEqualCLITest {
         false
     }
 
-    fn channel_order(&self) -> Order {
-        Order::Ordered
+    fn channel_order(&self) -> Ordering {
+        Ordering::Ordered
     }
 }
 
