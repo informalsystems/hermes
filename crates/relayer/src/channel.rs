@@ -1624,6 +1624,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ));
         }
 
+        let counterparty_ordering = channel_end.ordering();
+
+        if *counterparty_ordering != self.ordering {
+            return Err(ChannelError::invalid_ordering(
+                counterparty_ordering,
+                self.ordering,
+            ));
+        }
+
         let mut proposed_upgrade_channel = channel_end.clone();
 
         let Some(channel_proof) = maybe_channel_proof else {

@@ -74,6 +74,16 @@ define_error! {
             [ RelayerError ]
             |_| { "failed to build channel proofs" },
 
+        InvalidOrdering
+            {
+                channel_ordering: Ordering,
+                counterparty_ordering: Ordering,
+            }
+            | e | {
+                format_args!("channel ordering '{0}' does not match counterparty ordering '{1}'",
+                    e.channel_ordering, e.counterparty_ordering)
+            },
+
         ClientOperation
             {
                 client_id: ClientId,

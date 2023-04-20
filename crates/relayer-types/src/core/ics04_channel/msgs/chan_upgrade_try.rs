@@ -19,16 +19,24 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeTry";
 /// handshake (the `ChanUpgradeTry` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelUpgradeTry {
+    /// The port identifier of the counterparty chain (the upgrade handshake originator).
     pub port_id: PortId,
+    /// The channel identifier of the counterparty chain (the upgrade handshake originator).
     pub channel_id: ChannelId,
     pub signer: Signer,
+    /// The channel end of the counterparty chain.
     pub counterparty_channel: ChannelEnd,
+    /// The sequence number of the counterparty channel end. This is used to keep track 
+    /// of how many upgrade attempts have occurred for the given channel.
     pub counterparty_sequence: u64,
+    /// The ultimate state of the channel end after the upgrade is completed.
     pub proposed_upgrade_channel: ChannelEnd,
+    /// The height and/or timestamp after which the upgrade will be timed out. 
     pub timeout: UpgradeTimeout,
     pub proof_channel: CommitmentProofBytes,
     pub proof_upgrade_timeout: CommitmentProofBytes,
     pub proof_upgrade_sequence: CommitmentProofBytes,
+    /// The height at whch the proofs were queried. 
     pub proof_height: Height,
 }
 
