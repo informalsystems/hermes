@@ -32,6 +32,7 @@ pub fn detect(
     let mut provider = make_provider(peer_id, rpc_client, client_state, trusted_block, now)?;
 
     let divergence = block_on(detect_divergence(
+        None,
         &mut provider,
         primary_trace,
         options.clock_drift,

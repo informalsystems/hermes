@@ -186,7 +186,10 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             })) => {
                 warn!("misbehavior detected, reporting evidence to RPC witness node and primary chain");
 
-                match detector::report_evidence(self.io.rpc_client().clone(), evidence) {
+                match detector::report_evidence(
+                    self.io.rpc_client().clone(),
+                    evidence.against_primary,
+                ) {
                     Ok(hash) => warn!("evidence reported to RPC witness node with hash: {hash}"),
                     Err(e) => error!("failed to report evidence to RPC witness node: {}", e),
                 }
