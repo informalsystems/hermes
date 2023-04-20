@@ -8,6 +8,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, PortChannelId, PortId,
 };
 use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::proofs::ProofError;
 
 use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
@@ -61,6 +62,13 @@ define_error! {
 
         MissingChannelOnDestination
             |_| { "missing channel on destination chain" },
+
+        MissingChannelProof
+            |_| { "missing channel proof" },
+        
+        MalformedProof
+            [ ProofError ]
+            |_| { "malformed proof" },
 
         ChannelProof
             [ RelayerError ]
