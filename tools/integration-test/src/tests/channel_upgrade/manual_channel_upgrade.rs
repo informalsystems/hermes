@@ -252,8 +252,7 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
 
         info!("Set channel in (INITUPGRADE, TRYUPGRADE) state...");
 
-        //let (channel_id_on_b, _) =
-        try_channel_upgrade(&chains.handle_a, &chains.handle_b, channel);
+        let (channel_id_on_b, _) = try_channel_upgrade(&chains.handle_a, &chains.handle_b, channel);
 
         assert_eventually_channel_upgrade_try(
             &chains.handle_b,

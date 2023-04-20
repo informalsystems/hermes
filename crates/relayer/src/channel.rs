@@ -1579,7 +1579,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
-    pub fn build_chan_upgrade_try(&self, timeout: UpgradeTimeout) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_chan_upgrade_try(
+        &self,
+        timeout: UpgradeTimeout,
+    ) -> Result<Vec<Any>, ChannelError> {
         // Source channel ID must exist
         let src_channel_id = self
             .src_channel_id()
@@ -1594,7 +1597,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     channel_id: src_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
-                IncludeProof::Yes
+                IncludeProof::Yes,
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
@@ -1612,7 +1615,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             return Err(ChannelError::missing_channel_proof());
         };
 
-        let channel_proof_bytes = CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?;
+        let channel_proof_bytes =
+            CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?;
 
         if channel_end.state != State::InitUpgrade {
             return Err(ChannelError::invalid_channel_upgrade_state());
