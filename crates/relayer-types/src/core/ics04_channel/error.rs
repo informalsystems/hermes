@@ -359,7 +359,10 @@ define_error! {
 
         AbciConversionFailed
             { abci_event: String }
-            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)}
+            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)},
+
+        ParseConnectionHopsVector
+            | _ | { "error converting vector of String to vector of ConnectionId" }
     }
 }
 
