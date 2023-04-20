@@ -1672,7 +1672,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(vec![])
     }
 
-    pub fn build_chan_upgrade_try_and_send(&self, timeout: UpgradeTimeout) -> Result<IbcEvent, ChannelError> {
+    pub fn build_chan_upgrade_try_and_send(
+        &self,
+        timeout: UpgradeTimeout,
+    ) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_upgrade_try(timeout)?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeTry");
