@@ -9,4 +9,5 @@ pub mod msgs;
 pub mod packet;
 pub mod packet_id;
 pub mod timeout;
+pub mod upgrade_fields;
 pub mod version;

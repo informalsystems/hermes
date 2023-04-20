@@ -12,6 +12,7 @@ use ibc_proto::ibc::core::channel::v1::{
     IdentifiedChannel as RawIdentifiedChannel,
 };
 
+use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics04_channel::{error::Error, version::Version};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
@@ -44,6 +45,7 @@ impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
             counterparty: value.counterparty,
             connection_hops: value.connection_hops,
             version: value.version,
+            upgrade_sequence: 0, // FIXME: proto IdentifiedChannel does not have this field, should we default to 0 ?
         };
 
         Ok(IdentifiedChannelEnd {
@@ -80,6 +82,7 @@ pub struct ChannelEnd {
     pub remote: Counterparty,
     pub connection_hops: Vec<ConnectionId>,
     pub version: Version,
+    pub upgraded_sequence: Sequence,
 }
 
 impl Display for ChannelEnd {
@@ -100,6 +103,7 @@ impl Default for ChannelEnd {
             remote: Counterparty::default(),
             connection_hops: Vec::new(),
             version: Version::default(),
+            upgraded_sequence: Sequence::from(0), // The value of 0 indicates the channel has never been upgraded
         }
     }
 }
@@ -140,6 +144,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             remote,
             connection_hops,
             version,
+            Sequence::from(value.upgrade_sequence),
         ))
     }
 }
@@ -156,6 +161,7 @@ impl From<ChannelEnd> for RawChannel {
                 .map(|v| v.as_str().to_string())
                 .collect(),
             version: value.version.to_string(),
+            upgrade_sequence: value.upgraded_sequence.into(),
         }
     }
 }
@@ -168,6 +174,7 @@ impl ChannelEnd {
         remote: Counterparty,
         connection_hops: Vec<ConnectionId>,
         version: Version,
+        upgraded_sequence: Sequence,
     ) -> Self {
         Self {
             state,
@@ -175,6 +182,7 @@ impl ChannelEnd {
             remote,
             connection_hops,
             version,
+            upgraded_sequence,
         }
     }
 
@@ -498,6 +506,7 @@ pub mod test_util {
             counterparty: Some(get_dummy_raw_counterparty()),
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
+            upgrade_sequence: 0, // The value of 0 indicates the channel has never been upgraded
         }
     }
 }
