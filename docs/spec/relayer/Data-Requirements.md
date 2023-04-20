@@ -20,6 +20,9 @@ They are ordered from lowest to highest impact roughly, i.e., the first endpoint
     - Specifically, used for fetching `consensus_params.block.max_bytes` and `consensus_params.block.max_gas` parameters.
     - Not needed for IBC relaying strictly speaking.
     - Only used once, at relayer startup during health check.
+    - **Response fields used:**
+        - `block.max_bytes`
+        - `block.max_gas`
 
 - `/status`: Used in two situations:
   1. At relayer startup to fetch `node_info.id`, for initializing the light client component.
@@ -58,14 +61,25 @@ They are ordered from lowest to highest impact roughly, i.e., the first endpoint
         - Pattern: `send_packet.packet_src_channel == X && send_packet.packet_src_port == X && send_packet.packet_dst_channel == X && send_packet.packet_dst_port == X && send_packet.packet_sequence == X`. Also for `write_acknowledgement` packet events.
         - Used relatively often, on start and then for every `z` blocks, where `clear_interval = z` (default `z = 100`).
 
+  5. **Response fields used**:
+    - `txs[].height`
+    - `txs[].tx_result.events`
+
 - `/block_search`: The use-case is identical to point (4) from `/tx_search`. We use it to obtain packet events from block data, used relatively often, on start and then for every `z` blocks, where `clear_interval = z` (default `z = 100`).
     - Pattern: `send_packet.packet_src_channel == X && send_packet.packet_src_port == X && send_packet.packet_dst_channel == X && send_packet.packet_dst_port == X && send_packet.packet_sequence == X`. Also for `write_acknowledgement` packet events.
     - Note: Always used in conjunction with `block_results`.
+    - **Response fields used:**
+        - `blocks[].block.header.height`
 
 - `/block_results`: Used in two situations ([diagram for reference](https://app.excalidraw.com/l/4XqkU6POmGI/9jbKsT6mHxf)):
   1. Identical to point (4) from `/tx_search`: Used In conjunction with `block_search` and `tx_search` for periodic packet clearing.
       - Pattern: `/block_search?height=X` where X is a specific height where a block has relevant packet events.
   2. For CLIs `tx packet-recv` and `tx packet-ack` when the user passes the flag `--packet-data-query-height=X`.
+  3. **Response fields used:**
+     - `begin_block_events`
+     - `end_block_events`
+     - `height`
+     - `tx_results[].events`
 
 - `/broadcast_tx_sync`
   - For submitting transactions into the mempool.
