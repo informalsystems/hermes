@@ -1672,6 +1672,39 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(vec![])
     }
 
+    pub fn build_chan_upgrade_try_and_send(&self, timeout: UpgradeTimeout) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs = self.build_chan_upgrade_try(timeout)?;
+
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeTry");
+
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+
+        // Find the relevant event for channel upgrade try
+        let result = events
+            .into_iter()
+            .find(|event_with_height| {
+                matches!(event_with_height.event, IbcEvent::UpgradeTryChannel(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no channel upgrade try event was in the response".to_string(),
+                )
+            })?;
+
+        match &result.event {
+            IbcEvent::UpgradeTryChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
+        }
+    }
+
     pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
         self,
         mapper_a: impl Fn(ChainA) -> ChainC,
