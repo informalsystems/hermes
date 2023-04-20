@@ -35,6 +35,7 @@ impl TryFrom<RawUpgradeFields> for UpgradeFields {
 
     fn try_from(value: RawUpgradeFields) -> Result<Self, Self::Error> {
         let ordering = Ordering::from_i32(value.ordering)?;
+
         let (connection_hops, failures): (Vec<_>, Vec<_>) = value
             .connection_hops
             .iter()
@@ -42,10 +43,11 @@ impl TryFrom<RawUpgradeFields> for UpgradeFields {
                 Ok(connection_id) => itertools::Either::Left(connection_id),
                 Err(e) => itertools::Either::Right((id.clone(), e)),
             });
+
         if !failures.is_empty() {
-            // FIXME use failure vector to output more information
-            return Err(Self::Error::parse_connection_hops_vector());
+            return Err(Self::Error::parse_connection_hops_vector(failures));
         }
+
         let version = Version::from(value.version);
 
         Ok(Self::new(ordering, connection_hops, version))
