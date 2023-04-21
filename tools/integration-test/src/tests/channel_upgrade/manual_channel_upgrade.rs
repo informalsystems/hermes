@@ -18,10 +18,8 @@ use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::version::Version};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
-    ack_channel_upgrade, assert_eventually_channel_established,
-    assert_eventually_channel_upgrade_ack, assert_eventually_channel_upgrade_init,
-    assert_eventually_channel_upgrade_try, init_channel_upgrade, try_channel_upgrade,
-    ChannelUpgradableAttributes,
+    assert_eventually_channel_established, assert_eventually_channel_upgrade_init,
+    assert_eventually_channel_upgrade_try, assert_eventually_channel_upgrade_ack, ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -128,10 +126,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
 
         info!("Initialise channel upgrade process...");
 
-        let (channel_id_on_b, _) = init_channel_upgrade(
-            &chains.handle_a,
-            &chains.handle_b,
-            channel,
+        channel.build_chan_upgrade_init_and_send(
             Some(new_version),
             new_ordering,
             new_connection_hops,
@@ -143,7 +138,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
         assert_eventually_channel_upgrade_init(
             &chains.handle_b,
             &chains.handle_a,
-            &channel_id_on_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
             &channels.port_b.as_ref(),
             &upgrade_attrs,
         )?;
@@ -241,14 +236,11 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
 
         info!("Set channel in (INITUPGRADE, OPEN) state...");
 
-        let (channel_id_on_b, _) = init_channel_upgrade(
-            &chains.handle_a,
-            &chains.handle_b,
-            channel.clone(),
+        channel.build_chan_upgrade_init_and_send(
             Some(new_version),
             new_ordering,
             new_connection_hops,
-            timeout,
+            timeout.clone(),
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
@@ -256,20 +248,21 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
         assert_eventually_channel_upgrade_init(
             &chains.handle_b,
             &chains.handle_a,
-            &channel_id_on_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
             &channels.port_b.as_ref(),
             &upgrade_attrs,
         )?;
 
         info!("Set channel in (INITUPGRADE, TRYUPGRADE) state...");
 
-        //let (channel_id_on_b, _) =
-        try_channel_upgrade(&chains.handle_a, &chains.handle_b, channel);
+        // FIXME: waiting for build_chan_upgrade_try_and_send to be implemented
+        channel.build_chan_upgrade_try(timeout)?;
+        //channel.build_chan_upgrade_try_and_send()?;
 
         assert_eventually_channel_upgrade_try(
             &chains.handle_b,
             &chains.handle_a,
-            &channel_id_on_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
             &channels.port_b.as_ref(),
             &upgrade_attrs,
         )?;

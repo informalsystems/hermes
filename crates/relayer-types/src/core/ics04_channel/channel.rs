@@ -12,6 +12,7 @@ use ibc_proto::ibc::core::channel::v1::{
     IdentifiedChannel as RawIdentifiedChannel,
 };
 
+use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics04_channel::{error::Error, version::Version};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
@@ -44,6 +45,7 @@ impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
             counterparty: value.counterparty,
             connection_hops: value.connection_hops,
             version: value.version,
+            upgrade_sequence: 0, // FIXME: proto IdentifiedChannel does not have this field, should we default to 0 ?
         };
 
         Ok(IdentifiedChannelEnd {
@@ -76,10 +78,11 @@ impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelEnd {
     pub state: State,
-    pub ordering: Order,
+    pub ordering: Ordering,
     pub remote: Counterparty,
     pub connection_hops: Vec<ConnectionId>,
     pub version: Version,
+    pub upgraded_sequence: Sequence,
 }
 
 impl Display for ChannelEnd {
@@ -100,6 +103,7 @@ impl Default for ChannelEnd {
             remote: Counterparty::default(),
             connection_hops: Vec::new(),
             version: Version::default(),
+            upgraded_sequence: Sequence::from(0), // The value of 0 indicates the channel has never been upgraded
         }
     }
 }
@@ -116,7 +120,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             return Ok(ChannelEnd::default());
         }
 
-        let chan_ordering = Order::from_i32(value.ordering)?;
+        let chan_ordering = Ordering::from_i32(value.ordering)?;
 
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
         let remote = value
@@ -140,6 +144,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             remote,
             connection_hops,
             version,
+            Sequence::from(value.upgrade_sequence),
         ))
     }
 }
@@ -156,6 +161,7 @@ impl From<ChannelEnd> for RawChannel {
                 .map(|v| v.as_str().to_string())
                 .collect(),
             version: value.version.to_string(),
+            upgrade_sequence: value.upgraded_sequence.into(),
         }
     }
 }
@@ -164,10 +170,11 @@ impl ChannelEnd {
     /// Creates a new ChannelEnd in state Uninitialized and other fields parametrized.
     pub fn new(
         state: State,
-        ordering: Order,
+        ordering: Ordering,
         remote: Counterparty,
         connection_hops: Vec<ConnectionId>,
         version: Version,
+        upgraded_sequence: Sequence,
     ) -> Self {
         Self {
             state,
@@ -175,6 +182,7 @@ impl ChannelEnd {
             remote,
             connection_hops,
             version,
+            upgraded_sequence,
         }
     }
 
@@ -200,7 +208,7 @@ impl ChannelEnd {
         &self.state
     }
 
-    pub fn ordering(&self) -> &Order {
+    pub fn ordering(&self) -> &Ordering {
         &self.ordering
     }
 
@@ -232,7 +240,7 @@ impl ChannelEnd {
     }
 
     /// Helper function to compare the order of this end with another order.
-    pub fn order_matches(&self, other: &Order) -> bool {
+    pub fn order_matches(&self, other: &Ordering) -> bool {
         self.ordering.eq(other)
     }
 
@@ -323,23 +331,21 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
-pub type Ordering = Order;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, Default, PartialOrd, Ord)]
-pub enum Order {
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Default)]
+pub enum Ordering {
     Uninitialized = 0,
     #[default]
     Unordered = 1,
     Ordered = 2,
 }
 
-impl Display for Order {
+impl Display for Ordering {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.as_str())
     }
 }
 
-impl Order {
+impl Ordering {
     /// Yields the Order as a string
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -361,7 +367,7 @@ impl Order {
     }
 }
 
-impl FromStr for Order {
+impl FromStr for Ordering {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -500,6 +506,7 @@ pub mod test_util {
             counterparty: Some(get_dummy_raw_counterparty()),
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
+            upgrade_sequence: 0, // The value of 0 indicates the channel has never been upgraded
         }
     }
 }
@@ -607,24 +614,24 @@ mod tests {
 
     #[test]
     fn parse_channel_ordering_type() {
-        use super::Order;
+        use super::Ordering;
 
         struct Test {
             ordering: &'static str,
-            want_res: Option<Order>,
+            want_res: Option<Ordering>,
         }
         let tests: Vec<Test> = vec![
             Test {
                 ordering: "UNINITIALIZED",
-                want_res: Some(Order::Uninitialized),
+                want_res: Some(Ordering::Uninitialized),
             },
             Test {
                 ordering: "UNORDERED",
-                want_res: Some(Order::Unordered),
+                want_res: Some(Ordering::Unordered),
             },
             Test {
                 ordering: "ORDERED",
-                want_res: Some(Order::Ordered),
+                want_res: Some(Ordering::Ordered),
             },
             Test {
                 ordering: "UNKNOWN_ORDER",
@@ -635,7 +642,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            match Order::from_str(test.ordering) {
+            match Ordering::from_str(test.ordering) {
                 Ok(res) => assert_eq!(test.want_res, Some(res)),
                 Err(_) => assert!(test.want_res.is_none(), "parse failed"),
             }

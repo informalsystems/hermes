@@ -13,6 +13,7 @@ use crate::Height;
 
 use flex_error::{define_error, TraceError};
 use ibc_proto::protobuf::Error as TendermintError;
+use itertools::Itertools;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -67,9 +68,10 @@ define_error! {
         MissingNextRecvSeq
             { port_id: PortId, channel_id: ChannelId }
         | e | {
-                format_args!("Missing sequence number for receiving packets on port {0} and channel {1}",
-                             e.port_id,
-                             e.channel_id)
+                format_args!(
+                    "Missing sequence number for receiving packets on port {0} and channel {1}",
+                    e.port_id, e.channel_id
+                )
             },
 
         ZeroPacketSequence
@@ -105,6 +107,9 @@ define_error! {
 
         MissingUpgradeTimeout
             | _ | { "missing upgrade timeout, either a height or a timestamp must be set" },
+
+        MissingUpgradeFields
+            | _ | { "missing upgrade fields" },
 
         MissingProposedUpgradeChannel
             | _ | { "missing proposed upgrade channel" },
@@ -359,7 +364,18 @@ define_error! {
 
         AbciConversionFailed
             { abci_event: String }
-            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)}
+            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)},
+
+        ParseConnectionHopsVector
+            { failures: Vec<(String, ValidationError)> }
+            | e | {
+                let failures = e.failures
+                    .iter()
+                    .map(|(s, e)| format!("\"{}\": {}", s, e))
+                    .join(", ");
+
+                format!("error parsing a vector of ConnectionId: {}", failures)
+            }
     }
 }
 
