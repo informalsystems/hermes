@@ -127,8 +127,8 @@ pub trait TestOverrides {
     }
 
     /**
-       Return the channel ordering used for creating channels as [`Order`].
-       Defaults to [`Order::Unordered`].
+       Return the channel ordering used for creating channels as [`Ordering`].
+       Defaults to [`Ordering::Unordered`].
 
        Implemented for [`ChannelOrderOverride`].
     */

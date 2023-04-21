@@ -5,8 +5,11 @@ use core::str;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::abci;
 
+use crate::core::ics04_channel::channel::Ordering;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
+use crate::core::ics04_channel::packet::Sequence;
+use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::{Error as EventError, IbcEvent, IbcEventType};
 use crate::prelude::*;
@@ -29,6 +32,12 @@ pub const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
 pub const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 pub const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
 pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
+
+/// Channel upgrade attribute keys
+pub const UPGRADE_CONNECTION_HOPS: &str = "upgrade_connection_hops";
+pub const UPGRADE_VERSION: &str = "upgrade_version";
+pub const UPGRADE_SEQUENCE: &str = "upgrade_sequence";
+pub const UPGRADE_ORDERING: &str = "upgrade_ordering";
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 pub struct Attributes {
@@ -125,8 +134,88 @@ impl TryFrom<Packet> for Vec<abci::EventAttribute> {
     }
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
+pub struct UpgradeAttributes {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: Option<ChannelId>,
+    pub upgrade_connection_hops: Vec<ConnectionId>,
+    pub upgrade_version: Version,
+    pub upgrade_sequence: Sequence,
+    pub upgrade_ordering: Ordering,
+}
+
+impl UpgradeAttributes {}
+
+impl Display for UpgradeAttributes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        if let Some(counterparty_channel_id) = &self.counterparty_channel_id {
+            write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: {counterparty_channel_id}, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
+        } else {
+            write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
+        }
+        for hop in self.upgrade_connection_hops.iter() {
+            write!(f, " {} ", hop)?;
+        }
+        write!(
+            f,
+            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
+            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
+        )
+    }
+}
 pub trait EventType {
     fn event_type() -> IbcEventType;
+}
+
+/// Convert channel upgrade attributes to Tendermint ABCI tags
+impl From<UpgradeAttributes> for Vec<abci::EventAttribute> {
+    fn from(a: UpgradeAttributes) -> Self {
+        let mut attributes: Vec<abci::EventAttribute> = vec![];
+
+        let port_id: abci::EventAttribute = (PORT_ID_ATTRIBUTE_KEY, a.port_id.as_str()).into();
+        attributes.push(port_id);
+
+        let channel_id: abci::EventAttribute =
+            (CHANNEL_ID_ATTRIBUTE_KEY, a.channel_id.as_str()).into();
+        attributes.push(channel_id);
+
+        let counterparty_port_id = (
+            COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY,
+            a.counterparty_port_id.as_str(),
+        )
+            .into();
+
+        attributes.push(counterparty_port_id);
+        let channel_id = (COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY, a.channel_id.as_str()).into();
+        attributes.push(channel_id);
+
+        let mut hops = "".to_owned();
+        let mut hops_iterator = a.upgrade_connection_hops.iter().peekable();
+
+        while let Some(hop) = hops_iterator.next() {
+            hops = format!("{hops}{hop}");
+            // If it is not the last element, add separator.
+            if hops_iterator.peek().is_some() {
+                hops = format!("{hops}, ");
+            }
+        }
+
+        let upgrade_connection_hops = (UPGRADE_CONNECTION_HOPS, hops.as_str()).into();
+        attributes.push(upgrade_connection_hops);
+
+        let upgrade_version = (UPGRADE_VERSION, a.upgrade_version.0.as_str()).into();
+        attributes.push(upgrade_version);
+
+        let upgrade_sequence = (UPGRADE_SEQUENCE, a.upgrade_sequence.to_string().as_str()).into();
+        attributes.push(upgrade_sequence);
+
+        let upgrade_ordering = (UPGRADE_ORDERING, a.upgrade_ordering.as_str()).into();
+        attributes.push(upgrade_ordering);
+
+        attributes
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -475,28 +564,53 @@ impl EventType for CloseConfirm {
 pub struct UpgradeInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub connection_id: ConnectionId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
+    pub upgrade_connection_hops: Vec<ConnectionId>,
+    pub upgrade_version: Version,
+    pub upgrade_sequence: Sequence,
+    pub upgrade_ordering: Ordering,
 }
 
 impl Display for UpgradeInit {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        match &self.counterparty_channel_id {
-            Some(counterparty_channel_id) => write!(f, "UpgradeInit {{ port_id: {}, channel_id: {}, connection_id: {}, counterparty_port_id: {}, counterparty_channel_id: {} }}", self.port_id, self.channel_id, self.connection_id, self.counterparty_port_id, counterparty_channel_id),
-            None => write!(f, "UpgradeInit {{ port_id: {}, channel_id: {}, connection_id: {}, counterparty_port_id: {}, counterparty_channel_id: None }}", self.port_id, self.channel_id, self.connection_id, self.counterparty_port_id),
+        if let Some(counterparty_channel_id) = &self.counterparty_channel_id {
+            write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: {counterparty_channel_id}, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
+        } else {
+            write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
+        }
+        for hop in self.upgrade_connection_hops.iter() {
+            write!(f, " {} ", hop)?;
+        }
+        write!(
+            f,
+            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
+            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
+        )
+    }
+}
+
+impl From<UpgradeInit> for UpgradeAttributes {
+    fn from(ev: UpgradeInit) -> Self {
+        Self {
+            port_id: ev.port_id,
+            channel_id: ev.channel_id,
+            counterparty_port_id: ev.counterparty_port_id,
+            counterparty_channel_id: ev.counterparty_channel_id,
+            upgrade_connection_hops: ev.upgrade_connection_hops,
+            upgrade_version: ev.upgrade_version,
+            upgrade_sequence: ev.upgrade_sequence,
+            upgrade_ordering: ev.upgrade_ordering,
         }
     }
 }
 
-impl From<UpgradeInit> for Attributes {
-    fn from(ev: UpgradeInit) -> Self {
+impl From<UpgradeInit> for abci::Event {
+    fn from(value: UpgradeInit) -> Self {
+        let kind = UpgradeInit::event_type().as_str().to_owned();
         Self {
-            port_id: ev.port_id,
-            channel_id: Some(ev.channel_id),
-            connection_id: ev.connection_id,
-            counterparty_port_id: ev.counterparty_port_id,
-            counterparty_channel_id: ev.counterparty_channel_id,
+            kind,
+            attributes: UpgradeAttributes::from(value).into(),
         }
     }
 }
@@ -519,21 +633,20 @@ impl UpgradeInit {
     }
 }
 
-impl TryFrom<Attributes> for UpgradeInit {
+impl TryFrom<UpgradeAttributes> for UpgradeInit {
     type Error = EventError;
 
-    fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
-        if let Some(channel_id) = attrs.channel_id() {
-            Ok(Self {
-                port_id: attrs.port_id.clone(),
-                channel_id: channel_id.clone(),
-                connection_id: attrs.connection_id.clone(),
-                counterparty_port_id: attrs.counterparty_port_id.clone(),
-                counterparty_channel_id: attrs.counterparty_channel_id,
-            })
-        } else {
-            Err(EventError::channel(Error::missing_channel_id()))
-        }
+    fn try_from(attrs: UpgradeAttributes) -> Result<Self, Self::Error> {
+        Ok(Self {
+            port_id: attrs.port_id,
+            channel_id: attrs.channel_id,
+            counterparty_port_id: attrs.counterparty_port_id,
+            counterparty_channel_id: attrs.counterparty_channel_id,
+            upgrade_connection_hops: attrs.upgrade_connection_hops,
+            upgrade_version: attrs.upgrade_version,
+            upgrade_sequence: attrs.upgrade_sequence,
+            upgrade_ordering: attrs.upgrade_ordering,
+        })
     }
 }
 
@@ -642,7 +755,6 @@ impl_from_ibc_to_abci_event!(
     OpenTry,
     OpenAck,
     OpenConfirm,
-    UpgradeInit,
     UpgradeTry,
     CloseInit,
     CloseConfirm

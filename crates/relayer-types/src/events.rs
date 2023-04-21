@@ -423,7 +423,6 @@ impl IbcEvent {
             IbcEvent::OpenTryChannel(ev) => Some(ev.into()),
             IbcEvent::OpenAckChannel(ev) => Some(ev.into()),
             IbcEvent::OpenConfirmChannel(ev) => Some(ev.into()),
-            IbcEvent::UpgradeInitChannel(ev) => Some(ev.into()),
             _ => None,
         }
     }

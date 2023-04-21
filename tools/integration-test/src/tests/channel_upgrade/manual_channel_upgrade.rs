@@ -106,9 +106,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
 
         info!("Initialise channel upgrade process...");
 
-        let (channel_id_on_b, _) = init_channel_upgrade(
-            &chains.handle_a,
-            &chains.handle_b,
+        init_channel_upgrade(
             channel,
             Some(new_version),
             new_ordering,
@@ -121,7 +119,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
         assert_eventually_channel_upgrade_init(
             &chains.handle_b,
             &chains.handle_a,
-            &channel_id_on_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
             &channels.port_b.as_ref(),
             &upgrade_attrs,
         )?;

@@ -239,7 +239,8 @@ impl TryFrom<RawUpgradeTimeout> for UpgradeTimeout {
 
         let timeout_timestamp = Timestamp::from_nanoseconds(value.timestamp)
             .map_err(|_| Self::Error::invalid_timeout_timestamp)
-            .ok();
+            .ok()
+            .filter(|ts| ts.nanoseconds() > 0);
 
         Self::new(timeout_height, timeout_timestamp)
     }

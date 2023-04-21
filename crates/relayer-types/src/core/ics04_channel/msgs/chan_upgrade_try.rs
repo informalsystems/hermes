@@ -214,7 +214,7 @@ mod tests {
     use crate::core::ics04_channel::msgs::chan_upgrade_try::MsgChannelUpgradeTry;
 
     #[test]
-    fn parse_channel_upgrade_init_msg() {
+    fn parse_channel_upgrade_try_msg() {
         struct Test {
             name: String,
             raw: RawMsgChannelUpgradeTry,

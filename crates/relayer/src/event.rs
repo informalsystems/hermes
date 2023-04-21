@@ -2,26 +2,34 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use ibc_relayer_types::{
     applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
     applications::ics31_icq::events::CrossChainQueryPacket,
-    core::ics02_client::{
-        error::Error as ClientError,
-        events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
-        header::Header,
-        height::HeightErrorDetail,
-    },
     core::ics03_connection::{
         error::Error as ConnectionError,
         events::{self as connection_events, Attributes as ConnectionAttributes},
     },
     core::ics04_channel::{
         error::Error as ChannelError,
-        events::{self as channel_events, Attributes as ChannelAttributes},
+        events::{
+            self as channel_events, Attributes as ChannelAttributes,
+            UpgradeAttributes as ChannelUpgradeAttributes,
+        },
         packet::Packet,
         timeout::TimeoutHeight,
+    },
+    core::{
+        ics02_client::{
+            error::Error as ClientError,
+            events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
+            header::Header,
+            height::HeightErrorDetail,
+        },
+        ics04_channel::{channel::Ordering, packet::Sequence, version::Version},
+        ics24_host::identifier::ConnectionId,
     },
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
     Height,
 };
 use serde::Serialize;
+use std::str::FromStr;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::light_client::decode_header;
@@ -256,7 +264,7 @@ pub fn channel_close_confirm_try_from_abci_event(
 pub fn channel_upgrade_init_try_from_abci_event(
     abci_event: &AbciEvent,
 ) -> Result<channel_events::UpgradeInit, ChannelError> {
-    match channel_extract_attributes_from_tx(abci_event) {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
         Ok(attrs) => channel_events::UpgradeInit::try_from(attrs)
             .map_err(|_| ChannelError::implementation_specific()),
         Err(e) => Err(e),
@@ -402,6 +410,54 @@ fn channel_extract_attributes_from_tx(
             }
             channel_events::COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_channel_id = value.parse().ok();
+            }
+            _ => {}
+        }
+    }
+
+    Ok(attr)
+}
+
+fn channel_upgrade_extract_attributes_from_tx(
+    event: &AbciEvent,
+) -> Result<ChannelUpgradeAttributes, ChannelError> {
+    let mut attr = ChannelUpgradeAttributes::default();
+
+    for tag in &event.attributes {
+        let key = tag.key.as_str();
+        let value = tag.value.as_str();
+        match key {
+            channel_events::PORT_ID_ATTRIBUTE_KEY => {
+                attr.port_id = value.parse().map_err(ChannelError::identifier)?
+            }
+            channel_events::CHANNEL_ID_ATTRIBUTE_KEY => {
+                attr.channel_id = value.parse().map_err(ChannelError::identifier)?;
+            }
+            channel_events::COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY => {
+                attr.counterparty_port_id = value.parse().map_err(ChannelError::identifier)?;
+            }
+            channel_events::COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
+                attr.counterparty_channel_id = value.parse().ok();
+            }
+            channel_events::UPGRADE_CONNECTION_HOPS => {
+                let mut hops = vec![];
+                for hop_str in value.trim().split(',') {
+                    let hop = ConnectionId::from_str(hop_str).map_err(ChannelError::identifier)?;
+                    hops.push(hop);
+                }
+                attr.upgrade_connection_hops = hops;
+            }
+            channel_events::UPGRADE_VERSION => {
+                attr.upgrade_version = Version(value.to_string());
+            }
+            channel_events::UPGRADE_SEQUENCE => {
+                attr.upgrade_sequence =
+                    Sequence::from(value.parse::<u64>().map_err(|e| {
+                        ChannelError::invalid_string_as_sequence(value.to_string(), e)
+                    })?);
+            }
+            channel_events::UPGRADE_ORDERING => {
+                attr.upgrade_ordering = Ordering::from_str(value)?;
             }
             _ => {}
         }
