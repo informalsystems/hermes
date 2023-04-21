@@ -1598,8 +1598,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let src_port_id = self.src_port_id();
 
-        // Fetch the src channel end that will be upgraded by the upgrade handshake 
-        // Querying for the Channel End now includes the upgrade sequence number 
+        // Fetch the src channel end that will be upgraded by the upgrade handshake
+        // Querying for the Channel End now includes the upgrade sequence number
         let (channel_end, maybe_channel_proof) = self
             .src_chain()
             .query_channel(
@@ -1626,11 +1626,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty_ordering = channel_end.ordering();
 
         // We're assuming here that so long as the orderings match between the
-        // two channel ends, that the ordering on this channel end is valid 
-        // as far as going from a stricter order to a less strict ordering 
+        // two channel ends, that the ordering on this channel end is valid
+        // as far as going from a stricter order to a less strict ordering
         // So we aren't explicitly checking for that here like we did in the
         // build_chan_upgrade_init function
-        // TODO: Make sure this assumption is correct 
+        // TODO: Make sure this assumption is correct
         if *counterparty_ordering != self.ordering {
             return Err(ChannelError::invalid_ordering(
                 self.ordering,
