@@ -18,6 +18,8 @@ This section provides guidelines regarding troubleshooting.
     * Learn how to `inspect` the state of Hermes.
 - **[Cross-stack misconfiguration][cross-stack-config]**
     * Learn how to configure Hermes, Tendermint, and the SDK such that they play well with Hermes.
+- **[Genesis restart without IBC upgrade proposal][genesis-restart]**
+    * Learn how to update a client after a chain undergoes a genesis restart without an IBC upgrade proposal.
 
 [help]: ./help-command.md
 [log-level]: ./log-level.md
@@ -25,3 +27,4 @@ This section provides guidelines regarding troubleshooting.
 [patching]: ./patch-gaia.md
 [relayer state]: ./inspect.md
 [cross-stack-config]: ./cross-comp-config.md
+[genesis-restart]: ./genesis-restart.md

@@ -14,6 +14,7 @@ use core::{
     time::Duration,
 };
 use std::{fs, fs::File, io::Write, path::Path};
+use tendermint::block::Height as BlockHeight;
 use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
@@ -145,6 +146,10 @@ pub mod default {
 
     pub fn chain_type() -> ChainType {
         ChainType::CosmosSdk
+    }
+
+    pub fn ccv_consumer_chain() -> bool {
+        false
     }
 
     pub fn tx_confirmation() -> bool {
@@ -421,7 +426,14 @@ impl Display for AddressType {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct GenesisRestart {
+    pub restart_height: BlockHeight,
+    pub archive_addr: Url,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     pub id: ChainId,
@@ -439,6 +451,11 @@ pub struct ChainConfig {
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
+
+    // This field is only meant to be set via the `update client` command,
+    // for when we need to ugprade a client across a genesis restart and
+    // therefore need and archive node to fetch blocks from.
+    pub genesis_restart: Option<GenesisRestart>,
 
     // This field is deprecated, use `gas_multiplier` instead
     pub gas_adjustment: Option<f64>,
@@ -467,9 +484,9 @@ pub struct ChainConfig {
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
 
-    /// CCV only
-    #[serde(default, with = "humantime_serde")]
-    pub unbonding_period: Option<Duration>,
+    /// CCV consumer chain
+    #[serde(default = "default::ccv_consumer_chain")]
+    pub ccv_consumer_chain: bool,
 
     #[serde(default)]
     pub memo_prefix: Memo,

@@ -2,8 +2,8 @@ use core::any::Any;
 
 use bip39::{Language, Mnemonic, Seed};
 use bitcoin::{
+    bip32::{ChildNumber, DerivationPath, ExtendedPrivKey, ExtendedPubKey},
     network::constants::Network,
-    util::bip32::{ChildNumber, DerivationPath, ExtendedPrivKey, ExtendedPubKey},
 };
 use digest::Digest;
 use generic_array::{typenum::U32, GenericArray};
