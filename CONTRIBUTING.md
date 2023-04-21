@@ -1,25 +1,37 @@
 # Contributing
 
-Thank you for your interest in contributing! The goal
-of ibc-rs is to provide a high quality, formally verified implementation of
-the IBC protocol and relayer.
+Thank you for your interest in contributing to the Hermes IBC relayer! The goal
+of this project is to provide a high quality, formally verified IBC relayer 
+implementation in Rust.
 
 All work on the code base should be motivated by a Github
 issue. Before opening a new issue, first do a search of open and closed issues
 to make sure that yours will not be a duplicate.
 If you would like to work on an issue which already exists, please indicate so
-by leaving a comment. If what you'd like to work on hasn't already been covered
-by an issue, then open a new one to get the process going.
+by leaving a comment on the issue. If what you'd like to work on hasn't already 
+been covered by an issue, then open a new one to get the process going. Please
+do your best to ensure that your issue adheres to one of the 
+[issue templates](https://github.com/informalsystems/hermes/tree/master/.github/ISSUE_TEMPLATE)
+that we have in the repository. 
 
 The rest of this document outlines the best practices for contributing to this
 repository:
 
+- [Core Team Responsibility](#responsibility) - what the core team is responsible for
 - [Decision Making](#decision-making) - process for agreeing to changes
 - [Issues](#issues) - what makes a good issue
 - [Pull Requests](#pull-requests) - what makes a good pull request
 - [Forking](#forking) - fork the repo to make pull requests
 - [Changelog](#changelog) - changes must be recorded in the changelog
 - [Releases](#releases) - how to release new version of the crates
+
+## Core Team Responsibility
+
+The Hermes core team is responsible for stewarding this project over time. This means that the core team needs to understand the nature of, and agree to maintain, all of the changes that land on the master branch. It may cost a few days or weeks' worth of time to submit a particular change, but maintaining that change over the years has a much higher cost that the core team is responsible for bearing.
+
+With that in mind, the core team must balance the potential risks of maintaining 
+any contribution in the long-term against the immediate usefulness or utility 
+that that contribution manifests. 
 
 ## Decision Making
 
@@ -101,9 +113,9 @@ explaining why, and we will reprioritize it!
 
 ## Pull Requests
 
-If you have write access to the ibc-rs repo, you can directly branch off of `master`.
+If you have write access to the Hermes repo, you can directly branch off of `master`.
 This makes it easier for project maintainers to directly make changes to your
-branch should the need arise. Otherwise, check [Forking](#forking) section for instructions.
+branch should the need arise. Otherwise, check the [Forking](#forking) section for instructions.
 
 Branch names should be prefixed with the author's name followed by a short description
 of the feature, eg. `name/feature-x`.
@@ -117,14 +129,16 @@ PRs must:
 - add a corresponding entry in the `.changelog` directory using `unclog`,
   see the [Changelog](#changelog) section for more details.
 
-Pull requests should aim to be small and self-contained to facilitate quick
-review and merging. Larger change sets should be broken up across multiple PRs.
-Commits should be concise but informative, and moderately clean. Commits will be squashed into a
-single commit for the PR with all the commit messages.
+Pull requests should aim to be small, self-contained, and focused on implementing
+a single piece of logic from end-to-end. Structuring pull requests in this way
+makes it easy to facilitate quick review and merging. Larger change sets should 
+be broken up across multiple PRs. Commits should be concise but informative, 
+and moderately clean. Commits will be squashed into a single commit for the PR 
+with all the commit messages.
 
 In order to help facilitate the PR review process, tag *one* person as the
 reviewer of the PR. If you are unsure of who to tag, your point of contact on
-the ibc-rs team is always a natural candidate; they'll make sure that the PR gets
+the Hermes team is always a natural candidate; they'll make sure that the PR gets
 reviewed by whomever is most appropriate to review it. It also helps to notify
 the person whom you tagged as reviewer through direct means, such as through
 Slack or Discord, as it is easy for GitHub notifications to get lost or buried.
@@ -216,7 +230,7 @@ and [Hashicorp Consul](http://github.com/hashicorp/consul/tree/master/CHANGELOG.
 See those changelogs for examples.
 
 We currently split changes for a given release between these four sections: Breaking
-Changes, Features, Improvements, Bug Fixes.
+Changes, Features, Improvements, and Bug Fixes.
 
 Entries in the changelog should initially be logged in the __Unreleased__ section, which
 represents a "staging area" for accumulating all the changes throughout a
@@ -272,16 +286,15 @@ Our release process is as follows:
    2. All crates' `lib.rs` files documentation references' `html_root_url`
       parameters must point to the new version.
    3. Every reference to Hermes version in the [guide](./guide).
-
 4. Run `cargo doc --all-features --open` locally to double-check that all the
-   documentation compiles and seems up-to-date and coherent. Fix any potential
+   documentation compiles and is up-to-date and coherent. Fix any potential
    issues here and push them to the release PR.
 5. Mark the PR as **Ready for Review** and incorporate feedback on the release.
 6. Once approved, merge the PR.
 7. Pull `master` and run the [`release.sh`](./scripts/release.sh) script.
    If any problem arises, submit a new PR, get it merged to `master` and try again.
    The reason for not releasing straight from the release branch, and therefore losing the
-   ability to fix publishing problems as they arise, is that we would like the embedded
+   ability to fix publishing-related problems as they arise, is that we would like the embedded
    metadata of the published crates, namely the Git commit at which the release was done,
    to match the Git commit on the `master` branch which will be tagged.
    [See this article][crates.io-security] for a more in-depth explanation.
