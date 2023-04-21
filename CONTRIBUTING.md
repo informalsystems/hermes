@@ -117,24 +117,23 @@ If you have write access to the Hermes repo, you can directly branch off of `mas
 This makes it easier for project maintainers to directly make changes to your
 branch should the need arise. Otherwise, check the [Forking](#forking) section for instructions.
 
-Branch names should be prefixed with the author's name followed by a short description
-of the feature, eg. `name/feature-x`.
+Branch names should be prefixed with the author's name followed by a short description of the feature, eg. `name/feature-x`.
 
-Pull requests are made against `master` and are squash-merged into master.
-
-PRs must:
-
+Pull requests are made against `master` and are squash-merged into master. Each
+PR should:
 - make reference to an issue outlining the context
 - update any relevant documentation and include tests
 - add a corresponding entry in the `.changelog` directory using `unclog`,
   see the [Changelog](#changelog) section for more details.
 
-Pull requests should aim to be small, self-contained, and focused on implementing
-a single piece of logic from end-to-end. Structuring pull requests in this way
-makes it easy to facilitate quick review and merging. Larger change sets should 
-be broken up across multiple PRs. Commits should be concise but informative, 
-and moderately clean. Commits will be squashed into a single commit for the PR 
-with all the commit messages.
+Additionally, in order to make PRs as easy to review as possible, each PR should:
+- Be focused on implementing _*one*_ piece of logic from end-to-end. It must be 
+very clear what the purpose of the PR is from looking at the PR's title, description, and/or linked issue(s). It should also be very clear what value the changes incorporated in the PR aim to deliver. A single PR that does multiple things, without a clear articulation of the problem it attempts to solve, will very likely be rejected. 
+- Be small, ideally no more than 500 lines of code changes. While this is a guideline and not a hard rule, in general, larger changes should be structured as a series of PRs, each building off of the previous ones; these PRs should also be tracked in a tracking issue. 
+
+If a single PR absolutely has to be larger, it _must_ be structured such that it can be reviewed commit-by-commit, with each commit doing a single logical thing, accompanied with a good description of what it aims to achieve in the git commit message. Poorly structured PRs will likely be rejected on the grounds of being too much of a burden for the core maintainers to review; you will be asked to restructure the PR in accordance with the guidelines laid out here. 
+
+This does not necessarily apply to documentation-related changes or automatically generated code (e.g. generated from Protobuf definitions). But automatically generated code changes should occur within separate commits, so they are easily distinguishable from manual code changes.
 
 In order to help facilitate the PR review process, tag *one* person as the
 reviewer of the PR. If you are unsure of who to tag, your point of contact on
