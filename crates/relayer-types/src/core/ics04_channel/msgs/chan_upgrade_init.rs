@@ -60,17 +60,10 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
     type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelUpgradeInit) -> Result<Self, Self::Error> {
-        let raw_timeout = raw_msg
-            .timeout
-            .ok_or(Self::Error::missing_upgrade_timeout())?;
+        let raw_timeout = raw_msg.timeout.ok_or(Error::missing_upgrade_timeout())?;
+        let timeout = UpgradeTimeout::try_from(raw_timeout)?;
 
-        let timeout = UpgradeTimeout::try_from(raw_timeout)
-            .map_err(|_| Self::Error::invalid_timeout_height())?;
-
-        let raw_fields = raw_msg
-            .fields
-            .ok_or(Self::Error::missing_upgrade_timeout())?;
-
+        let raw_fields = raw_msg.fields.ok_or(Error::missing_upgrade_fields())?;
         let fields = UpgradeFields::try_from(raw_fields)?;
 
         Ok(MsgChannelUpgradeInit {
