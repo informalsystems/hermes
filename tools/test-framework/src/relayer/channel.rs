@@ -307,17 +307,6 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
     )
 }
 
-pub fn ack_channel_upgrade<ChainA: ChainHandle, ChainB: ChainHandle>(
-    _handle_a: &ChainA,
-    _handle_b: &ChainB,
-    _channel: Channel<ChainA, ChainB>,
-) { // -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainB, ChainA>), Error> {
-     //let event = channel.build_chan_upgrade_ack_and_send()?;
-     //let channel_id = extract_channel_id(&event)?.clone();
-     //let channel2 = Channel::restore_from_event(handle_b.clone(), handle_a.clone(), event)?;
-     //Ok((DualTagged::new(channel_id), channel2))
-}
-
 /// The field modified by the channel upgrade is only updated when the channel returns
 /// in the OPEN State
 pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainHandle>(
