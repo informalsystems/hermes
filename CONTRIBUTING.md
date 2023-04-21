@@ -131,9 +131,9 @@ Additionally, in order to make PRs as easy to review as possible, each PR should
 very clear what the purpose of the PR is from looking at the PR's title, description, and/or linked issue(s). It should also be very clear what value the changes incorporated in the PR aim to deliver. A single PR that does multiple things, without a clear articulation of the problem it attempts to solve, will very likely be rejected. 
 - Be small, ideally no more than 500 lines of code changes. While this is a guideline and not a hard rule, in general, larger changes should be structured as a series of PRs, each building off of the previous ones; these PRs should also be tracked in a tracking issue. 
 
-If a single PR absolutely has to be larger, it _must_ be structured such that it can be reviewed commit-by-commit, with each commit doing a single logical thing, accompanied with a good description of what it aims to achieve in the git commit message. Poorly structured PRs will likely be rejected on the grounds of being too much of a burden for the core maintainers to review; you will be asked to restructure the PR in accordance with the guidelines laid out here. 
+   If a single PR absolutely has to be larger, it _must_ be structured such that it can be reviewed commit-by-commit, with each commit doing a single logical thing, accompanied with a good description of what it aims to achieve in the git commit message. Poorly structured PRs will likely be rejected on the grounds of being too much of a burden for the core maintainers to review; you will be asked to restructure the PR in accordance with the guidelines laid out here. 
 
-This does not necessarily apply to documentation-related changes or automatically generated code (e.g. generated from Protobuf definitions). But automatically generated code changes should occur within separate commits, so they are easily distinguishable from manual code changes.
+   This does not necessarily apply to documentation-related changes or automatically generated code (e.g. generated from Protobuf definitions). But automatically generated code changes should occur within separate commits, so they are easily distinguishable from manual code changes.
 
 In order to help facilitate the PR review process, tag *one* person as the
 reviewer of the PR. If you are unsure of who to tag, your point of contact on
