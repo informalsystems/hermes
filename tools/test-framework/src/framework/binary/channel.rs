@@ -134,7 +134,7 @@ pub trait PortsOverride {
 */
 pub trait ChannelOrderOverride {
     /**
-       Return the channel ordering as [`Order`].
+       Return the channel ordering as [`Ordering`].
     */
     fn channel_order(&self) -> Ordering;
 }
