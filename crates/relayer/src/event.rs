@@ -457,11 +457,7 @@ fn channel_upgrade_extract_attributes_from_tx(
                     })?);
             }
             channel_events::UPGRADE_ORDERING => {
-                attr.upgrade_ordering = Ordering::from_i32(
-                    value
-                        .parse::<i32>()
-                        .map_err(|_| ChannelError::unknown_order_type(value.to_string()))?,
-                )?;
+                attr.upgrade_ordering = Ordering::from_str(value)?;
             }
             _ => {}
         }
