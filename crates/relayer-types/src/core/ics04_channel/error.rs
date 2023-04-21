@@ -108,6 +108,9 @@ define_error! {
         MissingUpgradeTimeout
             | _ | { "missing upgrade timeout, either a height or a timestamp must be set" },
 
+        MissingUpgradeFields
+            | _ | { "missing upgrade fields" },
+
         MissingProposedUpgradeChannel
             | _ | { "missing proposed upgrade channel" },
 
