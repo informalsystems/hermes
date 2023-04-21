@@ -44,6 +44,9 @@ pub enum TxCmd {
     /// Confirm the closing of a channel (ChannelCloseConfirm)
     ChanCloseConfirm(channel::TxChanCloseConfirmCmd),
 
+    // TODO
+    ChanUpgradeInit(channel::TxChanUpgradeInitCmd),
+
     /// Send a fungible token transfer test transaction (ICS20 MsgTransfer)
     FtTransfer(transfer::TxIcs20MsgTransferCmd),
 

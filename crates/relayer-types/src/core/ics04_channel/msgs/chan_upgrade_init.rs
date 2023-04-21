@@ -1,11 +1,9 @@
-use crate::timestamp::Timestamp;
-use crate::{prelude::*, Height};
-
-use ibc_proto::protobuf::Protobuf;
+use crate::core::ics04_channel::upgrade_fields::UpgradeFields;
+use crate::prelude::*;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
+use ibc_proto::protobuf::Protobuf;
 
-use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::timeout::UpgradeTimeout;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
@@ -20,7 +18,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeInit";
 pub struct MsgChannelUpgradeInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub proposed_upgrade_channel: ChannelEnd,
+    pub fields: UpgradeFields,
     pub timeout: UpgradeTimeout,
     pub signer: Signer,
 }
@@ -29,14 +27,14 @@ impl MsgChannelUpgradeInit {
     pub fn new(
         port_id: PortId,
         channel_id: ChannelId,
-        proposed_upgrade_channel: ChannelEnd,
+        fields: UpgradeFields,
         timeout: UpgradeTimeout,
         signer: Signer,
     ) -> Self {
         Self {
             port_id,
             channel_id,
-            proposed_upgrade_channel,
+            fields,
             timeout,
             signer,
         }
@@ -62,31 +60,17 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
     type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelUpgradeInit) -> Result<Self, Self::Error> {
-        let proposed_upgrade_channel = raw_msg
-            .proposed_upgrade_channel
-            .ok_or_else(Error::missing_proposed_upgrade_channel)?
-            .try_into()?;
+        let raw_timeout = raw_msg.timeout.ok_or(Error::missing_upgrade_timeout())?;
+        let timeout = UpgradeTimeout::try_from(raw_timeout)?;
 
-        let timeout_height = raw_msg
-            .timeout_height
-            .map(Height::try_from)
-            .transpose()
-            .map_err(|_| Error::invalid_timeout_height())?;
-
-        let timeout_timestamp = Some(raw_msg.timeout_timestamp)
-            .filter(|&ts| ts != 0)
-            .map(|raw_ts| {
-                Timestamp::from_nanoseconds(raw_ts).map_err(Error::invalid_timeout_timestamp)
-            })
-            .transpose()?;
-
-        let timeout = UpgradeTimeout::new(timeout_height, timeout_timestamp)?;
+        let raw_fields = raw_msg.fields.ok_or(Error::missing_upgrade_fields())?;
+        let fields = UpgradeFields::try_from(raw_fields)?;
 
         Ok(MsgChannelUpgradeInit {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
-            proposed_upgrade_channel,
+            fields,
             timeout,
         })
     }
@@ -94,15 +78,12 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
 
 impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
     fn from(domain_msg: MsgChannelUpgradeInit) -> Self {
-        let (timeout_height, timeout_timestamp) = domain_msg.timeout.into_tuple();
-
         Self {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
             signer: domain_msg.signer.to_string(),
-            proposed_upgrade_channel: Some(domain_msg.proposed_upgrade_channel.into()),
-            timeout_height: timeout_height.map(Into::into),
-            timeout_timestamp: timeout_timestamp.map(|ts| ts.nanoseconds()).unwrap_or(0),
+            fields: Some(domain_msg.fields.into()),
+            timeout: Some(domain_msg.timeout.into()),
         }
     }
 }
@@ -110,9 +91,10 @@ impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
 #[cfg(test)]
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
+    use ibc_proto::ibc::core::channel::v1::UpgradeTimeout as RawUpgradeTimeout;
 
     use crate::core::ics02_client::height::Height;
-    use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
+    use crate::core::ics04_channel::upgrade_fields::test_util::get_dummy_upgrade_fields;
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
     use crate::prelude::*;
     use crate::test_utils::get_dummy_bech32_account;
@@ -120,13 +102,16 @@ pub mod test_util {
 
     /// Returns a dummy `RawMsgChannelUpgadeInit`, for testing only!
     pub fn get_dummy_raw_msg_chan_upgrade_init() -> RawMsgChannelUpgradeInit {
+        let dummy_timeout = RawUpgradeTimeout {
+            height: Some(Height::new(0, 10).unwrap().into()),
+            timestamp: Timestamp::now().nanoseconds(),
+        };
         RawMsgChannelUpgradeInit {
             port_id: PortId::default().to_string(),
             channel_id: ChannelId::default().to_string(),
             signer: get_dummy_bech32_account(),
-            proposed_upgrade_channel: Some(get_dummy_raw_channel_end()),
-            timeout_height: Some(Height::new(0, 10).unwrap().into()),
-            timeout_timestamp: Timestamp::now().nanoseconds(),
+            fields: Some(get_dummy_upgrade_fields()),
+            timeout: Some(dummy_timeout),
         }
     }
 }
@@ -138,6 +123,7 @@ mod tests {
     use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
+    use ibc_proto::ibc::core::channel::v1::UpgradeTimeout as RawUpgradeTimeout;
 
     use crate::core::ics04_channel::msgs::chan_upgrade_init::test_util::get_dummy_raw_msg_chan_upgrade_init;
     use crate::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;
@@ -209,8 +195,7 @@ mod tests {
             Test {
                 name: "Timeout timestamp is 0 and no timeout height provided".to_string(),
                 raw: RawMsgChannelUpgradeInit {
-                    timeout_height: None,
-                    timeout_timestamp: 0,
+                    timeout: Some(RawUpgradeTimeout { height: None, timestamp: 0 }),
                     ..default_raw_msg
                 },
                 want_pass: false,

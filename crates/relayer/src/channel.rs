@@ -1,4 +1,6 @@
 pub use error::ChannelError;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics04_channel::upgrade_fields::UpgradeFields;
 
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::time::Duration;
@@ -863,6 +865,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             version,
+            Sequence::from(0),
         );
 
         // Build the domain type message
@@ -942,6 +945,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             Version::empty(),
+            Sequence::from(0),
         );
 
         // Retrieve existing channel
@@ -1033,6 +1037,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             version,
+            Sequence::from(0),
         );
 
         // Get signer
@@ -1519,6 +1524,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         channel_end.state = State::InitUpgrade;
 
+        let fields = UpgradeFields::new(
+            channel_end.ordering,
+            channel_end.connection_hops,
+            channel_end.version,
+        );
+
         // Build the domain type message
         let signer = self
             .dst_chain()
@@ -1530,7 +1541,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             MsgChannelUpgradeInit {
                 port_id: port_id.clone(),
                 channel_id: channel_id.clone(),
-                proposed_upgrade_channel: channel_end,
+                fields,
                 timeout,
                 signer,
             }
@@ -1581,7 +1592,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
     pub fn build_chan_upgrade_try(
         &self,
-        timeout: UpgradeTimeout,
+        _timeout: UpgradeTimeout,
     ) -> Result<Vec<Any>, ChannelError> {
         // Source channel ID must exist
         let src_channel_id = self
@@ -1589,7 +1600,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .ok_or_else(ChannelError::missing_local_channel_id)?;
 
         // Channel must exist on the souce chain
-        let (channe_end, maybe_channel_proof) = self
+        let (mut channel_end, maybe_channel_proof) = self
             .src_chain()
             .query_channel(
                 QueryChannelRequest {
@@ -1606,7 +1617,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.dst_chain().id(),
                 self.dst_port_id().clone(),
                 self.src_chain().id(),
-                src_channel.counterparty().port_id().clone(),
+                self.src_port_id().clone(),
                 src_channel_id.clone(),
             ));
         }
@@ -1615,8 +1626,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             return Err(ChannelError::missing_channel_proof());
         };
 
-        let channel_proof_bytes =
-            CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?;
+        let _channel_proof_bytes =
+            CommitmentProofBytes::try_from(channel_proof).map_err(ChannelError::malformed_proof)?;
 
         if channel_end.state != State::InitUpgrade {
             return Err(ChannelError::invalid_channel_upgrade_state());
@@ -1624,13 +1635,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         channel_end.state = State::TryUpgrade;
 
-        let signer = self
+        let _signer = self
             .dst_chain()
             .get_signer()
             .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         // Build the domain type message
-        let new_msg = MsgChannelUpgradeTry {
+        /*let new_msg = MsgChannelUpgradeTry {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             proposed_upgrade_channel: channel_end,
@@ -1644,7 +1655,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             proof_height,
         };
 
-        Ok(vec![new_msg.to_any()])
+        Ok(vec![new_msg.to_any()])*/
+        Ok(vec![])
     }
 
     pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(

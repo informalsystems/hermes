@@ -4,7 +4,9 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 
 use serde::{Deserialize, Serialize};
 
+use ibc_proto::ibc::core::channel::v1::UpgradeTimeout as RawUpgradeTimeout;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics02_client::{error::Error as ICS2Error, height::Height};
 use crate::core::ics04_channel::error::Error as ChannelError;
@@ -219,6 +221,46 @@ impl UpgradeTimeout {
             UpgradeTimeout::Height(height) => (Some(height), None),
             UpgradeTimeout::Timestamp(timestamp) => (None, Some(timestamp)),
             UpgradeTimeout::Both(height, timestamp) => (Some(height), Some(timestamp)),
+        }
+    }
+}
+
+impl Protobuf<RawUpgradeTimeout> for UpgradeTimeout {}
+
+impl TryFrom<RawUpgradeTimeout> for UpgradeTimeout {
+    type Error = ChannelError;
+
+    fn try_from(value: RawUpgradeTimeout) -> Result<Self, Self::Error> {
+        let timeout_height = value
+            .height
+            .map(Height::try_from)
+            .transpose()
+            .map_err(|_| Self::Error::invalid_timeout_height())?;
+
+        let timeout_timestamp = Timestamp::from_nanoseconds(value.timestamp)
+            .map_err(|_| Self::Error::invalid_timeout_timestamp)
+            .ok()
+            .filter(|ts| ts.nanoseconds() > 0);
+
+        Self::new(timeout_height, timeout_timestamp)
+    }
+}
+
+impl From<UpgradeTimeout> for RawUpgradeTimeout {
+    fn from(value: UpgradeTimeout) -> Self {
+        match value {
+            UpgradeTimeout::Height(height) => Self {
+                height: RawHeight::try_from(height).ok(),
+                timestamp: 0,
+            },
+            UpgradeTimeout::Timestamp(timestamp) => Self {
+                height: None,
+                timestamp: timestamp.nanoseconds(),
+            },
+            UpgradeTimeout::Both(height, timestamp) => Self {
+                height: RawHeight::try_from(height).ok(),
+                timestamp: timestamp.nanoseconds(),
+            },
         }
     }
 }
