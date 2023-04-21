@@ -77,7 +77,7 @@ In four situations:
 3. Query for the success/error status of a transaction immediately after it was broadcast.
       - Used rarely: at bootstrap (to register counterparty payee address for fees) or when transactions need to be sent sequentially (eg workaround for priority mempool or corner cases to avoid sequence mismatch).
       - Pattern: `tx.hash == XYZ`
-4. Query to obtain packet events, needed to find pending packets & build & relay them.
+4. Query to obtain packet events that occurred at or before a specified height. Required because application state does not store the full packet data which is needed to build and relay the packet messages.
       - Pattern: `send_packet.packet_src_channel == X && send_packet.packet_src_port == X && send_packet.packet_dst_channel == X && send_packet.packet_dst_port == X && send_packet.packet_sequence == X`. Also for `write_acknowledgement` packet events.
       - Used relatively often, on start and then for every `z` blocks, where `clear_interval = z` (default `z = 100`).
 
@@ -87,13 +87,14 @@ In four situations:
 
 ### `/block_search`
 
-The use-case is identical to point (4) from `/tx_search`. We use it to obtain packet events from block data, used relatively often, on start and then for every `z` blocks, where `clear_interval = z` (default `z = 100`).
+The use-case is similar to point (4) from `/tx_search`. We use it to obtain packet events from block data, used relatively often, on start and then for every `z` blocks, where `clear_interval = z` (default `z = 100`).
 
 #### Pattern
 `send_packet.packet_src_channel == X && send_packet.packet_src_port == X && send_packet.packet_dst_channel == X && send_packet.packet_dst_port == X && send_packet.packet_sequence == X`.
 Also for `write_acknowledgement` packet events.
 
 **Note:** Always used in conjunction with `block_results`.
+ The `block_search` is used to determine the `Block` that included a packet event. Then `block_search` is used with the block's height to extract the packet event. 
 
 **Response fields used:**
 - `blocks[].block.header.height`
@@ -102,8 +103,8 @@ Also for `write_acknowledgement` packet events.
 
 Used in two situations ([diagram for reference](https://app.excalidraw.com/l/4XqkU6POmGI/9jbKsT6mHxf)):
 
-1. Identical to point (4) from `/tx_search`: Used In conjunction with `block_search` and `tx_search` for periodic packet clearing.
-    - Pattern: `/block_search?height=X` where X is a specific height where a block has relevant packet events.
+1. Similar to point (4) from `/tx_search`: Used In conjunction with `block_search` and `tx_search` for periodic packet clearing.
+    - Pattern: `/block_results?height=X` where X is a specific height, obtained with `block_results`, where a block has relevant packet events. Only `begin_block_events` and `end_block_events` are used in this case.
 2. For CLIs `tx packet-recv` and `tx packet-ack` when the user passes the flag `--packet-data-query-height=X`.
 
 **Response fields used:**
