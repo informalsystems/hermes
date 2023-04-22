@@ -346,7 +346,7 @@ jobs:
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell ${{ matrix.chain.package }} -c cargo \
+          nix shell .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features channel-upgrade --no-fail-fast -- \
             --nocapture --test-threads=1 channel_upgrade::
 
