@@ -805,7 +805,7 @@ impl Runnable for TxChanUpgradeInitCmd {
     }
 }
 
-/// Relay the upgrade attempt (ChannelUpgradeTry)
+/// Relay the channel upgrade attempt (ChannelUpgradeTry)
 ///
 /// Build and send a `ChannelUpgradeTry` message in response to
 /// a `ChannelUpgradeInnit` message, signaling the chain's intent to
