@@ -54,6 +54,7 @@
         "ibc-go-v4-src": "ibc-go-v4-src",
         "ibc-go-v5-src": "ibc-go-v5-src",
         "ibc-go-v6-src": "ibc-go-v6-src",
+        "ibc-go-v7-channel-upgrade-src": "ibc-go-v7-channel-upgrade-src",
         "ibc-go-v7-src": "ibc-go-v7-src",
         "ibc-rs-src": "ibc-rs-src",
         "ica-src": "ica-src",
@@ -89,15 +90,16 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1682076511,
-        "narHash": "sha256-WsRmK7gMhfSPmPufBHGgzXs6L5P2N6Z46KXQcJunKgE=",
+        "lastModified": 1682153954,
+        "narHash": "sha256-nkkokaQz8vkpY92TAb4eAxM+UYcdZV4rNGdOb6+IKJ4=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "b52c0d3c2b93c7839374c0be8d7ab33d64ebe2ed",
+        "rev": "3d788d73a2d96b364a2845146bc25f8ed6b567fd",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "ibc-go-channel-upgrade",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -439,6 +441,23 @@
         "owner": "cosmos",
         "ref": "v6.1.0",
         "repo": "ibc-go",
+        "type": "github"
+      }
+    },
+    "ibc-go-v7-channel-upgrade-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1681914625,
+        "narHash": "sha256-MaUx988kvPc5AAlDiEPB0o0t+h+JyB3LsEFvPOvogQE=",
+        "owner": "cosmos",
+        "repo": "ibc-go",
+        "rev": "81a709b49a42504737d25be0e812d830f9a0897c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "repo": "ibc-go",
+        "rev": "81a709b49a42504737d25be0e812d830f9a0897c",
         "type": "github"
       }
     },
