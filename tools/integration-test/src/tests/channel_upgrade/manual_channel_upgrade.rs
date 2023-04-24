@@ -22,7 +22,7 @@ pub struct ChannelUpgradeManualHandshake;
 
 impl TestOverrides for ChannelUpgradeManualHandshake {
     fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
+        config.bootstrap_with_random_ids = true;
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -48,11 +48,11 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
         )?;
 
         let channel_end_a = chains
-            .handle_b
+            .handle_a
             .query_channel(
                 QueryChannelRequest {
-                    port_id: channels.port_b.0.clone(),
-                    channel_id: channels.channel_id_b.0.clone(),
+                    port_id: channels.port_a.0.clone(),
+                    channel_id: channels.channel_id_a.0.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -61,11 +61,11 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
 
         let channel_end_b = chains
-            .handle_a
+            .handle_b
             .query_channel(
                 QueryChannelRequest {
-                    port_id: channels.port_a.0.clone(),
-                    channel_id: channels.channel_id_a.0.clone(),
+                    port_id: channels.port_b.0.clone(),
+                    channel_id: channels.channel_id_b.0.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -99,7 +99,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
 
         info!("Set channel in (INITUPGRADE, OPEN) state...");
 
-        channel.build_chan_upgrade_init_and_send(
+        channel.flipped().build_chan_upgrade_init_and_send(
             Some(new_version),
             new_ordering,
             new_connection_hops,
@@ -109,18 +109,17 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
         info!("Check that the step ChanUpgradeInit was correctly executed...");
 
         assert_eventually_channel_upgrade_init(
-            &chains.handle_b,
             &chains.handle_a,
-            &channels.channel_id_b.as_ref(),
-            &channels.port_b.as_ref(),
+            &chains.handle_b,
+            &channels.channel_id_a.as_ref(),
+            &channels.port_a.as_ref(),
             &upgrade_attrs,
         )?;
 
         info!("Set channel in (INITUPGRADE, TRYUPGRADE) state...");
 
-        // FIXME: waiting for build_chan_upgrade_try_and_send to be implemented
-        //channel.build_chan_upgrade_try(timeout)?;
-        //channel.build_chan_upgrade_try_and_send()?;
+        // FIXME: Waiting for the TRY step to be implemented
+        //channel.build_chan_upgrade_try_and_send(timeout)?;
 
         /*assert_eventually_channel_upgrade_try(
             &chains.handle_b,
