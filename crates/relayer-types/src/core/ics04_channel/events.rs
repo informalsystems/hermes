@@ -134,6 +134,7 @@ impl TryFrom<Packet> for Vec<abci::EventAttribute> {
     }
 }
 
+/// The attributes emitted by upon receiving a channel upgrade init message.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct UpgradeAttributes {
     pub port_id: PortId,

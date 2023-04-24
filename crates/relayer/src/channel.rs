@@ -19,6 +19,7 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelO
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;
+// use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_try::MsgChannelUpgradeTry;
 use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc_relayer_types::core::ics24_host::identifier::{
@@ -1513,7 +1514,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             channel_end.ordering = new_ordering;
         }
 
-        // Build the proposed channel end
         if let Some(new_version) = new_version {
             channel_end.version = new_version;
         }
@@ -1522,15 +1522,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             channel_end.connection_hops = new_connection_hops;
         }
 
-        channel_end.state = State::InitUpgrade;
-
         let fields = UpgradeFields::new(
             channel_end.ordering,
             channel_end.connection_hops,
             channel_end.version,
         );
 
-        // Build the domain type message
         let signer = self
             .dst_chain()
             .get_signer()
@@ -1599,12 +1596,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .src_channel_id()
             .ok_or_else(ChannelError::missing_local_channel_id)?;
 
-        // Channel must exist on the souce chain
-        let (mut channel_end, maybe_channel_proof) = self
+        let src_port_id = self.src_port_id();
+
+        // Fetch the src channel end that will be upgraded by the upgrade handshake
+        // Querying for the Channel End now includes the upgrade sequence number
+        let (channel_end, maybe_channel_proof) = self
             .src_chain()
             .query_channel(
                 QueryChannelRequest {
-                    port_id: self.src_port_id().clone(),
+                    port_id: src_port_id.clone(),
                     channel_id: src_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
@@ -1612,6 +1612,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
+        // TODO: Is this check necessary?
         if channel_end.counterparty().port_id() != self.dst_port_id() {
             return Err(ChannelError::mismatch_port(
                 self.dst_chain().id(),
@@ -1619,6 +1620,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.src_chain().id(),
                 self.src_port_id().clone(),
                 src_channel_id.clone(),
+            ));
+        }
+
+        let counterparty_ordering = channel_end.ordering();
+
+        // We're assuming here that so long as the orderings match between the
+        // two channel ends, that the ordering on this channel end is valid
+        // as far as going from a stricter order to a less strict ordering
+        // So we aren't explicitly checking for that here like we did in the
+        // build_chan_upgrade_init function
+        // TODO: Make sure this assumption is correct
+        if *counterparty_ordering != self.ordering {
+            return Err(ChannelError::invalid_ordering(
+                self.ordering,
+                *counterparty_ordering,
             ));
         }
 
@@ -1633,8 +1649,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             return Err(ChannelError::invalid_channel_upgrade_state());
         }
 
-        channel_end.state = State::TryUpgrade;
-
         let _signer = self
             .dst_chain()
             .get_signer()
@@ -1642,11 +1656,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Build the domain type message
         /*let new_msg = MsgChannelUpgradeTry {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            proposed_upgrade_channel: channel_end,
+            port_id: src_port_id.clone(),
+            channel_id: src_channel_id.clone(),
+            proposed_upgrade_channel,
             signer,
-            counterparty_channel,
+            counterparty_channel: channel_end,
             counterparty_sequence,
             timeout,
             proof_channel: channel_proof_bytes,
@@ -1657,6 +1671,42 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         Ok(vec![new_msg.to_any()])*/
         Ok(vec![])
+    }
+
+    pub fn build_chan_upgrade_try_and_send(
+        &self,
+        timeout: UpgradeTimeout,
+    ) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs = self.build_chan_upgrade_try(timeout)?;
+
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeTry");
+
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+
+        // Find the relevant event for channel upgrade try
+        let result = events
+            .into_iter()
+            .find(|event_with_height| {
+                matches!(event_with_height.event, IbcEvent::UpgradeTryChannel(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no channel upgrade try event was in the response".to_string(),
+                )
+            })?;
+
+        match &result.event {
+            IbcEvent::UpgradeTryChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
+        }
     }
 
     pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(

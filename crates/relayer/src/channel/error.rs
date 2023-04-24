@@ -3,7 +3,7 @@ use core::time::Duration;
 use flex_error::{define_error, ErrorMessageTracer};
 
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
-use ibc_relayer_types::core::ics04_channel::channel::State;
+use ibc_relayer_types::core::ics04_channel::channel::{Ordering, State};
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, PortChannelId, PortId,
 };
@@ -73,6 +73,16 @@ define_error! {
         ChannelProof
             [ RelayerError ]
             |_| { "failed to build channel proofs" },
+
+        InvalidOrdering
+            {
+                channel_ordering: Ordering,
+                counterparty_ordering: Ordering,
+            }
+            | e | {
+                format_args!("channel ordering '{0}' does not match counterparty ordering '{1}'",
+                    e.channel_ordering, e.counterparty_ordering)
+            },
 
         ClientOperation
             {

@@ -14,6 +14,8 @@ SUBCOMMANDS:
     chan-open-confirm     Confirm opening of a channel (ChannelOpenConfirm)
     chan-open-init        Initialize a channel (ChannelOpenInit)
     chan-open-try         Relay the channel attempt (ChannelOpenTry)
+    chan-upgrade-init     Initiate a channel upgrade (ChannelUpgradeInit)
+    chan-upgrade-try      Relay the channel upgrade attempt (ChannelUpgradeTry)
     conn-ack              Relay acknowledgment of a connection attempt (ConnectionOpenAck)
     conn-confirm          Confirm opening of a connection (ConnectionOpenConfirm)
     conn-init             Initialize a connection (ConnectionOpenInit)
