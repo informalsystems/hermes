@@ -3,20 +3,6 @@
    relayer setup with chain handles and foreign clients, as well as
    connected IBC channels with completed handshakes.
 */
-
-#[cfg(feature = "next")]
-use {
-    crate::framework::binary::next::TestContextV2, crate::prelude::handle_generic_error,
-    ibc_relayer::keyring::Secp256k1KeyPair,
-    ibc_relayer_all_in_one::extra::all_for_one::builder::CanBuildAfoFullBiRelay,
-    ibc_relayer_cosmos::contexts::full::builder::CosmosRelayBuilder,
-    ibc_relayer_types::core::ics24_host::identifier::ChainId, std::collections::HashMap,
-    std::sync::Arc, tokio::runtime::Runtime as TokioRuntime,
-};
-
-#[cfg(not(feature = "next"))]
-use crate::framework::binary::next::TestContextV1;
-
 use tracing::info;
 
 use ibc_relayer::chain::handle::ChainHandle;
@@ -42,6 +28,7 @@ use crate::framework::next::chain::{
     CanShutdown, CanSpawnRelayer, CanWaitForAck, HasContextId, HasTestConfig, HasTwoChains,
     HasTwoChannels, HasTwoNodes,
 };
+use crate::framework::next::context::build_test_context;
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
@@ -239,65 +226,9 @@ where
 
         info!("written channel environment to {}", env_path.display());
 
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "next")] {
+        let test_context = build_test_context(config, relayer.clone(), chains, channels)?;
 
-                let runtime = Arc::new(TokioRuntime::new().unwrap());
-
-                // Build key map from existing keys in ChainHandle
-                let mut key_map: HashMap<ChainId, Secp256k1KeyPair> = HashMap::new();
-                let key_a = chains.handle_a().get_key().unwrap();
-                if let ibc_relayer::keyring::AnySigningKeyPair::Secp256k1(secp256k1_a) = key_a {
-                    let chain_a_id = chains.handle_a().id();
-                    key_map.insert(chain_a_id, secp256k1_a);
-                }
-                let key_b = chains.handle_b().get_key().unwrap();
-                if let ibc_relayer::keyring::AnySigningKeyPair::Secp256k1(secp256k1_b) = key_b {
-                    let chain_b_id = chains.handle_b().id();
-                    key_map.insert(chain_b_id, secp256k1_b);
-                }
-
-                let builder = CosmosRelayBuilder::new_wrapped(
-                    relayer.config.clone(),
-                    runtime.clone(),
-                    Default::default(),
-                    Default::default(),
-                    Default::default(),
-                    key_map,
-                );
-
-                let birelay = runtime.block_on(async {builder
-                        .build_afo_full_birelay(
-                            chains.chain_id_a().0,
-                            chains.chain_id_b().0,
-                            chains.client_id_a().0,
-                            chains.client_id_b().0,
-                        )
-                        .await
-                        .map_err(handle_generic_error)
-                    })?;
-
-                let context_next = TestContextV2 {
-                    context_id: "relayer_next".to_owned(),
-                    config: config.clone(),
-                    relayer: birelay,
-                    chains,
-                    channel: channels,
-                };
-
-                self.test.run(relayer, &context_next)?;
-            } else {
-                let context_current = TestContextV1 {
-                    context_id: "current_relayer".to_owned(),
-                    config: config.clone(),
-                    relayer: relayer.clone(),
-                    chains,
-                    channel: channels,
-                };
-
-                self.test.run(relayer, &context_current)?;
-            }
-        }
+        self.test.run(relayer, &test_context)?;
 
         Ok(())
     }
@@ -320,65 +251,10 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
             channels.channel_id_b,
         );
 
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "next")] {
+        let test_context =
+            build_test_context(config, relayer.clone(), chains.clone(), channels.clone())?;
 
-                let runtime = Arc::new(TokioRuntime::new().unwrap());
-
-                // Build key map from existing keys in ChainHandle
-                let mut key_map: HashMap<ChainId, Secp256k1KeyPair> = HashMap::new();
-                let key_a = chains.handle_a().get_key().unwrap();
-                if let ibc_relayer::keyring::AnySigningKeyPair::Secp256k1(secp256k1_a) = key_a {
-                    let chain_a_id = chains.handle_a().id();
-                    key_map.insert(chain_a_id, secp256k1_a);
-                }
-                let key_b = chains.handle_b().get_key().unwrap();
-                if let ibc_relayer::keyring::AnySigningKeyPair::Secp256k1(secp256k1_b) = key_b {
-                    let chain_b_id = chains.handle_b().id();
-                    key_map.insert(chain_b_id, secp256k1_b);
-                }
-
-                let builder = CosmosRelayBuilder::new_wrapped(
-                    relayer.config.clone(),
-                    runtime.clone(),
-                    Default::default(),
-                    Default::default(),
-                    Default::default(),
-                    key_map,
-                );
-
-                let birelay = runtime.block_on(async {builder
-                        .build_afo_full_birelay(
-                            chains.chain_id_a().0,
-                            chains.chain_id_b().0,
-                            chains.client_id_a().0,
-                            chains.client_id_b().0,
-                        )
-                        .await
-                        .map_err(handle_generic_error)
-                    })?;
-
-                let context_next = TestContextV2 {
-                    context_id: "relayer_next".to_owned(),
-                    config: config.clone(),
-                    relayer: birelay,
-                    chains: chains.clone(),
-                    channel: channels.clone(),
-                };
-
-                self.test.run(relayer.clone(), &context_next)?;
-            } else {
-                let context_current = TestContextV1 {
-                    context_id: "current_relayer".to_owned(),
-                    config: config.clone(),
-                    relayer: relayer.clone(),
-                    chains: chains.clone(),
-                    channel: channels.clone(),
-                };
-
-                self.test.run(relayer.clone(), &context_current)?;
-            }
-        }
+        self.test.run(relayer.clone(), &test_context)?;
 
         info!(
             "running two-way channel test in the opposite direction, from {}/{} to {}/{}",
@@ -391,65 +267,9 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
         let chains = chains.flip();
         let channels = channels.flip();
 
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "next")] {
+        let test_context = build_test_context(config, relayer.clone(), chains, channels)?;
 
-                let runtime = Arc::new(TokioRuntime::new().unwrap());
-
-                // Build key map from existing keys in ChainHandle
-                let mut key_map: HashMap<ChainId, Secp256k1KeyPair> = HashMap::new();
-                let key_a = chains.handle_a().get_key().unwrap();
-                if let ibc_relayer::keyring::AnySigningKeyPair::Secp256k1(secp256k1_a) = key_a {
-                    let chain_a_id = chains.handle_a().id();
-                    key_map.insert(chain_a_id, secp256k1_a);
-                }
-                let key_b = chains.handle_b().get_key().unwrap();
-                if let ibc_relayer::keyring::AnySigningKeyPair::Secp256k1(secp256k1_b) = key_b {
-                    let chain_b_id = chains.handle_b().id();
-                    key_map.insert(chain_b_id, secp256k1_b);
-                }
-
-                let builder = CosmosRelayBuilder::new_wrapped(
-                    relayer.config.clone(),
-                    runtime.clone(),
-                    Default::default(),
-                    Default::default(),
-                    Default::default(),
-                    key_map,
-                );
-
-                let birelay = runtime.block_on(async {builder
-                        .build_afo_full_birelay(
-                            chains.chain_id_a().0,
-                            chains.chain_id_b().0,
-                            chains.client_id_a().0,
-                            chains.client_id_b().0,
-                        )
-                        .await
-                        .map_err(handle_generic_error)
-                    })?;
-
-                let context_next = TestContextV2 {
-                    context_id: "relayer_next".to_owned(),
-                    config: config.clone(),
-                    relayer: birelay,
-                    chains,
-                    channel: channels,
-                };
-
-                self.test.run(relayer, &context_next)?;
-            } else {
-                let context_current = TestContextV1 {
-                    context_id: "current_relayer".to_owned(),
-                    config: config.clone(),
-                    relayer: relayer.clone(),
-                    chains,
-                    channel: channels,
-                };
-
-                self.test.run(relayer, &context_current)?;
-            }
-        }
+        self.test.run(relayer, &test_context)?;
 
         Ok(())
     }
