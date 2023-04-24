@@ -8,7 +8,9 @@ use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use ibc_relayer_types::core::ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
+use ibc_relayer_types::core::ics04_channel::channel::{
+    ChannelEnd, Ordering, State as ChannelState,
+};
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::{
     acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
@@ -304,11 +306,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn unordered_channel(&self) -> bool {
-        self.channel.ordering == Order::Unordered
+        self.channel.ordering == Ordering::Unordered
     }
 
     fn ordered_channel(&self) -> bool {
-        self.channel.ordering == Order::Ordered
+        self.channel.ordering == Ordering::Ordered
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {

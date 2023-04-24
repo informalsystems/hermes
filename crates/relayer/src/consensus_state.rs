@@ -81,14 +81,12 @@ impl From<AnyConsensusState> for Any {
         match value {
             AnyConsensusState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: Protobuf::<RawConsensusState>::encode_vec(&value)
-                    .expect("encoding to `Any` from `AnyConsensusState::Tendermint`"),
+                value: Protobuf::<RawConsensusState>::encode_vec(&value),
             },
             #[cfg(test)]
             AnyConsensusState::Mock(value) => Any {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: Protobuf::<RawMockConsensusState>::encode_vec(&value)
-                    .expect("encoding to `Any` from `AnyConsensusState::Mock`"),
+                value: Protobuf::<RawMockConsensusState>::encode_vec(&value),
             },
         }
     }

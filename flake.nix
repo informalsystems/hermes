@@ -46,6 +46,7 @@
               ibc-go-v7-simapp
               apalache
               evmos
+              juno
               stride
               stride-no-admin
             ;
