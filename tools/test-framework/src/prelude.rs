@@ -9,7 +9,7 @@ pub use ibc_relayer::config::Config;
 pub use ibc_relayer::foreign_client::ForeignClient;
 pub use ibc_relayer::registry::SharedRegistry;
 pub use ibc_relayer::supervisor::SupervisorHandle;
-pub use ibc_relayer_types::core::ics04_channel::channel::Order;
+pub use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 pub use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };

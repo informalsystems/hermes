@@ -17,6 +17,9 @@ use tracing::{error, instrument, trace, warn};
 use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
 };
+
+use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvConsumerParams;
+
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
@@ -303,6 +306,35 @@ impl CosmosSdkChain {
     }
 
     /// Query the chain staking parameters
+    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
+        crate::time!("query_ccv_consumer_chain_params");
+        crate::telemetry!(query, self.id(), "query_ccv_consumer_chain_params");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::interchain_security::ccv::consumer::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone()
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let request = tonic::Request::new(
+            ibc_proto::interchain_security::ccv::consumer::v1::QueryParamsRequest {},
+        );
+
+        let response = self
+            .block_on(client.query_params(request))
+            .map_err(Error::grpc_status)?;
+
+        let params = response
+            .into_inner()
+            .params
+            .ok_or_else(|| Error::grpc_response_param("no staking params".to_string()))?;
+
+        Ok(params)
+    }
+
+    /// Query the chain staking parameters
     pub fn query_staking_params(&self) -> Result<StakingParams, Error> {
         crate::time!("query_staking_params");
         crate::telemetry!(query, self.id(), "query_staking_params");
@@ -396,13 +428,17 @@ impl CosmosSdkChain {
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
 
-        if let Some(unbonding_period) = self.config.unbonding_period {
-            return Ok(unbonding_period);
-        }
-
-        let unbonding_time = self.query_staking_params()?.unbonding_time.ok_or_else(|| {
-            Error::grpc_response_param("no unbonding time in staking params".to_string())
-        })?;
+        let unbonding_time = if self.config.ccv_consumer_chain {
+            self.query_ccv_consumer_chain_params()?
+                .unbonding_period
+                .ok_or_else(|| {
+                    Error::grpc_response_param("no unbonding time in staking params".to_string())
+                })?
+        } else {
+            self.query_staking_params()?.unbonding_time.ok_or_else(|| {
+                Error::grpc_response_param("no unbonding time in staking params".to_string())
+            })?
+        };
 
         Ok(Duration::new(
             unbonding_time.seconds as u64,
@@ -413,8 +449,17 @@ impl CosmosSdkChain {
     /// The number of historical entries kept by this chain
     pub fn historical_entries(&self) -> Result<u32, Error> {
         crate::time!("historical_entries");
-
-        self.query_staking_params().map(|p| p.historical_entries)
+        if self.config.ccv_consumer_chain {
+            let ccv_parameters = self.query_ccv_consumer_chain_params()?;
+            ccv_parameters.historical_entries.try_into().map_err(|_| {
+                Error::invalid_historical_entries(
+                    self.id().clone(),
+                    ccv_parameters.historical_entries,
+                )
+            })
+        } else {
+            self.query_staking_params().map(|p| p.historical_entries)
+        }
     }
 
     /// Run a future to completion on the Tokio runtime.
@@ -2023,39 +2068,6 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             grpc_address,
             diagnostic.to_string(),
         ));
-    }
-
-    let unbonding_period = chain
-        .query_staking_params()
-        .map(|params| params.unbonding_time);
-
-    match unbonding_period {
-        Ok(Some(unbonding_period)) if chain.config.unbonding_period.is_some() => {
-            warn!(
-                "Chain '{}' has an unbonding period configured in the config.toml, \
-                but this is not required as this information can be fetched from the staking parameters. \
-                Please remove the `unbonding_period` setting from the chain configuration. \
-                Unbonding period in configuration: {:?}, unbonding period in staking parameters: {:?}",
-                chain_id, chain.config.unbonding_period.unwrap(), unbonding_period
-            );
-        }
-        Ok(None) if chain.config.unbonding_period.is_none() => {
-            warn!(
-                "Hermes was unable to fetch the unbonding period from the staking parameters for chain '{}'. \
-                If this is an ICS customer chain, please add the `unbonding_period` setting \
-                to the chain configuration.",
-                chain_id,
-            );
-        }
-        Err(e) if chain.config.unbonding_period.is_none() => {
-            warn!(
-                "Hermes was unable to fetch the unbonding period from the staking parameters for chain '{}'. \
-                If this is an ICS customer chain, please add the `unbonding_period` setting \
-                to the chain configuration. Otherwise, inspect the following error for more information: {}",
-                chain_id, e
-            );
-        }
-        _ => (),
     }
 
     if chain.historical_entries()? == 0 {

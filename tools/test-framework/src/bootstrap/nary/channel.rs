@@ -5,7 +5,7 @@
 use core::convert::TryInto;
 use core::time::Duration;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
 
 use crate::bootstrap::binary::channel::{
@@ -28,7 +28,7 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
     connections: DynamicConnectedConnections<Handle>,
     chains: &Vec<Handle>,
     ports: &Vec<Vec<PortId>>,
-    order: Order,
+    order: Ordering,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedChannels<Handle>, Error> {
     let size = chains.len();
@@ -85,7 +85,7 @@ pub fn bootstrap_channels_with_connections<Handle: ChainHandle, const SIZE: usiz
     connections: ConnectedConnections<Handle, SIZE>,
     chains: [Handle; SIZE],
     ports: [[PortId; SIZE]; SIZE],
-    order: Order,
+    order: Ordering,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannels<Handle, SIZE>, Error> {
     let channels = bootstrap_channels_with_connections_dynamic(
@@ -108,7 +108,7 @@ pub fn bootstrap_channels_and_connections_dynamic<Handle: ChainHandle>(
     chains: &DynamicConnectedChains<Handle>,
     ports: &Vec<Vec<PortId>>,
     connection_delay: Duration,
-    order: Order,
+    order: Ordering,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedChannels<Handle>, Error> {
     let connections = bootstrap_connections_dynamic(
@@ -134,7 +134,7 @@ pub fn bootstrap_channels_and_connections<Handle: ChainHandle, const SIZE: usize
     chains: &NaryConnectedChains<Handle, SIZE>,
     ports: [[PortId; SIZE]; SIZE],
     connection_delay: Duration,
-    order: Order,
+    order: Ordering,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannels<Handle, SIZE>, Error> {
     let channels = bootstrap_channels_and_connections_dynamic(

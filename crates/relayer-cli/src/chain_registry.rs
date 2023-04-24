@@ -127,7 +127,7 @@ where
         clock_drift: default::clock_drift(),
         max_block_time: default::max_block_time(),
         trusting_period: None,
-        unbonding_period: None,
+        ccv_consumer_chain: false,
         memo_prefix: Memo::default(),
         proof_specs: Default::default(),
         trust_threshold: TrustThreshold::default(),

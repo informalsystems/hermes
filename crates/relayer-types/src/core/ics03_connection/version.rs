@@ -8,7 +8,7 @@ use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use crate::core::ics03_connection::error::Error;
-use crate::core::ics04_channel::channel::Order;
+use crate::core::ics04_channel::channel::Ordering;
 
 /// Stores the identifier and the features supported by a version
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -60,8 +60,8 @@ impl Default for Version {
         Version {
             identifier: "1".to_string(),
             features: vec![
-                Order::Ordered.as_str().to_owned(),
-                Order::Unordered.as_str().to_owned(),
+                Ordering::Ordered.as_str().to_owned(),
+                Ordering::Unordered.as_str().to_owned(),
             ],
         }
     }

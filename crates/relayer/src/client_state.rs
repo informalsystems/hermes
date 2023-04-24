@@ -143,14 +143,12 @@ impl From<AnyClientState> for Any {
         match value {
             AnyClientState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: Protobuf::<RawClientState>::encode_vec(&value)
-                    .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
+                value: Protobuf::<RawClientState>::encode_vec(&value),
             },
             #[cfg(test)]
             AnyClientState::Mock(value) => Any {
                 type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-                value: Protobuf::<RawMockClientState>::encode_vec(&value)
-                    .expect("encoding to `Any` from `AnyClientState::Mock`"),
+                value: Protobuf::<RawMockClientState>::encode_vec(&value),
             },
         }
     }
@@ -188,6 +186,7 @@ impl ClientState for AnyClientState {
             .as_any()
             .downcast_ref::<AnyUpgradeOptions>()
             .expect("UpgradeOptions not of type AnyUpgradeOptions");
+
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.upgrade(
                 upgrade_height,
