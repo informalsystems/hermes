@@ -14,7 +14,7 @@ use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::versi
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_init,
-    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes,
+    ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -32,14 +32,6 @@ pub struct ChannelUpgradeInitHandshake;
 impl TestOverrides for ChannelUpgradeInitHandshake {
     fn modify_test_config(&self, config: &mut TestConfig) {
         config.bootstrap_with_random_ids = false;
-    }
-
-    fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode.connections.enabled = true;
-
-        config.mode.channels.enabled = false;
-        config.mode.packets.enabled = false;
-        config.mode.clients.enabled = false;
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -144,14 +136,6 @@ impl TestOverrides for ChannelUpgradeTryHandshake {
         config.bootstrap_with_random_ids = false;
     }
 
-    fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode.connections.enabled = true;
-
-        config.mode.channels.enabled = false;
-        config.mode.packets.enabled = false;
-        config.mode.clients.enabled = false;
-    }
-
     fn should_spawn_supervisor(&self) -> bool {
         false
     }
@@ -230,7 +214,7 @@ impl BinaryChannelTest for ChannelUpgradeTryHandshake {
             Some(new_version),
             new_ordering,
             new_connection_hops,
-            timeout.clone(),
+            timeout,
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
