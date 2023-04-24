@@ -119,6 +119,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
             previous_channel_id: domain_msg
                 .previous_channel_id
                 .map_or_else(|| "".to_string(), |v| v.to_string()),
+            counterparty_version: "".to_string(),
             channel: Some(domain_msg.channel.into()),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
@@ -143,6 +144,7 @@ pub mod test_util {
         RawMsgChannelOpenTry {
             port_id: PortId::default().to_string(),
             previous_channel_id: ChannelId::default().to_string(),
+            counterparty_version: "".to_string(),
             channel: Some(get_dummy_raw_channel_end()),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {

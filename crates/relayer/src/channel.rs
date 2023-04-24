@@ -836,22 +836,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
         // If the user supplied a version, use that.
-        // Otherwise, either use the version defined for the `transfer`
-        // or an empty version if the port is non-standard.
-        let version = self
-            .dst_version()
-            .cloned()
-            .or_else(|| version::default_by_port(self.dst_port_id()))
-            .unwrap_or_else(|| {
-                warn!(
-                    chain = %self.dst_chain().id(),
-                    channel = ?self.dst_channel_id(),
-                    port = %self.dst_port_id(),
-                    "no version specified for the channel, falling back on empty version"
-                );
-
-                Version::empty()
-            });
+        // Otherwise, use the empty version and let the application decide on it.
+        let version = self.dst_version().cloned().unwrap_or_else(Version::empty);
 
         let channel = ChannelEnd::new(
             State::Init,
@@ -1047,7 +1033,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let new_msg = MsgChannelOpenTry {
             port_id: self.dst_port_id().clone(),
             previous_channel_id,
-            counterparty_version: src_channel.version().clone(),
             channel,
             proofs,
             signer,
