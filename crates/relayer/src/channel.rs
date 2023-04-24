@@ -39,7 +39,6 @@ use crate::util::retry::RetryResult;
 use crate::util::task::Next;
 
 pub mod error;
-pub mod version;
 use version::Version;
 
 pub mod channel_handshake_retry {
