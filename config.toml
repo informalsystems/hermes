@@ -142,7 +142,7 @@ key_name = 'testkey'
 
 # Specify the folder used to store the keys. Optional
 # If this is not specified then the hermes home folder is used.
-# key_store_folder = '/home/.hermes_keys'
+# key_store_folder = '$HOME/.hermes/keys'
 
 # Specify the address type which determines:
 # 1) address derivation;
