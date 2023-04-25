@@ -140,7 +140,7 @@ pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 pub struct CosmosSdkChain {
     config: ChainConfig,
     tx_config: TxConfig,
-    rpc_client: HttpClient,
+    pub rpc_client: HttpClient,
     compat_mode: CompatMode,
     grpc_addr: Uri,
     light_client: TmLightClient,
@@ -515,7 +515,8 @@ impl CosmosSdkChain {
     }
 
     /// Run a future to completion on the Tokio runtime.
-    fn block_on<F: Future>(&self, f: F) -> F::Output {
+    pub fn block_on<F: Future>(&self, f: F) -> F::Output {
+        crate::time!("block_on");
         self.rt.block_on(f)
     }
 
