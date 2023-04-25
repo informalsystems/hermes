@@ -1006,15 +1006,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        // Re-use the version that was either set on ChanOpenInit or overwritten by the application.
-        let version = src_channel.version().clone();
-
         let channel = ChannelEnd::new(
             State::TryOpen,
             *src_channel.ordering(),
             counterparty,
             vec![self.dst_connection_id().clone()],
-            version,
+            // For `MsgChannelOpenTry` the version field within the channel has been deprecated.
+            // See https://github.com/cosmos/ibc-go/blob/v3.0.0/proto/ibc/core/channel/v1/tx.proto#L84
+            Version::empty(),
         );
 
         // Get signer
@@ -1033,6 +1032,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let new_msg = MsgChannelOpenTry {
             port_id: self.dst_port_id().clone(),
             previous_channel_id,
+            counterparty_version: src_channel.version().clone(),
             channel,
             proofs,
             signer,

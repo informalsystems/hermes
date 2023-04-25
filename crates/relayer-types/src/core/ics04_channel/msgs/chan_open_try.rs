@@ -1,5 +1,6 @@
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::error::Error as ChannelError;
+use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
@@ -22,6 +23,7 @@ pub struct MsgChannelOpenTry {
     pub port_id: PortId,
     pub previous_channel_id: Option<ChannelId>,
     pub channel: ChannelEnd,
+    pub counterparty_version: Version,
     pub proofs: Proofs,
     pub signer: Signer,
 }
@@ -31,6 +33,7 @@ impl MsgChannelOpenTry {
         port_id: PortId,
         previous_channel_id: Option<ChannelId>,
         channel: ChannelEnd,
+        counterparty_version: Version,
         proofs: Proofs,
         signer: Signer,
     ) -> Self {
@@ -38,6 +41,7 @@ impl MsgChannelOpenTry {
             port_id,
             previous_channel_id,
             channel,
+            counterparty_version,
             proofs,
             signer,
         }
@@ -99,6 +103,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
                 .channel
                 .ok_or_else(ChannelError::missing_channel)?
                 .try_into()?,
+            counterparty_version: raw_msg.counterparty_version.into(),
             proofs,
             signer: raw_msg.signer.parse().map_err(ChannelError::signer)?,
         };
@@ -118,7 +123,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
             previous_channel_id: domain_msg
                 .previous_channel_id
                 .map_or_else(|| "".to_string(), |v| v.to_string()),
-            counterparty_version: "".to_string(),
+            counterparty_version: domain_msg.counterparty_version.to_string(),
             channel: Some(domain_msg.channel.into()),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
@@ -143,8 +148,8 @@ pub mod test_util {
         RawMsgChannelOpenTry {
             port_id: PortId::default().to_string(),
             previous_channel_id: ChannelId::default().to_string(),
-            counterparty_version: "".to_string(),
             channel: Some(get_dummy_raw_channel_end()),
+            counterparty_version: "".to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
                 revision_number: 0,
@@ -230,6 +235,22 @@ mod tests {
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
+            },
+            Test {
+                name: "Empty counterparty version (valid choice)".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    counterparty_version: " ".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Arbitrary counterparty version (valid choice)".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    counterparty_version: "anyversion".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
             },
             Test {
                 name: "Bad proof height, height = 0".to_string(),
