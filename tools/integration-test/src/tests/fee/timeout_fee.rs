@@ -3,6 +3,7 @@
 //! operation times out.
 
 use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 use std::thread;
@@ -25,13 +26,12 @@ impl TestOverrides for TimeoutFeeTest {
 }
 
 impl BinaryChannelTest for TimeoutFeeTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let chain_driver_a = chains.node_a.chain_driver();
 
         let denom_a = chains.node_a.denom();

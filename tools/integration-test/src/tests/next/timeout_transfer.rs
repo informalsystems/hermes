@@ -7,6 +7,7 @@
 use ibc_relayer::config::PacketFilter;
 use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
@@ -26,16 +27,15 @@ impl TestOverrides for IbcTransferTest {
 }
 
 impl BinaryChannelTest for IbcTransferTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let pf: PacketFilter = PacketFilter::default();
 
-        let relay_context = build_cosmos_relay_context(&relayer.config, &chains, pf)?;
+        let relay_context = build_cosmos_relay_context(&relayer.config, chains, pf)?;
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 

@@ -1,3 +1,6 @@
+use ibc_test_framework::framework::next::chain::{
+    CanShutdown, CanSpawnRelayer, HasTwoChains, HasTwoChannels,
+};
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 
@@ -8,19 +11,23 @@ fn test_ibc_denom_trace() -> Result<(), Error> {
 
 pub struct IbcDenomTraceTest;
 
-impl TestOverrides for IbcDenomTraceTest {}
+impl TestOverrides for IbcDenomTraceTest {
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
 
 /// In order to test the denom_trace at first transfer IBC tokens from Chain A
 /// to Chain B, and then retrieving the trace hash of the transfered tokens.
 /// The trace hash is used to query the denom_trace and the result is verified.
 impl BinaryChannelTest for IbcDenomTraceTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer + CanShutdown,
+    {
+        let handle = context.spawn_relayer()?;
+        let chains = context.chains();
+        let channel = context.channel();
         let a_to_b_amount: u64 = 1234;
 
         let denom_a = chains.node_a.denom();
@@ -86,6 +93,8 @@ impl BinaryChannelTest for IbcDenomTraceTest {
             &denom_trace.base_denom,
             &denom_a.value().as_str().to_string(),
         )?;
+
+        context.shutdown(handle);
 
         Ok(())
     }

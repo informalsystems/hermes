@@ -3,10 +3,10 @@
    together with the relayer setup with chain handles and foreign clients,
    as well as connected IBC channels with completed handshakes.
 */
+use tracing::info;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
-use tracing::info;
 
 use crate::bootstrap::nary::channel::bootstrap_channels_with_connections;
 use crate::error::Error;
@@ -18,6 +18,7 @@ use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::chain::RunNaryChainTest;
 use crate::framework::nary::connection::{NaryConnectionTest, RunNaryConnectionTest};
 use crate::framework::nary::node::run_nary_node_test;
+use crate::framework::next::context::build_test_context;
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
@@ -204,8 +205,13 @@ where
         chains: NaryConnectedChains<Handle, 2>,
         channels: ConnectedChannels<Handle, 2>,
     ) -> Result<(), Error> {
-        self.test
-            .run(config, relayer, chains.into(), channels.into())
+        let connected_chains = chains.connected_chains_at::<0, 1>()?;
+        let connected_channel = channels.channel_at::<0, 1>()?;
+
+        let test_context =
+            build_test_context(config, relayer.clone(), connected_chains, connected_channel)?;
+
+        self.test.run(relayer, &test_context)
     }
 }
 

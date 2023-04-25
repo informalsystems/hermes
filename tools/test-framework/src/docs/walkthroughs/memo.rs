@@ -11,6 +11,7 @@
 //! ```no_run
 //! # use serde_json as json;
 //! # use ibc_relayer::config::{types::Memo, Config};
+//! # use ibc_test_framework::framework::next::chain::{CanSpawnRelayer, HasTwoChains, HasTwoChannels};
 //! # use ibc_test_framework::ibc::denom::derive_ibc_denom;
 //! # use ibc_test_framework::prelude::*;
 //! # use ibc_test_framework::util::random::{random_string, random_u128_range};
@@ -35,13 +36,14 @@
 //! }
 //!
 //! impl BinaryChannelTest for MemoTest {
-//!     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-//!         &self,
-//!         _config: &TestConfig,
-//!         _relayer: RelayerDriver,
-//!         chains: ConnectedChains<ChainA, ChainB>,
-//!         channel: ConnectedChannel<ChainA, ChainB>,
-//!     ) -> Result<(), Error> {
+//!     fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+//!     where
+//!         Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
+//!     {
+//!         let _handle = context.spawn_relayer()?;
+//!         let chains = context.chains();
+//!         let channel = context.channel();
+//!
 //!         let denom_a = chains.node_a.denom();
 //!
 //!         let a_to_b_amount = random_u128_range(1000, 5000);

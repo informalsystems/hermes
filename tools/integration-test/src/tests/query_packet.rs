@@ -1,6 +1,7 @@
 use ibc_relayer::chain::counterparty::{channel_on_destination, pending_packet_summary};
 use ibc_relayer::link::{Link, LinkParameters};
 
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::query_identified_channel_end;
 use ibc_test_framework::relayer::connection::query_identified_connection_end;
@@ -27,13 +28,12 @@ impl TestOverrides for QueryPacketPendingTest {
 }
 
 impl BinaryChannelTest for QueryPacketPendingTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let denom_a = chains.node_a.denom();
 
         let wallet_a = chains.node_a.wallets().user1().cloned();

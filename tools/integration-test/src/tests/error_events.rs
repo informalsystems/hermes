@@ -1,5 +1,6 @@
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer_types::events::IbcEvent;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::transfer::build_transfer_message;
 
@@ -10,16 +11,19 @@ fn test_error_events() -> Result<(), Error> {
 
 pub struct ErrorEventsTest;
 
-impl TestOverrides for ErrorEventsTest {}
+impl TestOverrides for ErrorEventsTest {
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
 
 impl BinaryChannelTest for ErrorEventsTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let denom_a = chains.node_a.denom();
 
         let wallet_a = chains.node_a.wallets().user1().cloned();

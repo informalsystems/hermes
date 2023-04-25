@@ -42,6 +42,9 @@ where
                 .await;
         });
 
+        // Wait for handle1 and handle2 to finish.
+        // Equivalent to Join.
+        // TODO: Confirm with Soares
         handle1.into_future().await;
         handle2.into_future().await;
 

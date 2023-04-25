@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use ibc_relayer::config::filter::{ChannelPolicy, FeePolicy, FilterPattern, MinFee};
 use ibc_relayer::config::PacketFilter;
 use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
@@ -37,13 +38,12 @@ impl TestOverrides for FilterIncentivizedFeesRelayerTest {
 }
 
 impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let chain_driver_a = chains.node_a.chain_driver();
         let chain_driver_b = chains.node_b.chain_driver();
 
@@ -185,13 +185,12 @@ impl TestOverrides for FilterByChannelIncentivizedFeesRelayerTest {
 }
 
 impl BinaryChannelTest for FilterByChannelIncentivizedFeesRelayerTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let chain_driver_a = chains.node_a.chain_driver();
         let chain_driver_b = chains.node_b.chain_driver();
 

@@ -3,6 +3,7 @@ use std::time::Instant;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::types::max_msg_num::MaxMsgNum;
 use ibc_test_framework::chain::config;
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::transfer::build_transfer_message;
 
@@ -48,13 +49,12 @@ impl TestOverrides for SequentialCommitTest {
 }
 
 impl BinaryChannelTest for SequentialCommitTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let wallet_a = chains.node_a.wallets().relayer().cloned();
         let wallet_b = chains.node_b.wallets().relayer().cloned();
 

@@ -1,3 +1,7 @@
+use ibc_test_framework::framework::next::chain::{
+    CanShutdown, CanSpawnRelayer, CanWaitForAck, HasContextId, HasTwoChains, HasTwoChannels,
+    HasTwoNodes,
+};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
@@ -36,26 +40,38 @@ fn test_self_connected_nary_ibc_transfer() -> Result<(), Error> {
     )))
 }
 
+impl TestOverrides for IbcTransferTest {
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
+
 pub struct IbcTransferTest;
 
-impl TestOverrides for IbcTransferTest {}
-
 impl BinaryChannelTest for IbcTransferTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
-        let denom_a = chains.node_a.denom();
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains
+            + HasTwoChannels
+            + HasTwoNodes
+            + CanSpawnRelayer
+            + HasContextId
+            + CanWaitForAck
+            + CanShutdown,
+    {
+        info!("Will run test with {}", context.context_id());
+        let handle = context.spawn_relayer()?;
 
-        let wallet_a = chains.node_a.wallets().user1().cloned();
-        let wallet_b = chains.node_b.wallets().user1().cloned();
-        let wallet_c = chains.node_a.wallets().user2().cloned();
+        let node_a = context.node_a();
+        let node_b = context.node_b();
 
-        let balance_a = chains
-            .node_a
+        let denom_a = node_a.denom();
+
+        let wallet_a = node_a.wallets().user1().cloned();
+        let wallet_b = node_b.wallets().user1().cloned();
+        let wallet_c = node_a.wallets().user2().cloned();
+
+        let balance_a = node_a
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
 
@@ -63,13 +79,15 @@ impl BinaryChannelTest for IbcTransferTest {
 
         info!(
             "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
-            chains.chain_id_a(),
-            chains.chain_id_b(),
+            context.chain_a().id(),
+            context.chain_b().id(),
             a_to_b_amount,
             denom_a
         );
 
-        chains.node_a.chain_driver().ibc_transfer_token(
+        let channel = context.channel();
+
+        node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
@@ -88,24 +106,25 @@ impl BinaryChannelTest for IbcTransferTest {
             a_to_b_amount
         );
 
-        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+        node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a.address(),
             &(balance_a - a_to_b_amount).as_ref(),
         )?;
 
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+        node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
             &denom_b.with_amount(a_to_b_amount).as_ref(),
         )?;
 
+        context.wait_for_src_acks()?;
+
         info!(
             "successfully performed IBC transfer from chain {} to chain {}",
-            chains.chain_id_a(),
-            chains.chain_id_b(),
+            context.chain_a().id(),
+            context.chain_b().id(),
         );
 
-        let balance_c = chains
-            .node_a
+        let balance_c = node_a
             .chain_driver()
             .query_balance(&wallet_c.address(), &denom_a)?;
 
@@ -113,12 +132,12 @@ impl BinaryChannelTest for IbcTransferTest {
 
         info!(
             "Sending IBC transfer from chain {} to chain {} with amount of {}",
-            chains.chain_id_b(),
-            chains.chain_id_a(),
+            context.chain_b().id(),
+            context.chain_a().id(),
             b_to_a_amount,
         );
 
-        chains.node_b.chain_driver().ibc_transfer_token(
+        node_b.chain_driver().ibc_transfer_token(
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &wallet_b.as_ref(),
@@ -126,21 +145,25 @@ impl BinaryChannelTest for IbcTransferTest {
             &denom_b.with_amount(b_to_a_amount).as_ref(),
         )?;
 
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+        node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
             &denom_b.with_amount(a_to_b_amount - b_to_a_amount).as_ref(),
         )?;
 
-        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+        node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_c.address(),
             &(balance_c + b_to_a_amount).as_ref(),
         )?;
 
         info!(
             "successfully performed reverse IBC transfer from chain {} back to chain {}",
-            chains.chain_id_b(),
-            chains.chain_id_a(),
+            context.chain_b().id(),
+            context.chain_a().id(),
         );
+
+        context.wait_for_dst_acks()?;
+
+        context.shutdown(handle);
 
         Ok(())
     }

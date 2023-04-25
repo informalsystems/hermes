@@ -3,7 +3,6 @@
    relayer setup with chain handles and foreign clients, as well as
    connected IBC channels with completed handshakes.
 */
-
 use tracing::info;
 
 use ibc_relayer::chain::handle::ChainHandle;
@@ -25,10 +24,14 @@ use crate::framework::binary::connection::{
 use crate::framework::binary::node::{
     run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
 };
+use crate::framework::next::chain::{
+    CanShutdown, CanSpawnRelayer, CanWaitForAck, HasContextId, HasTestConfig, HasTwoChains,
+    HasTwoChannels, HasTwoNodes,
+};
+use crate::framework::next::context::build_test_context;
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
-use crate::types::binary::channel::ConnectedChannel;
 use crate::types::binary::connection::ConnectedConnection;
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
@@ -89,13 +92,16 @@ where
 */
 pub trait BinaryChannelTest {
     /// Test runner
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channels: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error>;
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains
+            + HasTwoChannels
+            + HasTwoNodes
+            + HasTestConfig
+            + CanSpawnRelayer
+            + HasContextId
+            + CanWaitForAck
+            + CanShutdown;
 }
 
 /**
@@ -220,20 +226,23 @@ where
 
         info!("written channel environment to {}", env_path.display());
 
-        self.test.run(config, relayer, chains, channels)?;
+        let test_context = build_test_context(config, relayer.clone(), chains, channels)?;
+
+        self.test.run(relayer, &test_context)?;
 
         Ok(())
     }
 }
 
 impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTest<'a, Test> {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channels: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels + HasTestConfig,
+    {
+        let config = context.config();
+        let chains = context.chains().clone();
+        let channels = context.channel().clone();
+
         info!(
             "running two-way channel test, from {}/{} to {}/{}",
             chains.chain_id_a(),
@@ -242,8 +251,10 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
             channels.channel_id_b,
         );
 
-        self.test
-            .run(config, relayer.clone(), chains.clone(), channels.clone())?;
+        let test_context =
+            build_test_context(config, relayer.clone(), chains.clone(), channels.clone())?;
+
+        self.test.run(relayer.clone(), &test_context)?;
 
         info!(
             "running two-way channel test in the opposite direction, from {}/{} to {}/{}",
@@ -256,7 +267,9 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
         let chains = chains.flip();
         let channels = channels.flip();
 
-        self.test.run(config, relayer, chains, channels)?;
+        let test_context = build_test_context(config, relayer.clone(), chains, channels)?;
+
+        self.test.run(relayer, &test_context)?;
 
         Ok(())
     }
@@ -268,21 +281,24 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: SupervisorOverride,
 {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channels: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains
+            + HasTwoChannels
+            + HasTwoNodes
+            + HasTestConfig
+            + CanSpawnRelayer
+            + HasContextId
+            + CanWaitForAck
+            + CanShutdown,
+    {
+        let config = context.config();
         if self.get_overrides().should_spawn_supervisor() {
             relayer
                 .clone()
-                .with_supervisor(|| self.test.run(config, relayer, chains, channels))
+                .with_supervisor(|| self.test.run(relayer, context))
         } else {
-            hang_on_error(config.hang_on_fail, || {
-                self.test.run(config, relayer, chains, channels)
-            })
+            hang_on_error(config.hang_on_fail, || self.test.run(relayer, context))
         }
     }
 }

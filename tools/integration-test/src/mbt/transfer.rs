@@ -6,6 +6,7 @@ use ibc_relayer::config::{
     ModeConfig, Packets as ConfigPackets,
 };
 
+use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::types::tagged::mono::Tagged;
 
@@ -168,13 +169,12 @@ impl TestOverrides for IbcTransferMBT {
 }
 
 impl BinaryChannelTest for IbcTransferMBT {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channels: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels,
+    {
+        let chains = context.chains();
+        let channels = context.channel();
         // relayer is spawned
         let mut supervisor = Some(relayer.spawn_supervisor()?);
 
@@ -191,7 +191,7 @@ impl BinaryChannelTest for IbcTransferMBT {
                     amount,
                 } => {
                     info!("[LocalTransfer] Init");
-                    let node: Tagged<ChainA, _> = get_chain(&chains, *chain_id);
+                    let node: Tagged<Context::ChainA, _> = get_chain(chains, *chain_id);
                     super::handlers::local_transfer_handler(
                         node, *source, *target, *denom, *amount,
                     )?;
@@ -217,7 +217,7 @@ impl BinaryChannelTest for IbcTransferMBT {
                             assert!(
                                 super::utils::get_committed_packets_at_src(
                                     &chains.handle_a,
-                                    &channels
+                                    channels
                                 )?
                                 .is_empty(),
                                 "no packets present"
@@ -226,14 +226,14 @@ impl BinaryChannelTest for IbcTransferMBT {
                             super::handlers::ibc_transfer_send_packet(
                                 chains.node_a.as_ref(),
                                 chains.node_b.as_ref(),
-                                &channels,
+                                channels,
                                 packet,
                             )?;
 
                             assert_eq!(
                                 super::utils::get_committed_packets_at_src(
                                     &chains.handle_a,
-                                    &channels,
+                                    channels,
                                 )?
                                 .len(),
                                 1,
@@ -279,7 +279,7 @@ impl BinaryChannelTest for IbcTransferMBT {
                             super::handlers::ibc_transfer_receive_packet(
                                 chains.node_a.as_ref(),
                                 chains.node_b.as_ref(),
-                                &channels,
+                                channels,
                                 packet,
                             )?;
                             assert_eq!(
@@ -302,7 +302,7 @@ impl BinaryChannelTest for IbcTransferMBT {
                             assert_eq!(
                                 super::utils::get_acknowledged_packets_at_dst(
                                     &chains.handle_a,
-                                    &channels
+                                    channels
                                 )?
                                 .len(),
                                 1,
@@ -322,7 +322,7 @@ impl BinaryChannelTest for IbcTransferMBT {
                             assert!(
                                 super::utils::get_committed_packets_at_src(
                                     &chains.handle_a,
-                                    &channels
+                                    channels
                                 )?
                                 .is_empty(),
                                 "commitment is completed"

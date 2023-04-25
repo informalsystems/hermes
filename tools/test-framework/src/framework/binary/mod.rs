@@ -5,4 +5,5 @@
 pub mod chain;
 pub mod channel;
 pub mod connection;
+pub mod next;
 pub mod node;

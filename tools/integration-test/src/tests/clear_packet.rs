@@ -1,3 +1,4 @@
+use ibc_test_framework::framework::next::chain::{CanSpawnRelayer, HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
@@ -44,13 +45,12 @@ impl TestOverrides for ClearPacketRecoveryTest {
 }
 
 impl BinaryChannelTest for ClearPacketTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let denom_a = chains.node_a.denom();
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
@@ -79,7 +79,7 @@ impl BinaryChannelTest for ClearPacketTest {
         sleep(Duration::from_secs(1));
 
         // Spawn the supervisor only after the first IBC trasnfer
-        relayer.with_supervisor(|| {
+        context.with_supervisor(|| {
             sleep(Duration::from_secs(1));
 
             let amount2 = denom_a.with_amount(random_u128_range(1000, 5000));
@@ -120,13 +120,12 @@ impl BinaryChannelTest for ClearPacketTest {
 }
 
 impl BinaryChannelTest for ClearPacketRecoveryTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let denom_a = chains.node_a.denom();
         let denom_b1 = chains.node_b.denom();
 
@@ -158,7 +157,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
             &denom_a,
         )?;
 
-        relayer.with_supervisor(|| {
+        context.with_supervisor(|| {
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
                 &wallet_b.address(),
                 &denom_b2.with_amount(amount1).as_ref(),
