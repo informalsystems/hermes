@@ -158,6 +158,10 @@ address_type = { derivation = 'cosmos' }
 # Recommended value for Cosmos SDK: 'ibc'
 store_prefix = 'ibc'
 
+# Specify the folder used to store the keys. Optional
+# If this is not specified then the hermes home folder is used.
+# key_store_folder = '/home/.hermes_keys'
+
 # Gas Parameters
 # 
 # The term 'gas' is used to denote the amount of computation needed to execute

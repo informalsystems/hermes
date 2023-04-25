@@ -18,6 +18,7 @@ use tendermint_rpc::WebSocketClientUrl;
 use crate::chain::chain_type::ChainType as TestedChainType;
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
+use crate::prelude::TestConfig;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
 use crate::types::tagged::*;
@@ -124,7 +125,14 @@ impl FullNode {
     pub fn generate_chain_config(
         &self,
         chain_type: &TestedChainType,
+        test_config: &TestConfig,
     ) -> Result<config::ChainConfig, Error> {
+        let hermes_keystore_dir = test_config
+            .chain_store_dir
+            .join("hermes_keyring")
+            .as_path()
+            .display()
+            .to_string();
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
             r#type: ChainType::CosmosSdk,
@@ -135,12 +143,8 @@ impl FullNode {
             genesis_restart: None,
             account_prefix: self.chain_driver.account_prefix.clone(),
             key_name: self.wallets.relayer.id.0.clone(),
-
-            // By default we use in-memory key store to avoid polluting
-            // ~/.hermes/keys. See
-            // https://github.com/informalsystems/hermes/issues/1541
-            key_store_type: Store::Memory,
-
+            key_store_type: Store::Test,
+            key_store_folder: Some(hermes_keystore_dir),
             store_prefix: "ibc".to_string(),
             default_gas: None,
             max_gas: Some(3000000),

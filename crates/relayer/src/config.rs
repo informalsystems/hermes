@@ -448,6 +448,7 @@ pub struct ChainConfig {
     pub key_name: String,
     #[serde(default)]
     pub key_store_type: Store,
+    pub key_store_folder: Option<String>,
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
