@@ -16,7 +16,7 @@ mod signing_key_pair;
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use std::ffi::OsStr;
 use std::fs::{self, File};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use serde::{Deserialize, Serialize};
@@ -307,16 +307,15 @@ pub fn list_keys(config: &ChainConfig) -> Result<Vec<(String, AnySigningKeyPair)
 }
 
 fn disk_store_path(folder_name: &str, keystore_folder: &Option<PathBuf>) -> Result<PathBuf, Error> {
-    let home = dirs_next::home_dir().ok_or_else(Error::home_location_unavailable)?;
+    let ks_folder = match keystore_folder {
+        Some(folder) => folder.to_owned(),
+        None => {
+            let home = dirs_next::home_dir().ok_or_else(Error::home_location_unavailable)?;
+            home.join(KEYSTORE_DEFAULT_FOLDER)
+        }
+    };
 
-    let ks_folder = keystore_folder
-        .clone()
-        .unwrap_or(PathBuf::from(KEYSTORE_DEFAULT_FOLDER));
-
-    let folder = Path::new(home.as_path())
-        .join(ks_folder)
-        .join(folder_name)
-        .join(KEYSTORE_DISK_BACKEND);
+    let folder = ks_folder.join(folder_name).join(KEYSTORE_DISK_BACKEND);
 
     Ok(folder)
 }
