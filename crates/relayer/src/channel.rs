@@ -39,8 +39,8 @@ use crate::util::retry::RetryResult;
 use crate::util::task::Next;
 
 pub mod error;
-
-pub use ibc_relayer_types::core::ics04_channel::version::Version;
+pub mod version;
+use version::Version;
 
 pub mod channel_handshake_retry {
     //! Provides utility methods and constants to configure the retry behavior
