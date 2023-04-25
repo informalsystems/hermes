@@ -776,9 +776,13 @@ impl ChainEndpoint for CosmosSdkChain {
         let light_client = TmLightClient::from_config(&config, node_info.id)?;
 
         // Initialize key store and load key
-        let keybase =
-            KeyRing::new_secp256k1(config.key_store_type, &config.account_prefix, &config.id)
-                .map_err(Error::key_base)?;
+        let keybase = KeyRing::new_secp256k1(
+            config.key_store_type,
+            &config.account_prefix,
+            &config.id,
+            &config.key_store_folder,
+        )
+        .map_err(Error::key_base)?;
 
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
