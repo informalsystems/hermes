@@ -140,6 +140,10 @@ account_prefix = 'cosmos'
 #   https://hermes.informal.systems/commands/keys/index.html#adding-keys
 key_name = 'testkey'
 
+# Specify the folder used to store the keys. Optional
+# If this is not specified then the hermes home folder is used.
+# key_store_folder = '/home/.hermes_keys'
+
 # Specify the address type which determines:
 # 1) address derivation;
 # 2) how to retrieve and decode accounts and pubkeys;
@@ -157,10 +161,6 @@ address_type = { derivation = 'cosmos' }
 # Specify the store prefix used by the on-chain IBC modules. Required
 # Recommended value for Cosmos SDK: 'ibc'
 store_prefix = 'ibc'
-
-# Specify the folder used to store the keys. Optional
-# If this is not specified then the hermes home folder is used.
-# key_store_folder = '/home/.hermes_keys'
 
 # Gas Parameters
 # 

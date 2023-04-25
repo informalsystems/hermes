@@ -144,7 +144,7 @@ impl FullNode {
             account_prefix: self.chain_driver.account_prefix.clone(),
             key_name: self.wallets.relayer.id.0.clone(),
             key_store_type: Store::Test,
-            key_store_folder: Some(hermes_keystore_dir),
+            key_store_folder: Some(hermes_keystore_dir.into()),
             store_prefix: "ibc".to_string(),
             default_gas: None,
             max_gas: Some(3000000),

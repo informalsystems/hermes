@@ -204,7 +204,7 @@ impl<S: SigningKeyPairSized> KeyRing<S> {
         store: Store,
         account_prefix: &str,
         chain_id: &ChainId,
-        ks_folder: &Option<String>,
+        ks_folder: &Option<PathBuf>,
     ) -> Result<Self, Error> {
         match store {
             Store::Memory => Ok(Self::Memory(Memory::new(account_prefix.to_string()))),
@@ -270,7 +270,7 @@ impl KeyRing<Secp256k1KeyPair> {
         store: Store,
         account_prefix: &str,
         chain_id: &ChainId,
-        ks_folder: &Option<String>,
+        ks_folder: &Option<PathBuf>,
     ) -> Result<Self, Error> {
         Self::new(store, account_prefix, chain_id, ks_folder)
     }
@@ -281,7 +281,7 @@ impl KeyRing<Ed25519KeyPair> {
         store: Store,
         account_prefix: &str,
         chain_id: &ChainId,
-        ks_folder: &Option<String>,
+        ks_folder: &Option<PathBuf>,
     ) -> Result<Self, Error> {
         Self::new(store, account_prefix, chain_id, ks_folder)
     }
@@ -306,14 +306,12 @@ pub fn list_keys(config: &ChainConfig) -> Result<Vec<(String, AnySigningKeyPair)
     Ok(keys)
 }
 
-fn disk_store_path(folder_name: &str, keystore_folder: &Option<String>) -> Result<PathBuf, Error> {
+fn disk_store_path(folder_name: &str, keystore_folder: &Option<PathBuf>) -> Result<PathBuf, Error> {
     let home = dirs_next::home_dir().ok_or_else(Error::home_location_unavailable)?;
 
-    let ks_folder = if let Some(ks) = keystore_folder {
-        ks
-    } else {
-        KEYSTORE_DEFAULT_FOLDER
-    };
+    let ks_folder = keystore_folder
+        .clone()
+        .unwrap_or(PathBuf::from(KEYSTORE_DEFAULT_FOLDER));
 
     let folder = Path::new(home.as_path())
         .join(ks_folder)

@@ -13,7 +13,12 @@ use core::{
     str::FromStr,
     time::Duration,
 };
-use std::{fs, fs::File, io::Write, path::Path};
+use std::{
+    fs,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 use tendermint::block::Height as BlockHeight;
 use tendermint_rpc::{Url, WebSocketClientUrl};
 
@@ -448,7 +453,7 @@ pub struct ChainConfig {
     pub key_name: String,
     #[serde(default)]
     pub key_store_type: Store,
-    pub key_store_folder: Option<String>,
+    pub key_store_folder: Option<PathBuf>,
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
