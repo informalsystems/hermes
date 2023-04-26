@@ -183,7 +183,7 @@ pub fn query_channel_end<ChainA: ChainHandle, ChainB>(
             channel_id: channel_id.into_value().clone(),
             height: QueryHeight::Latest,
         },
-        IncludeProof::No,
+        IncludeProof::Yes,
     )?;
 
     Ok(DualTagged::new(channel_end))
