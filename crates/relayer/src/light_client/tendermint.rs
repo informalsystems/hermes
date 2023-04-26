@@ -194,13 +194,19 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                     Err(e) => error!("failed to report evidence to RPC witness node: {}", e),
                 }
 
-                // We redo verification one more time to get the trace of supporting headers
-                let verified = self.header_and_minimal_set(
-                    update_header.trusted_height,
-                    update_header.height(),
-                    &AnyClientState::Tendermint(client_state.clone()),
-                    now,
-                )?;
+                let target_block = self.fetch(update_header.height())?;
+                let trusted_height = TMHeight::from(update_header.trusted_height);
+                let trace = evidence
+                    .witness_trace
+                    .into_vec()
+                    .into_iter()
+                    .filter(|lb| {
+                        lb.height() != target_block.height() && lb.height() != trusted_height
+                    })
+                    .collect();
+
+                let (target_header, supporting_headers) =
+                    self.adjust_headers(update_header.trusted_height, target_block, trace)?;
 
                 let evidence = MisbehaviourEvidence {
                     misbehaviour: AnyMisbehaviour::Tendermint(TmMisbehaviour {
@@ -209,12 +215,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                         header2: TmHeader {
                             signed_header: challenging_block.signed_header,
                             validator_set: challenging_block.validators,
-                            trusted_height: verified.target.trusted_height,
-                            trusted_validator_set: verified.target.trusted_validator_set,
+                            trusted_height: target_header.trusted_height,
+                            trusted_validator_set: target_header.trusted_validator_set,
                         },
                     }),
-                    supporting_headers: verified
-                        .supporting
+                    supporting_headers: supporting_headers
                         .into_iter()
                         .map(AnyHeader::Tendermint)
                         .collect(),
