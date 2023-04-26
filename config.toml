@@ -23,8 +23,8 @@ enabled = true
 #      there is activity on a connection or channel they are involved with.
 refresh = true
 
-# Whether or not to enable misbehaviour detection for clients. [Default: false]
-misbehaviour = false
+# Whether or not to enable misbehaviour detection for clients. [Default: true]
+misbehaviour = true
 
 # Specify the connections mode.
 [mode.connections]
