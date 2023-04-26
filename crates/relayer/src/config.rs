@@ -266,7 +266,7 @@ impl Default for ModeConfig {
             clients: Clients {
                 enabled: true,
                 refresh: true,
-                misbehaviour: false,
+                misbehaviour: true,
             },
             connections: Connections { enabled: false },
             channels: Channels { enabled: false },
