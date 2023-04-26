@@ -116,6 +116,7 @@ where
         account_prefix: chain_data.bech32_prefix,
         key_name: String::new(),
         key_store_type: Store::default(),
+        key_store_folder: None,
         store_prefix: "ibc".to_string(),
         default_gas: Some(100000),
         max_gas: Some(400000),

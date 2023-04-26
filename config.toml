@@ -23,7 +23,7 @@ enabled = true
 #      there is activity on a connection or channel they are involved with.
 refresh = true
 
-# Whether or not to enable misbehaviour detection for clients. [Default: false]
+# Whether or not to enable misbehaviour detection for clients. [Default: true]
 misbehaviour = true
 
 # Specify the connections mode.
@@ -139,6 +139,10 @@ account_prefix = 'cosmos'
 # See the Adding Keys chapter for more information about managing signing keys:
 #   https://hermes.informal.systems/commands/keys/index.html#adding-keys
 key_name = 'testkey'
+
+# Specify the folder used to store the keys. Optional
+# If this is not specified then the hermes home folder is used.
+# key_store_folder = '$HOME/.hermes/keys'
 
 # Specify the address type which determines:
 # 1) address derivation;
