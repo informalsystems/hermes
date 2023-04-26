@@ -1,3 +1,2 @@
-- Update the default configuration for misbehaviour detection to be
-  `misbehaviour = true`.
+- Enable misbehaviour detection by default.
   ([#3001](https://github.com/informalsystems/hermes/issues/3001))
