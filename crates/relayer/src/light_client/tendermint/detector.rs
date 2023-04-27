@@ -19,6 +19,8 @@ use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 
 use crate::{error::Error, util::block_on};
 
+type Hasher = tendermint::crypto::default::Sha256;
+
 pub fn detect(
     peer_id: PeerId,
     rpc_client: HttpClient,
@@ -31,7 +33,7 @@ pub fn detect(
     let options = client_state.as_light_client_options();
     let mut provider = make_provider(peer_id, rpc_client, client_state, trusted_block, now)?;
 
-    let divergence = block_on(detect_divergence(
+    let divergence = block_on(detect_divergence::<Hasher>(
         None,
         &mut provider,
         primary_trace,

@@ -3941,7 +3941,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#2033c2288da6ec483d0c4eda9e09e84ba5ca379e"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#f3f6f0f66c2624e6dd91b33580e50b36124e12ad"
 dependencies = [
  "bytes",
  "digest 0.10.6",
@@ -3971,7 +3971,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#2033c2288da6ec483d0c4eda9e09e84ba5ca379e"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#f3f6f0f66c2624e6dd91b33580e50b36124e12ad"
 dependencies = [
  "flex-error",
  "serde",
@@ -3984,13 +3984,14 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#2033c2288da6ec483d0c4eda9e09e84ba5ca379e"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#f3f6f0f66c2624e6dd91b33580e50b36124e12ad"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
  "derive_more",
  "flex-error",
  "futures",
+ "regex",
  "serde",
  "serde_cbor",
  "serde_derive",
@@ -4007,7 +4008,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-detector"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#2033c2288da6ec483d0c4eda9e09e84ba5ca379e"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#f3f6f0f66c2624e6dd91b33580e50b36124e12ad"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -4030,7 +4031,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#2033c2288da6ec483d0c4eda9e09e84ba5ca379e"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#f3f6f0f66c2624e6dd91b33580e50b36124e12ad"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -4042,7 +4043,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#2033c2288da6ec483d0c4eda9e09e84ba5ca379e"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#f3f6f0f66c2624e6dd91b33580e50b36124e12ad"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4059,7 +4060,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#2033c2288da6ec483d0c4eda9e09e84ba5ca379e"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#f3f6f0f66c2624e6dd91b33580e50b36124e12ad"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4093,7 +4094,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#2033c2288da6ec483d0c4eda9e09e84ba5ca379e"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#f3f6f0f66c2624e6dd91b33580e50b36124e12ad"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
