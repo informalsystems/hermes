@@ -13,6 +13,7 @@ use core::{
     str::FromStr,
     time::Duration,
 };
+use serde_derive::{Deserialize, Serialize};
 use std::{
     fs,
     fs::File,
