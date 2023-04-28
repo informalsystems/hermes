@@ -17,10 +17,10 @@ members = [
 
 [patch.crates-io]
 # ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "main" }
-tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "evidence-json" }
-tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "evidence-json" }
-tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "evidence-json" }
-tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "evidence-json" }
-tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "evidence-json" }
-tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "evidence-json" }
-tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "evidence-json" }
+tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "dialect-evidence-serialization" }
+tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "dialect-evidence-serialization" }
+tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "dialect-evidence-serialization" }
+tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "dialect-evidence-serialization" }
+tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "dialect-evidence-serialization" }
+tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "dialect-evidence-serialization" }
+tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "dialect-evidence-serialization" }

@@ -3941,7 +3941,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=evidence-json#a7b51cacf543d1d7407c81a97bc9cdedc67798d5"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=dialect-evidence-serialization#fc7abfa5da60770ae03884cc938691f1752dcdea"
 dependencies = [
  "bytes",
  "digest 0.10.6",
@@ -3971,7 +3971,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=evidence-json#a7b51cacf543d1d7407c81a97bc9cdedc67798d5"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=dialect-evidence-serialization#fc7abfa5da60770ae03884cc938691f1752dcdea"
 dependencies = [
  "flex-error",
  "serde",
@@ -3984,7 +3984,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=evidence-json#a7b51cacf543d1d7407c81a97bc9cdedc67798d5"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=dialect-evidence-serialization#fc7abfa5da60770ae03884cc938691f1752dcdea"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -4008,7 +4008,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-detector"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=evidence-json#a7b51cacf543d1d7407c81a97bc9cdedc67798d5"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=dialect-evidence-serialization#fc7abfa5da60770ae03884cc938691f1752dcdea"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -4031,7 +4031,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=evidence-json#a7b51cacf543d1d7407c81a97bc9cdedc67798d5"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=dialect-evidence-serialization#fc7abfa5da60770ae03884cc938691f1752dcdea"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -4043,7 +4043,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=evidence-json#a7b51cacf543d1d7407c81a97bc9cdedc67798d5"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=dialect-evidence-serialization#fc7abfa5da60770ae03884cc938691f1752dcdea"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4060,7 +4060,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=evidence-json#a7b51cacf543d1d7407c81a97bc9cdedc67798d5"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=dialect-evidence-serialization#fc7abfa5da60770ae03884cc938691f1752dcdea"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4095,7 +4095,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=evidence-json#a7b51cacf543d1d7407c81a97bc9cdedc67798d5"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=dialect-evidence-serialization#fc7abfa5da60770ae03884cc938691f1752dcdea"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
