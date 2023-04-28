@@ -162,7 +162,16 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             provider: self.peer_id,
         };
 
-        let trusted_block = self.fetch(update_header.trusted_height)?; // TODO: Check validator sets match
+        let trusted_block = self.fetch(update_header.trusted_height)?;
+        if trusted_block.validators.hash() != update_header.trusted_validator_set.hash() {
+            return Err(Error::misbehaviour(format!(
+                "mismatch between the trusted validator set of the update \
+                header ({}) and that of the trusted block that was fetched ({}), \
+                aborting misbehaviour detection.",
+                trusted_block.validators.hash(),
+                update_header.trusted_validator_set.hash()
+            )));
+        }
 
         let divergence = detector::detect(
             self.peer_id,
