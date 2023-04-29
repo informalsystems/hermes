@@ -188,8 +188,8 @@ fn parse_optional_version(
         .find(|&m| m.path.contains(module_name))
     {
         None => Ok(None),
-        Some(comet_module) => {
-            let plain_version = comet_module.version.trim_start_matches('v');
+        Some(module) => {
+            let plain_version = module.version.trim_start_matches('v');
 
             semver::Version::parse(plain_version)
                 .map(|mut version| {
@@ -198,8 +198,8 @@ fn parse_optional_version(
                 })
                 .map_err(|e| {
                     Error::version_parsing_failed(
-                        comet_module.path.clone(),
-                        comet_module.version.clone(),
+                        module.path.clone(),
+                        module.version.clone(),
                         e.to_string(),
                         AppInfo::from(version_info),
                     )
