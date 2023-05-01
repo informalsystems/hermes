@@ -300,7 +300,7 @@ mod tests {
     // Use commit from 28.04.23 for tests
     const TEST_COMMIT: &str = "95b99457e828402bde994816ce57e548d7e1a76d";
 
-    // Helper function for configs without filter. The configuration don't have a filter
+    // Helper function for configs without filter. The configuration doesn't have a packet filter
     // if there is no `{chain-a}-{chain-b}.json` file in the `_IBC/` directory of the
     // chain-registry repository: https://github.com/cosmos/chain-registry/tree/master/_IBC
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
