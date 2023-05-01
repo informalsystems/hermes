@@ -167,15 +167,15 @@ fn parse_sdk_version(version_info: &VersionInfo) -> Result<semver::Version, Erro
 }
 
 fn parse_ibc_go_version(version_info: &VersionInfo) -> Result<Option<semver::Version>, Error> {
-    return parse_optional_version(version_info, IBC_GO_MODULE_NAME);
+    parse_optional_version(version_info, IBC_GO_MODULE_NAME)
 }
 
 fn parse_tendermint_version(version_info: &VersionInfo) -> Result<Option<semver::Version>, Error> {
-    return parse_optional_version(version_info, TENDERMINT_MODULE_NAME);
+    parse_optional_version(version_info, TENDERMINT_MODULE_NAME)
 }
 
 fn parse_comet_version(version_info: &VersionInfo) -> Result<Option<semver::Version>, Error> {
-    return parse_optional_version(version_info, COMET_MODULE_NAME);
+    parse_optional_version(version_info, COMET_MODULE_NAME)
 }
 
 fn parse_optional_version(
