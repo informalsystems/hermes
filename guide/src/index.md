@@ -27,7 +27,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 
 * **[Quick start](./quick-start/index.md)**
 
-  - This section can help you install Hermes.
+  - This section helps you install Hermes.
 
 * **[Tutorials](./tutorials/index.md)**
 
