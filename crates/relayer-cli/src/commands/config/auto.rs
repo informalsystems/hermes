@@ -127,10 +127,7 @@ impl Runnable for AutoCmd {
                         ))
                         .exit()
                     }
-                    Err(e) => {
-                        warn!("Encountered an error while attempting to write the config file: {}", e);
-                        Output::error(e.to_string()).exit();
-                    }
+                    Err(e) => Output::error(e.to_string()).exit(),
                 }
             }
             Err(e) => {
