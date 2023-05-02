@@ -1,3 +1,9 @@
+# This is an example configuration for Hermes. It is meant to be
+# used as a reference, _NOT_ for configuring a production relayer. 
+# If you're looking to configure a production relayer for some chains, 
+# try using the `hermes config auto` command to generate a config 
+# file for the chains you wish you relay for. 
+
 # The global section has parameters that apply globally to the relayer operation.
 [global]
 

@@ -1,27 +1,21 @@
 //! Contains functions to generate a relayer config for a given chain
 
-use ibc_chain_registry::{
-    asset_list::AssetList,
-    chain::ChainData,
-    error::RegistryError,
-    fetchable::Fetchable,
-    formatter::{SimpleGrpcFormatter, UriFormatter},
-    paths::IBCPath,
-    querier::*,
-};
+use ibc_chain_registry::asset_list::AssetList;
+use ibc_chain_registry::chain::ChainData;
+use ibc_chain_registry::error::RegistryError;
+use ibc_chain_registry::fetchable::Fetchable;
+use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
+use ibc_chain_registry::paths::IBCPath;
+use ibc_chain_registry::querier::*;
 
 use futures::future::join_all;
 use http::Uri;
 
-use ibc_relayer::{
-    config::{
-        filter::{FilterPattern, PacketFilter},
-        gas_multiplier::GasMultiplier,
-        types::{MaxMsgNum, MaxTxSize, Memo},
-        {default, AddressType, ChainConfig, GasPrice},
-    },
-    keyring::Store,
-};
+use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
+use ibc_relayer::config::gas_multiplier::GasMultiplier;
+use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use ibc_relayer::config::{default, AddressType, ChainConfig, GasPrice};
+use ibc_relayer::keyring::Store;
 
 use std::{collections::HashMap, marker::Send};
 
@@ -170,7 +164,7 @@ async fn get_data_from_handles<T>(
     data_array
 }
 
-/// Generates a `Vec<ChainConfig>` for a slice of chains names by fetching data from
+/// Generates a `Vec<ChainConfig>` for a slice of chain names by fetching data from
 /// <https://github.com/cosmos/chain-registry>. Gas settings are set to default values.
 ///
 /// # Arguments

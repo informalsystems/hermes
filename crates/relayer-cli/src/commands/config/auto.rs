@@ -1,15 +1,11 @@
 use crate::chain_registry::get_configs;
-use abscissa_core::{
-    clap::Parser,
-    {Command, Runnable},
-};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use crate::conclude::Output;
 
-use ibc_relayer::{
-    config::{store, ChainConfig, Config},
-    keyring::list_keys,
-};
+use ibc_relayer::config::{store, ChainConfig, Config};
+use ibc_relayer::keyring::list_keys;
 
 use std::path::PathBuf;
 use tracing::{info, warn};
@@ -131,7 +127,10 @@ impl Runnable for AutoCmd {
                         ))
                         .exit()
                     }
-                    Err(e) => Output::error(e.to_string()).exit(),
+                    Err(e) => {
+                        warn!("Encountered an error while attempting to write the config file: {}", e);
+                        Output::error(e.to_string()).exit();
+                    }
                 }
             }
             Err(e) => {
