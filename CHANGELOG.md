@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v1.4.1
+ 
+*May 2nd, 2023*
+ 
+This patch release adds support for CometBFT in version checks.
+ 
+### BUG FIXES
+ 
+- Support CometBFT when running version checks
+  ([\#3288](https://github.com/informalsystems/hermes/issues/3288))
+
 ## v1.4.0
 *March 27th, 2023*
 
