@@ -17,6 +17,9 @@ use tracing::{error, instrument, trace, warn};
 use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
 };
+
+use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvConsumerParams;
+
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
@@ -303,6 +306,35 @@ impl CosmosSdkChain {
     }
 
     /// Query the chain staking parameters
+    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
+        crate::time!("query_ccv_consumer_chain_params");
+        crate::telemetry!(query, self.id(), "query_ccv_consumer_chain_params");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::interchain_security::ccv::consumer::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone()
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let request = tonic::Request::new(
+            ibc_proto::interchain_security::ccv::consumer::v1::QueryParamsRequest {},
+        );
+
+        let response = self
+            .block_on(client.query_params(request))
+            .map_err(Error::grpc_status)?;
+
+        let params = response
+            .into_inner()
+            .params
+            .ok_or_else(|| Error::grpc_response_param("no staking params".to_string()))?;
+
+        Ok(params)
+    }
+
+    /// Query the chain staking parameters
     pub fn query_staking_params(&self) -> Result<StakingParams, Error> {
         crate::time!("query_staking_params");
         crate::telemetry!(query, self.id(), "query_staking_params");
@@ -396,13 +428,17 @@ impl CosmosSdkChain {
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
 
-        if let Some(unbonding_period) = self.config.unbonding_period {
-            return Ok(unbonding_period);
-        }
-
-        let unbonding_time = self.query_staking_params()?.unbonding_time.ok_or_else(|| {
-            Error::grpc_response_param("no unbonding time in staking params".to_string())
-        })?;
+        let unbonding_time = if self.config.ccv_consumer_chain {
+            self.query_ccv_consumer_chain_params()?
+                .unbonding_period
+                .ok_or_else(|| {
+                    Error::grpc_response_param("no unbonding time in staking params".to_string())
+                })?
+        } else {
+            self.query_staking_params()?.unbonding_time.ok_or_else(|| {
+                Error::grpc_response_param("no unbonding time in staking params".to_string())
+            })?
+        };
 
         Ok(Duration::new(
             unbonding_time.seconds as u64,
@@ -413,8 +449,17 @@ impl CosmosSdkChain {
     /// The number of historical entries kept by this chain
     pub fn historical_entries(&self) -> Result<u32, Error> {
         crate::time!("historical_entries");
-
-        self.query_staking_params().map(|p| p.historical_entries)
+        if self.config.ccv_consumer_chain {
+            let ccv_parameters = self.query_ccv_consumer_chain_params()?;
+            ccv_parameters.historical_entries.try_into().map_err(|_| {
+                Error::invalid_historical_entries(
+                    self.id().clone(),
+                    ccv_parameters.historical_entries,
+                )
+            })
+        } else {
+            self.query_staking_params().map(|p| p.historical_entries)
+        }
     }
 
     /// Run a future to completion on the Tokio runtime.
@@ -731,9 +776,13 @@ impl ChainEndpoint for CosmosSdkChain {
         let light_client = TmLightClient::from_config(&config, node_info.id)?;
 
         // Initialize key store and load key
-        let keybase =
-            KeyRing::new_secp256k1(config.key_store_type, &config.account_prefix, &config.id)
-                .map_err(Error::key_base)?;
+        let keybase = KeyRing::new_secp256k1(
+            config.key_store_type,
+            &config.account_prefix,
+            &config.id,
+            &config.key_store_folder,
+        )
+        .map_err(Error::key_base)?;
 
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
@@ -947,33 +996,19 @@ impl ChainEndpoint for CosmosSdkChain {
             .block_on(self.rpc_client.abci_info())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-        // Query `/blockchain` endpoint to pull the block metadata corresponding to
-        // the latest block that the application committed.
-        // TODO: Replace this query with `/header`, once it's available.
-        //  https://github.com/informalsystems/tendermint-rs/pull/1101
-        let blocks = self
-            .block_on(
-                self.rpc_client
-                    .blockchain(abci_info.last_block_height, abci_info.last_block_height),
-            )
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
-            .block_metas;
+        // Query `/header` endpoint to pull the latest block that the application committed.
+        let response = self
+            .block_on(self.rpc_client.header(abci_info.last_block_height))
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-        return if let Some(latest_app_block) = blocks.first() {
-            let height = ICSHeight::new(
-                ChainId::chain_version(latest_app_block.header.chain_id.as_str()),
-                u64::from(abci_info.last_block_height),
-            )
-            .map_err(|_| Error::invalid_height_no_source())?;
-            let timestamp = latest_app_block.header.time.into();
+        let height = ICSHeight::new(
+            ChainId::chain_version(response.header.chain_id.as_str()),
+            u64::from(abci_info.last_block_height),
+        )
+        .map_err(|_| Error::invalid_height_no_source())?;
 
-            Ok(ChainStatus { height, timestamp })
-        } else {
-            // The `/blockchain` query failed to return the header we wanted
-            Err(Error::query(
-                "/blockchain endpoint for latest app. block".to_owned(),
-            ))
-        };
+        let timestamp = response.header.time.into();
+        Ok(ChainStatus { height, timestamp })
     }
 
     fn query_clients(
@@ -1791,15 +1826,24 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         };
 
-        // TODO(hu55a1n1): use the `/header` RPC endpoint instead when we move to tendermint v0.35.x
-        let rpc_call = match height.value() {
-            0 => self.rpc_client.latest_block(),
-            _ => self.rpc_client.block(height),
+        let header = if height.value() == 0 {
+            self.block_on(async {
+                self.rpc_client
+                    .latest_block()
+                    .await
+                    .map(|response| response.block.header)
+            })
+        } else {
+            self.block_on(async {
+                self.rpc_client
+                    .header(height)
+                    .await
+                    .map(|response| response.header)
+            })
         };
-        let response = self
-            .block_on(rpc_call)
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-        Ok(response.block.header.into())
+
+        let header = header.map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        Ok(header.into())
     }
 
     fn build_client_state(
@@ -2028,39 +2072,6 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             grpc_address,
             diagnostic.to_string(),
         ));
-    }
-
-    let unbonding_period = chain
-        .query_staking_params()
-        .map(|params| params.unbonding_time);
-
-    match unbonding_period {
-        Ok(Some(unbonding_period)) if chain.config.unbonding_period.is_some() => {
-            warn!(
-                "Chain '{}' has an unbonding period configured in the config.toml, \
-                but this is not required as this information can be fetched from the staking parameters. \
-                Please remove the `unbonding_period` setting from the chain configuration. \
-                Unbonding period in configuration: {:?}, unbonding period in staking parameters: {:?}",
-                chain_id, chain.config.unbonding_period.unwrap(), unbonding_period
-            );
-        }
-        Ok(None) if chain.config.unbonding_period.is_none() => {
-            warn!(
-                "Hermes was unable to fetch the unbonding period from the staking parameters for chain '{}'. \
-                If this is an ICS customer chain, please add the `unbonding_period` setting \
-                to the chain configuration.",
-                chain_id,
-            );
-        }
-        Err(e) if chain.config.unbonding_period.is_none() => {
-            warn!(
-                "Hermes was unable to fetch the unbonding period from the staking parameters for chain '{}'. \
-                If this is an ICS customer chain, please add the `unbonding_period` setting \
-                to the chain configuration. Otherwise, inspect the following error for more information: {}",
-                chain_id, e
-            );
-        }
-        _ => (),
     }
 
     if chain.historical_entries()? == 0 {

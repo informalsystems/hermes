@@ -34,6 +34,7 @@
         - [Patch Gaia](./advanced/troubleshooting/patch-gaia.md)
         - [Inspecting the relayer's state](./advanced/troubleshooting/inspect.md)
         - [Cross Stack Misconfiguration](./advanced/troubleshooting/cross-comp-config.md)
+        - [Genesis restart without IBC upgrade proposal](./advanced/troubleshooting/genesis-restart.md)
 
 - [Documentation](./documentation/index.md)
     - [Configuration](./documentation/configuration/index.md)

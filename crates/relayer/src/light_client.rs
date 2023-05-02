@@ -1,3 +1,4 @@
+pub mod genesis_restart;
 pub mod tendermint;
 
 use core::ops::Deref;
@@ -124,8 +125,7 @@ impl From<AnyHeader> for Any {
         match value {
             AnyHeader::Tendermint(header) => Any {
                 type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-                value: ErasedProtobuf::<RawTmHeader>::encode_vec(&header)
-                    .expect("encoding to `Any` from `AnyHeader::Tendermint`"),
+                value: ErasedProtobuf::<RawTmHeader>::encode_vec(&header),
             },
         }
     }

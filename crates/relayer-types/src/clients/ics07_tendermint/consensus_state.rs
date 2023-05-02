@@ -125,8 +125,7 @@ impl From<ConsensusState> for Any {
     fn from(consensus_state: ConsensusState) -> Self {
         Any {
             type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawConsensusState>::encode_vec(&consensus_state)
-                .expect("encoding to `Any` from `TmConsensusState`"),
+            value: Protobuf::<RawConsensusState>::encode_vec(&consensus_state),
         }
     }
 }
