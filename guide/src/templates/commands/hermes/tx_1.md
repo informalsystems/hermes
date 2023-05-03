@@ -1,1 +1,1 @@
--n [[#BINARY hermes]][[#GLOBALOPTIONS]] tx [[#SUBCOMMAND]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] tx [[#SUBCOMMAND]]

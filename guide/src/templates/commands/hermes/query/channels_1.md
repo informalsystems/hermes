@@ -1,1 +1,1 @@
--n [[#BINARY hermes]][[#GLOBALOPTIONS]] query channels[[#OPTIONS]] --chain [[#CHAIN_ID]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] query channels[[#OPTIONS]] --chain [[#CHAIN_ID]]
