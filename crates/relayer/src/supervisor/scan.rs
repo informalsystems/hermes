@@ -899,7 +899,13 @@ fn init_telemetry(
         telemetry!(init_worker_by_type, WorkerType::Packet);
 
         if config.mode.packets.tx_confirmation {
-            telemetry!(init_per_channel, chain_id, channel_id, port_id);
+            telemetry!(
+                init_per_channel,
+                chain_id,
+                counterparty_chain_id,
+                channel_id,
+                port_id
+            );
         }
     }
 

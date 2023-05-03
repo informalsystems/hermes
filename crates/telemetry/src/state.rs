@@ -219,6 +219,7 @@ impl TelemetryState {
     pub fn init_per_channel(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
         src_port: &PortId,
     ) {
@@ -226,6 +227,7 @@ impl TelemetryState {
 
         let labels = &[
             KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("src_channel", src_channel.to_string()),
             KeyValue::new("src_port", src_port.to_string()),
         ];
@@ -359,6 +361,7 @@ impl TelemetryState {
     pub fn receive_packets_confirmed(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
         src_port: &PortId,
         count: u64,
@@ -368,6 +371,7 @@ impl TelemetryState {
         if count > 0 {
             let labels = &[
                 KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
             ];
@@ -380,6 +384,7 @@ impl TelemetryState {
     pub fn acknowledgment_packets_confirmed(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
         src_port: &PortId,
         count: u64,
@@ -389,6 +394,7 @@ impl TelemetryState {
         if count > 0 {
             let labels = &[
                 KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
             ];
@@ -402,6 +408,7 @@ impl TelemetryState {
     pub fn timeout_packets_confirmed(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
         src_port: &PortId,
         count: u64,
@@ -411,6 +418,7 @@ impl TelemetryState {
         if count > 0 {
             let labels = &[
                 KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
             ];

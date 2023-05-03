@@ -420,6 +420,7 @@ fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
     telemetry!(
         receive_packets_confirmed,
         &path.src_chain_id,
+        &path.dst_chain_id,
         &path.src_channel_id,
         &path.src_port_id,
         count as u64,
@@ -439,6 +440,7 @@ fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
     telemetry!(
         acknowledgment_packets_confirmed,
         &path.src_chain_id,
+        &path.dst_chain_id,
         &path.src_channel_id,
         &path.src_port_id,
         count as u64,
@@ -457,6 +459,7 @@ fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
     telemetry!(
         timeout_packets_confirmed,
         &path.src_chain_id,
+        &path.dst_chain_id,
         &path.src_channel_id,
         &path.src_port_id,
         count as u64,
