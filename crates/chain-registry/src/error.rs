@@ -1,5 +1,6 @@
 use flex_error::{define_error, TraceError};
 use http;
+use itertools::Itertools;
 use reqwest;
 use serde_json;
 use std::path::PathBuf;
@@ -68,6 +69,16 @@ define_error! {
         RpcSyncingError
             { rpc: String }
             |e| { format_args!("Rpc node out of sync: {}", e.rpc) },
+
+        UnhealthyEndpoints
+            { endpoints: Vec<String>, retries: u8 }
+            |e| {
+                let endpoints = e.endpoints
+                    .iter()
+                    .join(", ");
+
+                format!("Error finding a healthy endpoint after {} retries. Endpoints: {endpoints}", e.retries)
+            },
 
         UriParseError
             { uri: String }
