@@ -3,6 +3,7 @@
 use futures::future::join_all;
 use http::Uri;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::marker::Send;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::trace;
@@ -156,31 +157,33 @@ where
 /// amount of times in order to avoid failure with healthy endpoints.
 async fn query_healthy_retry<QuerierType>(
     chain_name: String,
-    rpc_endpoints: Vec<QuerierType::QueryInput>,
+    endpoints: Vec<QuerierType::QueryInput>,
     retries: u8,
-) -> Result<QuerierType::QueryOutput, QuerierType::QueryError>
+) -> Result<QuerierType::QueryOutput, RegistryError>
 where
     QuerierType: QueryContext + Send,
-    QuerierType::QueryInput: Clone,
+    QuerierType::QueryInput: Clone + Display,
+    QuerierType: QueryContext<QueryError = RegistryError>,
 {
-    let mut i = 0;
-    loop {
+    for i in 0..retries {
         let query_response =
-            QuerierType::query_healthy(chain_name.to_string(), rpc_endpoints.clone()).await;
+            QuerierType::query_healthy(chain_name.to_string(), endpoints.clone()).await;
         match query_response {
             Ok(r) => {
                 return Ok(r);
             }
-            Err(e) => {
-                if i == retries {
-                    return Err(e);
-                } else {
-                    trace!("Failed to query all endpoints, will retry");
-                }
+            Err(_) => {
+                trace!("Retry {i} failed to query all endpoints");
             }
         }
-        i += 1;
     }
+    Err(RegistryError::unhealthy_endpoints(
+        endpoints
+            .iter()
+            .map(|endpoint| endpoint.to_string())
+            .collect(),
+        retries,
+    ))
 }
 
 async fn get_handles<T: Fetchable + Send + 'static>(

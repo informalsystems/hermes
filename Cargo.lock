@@ -1717,6 +1717,7 @@ dependencies = [
  "http",
  "ibc-proto",
  "ibc-relayer-types",
+ "itertools",
  "reqwest",
  "serde",
  "serde_json",
