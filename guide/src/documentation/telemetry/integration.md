@@ -16,8 +16,8 @@ acknowledgement_events{chain="ibc-0",channel="channel-0",counterparty="ibc-1",po
 acknowledgement_events{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 2
 # HELP acknowledgment_packets_confirmed Number of confirmed acknowledgment packets. Available if relayer runs with Tx confirmation enabled
 # TYPE acknowledgment_packets_confirmed counter
-acknowledgment_packets_confirmed{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 2
-acknowledgment_packets_confirmed{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 2
+acknowledgment_packets_confirmed{dst_chain="ibc-1", src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 2
+acknowledgment_packets_confirmed{dst_chain="ibc-0", src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 2
 # HELP backlog_oldest_sequence Sequence number of the oldest SendPacket event in the backlog
 # TYPE backlog_oldest_sequence gauge
 backlog_oldest_sequence{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 0
@@ -82,8 +82,8 @@ queries_cache_hits{chain="ibc-1",query_type="query_connection"} 17
 queries_cache_hits{chain="ibc-1",query_type="query_latest_height"} 64
 # HELP receive_packets_confirmed Number of confirmed receive packets. Available if relayer runs with Tx confirmation enabled
 # TYPE receive_packets_confirmed counter
-receive_packets_confirmed{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 2
-receive_packets_confirmed{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 2
+receive_packets_confirmed{dst_chain="ibc-1", src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 2
+receive_packets_confirmed{dst_chain="ibc-0", src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 2
 # HELP send_packet_events Number of SendPacket events received
 # TYPE send_packet_events counter
 send_packet_events{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 2
