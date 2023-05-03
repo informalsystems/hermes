@@ -58,9 +58,9 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
 name = "aho-corasick"
-version = "0.7.20"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc936419f96fa211c1b9166887b38e5e40b19958e5b895be7c1f93adec7071ac"
+checksum = "67fc08ce920c31afb70f013dcce1bfc3a3195de6a228474e45e1f145b36f8d04"
 dependencies = [
  "memchr",
 ]
@@ -1709,7 +1709,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-chain-registry"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "async-trait",
  "flex-error",
@@ -1728,7 +1728,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-integration-test"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "http",
  "ibc-relayer",
@@ -1761,7 +1761,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1824,7 +1824,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "1.4.0"
+version = "1.4.1"
 dependencies = [
  "abscissa_core",
  "atty",
@@ -1865,7 +1865,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "axum",
  "crossbeam-channel 0.5.8",
@@ -1880,7 +1880,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-types"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "bytes",
  "derive_more",
@@ -1913,7 +1913,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "axum",
  "dashmap",
@@ -1931,7 +1931,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-test-framework"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "color-eyre",
  "crossbeam-channel 0.5.8",
@@ -2347,9 +2347,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.10.2"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0d3b8e76a2e4b17de765db9432e377a171c42fbe0512b8bc860ff1bfe2e273b"
+checksum = "934030d03f6191edbb4ba16835ccdb80d560788ac686570a8e2986a0fb59ded8"
 dependencies = [
  "crossbeam-channel 0.5.8",
  "crossbeam-epoch",
@@ -3053,13 +3053,13 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.7.3"
+version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b1f693b24f6ac912f4893ef08244d70b6067480d2f1a46e950c9691e6749d1d"
+checksum = "af83e617f331cc6ae2da5443c602dfa5af81e517212d9d611a5b3ba1777b5370"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-syntax",
+ "regex-syntax 0.7.1",
 ]
 
 [[package]]
@@ -3068,7 +3068,7 @@ version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
 dependencies = [
- "regex-syntax",
+ "regex-syntax 0.6.29",
 ]
 
 [[package]]
@@ -3076,6 +3076,12 @@ name = "regex-syntax"
 version = "0.6.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
+
+[[package]]
+name = "regex-syntax"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5996294f19bd3aae0453a862ad728f60e6600695733dd5df01da90c54363a3c"
 
 [[package]]
 name = "reqwest"
@@ -3578,9 +3584,9 @@ dependencies = [
 
 [[package]]
 name = "serial_test"
-version = "1.0.0"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "538c30747ae860d6fb88330addbbd3e0ddbe46d662d032855596d8a8ca260611"
+checksum = "0e56dd856803e253c8f298af3f4d7eb0ae5e23a737252cd90bb4f3b435033b2d"
 dependencies = [
  "dashmap",
  "futures",
@@ -3606,13 +3612,13 @@ dependencies = [
 
 [[package]]
 name = "serial_test_derive"
-version = "1.0.0"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "079a83df15f85d89a68d64ae1238f142f172b1fa915d0d76b26a7cba1b659a69"
+checksum = "91d129178576168c589c9ec973feedf7d3126c01ac2bf08795109aa35b69fb8f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.13",
 ]
 
 [[package]]
