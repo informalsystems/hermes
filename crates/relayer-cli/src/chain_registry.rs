@@ -17,15 +17,14 @@ use ibc_chain_registry::error::RegistryError;
 use ibc_chain_registry::fetchable::Fetchable;
 use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
 use ibc_chain_registry::paths::IBCPath;
-use ibc_chain_registry::querier::{
-    GrpcHealthCheckQuerier, HermesConfigData, QueryContext, SimpleHermesRpcQuerier,
-};
-use ibc_relayer::config::{
-    filter::{FilterPattern, PacketFilter},
-    gas_multiplier::GasMultiplier,
-    types::{MaxMsgNum, MaxTxSize, Memo},
-    {default, AddressType, ChainConfig, GasPrice},
-};
+use ibc_chain_registry::querier::GrpcHealthCheckQuerier;
+use ibc_chain_registry::querier::HermesConfigData;
+use ibc_chain_registry::querier::QueryContext;
+use ibc_chain_registry::querier::SimpleHermesRpcQuerier;
+use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
+use ibc_relayer::config::gas_multiplier::GasMultiplier;
+use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use ibc_relayer::config::{default, AddressType, ChainConfig, GasPrice};
 use ibc_relayer::keyring::Store;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
@@ -289,7 +288,7 @@ pub async fn get_configs(
 }
 
 /// Concurrent RPC and GRPC queries are likely to fail.
-/// Since the the RPC and GRPC endpoints are queried to confirm they are healthy,
+/// Since the RPC and GRPC endpoints are queried to confirm they are healthy,
 /// before generating the ChainConfig, the tests must not all run concurrently or
 /// else they will fail due to the amount of concurrent queries.
 #[cfg(test)]
