@@ -1,1 +1,1 @@
-[[#BINARY hermes]][[#GLOBALOPTIONS]] fee [[#SUBCOMMAND]]
+-n [[#BINARY hermes]][[#GLOBALOPTIONS]] fee [[#SUBCOMMAND]]

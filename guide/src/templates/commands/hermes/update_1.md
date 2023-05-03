@@ -1,1 +1,1 @@
-[[#BINARY hermes]][[#GLOBALOPTIONS]] update [[#SUBCOMMAND]]
+-n [[#BINARY hermes]][[#GLOBALOPTIONS]] update [[#SUBCOMMAND]]

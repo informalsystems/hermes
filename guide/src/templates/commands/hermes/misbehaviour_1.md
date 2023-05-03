@@ -1,1 +1,1 @@
-[[#BINARY hermes]][[#GLOBALOPTIONS]] misbehaviour --chain [[#CHAIN_ID]] --client [[#CLIENT_ID]]
+-n [[#BINARY hermes]][[#GLOBALOPTIONS]] misbehaviour --chain [[#CHAIN_ID]] --client [[#CLIENT_ID]]

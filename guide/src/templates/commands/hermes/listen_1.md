@@ -1,1 +1,1 @@
-[[#BINARY hermes]][[#GLOBALOPTIONS]] listen[[#OPTIONS]] --chain [[#CHAIN_ID]]
+-n [[#BINARY hermes]][[#GLOBALOPTIONS]] listen[[#OPTIONS]] --chain [[#CHAIN_ID]]

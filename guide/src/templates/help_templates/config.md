@@ -1,5 +1,5 @@
 DESCRIPTION:
-Validate Hermes configuration file
+Generate a new Hermes configuration file or validate an existing one
 
 USAGE:
     hermes config <SUBCOMMAND>
