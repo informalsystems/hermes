@@ -24,7 +24,7 @@ Run the `make` command to build and install `gaiad`
 
 ```shell
 cd ~/go/src/github.com/cosmos/gaia
-git checkout v4.2.1 
+git checkout {{#template ../../templates/gaia-version.md}}
 make install
 ```
 
