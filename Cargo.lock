@@ -1764,13 +1764,14 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.30.0"
+version = "0.31.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f844ebc1ddf70f2ad7cd5981a2feba261fff55e1ad6482c27551ee3c6cec7df4"
+checksum = "ed65b85a5f119da1cc16c7482a8331befca4a1034095e729dddcf93be1b3415a"
 dependencies = [
  "base64 0.21.0",
  "bytes",
  "flex-error",
+ "ics23",
  "prost",
  "serde",
  "subtle-encoding",
@@ -1981,15 +1982,17 @@ dependencies = [
 
 [[package]]
 name = "ics23"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "352b6bbf6a07602cf8def05362987835a255d3312eae59c1af358af3ac57e0cc"
+checksum = "af9e8f569c5cc88e08b8d076dc207e0748aa1f52d4b84910ec919c8f2bed6ea7"
 dependencies = [
  "anyhow",
  "bytes",
  "hex",
+ "pbjson",
  "prost",
  "ripemd",
+ "serde",
  "sha2 0.10.6",
  "sha3",
 ]
@@ -2644,6 +2647,16 @@ name = "paste"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
+
+[[package]]
+name = "pbjson"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "048f9ac93c1eab514f9470c4bc8d97ca2a0a236b84f45cc19d69a59fc11467f6"
+dependencies = [
+ "base64 0.13.1",
+ "serde",
+]
 
 [[package]]
 name = "pbkdf2"
@@ -3940,8 +3953,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#be556506503ac75026683c54bdf89361ce3534a1"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a46ec6b25b028097ab682ffae11d09d64fe1e2535833b902f26a278a0f88a705"
 dependencies = [
  "bytes",
  "digest 0.10.6",
@@ -3970,8 +3984,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#be556506503ac75026683c54bdf89361ce3534a1"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7dbb7610ef8422d5886116868e48ab6a9ea72859b3bf9021c6d87318e5600225"
 dependencies = [
  "flex-error",
  "serde",
@@ -3983,8 +3998,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#be556506503ac75026683c54bdf89361ce3534a1"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9940a1376b5c1e3e5759143bc4308a7114f6293167ca5f05365d3386389de0ff"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -4007,8 +4023,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-detector"
-version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#be556506503ac75026683c54bdf89361ce3534a1"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "765f272201f8dd04067498421b68a449a48623bf8f4df69b7e50071bec193daf"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -4030,8 +4047,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-verifier"
-version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#be556506503ac75026683c54bdf89361ce3534a1"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4bc4c47cf36e740645e04128bd14ff5723aef86f5377fbd4d3b0149198dfc7e"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -4042,8 +4060,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#be556506503ac75026683c54bdf89361ce3534a1"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ce23c8ff0e6634eb4c3c4aeed45076dc97dac91aac5501a905a67fa222e165b"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4059,8 +4078,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#be556506503ac75026683c54bdf89361ce3534a1"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd2cc789170db5a35d4e0bb2490035c03ef96df08f119bee25fd8dab5a09aa25"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4094,8 +4114,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-testgen"
-version = "0.31.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/new-misbehavior-detector#be556506503ac75026683c54bdf89361ce3534a1"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "023911e751fea64f20cd13bb9e15b5aae283aa3c7aaeb7e9bec1512032b32c99"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
