@@ -112,7 +112,7 @@ pub trait ChainEndpoint: Sized {
 
     /// Get the signing key pair
     fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
-        crate::time!("get_key");
+        // crate::time!("get_key");
 
         // Get the key from key seed file
         let key_pair = self

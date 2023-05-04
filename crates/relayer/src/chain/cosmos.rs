@@ -464,7 +464,7 @@ impl CosmosSdkChain {
 
     /// Run a future to completion on the Tokio runtime.
     fn block_on<F: Future>(&self, f: F) -> F::Output {
-        crate::time!("block_on");
+        // crate::time!("block_on");
         self.rt.block_on(f)
     }
 
@@ -875,6 +875,8 @@ impl ChainEndpoint for CosmosSdkChain {
         target: ICSHeight,
         client_state: &AnyClientState,
     ) -> Result<Self::LightBlock, Error> {
+        crate::time!("verify_header");
+
         self.light_client
             .verify(trusted, target, client_state)
             .map(|v| v.target)
@@ -887,6 +889,8 @@ impl ChainEndpoint for CosmosSdkChain {
         update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
+        crate::time!("check_misbehaviour");
+
         self.light_client.check_misbehaviour(update, client_state)
     }
 
@@ -920,7 +924,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
     /// Get the account for the signer
     fn get_signer(&self) -> Result<Signer, Error> {
-        crate::time!("get_signer");
+        // crate::time!("get_signer");
 
         // Get the key from key seed file
         let key_pair = self.key()?;
@@ -1970,6 +1974,7 @@ async fn fetch_node_info(
     config: &ChainConfig,
 ) -> Result<node::Info, Error> {
     crate::time!("fetch_node_info");
+
     rpc_client
         .status()
         .await

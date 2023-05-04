@@ -963,6 +963,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         client_state: &AnyClientState,
         header: &AnyHeader,
     ) -> Result<(), ForeignClientError> {
+        crate::time!("wait_for_header_validation_delay");
+
         // Get latest height and time on destination chain
         let mut status = self.dst_chain().query_application_status().map_err(|e| {
             ForeignClientError::client_update(
