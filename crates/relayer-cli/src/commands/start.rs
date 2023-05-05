@@ -37,11 +37,14 @@ impl Runnable for StartCmd {
 
             let now = Utc::now();
             let path_str = format!(
-                "{}/hermes-{}-{}-{}.prof",
+                "{}/hermes-{}-{}-{}-{}{}{}.prof",
                 profile_dir,
                 now.year(),
                 now.month(),
-                now.day()
+                now.day(),
+                now.hour(),
+                now.minute(),
+                now.second()
             );
             let file_name = Path::new(&path_str);
             ibc_relayer::macros::profiling::open_or_create_profile_file(file_name);
