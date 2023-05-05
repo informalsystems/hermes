@@ -144,6 +144,7 @@ fn subscribe(
         chain_config.id.clone(),
         chain_config.websocket_addr.clone(),
         compat_mode,
+        chain_config.batch_delay,
         rt,
     )
     .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;

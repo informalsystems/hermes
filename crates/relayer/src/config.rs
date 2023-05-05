@@ -173,6 +173,10 @@ pub mod default {
         Duration::from_secs(10)
     }
 
+    pub fn batch_delay() -> Duration {
+        Duration::from_millis(500)
+    }
+
     pub fn clock_drift() -> Duration {
         Duration::from_secs(5)
     }
@@ -449,6 +453,8 @@ pub struct ChainConfig {
     pub grpc_addr: Url,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
+    #[serde(default = "default::batch_delay", with = "humantime_serde")]
+    pub batch_delay: Duration,
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]

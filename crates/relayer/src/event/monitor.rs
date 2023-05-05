@@ -104,6 +104,8 @@ pub enum MonitorCmd {
 /// - [`EventType::Tx`](tendermint_rpc::query::EventType::Tx)
 pub struct EventMonitor {
     chain_id: ChainId,
+    /// Delay until batch is emitted
+    batch_delay: Duration,
     /// WebSocket to collect events from
     client: WebSocketClient,
     /// Async task handle for the WebSocket client's driver
@@ -178,6 +180,7 @@ impl EventMonitor {
         chain_id: ChainId,
         ws_url: WebSocketClientUrl,
         rpc_compat: CompatMode,
+        batch_delay: Duration,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, TxMonitorCmd)> {
         let event_bus = EventBus::new();
@@ -198,6 +201,7 @@ impl EventMonitor {
         let monitor = Self {
             rt,
             chain_id,
+            batch_delay,
             client,
             driver_handle,
             event_queries,
@@ -377,7 +381,7 @@ impl EventMonitor {
             core::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
 
         // Convert the stream of RPC events into a stream of event batches.
-        let batches = stream_batches(subscriptions, self.chain_id.clone());
+        let batches = stream_batches(subscriptions, self.chain_id.clone(), self.batch_delay);
 
         // Needed to be able to poll the stream
         pin_mut!(batches);
@@ -465,6 +469,7 @@ fn collect_events(
 fn stream_batches(
     subscriptions: Box<SubscriptionStream>,
     chain_id: ChainId,
+    batch_delay: Duration,
 ) -> impl Stream<Item = Result<EventBatch>> {
     let id = chain_id.clone();
 
@@ -474,10 +479,8 @@ fn stream_batches(
         .map_err(Error::canceled_or_generic)
         .try_flatten();
 
-    let timeout = Duration::from_millis(1000);
-
     // Group events by height
-    let grouped = try_group_while_timeout(events, |ev0, ev1| ev0.height == ev1.height, timeout);
+    let grouped = try_group_while_timeout(events, |ev0, ev1| ev0.height == ev1.height, batch_delay);
 
     // Convert each group to a batch
     grouped.map_ok(move |mut events_with_heights| {
