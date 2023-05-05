@@ -37,7 +37,7 @@ impl Runnable for StartCmd {
 
             let now = Utc::now();
             let path_str = format!(
-                "{}/hermes-{}-{}-{}-{}{}{}.prof",
+                "{}/hermes-{:04}-{:02}-{:02}-{:02}{:02}{:02}.prof",
                 profile_dir,
                 now.year(),
                 now.month(),
