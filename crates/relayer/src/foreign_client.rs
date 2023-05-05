@@ -1065,9 +1065,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })
         };
 
-        // Wait for the source network to produce block(s) & reach `target_height`.
-        while src_application_latest_height()? < target_height {
-            thread::sleep(Duration::from_millis(100));
+        {
+            crate::time!("wait_and_build_update_client_with_trusted_sleep");
+            // Wait for the source network to produce block(s) & reach `target_height`.
+            while src_application_latest_height()? < target_height {
+                thread::sleep(Duration::from_millis(100));
+            }
         }
 
         let messages = self.build_update_client_with_trusted(target_height, trusted_height)?;
