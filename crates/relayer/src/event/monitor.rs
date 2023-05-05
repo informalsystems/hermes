@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::cmp::Ordering;
+use std::time::Duration;
 
 use crossbeam_channel as channel;
 use futures::{
@@ -25,7 +26,7 @@ use crate::{
     telemetry,
     util::{
         retry::{retry_with_index, RetryResult},
-        stream::try_group_while,
+        stream::try_group_while_timeout,
     },
 };
 
@@ -341,12 +342,21 @@ impl EventMonitor {
     pub fn run(mut self) {
         debug!("starting event monitor");
 
+        // work around double borrow
+        let rt = self.rt.clone();
+
         // Continuously run the event loop, so that when it aborts
         // because of WebSocket client restart, we pick up the work again.
         loop {
-            match self.run_loop() {
+            match rt.block_on(self.run_loop()) {
                 Next::Continue => continue,
                 Next::Abort => break,
+                Next::Reconnect => {
+                    telemetry!(ws_reconnect, &self.chain_id);
+                    self.reconnect();
+
+                    continue;
+                }
             }
         }
 
@@ -361,7 +371,7 @@ impl EventMonitor {
         trace!("event monitor has successfully shut down");
     }
 
-    fn run_loop(&mut self) -> Next {
+    async fn run_loop(&mut self) -> Next {
         // Take ownership of the subscriptions
         let subscriptions =
             core::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
@@ -371,9 +381,6 @@ impl EventMonitor {
 
         // Needed to be able to poll the stream
         pin_mut!(batches);
-
-        // Work around double borrow
-        let rt = self.rt.clone();
 
         loop {
             // Process any shutdown or subscription commands
@@ -388,12 +395,10 @@ impl EventMonitor {
                 }
             }
 
-            let result = rt.block_on(async {
-                tokio::select! {
-                    Some(batch) = batches.next() => batch,
-                    Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
-                }
-            });
+            let result = tokio::select! {
+                Some(batch) = batches.next() => batch,
+                Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
+            };
 
             // Before handling the batch, check if there are any pending shutdown or subscribe commands.
             if let Ok(cmd) = self.rx_cmd.try_recv() {
@@ -415,29 +420,13 @@ impl EventMonitor {
 
                         self.propagate_error(e);
 
-                        telemetry!(ws_reconnect, &self.chain_id);
-
                         // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
-                        self.reconnect();
-
-                        // Abort this event loop, the `run` method will start a new one.
-                        // We can't just write `return self.run()` here because Rust
-                        // does not perform tail call optimization, and we would
-                        // thus potentially blow up the stack after many restarts.
-                        return Next::Continue;
+                        return Next::Reconnect;
                     } else {
                         error!("failed to collect events: {}", e);
 
-                        telemetry!(ws_reconnect, &self.chain_id);
-
                         // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
-                        self.reconnect();
-
-                        // Abort this event loop, the `run` method will start a new one.
-                        // We can't just write `return self.run()` here because Rust
-                        // does not perform tail call optimization, and we would
-                        // thus potentially blow up the stack after many restarts.
-                        return Next::Continue;
+                        return Next::Reconnect;
                     };
                 }
             }
@@ -485,8 +474,10 @@ fn stream_batches(
         .map_err(Error::canceled_or_generic)
         .try_flatten();
 
+    let timeout = Duration::from_millis(1000);
+
     // Group events by height
-    let grouped = try_group_while(events, |ev0, ev1| ev0.height == ev1.height);
+    let grouped = try_group_while_timeout(events, |ev0, ev1| ev0.height == ev1.height, timeout);
 
     // Convert each group to a batch
     grouped.map_ok(move |mut events_with_heights| {
@@ -529,4 +520,5 @@ async fn run_driver(
 pub enum Next {
     Abort,
     Continue,
+    Reconnect,
 }
