@@ -33,6 +33,7 @@ pub async fn wait_for_block_commits(
         return Ok(());
     }
 
+    crate::time!("wait_for_block_commits");
     let _span = debug_span!("wait_for_block_commits", id = %chain_id).entered();
 
     let start_time = Instant::now();

@@ -1053,6 +1053,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         target_height: Height,
         trusted_height: Option<Height>,
     ) -> Result<Vec<Any>, ForeignClientError> {
+        crate::time!("wait_and_build_update_client_with_trusted");
+
         let src_application_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::client_create(
@@ -1271,6 +1273,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         consensus_height: Height,
     ) -> Result<Option<UpdateClient>, ForeignClientError> {
+        crate::time!("fetch_update_client_event");
+
         let mut events_with_heights = vec![];
         for i in 0..MAX_RETRIES {
             thread::sleep(Duration::from_millis(200));
