@@ -58,7 +58,7 @@ tracing                  = "0.1.36"
 tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
 
 [dependencies.tendermint]
-version = "0.30.0"
+version = "0.32.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
