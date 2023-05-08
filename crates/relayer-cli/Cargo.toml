@@ -55,7 +55,7 @@ signal-hook              = "0.3.15"
 subtle-encoding          = "0.5"
 tokio                    = { version = "1.0", features = ["full"] }
 tracing                  = "0.1.36"
-tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
+tracing-subscriber       = { version = "0.3.17", features = ["fmt", "env-filter", "json"]}
 
 [dependencies.tendermint]
 version = "0.30.0"

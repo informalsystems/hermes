@@ -23,7 +23,7 @@ tendermint-rpc    = { version = "0.30.0", features = ["http-client", "websocket-
 http = "0.2.9"
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.36"
-tracing-subscriber = "0.3.14"
+tracing-subscriber = "0.3.17"
 eyre = "0.6.8"
 color-eyre = "0.6"
 rand = "0.8.5"
