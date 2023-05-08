@@ -10,7 +10,7 @@ jobs:
   md-link-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: markdown-link-check
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
