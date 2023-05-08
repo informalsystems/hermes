@@ -5,6 +5,7 @@ pub mod profiling {
     use core::sync::atomic::Ordering::Relaxed;
     use once_cell::sync::OnceCell;
     use serde_derive::Serialize;
+    use serde_json::Value;
     use std::fs::File;
     use std::fs::OpenOptions;
     use std::path::Path;
@@ -17,18 +18,21 @@ pub mod profiling {
     /// Measure the time between when this value is allocated
     /// and when it is dropped.
     pub struct Timer {
-        name: String,
+        name: &'static str,
+        info: Value,
         start: std::time::Instant,
     }
 
     #[derive(Debug, Serialize)]
-    struct TimerInfo {
-        name: String,
+    struct TimerInfo<'a> {
+        name: &'a str,
+        #[serde(flatten)]
+        info: &'a Value,
         elapsed: u128,
     }
 
     impl Timer {
-        pub fn new(name: String) -> Self {
+        pub fn new(name: &'static str, info: Value) -> Self {
             let depth = DEPTH.with(|d| d.fetch_add(1, Relaxed));
             let pad = "   ".repeat(depth);
 
@@ -36,6 +40,7 @@ pub mod profiling {
 
             Self {
                 name,
+                info,
                 start: std::time::Instant::now(),
             }
         }
@@ -49,11 +54,14 @@ pub mod profiling {
             let pad = "   ".repeat(depth - 1);
 
             tracing::info!("{}⏳ {} - elapsed: {}ms", pad, self.name, elapsed);
+
             let info = TimerInfo {
-                name: self.name.clone(),
+                name: self.name,
+                info: &self.info,
                 elapsed,
             };
-            to_json_format(info);
+
+            to_json_format(&info);
         }
     }
 
@@ -71,18 +79,11 @@ pub mod profiling {
         }
     }
 
-    fn to_json_format(info: TimerInfo) {
-        use std::io::prelude::*;
-
-        let json_str = match serde_json::to_string(&info) {
-            Ok(value) => value,
-            Err(_) => format!("{info:?}"), // Fallback to debug printing
-        };
-
+    fn to_json_format(info: &TimerInfo<'_>) {
         match FILE.get() {
             Some(mut f) => {
-                if let Err(e) = writeln!(f, "{}", json_str) {
-                    tracing::error!("Couldn't write to file: {}", e);
+                if let Err(e) = serde_json::to_writer(&mut f, &info) {
+                    tracing::error!("Couldn't write to file: {e}");
                 }
             }
             None => tracing::debug!("File for profiling is not set"),
@@ -99,10 +100,12 @@ pub mod profiling {
 /// ```rust
 /// use ibc_relayer::time;
 ///
-/// time!("full scope");
+/// let val1 = 1;
+/// let val2 = 2;
+/// time!("full scope", {"id1": val1, "id2": val2});
 ///
 /// let x = {
-///   time!("inner {}", "scope");
+///   time!("inner scope", {});
 ///
 ///   42
 ///   // "inner scope" timer ends here
@@ -111,8 +114,13 @@ pub mod profiling {
 /// ```
 #[macro_export]
 macro_rules! time {
-    ($($arg:tt)*) => {
+    ($name:expr, $info:tt) => {
         #[cfg(feature = "profiling")]
-        let _timer = $crate::macros::profiling::Timer::new(format!($($arg)*));
+        let _timer = $crate::macros::profiling::Timer::new($name, ::serde_json::json!($info));
+    };
+
+    ($name:expr) => {
+        #[cfg(feature = "profiling")]
+        let _timer = $crate::macros::profiling::Timer::new($name, ::serde_json::json!({}));
     };
 }
