@@ -12,16 +12,15 @@ use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
 use tendermint_rpc::{
-    client::CompatMode, event::Event as RpcEvent, query::Query, Error as RpcError,
-    SubscriptionClient, WebSocketClient, WebSocketClientDriver, WebSocketClientUrl,
+    client::CompatMode, event::Event as RpcEvent, query::Query, SubscriptionClient,
+    WebSocketClient, WebSocketClientDriver, WebSocketClientUrl,
 };
 
-use ibc_relayer_types::{
-    core::ics02_client::height::Height, core::ics24_host::identifier::ChainId, events::IbcEvent,
-};
+use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
 use crate::{
-    chain::{handle::Subscription, tracking::TrackingId},
+    chain::tracking::TrackingId,
+    event::{bus::EventBus, error::*, IbcEventWithHeight},
     telemetry,
     util::{
         retry::{retry_with_index, RetryResult},
@@ -29,12 +28,7 @@ use crate::{
     },
 };
 
-mod error;
-pub use error::*;
-
-use super::{bus::EventBus, IbcEventWithHeight};
-
-pub type Result<T> = core::result::Result<T, Error>;
+use super::{EventBatch, EventSourceCmd, Result, SubscriptionStream, TxEventSourceCmd};
 
 mod retry_strategy {
     use crate::util::retry::clamp_total;
@@ -52,48 +46,6 @@ mod retry_strategy {
 }
 
 /// A batch of events from a chain at a specific height
-#[derive(Clone, Debug)]
-pub struct EventBatch {
-    pub chain_id: ChainId,
-    pub tracking_id: TrackingId,
-    pub height: Height,
-    pub events: Vec<IbcEventWithHeight>,
-}
-
-type SubscriptionResult = core::result::Result<RpcEvent, RpcError>;
-type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
-
-pub type EventSender = channel::Sender<Result<EventBatch>>;
-pub type EventReceiver = channel::Receiver<Result<EventBatch>>;
-
-#[derive(Clone, Debug)]
-pub struct TxMonitorCmd(channel::Sender<MonitorCmd>);
-
-impl TxMonitorCmd {
-    pub fn shutdown(&self) -> Result<()> {
-        self.0
-            .send(MonitorCmd::Shutdown)
-            .map_err(|_| Error::channel_send_failed())
-    }
-
-    pub fn subscribe(&self) -> Result<Subscription> {
-        let (tx, rx) = crossbeam_channel::bounded(1);
-
-        self.0
-            .send(MonitorCmd::Subscribe(tx))
-            .map_err(|_| Error::channel_send_failed())?;
-
-        let subscription = rx.recv().map_err(|_| Error::channel_recv_failed())?;
-        Ok(subscription)
-    }
-}
-
-#[derive(Debug)]
-pub enum MonitorCmd {
-    Shutdown,
-    Subscribe(channel::Sender<Subscription>),
-}
-
 /// Connect to a Tendermint node, subscribe to a set of queries,
 /// receive push events over a websocket, and filter them for the
 /// event handler.
@@ -101,7 +53,7 @@ pub enum MonitorCmd {
 /// The default events that are queried are:
 /// - [`EventType::NewBlock`](tendermint_rpc::query::EventType::NewBlock)
 /// - [`EventType::Tx`](tendermint_rpc::query::EventType::Tx)
-pub struct EventMonitor {
+pub struct EventSource {
     chain_id: ChainId,
     /// WebSocket to collect events from
     client: WebSocketClient,
@@ -114,7 +66,7 @@ pub struct EventMonitor {
     /// Channel where to send client driver errors
     tx_err: mpsc::UnboundedSender<tendermint_rpc::Error>,
     /// Channel where to receive commands
-    rx_cmd: channel::Receiver<MonitorCmd>,
+    rx_cmd: channel::Receiver<EventSourceCmd>,
     /// Node Address
     ws_url: WebSocketClientUrl,
     /// RPC compatibility mode
@@ -127,48 +79,10 @@ pub struct EventMonitor {
     rt: Arc<TokioRuntime>,
 }
 
-// TODO: These are SDK specific, should be eventually moved.
-pub mod queries {
-    use tendermint_rpc::query::{EventType, Query};
-
-    pub fn all() -> Vec<Query> {
-        // Note: Tendermint-go supports max 5 query specifiers!
-        vec![
-            new_block(),
-            ibc_client(),
-            ibc_connection(),
-            ibc_channel(),
-            ibc_query(),
-            // This will be needed when we send misbehavior evidence to full node
-            // Query::eq("message.module", "evidence"),
-        ]
-    }
-
-    pub fn new_block() -> Query {
-        Query::from(EventType::NewBlock)
-    }
-
-    pub fn ibc_client() -> Query {
-        Query::eq("message.module", "ibc_client")
-    }
-
-    pub fn ibc_connection() -> Query {
-        Query::eq("message.module", "ibc_connection")
-    }
-
-    pub fn ibc_channel() -> Query {
-        Query::eq("message.module", "ibc_channel")
-    }
-
-    pub fn ibc_query() -> Query {
-        Query::eq("message.module", "interchainquery")
-    }
-}
-
-impl EventMonitor {
+impl EventSource {
     /// Create an event monitor, and connect to a node
     #[instrument(
-        name = "event_monitor.create",
+        name = "event_source.create",
         level = "error",
         skip_all,
         fields(chain = %chain_id, url = %ws_url)
@@ -178,7 +92,7 @@ impl EventMonitor {
         ws_url: WebSocketClientUrl,
         rpc_compat: CompatMode,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(Self, TxMonitorCmd)> {
+    ) -> Result<(Self, TxEventSourceCmd)> {
         let event_bus = EventBus::new();
         let (tx_cmd, rx_cmd) = channel::unbounded();
 
@@ -192,7 +106,7 @@ impl EventMonitor {
         let driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
 
         // TODO: move them to config file(?)
-        let event_queries = queries::all();
+        let event_queries = super::queries::all();
 
         let monitor = Self {
             rt,
@@ -209,7 +123,7 @@ impl EventMonitor {
             subscriptions: Box::new(futures::stream::empty()),
         };
 
-        Ok((monitor, TxMonitorCmd(tx_cmd)))
+        Ok((monitor, TxEventSourceCmd(tx_cmd)))
     }
 
     /// The list of [`Query`] that this event monitor is subscribing for.
@@ -218,7 +132,7 @@ impl EventMonitor {
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
-    #[instrument(name = "event_monitor.init_subscriptions", skip_all, fields(chain = %self.chain_id))]
+    #[instrument(name = "event_source.init_subscriptions", skip_all, fields(chain = %self.chain_id))]
     pub fn init_subscriptions(&mut self) -> Result<()> {
         let mut subscriptions = vec![];
 
@@ -241,7 +155,7 @@ impl EventMonitor {
     }
 
     #[instrument(
-        name = "event_monitor.try_reconnect",
+        name = "event_source.try_reconnect",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)
@@ -281,7 +195,7 @@ impl EventMonitor {
 
     /// Try to resubscribe to events
     #[instrument(
-        name = "event_monitor.try_resubscribe",
+        name = "event_source.try_resubscribe",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)
@@ -296,7 +210,7 @@ impl EventMonitor {
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
     #[instrument(
-        name = "event_monitor.reconnect",
+        name = "event_source.reconnect",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)
@@ -333,7 +247,7 @@ impl EventMonitor {
     /// Event monitor loop
     #[allow(clippy::while_let_loop)]
     #[instrument(
-        name = "event_monitor",
+        name = "event_source",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)
@@ -379,8 +293,8 @@ impl EventMonitor {
             // Process any shutdown or subscription commands
             if let Ok(cmd) = self.rx_cmd.try_recv() {
                 match cmd {
-                    MonitorCmd::Shutdown => return Next::Abort,
-                    MonitorCmd::Subscribe(tx) => {
+                    EventSourceCmd::Shutdown => return Next::Abort,
+                    EventSourceCmd::Subscribe(tx) => {
                         if let Err(e) = tx.send(self.event_bus.subscribe()) {
                             error!("failed to send back subscription: {e}");
                         }
@@ -398,8 +312,8 @@ impl EventMonitor {
             // Before handling the batch, check if there are any pending shutdown or subscribe commands.
             if let Ok(cmd) = self.rx_cmd.try_recv() {
                 match cmd {
-                    MonitorCmd::Shutdown => return Next::Abort,
-                    MonitorCmd::Subscribe(tx) => {
+                    EventSourceCmd::Shutdown => return Next::Abort,
+                    EventSourceCmd::Subscribe(tx) => {
                         if let Err(e) = tx.send(self.event_bus.subscribe()) {
                             error!("failed to send back subscription: {e}");
                         }

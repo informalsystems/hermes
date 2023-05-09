@@ -95,7 +95,7 @@ use crate::config::{parse_gas_prices, ChainConfig, GasPrice};
 use crate::consensus_state::AnyConsensusState;
 use crate::denom::DenomTrace;
 use crate::error::Error;
-use crate::event::monitor::{EventMonitor, TxMonitorCmd};
+use crate::event::source::{EventSource, TxEventSourceCmd};
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
@@ -148,7 +148,7 @@ pub struct CosmosSdkChain {
     /// A cached copy of the account information
     account: Option<Account>,
 
-    tx_monitor_cmd: Option<TxMonitorCmd>,
+    tx_monitor_cmd: Option<TxEventSourceCmd>,
 }
 
 impl CosmosSdkChain {
@@ -285,22 +285,18 @@ impl CosmosSdkChain {
         Ok(())
     }
 
-    fn init_event_monitor(&mut self) -> Result<TxMonitorCmd, Error> {
-        crate::time!("init_event_monitor");
+    fn init_event_source(&mut self) -> Result<TxEventSourceCmd, Error> {
+        crate::time!("init_event_source");
 
-        let (mut event_monitor, monitor_tx) = EventMonitor::new(
+        let (event_source, monitor_tx) = EventSource::push(
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
             self.compat_mode,
             self.rt.clone(),
         )
-        .map_err(Error::event_monitor)?;
+        .map_err(Error::event_source)?;
 
-        event_monitor
-            .init_subscriptions()
-            .map_err(Error::event_monitor)?;
-
-        thread::spawn(move || event_monitor.run());
+        thread::spawn(move || event_source.run());
 
         Ok(monitor_tx)
     }
@@ -809,7 +805,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn shutdown(self) -> Result<(), Error> {
         if let Some(monitor_tx) = self.tx_monitor_cmd {
-            monitor_tx.shutdown().map_err(Error::event_monitor)?;
+            monitor_tx.shutdown().map_err(Error::event_source)?;
         }
 
         Ok(())
@@ -827,13 +823,13 @@ impl ChainEndpoint for CosmosSdkChain {
         let tx_monitor_cmd = match &self.tx_monitor_cmd {
             Some(tx_monitor_cmd) => tx_monitor_cmd,
             None => {
-                let tx_monitor_cmd = self.init_event_monitor()?;
+                let tx_monitor_cmd = self.init_event_source()?;
                 self.tx_monitor_cmd = Some(tx_monitor_cmd);
                 self.tx_monitor_cmd.as_ref().unwrap()
             }
         };
 
-        let subscription = tx_monitor_cmd.subscribe().map_err(Error::event_monitor)?;
+        let subscription = tx_monitor_cmd.subscribe().map_err(Error::event_source)?;
         Ok(subscription)
     }
 

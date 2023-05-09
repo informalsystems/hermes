@@ -14,7 +14,9 @@ use tendermint_rpc::{client::CompatMode, Client, HttpClient};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 
-use ibc_relayer::{chain::handle::Subscription, config::ChainConfig, event::monitor::EventMonitor};
+use ibc_relayer::{
+    chain::handle::Subscription, config::ChainConfig, event::source::push::EventSource,
+};
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
 use crate::prelude::*;
@@ -140,7 +142,7 @@ fn subscribe(
     compat_mode: CompatMode,
     rt: Arc<TokioRuntime>,
 ) -> eyre::Result<Subscription> {
-    let (mut event_monitor, tx_cmd) = EventMonitor::new(
+    let (mut event_source, tx_cmd) = EventSource::new(
         chain_config.id.clone(),
         chain_config.websocket_addr.clone(),
         compat_mode,
@@ -148,14 +150,14 @@ fn subscribe(
     )
     .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;
 
-    event_monitor
+    event_source
         .init_subscriptions()
         .map_err(|e| eyre!("could not initialize subscriptions: {}", e))?;
 
-    let queries = event_monitor.queries();
+    let queries = event_source.queries();
     info!("listening for queries: {}", queries.iter().format(", "),);
 
-    thread::spawn(|| event_monitor.run());
+    thread::spawn(|| event_source.run());
 
     let subscription = tx_cmd.subscribe()?;
     Ok(subscription)

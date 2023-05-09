@@ -11,7 +11,7 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::cosmos::types::events::channel::RawObject;
-use crate::event::monitor::queries;
+use crate::event::source::queries;
 use crate::telemetry;
 
 use super::{ibc_event_try_from_abci_event, IbcEventWithHeight};

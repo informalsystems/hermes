@@ -19,7 +19,7 @@ use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::config::filter::FeePolicy;
-use crate::event::monitor::EventBatch;
+use crate::event::source::EventBatch;
 use crate::foreign_client::HasExpiredOrFrozenError;
 use crate::link::Resubmit;
 use crate::link::{error::LinkError, Link};

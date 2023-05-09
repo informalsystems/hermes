@@ -42,7 +42,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
-use crate::event::monitor::EventBatch;
+use crate::event::source::EventBatch;
 use crate::event::IbcEventWithHeight;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
