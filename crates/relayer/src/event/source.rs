@@ -1,7 +1,7 @@
 pub mod rpc;
 pub mod websocket;
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use crossbeam_channel as channel;
 
@@ -42,9 +42,10 @@ impl EventSource {
     pub fn rpc(
         chain_id: ChainId,
         rpc_client: HttpClient,
+        poll_interval: Duration,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, TxEventSourceCmd)> {
-        let (source, tx) = rpc::EventSource::new(chain_id, rpc_client, rt)?;
+        let (source, tx) = rpc::EventSource::new(chain_id, rpc_client, poll_interval, rt)?;
         Ok((Self::Rpc(source), tx))
     }
 

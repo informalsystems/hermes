@@ -173,6 +173,10 @@ pub mod default {
         Duration::from_secs(10)
     }
 
+    pub fn poll_interval() -> Duration {
+        Duration::from_secs(1)
+    }
+
     pub fn clock_drift() -> Duration {
         Duration::from_secs(5)
     }
@@ -460,6 +464,8 @@ pub struct ChainConfig {
     pub grpc_addr: Url,
     #[serde(default)]
     pub event_source: EventSource,
+    #[serde(default = "default::poll_interval", with = "humantime_serde")]
+    pub poll_interval: Duration,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
     pub account_prefix: String,

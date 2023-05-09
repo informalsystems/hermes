@@ -131,6 +131,11 @@ websocket_addr = 'ws://127.0.0.1:26657/websocket'
 # Default: 'websocket'
 event_source = 'websocket'
 
+# The interval at which to poll for blocks when the `event_source` is `rpc`.
+# Has no effect when `event_source` is set to `websocket`.
+# Default: 1 second
+poll_interval = '1s'
+
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
 # Note: Hermes uses this parameter _only_ in `start` mode; for all other CLIs,
@@ -316,6 +321,7 @@ rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://127.0.0.1:26557/websocket'
 event_source = 'websocket'
+poll_interval = '1s'
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'

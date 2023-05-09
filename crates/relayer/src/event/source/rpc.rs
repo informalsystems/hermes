@@ -34,15 +34,15 @@ use self::extract::extract_events;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-const QUERY_INTERVAL: Duration = Duration::from_secs(1);
-const MAX_QUERY_INTERVAL: Duration = Duration::from_secs(2);
-
 pub struct EventSource {
     /// Chain identifier
     chain_id: ChainId,
 
     /// RPC client
     rpc_client: HttpClient,
+
+    /// Poll interval
+    poll_interval: Duration,
 
     /// Event bus for broadcasting events
     event_bus: EventBus<Arc<Result<EventBatch>>>,
@@ -61,6 +61,7 @@ impl EventSource {
     pub fn new(
         chain_id: ChainId,
         rpc_client: HttpClient,
+        poll_interval: Duration,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, TxEventSourceCmd)> {
         let event_bus = EventBus::new();
@@ -70,6 +71,7 @@ impl EventSource {
             rt,
             chain_id,
             rpc_client,
+            poll_interval,
             event_bus,
             rx_cmd,
             last_fetched_height: BlockHeight::from(0_u32),
@@ -86,7 +88,7 @@ impl EventSource {
         let rt = self.rt.clone();
 
         rt.block_on(async {
-            let mut backoff = monitor_backoff();
+            let mut backoff = monitor_backoff(self.poll_interval);
 
             // Initialize the latest fetched height
             if let Ok(latest_height) = latest_height(&self.rpc_client).await {
@@ -103,10 +105,10 @@ impl EventSource {
 
                     Ok(Next::Continue) => {
                         // Reset the backoff
-                        backoff = monitor_backoff();
+                        backoff = monitor_backoff(self.poll_interval);
 
                         // Check if we need to wait some more before the next iteration.
-                        let delay = QUERY_INTERVAL.checked_sub(before_step.elapsed());
+                        let delay = self.poll_interval.checked_sub(before_step.elapsed());
 
                         if let Some(delay_remaining) = delay {
                             sleep(delay_remaining).await;
@@ -220,9 +222,9 @@ impl EventSource {
     }
 }
 
-fn monitor_backoff() -> impl Iterator<Item = Duration> {
-    ConstantGrowth::new(QUERY_INTERVAL, Duration::from_millis(500))
-        .clamp(MAX_QUERY_INTERVAL, usize::MAX)
+fn monitor_backoff(poll_interval: Duration) -> impl Iterator<Item = Duration> {
+    ConstantGrowth::new(poll_interval, Duration::from_millis(500))
+        .clamp(poll_interval * 5, usize::MAX)
 }
 
 fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {

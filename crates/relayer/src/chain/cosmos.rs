@@ -299,6 +299,7 @@ impl CosmosSdkChain {
             Mode::Rpc => EventSource::rpc(
                 self.config.id.clone(),
                 self.rpc_client.clone(),
+                self.config.poll_interval,
                 self.rt.clone(),
             ),
         }

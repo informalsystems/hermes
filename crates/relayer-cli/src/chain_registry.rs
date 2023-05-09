@@ -24,7 +24,7 @@ use ibc_chain_registry::querier::SimpleHermesRpcQuerier;
 use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use ibc_relayer::config::{default, AddressType, ChainConfig, GasPrice};
+use ibc_relayer::config::{default, AddressType, ChainConfig, EventSource, GasPrice};
 use ibc_relayer::keyring::Store;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
@@ -120,7 +120,8 @@ where
         rpc_addr: rpc_data.rpc_address,
         websocket_addr: websocket_address,
         grpc_addr: grpc_address,
-        event_source: Default::default(),
+        event_source: EventSource::Rpc,
+        poll_interval: default::poll_interval(),
         rpc_timeout: default::rpc_timeout(),
         genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,
