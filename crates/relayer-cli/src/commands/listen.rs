@@ -15,7 +15,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 
 use ibc_relayer::{
-    chain::handle::Subscription, config::ChainConfig, event::source::push::EventSource,
+    chain::handle::Subscription, config::ChainConfig, event::source::websocket::EventSource,
 };
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 

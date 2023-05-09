@@ -290,13 +290,13 @@ impl CosmosSdkChain {
         use crate::config::EventSource as Mode;
 
         let (event_source, monitor_tx) = match self.config.event_source {
-            Mode::Push => EventSource::push(
+            Mode::WebSocket => EventSource::websocket(
                 self.config.id.clone(),
                 self.config.websocket_addr.clone(),
                 self.compat_mode,
                 self.rt.clone(),
             ),
-            Mode::Pull => EventSource::pull(
+            Mode::Rpc => EventSource::rpc(
                 self.config.id.clone(),
                 self.rpc_client.clone(),
                 self.rt.clone(),

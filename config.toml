@@ -126,6 +126,11 @@ grpc_addr = 'http://127.0.0.1:9090'
 # listens on. Required
 websocket_addr = 'ws://127.0.0.1:26657/websocket'
 
+# The type of event source to use for getting events from the chain.
+# Either `websocket` for WebSocket or `rpc` for RPC via the `/block_results` endpoint.
+# Default: 'websocket'
+event_source = 'websocket'
+
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
 # Note: Hermes uses this parameter _only_ in `start` mode; for all other CLIs,
@@ -310,6 +315,7 @@ id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://127.0.0.1:26557/websocket'
+event_source = 'websocket'
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'

@@ -1,5 +1,5 @@
-pub mod pull;
-pub mod push;
+pub mod rpc;
+pub mod websocket;
 
 use std::sync::Arc;
 
@@ -23,35 +23,35 @@ use crate::chain::{handle::Subscription, tracking::TrackingId};
 pub type Result<T> = core::result::Result<T, Error>;
 
 pub enum EventSource {
-    Push(push::EventSource),
-    Pull(pull::EventSource),
+    WebSocket(websocket::EventSource),
+    Rpc(rpc::EventSource),
 }
 
 impl EventSource {
-    pub fn push(
+    pub fn websocket(
         chain_id: ChainId,
         ws_url: WebSocketClientUrl,
         rpc_compat: CompatMode,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, TxEventSourceCmd)> {
-        let (mut source, tx) = push::EventSource::new(chain_id, ws_url, rpc_compat, rt)?;
+        let (mut source, tx) = websocket::EventSource::new(chain_id, ws_url, rpc_compat, rt)?;
         source.init_subscriptions()?;
-        Ok((Self::Push(source), tx))
+        Ok((Self::WebSocket(source), tx))
     }
 
-    pub fn pull(
+    pub fn rpc(
         chain_id: ChainId,
         rpc_client: HttpClient,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, TxEventSourceCmd)> {
-        let (source, tx) = pull::EventSource::new(chain_id, rpc_client, rt)?;
-        Ok((Self::Pull(source), tx))
+        let (source, tx) = rpc::EventSource::new(chain_id, rpc_client, rt)?;
+        Ok((Self::Rpc(source), tx))
     }
 
     pub fn run(self) {
         match self {
-            Self::Push(source) => source.run(),
-            Self::Pull(source) => source.run(),
+            Self::WebSocket(source) => source.run(),
+            Self::Rpc(source) => source.run(),
         }
     }
 }

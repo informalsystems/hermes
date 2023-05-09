@@ -442,11 +442,11 @@ pub struct GenesisRestart {
 #[serde(rename_all = "lowercase")]
 pub enum EventSource {
     /// Push-based event source, via WebSocket
-    Push,
+    WebSocket,
 
     /// Pull-based event source, via RPC /block_results
     #[default]
-    Pull,
+    Rpc,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
