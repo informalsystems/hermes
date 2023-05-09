@@ -287,13 +287,21 @@ impl CosmosSdkChain {
 
     fn init_event_source(&mut self) -> Result<TxEventSourceCmd, Error> {
         crate::time!("init_event_source");
+        use crate::config::EventSource as Mode;
 
-        let (event_source, monitor_tx) = EventSource::push(
-            self.config.id.clone(),
-            self.config.websocket_addr.clone(),
-            self.compat_mode,
-            self.rt.clone(),
-        )
+        let (event_source, monitor_tx) = match self.config.event_source {
+            Mode::Push => EventSource::push(
+                self.config.id.clone(),
+                self.config.websocket_addr.clone(),
+                self.compat_mode,
+                self.rt.clone(),
+            ),
+            Mode::Pull => EventSource::pull(
+                self.config.id.clone(),
+                self.rpc_client.clone(),
+                self.rt.clone(),
+            ),
+        }
         .map_err(Error::event_source)?;
 
         thread::spawn(move || event_source.run());

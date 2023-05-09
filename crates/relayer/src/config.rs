@@ -438,6 +438,17 @@ pub struct GenesisRestart {
     pub archive_addr: Url,
 }
 
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum EventSource {
+    /// Push-based event source, via WebSocket
+    #[default]
+    Push,
+
+    /// Pull-based event source, via RPC /block_results
+    Pull,
+}
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
@@ -447,6 +458,8 @@ pub struct ChainConfig {
     pub rpc_addr: Url,
     pub websocket_addr: WebSocketClientUrl,
     pub grpc_addr: Url,
+    #[serde(default)]
+    pub event_source: EventSource,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
     pub account_prefix: String,

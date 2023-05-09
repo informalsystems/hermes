@@ -133,12 +133,14 @@ impl FullNode {
             .as_path()
             .display()
             .to_string();
+
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
             r#type: ChainType::CosmosSdk,
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
             websocket_addr: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
+            event_source: config::EventSource::Push,
             rpc_timeout: Duration::from_secs(10),
             genesis_restart: None,
             account_prefix: self.chain_driver.account_prefix.clone(),

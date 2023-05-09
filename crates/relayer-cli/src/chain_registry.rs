@@ -120,6 +120,7 @@ where
         rpc_addr: rpc_data.rpc_address,
         websocket_addr: websocket_address,
         grpc_addr: grpc_address,
+        event_source: Default::default(),
         rpc_timeout: default::rpc_timeout(),
         genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,
