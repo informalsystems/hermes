@@ -7,7 +7,7 @@ use crossbeam_channel as channel;
 
 use futures::Stream;
 use tendermint_rpc::{
-    client::CompatMode, event::Event as RpcEvent, Error as RpcError, WebSocketClientUrl,
+    client::CompatMode, event::Event as RpcEvent, Error as RpcError, HttpClient, WebSocketClientUrl,
 };
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -24,6 +24,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 pub enum EventSource {
     Push(push::EventSource),
+    Pull(pull::EventSource),
 }
 
 impl EventSource {
@@ -38,9 +39,19 @@ impl EventSource {
         Ok((Self::Push(source), tx))
     }
 
+    pub fn pull(
+        chain_id: ChainId,
+        rpc_client: HttpClient,
+        rt: Arc<TokioRuntime>,
+    ) -> Result<(Self, TxEventSourceCmd)> {
+        let (source, tx) = pull::EventSource::new(chain_id, rpc_client, rt)?;
+        Ok((Self::Pull(source), tx))
+    }
+
     pub fn run(self) {
         match self {
             Self::Push(source) => source.run(),
+            Self::Pull(source) => source.run(),
         }
     }
 }

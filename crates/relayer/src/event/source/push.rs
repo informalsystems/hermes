@@ -1,3 +1,5 @@
+pub mod extract;
+
 use alloc::sync::Arc;
 use core::cmp::Ordering;
 
@@ -29,6 +31,8 @@ use crate::{
 };
 
 use super::{EventBatch, EventSourceCmd, Result, SubscriptionStream, TxEventSourceCmd};
+
+use self::extract::extract_events;
 
 mod retry_strategy {
     use crate::util::retry::clamp_total;
@@ -382,7 +386,7 @@ fn collect_events(
     chain_id: &ChainId,
     event: RpcEvent,
 ) -> impl Stream<Item = Result<IbcEventWithHeight>> {
-    let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
+    let events = extract_events(chain_id, event).unwrap_or_default();
     stream::iter(events).map(Ok)
 }
 

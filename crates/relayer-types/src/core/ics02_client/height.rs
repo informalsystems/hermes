@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{core::ics24_host::identifier::ChainId, prelude::*};
 use core::cmp::Ordering;
 
 use core::num::ParseIntError;
@@ -31,6 +31,13 @@ impl Height {
             revision_number,
             revision_height,
         })
+    }
+
+    pub fn from_tm(height: tendermint::block::Height, chain_id: &ChainId) -> Self {
+        Self {
+            revision_number: chain_id.version(),
+            revision_height: height.value(),
+        }
     }
 
     pub fn revision_number(&self) -> u64 {
