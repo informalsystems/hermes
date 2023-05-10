@@ -459,7 +459,7 @@ impl EventMonitor {
     fn process_batch(&mut self, batch: EventBatch) {
         telemetry!(ws_events, &batch.chain_id, batch.events.len() as u64);
 
-        tracing::warn!(chain = %batch.chain_id, len = %batch.events.len(), "emitting batch");
+        debug!(chain = %batch.chain_id, len = %batch.events.len(), "emitting batch");
 
         self.event_bus.broadcast(Arc::new(Ok(batch)));
     }
@@ -484,7 +484,7 @@ fn stream_batches(
     // Collect IBC events from each RPC event
     let events = subscriptions
         .map_ok(move |rpc_event| {
-            tracing::warn!(chain = %id, "received an RPC event: {}", rpc_event.query);
+            debug!(chain = %id, "received an RPC event: {}", rpc_event.query);
             collect_events(&id, rpc_event)
         })
         .map_err(Error::canceled_or_generic)
@@ -502,7 +502,7 @@ fn stream_batches(
 
         sort_events(&mut events_with_heights);
 
-        tracing::warn!(chain = %chain_id, len = %events_with_heights.len(), "assembled batch");
+        debug!(chain = %chain_id, len = %events_with_heights.len(), "assembled batch");
 
         EventBatch {
             height,
