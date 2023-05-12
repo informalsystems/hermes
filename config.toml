@@ -132,6 +132,10 @@ websocket_addr = 'ws://127.0.0.1:26657/websocket'
 # Hermes uses a large preconfigured timeout (on the order of minutes).
 rpc_timeout = '10s'
 
+# Enable verification of headers including in `ClientUpdate` message using the light client.
+# Default: true
+verify_headers = true
+
 # Specify the prefix used by the chain. Required
 account_prefix = 'cosmos'
 

@@ -181,6 +181,10 @@ pub mod default {
         Duration::from_secs(30)
     }
 
+    pub fn verify_headers() -> bool {
+        true
+    }
+
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
     }
@@ -449,6 +453,8 @@ pub struct ChainConfig {
     pub grpc_addr: Url,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
+    #[serde(default = "default::verify_headers")]
+    pub verify_headers: bool,
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]

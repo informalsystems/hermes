@@ -133,6 +133,7 @@ impl FullNode {
             .as_path()
             .display()
             .to_string();
+
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
             r#type: ChainType::CosmosSdk,
@@ -140,6 +141,7 @@ impl FullNode {
             websocket_addr: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
             rpc_timeout: Duration::from_secs(10),
+            verify_headers: true,
             genesis_restart: None,
             account_prefix: self.chain_driver.account_prefix.clone(),
             key_name: self.wallets.relayer.id.0.clone(),

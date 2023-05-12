@@ -55,6 +55,7 @@ pub struct LightClient {
     chain_id: ChainId,
     peer_id: PeerId,
     io: AnyIo,
+    enable_verification: bool,
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
@@ -81,9 +82,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         let target_height =
             TMHeight::try_from(target.revision_height()).map_err(Error::invalid_height)?;
 
-        const NO_VERIFICATION: bool = true;
-
-        if NO_VERIFICATION {
+        if !self.enable_verification {
             let target = self.fetch(target)?;
             return Ok(Verified {
                 target,
@@ -226,6 +225,7 @@ impl LightClient {
             chain_id: config.id.clone(),
             peer_id,
             io,
+            enable_verification: config.verify_headers,
         })
     }
 
