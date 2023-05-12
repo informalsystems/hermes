@@ -464,7 +464,6 @@ impl CosmosSdkChain {
 
     /// Run a future to completion on the Tokio runtime.
     fn block_on<F: Future>(&self, f: F) -> F::Output {
-        // crate::time!("block_on");
         self.rt.block_on(f)
     }
 
@@ -924,8 +923,6 @@ impl ChainEndpoint for CosmosSdkChain {
 
     /// Get the account for the signer
     fn get_signer(&self) -> Result<Signer, Error> {
-        // crate::time!("get_signer");
-
         // Get the key from key seed file
         let key_pair = self.key()?;
 
