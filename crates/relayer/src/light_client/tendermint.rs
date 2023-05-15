@@ -129,7 +129,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
-        crate::time!("light client check_misbehaviour");
+        crate::time!(
+            "light client check_misbehaviour",
+            {
+                "src_chain": self.chain_id,
+            }
+        );
 
         let update_header = update.header.clone().ok_or_else(|| {
             Error::misbehaviour(format!(

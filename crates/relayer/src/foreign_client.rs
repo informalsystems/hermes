@@ -963,7 +963,15 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         client_state: &AnyClientState,
         header: &AnyHeader,
     ) -> Result<(), ForeignClientError> {
-        crate::time!("wait_for_header_validation_delay");
+        crate::time!(
+            "wait_for_header_validation_delay",
+            {
+                "src_chain": self.src_chain().id(),
+                "dst_chain": self.dst_chain().id(),
+                "header_height": header.height(),
+                "header_timestamp": header.timestamp()
+            }
+        );
 
         // Get latest height and time on destination chain
         let mut status = self.dst_chain().query_application_status().map_err(|e| {
@@ -1055,6 +1063,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         target_height: Height,
         trusted_height: Option<Height>,
     ) -> Result<Vec<Any>, ForeignClientError> {
+        crate::time!(
+            "wait_and_build_update_client_with_trusted",
+            {
+                "src_chain": self.src_chain().id(),
+                "dst_chain": self.dst_chain().id(),
+            }
+        );
+
         let src_application_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::client_create(
@@ -1065,9 +1081,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })
         };
 
-        // Wait for the source network to produce block(s) & reach `target_height`.
-        while src_application_latest_height()? < target_height {
-            thread::sleep(Duration::from_millis(100));
+        {
+            crate::time!(
+                "wait_and_build_update_client_with_trusted_sleep",
+                {
+                    "src_chain": self.src_chain().id(),
+                    "dst_chain": self.dst_chain().id(),
+                }
+            );
+            // Wait for the source network to produce block(s) & reach `target_height`.
+            while src_application_latest_height()? < target_height {
+                thread::sleep(Duration::from_millis(100));
+            }
         }
 
         let messages = self.build_update_client_with_trusted(target_height, trusted_height)?;
@@ -1273,6 +1298,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         consensus_height: Height,
     ) -> Result<Option<UpdateClient>, ForeignClientError> {
+        crate::time!(
+            "fetch_update_client_event",
+            {
+                "src_chain": self.src_chain().id(),
+                "dst_chain": self.dst_chain().id(),
+            }
+        );
+
         let mut events_with_heights = vec![];
         for i in 0..MAX_RETRIES {
             thread::sleep(Duration::from_millis(200));
