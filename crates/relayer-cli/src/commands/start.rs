@@ -27,6 +27,29 @@ pub struct StartCmd {
 
 impl Runnable for StartCmd {
     fn run(&self) {
+        #[cfg(feature = "profiling")]
+        {
+            use chrono::prelude::*;
+            use std::env;
+            use std::path::Path;
+
+            let profile_dir = env::var("PROFILE_DIR").unwrap_or_else(|_| ".".to_string());
+
+            let now = Utc::now();
+            let path_str = format!(
+                "{}/hermes-{:04}-{:02}-{:02}-{:02}{:02}{:02}.prof",
+                profile_dir,
+                now.year(),
+                now.month(),
+                now.day(),
+                now.hour(),
+                now.minute(),
+                now.second()
+            );
+            let file_name = Path::new(&path_str);
+            ibc_relayer::macros::profiling::open_or_create_profile_file(file_name);
+        }
+
         let config = (*app_config()).clone();
 
         let options = SupervisorOptions {

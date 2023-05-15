@@ -481,8 +481,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e3c5919066adf22df73762e50cffcde3a758f2a848b113b586d1f86728b673b"
 dependencies = [
  "iana-time-zone",
+ "js-sys",
  "num-integer",
  "num-traits",
+ "time 0.1.45",
+ "wasm-bindgen",
  "winapi",
 ]
 
@@ -1738,7 +1741,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "time",
+ "time 0.3.20",
  "toml 0.7.3",
  "tonic",
 ]
@@ -1830,6 +1833,7 @@ version = "1.4.1"
 dependencies = [
  "abscissa_core",
  "atty",
+ "chrono",
  "clap 3.2.23",
  "clap_complete 3.2.5",
  "color-eyre",
@@ -1907,7 +1911,7 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
- "time",
+ "time 0.3.20",
  "tracing",
  "tracing-subscriber",
  "uint",
@@ -3929,7 +3933,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time",
+ "time 0.3.20",
  "zeroize",
 ]
 
@@ -3965,7 +3969,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-rpc",
- "time",
+ "time 0.3.20",
  "tokio",
 ]
 
@@ -3979,7 +3983,7 @@ dependencies = [
  "flex-error",
  "serde",
  "tendermint",
- "time",
+ "time 0.3.20",
 ]
 
 [[package]]
@@ -3997,7 +4001,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time",
+ "time 0.3.20",
 ]
 
 [[package]]
@@ -4027,7 +4031,7 @@ dependencies = [
  "tendermint",
  "tendermint-config",
  "thiserror",
- "time",
+ "time 0.3.20",
  "tokio",
  "tracing",
  "url",
@@ -4048,7 +4052,7 @@ dependencies = [
  "simple-error",
  "tempfile",
  "tendermint",
- "time",
+ "time 0.3.20",
 ]
 
 [[package]]
@@ -4126,6 +4130,17 @@ checksum = "3fdd6f064ccff2d6567adcb3873ca630700f00b5ad3f060c25b5dcfd9a4ce152"
 dependencies = [
  "cfg-if 1.0.0",
  "once_cell",
+]
+
+[[package]]
+name = "time"
+version = "0.1.45"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b797afad3f312d1c66a56d11d0316f916356d11bd158fbc6ca6389ff6bf805a"
+dependencies = [
+ "libc",
+ "wasi 0.10.0+wasi-snapshot-preview1",
+ "winapi",
 ]
 
 [[package]]
@@ -4736,6 +4751,12 @@ name = "wasi"
 version = "0.9.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
+
+[[package]]
+name = "wasi"
+version = "0.10.0+wasi-snapshot-preview1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
 
 [[package]]
 name = "wasi"
