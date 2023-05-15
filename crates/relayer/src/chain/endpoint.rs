@@ -43,7 +43,7 @@ use crate::consensus_state::AnyConsensusState;
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-use crate::keyring::{AnySigningKeyPair, KeyRing, SigningKeyPairSized};
+use crate::keyring::{AnySigningKeyPair, SigningKeyPairSized};
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 
@@ -92,42 +92,24 @@ pub trait ChainEndpoint: Sized {
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
 
     /// Shutdown the chain runtime
-    fn shutdown(self) -> Result<(), Error>;
+    fn shutdown(&self) -> Result<(), Error>;
 
     /// Perform a health check
     fn health_check(&self) -> Result<HealthCheck, Error>;
 
     // Events
-    fn subscribe(&mut self) -> Result<Subscription, Error>;
+    fn subscribe(&self) -> Result<Subscription, Error>;
 
     // Keyring
 
-    /// Returns the chain's keybase
-    fn keybase(&self) -> &KeyRing<Self::SigningKeyPair>;
-
-    /// Returns the chain's keybase, mutably
-    fn keybase_mut(&mut self) -> &mut KeyRing<Self::SigningKeyPair>;
-
+    /// Get the signer from the keyring
     fn get_signer(&self) -> Result<Signer, Error>;
 
-    /// Get the signing key pair
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
-        // Get the key from key seed file
-        let key_pair = self
-            .keybase()
-            .get_key(&self.config().key_name)
-            .map_err(|e| Error::key_not_found(self.config().key_name.clone(), e))?;
+    /// Get the signing key pair from the keyring
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error>;
 
-        Ok(key_pair)
-    }
-
-    fn add_key(&mut self, key_name: &str, key_pair: Self::SigningKeyPair) -> Result<(), Error> {
-        self.keybase_mut()
-            .add_key(key_name, key_pair)
-            .map_err(Error::key_base)?;
-
-        Ok(())
-    }
+    // Add a new key to the keyring
+    fn add_key(&self, key_name: &str, key_pair: Self::SigningKeyPair) -> Result<(), Error>;
 
     // Versioning
 
@@ -139,20 +121,20 @@ pub trait ChainEndpoint: Sized {
     /// Sends one or more transactions with `msgs` to chain and
     /// synchronously wait for it to be committed.
     fn send_messages_and_wait_commit(
-        &mut self,
+        &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     /// Sends one or more transactions with `msgs` to chain.
     /// Non-blocking alternative to `send_messages_and_wait_commit` interface.
     fn send_messages_and_wait_check_tx(
-        &mut self,
+        &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<TxResponse>, Error>;
 
     /// Fetch a header from the chain at the given height and verify it.
     fn verify_header(
-        &mut self,
+        &self,
         trusted: ICSHeight,
         target: ICSHeight,
         client_state: &AnyClientState,
@@ -161,7 +143,7 @@ pub trait ChainEndpoint: Sized {
     /// Given a client update event that includes the header used in a client update,
     /// look for misbehaviour by fetching a header at same or latest height.
     fn check_misbehaviour(
-        &mut self,
+        &self,
         update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error>;
@@ -379,7 +361,7 @@ pub trait ChainEndpoint: Sized {
     /// Returns all the supporting headers that were need to verify the target
     /// header, for use when building a `ClientUpdate` message.
     fn build_header(
-        &mut self,
+        &self,
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
@@ -668,7 +650,7 @@ pub trait ChainEndpoint: Sized {
     }
 
     fn maybe_register_counterparty_payee(
-        &mut self,
+        &self,
         channel_id: &ChannelId,
         port_id: &PortId,
         counterparty_payee: &Signer,

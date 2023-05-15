@@ -59,7 +59,7 @@ pub struct LightClient {
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
     fn header_and_minimal_set(
-        &mut self,
+        &self,
         trusted: ICSHeight,
         target: ICSHeight,
         client_state: &AnyClientState,
@@ -71,7 +71,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     }
 
     fn verify(
-        &mut self,
+        &self,
         trusted: ICSHeight,
         target: ICSHeight,
         client_state: &AnyClientState,
@@ -103,7 +103,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         Ok(Verified { target, supporting })
     }
 
-    fn fetch(&mut self, height: ICSHeight) -> Result<LightBlock, Error> {
+    fn fetch(&self, height: ICSHeight) -> Result<LightBlock, Error> {
         trace!(%height, "fetching header");
 
         let height = TMHeight::try_from(height.revision_height()).map_err(Error::invalid_height)?;
@@ -116,7 +116,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     /// ## TODO
     /// - [ ] Return intermediate headers as well
     fn check_misbehaviour(
-        &mut self,
+        &self,
         update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
@@ -272,7 +272,7 @@ impl LightClient {
     }
 
     fn adjust_headers(
-        &mut self,
+        &self,
         trusted_height: ICSHeight,
         target: LightBlock,
         supporting: Vec<LightBlock>,

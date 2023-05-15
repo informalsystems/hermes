@@ -1,6 +1,5 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
-use crossbeam_channel as channel;
-use tracing::Span;
+use std::sync::Arc;
 
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketRequest;
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketResponse;
@@ -25,7 +24,7 @@ use crate::account::Balance;
 use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
-use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
+use crate::chain::handle::{ChainHandle, Subscription};
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -39,6 +38,8 @@ use crate::keyring::AnySigningKeyPair;
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
+
+use super::ChainImpl;
 
 /// A chain handle with support for caching.
 /// To be used for the passive relaying mode (i.e., `start` CLI).
@@ -72,8 +73,8 @@ impl<Handle: ChainHandle> Display for CachingChainHandle<Handle> {
 }
 
 impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
-    fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self {
-        Self::new(Handle::new(chain_id, sender))
+    fn new(chain: Arc<ChainImpl>) -> Self {
+        Self::new(Handle::new(chain))
     }
 
     fn id(&self) -> ChainId {

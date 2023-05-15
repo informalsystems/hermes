@@ -20,8 +20,9 @@
    is still a [`ChainHandle`].
 */
 
-use crossbeam_channel as channel;
-use tracing::Span;
+use std::sync::Arc;
+
+use ibc_relayer::spawn::ChainImpl;
 
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
@@ -29,7 +30,7 @@ use ibc_proto::ibc::apps::fee::v1::{
 use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
-use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
+use ibc_relayer::chain::handle::{ChainHandle, Subscription};
 use ibc_relayer::chain::requests::*;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -71,8 +72,8 @@ where
     Tag: Send + Sync + 'static,
     Handle: ChainHandle,
 {
-    fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self {
-        Self::new(Handle::new(chain_id, sender))
+    fn new(chain: Arc<ChainImpl>) -> Self {
+        Self::new(Handle::new(chain))
     }
 
     fn id(&self) -> ChainId {

@@ -2,8 +2,7 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
-use crossbeam_channel as channel;
-use tracing::{debug, Span};
+use tracing::debug;
 
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
@@ -28,7 +27,7 @@ use ibc_relayer_types::Height;
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
-use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
+use crate::chain::handle::{ChainHandle, Subscription};
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -42,6 +41,8 @@ use crate::keyring::AnySigningKeyPair;
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::lock::LockExt;
+
+use super::ChainImpl;
 
 #[derive(Debug, Clone)]
 pub struct CountingChainHandle<Handle> {
@@ -86,8 +87,8 @@ impl<Handle: ChainHandle> Display for CountingChainHandle<Handle> {
 }
 
 impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
-    fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self {
-        Self::new(Handle::new(chain_id, sender))
+    fn new(chain: Arc<ChainImpl>) -> Self {
+        Self::new(Handle::new(chain))
     }
 
     fn id(&self) -> ChainId {

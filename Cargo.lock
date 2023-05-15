@@ -1795,6 +1795,7 @@ dependencies = [
  "num-bigint",
  "num-rational",
  "once_cell",
+ "parking_lot",
  "prost",
  "regex",
  "retry",

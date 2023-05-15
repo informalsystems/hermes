@@ -10,7 +10,9 @@ use futures::future::join_all;
 use num_bigint::BigInt;
 use std::{cmp::Ordering, thread};
 
+use parking_lot::{Mutex, RwLock};
 use tokio::runtime::Runtime as TokioRuntime;
+use tokio::sync::RwLock as AsyncRwLock;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, trace, warn};
 
@@ -143,12 +145,12 @@ pub struct CosmosSdkChain {
     grpc_addr: Uri,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
-    keybase: KeyRing<Secp256k1KeyPair>,
+    keybase: RwLock<KeyRing<Secp256k1KeyPair>>,
 
     /// A cached copy of the account information
-    account: Option<Account>,
+    account: AsyncRwLock<Option<Account>>,
 
-    tx_monitor_cmd: Option<TxMonitorCmd>,
+    tx_monitor_cmd: Mutex<Option<TxMonitorCmd>>,
 }
 
 impl CosmosSdkChain {
@@ -163,7 +165,8 @@ impl CosmosSdkChain {
     }
 
     fn key(&self) -> Result<Secp256k1KeyPair, Error> {
-        self.keybase()
+        self.keybase
+            .read()
             .get_key(&self.config.key_name)
             .map_err(Error::key_base)
     }
@@ -285,7 +288,7 @@ impl CosmosSdkChain {
         Ok(())
     }
 
-    fn init_event_monitor(&mut self) -> Result<TxMonitorCmd, Error> {
+    fn init_event_monitor(&self) -> Result<TxMonitorCmd, Error> {
         crate::time!(
             "init_event_monitor",
             {
@@ -631,7 +634,7 @@ impl CosmosSdkChain {
         ),
     )]
     async fn do_send_messages_and_wait_commit(
-        &mut self,
+        &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!(
@@ -646,8 +649,10 @@ impl CosmosSdkChain {
         let key_pair = self.key()?;
         let key_account = key_pair.account();
 
-        let account =
-            get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
+        // Take a write lock on the current account,
+        // excluding anybody from sending txs until we are done.
+        let mut opt_account = self.account.write().await;
+        let account = get_or_fetch_account(&self.grpc_addr, &key_account, &mut opt_account).await?;
 
         if self.config.sequential_batch_tx {
             sequential_send_batched_messages_and_wait_commit(
@@ -682,7 +687,7 @@ impl CosmosSdkChain {
         ),
     )]
     async fn do_send_messages_and_wait_check_tx(
-        &mut self,
+        &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<Response>, Error> {
         crate::time!(
@@ -697,8 +702,10 @@ impl CosmosSdkChain {
         let key_pair = self.key()?;
         let key_account = key_pair.account();
 
-        let account =
-            get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
+        // Take a write lock on the current account,
+        // excluding anybody from sending txs until we are done.
+        let mut opt_account = self.account.write().await;
+        let account = get_or_fetch_account(&self.grpc_addr, &key_account, &mut opt_account).await?;
 
         send_batched_messages_and_wait_check_tx(
             &self.rpc_client,
@@ -707,6 +714,33 @@ impl CosmosSdkChain {
             account,
             &self.config.memo_prefix,
             proto_msgs,
+        )
+        .await
+    }
+
+    async fn do_maybe_register_counterparty_payee(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_payee: &Signer,
+    ) -> Result<(), Error> {
+        let address = self.get_signer()?;
+        let key_pair = self.key()?;
+
+        // Take a write lock on the current account,
+        // excluding anybody from sending txs until we are done.
+        let mut opt_account = self.account.write().await;
+
+        maybe_register_counterparty_payee(
+            &self.rpc_client,
+            &self.tx_config,
+            &key_pair,
+            &mut opt_account,
+            &self.config.memo_prefix,
+            channel_id,
+            port_id,
+            &address,
+            counterparty_payee,
         )
         .await
     }
@@ -865,38 +899,54 @@ impl ChainEndpoint for CosmosSdkChain {
             grpc_addr,
             light_client,
             rt,
-            keybase,
             tx_config,
-            account: None,
-            tx_monitor_cmd: None,
+            keybase: RwLock::new(keybase),
+            account: AsyncRwLock::new(None),
+            tx_monitor_cmd: Mutex::new(None),
         };
 
         Ok(chain)
     }
 
-    fn shutdown(self) -> Result<(), Error> {
-        if let Some(monitor_tx) = self.tx_monitor_cmd {
+    fn shutdown(&self) -> Result<(), Error> {
+        let cmd = self.tx_monitor_cmd.lock();
+
+        if let Some(monitor_tx) = cmd.as_ref() {
             monitor_tx.shutdown().map_err(Error::event_monitor)?;
         }
 
         Ok(())
     }
 
-    fn keybase(&self) -> &KeyRing<Self::SigningKeyPair> {
-        &self.keybase
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error> {
+        // Get the key from key seed file
+        let key_pair = self
+            .keybase
+            .read()
+            .get_key(&self.config().key_name)
+            .map_err(|e| Error::key_not_found(self.config().key_name.clone(), e))?;
+
+        Ok(key_pair)
     }
 
-    fn keybase_mut(&mut self) -> &mut KeyRing<Self::SigningKeyPair> {
-        &mut self.keybase
+    fn add_key(&self, key_name: &str, key_pair: Self::SigningKeyPair) -> Result<(), Error> {
+        self.keybase
+            .write()
+            .add_key(key_name, key_pair)
+            .map_err(Error::key_base)?;
+
+        Ok(())
     }
 
-    fn subscribe(&mut self) -> Result<Subscription, Error> {
-        let tx_monitor_cmd = match &self.tx_monitor_cmd {
+    fn subscribe(&self) -> Result<Subscription, Error> {
+        let mut cmd = self.tx_monitor_cmd.lock();
+
+        let tx_monitor_cmd = match cmd.as_ref() {
             Some(tx_monitor_cmd) => tx_monitor_cmd,
             None => {
                 let tx_monitor_cmd = self.init_event_monitor()?;
-                self.tx_monitor_cmd = Some(tx_monitor_cmd);
-                self.tx_monitor_cmd.as_ref().unwrap()
+                *cmd = Some(tx_monitor_cmd);
+                cmd.as_ref().unwrap()
             }
         };
 
@@ -937,7 +987,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
     /// Fetch a header from the chain at the given height and verify it.
     fn verify_header(
-        &mut self,
+        &self,
         trusted: ICSHeight,
         target: ICSHeight,
         client_state: &AnyClientState,
@@ -957,7 +1007,7 @@ impl ChainEndpoint for CosmosSdkChain {
     /// Given a client update event that includes the header used in a client update,
     /// look for misbehaviour by fetching a header at same or latest height.
     fn check_misbehaviour(
-        &mut self,
+        &self,
         update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
@@ -982,7 +1032,7 @@ impl ChainEndpoint for CosmosSdkChain {
     /// TODO - more work is required here for a smarter split maybe iteratively accumulating/ evaluating
     /// msgs in a Tx until any of the max size, max num msgs, max fee are exceeded.
     fn send_messages_and_wait_commit(
-        &mut self,
+        &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
         let runtime = self.rt.clone();
@@ -991,7 +1041,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn send_messages_and_wait_check_tx(
-        &mut self,
+        &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<Response>, Error> {
         let runtime = self.rt.clone();
@@ -1023,9 +1073,14 @@ impl ChainEndpoint for CosmosSdkChain {
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let key = match key_name {
-            Some(key_name) => self.keybase().get_key(key_name).map_err(Error::key_base)?,
             None => self.key()?,
+            Some(key_name) => self
+                .keybase
+                .read()
+                .get_key(key_name)
+                .map_err(Error::key_base)?,
         };
+
         let account = key.account();
 
         let denom = denom.unwrap_or(&self.config.gas_price.denom);
@@ -1038,9 +1093,14 @@ impl ChainEndpoint for CosmosSdkChain {
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let key = match key_name {
-            Some(key_name) => self.keybase().get_key(key_name).map_err(Error::key_base)?,
             None => self.key()?,
+            Some(key_name) => self
+                .keybase
+                .read()
+                .get_key(key_name)
+                .map_err(Error::key_base)?,
         };
+
         let account = key.account();
 
         let balance = self.block_on(query_all_balances(&self.grpc_addr, &account))?;
@@ -2074,7 +2134,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn build_header(
-        &mut self,
+        &self,
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
@@ -2097,23 +2157,14 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn maybe_register_counterparty_payee(
-        &mut self,
+        &self,
         channel_id: &ChannelId,
         port_id: &PortId,
         counterparty_payee: &Signer,
     ) -> Result<(), Error> {
-        let address = self.get_signer()?;
-        let key_pair = self.key()?;
-
-        self.rt.block_on(maybe_register_counterparty_payee(
-            &self.rpc_client,
-            &self.tx_config,
-            &key_pair,
-            &mut self.account,
-            &self.config.memo_prefix,
+        self.rt.block_on(self.do_maybe_register_counterparty_payee(
             channel_id,
             port_id,
-            &address,
             counterparty_payee,
         ))
     }

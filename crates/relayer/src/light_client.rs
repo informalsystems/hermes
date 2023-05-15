@@ -39,7 +39,7 @@ pub struct Verified<H> {
 pub trait LightClient<C: ChainEndpoint>: Send + Sync {
     /// Fetch and verify a header, and return its minimal supporting set.
     fn header_and_minimal_set(
-        &mut self,
+        &self,
         trusted: Height,
         target: Height,
         client_state: &AnyClientState,
@@ -47,7 +47,7 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
 
     /// Fetch a header from the chain at the given height and verify it.
     fn verify(
-        &mut self,
+        &self,
         trusted: Height,
         target: Height,
         client_state: &AnyClientState,
@@ -56,13 +56,13 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
     /// Given a client update event that includes the header used in a client update,
     /// look for misbehaviour by fetching a header at same or latest height.
     fn check_misbehaviour(
-        &mut self,
+        &self,
         update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, error::Error>;
 
     /// Fetch a header from the chain at the given height, without verifying it
-    fn fetch(&mut self, height: Height) -> Result<C::LightBlock, error::Error>;
+    fn fetch(&self, height: Height) -> Result<C::LightBlock, error::Error>;
 }
 
 /// Decodes an encoded header into a known `Header` type,

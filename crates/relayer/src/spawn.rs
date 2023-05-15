@@ -6,7 +6,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::{
-    chain::{cosmos::CosmosSdkChain, handle::ChainHandle, runtime::ChainRuntime, ChainType},
+    chain::{cosmos::CosmosSdkChain, endpoint::ChainEndpoint, handle::ChainHandle, ChainType},
     config::Config,
     error::Error as RelayerError,
 };
@@ -40,6 +40,10 @@ impl SpawnErrorDetail {
     }
 }
 
+pub enum ChainImpl {
+    CosmosSdk(CosmosSdkChain),
+}
+
 /// Spawns a chain runtime from the configuration and given a chain identifier.
 /// Returns the corresponding handle if successful.
 pub fn spawn_chain_runtime<Handle: ChainHandle>(
@@ -53,9 +57,12 @@ pub fn spawn_chain_runtime<Handle: ChainHandle>(
         .ok_or_else(|| SpawnError::missing_chain_config(chain_id.clone()))?;
 
     let handle = match chain_config.r#type {
-        ChainType::CosmosSdk => ChainRuntime::<CosmosSdkChain>::spawn::<Handle>(chain_config, rt),
-    }
-    .map_err(SpawnError::relayer)?;
+        ChainType::CosmosSdk => {
+            let chain = CosmosSdkChain::bootstrap(chain_config, rt).map_err(SpawnError::relayer)?;
+            let chain = ChainImpl::CosmosSdk(chain);
+            Handle::new(Arc::new(chain))
+        }
+    };
 
     Ok(handle)
 }
