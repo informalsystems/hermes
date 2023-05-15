@@ -11,6 +11,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::signer::Signer;
 use tonic::Code;
 
+use crate::chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH;
 use crate::error::Error;
 
 pub async fn query_counterparty_payee(
@@ -21,6 +22,8 @@ pub async fn query_counterparty_payee(
     let mut client = QueryClient::connect(grpc_address.clone())
         .await
         .map_err(Error::grpc_transport)?;
+
+    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
 
     let request = QueryCounterpartyPayeeRequest {
         channel_id: channel_id.to_string(),
@@ -39,7 +42,7 @@ pub async fn query_counterparty_payee(
             if e.code() == Code::NotFound {
                 Ok(None)
             } else {
-                Err(Error::grpc_status(e))
+                Err(Error::grpc_status(e, "query_counterparty_payee".to_owned()))
             }
         }
     }
@@ -54,6 +57,8 @@ pub async fn query_incentivized_packets(
         .await
         .map_err(Error::grpc_transport)?;
 
+    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+
     let request = QueryIncentivizedPacketsForChannelRequest {
         channel_id: channel_id.to_string(),
         port_id: port_id.to_string(),
@@ -64,7 +69,7 @@ pub async fn query_incentivized_packets(
     let response = client
         .incentivized_packets_for_channel(request)
         .await
-        .map_err(Error::grpc_status)?;
+        .map_err(|e| Error::grpc_status(e, "query_incentivized_packets".to_owned()))?;
 
     let raw_packets = response.into_inner().incentivized_packets;
 
@@ -86,10 +91,12 @@ pub async fn query_incentivized_packet(
         .await
         .map_err(Error::grpc_transport)?;
 
+    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+
     let response = client
         .incentivized_packet(tonic::Request::new(request))
         .await
-        .map_err(Error::grpc_status)?;
+        .map_err(|e| Error::grpc_status(e, "query_incentivized_packet".to_owned()))?;
 
     Ok(response.into_inner())
 }

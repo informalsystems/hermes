@@ -4,7 +4,7 @@ use ibc_proto::cosmos::bank::v1beta1::{
     query_client::QueryClient, QueryAllBalancesRequest, QueryBalanceRequest,
 };
 
-use crate::{account::Balance, error::Error};
+use crate::{account::Balance, chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH, error::Error};
 
 /// Uses the GRPC client to retrieve the account balance for a specific denom
 pub async fn query_balance(
@@ -16,6 +16,8 @@ pub async fn query_balance(
         .await
         .map_err(Error::grpc_transport)?;
 
+    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+
     let request = tonic::Request::new(QueryBalanceRequest {
         address: account_address.to_string(),
         denom: denom.to_string(),
@@ -25,7 +27,7 @@ pub async fn query_balance(
         .balance(request)
         .await
         .map(|r| r.into_inner())
-        .map_err(Error::grpc_status)?;
+        .map_err(|e| Error::grpc_status(e, "query_balance".to_owned()))?;
 
     // Querying for a balance might fail, i.e. if the account doesn't actually exist
     let balance = response
@@ -47,6 +49,8 @@ pub async fn query_all_balances(
         .await
         .map_err(Error::grpc_transport)?;
 
+    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+
     let request = tonic::Request::new(QueryAllBalancesRequest {
         address: account_address.to_string(),
         pagination: None,
@@ -56,7 +60,7 @@ pub async fn query_all_balances(
         .all_balances(request)
         .await
         .map(|r| r.into_inner())
-        .map_err(Error::grpc_status)?;
+        .map_err(|e| Error::grpc_status(e, "query_all_balances".to_owned()))?;
 
     let balances = response
         .balances

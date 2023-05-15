@@ -4,7 +4,10 @@ use tracing::{debug, warn};
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, Height};
 
 use crate::{
-    chain::requests::{QueryConsensusStateHeightsRequest, QueryConsensusStatesRequest},
+    chain::{
+        cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH,
+        requests::{QueryConsensusStateHeightsRequest, QueryConsensusStatesRequest},
+    },
     consensus_state::AnyConsensusStateWithHeight,
     error::Error,
     util::pretty::{PrettyConsensusStateWithHeight, PrettyHeight},
@@ -35,6 +38,8 @@ pub async fn query_consensus_state_heights(
             .await
             .map_err(Error::grpc_transport)?;
 
+    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+
     let grpc_request = tonic::Request::new(request.clone().into());
     let grpc_response = client.consensus_state_heights(grpc_request).await;
 
@@ -56,7 +61,9 @@ pub async fn query_consensus_state_heights(
         }
     }
 
-    let response = grpc_response.map_err(Error::grpc_status)?.into_inner();
+    let response = grpc_response
+        .map_err(|e| Error::grpc_status(e, "query_consensus_state_heights".to_owned()))?
+        .into_inner();
 
     let mut heights: Vec<_> = response
         .consensus_state_heights
@@ -92,10 +99,12 @@ pub async fn query_consensus_states(
             .await
             .map_err(Error::grpc_transport)?;
 
+    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+
     let response = client
         .consensus_states(tonic::Request::new(request.into()))
         .await
-        .map_err(Error::grpc_status)?
+        .map_err(|e| Error::grpc_status(e, "query_consensus_states".to_owned()))?
         .into_inner();
 
     let mut consensus_states: Vec<_> = response

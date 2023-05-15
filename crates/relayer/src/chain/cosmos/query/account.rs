@@ -5,6 +5,7 @@ use prost::Message;
 use tracing::info;
 
 use crate::chain::cosmos::types::account::Account;
+use crate::chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH;
 use crate::error::Error;
 
 /// Get a `&mut Account` from an `&mut Option<Account>` if it is `Some(Account)`.
@@ -57,6 +58,8 @@ pub async fn query_account(
         .await
         .map_err(Error::grpc_transport)?;
 
+    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+
     let request = tonic::Request::new(QueryAccountRequest {
         address: account_address.to_string(),
     });
@@ -64,7 +67,11 @@ pub async fn query_account(
     let response = client.account(request).await;
 
     // Querying for an account might fail, i.e. if the account doesn't actually exist
-    let resp_account = match response.map_err(Error::grpc_status)?.into_inner().account {
+    let resp_account = match response
+        .map_err(|e| Error::grpc_status(e, "query_account".to_owned()))?
+        .into_inner()
+        .account
+    {
         Some(account) => account,
         None => return Err(Error::empty_query_account(account_address.to_string())),
     };

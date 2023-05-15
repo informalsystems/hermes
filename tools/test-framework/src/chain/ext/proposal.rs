@@ -1,5 +1,6 @@
 use eyre::eyre;
 use http::Uri;
+use ibc_relayer::chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH;
 use prost::Message;
 
 use ibc_proto::cosmos::gov::v1beta1::{query_client::QueryClient, QueryProposalRequest};
@@ -59,13 +60,15 @@ pub async fn query_upgrade_proposal_height(
         }
     };
 
+    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+
     let request = tonic::Request::new(QueryProposalRequest { proposal_id });
 
     let response = client
         .proposal(request)
         .await
         .map(|r| r.into_inner())
-        .map_err(RelayerError::grpc_status)?;
+        .map_err(|e| RelayerError::grpc_status(e, "query_upgrade_proposal_height".to_owned()))?;
 
     // Querying for a balance might fail, i.e. if the account doesn't actually exist
     let proposal = response

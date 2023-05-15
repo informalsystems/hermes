@@ -7,6 +7,7 @@ pub mod proof_specs;
 pub mod types;
 
 use alloc::collections::BTreeMap;
+use byte_unit::Byte;
 use core::{
     cmp::Ordering,
     fmt::{Display, Error as FmtError, Formatter},
@@ -472,6 +473,8 @@ pub struct ChainConfig {
     pub max_msg_num: MaxMsgNum,
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
+    #[serde(default)]
+    pub max_grpc_decoding_size: Option<Byte>,
 
     /// A correction parameter that helps deal with clocks that are only approximately synchronized
     /// between the source and destination chains for a client.
@@ -586,6 +589,18 @@ mod tests {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests/config/fixtures/relayer_conf_example_fee_filter.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_decoding_size_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_decoding_size.toml"
         );
 
         let config = load(path).expect("could not parse config");
