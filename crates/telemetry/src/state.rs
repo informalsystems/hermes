@@ -221,7 +221,9 @@ impl TelemetryState {
         src_chain: &ChainId,
         dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
     ) {
         let cx = Context::current();
 
@@ -229,7 +231,9 @@ impl TelemetryState {
             KeyValue::new("src_chain", src_chain.to_string()),
             KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("src_channel", src_channel.to_string()),
+            KeyValue::new("dst_channel", dst_channel.to_string()),
             KeyValue::new("src_port", src_port.to_string()),
+            KeyValue::new("dst_port", dst_port.to_string()),
         ];
 
         self.receive_packets_confirmed.add(&cx, 0, labels);
@@ -358,12 +362,15 @@ impl TelemetryState {
     }
 
     /// Number of receive packets relayed, per channel
+    #[allow(clippy::too_many_arguments)]
     pub fn receive_packets_confirmed(
         &self,
         src_chain: &ChainId,
         dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
         count: u64,
     ) {
         let cx = Context::current();
@@ -373,7 +380,9 @@ impl TelemetryState {
                 KeyValue::new("src_chain", src_chain.to_string()),
                 KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
             ];
 
             self.receive_packets_confirmed.add(&cx, count, labels);
@@ -381,12 +390,15 @@ impl TelemetryState {
     }
 
     /// Number of acknowledgment packets relayed, per channel
+    #[allow(clippy::too_many_arguments)]
     pub fn acknowledgment_packets_confirmed(
         &self,
         src_chain: &ChainId,
         dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
         count: u64,
     ) {
         let cx = Context::current();
@@ -396,7 +408,9 @@ impl TelemetryState {
                 KeyValue::new("src_chain", src_chain.to_string()),
                 KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
             ];
 
             self.acknowledgment_packets_confirmed
@@ -405,12 +419,15 @@ impl TelemetryState {
     }
 
     /// Number of timeout packets relayed, per channel
+    #[allow(clippy::too_many_arguments)]
     pub fn timeout_packets_confirmed(
         &self,
         src_chain: &ChainId,
         dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
         count: u64,
     ) {
         let cx = Context::current();
@@ -420,7 +437,9 @@ impl TelemetryState {
                 KeyValue::new("src_chain", src_chain.to_string()),
                 KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
             ];
 
             self.timeout_packets_confirmed.add(&cx, count, labels);
