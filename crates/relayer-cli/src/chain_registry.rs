@@ -135,6 +135,7 @@ where
         fee_granter: None,
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),
+        max_grpc_decoding_size: default::max_grpc_decoding_size(),
         clock_drift: default::clock_drift(),
         max_block_time: default::max_block_time(),
         trusting_period: None,
