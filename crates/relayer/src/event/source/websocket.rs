@@ -51,7 +51,7 @@ mod retry_strategy {
 
 /// A batch of events received from a WebSocket endpoint from a
 /// chain at a specific height.
-/// 
+///
 /// Connect to a Tendermint node, subscribe to a set of queries,
 /// receive push events over a websocket, and filter them for the
 /// event handler.
