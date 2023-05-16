@@ -95,8 +95,8 @@ define_error! {
             |_| { "gRPC error" },
 
         GrpcStatus
-            { status: GrpcStatus }
-            |e| { format!("gRPC call failed with status: {0}", e.status) },
+            { status: GrpcStatus, query: String }
+            |e| { format!("gRPC call `{}` failed with status: {1}", e.query, e.status) },
 
         GrpcTransport
             [ TraceError<TransportError> ]
