@@ -288,7 +288,7 @@ impl CosmosSdkChain {
 
     fn init_event_source(&mut self) -> Result<TxEventSourceCmd, Error> {
         crate::time!(
-            "init_event_monitor",
+            "init_event_source",
             {
                 "src_chain": self.config().id.to_string(),
             }

@@ -34,6 +34,8 @@ use self::extract::extract_events;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+/// Captures the mode in which events are fetched from a chain, either via WebSocket
+/// or via RPC endpoint.
 pub struct EventSource {
     /// Chain identifier
     chain_id: ChainId,
