@@ -328,7 +328,7 @@ impl EventSource {
             }
 
             match result {
-                Ok(batch) => self.process_batch(batch),
+                Ok(batch) => self.broadcast_batch(batch),
                 Err(e) => {
                     if let ErrorDetail::SubscriptionCancelled(reason) = e.detail() {
                         error!("subscription cancelled, reason: {}", reason);
@@ -375,11 +375,17 @@ impl EventSource {
         self.event_bus.broadcast(Arc::new(Err(error)));
     }
 
-    /// Collect the IBC events from the subscriptions
-    fn process_batch(&mut self, batch: EventBatch) {
+    /// Broadcast a batch of events to all subscribers.
+    fn broadcast_batch(&mut self, batch: EventBatch) {
         telemetry!(ws_events, &batch.chain_id, batch.events.len() as u64);
 
-        debug!(chain = %batch.chain_id, len = %batch.events.len(), "emitting batch");
+        debug!(
+            chain = %batch.chain_id,
+            count = %batch.events.len(),
+            height = %batch.height,
+            "broadcasting batch of {} events",
+            batch.events.len()
+        );
 
         self.event_bus.broadcast(Arc::new(Ok(batch)));
     }
