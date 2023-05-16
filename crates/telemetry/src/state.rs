@@ -125,7 +125,7 @@ pub struct TelemetryState {
     ws_events: Counter<u64>,
 
     /// Number of messages submitted to a specific chain
-    total_messages_submitted: Counter<u64>,
+    messages_submitted: Counter<u64>,
 
     /// The balance of each wallet Hermes uses per chain
     wallet_balance: ObservableGauge<f64>,
@@ -211,7 +211,7 @@ impl TelemetryState {
 
         self.ws_reconnect.add(&cx, 0, labels);
         self.ws_events.add(&cx, 0, labels);
-        self.total_messages_submitted.add(&cx, 0, labels);
+        self.messages_submitted.add(&cx, 0, labels);
 
         self.init_queries(chain_id);
     }
@@ -219,15 +219,21 @@ impl TelemetryState {
     pub fn init_per_channel(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
     ) {
         let cx = Context::current();
 
         let labels = &[
             KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("src_channel", src_channel.to_string()),
+            KeyValue::new("dst_channel", dst_channel.to_string()),
             KeyValue::new("src_port", src_port.to_string()),
+            KeyValue::new("dst_port", dst_port.to_string()),
         ];
 
         self.receive_packets_confirmed.add(&cx, 0, labels);
@@ -356,11 +362,15 @@ impl TelemetryState {
     }
 
     /// Number of receive packets relayed, per channel
+    #[allow(clippy::too_many_arguments)]
     pub fn receive_packets_confirmed(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
         count: u64,
     ) {
         let cx = Context::current();
@@ -368,8 +378,11 @@ impl TelemetryState {
         if count > 0 {
             let labels = &[
                 KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
             ];
 
             self.receive_packets_confirmed.add(&cx, count, labels);
@@ -377,11 +390,15 @@ impl TelemetryState {
     }
 
     /// Number of acknowledgment packets relayed, per channel
+    #[allow(clippy::too_many_arguments)]
     pub fn acknowledgment_packets_confirmed(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
         count: u64,
     ) {
         let cx = Context::current();
@@ -389,8 +406,11 @@ impl TelemetryState {
         if count > 0 {
             let labels = &[
                 KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
             ];
 
             self.acknowledgment_packets_confirmed
@@ -399,11 +419,15 @@ impl TelemetryState {
     }
 
     /// Number of timeout packets relayed, per channel
+    #[allow(clippy::too_many_arguments)]
     pub fn timeout_packets_confirmed(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
         count: u64,
     ) {
         let cx = Context::current();
@@ -411,8 +435,11 @@ impl TelemetryState {
         if count > 0 {
             let labels = &[
                 KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
             ];
 
             self.timeout_packets_confirmed.add(&cx, count, labels);
@@ -462,12 +489,12 @@ impl TelemetryState {
     }
 
     /// How many messages Hermes submitted to the chain
-    pub fn total_messages_submitted(&self, chain_id: &ChainId, count: u64) {
+    pub fn messages_submitted(&self, chain_id: &ChainId, count: u64) {
         let cx = Context::current();
 
         let labels = &[KeyValue::new("chain", chain_id.to_string())];
 
-        self.total_messages_submitted.add(&cx, count, labels);
+        self.messages_submitted.add(&cx, count, labels);
     }
 
     /// The balance in each wallet that Hermes is using, per account, denom and chain.
@@ -948,8 +975,8 @@ impl Default for TelemetryState {
                 .with_description("How many IBC events did Hermes receive via the websocket subscription")
                 .init(),
 
-            total_messages_submitted: meter
-                .u64_counter("total_messages_submitted")
+            messages_submitted: meter
+                .u64_counter("messages_submitted")
                 .with_description("Number of messages submitted to a specific chain")
                 .init(),
 

@@ -331,13 +331,16 @@ impl CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(
             ibc_proto::interchain_security::ccv::consumer::v1::QueryParamsRequest {},
         );
 
         let response = self
             .block_on(client.query_params(request))
-            .map_err(Error::grpc_status)?;
+            .map_err(|e| Error::grpc_status(e, "query_ccv_consumer_chain_params".to_owned()))?;
 
         let params = response
             .into_inner()
@@ -365,12 +368,15 @@ impl CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request =
             tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
 
         let response = self
             .block_on(client.params(request))
-            .map_err(Error::grpc_status)?;
+            .map_err(|e| Error::grpc_status(e, "query_staking_params".to_owned()))?;
 
         let params = response
             .into_inner()
@@ -417,6 +423,9 @@ impl CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(ibc_proto::cosmos::base::node::v1beta1::ConfigRequest {});
 
         match self.block_on(client.config(request)) {
@@ -429,7 +438,7 @@ impl CosmosSdkChain {
                 if is_unimplemented_node_query(&e) {
                     Ok(None)
                 } else {
-                    Err(Error::grpc_status(e))
+                    Err(Error::grpc_status(e, "query_config_params".to_owned()))
                 }
             }
         }
@@ -1180,10 +1189,13 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
         let response = self
             .block_on(client.client_states(request))
-            .map_err(Error::grpc_status)?
+            .map_err(|e| Error::grpc_status(e, "query_clients".to_owned()))?
             .into_inner();
 
         // Deserialize into domain type
@@ -1368,12 +1380,15 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
 
         let response = match self.block_on(client.client_connections(request)) {
             Ok(res) => res.into_inner(),
             Err(e) if e.code() == tonic::Code::NotFound => return Ok(vec![]),
-            Err(e) => return Err(Error::grpc_status(e)),
+            Err(e) => return Err(Error::grpc_status(e, "query_client_connections".to_owned())),
         };
 
         let ids = response
@@ -1409,11 +1424,14 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.connections(request))
-            .map_err(Error::grpc_status)?
+            .map_err(|e| Error::grpc_status(e, "query_connections".to_owned()))?
             .into_inner();
 
         let connections = response
@@ -1461,6 +1479,10 @@ impl ChainEndpoint for CosmosSdkChain {
                     .await
                     .map_err(Error::grpc_transport)?;
 
+            client = client.max_decoding_message_size(
+                chain.config().max_grpc_decoding_size.get_bytes() as usize,
+            );
+
             let mut request = connection::QueryConnectionRequest {
                 connection_id: connection_id.to_string(),
             }
@@ -1476,7 +1498,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 if e.code() == tonic::Code::NotFound {
                     Error::connection_not_found(connection_id.clone())
                 } else {
-                    Error::grpc_status(e)
+                    Error::grpc_status(e, "query_connection".to_owned())
                 }
             })?;
 
@@ -1539,11 +1561,14 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.connection_channels(request))
-            .map_err(Error::grpc_status)?
+            .map_err(|e| Error::grpc_status(e, "query_connection_channels".to_owned()))?
             .into_inner();
 
         let channels = response
@@ -1584,11 +1609,14 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.channels(request))
-            .map_err(Error::grpc_status)?
+            .map_err(|e| Error::grpc_status(e, "query_channels".to_owned()))?
             .into_inner();
 
         let channels = response
@@ -1659,11 +1687,14 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.channel_client_state(request))
-            .map_err(Error::grpc_status)?
+            .map_err(|e| Error::grpc_status(e, "query_channel_client_state".to_owned()))?
             .into_inner();
 
         let client_state: Option<IdentifiedAnyClientState> = response
@@ -1719,11 +1750,14 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.packet_commitments(request))
-            .map_err(Error::grpc_status)?
+            .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))?
             .into_inner();
 
         let mut commitment_sequences: Vec<Sequence> = response
@@ -1787,11 +1821,14 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
 
         let mut response = self
             .block_on(client.unreceived_packets(request))
-            .map_err(Error::grpc_status)?
+            .map_err(|e| Error::grpc_status(e, "query_unreceived_packets".to_owned()))?
             .into_inner();
 
         response.sequences.sort_unstable();
@@ -1848,11 +1885,14 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.packet_acknowledgements(request))
-            .map_err(Error::grpc_status)?
+            .map_err(|e| Error::grpc_status(e, "query_packet_acknowledgements".to_owned()))?
             .into_inner();
 
         let acks_sequences = response
@@ -1890,11 +1930,14 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+
         let request = tonic::Request::new(request.into());
 
         let mut response = self
             .block_on(client.unreceived_acks(request))
-            .map_err(Error::grpc_status)?
+            .map_err(|e| Error::grpc_status(e, "query_unreceived_acknowledgements".to_owned()))?
             .into_inner();
 
         response.sequences.sort_unstable();
@@ -1946,11 +1989,15 @@ impl ChainEndpoint for CosmosSdkChain {
                     )
                     .map_err(Error::grpc_transport)?;
 
+                client = client.max_decoding_message_size(
+                    self.config().max_grpc_decoding_size.get_bytes() as usize,
+                );
+
                 let request = tonic::Request::new(request.into());
 
                 let response = self
                     .block_on(client.next_sequence_receive(request))
-                    .map_err(Error::grpc_status)?
+                    .map_err(|e| Error::grpc_status(e, "query_next_sequence_receive".to_owned()))?
                     .into_inner();
 
                 Ok((Sequence::from(response.next_sequence_receive), None))
