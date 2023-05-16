@@ -109,6 +109,7 @@ where
         MAX_HEALTHY_QUERY_RETRIES,
     )
     .await?;
+
     let websocket_address =
         rpc_data.websocket.clone().try_into().map_err(|e| {
             RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
@@ -120,7 +121,7 @@ where
         rpc_addr: rpc_data.rpc_address,
         websocket_addr: websocket_address,
         grpc_addr: grpc_address,
-        event_source: EventSource::Rpc,
+        event_source: EventSource::WebSocket,
         poll_interval: default::poll_interval(),
         rpc_timeout: default::rpc_timeout(),
         genesis_restart: None,
