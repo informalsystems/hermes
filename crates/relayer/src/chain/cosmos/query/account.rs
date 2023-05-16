@@ -5,7 +5,7 @@ use prost::Message;
 use tracing::info;
 
 use crate::chain::cosmos::types::account::Account;
-use crate::chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH;
+use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
 
 /// Get a `&mut Account` from an `&mut Option<Account>` if it is `Some(Account)`.
@@ -58,7 +58,7 @@ pub async fn query_account(
         .await
         .map_err(Error::grpc_transport)?;
 
-    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = tonic::Request::new(QueryAccountRequest {
         address: account_address.to_string(),

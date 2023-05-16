@@ -11,7 +11,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::signer::Signer;
 use tonic::Code;
 
-use crate::chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH;
+use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
 
 pub async fn query_counterparty_payee(
@@ -23,7 +23,7 @@ pub async fn query_counterparty_payee(
         .await
         .map_err(Error::grpc_transport)?;
 
-    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = QueryCounterpartyPayeeRequest {
         channel_id: channel_id.to_string(),
@@ -57,7 +57,7 @@ pub async fn query_incentivized_packets(
         .await
         .map_err(Error::grpc_transport)?;
 
-    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = QueryIncentivizedPacketsForChannelRequest {
         channel_id: channel_id.to_string(),
@@ -91,7 +91,7 @@ pub async fn query_incentivized_packet(
         .await
         .map_err(Error::grpc_transport)?;
 
-    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let response = client
         .incentivized_packet(tonic::Request::new(request))

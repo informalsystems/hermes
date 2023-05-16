@@ -1,5 +1,4 @@
 use alloc::sync::Arc;
-use byte_unit::n_mib_bytes;
 use bytes::{Buf, Bytes};
 use core::{
     convert::{TryFrom, TryInto},
@@ -121,8 +120,6 @@ pub mod tx;
 pub mod types;
 pub mod version;
 pub mod wait;
-
-pub const DEFAULT_GRPC_MAX_MESSAGE_LENGTH: u64 = n_mib_bytes(32);
 
 /// Defines an upper limit on how large any transaction can be.
 /// This upper limit is defined as a fraction relative to the block's
@@ -322,11 +319,8 @@ impl CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(
             ibc_proto::interchain_security::ccv::consumer::v1::QueryParamsRequest {},
@@ -357,11 +351,8 @@ impl CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request =
             tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
@@ -410,11 +401,8 @@ impl CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(ibc_proto::cosmos::base::node::v1beta1::ConfigRequest {});
 
@@ -1048,11 +1036,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
         let response = self
@@ -1217,11 +1202,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
 
@@ -1259,11 +1241,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
 
@@ -1312,11 +1291,9 @@ impl ChainEndpoint for CosmosSdkChain {
                     .await
                     .map_err(Error::grpc_transport)?;
 
-            client = if let Some(config_limit) = chain.config().max_grpc_decoding_size {
-                client.max_decoding_message_size(config_limit.get_bytes() as usize)
-            } else {
-                client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-            };
+            client = client.max_decoding_message_size(
+                chain.config().max_grpc_decoding_size.get_bytes() as usize,
+            );
 
             let mut request = connection::QueryConnectionRequest {
                 connection_id: connection_id.to_string(),
@@ -1391,11 +1368,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
 
@@ -1437,11 +1411,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
 
@@ -1508,11 +1479,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
 
@@ -1569,11 +1537,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
 
@@ -1638,11 +1603,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
 
@@ -1700,11 +1662,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
 
@@ -1743,11 +1702,8 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-            client.max_decoding_message_size(config_limit.get_bytes() as usize)
-        } else {
-            client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-        };
+        client = client
+            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
 
         let request = tonic::Request::new(request.into());
 
@@ -1800,11 +1756,9 @@ impl ChainEndpoint for CosmosSdkChain {
                     )
                     .map_err(Error::grpc_transport)?;
 
-                client = if let Some(config_limit) = self.config().max_grpc_decoding_size {
-                    client.max_decoding_message_size(config_limit.get_bytes() as usize)
-                } else {
-                    client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize)
-                };
+                client = client.max_decoding_message_size(
+                    self.config().max_grpc_decoding_size.get_bytes() as usize,
+                );
 
                 let request = tonic::Request::new(request.into());
 

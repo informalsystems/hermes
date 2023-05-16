@@ -4,7 +4,9 @@ use ibc_proto::ibc::applications::transfer::v1::{
     query_client::QueryClient, QueryDenomTraceRequest,
 };
 
-use crate::{chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH, denom::DenomTrace, error::Error};
+use crate::config::default::max_grpc_decoding_size;
+use crate::denom::DenomTrace;
+use crate::error::Error;
 
 // Uses the GRPC client to retrieve the denom trace for a specific hash
 pub async fn query_denom_trace(grpc_address: &Uri, hash: &str) -> Result<DenomTrace, Error> {
@@ -12,7 +14,7 @@ pub async fn query_denom_trace(grpc_address: &Uri, hash: &str) -> Result<DenomTr
         .await
         .map_err(Error::grpc_transport)?;
 
-    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = tonic::Request::new(QueryDenomTraceRequest {
         hash: hash.to_owned(),

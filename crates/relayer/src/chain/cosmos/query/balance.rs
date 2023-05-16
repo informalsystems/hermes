@@ -4,7 +4,9 @@ use ibc_proto::cosmos::bank::v1beta1::{
     query_client::QueryClient, QueryAllBalancesRequest, QueryBalanceRequest,
 };
 
-use crate::{account::Balance, chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH, error::Error};
+use crate::account::Balance;
+use crate::config::default::max_grpc_decoding_size;
+use crate::error::Error;
 
 /// Uses the GRPC client to retrieve the account balance for a specific denom
 pub async fn query_balance(
@@ -16,7 +18,7 @@ pub async fn query_balance(
         .await
         .map_err(Error::grpc_transport)?;
 
-    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = tonic::Request::new(QueryBalanceRequest {
         address: account_address.to_string(),
@@ -49,7 +51,7 @@ pub async fn query_all_balances(
         .await
         .map_err(Error::grpc_transport)?;
 
-    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = tonic::Request::new(QueryAllBalancesRequest {
         address: account_address.to_string(),

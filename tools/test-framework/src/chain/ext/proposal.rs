@@ -1,6 +1,6 @@
 use eyre::eyre;
 use http::Uri;
-use ibc_relayer::chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH;
+use ibc_relayer::config::default::max_grpc_decoding_size;
 use prost::Message;
 
 use ibc_proto::cosmos::gov::v1beta1::{query_client::QueryClient, QueryProposalRequest};
@@ -60,7 +60,7 @@ pub async fn query_upgrade_proposal_height(
         }
     };
 
-    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = tonic::Request::new(QueryProposalRequest { proposal_id });
 

@@ -189,6 +189,10 @@ pub mod default {
     pub fn auto_register_counterparty_payee() -> bool {
         false
     }
+
+    pub fn max_grpc_decoding_size() -> Byte {
+        Byte::from_bytes(33554432)
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -473,8 +477,8 @@ pub struct ChainConfig {
     pub max_msg_num: MaxMsgNum,
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
-    #[serde(default)]
-    pub max_grpc_decoding_size: Option<Byte>,
+    #[serde(default = "default::max_grpc_decoding_size")]
+    pub max_grpc_decoding_size: Byte,
 
     /// A correction parameter that helps deal with clocks that are only approximately synchronized
     /// between the source and destination chains for a client.

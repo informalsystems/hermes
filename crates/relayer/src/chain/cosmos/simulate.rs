@@ -2,7 +2,7 @@ use ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::tx::v1beta1::{SimulateRequest, SimulateResponse, Tx};
 use tonic::codegen::http::Uri;
 
-use crate::chain::cosmos::DEFAULT_GRPC_MAX_MESSAGE_LENGTH;
+use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
 
 pub async fn send_tx_simulate(grpc_address: &Uri, tx: Tx) -> Result<SimulateResponse, Error> {
@@ -21,7 +21,7 @@ pub async fn send_tx_simulate(grpc_address: &Uri, tx: Tx) -> Result<SimulateResp
         .await
         .map_err(Error::grpc_transport)?;
 
-    client = client.max_decoding_message_size(DEFAULT_GRPC_MAX_MESSAGE_LENGTH as usize);
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = tonic::Request::new(req);
     let response = client
