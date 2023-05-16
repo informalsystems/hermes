@@ -930,10 +930,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         &self,
         consensus_height: Height,
     ) -> Result<(), ConnectionError> {
+        crate::time!(
+            "wait_for_dest_app_height",
+            {
+                "src_chain": self.src_chain().id(),
+                "dst_chain": self.dst_chain().id(),
+            }
+        );
         let dst_application_latest_height = || {
             self.dst_chain()
                 .query_latest_height()
-                .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))
+                .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))
         };
 
         while consensus_height >= dst_application_latest_height()? {

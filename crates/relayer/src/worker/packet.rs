@@ -1,3 +1,9 @@
+#[cfg(feature = "telemetry")]
+use {
+    ibc_relayer_types::core::ics24_host::identifier::ChannelId,
+    ibc_relayer_types::core::ics24_host::identifier::PortId,
+};
+
 use core::time::Duration;
 use itertools::Itertools;
 use moka::sync::Cache;
@@ -391,7 +397,12 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !summary.is_empty() {
         trace!("produced relay summary: {:?}", summary);
-        telemetry!(packet_metrics(_path, &summary));
+        telemetry!(packet_metrics(
+            _path,
+            &summary,
+            &link.a_to_b.path_id.counterparty_channel_id,
+            &link.a_to_b.path_id.counterparty_port_id
+        ));
     }
 
     Ok(())
@@ -401,14 +412,24 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 use crate::link::RelaySummary;
 
 #[cfg(feature = "telemetry")]
-fn packet_metrics(path: &Packet, summary: &RelaySummary) {
-    receive_packet_metrics(path, summary);
-    acknowledgment_metrics(path, summary);
-    timeout_metrics(path, summary);
+fn packet_metrics(
+    path: &Packet,
+    summary: &RelaySummary,
+    dst_channel: &ChannelId,
+    dst_port: &PortId,
+) {
+    receive_packet_metrics(path, summary, dst_channel, dst_port);
+    acknowledgment_metrics(path, summary, dst_channel, dst_port);
+    timeout_metrics(path, summary, dst_channel, dst_port);
 }
 
 #[cfg(feature = "telemetry")]
-fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
+fn receive_packet_metrics(
+    path: &Packet,
+    summary: &RelaySummary,
+    dst_channel: &ChannelId,
+    dst_port: &PortId,
+) {
     use ibc_relayer_types::events::IbcEvent::WriteAcknowledgement;
 
     let count = summary
@@ -420,14 +441,22 @@ fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
     telemetry!(
         receive_packets_confirmed,
         &path.src_chain_id,
+        &path.dst_chain_id,
         &path.src_channel_id,
+        dst_channel,
         &path.src_port_id,
+        dst_port,
         count as u64,
     );
 }
 
 #[cfg(feature = "telemetry")]
-fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
+fn acknowledgment_metrics(
+    path: &Packet,
+    summary: &RelaySummary,
+    dst_channel: &ChannelId,
+    dst_port: &PortId,
+) {
     use ibc_relayer_types::events::IbcEvent::AcknowledgePacket;
 
     let count = summary
@@ -439,14 +468,22 @@ fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
     telemetry!(
         acknowledgment_packets_confirmed,
         &path.src_chain_id,
+        &path.dst_chain_id,
         &path.src_channel_id,
+        dst_channel,
         &path.src_port_id,
+        dst_port,
         count as u64,
     );
 }
 
 #[cfg(feature = "telemetry")]
-fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
+fn timeout_metrics(
+    path: &Packet,
+    summary: &RelaySummary,
+    dst_channel: &ChannelId,
+    dst_port: &PortId,
+) {
     use ibc_relayer_types::events::IbcEvent::TimeoutPacket;
     let count = summary
         .events
@@ -457,8 +494,11 @@ fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
     telemetry!(
         timeout_packets_confirmed,
         &path.src_chain_id,
+        &path.dst_chain_id,
         &path.src_channel_id,
+        dst_channel,
         &path.src_port_id,
+        dst_port,
         count as u64,
     );
 }

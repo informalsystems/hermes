@@ -53,7 +53,12 @@ pub async fn send_tx_with_account_sequence_retry(
     tx_memo: &Memo,
     messages: &[Any],
 ) -> Result<Response, Error> {
-    time!("send_tx_with_account_sequence_retry");
+    time!(
+        "send_tx_with_account_sequence_retry",
+        {
+            "src_chain": config.chain_id,
+        }
+    );
 
     let _message_count = messages.len() as u64;
 
