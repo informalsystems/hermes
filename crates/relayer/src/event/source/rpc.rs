@@ -69,7 +69,7 @@ impl EventSource {
         let event_bus = EventBus::new();
         let (tx_cmd, rx_cmd) = channel::unbounded();
 
-        let monitor = Self {
+        let source = Self {
             rt,
             chain_id,
             rpc_client,
@@ -79,18 +79,18 @@ impl EventSource {
             last_fetched_height: BlockHeight::from(0_u32),
         };
 
-        Ok((monitor, TxEventSourceCmd(tx_cmd)))
+        Ok((source, TxEventSourceCmd(tx_cmd)))
     }
 
     pub fn run(mut self) {
-        let _span = error_span!("event_monitor", chain.id = %self.chain_id).entered();
+        let _span = error_span!("event_source.rpc", chain.id = %self.chain_id).entered();
 
-        debug!("starting event monitor");
+        debug!("collecting events");
 
         let rt = self.rt.clone();
 
         rt.block_on(async {
-            let mut backoff = monitor_backoff(self.poll_interval);
+            let mut backoff = poll_backoff(self.poll_interval);
 
             // Initialize the latest fetched height
             if let Ok(latest_height) = latest_height(&self.rpc_client).await {
@@ -107,7 +107,7 @@ impl EventSource {
 
                     Ok(Next::Continue) => {
                         // Reset the backoff
-                        backoff = monitor_backoff(self.poll_interval);
+                        backoff = poll_backoff(self.poll_interval);
 
                         // Check if we need to wait some more before the next iteration.
                         let delay = self.poll_interval.checked_sub(before_step.elapsed());
@@ -120,7 +120,7 @@ impl EventSource {
                     }
 
                     Err(e) => {
-                        error!("event monitor encountered an error: {e}");
+                        error!("event source encountered an error: {e}");
 
                         // Let's backoff the little bit to give the chain some time to recover.
                         let delay = backoff.next().expect("backoff is an infinite iterator");
@@ -132,7 +132,7 @@ impl EventSource {
             }
         });
 
-        debug!("shutting down event monitor");
+        debug!("shutting down event source");
     }
 
     async fn step(&mut self) -> Result<Next> {
@@ -233,7 +233,7 @@ impl EventSource {
     }
 }
 
-fn monitor_backoff(poll_interval: Duration) -> impl Iterator<Item = Duration> {
+fn poll_backoff(poll_interval: Duration) -> impl Iterator<Item = Duration> {
     ConstantGrowth::new(poll_interval, Duration::from_millis(500))
         .clamp(poll_interval * 5, usize::MAX)
 }

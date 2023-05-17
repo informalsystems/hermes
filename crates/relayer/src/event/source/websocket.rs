@@ -86,7 +86,7 @@ pub struct EventSource {
 }
 
 impl EventSource {
-    /// Create an event monitor, and connect to a node
+    /// Create an event source, and connect to a node
     #[instrument(
         name = "event_source.create",
         level = "error",
@@ -114,7 +114,7 @@ impl EventSource {
         // TODO: move them to config file(?)
         let event_queries = super::queries::all();
 
-        let monitor = Self {
+        let source = Self {
             rt,
             chain_id,
             client,
@@ -129,10 +129,10 @@ impl EventSource {
             subscriptions: Box::new(futures::stream::empty()),
         };
 
-        Ok((monitor, TxEventSourceCmd(tx_cmd)))
+        Ok((source, TxEventSourceCmd(tx_cmd)))
     }
 
-    /// The list of [`Query`] that this event monitor is subscribing for.
+    /// The list of [`Query`] that this event source is subscribing for.
     pub fn queries(&self) -> &[Query] {
         &self.event_queries
     }
@@ -250,16 +250,16 @@ impl EventSource {
         }
     }
 
-    /// Event monitor loop
+    /// Event source loop
     #[allow(clippy::while_let_loop)]
     #[instrument(
-        name = "event_source",
+        name = "event_source.websocket",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)
     )]
     pub fn run(mut self) {
-        debug!("starting event monitor");
+        debug!("collecting events");
 
         // Continuously run the event loop, so that when it aborts
         // because of WebSocket client restart, we pick up the work again.
@@ -270,7 +270,7 @@ impl EventSource {
             }
         }
 
-        debug!("event monitor is shutting down");
+        debug!("event source is shutting down");
 
         // Close the WebSocket connection
         let _ = self.client.close();
@@ -278,7 +278,7 @@ impl EventSource {
         // Wait for the WebSocket driver to finish
         let _ = self.rt.block_on(self.driver_handle);
 
-        trace!("event monitor has successfully shut down");
+        trace!("event source has successfully shut down");
     }
 
     fn run_loop(&mut self) -> Next {
@@ -454,7 +454,7 @@ async fn run_driver(
 ) {
     if let Err(e) = driver.run().await {
         if tx.send(e).is_err() {
-            error!("failed to relay driver error to event monitor");
+            error!("failed to relay driver error to event source");
         }
     }
 }

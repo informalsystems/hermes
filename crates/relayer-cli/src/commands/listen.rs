@@ -148,7 +148,7 @@ fn subscribe(
         compat_mode,
         rt,
     )
-    .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;
+    .map_err(|e| eyre!("could not initialize event source: {}", e))?;
 
     event_source
         .init_subscriptions()
