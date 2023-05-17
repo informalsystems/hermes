@@ -136,12 +136,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         .entered();
 
         // Find the sequence numbers of unreceived acknowledgements
-        let (sequences, src_response_height) = unreceived_acknowledgements(
+        let Some((sequences, src_response_height)) = unreceived_acknowledgements(
             self.a_to_b.dst_chain(),
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
         )
-        .map_err(LinkError::supervisor)?;
+        .map_err(LinkError::supervisor)? else { return Ok(vec![]) };
 
         if sequences.is_empty() {
             return Ok(vec![]);

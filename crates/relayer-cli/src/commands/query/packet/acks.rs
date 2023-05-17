@@ -44,7 +44,7 @@ pub struct QueryPacketAcknowledgementsCmd {
 }
 
 impl QueryPacketAcknowledgementsCmd {
-    fn execute(&self) -> Result<PacketSeqs, Error> {
+    fn execute(&self) -> Result<Option<PacketSeqs>, Error> {
         let config = app_config();
 
         let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
@@ -54,11 +54,14 @@ impl QueryPacketAcknowledgementsCmd {
             &self.channel_id,
         )?;
 
-        let (seqs, height) =
+        if let Some((seqs, height)) =
             acknowledgements_on_chain(&chains.src, &chains.dst, &chan_conn_cli.channel)
-                .map_err(Error::supervisor)?;
-
-        Ok(PacketSeqs { seqs, height })
+                .map_err(Error::supervisor)?
+        {
+            Ok(Some(PacketSeqs { seqs, height }))
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -69,7 +72,8 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
 
         match self.execute() {
             Ok(p) if json() => Output::success(p).exit(),
-            Ok(p) => Output::success(p.collated()).exit(),
+            Ok(Some(p)) => Output::success(p.collated()).exit(),
+            Ok(None) => Output::error("No acknowledgments found").exit(),
             Err(e) => Output::error(e).exit(),
         }
     }
