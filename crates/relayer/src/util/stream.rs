@@ -115,7 +115,7 @@ where
             match x {
                 // timeout
                 Err(e) => {
-                    tracing::warn!("{e}");
+                    tracing::debug!("{e}");
 
                     if let Some(cur_state) = mem::take(&mut state) {
                         if !cur_state.group.is_empty() {
