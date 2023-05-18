@@ -49,6 +49,7 @@
               juno
               stride
               stride-no-admin
+              migaloo
             ;
 
             python = nixpkgs.python3.withPackages (p: [
