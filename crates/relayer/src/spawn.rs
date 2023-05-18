@@ -7,7 +7,7 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::{cosmos::CosmosSdkChain, endpoint::ChainEndpoint, handle::ChainHandle, ChainType},
-    config::Config,
+    config::{ChainConfig, Config},
     error::Error as RelayerError,
 };
 
@@ -42,6 +42,14 @@ impl SpawnErrorDetail {
 
 pub enum ChainImpl {
     CosmosSdk(CosmosSdkChain),
+}
+
+impl ChainImpl {
+    pub fn config(&self) -> &ChainConfig {
+        match self {
+            Self::CosmosSdk(chain) => chain.config(),
+        }
+    }
 }
 
 /// Spawns a chain runtime from the configuration and given a chain identifier.
