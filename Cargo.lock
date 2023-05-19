@@ -1811,7 +1811,6 @@ dependencies = [
  "regex",
  "retry",
  "ripemd",
- "rsevents-extra",
  "secp256k1",
  "semver",
  "serde",
@@ -1820,6 +1819,7 @@ dependencies = [
  "serial_test",
  "sha2 0.10.6",
  "signature",
+ "std-semaphore",
  "strum",
  "subtle-encoding",
  "tendermint",
@@ -3182,24 +3182,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rsevents"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8e29769fda0194d58e06d876d82337aac382415df547f073f44ffea0bb0c651"
-dependencies = [
- "parking_lot_core",
-]
-
-[[package]]
-name = "rsevents-extra"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ff64e850751883803e4b4837a37fd5d349d9cea4fe665df3c16887a08e936e4"
-dependencies = [
- "rsevents",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3801,6 +3783,12 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "std-semaphore"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33ae9eec00137a8eed469fb4148acd9fc6ac8c3f9b110f52cd34698c8b5bfa0e"
 
 [[package]]
 name = "string_cache"

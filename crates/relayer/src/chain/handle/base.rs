@@ -21,7 +21,7 @@ use ibc_relayer_types::{
     signer::Signer,
     Height,
 };
-use rsevents_extra::Semaphore;
+use std_semaphore::Semaphore;
 
 use crate::{
     account::Balance,
@@ -81,7 +81,7 @@ impl BaseChainHandle {
 
         Self {
             chain,
-            semaphore: Arc::new(Semaphore::new(max_concurrency, max_concurrency)),
+            semaphore: Arc::new(Semaphore::new(max_concurrency as isize)),
         }
     }
 }
@@ -174,7 +174,7 @@ impl ChainHandle for BaseChainHandle {
         key_name: Option<String>,
         denom: Option<String>,
     ) -> Result<Balance, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => {
@@ -184,7 +184,7 @@ impl ChainHandle for BaseChainHandle {
     }
 
     fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_all_balances(key_name.as_deref()), // FIXME
@@ -192,7 +192,7 @@ impl ChainHandle for BaseChainHandle {
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_denom_trace(hash),
@@ -200,7 +200,7 @@ impl ChainHandle for BaseChainHandle {
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_application_status(),
@@ -211,7 +211,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_clients(request),
@@ -223,7 +223,7 @@ impl ChainHandle for BaseChainHandle {
         request: QueryClientStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_client_state(request, include_proof),
@@ -234,7 +234,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_client_connections(request),
@@ -245,7 +245,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryConsensusStateHeightsRequest,
     ) -> Result<Vec<Height>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_consensus_state_heights(request),
@@ -257,7 +257,7 @@ impl ChainHandle for BaseChainHandle {
         request: QueryConsensusStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_consensus_state(request, include_proof),
@@ -268,7 +268,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_upgraded_client_state(request),
@@ -279,7 +279,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_upgraded_consensus_state(request),
@@ -287,7 +287,7 @@ impl ChainHandle for BaseChainHandle {
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_commitment_prefix(),
@@ -295,7 +295,7 @@ impl ChainHandle for BaseChainHandle {
     }
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_compatible_versions(),
@@ -307,7 +307,7 @@ impl ChainHandle for BaseChainHandle {
         request: QueryConnectionRequest,
         include_proof: IncludeProof,
     ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_connection(request, include_proof),
@@ -318,7 +318,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_connections(request),
@@ -329,7 +329,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_connection_channels(request),
@@ -341,7 +341,7 @@ impl ChainHandle for BaseChainHandle {
         request: QueryNextSequenceReceiveRequest,
         include_proof: IncludeProof,
     ) -> Result<(Sequence, Option<MerkleProof>), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => {
@@ -354,7 +354,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_channels(request),
@@ -366,7 +366,7 @@ impl ChainHandle for BaseChainHandle {
         request: QueryChannelRequest,
         include_proof: IncludeProof,
     ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_channel(request, include_proof),
@@ -377,7 +377,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_channel_client_state(request),
@@ -492,7 +492,7 @@ impl ChainHandle for BaseChainHandle {
         request: QueryPacketCommitmentRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_packet_commitment(request, include_proof),
@@ -503,7 +503,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<Sequence>, Height), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_packet_commitments(request),
@@ -515,7 +515,7 @@ impl ChainHandle for BaseChainHandle {
         request: QueryPacketReceiptRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_packet_receipt(request, include_proof),
@@ -526,7 +526,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<Sequence>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_unreceived_packets(request),
@@ -538,7 +538,7 @@ impl ChainHandle for BaseChainHandle {
         request: QueryPacketAcknowledgementRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => {
@@ -551,7 +551,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<Sequence>, Height), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_packet_acknowledgements(request),
@@ -562,7 +562,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_unreceived_acknowledgements(request),
@@ -570,7 +570,7 @@ impl ChainHandle for BaseChainHandle {
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_txs(request),
@@ -581,7 +581,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryPacketEventDataRequest,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_packet_events(request),
@@ -592,7 +592,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => {
@@ -607,7 +607,7 @@ impl ChainHandle for BaseChainHandle {
         port_id: PortId,
         counterparty_payee: Signer,
     ) -> Result<(), Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => {
@@ -620,7 +620,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: Vec<CrossChainQueryRequest>,
     ) -> Result<Vec<CrossChainQueryResponse>, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.cross_chain_query(request),
@@ -631,7 +631,7 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error> {
-        let _permit = self.semaphore.wait();
+        let _permit = self.semaphore.access();
 
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => chain.query_incentivized_packet(request),
