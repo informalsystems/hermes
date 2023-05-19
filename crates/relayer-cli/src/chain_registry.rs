@@ -122,6 +122,7 @@ where
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         verify_headers: default::verify_headers(),
+        batch_delay: default::batch_delay(),
         genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,
         key_name: String::new(),

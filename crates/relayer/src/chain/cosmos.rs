@@ -298,6 +298,7 @@ impl CosmosSdkChain {
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
             self.compat_mode,
+            self.config.batch_delay,
             self.rt.clone(),
         )
         .map_err(Error::event_monitor)?;

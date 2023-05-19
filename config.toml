@@ -136,6 +136,9 @@ rpc_timeout = '10s'
 # Default: true
 verify_headers = true
 
+# Delay until event batch is emitted if no NewBlock events have come yet
+batch_delay = '500ms'
+
 # Specify the prefix used by the chain. Required
 account_prefix = 'cosmos'
 
@@ -315,6 +318,7 @@ rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://127.0.0.1:26557/websocket'
 rpc_timeout = '10s'
+batch_delay = '500ms'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
