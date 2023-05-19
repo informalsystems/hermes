@@ -130,9 +130,24 @@ fn misbehaviour_handling<Chain: ChainHandle>(
         })?;
 
     let client = ForeignClient::restore(client_id, chain, counterparty_chain);
-    let result = client.detect_misbehaviour_and_submit_evidence(update.as_ref());
-    if let MisbehaviourResults::EvidenceSubmitted(events) = result {
-        info!("evidence submission result {}", PrettySlice(&events));
+    let result = client.detect_misbehaviour_and_submit_evidence(update);
+
+    match result {
+        MisbehaviourResults::ValidClient => {
+            info!("client is valid");
+        }
+        MisbehaviourResults::CannotExecute => {
+            warn!("could not perform misbehaviour detection");
+        }
+        MisbehaviourResults::EvidenceSubmitted(events) => {
+            info!(
+                "misbehavior detected, evidence submitted: {}",
+                PrettySlice(&events)
+            );
+        }
+        MisbehaviourResults::VerificationError => {
+            warn!("verification error during misbehavior detection");
+        }
     }
 
     Ok(())
