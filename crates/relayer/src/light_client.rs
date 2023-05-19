@@ -1,4 +1,4 @@
-pub mod genesis_restart;
+pub mod io;
 pub mod tendermint;
 
 use core::ops::Deref;
@@ -43,6 +43,7 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
         trusted: Height,
         target: Height,
         client_state: &AnyClientState,
+        now: C::Time,
     ) -> Result<Verified<C::Header>, error::Error>;
 
     /// Fetch a header from the chain at the given height and verify it.
@@ -51,14 +52,16 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
         trusted: Height,
         target: Height,
         client_state: &AnyClientState,
+        now: C::Time,
     ) -> Result<Verified<C::LightBlock>, error::Error>;
 
     /// Given a client update event that includes the header used in a client update,
-    /// look for misbehaviour by fetching a header at same or latest height.
-    fn check_misbehaviour(
+    /// run the light client attack detector.
+    fn detect_misbehaviour(
         &mut self,
         update: &UpdateClient,
         client_state: &AnyClientState,
+        now: C::Time,
     ) -> Result<Option<MisbehaviourEvidence>, error::Error>;
 
     /// Fetch a header from the chain at the given height, without verifying it

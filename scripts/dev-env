@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 usage() {
-  echo "Usage: $0 CONFIG_FILE CHAIN_0_ID CHAIN_1_ID [CHAIN_2_ID]"
+  echo "Usage: $0 CONFIG_FILE CHAIN_0_ID CHAIN_1_ID [CHAIN_2_ID] [--non-interactive]"
   echo "Example: $0 ./config.toml ibc-0 ibc-1 ibc-2"
   exit 1
 }
@@ -23,19 +23,35 @@ if [ -z "$3" ]; then
   missing "CHAIN_1_ID"
 fi
 
-
-if [ "$#" -gt 4 ]; then
+if [ "$#" -gt 5 ]; then
   echo "Incorrect number of parameters."
   usage
+fi
+
+NON_INTERACTIVE=""
+
+if [ "$#" -eq 4 ]; then
+  if [ "$4" == "--non-interactive" ]; then
+      NON_INTERACTIVE="--non-interactive"
+  else
+      CHAIN_2_ID="$4"
+  fi
+fi
+
+if [ "$#" -eq 5 ]; then
+  CHAIN_2_ID="$4"
+
+  if [ "$5" == "--non-interactive" ]; then
+      NON_INTERACTIVE="--non-interactive"
+  fi
 fi
 
 CONFIG_FILE="$1"
 CHAIN_0_ID="$2"
 CHAIN_1_ID="$3"
-CHAIN_2_ID="$4"
 
 SETUP_CHAINS="$(dirname "$0")/setup-chains"
 INIT_CLIENTS="$(dirname "$0")/init-hermes"
 
-"$SETUP_CHAINS" "$CHAIN_0_ID" "$CHAIN_1_ID" "$CHAIN_2_ID"
+"$SETUP_CHAINS" "$CHAIN_0_ID" "$CHAIN_1_ID" "$CHAIN_2_ID" "$NON_INTERACTIVE"
 "$INIT_CLIENTS" "$CONFIG_FILE" "$CHAIN_0_ID" "$CHAIN_1_ID" "$CHAIN_2_ID"

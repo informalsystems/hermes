@@ -1,13 +1,14 @@
-use crate::core::ics23_commitment::error::Error;
+use core::{convert::TryFrom, fmt};
+use serde::{Deserialize, Serialize};
+use subtle_encoding::{Encoding, Hex};
+
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+
 use crate::prelude::*;
 use crate::proofs::ProofError;
 use crate::tx_msg::encode_message;
 
-use core::{convert::TryFrom, fmt};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
-use serde::{Deserialize, Serialize};
-use subtle_encoding::{Encoding, Hex};
-
+use super::error::Error;
 use super::merkle::MerkleProof;
 
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]

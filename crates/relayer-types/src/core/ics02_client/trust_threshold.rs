@@ -75,22 +75,18 @@ impl TrustThreshold {
     }
 }
 
-/// Conversion from Tendermint domain type into
-/// IBC domain type.
+/// Conversion from Tendermint domain type into IBC domain type.
 impl From<TrustThresholdFraction> for TrustThreshold {
     fn from(t: TrustThresholdFraction) -> Self {
         Self(Ratio::new_raw(t.numerator(), t.denominator()))
     }
 }
 
-/// Conversion from IBC domain type into
-/// Tendermint domain type.
-impl TryFrom<TrustThreshold> for TrustThresholdFraction {
-    type Error = Error;
-
-    fn try_from(t: TrustThreshold) -> Result<TrustThresholdFraction, Error> {
+/// Conversion from IBC domain type into Tendermint domain type.
+impl From<TrustThreshold> for TrustThresholdFraction {
+    fn from(t: TrustThreshold) -> TrustThresholdFraction {
         TrustThresholdFraction::new(t.numerator(), t.denominator())
-            .map_err(|_| Error::failed_trust_threshold_conversion(t.numerator(), t.denominator()))
+            .expect("trust threshold should have been valid")
     }
 }
 
