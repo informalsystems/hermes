@@ -1,4 +1,3 @@
-#[cfg(feature = "profiling")]
 pub mod profiling {
 
     use core::sync::atomic::AtomicUsize;
@@ -93,7 +92,7 @@ pub mod profiling {
 
 /// Measure the time until the current scope ends.
 ///
-/// Only enabled when the "profiling" feature is enabled.
+/// Only enabled when "--debug=profiling" is set.
 ///
 /// ## Example
 ///
@@ -115,12 +114,10 @@ pub mod profiling {
 #[macro_export]
 macro_rules! time {
     ($name:expr, $info:tt) => {
-        #[cfg(feature = "profiling")]
         let _timer = $crate::macros::profiling::Timer::new($name, ::serde_json::json!($info));
     };
 
     ($name:expr) => {
-        #[cfg(feature = "profiling")]
         let _timer = $crate::macros::profiling::Timer::new($name, ::serde_json::json!({}));
     };
 }

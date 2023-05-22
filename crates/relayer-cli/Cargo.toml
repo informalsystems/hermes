@@ -21,7 +21,6 @@ name = "hermes"
 default     = ["telemetry", "rest-server", "std", "eyre_tracer",]
 std         = ["flex-error/std"]
 eyre_tracer = ["flex-error/eyre_tracer"]
-profiling   = ["ibc-relayer/profiling"]
 telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 

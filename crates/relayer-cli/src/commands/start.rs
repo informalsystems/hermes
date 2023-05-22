@@ -1,4 +1,5 @@
 use ibc_relayer::supervisor::SupervisorOptions;
+use ibc_relayer::util::debug_section::DebugSection;
 use std::error::Error;
 use std::io;
 
@@ -27,8 +28,9 @@ pub struct StartCmd {
 
 impl Runnable for StartCmd {
     fn run(&self) {
-        #[cfg(feature = "profiling")]
-        {
+        let app = app_reader();
+
+        if app.debug_sections().contains(&DebugSection::Profiling) {
             use chrono::prelude::*;
             use std::env;
             use std::path::Path;
@@ -46,8 +48,8 @@ impl Runnable for StartCmd {
                 now.minute(),
                 now.second()
             );
-            let file_name = Path::new(&path_str);
-            ibc_relayer::macros::profiling::open_or_create_profile_file(file_name);
+
+            ibc_relayer::macros::profiling::open_or_create_profile_file(Path::new(&path_str));
         }
 
         let config = (*app_config()).clone();

@@ -14,14 +14,14 @@ use crate::commands::CliCmd;
 #[derive(Copy, Clone, Debug, ValueEnum)]
 pub enum CliDebugSection {
     Rpc,
-    // Profiling,
+    Profiling,
 }
 
 impl From<CliDebugSection> for DebugSection {
     fn from(section: CliDebugSection) -> Self {
         match section {
             CliDebugSection::Rpc => DebugSection::Rpc,
-            // CliDebugSection::Profiling => DebugSection::Profiling,
+            CliDebugSection::Profiling => DebugSection::Profiling,
         }
     }
 }
