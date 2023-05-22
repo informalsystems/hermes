@@ -30,10 +30,12 @@ impl Runnable for StartCmd {
     fn run(&self) {
         let app = app_reader();
 
-        if app.debug_sections().contains(&DebugSection::Profiling) {
+        if app.debug_enabled(DebugSection::Profiling) {
             use chrono::prelude::*;
             use std::env;
             use std::path::Path;
+
+            use ibc_relayer::util::profiling::open_or_create_profile_file;
 
             let profile_dir = env::var("PROFILE_DIR").unwrap_or_else(|_| ".".to_string());
 
@@ -49,7 +51,7 @@ impl Runnable for StartCmd {
                 now.second()
             );
 
-            ibc_relayer::macros::profiling::open_or_create_profile_file(Path::new(&path_str));
+            open_or_create_profile_file(Path::new(&path_str));
         }
 
         let config = (*app_config()).clone();

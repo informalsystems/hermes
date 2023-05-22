@@ -81,6 +81,11 @@ impl CliApp {
         &self.debug_sections
     }
 
+    /// Returns `true` if the given debug section is enabled
+    pub fn debug_enabled(&self, section: DebugSection) -> bool {
+        self.debug_sections.contains(&section)
+    }
+
     /// Returns the path to the configuration file
     pub fn config_path(&self) -> Option<&PathBuf> {
         self.config_path.as_ref()
@@ -184,6 +189,11 @@ impl Application for CliApp {
 
         // Update the `debug_sections` flag
         self.debug_sections = command.debug.iter().copied().map(Into::into).collect();
+
+        // Enable profiling if requested
+        if self.debug_enabled(DebugSection::Profiling) {
+            ibc_relayer::util::profiling::enable();
+        }
 
         if command.json {
             // Enable JSON by using the crate-level `Tracing`
