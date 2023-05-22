@@ -30,7 +30,7 @@ use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryRespons
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
-use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
+use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
@@ -57,7 +57,8 @@ use ibc_relayer_types::Height as ICSHeight;
 
 use tendermint::block::Height as TmHeight;
 use tendermint::node::{self, info::TxIndexStatus};
-use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
+use tendermint::time::Time as TmTime;
+use tendermint_light_client::verifier::types::LightBlock as TmLightBlock;
 use tendermint_rpc::client::CompatMode;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::endpoint::status;
@@ -228,9 +229,8 @@ impl CosmosSdkChain {
             ));
         }
 
-        // Get the latest height and convert to tendermint Height
-        let latest_height = TmHeight::try_from(self.query_chain_latest_height()?.revision_height())
-            .map_err(Error::invalid_height)?;
+        // Get the latest height
+        let latest_height = self.query_chain_latest_height()?;
 
         // Check on the configured max_tx_size against the consensus parameters at latest height
         let result = self
@@ -300,6 +300,7 @@ impl CosmosSdkChain {
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
             self.compat_mode,
+            self.config.batch_delay,
             self.rt.clone(),
         )
         .map_err(Error::event_monitor)?;
@@ -525,10 +526,6 @@ impl CosmosSdkChain {
             "src_chain": self.config().id.to_string(),
         });
 
-        let path = IBC_QUERY_PATH.into();
-
-        let height = TmHeight::try_from(height_query)?;
-
         let data = data.into();
         if !data.is_provable() & prove {
             return Err(Error::private_store());
@@ -537,9 +534,9 @@ impl CosmosSdkChain {
         let response = self.block_on(abci_query(
             &self.rpc_client,
             &self.config.rpc_addr,
-            path,
+            IBC_QUERY_PATH.to_string(),
             data.to_string(),
-            height,
+            height_query.into(),
             prove,
         ))?;
 
@@ -578,7 +575,7 @@ impl CosmosSdkChain {
             &self.config.rpc_addr,
             path,
             Path::Upgrade(query_data).to_string(),
-            TmHeight::try_from(query_height.revision_height()).map_err(Error::invalid_height)?,
+            query_height.into(),
             true,
         ))?;
 
@@ -869,8 +866,9 @@ impl CosmosSdkChain {
 impl ChainEndpoint for CosmosSdkChain {
     type LightBlock = TmLightBlock;
     type Header = TmHeader;
-    type ConsensusState = TMConsensusState;
+    type ConsensusState = TmConsensusState;
     type ClientState = TmClientState;
+    type Time = TmTime;
     type SigningKeyPair = Secp256k1KeyPair;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
@@ -1008,13 +1006,14 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         );
 
+        let now = self.chain_status()?.sync_info.latest_block_time;
+
         self.light_client
-            .verify(trusted, target, client_state)
+            .verify(trusted, target, client_state, now)
             .map(|v| v.target)
     }
 
-    /// Given a client update event that includes the header used in a client update,
-    /// look for misbehaviour by fetching a header at same or latest height.
+    /// Perform misbehavior detection for the given client state and update event.
     fn check_misbehaviour(
         &self,
         update: &UpdateClient,
@@ -1027,7 +1026,10 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         );
 
-        self.light_client.check_misbehaviour(update, client_state)
+        let now = self.chain_status()?.sync_info.latest_block_time;
+
+        self.light_client
+            .detect_misbehaviour(update, client_state, now)
     }
 
     // Queries
@@ -1634,6 +1636,7 @@ impl ChainEndpoint for CosmosSdkChain {
                     .ok()
             })
             .collect();
+
         Ok(channels)
     }
 
@@ -2110,9 +2113,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<Self::ConsensusState, Error> {
         let height = match request.height {
             QueryHeight::Latest => TmHeight::from(0u32),
-            QueryHeight::Specific(ibc_height) => {
-                TmHeight::try_from(ibc_height.revision_height()).map_err(Error::invalid_height)?
-            }
+            QueryHeight::Specific(ibc_height) => TmHeight::from(ibc_height),
         };
 
         let header = if height.value() == 0 {
@@ -2177,7 +2178,7 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         );
 
-        Ok(TMConsensusState::from(light_block.signed_header.header))
+        Ok(TmConsensusState::from(light_block.signed_header.header))
     }
 
     fn build_header(
@@ -2193,11 +2194,14 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         );
 
+        let now = self.chain_status()?.sync_info.latest_block_time;
+
         // Get the light block at target_height from chain.
         let Verified { target, supporting } = self.light_client.header_and_minimal_set(
             trusted_height,
             target_height,
             client_state,
+            now,
         )?;
 
         Ok((target, supporting))

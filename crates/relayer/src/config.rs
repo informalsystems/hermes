@@ -14,6 +14,7 @@ use core::{
     str::FromStr,
     time::Duration,
 };
+use serde_derive::{Deserialize, Serialize};
 use std::{
     fs,
     fs::File,
@@ -21,12 +22,10 @@ use std::{
     path::{Path, PathBuf},
 };
 use tendermint::block::Height as BlockHeight;
+use tendermint_light_client::verifier::types::TrustThreshold;
 use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
-use serde_derive::{Deserialize, Serialize};
-use tendermint_light_client_verifier::types::TrustThreshold;
-
 use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
@@ -172,6 +171,10 @@ pub mod default {
 
     pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
+    }
+
+    pub fn batch_delay() -> Duration {
+        Duration::from_millis(500)
     }
 
     pub fn clock_drift() -> Duration {
@@ -454,6 +457,8 @@ pub struct ChainConfig {
     pub grpc_addr: Url,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
+    #[serde(default = "default::batch_delay", with = "humantime_serde")]
+    pub batch_delay: Duration,
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]
