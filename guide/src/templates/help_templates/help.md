@@ -7,6 +7,8 @@ USAGE:
 
 OPTIONS:
         --config <CONFIG>    Path to configuration file
+        --debug <DEBUG>      Enable debug output for the given section(s), comma separated, can be
+                             repeated. [possible values: rpc, profiling]
     -h, --help               Print help information
         --json               Enable JSON output
     -V, --version            Print version information
