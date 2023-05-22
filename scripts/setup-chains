@@ -3,7 +3,7 @@
 # Copied from https://github.com/cosmos/relayer and modified to initialize Gaia chains.
 
 usage() {
-  echo "Usage: $0 CHAIN_0_ID CHAIN_1_ID [CHAIN_2_ID]"
+  echo "Usage: $0 CHAIN_0_ID CHAIN_1_ID [CHAIN_2_ID] [--non-interactive]"
   echo "Example: $0 ibc-0 ibc-1 ibc-2"
   exit 1
 }
@@ -21,10 +21,23 @@ if [ -z "$2" ]; then
   missing "CHAIN_1_ID"
 fi
 
-
-if [ "$#" -gt 3 ]; then
+if [ "$#" -gt 4 ]; then
   echo "Incorrect number of parameters."
   usage
+fi
+
+NON_INTERACTIVE=false
+
+if [ "$#" -eq 3 ]; then
+  if [ "$3" == "--non-interactive" ]; then
+      NON_INTERACTIVE=true
+  fi
+fi
+
+if [ "$#" -eq 4 ]; then
+  if [ "$4" == "--non-interactive" ]; then
+      NON_INTERACTIVE=true
+  fi
 fi
 
 CHAIN_0_ID="$1"
@@ -34,7 +47,7 @@ CHAIN_2_ID="$3"
 GAIA_DATA="$(pwd)/data"
 
 # Ensure user understands what will be deleted
-if [[ -d $GAIA_DATA ]] && [[ ! "$3" == "skip" ]]; then
+if [[ -d $GAIA_DATA ]] && [[ $NON_INTERACTIVE == false ]]; then
   echo "WARNING: $0 will DELETE the '$(pwd)/data' folder."
   read -p "> Do you wish to continue? (y/n): " -n 1 -r
   echo

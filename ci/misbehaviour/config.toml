@@ -23,7 +23,7 @@ enabled = true
 #      there is activity on a connection or channel they are involved with.
 refresh = true
 
-# Whether or not to enable misbehaviour detection for clients. [Default: true]
+# Whether or not to enable misbehaviour detection for clients. [Default: false]
 misbehaviour = true
 
 # Specify the connections mode.
@@ -112,10 +112,6 @@ port = 3001
 # Specify the chain ID. Required
 id = 'ibc-0'
 
-# Whether or not this is a CCV consumer chain. Default: false
-# Only specifiy true for CCV consumer chain, but NOT for sovereign chains.
-ccv_consumer_chain = false
-
 # Specify the RPC address and port where the chain RPC server listens on. Required
 rpc_addr = 'http://127.0.0.1:26657'
 
@@ -125,28 +121,6 @@ grpc_addr = 'http://127.0.0.1:9090'
 # Specify the WebSocket address and port where the chain WebSocket server
 # listens on. Required
 websocket_addr = 'ws://127.0.0.1:26657/websocket'
-
-# The type of event source to use for getting events from the chain.
-# This setting can take one of two values:
-# 
-# - `websocket` for WebSocket
-# - `rpc` for RPC via the `/block_results` endpoint
-#
-# Default: 'websocket'
-event_source = 'websocket'
-
-# Delay until event batch is emitted if no NewBlock events have come yet.
-#
-# Note: Only applies when `event_source` is set to `websocket`.
-#
-# Default: 500ms
-batch_delay = '500ms'
-
-# The interval at which to poll for blocks when the `event_source` is `rpc`.
-# Note: Only applies when `event_source` is set to `rpc`.
-#
-# Default: 1 second
-poll_interval = '1s'
 
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
@@ -161,10 +135,6 @@ account_prefix = 'cosmos'
 # See the Adding Keys chapter for more information about managing signing keys:
 #   https://hermes.informal.systems/commands/keys/index.html#adding-keys
 key_name = 'testkey'
-
-# Specify the folder used to store the keys. Optional
-# If this is not specified then the hermes home folder is used.
-# key_store_folder = '$HOME/.hermes/keys'
 
 # Specify the address type which determines:
 # 1) address derivation;
@@ -332,10 +302,7 @@ id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://127.0.0.1:26557/websocket'
-event_source = 'websocket'
-poll_interval = '1s'
 rpc_timeout = '10s'
-batch_delay = '500ms'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'

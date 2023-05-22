@@ -27,5 +27,5 @@ axum                     = "0.6.18"
 tokio                    = "1.26.0"
 
 [dependencies.tendermint]
-version = "0.30.0"
+version = "0.32.0"
 default-features = false

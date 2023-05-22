@@ -124,6 +124,7 @@ where
         event_source: EventSource::WebSocket,
         poll_interval: default::poll_interval(),
         rpc_timeout: default::rpc_timeout(),
+        batch_delay: default::batch_delay(),
         genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,
         key_name: String::new(),

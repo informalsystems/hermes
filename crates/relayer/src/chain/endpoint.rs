@@ -75,6 +75,9 @@ pub trait ChainEndpoint: Sized {
     /// Type of the client state for this chain
     type ClientState: ClientState + Into<AnyClientState>;
 
+    /// The type of time for this chain
+    type Time;
+
     /// Type of the key pair used for signatures of messages on chain
     type SigningKeyPair: SigningKeyPairSized + Into<AnySigningKeyPair>;
 
