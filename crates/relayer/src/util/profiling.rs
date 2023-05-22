@@ -95,20 +95,35 @@ pub fn open_or_create_profile_file(file_name: &Path) {
         .open(file_name)
         .unwrap();
 
-    match FILE.set(file) {
+    match FILE.set(Mutex::new(file)) {
         Ok(_) => tracing::trace!("profile file created at: {file_name:#?}"),
-        Err(e) => tracing::error!("profile file was already set with: {:#?}", e.metadata()),
+        Err(e) => tracing::error!(
+            "profile file was already set with: {:#?}",
+            e.lock().unwrap().metadata()
+        ),
     }
 }
 
 fn output_json(info: &TimerInfo<'_>) {
-    if let Some(mut f) = FILE.get() {
-        if let Err(e) = serde_json::to_writer(&mut f, &info) {
+    if let Some(f) = FILE.get() {
+        if let Err(e) = _output_json(f, info) {
             tracing::error!("couldn't write to file: {e}");
         }
     } else {
         tracing::debug!("File for profiling output is not set");
     }
+}
+
+fn _output_json(f: &Mutex<File>, info: &TimerInfo<'_>) -> Result<(), Box<dyn std::error::Error>> {
+    use std::io::Write;
+
+    {
+        let mut f = f.lock().unwrap();
+        serde_json::to_writer(&mut *f, info)?;
+        writeln!(&mut *f)?;
+    }
+
+    Ok(())
 }
 
 /// Measure the time until the current scope ends.
