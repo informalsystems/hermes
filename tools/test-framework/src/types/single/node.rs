@@ -133,13 +133,15 @@ impl FullNode {
             .as_path()
             .display()
             .to_string();
+
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
             r#type: ChainType::CosmosSdk,
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
             websocket_addr: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
-            rpc_timeout: Duration::from_secs(10),
+            rpc_timeout: ibc_relayer::config::default::rpc_timeout(),
+            batch_delay: ibc_relayer::config::default::batch_delay(),
             max_concurrency: config::default::max_concurrency(),
             genesis_restart: None,
             account_prefix: self.chain_driver.account_prefix.clone(),
