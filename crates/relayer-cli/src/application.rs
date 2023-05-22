@@ -191,10 +191,9 @@ impl Application for CliApp {
         self.debug_sections = command.debug.iter().copied().map(Into::into).collect();
 
         // Enable profiling if requested
-        if self.debug_enabled(DebugSection::Profiling) {
-            let enable_json = self.debug_enabled(DebugSection::ProfilingJson);
-            ibc_relayer::util::profiling::enable(enable_json);
-        }
+        let enable_console = self.debug_enabled(DebugSection::Profiling);
+        let enable_json = self.debug_enabled(DebugSection::ProfilingJson);
+        ibc_relayer::util::profiling::enable(enable_console, enable_json);
 
         if command.json {
             // Enable JSON by using the crate-level `Tracing`

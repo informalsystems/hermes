@@ -1,6 +1,6 @@
-use core::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 use std::fs::{File, OpenOptions};
 use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 use std::sync::Mutex;
 
 use once_cell::sync::OnceCell;
@@ -12,23 +12,24 @@ std::thread_local! {
 }
 
 static FILE: OnceCell<Mutex<File>> = OnceCell::new();
-static ENABLED: OnceCell<bool> = OnceCell::new();
-static JSON_ENABLED: OnceCell<bool> = OnceCell::new();
+static ENABLED: AtomicUsize = AtomicUsize::new(0);
 
-pub fn enable(enable_json: bool) {
-    ENABLED.set(true).expect("profiling already enabled");
+const CONSOLE_MASK: usize = 0b01;
+const JSON_MASK: usize = 0b10;
 
-    JSON_ENABLED
-        .set(enable_json)
-        .expect("JSON profiling already enabled");
+pub fn enable(console: bool, json: bool) {
+    let console_mask = if console { CONSOLE_MASK } else { 0 };
+    let json_mask = if json { JSON_MASK } else { 0 };
+
+    ENABLED.store(console_mask | json_mask, Relaxed);
 }
 
-pub fn enabled() -> bool {
-    ENABLED.get().copied().unwrap_or(false)
+pub fn console_enabled() -> bool {
+    ENABLED.load(Relaxed) & CONSOLE_MASK != 0
 }
 
 pub fn json_enabled() -> bool {
-    JSON_ENABLED.get().copied().unwrap_or(false)
+    ENABLED.load(Relaxed) & JSON_MASK != 0
 }
 
 /// Measure the time between when this value is allocated
@@ -52,7 +53,7 @@ impl Timer {
         let depth = DEPTH.with(|d| d.fetch_add(1, Relaxed));
         let pad = "   ".repeat(depth);
 
-        if enabled() {
+        if console_enabled() {
             tracing::info!("{}⏳ {} - start", pad, name);
         }
 
@@ -71,7 +72,7 @@ impl Drop for Timer {
         let depth = DEPTH.with(|d| d.fetch_sub(1, Relaxed));
         let pad = "   ".repeat(depth - 1);
 
-        if enabled() {
+        if console_enabled() {
             tracing::info!("{}⏳ {} - elapsed: {}ms", pad, self.name, elapsed);
         }
 
@@ -117,11 +118,9 @@ fn output_json(info: &TimerInfo<'_>) {
 fn _output_json(f: &Mutex<File>, info: &TimerInfo<'_>) -> Result<(), Box<dyn std::error::Error>> {
     use std::io::Write;
 
-    {
-        let mut f = f.lock().unwrap();
-        serde_json::to_writer(&mut *f, info)?;
-        writeln!(&mut *f)?;
-    }
+    let mut f = f.lock().unwrap();
+    serde_json::to_writer(&mut *f, info)?;
+    writeln!(&mut *f)?;
 
     Ok(())
 }
