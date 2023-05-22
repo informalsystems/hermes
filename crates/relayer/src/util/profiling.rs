@@ -32,6 +32,10 @@ pub fn json_enabled() -> bool {
     ENABLED.load(Relaxed) & JSON_MASK != 0
 }
 
+fn enabled() -> usize {
+    ENABLED.load(Relaxed)
+}
+
 /// Measure the time between when this value is allocated
 /// and when it is dropped.
 pub struct Timer {
@@ -67,23 +71,27 @@ impl Timer {
 
 impl Drop for Timer {
     fn drop(&mut self) {
+        let enabled = enabled();
+
+        if enabled == 0 {
+            return;
+        }
+
         let elapsed = self.start.elapsed().as_millis();
 
         let depth = DEPTH.with(|d| d.fetch_sub(1, Relaxed));
         let pad = "   ".repeat(depth - 1);
 
-        if console_enabled() {
+        if enabled & CONSOLE_MASK != 0 {
             tracing::info!("{}⏳ {} - elapsed: {}ms", pad, self.name, elapsed);
         }
 
-        let info = TimerInfo {
-            name: self.name,
-            info: &self.info,
-            elapsed,
-        };
-
-        if json_enabled() {
-            output_json(&info);
+        if enabled & JSON_MASK != 0 {
+            output_json(&TimerInfo {
+                name: self.name,
+                info: &self.info,
+                elapsed,
+            });
         }
     }
 }
