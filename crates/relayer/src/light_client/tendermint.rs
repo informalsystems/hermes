@@ -49,6 +49,7 @@ pub struct LightClient {
     chain_id: ChainId,
     peer_id: PeerId,
     io: AnyIo,
+    enable_verification: bool,
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
@@ -86,6 +87,15 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         now: Time,
     ) -> Result<Verified<LightBlock>, Error> {
         trace!(%trusted_height, %target_height, "light client verification");
+
+        if !self.enable_verification {
+            let target = self.fetch(target_height)?;
+
+            return Ok(Verified {
+                target,
+                supporting: vec![],
+            });
+        }
 
         let client = self.prepare_client(client_state, now)?;
         let mut state = self.prepare_state(trusted_height)?;
@@ -279,10 +289,17 @@ impl LightClient {
             }
         };
 
+        // If the full node is configured as trusted then, in addition to headers not being verified,
+        // the verification traces will not be provided. This may cause failure in client
+        // updates after significant change in validator sets.
+        let enable_verification = !config.trusted_node;
+
         Ok(Self {
             chain_id: config.id.clone(),
             peer_id,
             io,
+
+            enable_verification,
         })
     }
 

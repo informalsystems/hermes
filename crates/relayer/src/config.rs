@@ -185,6 +185,10 @@ pub mod default {
         Duration::from_secs(30)
     }
 
+    pub fn trusted_node() -> bool {
+        false
+    }
+
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
     }
@@ -459,6 +463,8 @@ pub struct ChainConfig {
     pub rpc_timeout: Duration,
     #[serde(default = "default::batch_delay", with = "humantime_serde")]
     pub batch_delay: Duration,
+    #[serde(default = "default::trusted_node")]
+    pub trusted_node: bool,
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]

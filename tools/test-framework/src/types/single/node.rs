@@ -142,6 +142,7 @@ impl FullNode {
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
             rpc_timeout: ibc_relayer::config::default::rpc_timeout(),
             batch_delay: ibc_relayer::config::default::batch_delay(),
+            trusted_node: false,
             genesis_restart: None,
             account_prefix: self.chain_driver.account_prefix.clone(),
             key_name: self.wallets.relayer.id.0.clone(),

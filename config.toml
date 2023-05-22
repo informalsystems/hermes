@@ -132,6 +132,17 @@ websocket_addr = 'ws://127.0.0.1:26657/websocket'
 # Hermes uses a large preconfigured timeout (on the order of minutes).
 rpc_timeout = '10s'
 
+# Experimental: Whether or not the full node is trusted.
+#
+# If not trusted, Hermes will verify headers included in the `ClientUpdate` message using the light client.
+#
+# Note: If the full node is configured as trusted then, in addition to headers not being verified,
+#       the verification traces will not be provided.
+#       This may cause failure in client updates after significant change in validator sets.
+#
+# Default: false
+trusted_node = false
+
 # Delay until event batch is emitted if no NewBlock events have come yet
 batch_delay = '500ms'
 
@@ -315,6 +326,7 @@ grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://127.0.0.1:26557/websocket'
 rpc_timeout = '10s'
 batch_delay = '500ms'
+trusted_node = false
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
