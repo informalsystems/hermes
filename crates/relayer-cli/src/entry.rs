@@ -15,6 +15,7 @@ use crate::commands::CliCmd;
 pub enum CliDebugSection {
     Rpc,
     Profiling,
+    ProfilingJson,
 }
 
 impl From<CliDebugSection> for DebugSection {
@@ -22,6 +23,7 @@ impl From<CliDebugSection> for DebugSection {
         match section {
             CliDebugSection::Rpc => DebugSection::Rpc,
             CliDebugSection::Profiling => DebugSection::Profiling,
+            CliDebugSection::ProfilingJson => DebugSection::ProfilingJson,
         }
     }
 }

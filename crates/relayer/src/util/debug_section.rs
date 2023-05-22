@@ -2,4 +2,5 @@
 pub enum DebugSection {
     Rpc,
     Profiling,
+    ProfilingJson,
 }

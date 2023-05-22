@@ -4,24 +4,11 @@ The `relayer` crate provides a `time!` macro which can be used to measure how mu
 
 ### Setup
 
-The `time!` macro has no effect unless the `profiling` feature of the `relayer` crate is enabled.
-
-To enable it, one must compile the `relayer-cli` crate with the `--features=profiling` flag.
-
-a) One way is to build the `relayer` binary and update the `hermes` alias to point to the executable:
+The `time!` macro has no effect unless the `--debug=profiling` global flag is specified on the command-line:
 
 ```shell
-cd relayer-cli/
-cargo build --features=profiling
+$ hermes --debug=profiling start
 ```
-
-b) Alternatively, one can use the `cargo run` command and update the alias accordingly:
-
-```shell
-alias hermes='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
-```
-
-The `--manifest-path=relayer-cli/Cargo.toml` flag is needed for `cargo run` to accept the `--features` flag.
 
 ### Example
 
@@ -45,7 +32,7 @@ fn my_function(x: u32) -> u32 {
 }
 ```
 
-#### Output
+#### Console output
 
 ```
 Jan 20 11:28:46.841  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - start
@@ -60,10 +47,9 @@ and it's often not clear which of these are the culprit for low performance.
 With profiling enabled, `hermes` will output timing information for individual
 methods involved in a command.
 
-__NOTE__: To be able to see the profiling output, Hermes needs to be compiled with
-the `profiling` feature and the [log level][log-level] should be `info` level or lower.
+__NOTE__: To be able to see the profiling output, the [log level][log-level] should be `info` level or lower.
 
-#### Example output for `tx conn-init` command
+##### Example output for `tx conn-init` command
 
 ```
 {{#template ../../templates/commands/hermes/tx/conn-init_1.md DST_CHAIN_ID=ibc-0 SRC_CHAIN_ID=ibc-1 DST_CLIENT_ID=07-tendermint-0 SRC_CLIENT_ID=07-tendermint-0}}
@@ -122,4 +108,24 @@ Success: CreateClient(
         },
     ),
 )
+```
+
+#### JSON output
+
+Additionally, if the `--debug=profiling-json` flag is specified, Hermes will output profiling information in
+JSON format in a file named `hermes-YYYY-MM-DD-HHMMSS-prof.json`, in the directory specified in the `PROFILING_DIR`
+env variable, or the current directory otherwise.
+
+```json
+{"name":"fetch_node_info","src_chain":"ibc-0","elapsed":6}
+{"name":"chain_status","src_chain":"ibc-0","elapsed":12}
+{"name":"query_config_params","src_chain":"ibc-0","elapsed":3}
+{"name":"min_gas_price","src_chain":"ibc-0","elapsed":3}
+{"name":"query_staking_params","src_chain":"ibc-0","elapsed":159}
+{"name":"historical_entries","src_chain":"ibc-0","elapsed":329}
+{"name":"query_staking_params","src_chain":"ibc-0","elapsed":121}
+{"name":"unbonding_period","src_chain":"ibc-0","elapsed":12}
+{"name":"query_latest_height","src_chain":"ibc-0","elapsed":8}
+{"name":"fetch_node_info","src_chain":"ibc-1","elapsed":9}
+{"name":"chain_status","src_chain":"ibc-1","elapsed":43}
 ```

@@ -192,7 +192,8 @@ impl Application for CliApp {
 
         // Enable profiling if requested
         if self.debug_enabled(DebugSection::Profiling) {
-            ibc_relayer::util::profiling::enable();
+            let enable_json = self.debug_enabled(DebugSection::ProfilingJson);
+            ibc_relayer::util::profiling::enable(enable_json);
         }
 
         if command.json {

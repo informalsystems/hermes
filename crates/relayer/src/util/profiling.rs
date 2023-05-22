@@ -1,25 +1,34 @@
-use core::sync::atomic::AtomicUsize;
-use core::sync::atomic::Ordering::Relaxed;
+use core::sync::atomic::{AtomicUsize, Ordering::Relaxed};
+use std::fs::{File, OpenOptions};
+use std::path::Path;
+use std::sync::Mutex;
+
 use once_cell::sync::OnceCell;
 use serde_derive::Serialize;
 use serde_json::Value;
-use std::fs::File;
-use std::fs::OpenOptions;
-use std::path::Path;
 
 std::thread_local! {
     pub static DEPTH: AtomicUsize = AtomicUsize::new(0);
 }
 
-static FILE: OnceCell<File> = OnceCell::new();
+static FILE: OnceCell<Mutex<File>> = OnceCell::new();
 static ENABLED: OnceCell<bool> = OnceCell::new();
+static JSON_ENABLED: OnceCell<bool> = OnceCell::new();
 
-pub fn enable() {
+pub fn enable(enable_json: bool) {
     ENABLED.set(true).expect("profiling already enabled");
+
+    JSON_ENABLED
+        .set(enable_json)
+        .expect("JSON profiling already enabled");
 }
 
 pub fn enabled() -> bool {
     ENABLED.get().copied().unwrap_or(false)
+}
+
+pub fn json_enabled() -> bool {
+    JSON_ENABLED.get().copied().unwrap_or(false)
 }
 
 /// Measure the time between when this value is allocated
@@ -57,14 +66,12 @@ impl Timer {
 
 impl Drop for Timer {
     fn drop(&mut self) {
-        let enabled = enabled();
-
         let elapsed = self.start.elapsed().as_millis();
 
         let depth = DEPTH.with(|d| d.fetch_sub(1, Relaxed));
         let pad = "   ".repeat(depth - 1);
 
-        if enabled {
+        if enabled() {
             tracing::info!("{}⏳ {} - elapsed: {}ms", pad, self.name, elapsed);
         }
 
@@ -74,7 +81,7 @@ impl Drop for Timer {
             elapsed,
         };
 
-        if enabled {
+        if json_enabled() {
             output_json(&info);
         }
     }
