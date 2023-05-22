@@ -14,6 +14,7 @@ use core::{
     str::FromStr,
     time::Duration,
 };
+use serde_derive::{Deserialize, Serialize};
 use std::{
     fs,
     fs::File,
@@ -21,12 +22,10 @@ use std::{
     path::{Path, PathBuf},
 };
 use tendermint::block::Height as BlockHeight;
+use tendermint_light_client::verifier::types::TrustThreshold;
 use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
-use serde_derive::{Deserialize, Serialize};
-use tendermint_light_client_verifier::types::TrustThreshold;
-
 use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
