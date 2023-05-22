@@ -41,8 +41,9 @@ pub struct EntryPoint {
     /// Enable the given debug sections, separated by commas.
     #[clap(
         long = "debug",
-        help = "Enable debug output for the given section, can be repeated.",
-        value_enum
+        help = "Enable debug output for the given section(s), comma separated, can be repeated.",
+        value_enum,
+        value_delimiter = ','
     )]
     pub debug: Vec<CliDebugSection>,
 
