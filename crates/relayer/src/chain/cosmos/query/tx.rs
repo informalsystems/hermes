@@ -149,21 +149,18 @@ pub async fn query_packets_from_txs(
             continue;
         }
 
-        // If more than one event was found for this sequence, log a warning, and use the first one.
+        // If more than one event was found for this sequence, log a warning
         if tx_events.len() > 1 {
             warn!("more than one packet event found for sequence {seq}, this should not happen",);
 
             for (event, hash, height) in &tx_events {
                 warn!("seq: {seq}, tx hash: {hash}, tx height: {height}, event: {event}",);
             }
-
-            let (first_event, _, _) = tx_events.remove(0);
-            result.push(first_event);
-        } else {
-            // Only one event was found for this sequence, use it.
-            let (first_event, _, _) = tx_events.remove(0);
-            result.push(first_event);
         }
+
+        // In either case, use the first (latest) event found for this sequence
+        let (first_event, _, _) = tx_events.remove(0);
+        result.push(first_event);
     }
 
     Ok(result)
