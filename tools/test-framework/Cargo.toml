@@ -16,7 +16,7 @@ description = """
 [dependencies]
 ibc-relayer-types = { version = "=0.23.1",     path = "../../crates/relayer-types" }
 ibc-relayer       = { version = "=0.23.1",     path = "../../crates/relayer" }
-ibc-relayer-cli   = { version = "=1.4.1",      path = "../../crates/relayer-cli" }
+ibc-relayer-cli   = { version = "=1.5.0",      path = "../../crates/relayer-cli" }
 ibc-proto         = { version = "0.31.0-alpha.2" }
 tendermint-rpc    = { version = "0.32.0", features = ["http-client", "websocket-client"] }
 
