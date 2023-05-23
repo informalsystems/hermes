@@ -1,15 +1,13 @@
 //! Contains functions to generate a relayer config for a given chain
 
-use futures::future::join_all;
-use http::Uri;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::marker::Send;
+
+use futures::future::join_all;
+use http::Uri;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::trace;
-
-use tendermint_light_client_verifier::types::TrustThreshold;
-use tendermint_rpc::Url;
 
 use ibc_chain_registry::asset_list::AssetList;
 use ibc_chain_registry::chain::ChainData;
@@ -17,15 +15,15 @@ use ibc_chain_registry::error::RegistryError;
 use ibc_chain_registry::fetchable::Fetchable;
 use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
 use ibc_chain_registry::paths::IBCPath;
-use ibc_chain_registry::querier::GrpcHealthCheckQuerier;
-use ibc_chain_registry::querier::HermesConfigData;
-use ibc_chain_registry::querier::QueryContext;
-use ibc_chain_registry::querier::SimpleHermesRpcQuerier;
+use ibc_chain_registry::querier::*;
 use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use ibc_relayer::config::{default, AddressType, ChainConfig, GasPrice};
 use ibc_relayer::keyring::Store;
+
+use tendermint_light_client_verifier::types::TrustThreshold;
+use tendermint_rpc::Url;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
 
@@ -215,7 +213,7 @@ async fn get_data_from_handles<T>(
     data_array
 }
 
-/// Generates a `Vec<ChainConfig>` for a slice of chains names by fetching data from
+/// Generates a `Vec<ChainConfig>` for a slice of chain names by fetching data from
 /// <https://github.com/cosmos/chain-registry>. Gas settings are set to default values.
 ///
 /// # Arguments

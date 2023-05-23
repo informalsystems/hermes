@@ -3,7 +3,10 @@
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
 use tracing_subscriber::{filter::EnvFilter, util::SubscriberInitExt, FmtSubscriber};
 
-use ibc_relayer::config::{GlobalConfig, LogLevel};
+use ibc_relayer::{
+    config::{GlobalConfig, LogLevel},
+    util::debug_section::DebugSection,
+};
 
 use crate::config::Error;
 
@@ -22,8 +25,8 @@ pub struct JsonTracing;
 
 impl JsonTracing {
     /// Creates a new [`JsonTracing`] component
-    pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level)?;
+    pub fn new(cfg: GlobalConfig, debug_sections: &[DebugSection]) -> Result<Self, FrameworkError> {
+        let filter = build_tracing_filter(cfg.log_level, debug_sections)?;
         // Note: JSON formatter is un-affected by ANSI 'color' option. Set to 'false'.
         let use_color = false;
 
@@ -55,8 +58,8 @@ pub struct PrettyTracing;
 
 impl PrettyTracing {
     /// Creates a new [`PrettyTracing`] component
-    pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level)?;
+    pub fn new(cfg: GlobalConfig, debug_sections: &[DebugSection]) -> Result<Self, FrameworkError> {
+        let filter = build_tracing_filter(cfg.log_level, debug_sections)?;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.
         let builder = FmtSubscriber::builder()
@@ -98,9 +101,17 @@ fn default_directive(log_level: LogLevel) -> String {
 /// Builds a tracing filter based on the input `log_level`.
 /// Enables tracing exclusively for the relayer crates.
 /// Returns error if the filter failed to build.
-fn build_tracing_filter(default_level: LogLevel) -> Result<EnvFilter, FrameworkError> {
-    let directive =
+fn build_tracing_filter(
+    default_level: LogLevel,
+    debug_sections: &[DebugSection],
+) -> Result<EnvFilter, FrameworkError> {
+    let mut directive =
         std::env::var(HERMES_LOG_VAR).unwrap_or_else(|_| default_directive(default_level));
+
+    if debug_sections.contains(&DebugSection::Rpc) {
+        // Enable debug tracing for the `tendermint_rpc` crate as well
+        directive.push_str(",tendermint_rpc=debug");
+    }
 
     // Build the filter directive
     match EnvFilter::try_new(&directive) {

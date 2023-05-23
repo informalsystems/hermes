@@ -5,10 +5,28 @@ use std::process;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Configurable, FrameworkError, Runnable};
-use clap::IntoApp;
+use clap::{IntoApp, ValueEnum};
 use ibc_relayer::config::Config;
+use ibc_relayer::util::debug_section::DebugSection;
 
 use crate::commands::CliCmd;
+
+#[derive(Copy, Clone, Debug, ValueEnum)]
+pub enum CliDebugSection {
+    Rpc,
+    Profiling,
+    ProfilingJson,
+}
+
+impl From<CliDebugSection> for DebugSection {
+    fn from(section: CliDebugSection) -> Self {
+        match section {
+            CliDebugSection::Rpc => DebugSection::Rpc,
+            CliDebugSection::Profiling => DebugSection::Profiling,
+            CliDebugSection::ProfilingJson => DebugSection::ProfilingJson,
+        }
+    }
+}
 
 /// Entry point for Hermes CLI.
 #[derive(Command, Debug, Parser)]
@@ -21,6 +39,15 @@ pub struct EntryPoint {
     /// Toggle JSON output mode one verbosity setting
     #[clap(long = "json", help = "Enable JSON output")]
     pub json: bool,
+
+    /// Enable the given debug sections, separated by commas.
+    #[clap(
+        long = "debug",
+        help = "Enable debug output for the given section(s), comma separated, can be repeated.",
+        value_enum,
+        value_delimiter = ','
+    )]
+    pub debug: Vec<CliDebugSection>,
 
     /// Subcommand to execute.
     ///
