@@ -30,6 +30,7 @@ use crate::light_client::decode_header;
 pub mod bus;
 pub mod error;
 pub mod source;
+pub mod util;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct IbcEventWithHeight {

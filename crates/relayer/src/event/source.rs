@@ -1,3 +1,4 @@
+pub mod hybrid;
 pub mod rpc;
 pub mod websocket;
 
@@ -25,6 +26,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum EventSource {
     WebSocket(websocket::EventSource),
     Rpc(rpc::EventSource),
+    Hybrid(hybrid::EventSource),
 }
 
 impl EventSource {
@@ -57,7 +59,21 @@ impl EventSource {
         match self {
             Self::WebSocket(source) => source.run(),
             Self::Rpc(source) => source.run(),
+            Self::Hybrid(source) => source.run(),
         }
+    }
+
+    pub fn hybrid(
+        chain_id: ChainId,
+        url: WebSocketClientUrl,
+        compat_mode: CompatMode,
+        rt: Arc<TokioRuntime>,
+    ) -> Result<(EventSource, TxEventSourceCmd)> {
+        let (mut source, tx) = hybrid::EventSource::new(chain_id, url, compat_mode, rt)?;
+
+        source.init_subscription()?;
+
+        Ok((Self::Hybrid(source), tx))
     }
 }
 

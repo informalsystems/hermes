@@ -473,6 +473,12 @@ pub enum EventSourceMode {
         #[serde(default = "default::poll_interval", with = "humantime_serde")]
         poll_interval: Duration,
     },
+
+    /// Hybrid mode, listens to NewBlock events via WebSocket and pulls the actual events via RPC
+    Hybrid {
+        /// The WebSocket URL to connect to
+        ws_url: WebSocketClientUrl,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]

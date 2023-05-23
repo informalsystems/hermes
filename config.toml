@@ -130,11 +130,11 @@ grpc_addr = 'http://127.0.0.1:9090'
 
 # The type of event source to use for getting events from the chain.
 #
-# This setting can take two types of values, as an inline table:
+# This setting can take three types of values, as an inline table:
 # 
 # a) Push: for receiving IBC events over WebSocket
 #
-#      `{ mode = 'push', batch_delay = '500ms' }`
+#      `{ mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }`
 #
 #    where
 #
@@ -149,6 +149,15 @@ grpc_addr = 'http://127.0.0.1:9090'
 #    where
 #
 #    - `poll_interval` is the interval at which to poll for blocks. Default: 1s
+#
+# c) Hybrid: for listening for NewBlock events over WebSocket, and polling for IBC events
+#   via the `/block_results` RPC endpoint
+#
+#     `{ mode = 'hybrid', url = 'ws://127.0.0.1:26657/websocket' }
+#
+#    where
+#
+#    - `url` is the WebSocket URL to connect to. Required
 #
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
 
@@ -348,11 +357,7 @@ rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }
 rpc_timeout = '10s'
-<<<<<<< HEAD
-=======
-batch_delay = '500ms'
 trusted_node = false
->>>>>>> master
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'

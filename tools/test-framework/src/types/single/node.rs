@@ -139,9 +139,8 @@ impl FullNode {
             r#type: ChainType::CosmosSdk,
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
-            event_source: config::EventSourceMode::Push {
-                url: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
-                batch_delay: config::default::batch_delay(),
+            event_source: config::EventSourceMode::Hybrid {
+                ws_url: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
             },
             rpc_timeout: config::default::rpc_timeout(),
             trusted_node: false,
