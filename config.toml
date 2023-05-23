@@ -9,7 +9,7 @@
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
-log_level = 'info'
+log_level = 'debug'
 
 
 # Specify the mode to be used by the relayer. [Required]
@@ -36,13 +36,13 @@ misbehaviour = true
 [mode.connections]
 
 # Whether or not to enable the connection workers for handshake completion. [Required]
-enabled = false
+enabled = true
 
 # Specify the channels mode.
 [mode.channels]
 
 # Whether or not to enable the channel workers for handshake completion. [Required]
-enabled = false
+enabled = true
 
 # Specify the packets mode.
 [mode.packets]
@@ -84,7 +84,7 @@ auto_register_counterparty_payee = false
 [rest]
 
 # Whether or not to enable the REST service. Default: false
-enabled = true
+enabled = false
 
 # Specify the IPv4/6 host over which the built-in HTTP server will serve the RESTful
 # API requests. Default: 127.0.0.1
@@ -137,6 +137,20 @@ websocket_addr = 'ws://127.0.0.1:26657/websocket'
 # Note: Hermes uses this parameter _only_ in `start` mode; for all other CLIs,
 # Hermes uses a large preconfigured timeout (on the order of minutes).
 rpc_timeout = '10s'
+
+# Experimental: Whether or not the full node is trusted.
+#
+# If not trusted, Hermes will verify headers included in the `ClientUpdate` message using the light client.
+#
+# Note: If the full node is configured as trusted then, in addition to headers not being verified,
+#       the verification traces will not be provided.
+#       This may cause failure in client updates after significant change in validator sets.
+#
+# Default: false
+trusted_node = false
+
+# Delay until event batch is emitted if no NewBlock events have come yet
+batch_delay = '500ms'
 
 # Specify the prefix used by the chain. Required
 account_prefix = 'cosmos'
@@ -317,6 +331,8 @@ rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://127.0.0.1:26557/websocket'
 rpc_timeout = '10s'
+batch_delay = '500ms'
+trusted_node = false
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'

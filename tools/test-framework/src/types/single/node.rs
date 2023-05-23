@@ -133,13 +133,16 @@ impl FullNode {
             .as_path()
             .display()
             .to_string();
+
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
             r#type: ChainType::CosmosSdk,
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
             websocket_addr: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
-            rpc_timeout: Duration::from_secs(10),
+            rpc_timeout: ibc_relayer::config::default::rpc_timeout(),
+            batch_delay: ibc_relayer::config::default::batch_delay(),
+            trusted_node: false,
             genesis_restart: None,
             account_prefix: self.chain_driver.account_prefix.clone(),
             key_name: self.wallets.relayer.id.0.clone(),
@@ -153,6 +156,7 @@ impl FullNode {
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
+            max_grpc_decoding_size: config::default::max_grpc_decoding_size(),
             max_block_time: Duration::from_secs(30),
             clock_drift: Duration::from_secs(5),
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),

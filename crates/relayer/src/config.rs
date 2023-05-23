@@ -7,12 +7,14 @@ pub mod proof_specs;
 pub mod types;
 
 use alloc::collections::BTreeMap;
+use byte_unit::Byte;
 use core::{
     cmp::Ordering,
     fmt::{Display, Error as FmtError, Formatter},
     str::FromStr,
     time::Duration,
 };
+use serde_derive::{Deserialize, Serialize};
 use std::{
     fs,
     fs::File,
@@ -20,12 +22,10 @@ use std::{
     path::{Path, PathBuf},
 };
 use tendermint::block::Height as BlockHeight;
+use tendermint_light_client::verifier::types::TrustThreshold;
 use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
-use serde_derive::{Deserialize, Serialize};
-use tendermint_light_client_verifier::types::TrustThreshold;
-
 use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
@@ -173,6 +173,10 @@ pub mod default {
         Duration::from_secs(10)
     }
 
+    pub fn batch_delay() -> Duration {
+        Duration::from_millis(500)
+    }
+
     pub fn clock_drift() -> Duration {
         Duration::from_secs(5)
     }
@@ -181,12 +185,20 @@ pub mod default {
         Duration::from_secs(30)
     }
 
+    pub fn trusted_node() -> bool {
+        false
+    }
+
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
     }
 
     pub fn auto_register_counterparty_payee() -> bool {
         false
+    }
+
+    pub fn max_grpc_decoding_size() -> Byte {
+        Byte::from_bytes(33554432)
     }
 }
 
@@ -449,6 +461,10 @@ pub struct ChainConfig {
     pub grpc_addr: Url,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
+    #[serde(default = "default::batch_delay", with = "humantime_serde")]
+    pub batch_delay: Duration,
+    #[serde(default = "default::trusted_node")]
+    pub trusted_node: bool,
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]
@@ -472,6 +488,8 @@ pub struct ChainConfig {
     pub max_msg_num: MaxMsgNum,
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
+    #[serde(default = "default::max_grpc_decoding_size")]
+    pub max_grpc_decoding_size: Byte,
 
     /// A correction parameter that helps deal with clocks that are only approximately synchronized
     /// between the source and destination chains for a client.
@@ -586,6 +604,18 @@ mod tests {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests/config/fixtures/relayer_conf_example_fee_filter.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_decoding_size_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_decoding_size.toml"
         );
 
         let config = load(path).expect("could not parse config");

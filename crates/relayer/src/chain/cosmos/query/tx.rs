@@ -25,12 +25,20 @@ pub async fn query_txs(
     rpc_address: &Url,
     request: QueryTxRequest,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
-    crate::time!("query_txs");
+    crate::time!("query_txs",
+    {
+        "src_chain": chain_id,
+    });
     crate::telemetry!(query, chain_id, "query_txs");
 
     match request {
         QueryTxRequest::Client(request) => {
-            crate::time!("query_txs: single client update event");
+            crate::time!(
+                "query_txs: single client update event",
+                {
+                    "src_chain": chain_id,
+                }
+            );
 
             // query the first Tx that includes the event matching the client request
             // Note: it is possible to have multiple Tx-es for same client and consensus height.
@@ -102,7 +110,12 @@ pub async fn query_packets_from_txs(
     rpc_address: &Url,
     request: &QueryPacketEventDataRequest,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
-    crate::time!("query_packets_from_txs");
+    crate::time!(
+        "query_packets_from_txs",
+        {
+            "src_chain": chain_id,
+        }
+    );
     crate::telemetry!(query, chain_id, "query_packets_from_txs");
 
     let mut result: Vec<IbcEventWithHeight> = vec![];
@@ -148,7 +161,12 @@ pub async fn query_packets_from_block(
     rpc_address: &Url,
     request: &QueryPacketEventDataRequest,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
-    crate::time!("query_packets_from_block");
+    crate::time!(
+        "query_packets_from_block",
+        {
+            "src_chain": chain_id,
+        }
+    );
     crate::telemetry!(query, chain_id, "query_packets_from_block");
 
     let tm_height = match request.height.get() {
