@@ -157,22 +157,26 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     let workers = Arc::new(RwLock::new(WorkerMap::new()));
     let client_state_filter = Arc::new(RwLock::new(FilterPolicy::default()));
 
-    let scan = chain_scanner(
-        &config,
-        &mut registry.write(),
-        &mut client_state_filter.acquire_write(),
-        if options.force_full_scan {
-            ScanMode::Full
-        } else {
-            ScanMode::Auto
-        },
-    )
-    .scan_chains();
+    // Only scan if clear_on_start is enabled
+    if config.mode.packets.clear_on_start {
+        let scan = chain_scanner(
+            &config,
+            &mut registry.write(),
+            &mut client_state_filter.acquire_write(),
+            if options.force_full_scan {
+                ScanMode::Full
+            } else {
+                ScanMode::Auto
+            },
+        )
+        .scan_chains();
 
-    info!("scanned chains:");
-    info!("{}", scan);
+        info!("scanned chains:");
+        info!("{}", scan);
 
-    spawn_context(&config, &mut registry.write(), &mut workers.acquire_write()).spawn_workers(scan);
+        spawn_context(&config, &mut registry.write(), &mut workers.acquire_write())
+            .spawn_workers(scan);
+    }
 
     let subscriptions = init_subscriptions(&config, &mut registry.write())?;
 
