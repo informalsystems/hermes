@@ -189,6 +189,10 @@ pub mod default {
         ZERO_DURATION
     }
 
+    pub fn max_concurrency() -> u16 {
+        50
+    }
+
     pub fn auto_register_counterparty_payee() -> bool {
         false
     }
@@ -450,15 +454,24 @@ pub struct GenesisRestart {
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     pub id: ChainId,
+
     #[serde(default = "default::chain_type")]
     pub r#type: ChainType,
+
     pub rpc_addr: Url,
     pub websocket_addr: WebSocketClientUrl,
     pub grpc_addr: Url,
+
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
+
     #[serde(default = "default::batch_delay", with = "humantime_serde")]
     pub batch_delay: Duration,
+
+    /// The maximum number of requests which can be issued to the chain concurrently.
+    #[serde(default = "default::max_concurrency")]
+    pub max_concurrency: u16,
+
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]

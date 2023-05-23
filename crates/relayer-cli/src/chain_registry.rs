@@ -121,6 +121,7 @@ where
         websocket_addr: websocket_address,
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
+        max_concurrency: default::max_concurrency(),
         batch_delay: default::batch_delay(),
         genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,
