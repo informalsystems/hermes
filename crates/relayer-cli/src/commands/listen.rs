@@ -15,7 +15,9 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 
 use ibc_relayer::{
-    chain::handle::Subscription, config::ChainConfig, event::source::websocket::EventSource,
+    chain::handle::Subscription,
+    config::{ChainConfig, EventSourceMode},
+    event::source::websocket::EventSource,
 };
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
@@ -142,11 +144,15 @@ fn subscribe(
     compat_mode: CompatMode,
     rt: Arc<TokioRuntime>,
 ) -> eyre::Result<Subscription> {
+    let EventSourceMode::Push { url, batch_delay } = &chain_config.event_source else {
+        return Err(eyre!("unsupported event source mode, only 'push' is supported for listening to events"));
+    };
+
     let (mut event_source, tx_cmd) = EventSource::new(
         chain_config.id.clone(),
-        chain_config.websocket_addr.clone(),
+        url.clone(),
         compat_mode,
-        chain_config.batch_delay,
+        *batch_delay,
         rt,
     )
     .map_err(|e| eyre!("could not initialize event source: {}", e))?;

@@ -294,20 +294,20 @@ impl CosmosSdkChain {
             }
         );
 
-        use crate::config::EventSource as Mode;
+        use crate::config::EventSourceMode as Mode;
 
-        let (event_source, monitor_tx) = match self.config.event_source {
-            Mode::WebSocket => EventSource::websocket(
+        let (event_source, monitor_tx) = match &self.config.event_source {
+            Mode::Push { url, batch_delay } => EventSource::websocket(
                 self.config.id.clone(),
-                self.config.websocket_addr.clone(),
+                url.clone(),
                 self.compat_mode,
-                self.config.batch_delay,
+                *batch_delay,
                 self.rt.clone(),
             ),
-            Mode::Rpc => EventSource::rpc(
+            Mode::Pull { poll_interval } => EventSource::rpc(
                 self.config.id.clone(),
                 self.rpc_client.clone(),
-                self.config.poll_interval,
+                *poll_interval,
                 self.rt.clone(),
             ),
         }

@@ -122,31 +122,29 @@ rpc_addr = 'http://127.0.0.1:26657'
 # Specify the GRPC address and port where the chain GRPC server listens on. Required
 grpc_addr = 'http://127.0.0.1:9090'
 
-# Specify the WebSocket address and port where the chain WebSocket server
-# listens on. Required
-websocket_addr = 'ws://127.0.0.1:26657/websocket'
-
 # The type of event source to use for getting events from the chain.
-# This setting can take one of two values:
+#
+# This setting can take two types of values, as an inline table:
 # 
-# - `websocket` for WebSocket
-# - `rpc` for RPC via the `/block_results` endpoint
+# a) Push: for receiving IBC events over WebSocket
 #
-# Default: 'websocket'
-event_source = 'websocket'
-
-# Delay until event batch is emitted if no NewBlock events have come yet.
+#      `{ mode = 'push', batch_delay = '500ms' }`
 #
-# Note: Only applies when `event_source` is set to `websocket`.
+#    where
 #
-# Default: 500ms
-batch_delay = '500ms'
-
-# The interval at which to poll for blocks when the `event_source` is `rpc`.
-# Note: Only applies when `event_source` is set to `rpc`.
+#    - `url` is the WebSocket URL to connect to. Required
+#    - `batch_delay` is the delay until event batch is
+#      emitted if no NewBlock events have come yet. Default: 500ms
 #
-# Default: 1 second
-poll_interval = '1s'
+# b) Poll: for polling for IBC events via the `/block_results` RPC endpoint
+#
+#     `{ mode = 'poll', poll_interval = '1s' }`
+#
+#    where
+#
+#    - `poll_interval` is the interval at which to poll for blocks. Default: 1s
+#
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
 
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
@@ -331,11 +329,8 @@ memo_prefix = ''
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
-websocket_addr = 'ws://127.0.0.1:26557/websocket'
-event_source = 'websocket'
-poll_interval = '1s'
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }
 rpc_timeout = '10s'
-batch_delay = '500ms'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'

@@ -49,13 +49,13 @@ please refer to the [Keys](../commands/keys/index.md) sections in order to learn
 
 Hermes supports connection via TLS for use-cases such as connecting from behind
 a proxy or a load balancer. In order to enable this, you'll want to set the
-`rpc_addr`, `grpc_addr`, or `websocket_addr` parameters to specify a TLS
+`rpc_addr`, `grpc_addr`, or `event_source` parameters to specify a TLS
 connection via HTTPS using the following scheme (note that the port number 443
 is just used for example):
 ```
 rpc_addr = 'https://domain.com:443'
 grpc_addr = 'https://domain.com:443'
-websocket_addr = 'wss://domain.com:443/websocket'
+event_source = { mode = 'push', url = 'wss://domain.com:443/websocket', batch_delay = '500ms' }
 ```
 
 ## Support for Interchain Accounts
@@ -102,7 +102,7 @@ list = [
 ## Connecting to a full node protected by HTTP Basic Authentication
 
 To connect to a full node protected by [HTTP Basic Authentication][http-basic-auth],
-specify the username and password in the `rpc_addr`, `grpc_addr` and `websocket_addr` settings
+specify the username and password in the `rpc_addr`, `grpc_addr` and `event_source` settings
 under the chain configuration in `config.toml`.
 
 Here is an example with username `hello` and password `world`, assuming the RPC, WebSocket and gRPC servers
@@ -116,7 +116,7 @@ id = 'my-chain-0'
 
 rpc_addr = 'https://hello:world@mydomain.com:26657'
 grpc_addr = 'https://hello:world@mydomain.com:9090'
-websocket_addr = 'wss://hello:world@mydomain.com:26657/websocket'
+event_source = { mode = 'push', url = 'wss://hello:world@mydomain.com:26657/websocket', batch_delay = '500ms' }
 
 # ...
 ```

@@ -450,34 +450,48 @@ pub struct GenesisRestart {
     pub archive_addr: Url,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum EventSource {
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(tag = "mode", rename_all = "lowercase")]
+pub enum EventSourceMode {
     /// Push-based event source, via WebSocket
-    #[default]
-    WebSocket,
+    Push {
+        /// The WebSocket URL to connect to
+        url: WebSocketClientUrl,
+
+        /// Maximum amount of time to wait for a NewBlock event before emitting the event batch
+        #[serde(default = "default::batch_delay", with = "humantime_serde")]
+        batch_delay: Duration,
+    },
 
     /// Pull-based event source, via RPC /block_results
-    Rpc,
+    Pull {
+        /// The polling interval
+        #[serde(default = "default::poll_interval", with = "humantime_serde")]
+        poll_interval: Duration,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
+    /// The chain's network identifier
     pub id: ChainId,
+
+    /// The chain type
     #[serde(default = "default::chain_type")]
     pub r#type: ChainType,
+
+    /// The RPC URL to connect to
     pub rpc_addr: Url,
-    pub websocket_addr: WebSocketClientUrl,
+
+    /// The gRPC URL to connect to
     pub grpc_addr: Url,
-    #[serde(default)]
-    pub event_source: EventSource,
-    #[serde(default = "default::poll_interval", with = "humantime_serde")]
-    pub poll_interval: Duration,
+
+    /// The type of event source and associated settings
+    pub event_source: EventSourceMode,
+
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
-    #[serde(default = "default::batch_delay", with = "humantime_serde")]
-    pub batch_delay: Duration,
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]
