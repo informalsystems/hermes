@@ -96,6 +96,7 @@ pub async fn query_txs(
 }
 
 /// This function queries transactions for packet events matching certain criteria.
+///
 /// It returns at most one packet event for each sequence specified in the request.
 ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
 ///    sequence (the query conditions can only be AND-ed).
@@ -121,34 +122,27 @@ pub async fn query_packets_from_txs(
     let mut result: Vec<IbcEventWithHeight> = vec![];
 
     for seq in &request.sequences {
-        // query first (and only) Tx that includes the event specified in the query request
-        let mut response = rpc_client
-            .tx_search(
-                packet_query(request, *seq),
-                false,
-                1,
-                1, // get only the first Tx matching the query
-                Order::Ascending,
-            )
+        // Query the latest 10 txs which include the event specified in the query request
+        let response = rpc_client
+            .tx_search(packet_query(request, *seq), false, 1, 10, Order::Descending)
             .await
             .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
-
-        debug_assert!(
-            response.txs.len() <= 1,
-            "packet_from_tx_search_response: unexpected number of txs"
-        );
 
         if response.txs.is_empty() {
             continue;
         }
 
-        let tx = response.txs.remove(0);
-        let event = packet_from_tx_search_response(chain_id, request, *seq, tx)?;
-
-        if let Some(event) = event {
-            result.push(event);
+        // Process each tx in descending order
+        'inner: for tx in response.txs {
+            // Check if the tx contains and event which matches the query
+            if let Some(event) = packet_from_tx_search_response(chain_id, request, *seq, tx)? {
+                // We found the event
+                result.push(event);
+                break 'inner;
+            }
         }
     }
+
     Ok(result)
 }
 
