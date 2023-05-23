@@ -1819,13 +1819,17 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<Sequence>, ICSHeight), Error> {
+        crate::telemetry!(query, self.id(), "query_packet_acknowledgements");
         crate::time!(
             "query_packet_acknowledgements",
             {
                 "src_chain": self.config().id.to_string(),
             }
         );
-        crate::telemetry!(query, self.id(), "query_packet_acknowledgements");
+
+        if request.packet_commitment_sequences.is_empty() {
+            return Ok((Vec::new(), self.query_chain_latest_height()?));
+        }
 
         let mut client = self
             .block_on(

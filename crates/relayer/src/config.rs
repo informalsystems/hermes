@@ -189,6 +189,10 @@ pub mod default {
         Duration::from_secs(30)
     }
 
+    pub fn trusted_node() -> bool {
+        false
+    }
+
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
     }
@@ -490,8 +494,14 @@ pub struct ChainConfig {
     /// The type of event source and associated settings
     pub event_source: EventSourceMode,
 
+    /// Timeout used when issuing RPC queries
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
+
+    /// Whether or not the full node Hermes connects to is trusted
+    #[serde(default = "default::trusted_node")]
+    pub trusted_node: bool,
+
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]
@@ -713,3 +723,4 @@ mod tests {
         assert_eq!(expected, parsed);
     }
 }
+

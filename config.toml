@@ -1,3 +1,9 @@
+# This is an example configuration for Hermes. It is meant to be
+# used as a reference, _NOT_ for configuring a production relayer. 
+# If you're looking to configure a production relayer for some chains, 
+# try using the `hermes config auto` command to generate a config 
+# file that serves as the starting point for configuring Hermes.
+
 # The global section has parameters that apply globally to the relayer operation.
 [global]
 
@@ -151,6 +157,17 @@ event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_de
 # Note: Hermes uses this parameter _only_ in `start` mode; for all other CLIs,
 # Hermes uses a large preconfigured timeout (on the order of minutes).
 rpc_timeout = '10s'
+
+# Experimental: Whether or not the full node is trusted.
+#
+# If not trusted, Hermes will verify headers included in the `ClientUpdate` message using the light client.
+#
+# Note: If the full node is configured as trusted then, in addition to headers not being verified,
+#       the verification traces will not be provided.
+#       This may cause failure in client updates after significant change in validator sets.
+#
+# Default: false
+trusted_node = false
 
 # Specify the prefix used by the chain. Required
 account_prefix = 'cosmos'
@@ -331,6 +348,11 @@ rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }
 rpc_timeout = '10s'
+<<<<<<< HEAD
+=======
+batch_delay = '500ms'
+trusted_node = false
+>>>>>>> master
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
