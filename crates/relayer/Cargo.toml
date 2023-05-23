@@ -17,7 +17,6 @@ all-features = true
 
 [features]
 default   = ["flex-error/std", "flex-error/eyre_tracer"]
-profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
