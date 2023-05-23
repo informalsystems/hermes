@@ -116,6 +116,9 @@ Additionally, if the `--debug=profiling-json` flag is specified, Hermes will out
 JSON format in a file named `hermes-YYYY-MM-DD-HHMMSS-prof.json`, in the directory specified in the `PROFILING_DIR`
 env variable, or the current directory otherwise.
 
+> __NOTE__: Outputting profiling information in JSON format in a file is only available for the `hermes start` command.
+> This debug option won't do anything with the other CLIs.
+
 ```json
 {"name":"fetch_node_info","src_chain":"ibc-0","elapsed":6}
 {"name":"chain_status","src_chain":"ibc-0","elapsed":12}
