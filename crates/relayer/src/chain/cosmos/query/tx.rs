@@ -154,7 +154,7 @@ pub async fn query_packets_from_txs(
             warn!("more than one packet event found for sequence {seq}, this should not happen",);
 
             for (event, hash, height) in &tx_events {
-                warn!("seq: {seq}, tx hash: {hash}, tx height: {height}, event: {event:?}",);
+                warn!("seq: {seq}, tx hash: {hash}, tx height: {height}, event: {event}",);
             }
 
             let (first_event, _, _) = tx_events.remove(0);
