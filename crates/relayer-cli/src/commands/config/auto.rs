@@ -1,15 +1,11 @@
 use crate::chain_registry::get_configs;
-use abscissa_core::{
-    clap::Parser,
-    {Command, Runnable},
-};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use crate::conclude::Output;
 
-use ibc_relayer::{
-    config::{store, ChainConfig, Config},
-    keyring::list_keys,
-};
+use ibc_relayer::config::{store, ChainConfig, Config};
+use ibc_relayer::keyring::list_keys;
 
 use std::path::PathBuf;
 use tracing::{info, warn};
