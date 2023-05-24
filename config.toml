@@ -152,10 +152,11 @@ trusted_node = false
 # Delay until event batch is emitted if no NewBlock events have come yet.
 #
 # Lower values will result in faster event processing, improving the latency of Hermes,
-# but may miss some events if set too low. Higher values will result in slower event
-# processing, increasing the latency of Hermes, but are less likely to miss any events.
-# The default value provides a good balance between the two, while being very unlikely
-# to miss any events.
+# but may split the events into more batches than necessary, requiring more client updates
+# to be submitted, yielding higher costs. Higher values will result in slower event
+# processing, increasing the latency of Hermes, but are more likely to batch events together.
+#
+# The default value provides good latency while minimizing the number of client updates needed.
 #
 # Default: 500ms
 batch_delay = '500ms'

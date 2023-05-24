@@ -16,9 +16,11 @@ The `trusted_node` setting is an experimental option that determines whether or 
 trusted_node = false
 ```
 
-When set to `true`, Hermes trusts the full node and does not verify headers included in the `ClientUpdate` message using the light client. This could lead to faster processing as it bypasses the verification step.
+When set to `true`, Hermes trusts the full node and does not verify headers included in the `ClientUpdate` message using the light client.
+This could lead to faster processing as it bypasses the verification step.
 
-However, it's important to note that when the full node is configured as trusted, the verification traces will not be provided. This could potentially lead to failure in client updates after a significant change in validator sets.
+However, it's important to note that when the full node is configured as trusted, the verification traces will not be provided.
+This could potentially lead to failure in client updates after a significant change in validator sets.
 
 If you prefer security over speed, or if the validator set changes frequently, consider leaving this setting as `false`, which is also the default.
 
@@ -30,11 +32,13 @@ The `batch_delay` setting dictates the delay until an event batch is emitted if 
 batch_delay = '500ms'
 ```
 
-Lower `batch_delay` values will result in faster event processing, improving the latency of Hermes. However, setting it too low could cause some events to be missed. Conversely, higher values will increase the latency of Hermes, but it is less likely to miss any events.
+Lower `batch_delay` values will result in faster event processing, improving the latency of Hermes.
+However, setting it too low could sometimes cause events to be split across more batches than necessary, which will then cause Hermes to send more client updates than otherwise required.
+Conversely, higher values will increase the latency of Hermes, but will minimize the number of client updates.
 
-If you prioritize processing speed and can tolerate the occasional missed event, consider setting a lower `batch_delay`. For critical applications where no event should be missed, consider a higher `batch_delay`.
+If you prioritize processing speed and can tolerate the potentially slightly higher costs, consider setting a lower `batch_delay`. For backup relayer or settings where latency is not as important, consider a higher `batch_delay`.
 
-The default `500ms` provides a good balance between speed and reliability, while being very unlikely to miss any events.
+The default `500ms` provides a good balance between speed and reliability, while still minimizing the number of client updates to send.
 
 ## Conclusion
 
