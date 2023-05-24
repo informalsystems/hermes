@@ -1,8 +1,9 @@
 use core::time::Duration;
 
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 
-use crate::chain::cli::transfer::local_transfer_token;
+use crate::chain::cli::transfer::{local_transfer_token, transfer_from_chain};
 use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
@@ -68,6 +69,15 @@ pub trait ChainTransferMethodsExt<Chain> {
         &self,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
+        token: &TaggedTokenRef<Chain>,
+    ) -> Result<(), Error>;
+
+    fn transfer_from_chain<Counterparty>(
+        &self,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        port: &PortId,
+        channel: &ChannelId,
         token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error>;
 }
@@ -156,6 +166,28 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             &driver.home_path,
             &driver.rpc_listen_address(),
             sender.value().address.as_str(),
+            recipient.value().as_str(),
+            &token.value().to_string(),
+        )
+    }
+
+    fn transfer_from_chain<Counterparty>(
+        &self,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        port: &PortId,
+        channel: &ChannelId,
+        token: &TaggedTokenRef<Chain>,
+    ) -> Result<(), Error> {
+        let driver = *self.value();
+        transfer_from_chain(
+            driver.chain_id.as_str(),
+            &driver.command_path,
+            &driver.home_path,
+            &driver.rpc_listen_address(),
+            sender.value().address.as_str(),
+            port.as_ref(),
+            channel.as_ref(),
             recipient.value().as_str(),
             &token.value().to_string(),
         )

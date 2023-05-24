@@ -12,6 +12,16 @@ fn test_supervisor() -> Result<(), Error> {
     run_binary_chain_test(&SupervisorTest)
 }
 
+#[test]
+fn test_supervisor_with_scan() -> Result<(), Error> {
+    run_binary_channel_test(&SupervisorWithScanTest)
+}
+
+#[test]
+fn test_supervisor_no_scan() -> Result<(), Error> {
+    run_binary_channel_test(&SupervisorNoScanTest)
+}
+
 struct SupervisorTest;
 
 impl TestOverrides for SupervisorTest {
@@ -139,6 +149,170 @@ impl BinaryChainTest for SupervisorTest {
         )?;
 
         std::thread::sleep(core::time::Duration::from_secs(10));
+
+        Ok(())
+    }
+}
+
+struct SupervisorWithScanTest;
+
+impl TestOverrides for SupervisorWithScanTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode = ModeConfig {
+            clients: config::Clients {
+                enabled: true,
+                refresh: true,
+                misbehaviour: true,
+            },
+            connections: config::Connections { enabled: true },
+            channels: config::Channels { enabled: true },
+            packets: config::Packets {
+                clear_on_start: true,
+                ..Default::default()
+            },
+        };
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        true
+    }
+}
+
+impl BinaryChannelTest for SupervisorWithScanTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        _relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let denom_a = chains.node_a.denom();
+
+        let denom_b = derive_ibc_denom(
+            &channels.port_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
+            &denom_a,
+        )?;
+
+        // Use the same wallet as the relayer to perform token transfer.
+        // This will cause an account sequence mismatch error.
+        let wallet_a = chains.node_a.wallets().user1().cloned();
+        let wallet_b = chains.node_b.wallets().user1().cloned();
+
+        let transfer_amount = 1000u64;
+
+        let balance_a = chains
+            .node_a
+            .chain_driver()
+            .query_balance(&wallet_a.address(), &denom_a)?;
+
+        info!(
+            "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
+            chains.chain_id_a(),
+            chains.chain_id_b(),
+            transfer_amount,
+            denom_a
+        );
+
+        chains.node_a.chain_driver().transfer_from_chain(
+            &chains.node_a.wallets().user1(),
+            &chains.node_b.wallets().user1().address(),
+            &channels.port_a.0,
+            &channels.channel_id_a.0,
+            &denom_a.with_amount(1000u64).as_ref(),
+        )?;
+
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.address(),
+            &(balance_a - transfer_amount).as_ref(),
+        )?;
+
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            &denom_b.with_amount(transfer_amount).as_ref(),
+        )?;
+
+        Ok(())
+    }
+}
+
+struct SupervisorNoScanTest;
+
+impl TestOverrides for SupervisorNoScanTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode = ModeConfig {
+            clients: config::Clients {
+                enabled: true,
+                refresh: true,
+                misbehaviour: true,
+            },
+            connections: config::Connections { enabled: true },
+            channels: config::Channels { enabled: true },
+            packets: config::Packets {
+                clear_on_start: false,
+                ..Default::default()
+            },
+        };
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        true
+    }
+}
+
+impl BinaryChannelTest for SupervisorNoScanTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        _relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let denom_a = chains.node_a.denom();
+
+        let denom_b = derive_ibc_denom(
+            &channels.port_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
+            &denom_a,
+        )?;
+
+        // Use the same wallet as the relayer to perform token transfer.
+        // This will cause an account sequence mismatch error.
+        let wallet_a = chains.node_a.wallets().user1().cloned();
+        let wallet_b = chains.node_b.wallets().user1().cloned();
+
+        let transfer_amount = 1000u64;
+
+        let balance_a = chains
+            .node_a
+            .chain_driver()
+            .query_balance(&wallet_a.address(), &denom_a)?;
+
+        info!(
+            "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
+            chains.chain_id_a(),
+            chains.chain_id_b(),
+            transfer_amount,
+            denom_a
+        );
+
+        chains.node_a.chain_driver().transfer_from_chain(
+            &chains.node_a.wallets().user1(),
+            &chains.node_b.wallets().user1().address(),
+            &channels.port_a.0,
+            &channels.channel_id_a.0,
+            &denom_a.with_amount(1000u64).as_ref(),
+        )?;
+
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.address(),
+            &(balance_a - transfer_amount).as_ref(),
+        )?;
+
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            &denom_b.with_amount(transfer_amount).as_ref(),
+        )?;
 
         Ok(())
     }
