@@ -149,7 +149,15 @@ rpc_timeout = '10s'
 # Default: false
 trusted_node = false
 
-# Delay until event batch is emitted if no NewBlock events have come yet
+# Delay until event batch is emitted if no NewBlock events have come yet.
+#
+# Lower values will result in faster event processing, improving the latency of Hermes,
+# but may miss some events if set too low. Higher values will result in slower event
+# processing, increasing the latency of Hermes, but are less likely to miss any events.
+# The default value provides a good balance between the two, while being very unlikely
+# to miss any events.
+#
+# Default: 500ms
 batch_delay = '500ms'
 
 # Specify the prefix used by the chain. Required

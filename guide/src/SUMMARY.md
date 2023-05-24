@@ -7,6 +7,7 @@
 - [Quick start](./quick-start/index.md)
    - [Prerequisites](./quick-start/pre-requisites.md)
    - [Installation](./quick-start/installation.md)
+   - [Performance Tuning](./quick-start/performance.md)
 - [Tutorials](./tutorials/index.md)
    - [Prerequisites for local chains](./tutorials/pre-requisites/index.md)
      - [Install Gaia](./tutorials/pre-requisites/gaia.md)
