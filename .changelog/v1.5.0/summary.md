@@ -6,7 +6,7 @@ sweeping improvements✨.
 
 The one breaking change is the removal of the `unbonding_period` setting
 from the chain configuration. This is now replaced by a fresh
-`ccv_consumer_chain` flag for Cross-Chain Validation (CCV) consumer chains. 
+`ccv_consumer_chain` setting for Cross-Chain Validation (CCV) consumer chains. 
 
 Also, Hermes has strengthened its misbehavior detection. With the
 `mode.misbehaviour.enabled` setting enabled (now the case by default)
