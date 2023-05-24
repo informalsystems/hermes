@@ -1,6 +1,10 @@
+mod detector;
+
 use std::time::Duration;
 
 use itertools::Itertools;
+use tendermint::Time;
+use tracing::{debug, error, trace, warn};
 
 use tendermint_light_client::{
     components::{
@@ -10,16 +14,15 @@ use tendermint_light_client::{
     light_client::LightClient as TmLightClient,
     state::State as LightClientState,
     store::{memory::MemoryStore, LightStore},
+    verifier::types::{Height as TMHeight, LightBlock, PeerId, Status},
+    verifier::ProdVerifier,
 };
-use tendermint_light_client_verifier::options::Options as TmOptions;
-use tendermint_light_client_verifier::types::{Height as TMHeight, LightBlock, PeerId, Status};
-use tendermint_light_client_verifier::ProdVerifier;
+use tendermint_light_client_detector::Divergence;
 use tendermint_rpc as rpc;
 
 use ibc_relayer_types::{
     clients::ics07_tendermint::{
-        header::{headers_compatible, Header as TmHeader},
-        misbehaviour::Misbehaviour as TmMisbehaviour,
+        header::Header as TmHeader, misbehaviour::Misbehaviour as TmMisbehaviour,
     },
     core::{
         ics02_client::{client_type::ClientType, events::UpdateClient, header::downcast_header},
@@ -27,77 +30,90 @@ use ibc_relayer_types::{
     },
     downcast, Height as ICSHeight,
 };
-use tracing::trace;
 
 use crate::{
-    chain::cosmos::CosmosSdkChain, client_state::AnyClientState, config::ChainConfig, error::Error,
-    misbehaviour::MisbehaviourEvidence,
+    chain::cosmos::CosmosSdkChain,
+    client_state::AnyClientState,
+    config::ChainConfig,
+    error::Error,
+    light_client::AnyHeader,
+    misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
 };
 
-use super::{genesis_restart::RestartAwareIo, Verified};
-
-#[derive(Clone, Debug)]
-enum AnyIo {
-    Prod(ProdIo),
-    RestartAware(RestartAwareIo),
-}
-
-impl Io for AnyIo {
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, components::io::IoError> {
-        match self {
-            AnyIo::Prod(io) => io.fetch_light_block(height),
-            AnyIo::RestartAware(io) => io.fetch_light_block(height),
-        }
-    }
-}
+use super::{
+    io::{AnyIo, RestartAwareIo},
+    Verified,
+};
 
 pub struct LightClient {
     chain_id: ChainId,
     peer_id: PeerId,
     io: AnyIo,
+    enable_verification: bool,
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
     fn header_and_minimal_set(
         &mut self,
-        trusted: ICSHeight,
-        target: ICSHeight,
+        trusted_height: ICSHeight,
+        target_height: ICSHeight,
         client_state: &AnyClientState,
+        now: Time,
     ) -> Result<Verified<TmHeader>, Error> {
-        let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
-        let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
+        let Verified { target, supporting } =
+            self.verify(trusted_height, target_height, client_state, now)?;
+
+        // Omit the trusted header from the minimal supporting set, as it is not
+        // needed when submitting the update client message.
+        let supporting = {
+            let trusted_height = TMHeight::from(trusted_height);
+
+            supporting
+                .into_iter()
+                .filter(|lb| lb.height() != trusted_height)
+                .collect()
+        };
+
+        let (target, supporting) = self.adjust_headers(trusted_height, target, supporting)?;
 
         Ok(Verified { target, supporting })
     }
 
     fn verify(
         &mut self,
-        trusted: ICSHeight,
-        target: ICSHeight,
+        trusted_height: ICSHeight,
+        target_height: ICSHeight,
         client_state: &AnyClientState,
+        now: Time,
     ) -> Result<Verified<LightBlock>, Error> {
-        trace!(%trusted, %target, "light client verification");
+        trace!(%trusted_height, %target_height, "light client verification");
 
-        let target_height =
-            TMHeight::try_from(target.revision_height()).map_err(Error::invalid_height)?;
+        if !self.enable_verification {
+            let target = self.fetch(target_height)?;
 
-        let client = self.prepare_client(client_state)?;
-        let mut state = self.prepare_state(trusted)?;
+            return Ok(Verified {
+                target,
+                supporting: vec![],
+            });
+        }
+
+        let client = self.prepare_client(client_state, now)?;
+        let mut state = self.prepare_state(trusted_height)?;
 
         // Verify the target header
         let target = client
-            .verify_to_target(target_height, &mut state)
+            .verify_to_target(target_height.into(), &mut state)
             .map_err(|e| Error::light_client_verification(self.chain_id.to_string(), e))?;
 
         // Collect the verification trace for the target block
         let target_trace = state.get_trace(target.height());
 
-        // Compute the minimal supporting set, sorted by ascending height
+        // Compute the supporting set, sorted by ascending height, omitting the target header
         let supporting = target_trace
             .into_iter()
-            .filter(|lb| lb.height() != target.height())
             .unique_by(LightBlock::height)
             .sorted_by_key(LightBlock::height)
+            .filter(|lb| lb.height() != target.height())
             .collect_vec();
 
         Ok(Verified { target, supporting })
@@ -106,23 +122,24 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     fn fetch(&mut self, height: ICSHeight) -> Result<LightBlock, Error> {
         trace!(%height, "fetching header");
 
-        let height = TMHeight::try_from(height.revision_height()).map_err(Error::invalid_height)?;
-        self.fetch_light_block(AtHeight::At(height))
+        self.fetch_light_block(AtHeight::At(height.into()))
     }
 
-    /// Given a client update event that includes the header used in a client update,
-    /// look for misbehaviour by fetching a header at same or latest height.
-    ///
-    /// ## TODO
-    /// - [ ] Return intermediate headers as well
-    fn check_misbehaviour(
+    /// Perform misbehavior detection on the given client state and update client event.
+    fn detect_misbehaviour(
         &mut self,
         update: &UpdateClient,
         client_state: &AnyClientState,
+        now: Time,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
-        crate::time!("light client check_misbehaviour");
+        crate::time!(
+            "light client check_misbehaviour",
+            {
+                "src_chain": self.chain_id,
+            }
+        );
 
-        let update_header = update.header.clone().ok_or_else(|| {
+        let update_header = update.header.as_ref().ok_or_else(|| {
             Error::misbehaviour(format!(
                 "missing header in update client event {}",
                 self.chain_id
@@ -137,47 +154,107 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 ))
             })?;
 
-        let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
-        let latest_chain_height =
-            ICSHeight::new(self.chain_id.version(), latest_chain_block.height().into())
-                .map_err(|_| Error::invalid_height_no_source())?;
+        let client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Error::misbehaviour(format!(
+                    "client type incompatible for chain {}",
+                    self.chain_id
+                ))
+            })?;
 
-        // set the target height to the minimum between the update height and latest chain height
-        let target_height = core::cmp::min(update.consensus_height(), latest_chain_height);
-        let trusted_height = update_header.trusted_height;
+        let next_validators = self
+            .io
+            .fetch_validator_set(
+                AtHeight::At(update_header.signed_header.header.height.increment()),
+                Some(update_header.signed_header.header.proposer_address),
+            )
+            .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e))?;
 
-        // TODO - check that a consensus state at trusted_height still exists on-chain,
-        // currently we don't have access to Cosmos chain query from here
+        let target_block: LightBlock = LightBlock {
+            signed_header: update_header.signed_header.clone(),
+            validators: update_header.validator_set.clone(),
+            next_validators,
+            provider: self.peer_id,
+        };
 
-        if trusted_height >= latest_chain_height {
-            // Can happen with multiple FLA attacks, we return no evidence and hope to catch this in
-            // the next iteration. e.g:
-            // existing consensus states: 1000, 900, 300, 200 (only known by the caller)
-            // latest_chain_height = 300
-            // target_height = 1000
-            // trusted_height = 900
-            return Ok(None);
+        let trusted_block = self.fetch(update_header.trusted_height)?;
+        if trusted_block.validators.hash() != update_header.trusted_validator_set.hash() {
+            return Err(Error::misbehaviour(format!(
+                "mismatch between the trusted validator set of the update \
+                header ({}) and that of the trusted block that was fetched ({}), \
+                aborting misbehaviour detection.",
+                trusted_block.validators.hash(),
+                update_header.trusted_validator_set.hash()
+            )));
         }
 
-        let Verified { target, supporting } =
-            self.verify(trusted_height, target_height, client_state)?;
+        let divergence = detector::detect(
+            self.peer_id,
+            self.io.rpc_client().clone(),
+            target_block,
+            trusted_block,
+            client_state,
+            now,
+        );
 
-        if !headers_compatible(&target.signed_header, &update_header.signed_header) {
-            let (witness, supporting) = self.adjust_headers(trusted_height, target, supporting)?;
+        dbg!(&divergence);
 
-            let misbehaviour = TmMisbehaviour {
-                client_id: update.client_id().clone(),
-                header1: update_header.clone(),
-                header2: witness,
+        match divergence {
+            Ok(None) => {
+                debug!("no misbehavior detected");
+                Ok(None)
             }
-            .into();
+            Ok(Some(Divergence {
+                evidence,
+                challenging_block,
+            })) => {
+                warn!("misbehavior detected, reporting evidence to RPC witness node and primary chain");
 
-            Ok(Some(MisbehaviourEvidence {
-                misbehaviour,
-                supporting_headers: supporting.into_iter().map(Into::into).collect(),
-            }))
-        } else {
-            Ok(None)
+                match detector::report_evidence(
+                    self.io.rpc_client().clone(),
+                    evidence.against_primary,
+                ) {
+                    Ok(hash) => warn!("evidence reported to RPC witness node with hash: {hash}"),
+                    Err(e) => error!("failed to report evidence to RPC witness node: {}", e),
+                }
+
+                let target_block = self.fetch(update_header.height())?;
+                let trusted_height = TMHeight::from(update_header.trusted_height);
+                let trace = evidence
+                    .witness_trace
+                    .into_vec()
+                    .into_iter()
+                    .filter(|lb| {
+                        lb.height() != target_block.height() && lb.height() != trusted_height
+                    })
+                    .collect();
+
+                let (target_header, supporting_headers) =
+                    self.adjust_headers(update_header.trusted_height, target_block, trace)?;
+
+                let evidence = MisbehaviourEvidence {
+                    misbehaviour: AnyMisbehaviour::Tendermint(TmMisbehaviour {
+                        client_id: update.client_id().clone(),
+                        header1: update_header.clone(),
+                        header2: TmHeader {
+                            signed_header: challenging_block.signed_header,
+                            validator_set: challenging_block.validators,
+                            trusted_height: target_header.trusted_height,
+                            trusted_validator_set: target_header.trusted_validator_set,
+                        },
+                    }),
+                    supporting_headers: supporting_headers
+                        .into_iter()
+                        .map(AnyHeader::Tendermint)
+                        .collect(),
+                };
+
+                Ok(Some(evidence))
+            }
+            Err(e) => {
+                error!("could not detect misbehavior: {}", e);
+                Err(e)
+            }
         }
     }
 }
@@ -212,15 +289,26 @@ impl LightClient {
             }
         };
 
+        // If the full node is configured as trusted then, in addition to headers not being verified,
+        // the verification traces will not be provided. This may cause failure in client
+        // updates after significant change in validator sets.
+        let enable_verification = !config.trusted_node;
+
         Ok(Self {
             chain_id: config.id.clone(),
             peer_id,
             io,
+
+            enable_verification,
         })
     }
 
-    fn prepare_client(&self, client_state: &AnyClientState) -> Result<TmLightClient, Error> {
-        let clock = components::clock::SystemClock;
+    fn prepare_client(
+        &self,
+        client_state: &AnyClientState,
+        now: Time,
+    ) -> Result<TmLightClient, Error> {
+        let clock = components::clock::FixedClock::new(now);
         let verifier = ProdVerifier::default();
         let scheduler = components::scheduler::basic_bisecting_schedule;
 
@@ -229,18 +317,9 @@ impl LightClient {
                 Error::client_type_mismatch(ClientType::Tendermint, client_state.client_type())
             })?;
 
-        let params = TmOptions {
-            trust_threshold: client_state
-                .trust_threshold
-                .try_into()
-                .map_err(Error::light_client_state)?,
-            trusting_period: client_state.trusting_period,
-            clock_drift: client_state.max_clock_drift,
-        };
-
         Ok(TmLightClient::new(
             self.peer_id,
-            params,
+            client_state.as_light_client_options(),
             clock,
             scheduler,
             verifier,
@@ -248,11 +327,8 @@ impl LightClient {
         ))
     }
 
-    fn prepare_state(&self, trusted: ICSHeight) -> Result<LightClientState, Error> {
-        let trusted_height =
-            TMHeight::try_from(trusted.revision_height()).map_err(Error::invalid_height)?;
-
-        let trusted_block = self.fetch_light_block(AtHeight::At(trusted_height))?;
+    fn prepare_state(&self, trusted_height: ICSHeight) -> Result<LightClientState, Error> {
+        let trusted_block = self.fetch_light_block(AtHeight::At(trusted_height.into()))?;
 
         let mut store = MemoryStore::new();
         store.insert(trusted_block, Status::Trusted);

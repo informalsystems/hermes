@@ -55,8 +55,8 @@ pub fn bootstrap_chains_with_full_nodes(
 > {
     let mut config = Config::default();
 
-    add_chain_config(&mut config, &node_a)?;
-    add_chain_config(&mut config, &node_b)?;
+    add_chain_config(&mut config, &node_a, test_config)?;
+    add_chain_config(&mut config, &node_b, test_config)?;
 
     config_modifier(&mut config);
 
@@ -249,8 +249,13 @@ pub fn new_registry(config: Config) -> SharedRegistry<CountingAndCachingChainHan
    Generate [`ChainConfig`](ibc_relayer::config::ChainConfig) from a running
    [`FullNode`] and add it to the relayer's [`Config`].
 */
-pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), Error> {
-    let chain_config = running_node.generate_chain_config(&running_node.chain_driver.chain_type)?;
+pub fn add_chain_config(
+    config: &mut Config,
+    running_node: &FullNode,
+    test_config: &TestConfig,
+) -> Result<(), Error> {
+    let chain_config =
+        running_node.generate_chain_config(&running_node.chain_driver.chain_type, test_config)?;
 
     config.chains.push(chain_config);
     Ok(())

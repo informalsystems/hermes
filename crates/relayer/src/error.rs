@@ -10,6 +10,7 @@ use prost::{DecodeError, EncodeError};
 use regex::Regex;
 use tendermint::abci;
 use tendermint::Error as TendermintError;
+use tendermint_light_client::builder::error::Error as LightClientBuilderError;
 use tendermint_light_client::components::io::IoError as LightClientIoError;
 use tendermint_light_client::errors::{
     Error as LightClientError, ErrorDetail as LightClientErrorDetail,
@@ -94,8 +95,8 @@ define_error! {
             |_| { "gRPC error" },
 
         GrpcStatus
-            { status: GrpcStatus }
-            |e| { format!("gRPC call failed with status: {0}", e.status) },
+            { status: GrpcStatus, query: String }
+            |e| { format!("gRPC call `{}` failed with status: {1}", e.query, e.status) },
 
         GrpcTransport
             [ TraceError<TransportError> ]
@@ -108,6 +109,10 @@ define_error! {
         Decode
             [ TendermintProtoError ]
             |_| { "error decoding protobuf" },
+
+        LightClientBuilder
+            [ LightClientBuilderError ]
+            |_| { "light client builder error" },
 
         LightClientVerification
             { chain_id: String }

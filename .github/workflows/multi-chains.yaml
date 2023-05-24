@@ -59,46 +59,31 @@ jobs:
       matrix:
         first-package:
           - package: gaia9
-            chain_command_path: gaiad
+            command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v7-simapp
-            chain_command_path: simd
+            command: simd
             account_prefix: cosmos
           - package: wasmd
-            chain_command_path: wasmd
+            command: wasmd
             account_prefix: wasm
-          - package: evmos
-            chain_command_path: evmosd
-            account_prefix: evmos
-          - package: osmosis
-            chain_command_path: osmosisd
-            account_prefix: osmo
-          - package: stride
-            chain_command_path: strided
-            account_prefix: stride
         second-package:
-          - package: gaia9
-            chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: ibc-go-v7-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: wasmd
-            chain_command_path: wasmd
-            account_prefix: wasm
           - package: evmos
-            chain_command_path: evmosd
+            command: evmosd
             account_prefix: evmos
           - package: osmosis
-            chain_command_path: osmosisd
+            command: osmosisd
             account_prefix: osmo
           - package: stride
-            chain_command_path: strided
+            command: strided
             account_prefix: stride
+          - package: juno
+            command: junod
+            account_prefix: juno
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
@@ -126,7 +111,7 @@ jobs:
            max_attempts: 2
            timeout_minutes: 60
            command: |
-             CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first-package.package }} -c which ${{ matrix.first-package.chain_command_path }}),$(nix shell .#${{ matrix.second-package.package }} -c which ${{ matrix.second-package.chain_command_path }}) \
+             CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first-package.package }} -c which ${{ matrix.first-package.command }}),$(nix shell .#${{ matrix.second-package.package }} -c which ${{ matrix.second-package.command }}) \
               nix shell .#python -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2

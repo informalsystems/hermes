@@ -56,7 +56,16 @@ async fn estimate_fee_with_tx(
     chain_id: &ChainId,
     tx: Tx,
 ) -> Result<Fee, Error> {
-    let estimated_gas = estimate_gas_with_tx(gas_config, grpc_address, tx).await?;
+    let estimated_gas = {
+        crate::time!(
+            "estimate_gas_with_tx",
+            {
+                "src_chain": chain_id,
+            }
+
+        );
+        estimate_gas_with_tx(gas_config, grpc_address, tx).await
+    }?;
 
     if estimated_gas > gas_config.max_gas {
         debug!(

@@ -8,7 +8,9 @@ use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use ibc_relayer_types::core::ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
+use ibc_relayer_types::core::ics04_channel::channel::{
+    ChannelEnd, Ordering, State as ChannelState,
+};
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::{
     acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
@@ -304,11 +306,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn unordered_channel(&self) -> bool {
-        self.channel.ordering == Order::Unordered
+        self.channel.ordering == Ordering::Unordered
     }
 
     fn ordered_channel(&self) -> bool {
-        self.channel.ordering == Order::Ordered
+        self.channel.ordering == Ordering::Ordered
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
@@ -417,11 +419,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         telemetry!(received_event_batch, tracking_id);
 
         for i in 1..=MAX_RETRIES {
-            let cleared = self
-                .schedule_recv_packet_and_timeout_msgs(height, tracking_id)
-                .and_then(|_| self.schedule_packet_ack_msgs(height, tracking_id));
+            let cleared_recv = self.schedule_recv_packet_and_timeout_msgs(height, tracking_id);
+            let cleared_ack = self.schedule_packet_ack_msgs(height, tracking_id);
 
-            match cleared {
+            match cleared_recv.and(cleared_ack) {
                 Ok(()) => return Ok(()),
                 Err(e) => error!(
                     "failed to clear packets, retry {}/{}: {}",
@@ -1161,9 +1162,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         )
         .entered();
 
-        let (sequences, src_response_height) =
+        let sequences_and_height =
             unreceived_acknowledgements(self.dst_chain(), self.src_chain(), &self.path_id)
                 .map_err(LinkError::supervisor)?;
+
+        let Some((sequences, src_response_height)) = sequences_and_height else { return Ok(()) };
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
