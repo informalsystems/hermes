@@ -2,7 +2,7 @@
 
 > __WARNING__: Currently Hermes does NOT support a `keyring` store to securely
 > store the private key file. The key file will be stored on the local file system
-> in the user the folder set by the configuration `key_store_folder` which defaults
+> in the folder set by the configuration `key_store_folder` which defaults
 > to `key_store_folder = '$HOME/.hermes/keys'`.
 
 > __BREAKING__: As of Hermes v1.0.0, the sub-command `keys restore` has been removed.
