@@ -71,6 +71,8 @@ pub fn transfer_from_chain(
             home_path,
             "--keyring-backend",
             "test",
+            "--fees",
+            "1200stake",
             "--yes",
         ],
     )?;
