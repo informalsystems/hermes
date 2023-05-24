@@ -2,7 +2,7 @@
 
 ## Overview
 
-Hermes is a robust IBC relayer built to facilitate inter-blockchain communication effectively. It provides several configuration options that users can tweak to optimize its performance to suit specific requirements. This guide provides an overview of these options, and suggests ways to modify them for different scenarios.
+Hermes provides several configuration options that users can tweak to optimize its performance to suit specific requirements. This guide provides an overview of these options, and suggests ways to modify them for different scenarios.
 
 The two per-chain configuration options you can use to tune the performance of Hermes as of version 1.5 are `trusted_node` and `batch_delay`.
 
