@@ -44,10 +44,11 @@ and `--restart-height` that enable a client update following a genesis restart
 without an IBC upgrade proposal.
 
 When it comes to telemetry, the destination chain is now added to the labels of
-the confirmed packet metrics 📊. Take note that some metrics now have the
-suffix `_total`. If you're using a running Grafana dashboard or any other tool
-relying on the metric labels, an update might be needed.
-The [corresponding page in the guide][telemetry-guide] reflects the new metric
+the confirmed packet metrics.
+
+Take note that some metrics now have the suffix `_total`. If you're using a running a
+Grafana dashboard or any other tool relying on the metric names or labels, an update might be needed.
+The [corresponding page in the guide][telemetry-guide] reflects the new metric names and
 labels for your convenience.
 
 There's also a fresh configuration option to specify the directory used for the
@@ -55,6 +56,12 @@ keyring store.
 
 From this version onwards, multi-platform (arm64 and amd64) images will be
 distributed both on Docker Hub and the GitHub Content Repository.
+
+### Note for operators
+
+> ⚠️  Be aware that this release contains a couple breaking
+> ⚠️  changes to the Hermes configuration and telemetry metrics.
+> ⚠️  Please consult the [`UPGRADING.md`](UPGRADING.md) document for more details.
 
 [perf-guide]: https://hermes.informal.systems/documentation/configuration/performance.html
 [telemetry-guide]: https://hermes.informal.systems/documentation/telemetry/operators.html
@@ -65,6 +72,10 @@ distributed both on Docker Hub and the GitHub Content Repository.
   which was only used for CCV consumern chains.
   Instead, use the `ccv_consumer_chain` setting to identify a CCV consumer chains.
   ([\#3125](https://github.com/informalsystems/hermes/issues/3125))
+
+- Due to the update of an internal dependency, some Prometheus metrics now have a `_total` suffix.
+  Check the corresponding [guide page][telemetry-guide] for the list of all metrics,
+  including their new suffixes and labels.
 
 ### BUG FIXES
 
