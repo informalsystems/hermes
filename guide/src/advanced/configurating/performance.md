@@ -24,7 +24,7 @@ If you prefer security over speed, or if the validator set changes frequently, c
 
 ### 2. Batch Delay
 
-The `batch_delay` setting dictates the delay until an event batch is emitted if no `NewBlock` events have been receibed yet.
+The `batch_delay` setting dictates the delay until an event batch is emitted if no `NewBlock` events have been received yet.
 
 ```toml
 batch_delay = '500ms'
