@@ -11,3 +11,6 @@ Acquire advanced knowledges about `hermes`. In this section, we present a summar
 
 - **[Troubleshooting](./troubleshooting/index.md)**
     * Learn the general guidelines regarding troubleshooting.
+
+- **[Configurating](./configurating/index.md)**
+    * Learn the more advanced configurations for Hermes.

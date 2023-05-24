@@ -7,7 +7,6 @@
 - [Quick start](./quick-start/index.md)
    - [Prerequisites](./quick-start/pre-requisites.md)
    - [Installation](./quick-start/installation.md)
-   - [Performance Tuning](./quick-start/performance.md)
 - [Tutorials](./tutorials/index.md)
    - [Prerequisites for local chains](./tutorials/pre-requisites/index.md)
      - [Install Gaia](./tutorials/pre-requisites/gaia.md)
@@ -36,6 +35,8 @@
         - [Inspecting the relayer's state](./advanced/troubleshooting/inspect.md)
         - [Cross Stack Misconfiguration](./advanced/troubleshooting/cross-comp-config.md)
         - [Genesis restart without IBC upgrade proposal](./advanced/troubleshooting/genesis-restart.md)
+    - [Configurating](./advanced/configurating/index.md)
+      - [Performance Tuning](./advanced/configurating/performance.md)
 
 - [Documentation](./documentation/index.md)
     - [Configuration](./documentation/configuration/index.md)
