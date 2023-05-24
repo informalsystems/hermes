@@ -10,10 +10,11 @@ from the chain configuration. This is now replaced by a fresh
 
 Also, Hermes has strengthened its misbehavior detection. With the
 `mode.misbehaviour.enabled` setting enabled (now the case by default)
-the relayer will closely monitor on-chain client updates, comparing submitted
-headers with those fetched from its RPC node. In the event of any discrepancy,
-Hermes will submit a `MisbehaviourMsg` to the chain hosting the IBC client
-and provide the evidence to the reference chain.
+the relayer was already closely monitoring on-chain client updates,
+comparing submitted headers with those fetched from its RPC node.
+In the event of any discrepancy, Hermes would report the misbehaviour
+to the chain hosting the IBC client. As of this version,
+Hermes will also report the misbehaviour evidence to the reference chain.
 
 This version rolls out a string of performance enhancements. Event batches
 are now delivered after a configurable delay, greatly trimming down latency
@@ -53,4 +54,3 @@ distributed both on Docker Hub and the GitHub Content Repository.
 
 [perf-guide]: https://hermes.informal.systems/documentation/configuration/performance.html
 [telemetry-guide]: https://hermes.informal.systems/documentation/telemetry/operators.html
-
