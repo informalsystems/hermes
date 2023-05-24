@@ -197,8 +197,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             now,
         );
 
-        dbg!(&divergence);
-
         match divergence {
             Ok(None) => {
                 debug!("no misbehavior detected");
