@@ -40,6 +40,10 @@ use super::WorkerCmd;
 const INCENTIVIZED_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const INCENTIVIZED_CACHE_MAX_CAPACITY: u64 = 1000;
 
+// Number of NewBlock consecutive NewBlock events before aborting the
+// packet cmd worker.
+const PACKET_CMD_WORKER_IDLE_TIMEOUT: u64 = 100;
+
 fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     if e.is_expired_or_frozen_error() {
         // If the client is expired or frozen, terminate the packet worker
@@ -94,6 +98,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
         )
     };
 
+    let mut idle_worker_timer = 0;
     spawn_background_task(span, Some(Duration::from_millis(200)), move || {
         if let Ok(cmd) = cmd_rx.try_recv() {
             // Try to clear pending packets. At different levels down in `handle_packet_cmd` there
@@ -101,13 +106,24 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             // If clearing fails after all these retries with ignorable error the task continues
             // (see `handle_link_error_in_task`) and clearing is retried with the next
             // (`NewBlock`) `cmd` that matches the clearing interval.
-            handle_packet_cmd(
+            let executed = handle_packet_cmd(
                 &mut link.lock().unwrap(),
                 &mut should_clear_on_start,
                 clear_interval,
                 &path,
                 cmd,
             )?;
+
+            if executed {
+                idle_worker_timer = 0;
+            } else {
+                idle_worker_timer += 1;
+            }
+
+            if idle_worker_timer > PACKET_CMD_WORKER_IDLE_TIMEOUT {
+                debug!("Will abort packet_cmd_worker");
+                return Ok(Next::Abort);
+            }
         }
 
         Ok(Next::Continue)
@@ -174,7 +190,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     clear_interval: u64,
     path: &Packet,
     cmd: WorkerCmd,
-) -> Result<(), TaskError<RunError>> {
+) -> Result<bool, TaskError<RunError>> {
     // Handle packet clearing which is triggered from a command
     let (do_clear, maybe_height) = match &cmd {
         WorkerCmd::IbcEvents { batch } => {
@@ -209,9 +225,10 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     // Handle command-specific task
     if let WorkerCmd::IbcEvents { batch } = cmd {
-        handle_update_schedule(link, clear_interval, path, batch)
+        handle_update_schedule(link, clear_interval, path, batch)?;
+        Ok(true)
     } else {
-        Ok(())
+        Ok(false)
     }
 }
 

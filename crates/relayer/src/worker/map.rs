@@ -217,6 +217,21 @@ impl WorkerMap {
             worker.shutdown();
         }
     }
+
+    /// Verify if at least one task of the WorkerHandle is stopped.
+    /// If it is the case, shutdown all remaining tasks and remove the worker from the WorkerMap.
+    pub fn clean_stopped_workers(&mut self) {
+        let stopped_workers: Vec<(WorkerId, Object)> = self
+            .workers
+            .iter()
+            .filter(|w| w.1.is_stopped_then_kill())
+            .map(|w| (w.1.id(), w.0.clone()))
+            .collect();
+
+        for worker in stopped_workers {
+            self.remove_stopped(worker.0, worker.1);
+        }
+    }
 }
 
 // Drop handle to send shutdown signals to background tasks in parallel
