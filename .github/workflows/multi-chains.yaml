@@ -58,80 +58,32 @@ jobs:
       fail-fast: false
       matrix:
         first-package:
-          - package: gaia6
-            chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: gaia7
-            chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: gaia8
-            chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: ibc-go-v2-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v3-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v4-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v5-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v6-simapp
-            chain_command_path: simd
+          - package: gaia9
+            command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v7-simapp
-            chain_command_path: simd
+            command: simd
             account_prefix: cosmos
           - package: wasmd
-            chain_command_path: wasmd
+            command: wasmd
             account_prefix: wasm
-          - package: evmos
-            chain_command_path: evmosd
-            account_prefix: evmos
-          - package: osmosis
-            chain_command_path: osmosisd
-            account_prefix: osmo
         second-package:
-          - package: gaia6
-            chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: gaia7
-            chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: gaia8
-            chain_command_path: gaiad
-            account_prefix: cosmos
-          - package: ibc-go-v2-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v3-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v4-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v5-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: ibc-go-v6-simapp
-            chain_command_path: simd
-            account_prefix: cosmos
-          - package: wasmd
-            chain_command_path: wasmd
-            account_prefix: wasm
           - package: evmos
-            chain_command_path: evmosd
+            command: evmosd
             account_prefix: evmos
           - package: osmosis
-            chain_command_path: osmosisd
+            command: osmosisd
             account_prefix: osmo
+          - package: stride
+            command: strided
+            account_prefix: stride
+          - package: juno
+            command: junod
+            account_prefix: juno
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v21
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
@@ -156,10 +108,10 @@ jobs:
           NO_COLOR_LOG: 1
           ACCOUNT_PREFIXES: ${{ matrix.first-package.account_prefix }},${{ matrix.second-package.account_prefix }}
         with:
-          max_attempts: 3
-          timeout_minutes: 45
-          command: |
-            CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first-package.package }} -c which ${{ matrix.first-package.chain_command_path }}),$(nix shell .#${{ matrix.second-package.package }} -c which ${{ matrix.second-package.chain_command_path }}) \
+           max_attempts: 2
+           timeout_minutes: 60
+           command: |
+             CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first-package.package }} -c which ${{ matrix.first-package.command }}),$(nix shell .#${{ matrix.second-package.package }} -c which ${{ matrix.second-package.command }}) \
               nix shell .#python -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2

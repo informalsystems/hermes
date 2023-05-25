@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
@@ -11,7 +11,7 @@ pub fn reply_channel<T>() -> (ReplySender<T>, ReplyReceiver<T>) {
     crossbeam_channel::bounded(1)
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct VersionInfo {
     pub name: String,
     pub version: String,

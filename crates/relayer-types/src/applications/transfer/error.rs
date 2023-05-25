@@ -6,7 +6,7 @@ use ibc_proto::protobuf::Error as TendermintProtoError;
 use subtle_encoding::Error as EncodingError;
 use uint::FromDecStrErr;
 
-use crate::core::ics04_channel::channel::Order;
+use crate::core::ics04_channel::channel::Ordering;
 use crate::core::ics04_channel::error as channel_error;
 use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::error::ValidationError;
@@ -90,8 +90,8 @@ define_error! {
             | _ | { "invalid hex string" },
 
         ChannelNotUnordered
-            { order: Order }
-            | e | { format_args!("expected '{0}' channel, got '{1}'", Order::Unordered, e.order) },
+            { order: Ordering }
+            | e | { format_args!("expected '{0}' channel, got '{1}'", Ordering::Unordered, e.order) },
 
         InvalidVersion
             { version: Version }

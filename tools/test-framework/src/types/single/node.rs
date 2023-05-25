@@ -8,6 +8,7 @@ use eyre::eyre;
 use eyre::Report as Error;
 use ibc_relayer::chain::ChainType;
 use ibc_relayer::config;
+use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use std::sync::{Arc, RwLock};
@@ -17,6 +18,7 @@ use tendermint_rpc::WebSocketClientUrl;
 use crate::chain::chain_type::ChainType as TestedChainType;
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
+use crate::prelude::TestConfig;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
 use crate::types::tagged::*;
@@ -123,36 +125,44 @@ impl FullNode {
     pub fn generate_chain_config(
         &self,
         chain_type: &TestedChainType,
+        test_config: &TestConfig,
     ) -> Result<config::ChainConfig, Error> {
+        let hermes_keystore_dir = test_config
+            .chain_store_dir
+            .join("hermes_keyring")
+            .as_path()
+            .display()
+            .to_string();
+
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
             r#type: ChainType::CosmosSdk,
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
             websocket_addr: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
-            rpc_timeout: Duration::from_secs(10),
+            rpc_timeout: ibc_relayer::config::default::rpc_timeout(),
+            batch_delay: ibc_relayer::config::default::batch_delay(),
+            trusted_node: false,
+            genesis_restart: None,
             account_prefix: self.chain_driver.account_prefix.clone(),
             key_name: self.wallets.relayer.id.0.clone(),
-
-            // By default we use in-memory key store to avoid polluting
-            // ~/.hermes/keys. See
-            // https://github.com/informalsystems/hermes/issues/1541
-            key_store_type: Store::Memory,
-
+            key_store_type: Store::Test,
+            key_store_folder: Some(hermes_keystore_dir.into()),
             store_prefix: "ibc".to_string(),
             default_gas: None,
             max_gas: Some(3000000),
             gas_adjustment: None,
-            gas_multiplier: Default::default(),
+            gas_multiplier: Some(GasMultiplier::unsafe_new(1.2)),
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
+            max_grpc_decoding_size: config::default::max_grpc_decoding_size(),
             max_block_time: Duration::from_secs(30),
             clock_drift: Duration::from_secs(5),
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
-            unbonding_period: None,
+            ccv_consumer_chain: false,
             trust_threshold: Default::default(),
-            gas_price: config::GasPrice::new(0.001, "stake".to_string()),
+            gas_price: config::GasPrice::new(0.003, "stake".to_string()),
             packet_filter: Default::default(),
             address_type: chain_type.address_type(),
             memo_prefix: Default::default(),

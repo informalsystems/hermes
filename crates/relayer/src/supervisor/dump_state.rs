@@ -11,7 +11,7 @@ use crate::{
     worker::{WorkerData, WorkerHandle, WorkerId},
 };
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkerDesc {
     pub id: WorkerId,
     pub object: Object,
@@ -24,7 +24,7 @@ impl WorkerDesc {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SupervisorState {
     pub chains: Vec<ChainId>,
     pub workers: BTreeMap<ObjectType, Vec<WorkerDesc>>,

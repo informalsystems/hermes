@@ -1,4 +1,4 @@
-# Config
+# Generating and Validating Config Files
 
 #### Show usage
 
@@ -14,7 +14,7 @@ The available sub-commands are the following:
 {{#include ../../templates/help_templates/config.md}}
 ```
 
-### Automatically generate configuration
+### Automatically generate configuration files for specified chains 
 Use `config auto` to automatically generate a configuration file from the [chain-registry](https://github.com/cosmos/chain-registry).
 
 > __WARNING__: Currently, gas parameters are set to default value and require to be set manually.
@@ -25,7 +25,7 @@ Use `config auto` to automatically generate a configuration file from the [chain
 
 __Example__
 
-Use `config auto` to generate a configuration file able to relay between `cosmoshub` and `osmosis`. This command assumes the existence of a key file for `cosmoshub-4` and `osmosis-1` in `$HOME/.hermes/keys`.
+Use `config auto` to generate a configuration file that is able to relay between `cosmoshub` and `osmosis`. This command assumes the existence of a key file for `cosmoshub-4` and `osmosis-1` in `$HOME/.hermes/keys`.
 ```
 {{#template ../../templates/commands/hermes/config/auto_1.md PATH=~/example_config.toml CHAIN_NAME:OPTIONAL_KEY_NAME=cosmoshub osmosis}}
 
@@ -49,7 +49,7 @@ SUCCESS "Config file written successfully : ~/example_config.toml."
 
 __WARNING__ : Do not forget to modify the gas settings before relaying !
 
-### Validate configuration
+### Validate an existing configuration file
 
 Use `config validate` to perform a quick syntactic validation of
 your configuration file.

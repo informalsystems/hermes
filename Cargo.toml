@@ -11,15 +11,19 @@ members = [
     "crates/chain-registry",
     "tools/integration-test",
     "tools/test-framework",
+]
+
+exclude = [
     "tools/check-guide",
     "tools/query-events",
 ]
 
 [patch.crates-io]
 # ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "main" }
-# tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
-# tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs", branch = "main" }
+# tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
+# tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
+# tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
+# tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
+# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
+# tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
+# tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }

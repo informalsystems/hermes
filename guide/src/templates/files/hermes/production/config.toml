@@ -3,7 +3,7 @@ log_level = 'info'
 [mode.clients]
 enabled = true
 refresh = true
-misbehaviour = false
+misbehaviour = true
 
 [mode.connections]
 enabled = false

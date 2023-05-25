@@ -12,7 +12,7 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: taiki-e/create-gh-release-action@v1
         env:
           # (required)
@@ -25,11 +25,11 @@ jobs:
         config:
           - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
           - { os: ubuntu-latest, target: aarch64-unknown-linux-gnu }
-          - { os: macos-latest,  target: x86_64-apple-darwin }
-          - { os: macos-latest,  target: aarch64-apple-darwin }
+          - { os: macos-latest, target: x86_64-apple-darwin }
+          - { os: macos-latest, target: aarch64-apple-darwin }
     runs-on: ${{ matrix.config.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required)
@@ -57,15 +57,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # (optional)
           CARGO_PROFILE_RELEASE_LTO: true
+
   docker-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
@@ -73,12 +82,15 @@ jobs:
         run: echo "TAG=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: ./ci/release/
           file: ./ci/release/hermes.Dockerfile
           push: true
           build-args: TAG=v${{env.TAG}}
-          tags: informalsystems/hermes:${{env.TAG}}
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            informalsystems/hermes:${{env.TAG}}
+            ghcr.io/informalsystems/hermes:${{env.TAG}}
           cache-from: type=gha
           cache-to: type=gha,mode=max

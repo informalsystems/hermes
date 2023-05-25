@@ -115,8 +115,12 @@ impl Runnable for KeysDeleteCmd {
 pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
     match config.r#type {
         ChainType::CosmosSdk => {
-            let mut keyring =
-                KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
+            let mut keyring = KeyRing::new_secp256k1(
+                Store::Test,
+                &config.account_prefix,
+                &config.id,
+                &config.key_store_folder,
+            )?;
             keyring.remove_key(key_name)?;
         }
     }
@@ -126,8 +130,12 @@ pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
 pub fn delete_all_keys(config: &ChainConfig) -> eyre::Result<()> {
     match config.r#type {
         ChainType::CosmosSdk => {
-            let mut keyring =
-                KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
+            let mut keyring = KeyRing::new_secp256k1(
+                Store::Test,
+                &config.account_prefix,
+                &config.id,
+                &config.key_store_folder,
+            )?;
             let keys = keyring.keys()?;
             for (key_name, _) in keys {
                 keyring.remove_key(&key_name)?;

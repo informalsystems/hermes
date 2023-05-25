@@ -19,7 +19,6 @@
 //!    - Misspelled receiver address, port or channel: The intermediary chain will refund the sender.
 
 use ibc_relayer::config::{self, Config, ModeConfig};
-use ibc_test_framework::chain::cli::transfer::transfer_with_memo;
 use ibc_test_framework::prelude::*;
 
 use crate::tests::forward::memo::{
@@ -41,16 +40,6 @@ fn test_misspelled_memo_fields_ibc_forward_transfer() -> Result<(), Error> {
 fn test_misspelled_memo_content_ibc_forward_transfer() -> Result<(), Error> {
     run_nary_channel_test(&MisspelledMemoContentIbcForwardTransferTest)
 }
-
-/*#[test]
-fn test_invalid_channel_ibc_forward_transfer() -> Result<(), Error> {
-    run_nary_channel_test(&InvalidChannelIbcForwardTransferTest)
-}
-
-#[test]
-fn test_invalid_address_ibc_forward_transfer() -> Result<(), Error> {
-    run_nary_channel_test(&InvalidAddressIbcForwardTransferTest)
-}*/
 
 struct IbcForwardTransferTestOverrides;
 
@@ -135,27 +124,17 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
-        let binding = node_a.chain_driver();
-        let driver = binding.value();
-        match transfer_with_memo(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-            wallet_a.address().value().as_str(),
-            wallet_b.address().value().as_str(),
-            &denom_a.with_amount(a_to_c_amount).to_string(),
-            channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-            &channel_a_to_b.port_a.to_string(),
-            &memo,
-        ) {
-            Ok(_) => {
-                info!("CLI for transfer with memo successful");
-            }
-            Err(e) => {
-                info!("error with memo CLI : {}", e);
-            }
-        }
+        node_a
+            .chain_driver()
+            .ibc_transfer_token_with_memo_and_timeout(
+                &channel_a_to_b.port_a.as_ref(),
+                &channel_a_to_b.channel_id_a.as_ref(),
+                &wallet_a,
+                &wallet_b.address(),
+                &denom_a.with_amount(a_to_c_amount).as_ref(),
+                Some(memo),
+                None,
+            )?;
 
         info!(
             "waiting for user on chain C to receive IBC transferred amount of {}",
@@ -280,27 +259,17 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         {
             info!("forward transfer with invalid `port` field");
 
-            let binding = node_a.chain_driver();
-            let driver = binding.value();
-            match transfer_with_memo(
-                driver.chain_id.as_str(),
-                &driver.command_path,
-                &driver.home_path,
-                &driver.rpc_listen_address(),
-                wallet_a.address().value().as_str(),
-                wallet_b.address().value().as_str(),
-                &denom_a.with_amount(a_to_c_amount).to_string(),
-                channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-                &channel_a_to_b.port_a.to_string(),
-                &memo1,
-            ) {
-                Ok(_) => {
-                    info!("CLI for transfer with memo successful");
-                }
-                Err(e) => {
-                    info!("error with memo CLI : {}", e);
-                }
-            }
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo1),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));
@@ -327,27 +296,17 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         {
             info!("forward transfer with invalid `channel` field");
 
-            let binding = node_a.chain_driver();
-            let driver = binding.value();
-            match transfer_with_memo(
-                driver.chain_id.as_str(),
-                &driver.command_path,
-                &driver.home_path,
-                &driver.rpc_listen_address(),
-                wallet_a.address().value().as_str(),
-                wallet_b.address().value().as_str(),
-                &denom_a.with_amount(a_to_c_amount).to_string(),
-                channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-                &channel_a_to_b.port_a.to_string(),
-                &memo2,
-            ) {
-                Ok(_) => {
-                    info!("CLI for transfer with memo successful");
-                }
-                Err(e) => {
-                    info!("error with memo CLI : {}", e);
-                }
-            }
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo2),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));
@@ -374,27 +333,17 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         {
             info!("forward transfer with invalid `receiver` field");
 
-            let binding = node_a.chain_driver();
-            let driver = binding.value();
-            match transfer_with_memo(
-                driver.chain_id.as_str(),
-                &driver.command_path,
-                &driver.home_path,
-                &driver.rpc_listen_address(),
-                wallet_a.address().value().as_str(),
-                wallet_b.address().value().as_str(),
-                &denom_a.with_amount(a_to_c_amount).to_string(),
-                channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-                &channel_a_to_b.port_a.to_string(),
-                &memo3,
-            ) {
-                Ok(_) => {
-                    info!("transfer with memo CLI successful");
-                }
-                Err(e) => {
-                    info!("error with memo CLI : {}", e);
-                }
-            }
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo3),
+                    None,
+                )?;
 
             info!("checking that the sender was refunded and other chains didn't receive tokens");
 
@@ -421,27 +370,17 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         {
             info!("forward transfer with invalid `forward` field");
 
-            let binding = node_a.chain_driver();
-            let driver = binding.value();
-            match transfer_with_memo(
-                driver.chain_id.as_str(),
-                &driver.command_path,
-                &driver.home_path,
-                &driver.rpc_listen_address(),
-                wallet_a.address().value().as_str(),
-                wallet_b.address().value().as_str(),
-                &denom_a.with_amount(a_to_c_amount).to_string(),
-                channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-                &channel_a_to_b.port_a.to_string(),
-                &memo4,
-            ) {
-                Ok(_) => {
-                    info!("transfer with memo CLI successful");
-                }
-                Err(e) => {
-                    info!("error with memo CLI : {}", e);
-                }
-            }
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo4),
+                    None,
+                )?;
 
             info!(
                 "check that only the sender lost {} tokens and the intemediary chain received {} tokens",
@@ -554,27 +493,17 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
         {
             info!("forward transfer with invalid port");
 
-            let binding = node_a.chain_driver();
-            let driver = binding.value();
-            match transfer_with_memo(
-                driver.chain_id.as_str(),
-                &driver.command_path,
-                &driver.home_path,
-                &driver.rpc_listen_address(),
-                wallet_a.address().value().as_str(),
-                wallet_b.address().value().as_str(),
-                &denom_a.with_amount(a_to_c_amount).to_string(),
-                channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-                &channel_a_to_b.port_a.to_string(),
-                &memo2,
-            ) {
-                Ok(_) => {
-                    info!("transfer with memo CLI successful");
-                }
-                Err(e) => {
-                    info!("error with memo CLI : {}", e);
-                }
-            }
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo2),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));
@@ -602,27 +531,17 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
         {
             info!("forward transfer with invalid channel");
 
-            let binding = node_a.chain_driver();
-            let driver = binding.value();
-            match transfer_with_memo(
-                driver.chain_id.as_str(),
-                &driver.command_path,
-                &driver.home_path,
-                &driver.rpc_listen_address(),
-                wallet_a.address().value().as_str(),
-                wallet_b.address().value().as_str(),
-                &denom_a.with_amount(a_to_c_amount).to_string(),
-                channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-                &channel_a_to_b.port_a.to_string(),
-                &memo3,
-            ) {
-                Ok(_) => {
-                    info!("transfer with memo CLI successful");
-                }
-                Err(e) => {
-                    info!("error with memo CLI : {}", e);
-                }
-            }
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo3),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));
@@ -650,27 +569,17 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
         {
             info!("forward transfer with invalid receiver address");
 
-            let binding = node_a.chain_driver();
-            let driver = binding.value();
-            match transfer_with_memo(
-                driver.chain_id.as_str(),
-                &driver.command_path,
-                &driver.home_path,
-                &driver.rpc_listen_address(),
-                wallet_a.address().value().as_str(),
-                wallet_b.address().value().as_str(),
-                &denom_a.with_amount(a_to_c_amount).to_string(),
-                channel_a_to_b.channel.a_channel_id().unwrap().as_ref(),
-                &channel_a_to_b.port_a.to_string(),
-                &memo1,
-            ) {
-                Ok(_) => {
-                    info!("transfer with memo CLI successful");
-                }
-                Err(e) => {
-                    info!("error with memo CLI : {}", e);
-                }
-            }
+            node_a
+                .chain_driver()
+                .ibc_transfer_token_with_memo_and_timeout(
+                    &channel_a_to_b.port_a.as_ref(),
+                    &channel_a_to_b.channel_id_a.as_ref(),
+                    &wallet_a,
+                    &wallet_b.address(),
+                    &denom_a.with_amount(a_to_c_amount).as_ref(),
+                    Some(memo1),
+                    None,
+                )?;
 
             // Wait before checking the balances
             std::thread::sleep(Duration::from_secs(10));

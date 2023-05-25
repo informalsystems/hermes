@@ -16,7 +16,7 @@ mod signing_key_pair;
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use std::ffi::OsStr;
 use std::fs::{self, File};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use serde::{Deserialize, Serialize};
@@ -200,12 +200,17 @@ pub enum KeyRing<S> {
 }
 
 impl<S: SigningKeyPairSized> KeyRing<S> {
-    pub fn new(store: Store, account_prefix: &str, chain_id: &ChainId) -> Result<Self, Error> {
+    pub fn new(
+        store: Store,
+        account_prefix: &str,
+        chain_id: &ChainId,
+        ks_folder: &Option<PathBuf>,
+    ) -> Result<Self, Error> {
         match store {
             Store::Memory => Ok(Self::Memory(Memory::new(account_prefix.to_string()))),
 
             Store::Test => {
-                let keys_folder = disk_store_path(chain_id.as_str())?;
+                let keys_folder = disk_store_path(chain_id.as_str(), ks_folder)?;
 
                 // Create keys folder if it does not exist
                 fs::create_dir_all(&keys_folder).map_err(|e| {
@@ -265,8 +270,9 @@ impl KeyRing<Secp256k1KeyPair> {
         store: Store,
         account_prefix: &str,
         chain_id: &ChainId,
+        ks_folder: &Option<PathBuf>,
     ) -> Result<Self, Error> {
-        Self::new(store, account_prefix, chain_id)
+        Self::new(store, account_prefix, chain_id, ks_folder)
     }
 }
 
@@ -275,15 +281,21 @@ impl KeyRing<Ed25519KeyPair> {
         store: Store,
         account_prefix: &str,
         chain_id: &ChainId,
+        ks_folder: &Option<PathBuf>,
     ) -> Result<Self, Error> {
-        Self::new(store, account_prefix, chain_id)
+        Self::new(store, account_prefix, chain_id, ks_folder)
     }
 }
 
 pub fn list_keys(config: &ChainConfig) -> Result<Vec<(String, AnySigningKeyPair)>, Error> {
     let keys = match config.r#type {
         ChainType::CosmosSdk => {
-            let keyring = KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
+            let keyring = KeyRing::new_secp256k1(
+                Store::Test,
+                &config.account_prefix,
+                &config.id,
+                &config.key_store_folder,
+            )?;
             keyring
                 .keys()?
                 .into_iter()
@@ -294,13 +306,16 @@ pub fn list_keys(config: &ChainConfig) -> Result<Vec<(String, AnySigningKeyPair)
     Ok(keys)
 }
 
-fn disk_store_path(folder_name: &str) -> Result<PathBuf, Error> {
-    let home = dirs_next::home_dir().ok_or_else(Error::home_location_unavailable)?;
+fn disk_store_path(folder_name: &str, keystore_folder: &Option<PathBuf>) -> Result<PathBuf, Error> {
+    let ks_folder = match keystore_folder {
+        Some(folder) => folder.to_owned(),
+        None => {
+            let home = dirs_next::home_dir().ok_or_else(Error::home_location_unavailable)?;
+            home.join(KEYSTORE_DEFAULT_FOLDER)
+        }
+    };
 
-    let folder = Path::new(home.as_path())
-        .join(KEYSTORE_DEFAULT_FOLDER)
-        .join(folder_name)
-        .join(KEYSTORE_DISK_BACKEND);
+    let folder = ks_folder.join(folder_name).join(KEYSTORE_DISK_BACKEND);
 
     Ok(folder)
 }

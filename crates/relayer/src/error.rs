@@ -10,6 +10,7 @@ use prost::{DecodeError, EncodeError};
 use regex::Regex;
 use tendermint::abci;
 use tendermint::Error as TendermintError;
+use tendermint_light_client::builder::error::Error as LightClientBuilderError;
 use tendermint_light_client::components::io::IoError as LightClientIoError;
 use tendermint_light_client::errors::{
     Error as LightClientError, ErrorDetail as LightClientErrorDetail,
@@ -94,8 +95,8 @@ define_error! {
             |_| { "gRPC error" },
 
         GrpcStatus
-            { status: GrpcStatus }
-            |e| { format!("gRPC call failed with status: {0}", e.status) },
+            { status: GrpcStatus, query: String }
+            |e| { format!("gRPC call `{}` failed with status: {1}", e.query, e.status) },
 
         GrpcTransport
             [ TraceError<TransportError> ]
@@ -108,6 +109,10 @@ define_error! {
         Decode
             [ TendermintProtoError ]
             |_| { "error decoding protobuf" },
+
+        LightClientBuilder
+            [ LightClientBuilderError ]
+            |_| { "light client builder error" },
 
         LightClientVerification
             { chain_id: String }
@@ -528,12 +533,25 @@ define_error! {
             { chain_id: ChainId }
             |e| {
                 format_args!(
-                    "staking module for chain '{}' does not maintain any historical entries \
-                    (`historical_entries` staking params is set to 0)",
+                    "chain '{}' does not maintain any historical entries \
+                    (`historical_entries` params is set to 0)",
                     e.chain_id
                 )
             },
 
+        InvalidHistoricalEntries
+            {
+                chain_id: ChainId,
+                entries: i64,
+            }
+            |e| {
+                format_args!(
+                    "chain '{}' reports invalid historical entries value \
+                    (`historical_entries` params is set to '{}')",
+                    e.chain_id,
+                    e.entries,
+                )
+            },
         GasPriceTooLow
             { chain_id: ChainId }
             |e| { format!("Hermes gas price is lower than the minimum gas price set by node operator'{}'", e.chain_id) },
@@ -568,6 +586,11 @@ define_error! {
 
         QueriedProofNotFound
             |_| { "Requested proof with query but no proof was returned." },
+
+        InvalidArchiveAddress
+            { address: String }
+            [ TendermintRpcError ]
+            |e| { format!("invalid archive node address {}", e.address) },
     }
 }
 

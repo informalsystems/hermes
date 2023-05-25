@@ -1,9 +1,15 @@
+# This is an example configuration for Hermes. It is meant to be
+# used as a reference, _NOT_ for configuring a production relayer. 
+# If you're looking to configure a production relayer for some chains, 
+# try using the `hermes config auto` command to generate a config 
+# file that serves as the starting point for configuring Hermes.
+
 # The global section has parameters that apply globally to the relayer operation.
 [global]
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
-log_level = 'info'
+log_level = 'debug'
 
 
 # Specify the mode to be used by the relayer. [Required]
@@ -23,20 +29,20 @@ enabled = true
 #      there is activity on a connection or channel they are involved with.
 refresh = true
 
-# Whether or not to enable misbehaviour detection for clients. [Default: false]
-misbehaviour = false
+# Whether or not to enable misbehaviour detection for clients. [Default: true]
+misbehaviour = true
 
 # Specify the connections mode.
 [mode.connections]
 
 # Whether or not to enable the connection workers for handshake completion. [Required]
-enabled = false
+enabled = true
 
 # Specify the channels mode.
 [mode.channels]
 
 # Whether or not to enable the channel workers for handshake completion. [Required]
-enabled = false
+enabled = true
 
 # Specify the packets mode.
 [mode.packets]
@@ -78,7 +84,7 @@ auto_register_counterparty_payee = false
 [rest]
 
 # Whether or not to enable the REST service. Default: false
-enabled = true
+enabled = false
 
 # Specify the IPv4/6 host over which the built-in HTTP server will serve the RESTful
 # API requests. Default: 127.0.0.1
@@ -112,6 +118,10 @@ port = 3001
 # Specify the chain ID. Required
 id = 'ibc-0'
 
+# Whether or not this is a CCV consumer chain. Default: false
+# Only specifiy true for CCV consumer chain, but NOT for sovereign chains.
+ccv_consumer_chain = false
+
 # Specify the RPC address and port where the chain RPC server listens on. Required
 rpc_addr = 'http://127.0.0.1:26657'
 
@@ -128,6 +138,29 @@ websocket_addr = 'ws://127.0.0.1:26657/websocket'
 # Hermes uses a large preconfigured timeout (on the order of minutes).
 rpc_timeout = '10s'
 
+# Experimental: Whether or not the full node is trusted.
+#
+# If not trusted, Hermes will verify headers included in the `ClientUpdate` message using the light client.
+#
+# Note: If the full node is configured as trusted then, in addition to headers not being verified,
+#       the verification traces will not be provided.
+#       This may cause failure in client updates after significant change in validator sets.
+#
+# Default: false
+trusted_node = false
+
+# Delay until event batch is emitted if no NewBlock events have come yet.
+#
+# Lower values will result in faster event processing, improving the latency of Hermes,
+# but may split the events into more batches than necessary, requiring more client updates
+# to be submitted, yielding higher costs. Higher values will result in slower event
+# processing, increasing the latency of Hermes, but are more likely to batch events together.
+#
+# The default value provides good latency while minimizing the number of client updates needed.
+#
+# Default: 500ms
+batch_delay = '500ms'
+
 # Specify the prefix used by the chain. Required
 account_prefix = 'cosmos'
 
@@ -135,6 +168,10 @@ account_prefix = 'cosmos'
 # See the Adding Keys chapter for more information about managing signing keys:
 #   https://hermes.informal.systems/commands/keys/index.html#adding-keys
 key_name = 'testkey'
+
+# Specify the folder used to store the keys. Optional
+# If this is not specified then the hermes home folder is used.
+# key_store_folder = '$HOME/.hermes/keys'
 
 # Specify the address type which determines:
 # 1) address derivation;
@@ -234,12 +271,6 @@ max_block_time = '30s'
 # Default: 2/3 of the `unbonding period` for Cosmos SDK chains
 trusting_period = '14days'
 
-# Unbonding period for this chain.
-# Required for ICS consumer chains, as they currently do not expose the staking module.
-# WARNING: Only specifiy this for ICS consumer chain, but NOT for any other type of chain.
-# For other chains, this is fetched via gRPC from the staking parameters.
-unbonding_period = '21days'
-
 # Specify the trust threshold for the light client, ie. the minimum fraction of validators
 # which must overlap across two blocks during light client verification.
 # Default: { numerator = '2', denominator = '3' }, ie. 2/3.
@@ -309,6 +340,8 @@ rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://127.0.0.1:26557/websocket'
 rpc_timeout = '10s'
+batch_delay = '500ms'
+trusted_node = false
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'

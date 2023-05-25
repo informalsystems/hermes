@@ -1,17 +1,14 @@
-extern crate alloc;
-
 pub mod encoder;
 mod path_identifier;
 pub mod server;
 pub mod state;
 
-use alloc::sync::Arc;
+use std::error::Error;
+use std::net::{SocketAddr, ToSocketAddrs};
+use std::sync::Arc;
+
 use once_cell::sync::Lazy;
-use std::{
-    error::Error,
-    net::{SocketAddr, ToSocketAddrs},
-    thread::JoinHandle,
-};
+use tokio::task::JoinHandle;
 
 pub use crate::state::TelemetryState;
 
@@ -25,22 +22,17 @@ pub fn global() -> &'static Arc<TelemetryState> {
     &GLOBAL_STATE
 }
 
+pub type BoxError = Box<dyn Error + Send + Sync>;
+
 pub fn spawn<A>(
-    address: A,
+    addr: A,
     state: Arc<TelemetryState>,
-) -> Result<(SocketAddr, JoinHandle<()>), Box<dyn Error + Send + Sync>>
+) -> Result<(SocketAddr, JoinHandle<Result<(), BoxError>>), BoxError>
 where
     A: ToSocketAddrs + Send + 'static,
 {
-    let server = server::listen(address, state);
+    let addr = addr.to_socket_addrs()?.next().unwrap();
+    let handle = tokio::spawn(server::listen(addr, state));
 
-    match server {
-        Ok(server) => {
-            let address = server.server_addr();
-            let handle = std::thread::spawn(move || server.run());
-
-            Ok((address, handle))
-        }
-        Err(e) => Err(e),
-    }
+    Ok((addr, handle))
 }

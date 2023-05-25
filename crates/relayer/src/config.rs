@@ -7,19 +7,25 @@ pub mod proof_specs;
 pub mod types;
 
 use alloc::collections::BTreeMap;
+use byte_unit::Byte;
 use core::{
     cmp::Ordering,
     fmt::{Display, Error as FmtError, Formatter},
     str::FromStr,
     time::Duration,
 };
-use std::{fs, fs::File, io::Write, path::Path};
+use serde_derive::{Deserialize, Serialize};
+use std::{
+    fs,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
+use tendermint::block::Height as BlockHeight;
+use tendermint_light_client::verifier::types::TrustThreshold;
 use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
-use serde_derive::{Deserialize, Serialize};
-use tendermint_light_client_verifier::types::TrustThreshold;
-
 use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
@@ -147,6 +153,10 @@ pub mod default {
         ChainType::CosmosSdk
     }
 
+    pub fn ccv_consumer_chain() -> bool {
+        false
+    }
+
     pub fn tx_confirmation() -> bool {
         false
     }
@@ -163,6 +173,10 @@ pub mod default {
         Duration::from_secs(10)
     }
 
+    pub fn batch_delay() -> Duration {
+        Duration::from_millis(500)
+    }
+
     pub fn clock_drift() -> Duration {
         Duration::from_secs(5)
     }
@@ -171,12 +185,20 @@ pub mod default {
         Duration::from_secs(30)
     }
 
+    pub fn trusted_node() -> bool {
+        false
+    }
+
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
     }
 
     pub fn auto_register_counterparty_payee() -> bool {
         false
+    }
+
+    pub fn max_grpc_decoding_size() -> Byte {
+        Byte::from_bytes(33554432)
     }
 }
 
@@ -256,7 +278,7 @@ impl Default for ModeConfig {
             clients: Clients {
                 enabled: true,
                 refresh: true,
-                misbehaviour: false,
+                misbehaviour: true,
             },
             connections: Connections { enabled: false },
             channels: Channels { enabled: false },
@@ -421,7 +443,14 @@ impl Display for AddressType {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct GenesisRestart {
+    pub restart_height: BlockHeight,
+    pub archive_addr: Url,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     pub id: ChainId,
@@ -432,13 +461,23 @@ pub struct ChainConfig {
     pub grpc_addr: Url,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
+    #[serde(default = "default::batch_delay", with = "humantime_serde")]
+    pub batch_delay: Duration,
+    #[serde(default = "default::trusted_node")]
+    pub trusted_node: bool,
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]
     pub key_store_type: Store,
+    pub key_store_folder: Option<PathBuf>,
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
+
+    // This field is only meant to be set via the `update client` command,
+    // for when we need to ugprade a client across a genesis restart and
+    // therefore need and archive node to fetch blocks from.
+    pub genesis_restart: Option<GenesisRestart>,
 
     // This field is deprecated, use `gas_multiplier` instead
     pub gas_adjustment: Option<f64>,
@@ -449,6 +488,8 @@ pub struct ChainConfig {
     pub max_msg_num: MaxMsgNum,
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
+    #[serde(default = "default::max_grpc_decoding_size")]
+    pub max_grpc_decoding_size: Byte,
 
     /// A correction parameter that helps deal with clocks that are only approximately synchronized
     /// between the source and destination chains for a client.
@@ -467,9 +508,9 @@ pub struct ChainConfig {
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
 
-    /// CCV only
-    #[serde(default, with = "humantime_serde")]
-    pub unbonding_period: Option<Duration>,
+    /// CCV consumer chain
+    #[serde(default = "default::ccv_consumer_chain")]
+    pub ccv_consumer_chain: bool,
 
     #[serde(default)]
     pub memo_prefix: Memo,
@@ -563,6 +604,18 @@ mod tests {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests/config/fixtures/relayer_conf_example_fee_filter.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_decoding_size_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_decoding_size.toml"
         );
 
         let config = load(path).expect("could not parse config");
