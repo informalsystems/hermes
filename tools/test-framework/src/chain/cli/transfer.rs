@@ -49,6 +49,7 @@ pub fn transfer_from_chain(
     src_channel: &str,
     recipient: &str,
     token: &str,
+    timeout_height: &str,
 ) -> Result<(), Error> {
     simple_exec(
         chain_id,
@@ -73,6 +74,8 @@ pub fn transfer_from_chain(
             "test",
             "--fees",
             "1200stake",
+            "--timeout-height",
+            timeout_height,
             "--yes",
         ],
     )?;

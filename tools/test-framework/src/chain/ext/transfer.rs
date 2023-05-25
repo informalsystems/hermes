@@ -1,5 +1,6 @@
 use core::time::Duration;
 
+use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 
@@ -79,6 +80,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         port: &PortId,
         channel: &ChannelId,
         token: &TaggedTokenRef<Chain>,
+        timeout_height: &Height,
     ) -> Result<(), Error>;
 }
 
@@ -178,8 +180,10 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         port: &PortId,
         channel: &ChannelId,
         token: &TaggedTokenRef<Chain>,
+        timeout_height: &Height,
     ) -> Result<(), Error> {
         let driver = *self.value();
+        let timeout_height_str = timeout_height.revision_height() + 100;
         transfer_from_chain(
             driver.chain_id.as_str(),
             &driver.command_path,
@@ -190,6 +194,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             channel.as_ref(),
             recipient.value().as_str(),
             &token.value().to_string(),
+            &timeout_height_str.to_string(),
         )
     }
 }

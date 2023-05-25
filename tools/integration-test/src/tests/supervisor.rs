@@ -220,12 +220,15 @@ impl BinaryChannelTest for SupervisorScanTest {
             denom_a
         );
 
+        let dst_height = chains.handle_b().query_latest_height()?;
+
         chains.node_a.chain_driver().transfer_from_chain(
             &chains.node_a.wallets().user1(),
             &chains.node_b.wallets().user1().address(),
             &channels.port_a.0,
             &channels.channel_id_a.0,
             &denom_a.with_amount(1000u64).as_ref(),
+            &dst_height,
         )?;
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
