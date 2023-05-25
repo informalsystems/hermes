@@ -261,7 +261,7 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
                 &chains.node_b.wallets().user1().address(),
                 &channel.port_a.0,
                 &channel.channel_id_a.0,
-                &denom_a.with_amount(1000u64).as_ref(),
+                &denom_a.with_amount(amount1).as_ref(),
                 &dst_height,
             )?;
 
