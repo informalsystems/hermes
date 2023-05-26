@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/guide-templates.yaml
-      - crates/**
+      - crates/relayer-cli/**
       - scripts/**
       - tools/check-guide/**
 
@@ -11,7 +11,7 @@ on:
     branches: master
     paths:
       - .github/workflows/guide-templates.yaml
-      - crates/**
+      - crates/relayer-cli/**
       - scripts/**
       - tools/check-guide/**
 
@@ -36,4 +36,4 @@ jobs:
         name: Check guide
         with:
           command: run
-          args: -p check-guide
+          args: --manifest-path tools/check-guide/Cargo.toml
