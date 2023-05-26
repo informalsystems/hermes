@@ -3307,8 +3307,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a46ec6b25b028097ab682ffae11d09d64fe1e2535833b902f26a278a0f88a705"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -3338,8 +3337,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dbb7610ef8422d5886116868e48ab6a9ea72859b3bf9021c6d87318e5600225"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
 dependencies = [
  "flex-error",
  "serde",
@@ -3352,8 +3350,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9940a1376b5c1e3e5759143bc4308a7114f6293167ca5f05365d3386389de0ff"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3377,8 +3374,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-detector"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "765f272201f8dd04067498421b68a449a48623bf8f4df69b7e50071bec193daf"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3401,8 +3397,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4bc4c47cf36e740645e04128bd14ff5723aef86f5377fbd4d3b0149198dfc7e"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3414,8 +3409,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce23c8ff0e6634eb4c3c4aeed45076dc97dac91aac5501a905a67fa222e165b"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3432,8 +3426,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd2cc789170db5a35d4e0bb2490035c03ef96df08f119bee25fd8dab5a09aa25"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3468,8 +3461,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "023911e751fea64f20cd13bb9e15b5aae283aa3c7aaeb7e9bec1512032b32c99"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",

@@ -145,8 +145,16 @@ fn collect_events(res: block_results::Response) -> impl Iterator<Item = Event> {
         .unwrap_or_default()
         .into_iter()
         .map(Into::into);
+    // Since CometBFT 0.38, block events are returned in the
+    // finalize_block_events field and the other *_block_events fields
+    // are no longer present. We put these in place of the end_block_events
+    // in older protocol.
+    let finalize_events = res
+        .finalize_block_events
+        .into_iter()
+        .map(Into::into);
 
-    begin_events.chain(tx_events).chain(end_events)
+    begin_events.chain(tx_events).chain(end_events).chain(finalize_events)
 }
 
 fn event_matches(event: &Event, query: &Query) -> bool {

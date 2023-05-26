@@ -762,9 +762,6 @@ impl CosmosSdkChain {
         );
         crate::telemetry!(query, self.id(), "query_block");
 
-        let mut begin_block_events = vec![];
-        let mut end_block_events = vec![];
-
         let tm_height =
             tendermint::block::Height::try_from(block_height.revision_height()).unwrap();
 
@@ -775,24 +772,32 @@ impl CosmosSdkChain {
         let response_height = ICSHeight::new(self.id().version(), u64::from(response.height))
             .map_err(|_| Error::invalid_height_no_source())?;
 
-        begin_block_events.append(
-            &mut response
-                .begin_block_events
-                .unwrap_or_default()
-                .iter()
-                .filter_map(|ev| filter_matching_event(ev, request, seqs))
-                .map(|ev| IbcEventWithHeight::new(ev, response_height))
-                .collect(),
-        );
+        let begin_block_events = response
+            .begin_block_events
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|ev| filter_matching_event(ev, request, seqs))
+            .map(|ev| IbcEventWithHeight::new(ev, response_height))
+            .collect();
 
-        end_block_events.append(
-            &mut response
-                .end_block_events
-                .unwrap_or_default()
+        let mut end_block_events: Vec<_> = response
+            .end_block_events
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|ev| filter_matching_event(ev, request, seqs))
+            .map(|ev| IbcEventWithHeight::new(ev, response_height))
+            .collect();
+
+        // Since CometBFT 0.38, block events are returned in the
+        // finalize_block_events field and the other *_block_events fields
+        // are no longer present. We put these in place of the end_block_events
+        // in older protocol.
+        end_block_events.extend(
+            response
+                .finalize_block_events
                 .iter()
                 .filter_map(|ev| filter_matching_event(ev, request, seqs))
-                .map(|ev| IbcEventWithHeight::new(ev, response_height))
-                .collect(),
+                .map(|ev| IbcEventWithHeight::new(ev, response_height)),
         );
 
         Ok((begin_block_events, end_block_events))
