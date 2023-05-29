@@ -117,12 +117,9 @@ where
                 Err(e) => {
                     tracing::debug!("{e}");
 
-                    if let Some(cur_state) = mem::take(&mut state) {
-                        if !cur_state.group.is_empty() {
-                            yield Ok(cur_state.group);
-                        }
-
-                        yield Ok(vec![cur_state.cur]);
+                    if let Some(mut cur_state) = mem::take(&mut state) {
+                        cur_state.group.push(cur_state.cur);
+                        yield Ok(cur_state.group);
                     }
                 }
 

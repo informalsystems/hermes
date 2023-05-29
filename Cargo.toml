@@ -11,6 +11,9 @@ members = [
     "crates/chain-registry",
     "tools/integration-test",
     "tools/test-framework",
+]
+
+exclude = [
     "tools/check-guide",
     "tools/query-events",
 ]
