@@ -304,10 +304,10 @@ impl CosmosSdkChain {
                 *batch_delay,
                 self.rt.clone(),
             ),
-            Mode::Pull { poll_interval } => EventSource::rpc(
+            Mode::Pull { interval } => EventSource::rpc(
                 self.config.id.clone(),
                 self.rpc_client.clone(),
-                *poll_interval,
+                *interval,
                 self.rt.clone(),
             ),
         }

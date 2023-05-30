@@ -147,13 +147,13 @@ grpc_addr = 'http://127.0.0.1:9090'
 #      processing, increasing the latency of Hermes, but are more likely to batch events together.
 #      The default value provides good latency while minimizing the number of client updates needed.
 
-# b) Poll: for polling for IBC events via the `/block_results` RPC endpoint
+# b) Pull: for polling for IBC events via the `/block_results` RPC endpoint
 #
-#     `{ mode = 'poll', poll_interval = '1s' }`
+#     `{ mode = 'pull', interval = '1s' }`
 #
 #    where
 #
-#    - `poll_interval` is the interval at which to poll for blocks. Default: 1s
+#    - `interval` is the interval at which to poll for blocks. Default: 1s
 #
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
 
