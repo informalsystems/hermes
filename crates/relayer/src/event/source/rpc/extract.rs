@@ -24,9 +24,9 @@ pub fn extract_events(
                     if let DistributionType::Reward = dist.distribution_type {
                         telemetry!(fees_amount, chain_id, &dist.receiver, dist.fee.clone());
                     }
+                } else {
+                    events_with_height.push(IbcEventWithHeight { height, event });
                 }
-
-                events_with_height.push(IbcEventWithHeight { height, event });
             }
 
             _ => {}
