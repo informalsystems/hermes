@@ -307,16 +307,9 @@ impl EventSource {
         pin_mut!(batches);
 
         loop {
-            // Process any shutdown or subscription commands
-            if let Ok(cmd) = self.rx_cmd.try_recv() {
-                match cmd {
-                    EventSourceCmd::Shutdown => return Next::Abort,
-                    EventSourceCmd::Subscribe(tx) => {
-                        if let Err(e) = tx.send(self.event_bus.subscribe()) {
-                            error!("failed to send back subscription: {e}");
-                        }
-                    }
-                }
+            // Process any shutdown or subscription commands before we start doing any work.
+            if let Next::Abort = self.try_process_cmd() {
+                return Next::Abort;
             }
 
             let result = tokio::select! {
@@ -325,15 +318,15 @@ impl EventSource {
             };
 
             // Before handling the batch, check if there are any pending shutdown or subscribe commands.
-            if let Ok(cmd) = self.rx_cmd.try_recv() {
-                match cmd {
-                    EventSourceCmd::Shutdown => return Next::Abort,
-                    EventSourceCmd::Subscribe(tx) => {
-                        if let Err(e) = tx.send(self.event_bus.subscribe()) {
-                            error!("failed to send back subscription: {e}");
-                        }
-                    }
-                }
+            //
+            // This avoids having the supervisor process an event batch after the event source has been shutdown,
+            // and issues during testing where the WebSocket connection might get closed before the event
+            // source has been shutdown.
+            //
+            // It also allows subscribers to receive the latest event batch even if they
+            // subscribe while the batch being fetched.
+            if let Next::Abort = self.try_process_cmd() {
+                return Next::Abort;
             }
 
             match result {
@@ -381,6 +374,23 @@ impl EventSource {
         );
 
         self.event_bus.broadcast(Arc::new(Ok(batch)));
+    }
+
+    /// Process a pending command, if any.
+    fn try_process_cmd(&mut self) -> Next {
+        if let Ok(cmd) = self.rx_cmd.try_recv() {
+            match cmd {
+                EventSourceCmd::Shutdown => return Next::Abort,
+
+                EventSourceCmd::Subscribe(tx) => {
+                    if let Err(e) = tx.send(self.event_bus.subscribe()) {
+                        error!("failed to send back subscription: {e}");
+                    }
+                }
+            }
+        }
+
+        Next::Continue
     }
 }
 
