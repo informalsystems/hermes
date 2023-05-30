@@ -59,7 +59,7 @@ humantime = "2.1.0"
 regex = "1.8.1"
 moka = "0.11.0"
 uuid = { version = "1.3.3", features = ["v4"] }
-bs58 = "0.4.0"
+bs58 = "0.5.0"
 digest = "0.10.6"
 ed25519 = "1.5.2"
 ed25519-dalek = { version = "1.0.1", features = ["serde"] }
