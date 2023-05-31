@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use core::fmt::{Display, Error as FmtError, Formatter};
-use core::hash::{Hash, Hasher};
+use core::hash::Hash;
 use core::num::ParseIntError;
 use core::ops::{Add, Sub};
 use core::str::FromStr;
@@ -21,19 +21,11 @@ pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 /// a `u64` value and a raw timestamp. In protocol buffer, the timestamp is
 /// represented as a `u64` Unix timestamp in nanoseconds, with 0 representing the absence
 /// of timestamp.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Default, Deserialize, Serialize, PartialOrd, Ord)]
+#[derive(
+    Copy, Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash,
+)]
 pub struct Timestamp {
     time: Option<Time>,
-}
-
-// TODO: derive when tendermint::Time supports it:
-// https://github.com/informalsystems/tendermint-rs/pull/1054
-#[allow(clippy::derived_hash_with_manual_eq)]
-impl Hash for Timestamp {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let odt: Option<OffsetDateTime> = self.time.map(Into::into);
-        odt.hash(state);
-    }
 }
 
 /// The expiry result when comparing two timestamps.
@@ -43,7 +35,7 @@ impl Hash for Timestamp {
 ///
 /// User of this result may want to determine whether error should be raised,
 /// when either of the timestamp being compared is invalid.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Deserialize, Serialize, Hash)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub enum Expiry {
     Expired,
     NotExpired,
