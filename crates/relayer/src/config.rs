@@ -426,6 +426,7 @@ impl Default for HistogramBuckets {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "HistogramRangeUnchecked")]
 pub struct HistogramConfig {
+    #[serde(flatten)]
     pub range: Range<u64>,
     pub buckets: u64,
 }
@@ -434,16 +435,16 @@ impl TryFrom<HistogramRangeUnchecked> for HistogramConfig {
     type Error = String;
 
     fn try_from(value: HistogramRangeUnchecked) -> Result<Self, Self::Error> {
-        if value.min > value.max {
+        if value.start > value.end {
             return Err(format!(
                 "histogram range min `{}` must be smaller or equal than max `{}`",
-                value.min, value.max
+                value.start, value.end
             ));
         }
         Ok(Self {
             range: Range {
-                start: value.min,
-                end: value.max,
+                start: value.start,
+                end: value.end,
             },
             buckets: value.buckets,
         })
@@ -452,8 +453,8 @@ impl TryFrom<HistogramRangeUnchecked> for HistogramConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct HistogramRangeUnchecked {
-    min: u64,
-    max: u64,
+    start: u64,
+    end: u64,
     buckets: u64,
 }
 

@@ -17,8 +17,8 @@ enabled = true                                                  # default = fals
 host    = '127.0.0.1'                                           # default value
 port    = 3001                                                  # default value
 [telemetry.buckets]                                             # default value
-latency_submitted = { min = 5000, max = 10000, buckets = 10 }   # default value
-latency_confirmed = { min = 5000, max = 10000, buckets = 10 }   # default value
+latency_submitted = { start = 5000, end = 10000, buckets = 10 } # default value
+latency_confirmed = { start = 5000, end = 10000, buckets = 10 } # default value
 ```
 
 Please see the [relevant section for *Configuration*](../configuration/index.md) for more general details about Hermes configuration options.
