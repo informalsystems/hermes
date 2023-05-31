@@ -110,6 +110,36 @@ host = '127.0.0.1'
 # by the telemetry service. Default: 3001
 port = 3001
 
+# Specify the range of the 10 histogram buckets in ms for the `tx_latency_submitted` metric.
+# Default: { min = 500, max = 10000 } which will result in the following buckets:
+# tx_latency_submitted_bucket{...,le="950"} 0
+# tx_latency_submitted_bucket{...,le="1900"} 1
+# tx_latency_submitted_bucket{...,le="2850"} 1
+# tx_latency_submitted_bucket{...,le="3800"} 1
+# tx_latency_submitted_bucket{...,le="4750"} 1
+# tx_latency_submitted_bucket{...,le="5700"} 1
+# tx_latency_submitted_bucket{...,le="6650"} 1
+# tx_latency_submitted_bucket{...,le="7600"} 1
+# tx_latency_submitted_bucket{...,le="8550"} 1
+# tx_latency_submitted_bucket{...,le="9500"} 1
+# tx_latency_submitted_bucket{...,le="+Inf"} 1
+# submitted_range = { min = 5000, max = 10000 }
+
+# Specify the range of the 10 histogram buckets in ms for the `tx_latency_confirmed` metric.
+# Default: { min = 1000, max = 20000 } which will result in the following buckets:
+# tx_latency_confirmed_bucket{...,le="1900"} 0
+# tx_latency_confirmed_bucket{...,le="3800"} 0
+# tx_latency_confirmed_bucket{...,le="5700"} 0
+# tx_latency_confirmed_bucket{...,le="7600"} 0
+# tx_latency_confirmed_bucket{...,le="9500"} 0
+# tx_latency_confirmed_bucket{...,le="11400"} 0
+# tx_latency_confirmed_bucket{...,le="13300"} 0
+# tx_latency_confirmed_bucket{...,le="15200"} 0
+# tx_latency_confirmed_bucket{...,le="17100"} 0
+# tx_latency_confirmed_bucket{...,le="19000"} 0
+# tx_latency_confirmed_bucket{...,le="+Inf"} 1
+confirmed_range = { min = 1000, max = 20000 }
+
 
 # A chains section includes parameters related to a chain and the full node to which
 # the relayer can send transactions and queries.

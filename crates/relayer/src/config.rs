@@ -381,6 +381,38 @@ pub struct TelemetryConfig {
     pub enabled: bool,
     pub host: String,
     pub port: u16,
+    pub submitted_range: HistogramRange,
+    pub confirmed_range: HistogramRange,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "HistogramRangeUnchecked")]
+pub struct HistogramRange {
+    pub min: u64,
+    pub max: u64,
+}
+
+impl TryFrom<HistogramRangeUnchecked> for HistogramRange {
+    type Error = String;
+
+    fn try_from(value: HistogramRangeUnchecked) -> Result<Self, Self::Error> {
+        if value.min > value.max {
+            return Err(format!(
+                "histogram range min `{}` must be smaller or equal than max `{}`",
+                value.min, value.max
+            ));
+        }
+        Ok(Self {
+            min: value.min,
+            max: value.max,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct HistogramRangeUnchecked {
+    min: u64,
+    max: u64,
 }
 
 /// Default values for the telemetry configuration.
@@ -392,6 +424,14 @@ impl Default for TelemetryConfig {
             enabled: false,
             host: "127.0.0.1".to_string(),
             port: 3001,
+            submitted_range: HistogramRange {
+                min: 500,
+                max: 10000,
+            },
+            confirmed_range: HistogramRange {
+                min: 1000,
+                max: 20000,
+            },
         }
     }
 }
@@ -621,6 +661,28 @@ mod tests {
         let config = load(path).expect("could not parse config");
 
         dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_telemetry() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_valid_telemetry.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_invalid_telemetry() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_invalid_telemetry.toml"
+        );
+
+        assert!(load(path).is_err());
     }
 
     #[test]
