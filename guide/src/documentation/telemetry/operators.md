@@ -70,7 +70,7 @@ tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-
 tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version="",le="5000"} 2
 tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version="",le="+Inf"} 2
 ```
-The range of the buckets can be configured using the `submitted_range` and `confirmed_range` seen [here](./index.md)
+The range of the buckets can be configured using the `latency_submitted` and `latency_confirmed` seen [here](./index.md)
 
 
 ## Are Hermes transactions successful?
