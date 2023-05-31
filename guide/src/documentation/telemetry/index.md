@@ -13,9 +13,11 @@ The telemetry service is not active by default, and must be enabled in Hermes' c
 
 ```toml
 [telemetry]
-enabled = true          # default = false
-host    = '127.0.0.1'   # default value
-port    = 3001          # default value
+enabled = true                                  # default = false
+host    = '127.0.0.1'                           # default value
+port    = 3001                                  # default value
+submitted_range = { min = 500, max = 10000 }   # default value
+confirmed_range = { min = 1000, max = 20000 }   # default value
 ```
 
 Please see the [relevant section for *Configuration*](../configuration/index.md) for more general details about Hermes configuration options.
