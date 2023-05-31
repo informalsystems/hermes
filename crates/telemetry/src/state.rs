@@ -1074,36 +1074,27 @@ impl CustomAggregatorSelector {
     }
 
     pub fn get_submitted_range(&self) -> Vec<f64> {
-        let step = (self.tx_latency_submitted_range.end - self.tx_latency_submitted_range.start)
-            / self.tx_latency_submitted_buckets;
-        (0..=self.tx_latency_submitted_buckets)
-            .scan(self.tx_latency_submitted_range.start, |state, _| {
-                let current_value = *state;
-                if current_value >= self.tx_latency_submitted_range.end {
-                    return Some(self.tx_latency_submitted_range.end);
-                }
-                *state += step;
-                Some(current_value)
-            })
-            .map(|e| e as f64)
-            .collect::<Vec<_>>()
+        build_histogram_buckets(
+            self.tx_latency_submitted_range.start,
+            self.tx_latency_submitted_range.end,
+            self.tx_latency_submitted_buckets,
+        )
     }
 
     pub fn get_confirmed_range(&self) -> Vec<f64> {
-        let step = (self.tx_latency_confirmed_range.end - self.tx_latency_confirmed_range.start)
-            / self.tx_latency_confirmed_buckets;
-        (0..=self.tx_latency_confirmed_buckets)
-            .scan(self.tx_latency_confirmed_range.start, |state, _| {
-                let current_value = *state;
-                if current_value >= self.tx_latency_confirmed_range.end {
-                    return Some(self.tx_latency_confirmed_range.end);
-                }
-                *state += step;
-                Some(current_value)
-            })
-            .map(|e| e as f64)
-            .collect::<Vec<_>>()
+        build_histogram_buckets(
+            self.tx_latency_confirmed_range.start,
+            self.tx_latency_confirmed_range.end,
+            self.tx_latency_confirmed_buckets,
+        )
     }
+}
+
+fn build_histogram_buckets(start: u64, end: u64, buckets: u64) -> Vec<f64> {
+    let step = (end - start) / buckets;
+    (0..=buckets)
+        .map(|i| (start + i * step) as f64)
+        .collect::<Vec<_>>()
 }
 
 impl AggregatorSelector for CustomAggregatorSelector {

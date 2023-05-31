@@ -202,22 +202,23 @@ pub mod default {
         Byte::from_bytes(33554432)
     }
 
-    pub fn buckets() -> HistogramBuckets {
-        HistogramBuckets {
-            latency_submitted: HistogramConfig {
-                range: Range {
-                    start: 500,
-                    end: 10000,
-                },
-                buckets: 10,
+    pub fn latency_submitted() -> HistogramConfig {
+        HistogramConfig {
+            range: Range {
+                start: 500,
+                end: 10000,
             },
-            latency_confirmed: HistogramConfig {
-                range: Range {
-                    start: 1000,
-                    end: 20000,
-                },
-                buckets: 10,
+            buckets: 10,
+        }
+    }
+
+    pub fn latency_confirmed() -> HistogramConfig {
+        HistogramConfig {
+            range: Range {
+                start: 1000,
+                end: 20000,
             },
+            buckets: 10,
         }
     }
 }
@@ -401,33 +402,23 @@ pub struct TelemetryConfig {
     pub enabled: bool,
     pub host: String,
     pub port: u16,
-    #[serde(default = "default::buckets")]
+    #[serde(default = "HistogramBuckets::default")]
     pub buckets: HistogramBuckets,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct HistogramBuckets {
+    #[serde(default = "default::latency_submitted")]
     pub latency_submitted: HistogramConfig,
+    #[serde(default = "default::latency_confirmed")]
     pub latency_confirmed: HistogramConfig,
 }
 
 impl Default for HistogramBuckets {
     fn default() -> Self {
         Self {
-            latency_submitted: HistogramConfig {
-                range: Range {
-                    start: 500,
-                    end: 10000,
-                },
-                buckets: 10,
-            },
-            latency_confirmed: HistogramConfig {
-                range: Range {
-                    start: 1000,
-                    end: 20000,
-                },
-                buckets: 10,
-            },
+            latency_submitted: default::latency_submitted(),
+            latency_confirmed: default::latency_confirmed(),
         }
     }
 }
