@@ -19,6 +19,7 @@ use std::{
     fs,
     fs::File,
     io::Write,
+    ops::Range,
     path::{Path, PathBuf},
 };
 use tendermint::block::Height as BlockHeight;
@@ -201,17 +202,22 @@ pub mod default {
         Byte::from_bytes(33554432)
     }
 
-    pub fn submitted_range() -> HistogramRange {
-        HistogramRange {
-            min: 500,
-            max: 10000,
-        }
-    }
-
-    pub fn confirmed_range() -> HistogramRange {
-        HistogramRange {
-            min: 1000,
-            max: 20000,
+    pub fn buckets() -> HistogramBuckets {
+        HistogramBuckets {
+            latency_submitted: HistogramConfig {
+                range: Range {
+                    start: 500,
+                    end: 10000,
+                },
+                buckets: 10,
+            },
+            latency_confirmed: HistogramConfig {
+                range: Range {
+                    start: 1000,
+                    end: 20000,
+                },
+                buckets: 10,
+            },
         }
     }
 }
@@ -395,20 +401,45 @@ pub struct TelemetryConfig {
     pub enabled: bool,
     pub host: String,
     pub port: u16,
-    #[serde(default = "default::submitted_range")]
-    pub submitted_range: HistogramRange,
-    #[serde(default = "default::confirmed_range")]
-    pub confirmed_range: HistogramRange,
+    #[serde(default = "default::buckets")]
+    pub buckets: HistogramBuckets,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct HistogramBuckets {
+    pub latency_submitted: HistogramConfig,
+    pub latency_confirmed: HistogramConfig,
+}
+
+impl Default for HistogramBuckets {
+    fn default() -> Self {
+        Self {
+            latency_submitted: HistogramConfig {
+                range: Range {
+                    start: 500,
+                    end: 10000,
+                },
+                buckets: 10,
+            },
+            latency_confirmed: HistogramConfig {
+                range: Range {
+                    start: 1000,
+                    end: 20000,
+                },
+                buckets: 10,
+            },
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "HistogramRangeUnchecked")]
-pub struct HistogramRange {
-    pub min: u64,
-    pub max: u64,
+pub struct HistogramConfig {
+    pub range: Range<u64>,
+    pub buckets: u64,
 }
 
-impl TryFrom<HistogramRangeUnchecked> for HistogramRange {
+impl TryFrom<HistogramRangeUnchecked> for HistogramConfig {
     type Error = String;
 
     fn try_from(value: HistogramRangeUnchecked) -> Result<Self, Self::Error> {
@@ -419,8 +450,11 @@ impl TryFrom<HistogramRangeUnchecked> for HistogramRange {
             ));
         }
         Ok(Self {
-            min: value.min,
-            max: value.max,
+            range: Range {
+                start: value.min,
+                end: value.max,
+            },
+            buckets: value.buckets,
         })
     }
 }
@@ -429,6 +463,7 @@ impl TryFrom<HistogramRangeUnchecked> for HistogramRange {
 pub struct HistogramRangeUnchecked {
     min: u64,
     max: u64,
+    buckets: u64,
 }
 
 /// Default values for the telemetry configuration.
@@ -440,14 +475,7 @@ impl Default for TelemetryConfig {
             enabled: false,
             host: "127.0.0.1".to_string(),
             port: 3001,
-            submitted_range: HistogramRange {
-                min: 500,
-                max: 10000,
-            },
-            confirmed_range: HistogramRange {
-                min: 1000,
-                max: 20000,
-            },
+            buckets: HistogramBuckets::default(),
         }
     }
 }

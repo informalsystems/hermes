@@ -24,8 +24,10 @@ tx_confirmation = true
 enabled = true
 host = '127.0.0.1'
 port = 3001
-submitted_range = { min = 10000, max = 5000 }
-confirmed_range = { min = 10000, max = 20000 }
+
+[telemetry.buckets]
+latency_submitted = { min = 5000, max = 1000, buckets = 10 } # min can't be smaller than max
+latency_confirmed = { min = 5000, max = 10000, buckets = 10 }
 
 [[chains]]
 id = 'chain_A'
