@@ -135,6 +135,9 @@ rpc_timeout = '10s'
 # The maximum number of requests which can be issued to the chain concurrently.
 # Higher number may increase throughput when relaying on multiple channels
 # or between multiple chains but may also overload the node.
+# If this value is set to 0, then the maximum amount of concurrency as 
+# determined by the system will be used, effectively disabling the limit.
+# Doing this may completely overload the node.
 # Default: 50
 max_concurrency = 50
 
