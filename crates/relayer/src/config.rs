@@ -200,6 +200,20 @@ pub mod default {
     pub fn max_grpc_decoding_size() -> Byte {
         Byte::from_bytes(33554432)
     }
+
+    pub fn submitted_range() -> HistogramRange {
+        HistogramRange {
+            min: 500,
+            max: 10000,
+        }
+    }
+
+    pub fn confirmed_range() -> HistogramRange {
+        HistogramRange {
+            min: 1000,
+            max: 20000,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -381,7 +395,9 @@ pub struct TelemetryConfig {
     pub enabled: bool,
     pub host: String,
     pub port: u16,
+    #[serde(default = "default::submitted_range")]
     pub submitted_range: HistogramRange,
+    #[serde(default = "default::confirmed_range")]
     pub confirmed_range: HistogramRange,
 }
 
