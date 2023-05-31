@@ -227,7 +227,7 @@ impl EventSource {
     fn broadcast_batch(&mut self, batch: EventBatch) {
         telemetry!(ws_events, &batch.chain_id, batch.events.len() as u64);
 
-        debug!(
+        trace!(
             chain = %batch.chain_id,
             count = %batch.events.len(),
             height = %batch.height,
