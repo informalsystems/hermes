@@ -169,9 +169,9 @@ impl Display for Timestamp {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(
             f,
-            "Timestamp({})",
+            "{}",
             self.time
-                .map_or("NoTimestamp".to_string(), |time| time.to_rfc3339())
+                .map_or_else(|| "NoTimestamp".to_string(), |time| time.to_rfc3339())
         )
     }
 }
