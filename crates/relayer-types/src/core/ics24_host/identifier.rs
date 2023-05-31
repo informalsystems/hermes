@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use super::validate::*;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics24_host::error::ValidationError;
-use crate::prelude::*;
 
 /// This type is subject to future changes.
 ///

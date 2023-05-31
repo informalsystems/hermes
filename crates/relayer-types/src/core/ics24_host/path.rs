@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 /// Path-space as listed in ICS-024
 /// https://github.com/cosmos/ibc/tree/master/spec/core/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.

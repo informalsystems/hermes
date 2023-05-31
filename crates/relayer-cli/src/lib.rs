@@ -17,7 +17,7 @@
     rust_2018_idioms,
     trivial_casts,
     unused_lifetimes,
-    unused_qualifications
+    // unused_qualifications
 )]
 #![allow(deprecated)]
 

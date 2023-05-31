@@ -1,7 +1,7 @@
 use crate::applications::transfer::acknowledgement::Acknowledgement;
 use crate::applications::transfer::{Amount, PrefixedDenom, MODULE_ID_STR};
 use crate::events::ModuleEvent;
-use crate::prelude::*;
+
 use crate::signer::Signer;
 
 const EVENT_TYPE_PACKET: &str = "fungible_token_packet";
