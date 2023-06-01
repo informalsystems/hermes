@@ -2,7 +2,7 @@
 /// https://github.com/cosmos/ibc/tree/master/spec/core/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
 ///
-use core::str::FromStr;
+use std::str::FromStr;
 
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
