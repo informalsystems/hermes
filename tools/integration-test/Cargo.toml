@@ -36,6 +36,7 @@ experimental = []
 mbt = []
 forward-packet = []
 ics31 = []
+clean-workers = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"

@@ -99,6 +99,11 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     let mut idle_worker_timer = 0;
+    let packet_cmd_worker_idle_timeout = if clear_interval > 0 {
+        clear_interval * 5
+    } else {
+        PACKET_CMD_WORKER_IDLE_TIMEOUT
+    };
     spawn_background_task(span, Some(Duration::from_millis(200)), move || {
         if let Ok(cmd) = cmd_rx.try_recv() {
             // Try to clear pending packets. At different levels down in `handle_packet_cmd` there
@@ -120,7 +125,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                 idle_worker_timer += 1;
             }
 
-            if idle_worker_timer > PACKET_CMD_WORKER_IDLE_TIMEOUT {
+            if idle_worker_timer > packet_cmd_worker_idle_timeout {
                 debug!("Will abort packet_cmd_worker");
                 return Ok(Next::Abort);
             }
