@@ -116,6 +116,7 @@ impl BinaryChannelTest for CleanChannelWorkersTest {
         )?;
 
         let supervisor = relayer.spawn_supervisor()?;
+
         // Assert the packet workers are correctly spawned
         assert_eventual_workers_removed(&supervisor, &ObjectType::Channel, 2)?;
 
@@ -132,7 +133,7 @@ fn assert_eventual_workers_removed(
     goal: usize,
 ) -> Result<(), Error> {
     assert_eventually_succeed(
-        "eventual packet workers",
+        &format!("eventual {worker_type} workers"),
         50,
         Duration::from_secs(10),
         || {

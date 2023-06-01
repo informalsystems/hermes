@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
@@ -255,6 +257,19 @@ pub enum ObjectType {
     Packet,
     Wallet,
     CrossChainQuery,
+}
+
+impl Display for ObjectType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ObjectType::Client => write!(f, "client"),
+            ObjectType::Channel => write!(f, "channel"),
+            ObjectType::Connection => write!(f, "connection"),
+            ObjectType::Packet => write!(f, "packet"),
+            ObjectType::Wallet => write!(f, "wallet"),
+            ObjectType::CrossChainQuery => write!(f, "cross_chain_query"),
+        }
+    }
 }
 
 impl From<Client> for Object {
