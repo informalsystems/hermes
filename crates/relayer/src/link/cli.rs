@@ -3,6 +3,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use itertools::Itertools;
 use tracing::{error_span, info};
 
 use ibc_relayer_types::events::IbcEvent;
@@ -23,6 +24,7 @@ use crate::link::relay_path::RelayPath;
 use crate::link::relay_sender::SyncSender;
 use crate::link::Link;
 use crate::path::PathIdentifiers;
+use crate::util::collate::CollatedIterExt;
 use crate::util::pretty::{PrettyDuration, PrettySlice};
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
@@ -150,7 +152,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         info!(
             "{} unreceived acknowledgements found: {} ",
             sequences.len(),
-            PrettySlice(&sequences)
+            sequences.iter().copied().collated().format(", "),
         );
 
         let query_height = match packet_data_query_height {
