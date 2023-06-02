@@ -305,6 +305,8 @@ fn batch_messages(
     Ok(batches)
 }
 
+// Clippy on 1.70 yields false positives
+#[allow(clippy::redundant_clone)]
 #[cfg(test)]
 mod tests {
     use super::batch_messages;
