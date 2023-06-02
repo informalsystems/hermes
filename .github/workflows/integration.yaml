@@ -78,6 +78,9 @@ jobs:
           - package: juno
             command: junod
             account_prefix: juno
+          - package: neutron
+            command: neutrond
+            account_prefix: neutron
 
     steps:
       - uses: actions/checkout@v3
