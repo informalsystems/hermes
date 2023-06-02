@@ -1,3 +1,5 @@
+#![allow(unused_qualifications)] // Fix for warning in `ValueEnum` generated code
+
 //! Definition of the entrypoint for the Hermes CLI.
 
 use std::path::PathBuf;
