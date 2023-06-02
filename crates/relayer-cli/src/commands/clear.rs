@@ -12,7 +12,6 @@ use ibc_relayer_types::events::IbcEvent;
 use crate::application::app_config;
 use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
-use crate::error::Error;
 
 /// `clear` subcommands
 #[derive(Command, Debug, Parser, Runnable)]
@@ -115,11 +114,13 @@ impl Runnable for ClearPacketsCmd {
             src_port_id: self.port_id.clone(),
             src_channel_id: self.channel_id.clone(),
         };
+
         let fwd_link = match Link::new_from_opts(chains.src.clone(), chains.dst, opts, false, false)
         {
             Ok(link) => link,
             Err(e) => Output::error(e).exit(),
         };
+
         let rev_link = match fwd_link.reverse(false, false) {
             Ok(link) => link,
             Err(e) => Output::error(e).exit(),
@@ -127,28 +128,32 @@ impl Runnable for ClearPacketsCmd {
 
         // Schedule RecvPacket messages for pending packets in both directions.
         // This may produce pending acks which will be processed in the next phase.
-        run_and_collect_events(&mut ev_list, || {
+        run_and_collect_events("forward recv and timeout", &mut ev_list, || {
             fwd_link.relay_recv_packet_and_timeout_messages()
         });
-        run_and_collect_events(&mut ev_list, || {
+        run_and_collect_events("reverse recv and timeout", &mut ev_list, || {
             rev_link.relay_recv_packet_and_timeout_messages()
         });
 
         // Schedule AckPacket messages in both directions.
-        run_and_collect_events(&mut ev_list, || fwd_link.relay_ack_packet_messages());
-        run_and_collect_events(&mut ev_list, || rev_link.relay_ack_packet_messages());
+        run_and_collect_events("forward ack", &mut ev_list, || {
+            fwd_link.relay_ack_packet_messages()
+        });
+        run_and_collect_events("reverse ack", &mut ev_list, || {
+            rev_link.relay_ack_packet_messages()
+        });
 
         Output::success(ev_list).exit()
     }
 }
 
-fn run_and_collect_events<F>(ev_list: &mut Vec<IbcEvent>, f: F)
+fn run_and_collect_events<F>(desc: &str, ev_list: &mut Vec<IbcEvent>, f: F)
 where
     F: FnOnce() -> Result<Vec<IbcEvent>, LinkError>,
 {
     match f() {
         Ok(mut ev) => ev_list.append(&mut ev),
-        Err(e) => Output::error(Error::link(e)).exit(),
+        Err(e) => tracing::error!("Failed to relay {desc} packets: {e:?}"),
     };
 }
 

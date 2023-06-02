@@ -140,15 +140,20 @@ grpc_addr = 'http://127.0.0.1:9090'
 #
 #    - `url` is the WebSocket URL to connect to. Required
 #    - `batch_delay` is the delay until event batch is
-#      emitted if no NewBlock events have come yet. Default: 500ms
+#      emitted in the absence of NewBlock event. Default: 500ms
+#      Lower values will result in faster event processing, improving the latency of Hermes,
+#      but may split the events into more batches than necessary, requiring more client updates
+#      to be submitted, yielding higher costs. Higher values will result in slower event
+#      processing, increasing the latency of Hermes, but are more likely to batch events together.
+#      The default value provides good latency while minimizing the number of client updates needed.
+
+# b) Pull: for polling for IBC events via the `/block_results` RPC endpoint
 #
-# b) Poll: for polling for IBC events via the `/block_results` RPC endpoint
-#
-#     `{ mode = 'poll', poll_interval = '1s' }`
+#     `{ mode = 'pull', interval = '1s' }`
 #
 #    where
 #
-#    - `poll_interval` is the interval at which to poll for blocks. Default: 1s
+#    - `interval` is the interval at which to poll for blocks. Default: 1s
 #
 # c) Hybrid: for listening for NewBlock events over WebSocket, and polling for IBC events
 #   via the `/block_results` RPC endpoint

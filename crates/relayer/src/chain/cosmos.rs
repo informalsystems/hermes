@@ -305,10 +305,10 @@ impl CosmosSdkChain {
                 self.rt.clone(),
             ),
 
-            Mode::Pull { poll_interval } => EventSource::rpc(
+            Mode::Pull { interval } => EventSource::rpc(
                 self.config.id.clone(),
                 self.rpc_client.clone(),
-                *poll_interval,
+                *interval,
                 self.rt.clone(),
             ),
 
@@ -763,7 +763,7 @@ impl CosmosSdkChain {
             &mut response
                 .begin_block_events
                 .unwrap_or_default()
-                .into_iter()
+                .iter()
                 .filter_map(|ev| filter_matching_event(ev, request, seqs))
                 .map(|ev| IbcEventWithHeight::new(ev, response_height))
                 .collect(),
@@ -773,7 +773,7 @@ impl CosmosSdkChain {
             &mut response
                 .end_block_events
                 .unwrap_or_default()
-                .into_iter()
+                .iter()
                 .filter_map(|ev| filter_matching_event(ev, request, seqs))
                 .map(|ev| IbcEventWithHeight::new(ev, response_height))
                 .collect(),

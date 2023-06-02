@@ -468,10 +468,11 @@ pub enum EventSourceMode {
     },
 
     /// Pull-based event source, via RPC /block_results
+    #[serde(alias = "poll")]
     Pull {
         /// The polling interval
         #[serde(default = "default::poll_interval", with = "humantime_serde")]
-        poll_interval: Duration,
+        interval: Duration,
     },
 
     /// Hybrid mode, listens to NewBlock events via WebSocket and pulls the actual events via RPC

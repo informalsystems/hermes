@@ -14,10 +14,10 @@ cannot be relayed using the frozen client.
 
 The misbehaviour monitor starts by analyzing all headers used in prior client updates.
 Once finished it registers for update client events and checks any new headers for misbehaviour.
-If it detects evidence of misbehaviour, it submits a transaction with the evidence to the chain.
+If evidence of misbehaviour is found, it submits:
+- the tendermint evidence to the reference chain
+- the IBC Misbehaviour message with the evidence to the host chain
 If the chain validates the transaction then the monitor exits.
-
-> This is an experimental feature.
 
 The following types of misbehaviour are handled:
 1. **Fork**

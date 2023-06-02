@@ -136,8 +136,8 @@ impl EventSource {
 
     async fn step(&mut self) -> Result<Next> {
         // Process any shutdown or subscription commands before we start doing any work
-        if let Some(next) = self.try_process_cmd() {
-            return Ok(next);
+        if let Next::Abort = self.try_process_cmd() {
+            return Ok(Next::Abort);
         }
 
         let latest_height = latest_height(&self.rpc_client).await?;
@@ -159,8 +159,13 @@ impl EventSource {
         };
 
         // Before handling the batch, check if there are any pending shutdown or subscribe commands.
-        if let Some(next) = self.try_process_cmd() {
-            return Ok(next);
+        //
+        // This avoids having the supervisor process an event batch after the event source has been shutdown.
+        //
+        // It also allows subscribers to receive the latest event batch even if they
+        // subscribe while the batch being fetched.
+        if let Next::Abort = self.try_process_cmd() {
+            return Ok(Next::Abort);
         }
 
         for batch in batches.unwrap_or_default() {
@@ -170,10 +175,12 @@ impl EventSource {
         Ok(Next::Continue)
     }
 
-    fn try_process_cmd(&mut self) -> Option<Next> {
+    /// Process any pending commands, if any.
+    fn try_process_cmd(&mut self) -> Next {
         if let Ok(cmd) = self.rx_cmd.try_recv() {
             match cmd {
-                EventSourceCmd::Shutdown => return Some(Next::Abort),
+                EventSourceCmd::Shutdown => return Next::Abort,
+
                 EventSourceCmd::Subscribe(tx) => {
                     if let Err(e) = tx.send(self.event_bus.subscribe()) {
                         error!("failed to send back subscription: {e}");
@@ -182,7 +189,7 @@ impl EventSource {
             }
         }
 
-        None
+        Next::Continue
     }
 
     async fn fetch_batches(&mut self, latest_height: BlockHeight) -> Result<Vec<EventBatch>> {
@@ -220,7 +227,7 @@ impl EventSource {
     fn broadcast_batch(&mut self, batch: EventBatch) {
         telemetry!(ws_events, &batch.chain_id, batch.events.len() as u64);
 
-        debug!(
+        trace!(
             chain = %batch.chain_id,
             count = %batch.events.len(),
             height = %batch.height,

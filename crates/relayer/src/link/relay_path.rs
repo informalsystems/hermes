@@ -419,11 +419,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         telemetry!(received_event_batch, tracking_id);
 
         for i in 1..=MAX_RETRIES {
-            let cleared = self
-                .schedule_recv_packet_and_timeout_msgs(height, tracking_id)
-                .and_then(|_| self.schedule_packet_ack_msgs(height, tracking_id));
+            let cleared_recv = self.schedule_recv_packet_and_timeout_msgs(height, tracking_id);
+            let cleared_ack = self.schedule_packet_ack_msgs(height, tracking_id);
 
-            match cleared {
+            match cleared_recv.and(cleared_ack) {
                 Ok(()) => return Ok(()),
                 Err(e) => error!(
                     "failed to clear packets, retry {}/{}: {}",
