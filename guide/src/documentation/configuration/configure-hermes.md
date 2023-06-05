@@ -158,8 +158,10 @@ event_source = { mode = 'pull', interval = '2s' }
 ```
 
 The pull model of relaying is in contrast with Hermes' default push model, where IBC events are received
-over WebSocket. This mode should only be used in situations where Hermes misses events that it should
-be receiving, such as when relaying for a CosmWasm-enabled blockchain which emits IBC events without the
+over WebSocket. 
+
+> **Note:** This mode should only be used in situations where Hermes misses events that it should
+be receiving, such as when relaying for CosmWasm-enabled blockchains which emit IBC events without the
 `message` attribute. Without this attribute, the WebSocket is not able to catch these events to stream
 to Hermes, so the `/block_results` RPC endpoint must be used instead. 
 
