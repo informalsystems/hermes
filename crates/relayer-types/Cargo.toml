@@ -36,10 +36,10 @@ bytes = { version = "1.4.0" }
 safe-regex = { version = "0.2.5" }
 subtle-encoding = { version = "0.5" }
 flex-error = { version = "0.4.4" }
-derive_more = { version = "0.99.17", features = ["from", "into", "display"] }
+derive_more = { version = "0.99.17", default-features = false, features = ["from", "into", "display"] }
 uint = { version = "0.9" }
 itertools = { version = "0.10.3" }
-primitive-types = { version = "0.12.1", features = ["serde_no_std"] }
+primitive-types = { version = "0.12.1", default-features = false, features = ["serde_no_std"] }
 dyn-clone = "1.0.8"
 num-rational = "0.4.1"
 
