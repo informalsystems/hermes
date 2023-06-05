@@ -140,6 +140,29 @@ event_source = { mode = 'push', url = 'wss://hello:world@mydomain.com:26657/webs
 > **Caution:** Warning: The "Basic" authentication scheme sends the credentials encoded but not encrypted.
 > This would be completely insecure unless the exchange was over a secure connection (HTTPS/TLS).
 
+## Configuring Support for Wasm Relaying
+
+As of version 1.6.0, Hermes supports the relaying of wasm messages natively. This is facilitated by configuring
+Hermes to use pull-based relaying by polling for IBC events via the `/block_results` RPC endpoint. Set
+the `event_source` parameter to pull mode in `config.toml`:
+
+```toml
+event_source = 'poll'
+```
+
+The default interval at which Hermes polls the RPC endpoint is 1 second. If you need to change the interval,
+you can do so like this:
+
+```toml
+event_source = { mode = 'pull', interval = '2s' }
+```
+
+The pull model of relaying is in contrast with Hermes' default push model, where IBC events are received
+over WebSocket. This mode should only be used in situations where Hermes misses events that it should
+be receiving, such as when relaying for a CosmWasm-enabled blockchain which emits IBC events without the
+`message` attribute. Without this attribute, the WebSocket is not able to catch these events to stream
+to Hermes, so the `/block_results` RPC endpoint must be used instead. 
+
 [http-basic-auth]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication
 [ica]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
 [chain-registry]: https://github.com/cosmos/chain-registry
