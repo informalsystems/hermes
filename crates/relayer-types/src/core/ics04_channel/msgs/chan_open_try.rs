@@ -3,7 +3,7 @@ use crate::core::ics04_channel::error::Error as ChannelError;
 use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::prelude::*;
+
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -134,7 +134,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
     use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
@@ -164,7 +164,6 @@ pub mod test_util {
 mod tests {
     use crate::core::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-    use crate::prelude::*;
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
     use ibc_proto::ibc::core::client::v1::Height;

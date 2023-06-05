@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use ibc_proto::ibc::mock::Misbehaviour as RawMisbehaviour;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};

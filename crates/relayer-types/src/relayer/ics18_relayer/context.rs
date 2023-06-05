@@ -1,4 +1,3 @@
-use crate::prelude::*;
 use ibc_proto::google::protobuf::Any;
 
 use crate::core::ics02_client::client_state::ClientState;
