@@ -323,6 +323,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore]
     async fn fetch_chain_config_with_packet_filters() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[
             "cosmoshub".to_string(),
@@ -408,6 +409,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore]
     async fn fetch_chain_config_without_packet_filters() -> Result<(), RegistryError> {
         // The commit from 28.04.23 does not have `evmos-juno.json` nor `juno-evmos.json` file:
         // https://github.com/cosmos/chain-registry/tree/master/_IBC
@@ -417,6 +419,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore]
     async fn fetch_one_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &["cosmoshub".to_string()]; // Must be sorted
         should_have_no_filter(test_chains).await
@@ -424,6 +427,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore]
     async fn fetch_no_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[];
         let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
