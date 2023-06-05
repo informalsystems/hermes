@@ -17,17 +17,14 @@ description  = """
 all-features = true
 
 [features]
-default = ["std"]
-std = ["flex-error/std", "flex-error/eyre_tracer", "ibc-proto/std", "clock"]
-clock = ["tendermint/clock", "time/std"]
-
+clock = []
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = ["tendermint-testgen", "clock", "std"]
+mocks = ["tendermint-testgen", "clock"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.31.0-alpha.2", features = ["std"] }
+ibc-proto = { version = "0.31.0-alpha.2" }
 ics23 = { version = "0.10.1", features = ["std", "host-functions"] }
 time = { version = ">=0.3.0, <0.3.21" }
 serde_derive = { version = "1.0.104" }
@@ -48,6 +45,7 @@ num-rational = "0.4.1"
 
 [dependencies.tendermint]
 version = "0.32.0"
+features = ["clock"]
 
 [dependencies.tendermint-proto]
 version = "0.32.0"

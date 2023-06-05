@@ -94,7 +94,7 @@ impl Runnable for AutoCmd {
                     .iter_mut()
                     .zip(names_and_keys.iter().map(|n| &n.1).cloned());
 
-                for (mut chain_config, key_option) in configs_and_keys {
+                for (chain_config, key_option) in configs_and_keys {
                     // If a key is provided, use it
                     if let Some(key_name) = key_option {
                         info!("{}: uses key \"{}\"", &chain_config.id, &key_name);

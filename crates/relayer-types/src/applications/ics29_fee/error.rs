@@ -4,7 +4,6 @@ use prost::EncodeError;
 use crate::applications::transfer::error::Error as TransferError;
 use crate::core::ics04_channel::error::Error as ChannelError;
 use crate::core::ics24_host::error::ValidationError;
-use crate::prelude::*;
 use crate::signer::SignerError;
 
 define_error! {

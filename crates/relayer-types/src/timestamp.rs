@@ -1,11 +1,9 @@
-use crate::prelude::*;
-
-use core::fmt::{Display, Error as FmtError, Formatter};
-use core::hash::Hash;
-use core::num::ParseIntError;
-use core::ops::{Add, Sub};
-use core::str::FromStr;
-use core::time::Duration;
+use std::fmt::{Display, Error as FmtError, Formatter};
+use std::hash::Hash;
+use std::num::ParseIntError;
+use std::ops::{Add, Sub};
+use std::str::FromStr;
+use std::time::Duration;
 
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};

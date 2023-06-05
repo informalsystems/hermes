@@ -2,8 +2,8 @@
 //! represented as a fraction with valid values in the
 //! range `[0, 1)`.
 
-use core::convert::TryFrom;
-use core::fmt::{Display, Error as FmtError, Formatter};
+use std::convert::TryFrom;
+use std::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc_proto::protobuf::Protobuf;
 use num_rational::Ratio;
