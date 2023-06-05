@@ -118,7 +118,7 @@ impl WorkerHandle {
 
     /// Verify if at least one task of the WorkerHandle is stopped.
     /// If it is the case, shutdown all remaining tasks.
-    pub fn is_stopped_then_kill(&self) -> bool {
+    pub fn shutdown_stopped_tasks(&self) -> bool {
         if self.task_handles.iter().any(|t| t.is_stopped()) {
             for task in self.task_handles.iter() {
                 task.shutdown();
