@@ -17,9 +17,6 @@ default-run = "hermes"
 [[bin]]
 name = "hermes"
 
-[profile.release]
-overflow-checks = true
-
 [features]
 default     = ["telemetry", "rest-server", "std", "eyre_tracer"]
 std         = ["flex-error/std"]

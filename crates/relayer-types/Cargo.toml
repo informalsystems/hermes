@@ -13,9 +13,6 @@ description  = """
     This crate comprises the main data structures and on-chain logic.
 """
 
-[profile.release]
-overflow-checks = true
-
 [package.metadata.docs.rs]
 all-features = true
 
