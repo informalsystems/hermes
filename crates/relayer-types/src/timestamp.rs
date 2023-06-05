@@ -1,5 +1,5 @@
 use std::fmt::{Display, Error as FmtError, Formatter};
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::num::ParseIntError;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
