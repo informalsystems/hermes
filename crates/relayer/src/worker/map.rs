@@ -224,8 +224,8 @@ impl WorkerMap {
         let stopped_workers: Vec<(WorkerId, Object)> = self
             .workers
             .iter()
-            .filter(|(_, w)| w.shutdown_stopped_tasks())
-            .map(|(o, w)| (o.id(), w.clone()))
+            .filter(|(_, worker_handle)| worker_handle.shutdown_stopped_tasks())
+            .map(|(object, worker_handle)| (worker_handle.id(), object.clone()))
             .collect();
 
         for worker in stopped_workers {

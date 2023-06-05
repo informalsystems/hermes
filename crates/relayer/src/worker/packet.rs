@@ -42,7 +42,7 @@ const INCENTIVIZED_CACHE_MAX_CAPACITY: u64 = 1000;
 
 // Number of NewBlock consecutive NewBlock events before aborting the
 // packet cmd worker.
-const PACKET_CMD_WORKER_IDLE_TIMEOUT: u64 = 100;
+const IDLE_TIMEOUT_BLOCKS: u64 = 100;
 
 fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     if e.is_expired_or_frozen_error() {
@@ -102,7 +102,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     let packet_cmd_worker_idle_timeout = if clear_interval > 0 {
         clear_interval * 5
     } else {
-        PACKET_CMD_WORKER_IDLE_TIMEOUT
+        IDLE_TIMEOUT_BLOCKS
     };
     spawn_background_task(span, Some(Duration::from_millis(200)), move || {
         if let Ok(cmd) = cmd_rx.try_recv() {
