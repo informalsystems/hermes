@@ -137,7 +137,7 @@ event_source = { mode = 'push', url = 'wss://hello:world@mydomain.com:26657/webs
 # ...
 ```
 
-> **Caution:** Warning: The "Basic" authentication scheme sends the credentials encoded but not encrypted.
+> **Caution:** The "Basic" authentication scheme sends the credentials encoded but not encrypted.
 > This would be completely insecure unless the exchange was over a secure connection (HTTPS/TLS).
 
 ## Configuring Support for Wasm Relaying
