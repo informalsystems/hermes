@@ -1,7 +1,6 @@
 use crate::core::ics24_host::error::ValidationError as Ics24ValidationError;
 use tendermint::error::Error as TendermintError;
 
-use crate::prelude::*;
 use flex_error::define_error;
 
 define_error! {

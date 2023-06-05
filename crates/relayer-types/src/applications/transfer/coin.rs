@@ -1,13 +1,12 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
-use core::str::{from_utf8, FromStr};
 use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use safe_regex::regex;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Error as FmtError, Formatter};
+use std::str::{from_utf8, FromStr};
 
 use super::amount::Amount;
 use super::denom::{BaseDenom, PrefixedDenom};
 use super::error::Error;
-use crate::prelude::*;
 use crate::serializers::serde_string;
 
 /// A `Coin` type with fully qualified `PrefixedDenom`.
