@@ -1,7 +1,5 @@
 //! This is the definition of a transfer messages that an application submits to a chain.
 
-use crate::prelude::*;
-
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;

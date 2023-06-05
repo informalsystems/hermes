@@ -1,6 +1,4 @@
-use crate::prelude::*;
-
-use core::str::FromStr;
+use std::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -263,7 +261,7 @@ impl From<Packet> for RawPacket {
 
 #[cfg(test)]
 pub mod test_utils {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
@@ -289,7 +287,6 @@ pub mod test_utils {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
 
     use test_log::test;
 

@@ -1,8 +1,8 @@
-use alloc::string::FromUtf8Error;
-use core::convert::Infallible;
-use core::str::Utf8Error;
 use flex_error::{define_error, DisplayOnly, TraceError};
 use ibc_proto::protobuf::Error as TendermintProtoError;
+use std::convert::Infallible;
+use std::str::Utf8Error;
+use std::string::FromUtf8Error;
 use subtle_encoding::Error as EncodingError;
 use uint::FromDecStrErr;
 
@@ -11,7 +11,6 @@ use crate::core::ics04_channel::error as channel_error;
 use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::prelude::*;
 use crate::signer::SignerError;
 
 define_error! {
