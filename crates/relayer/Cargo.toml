@@ -12,6 +12,9 @@ description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
 
+[profile.release]
+overflow-checks = true
+
 [package.metadata.docs.rs]
 all-features = true
 
