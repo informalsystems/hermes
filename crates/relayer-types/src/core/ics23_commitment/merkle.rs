@@ -1,4 +1,3 @@
-use crate::prelude::*;
 use tendermint::merkle::proof::ProofOps as TendermintProof;
 
 use ibc_proto::ibc::core::commitment::v1::MerklePath;

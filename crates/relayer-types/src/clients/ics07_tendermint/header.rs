@@ -1,5 +1,4 @@
-use alloc::string::ToString;
-use core::fmt::{Display, Error as FmtError, Formatter};
+use std::fmt::{Display, Error as FmtError, Formatter};
 
 use bytes::Buf;
 use ibc_proto::google::protobuf::Any;
@@ -150,7 +149,6 @@ impl From<Header> for RawHeader {
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
-    use alloc::vec;
 
     use subtle_encoding::hex;
     use tendermint::block::signed_header::SignedHeader;

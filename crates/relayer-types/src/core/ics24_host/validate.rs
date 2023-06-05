@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use super::error::ValidationError as Error;
 
 /// Path separator (ie. forward slash '/')
