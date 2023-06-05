@@ -225,7 +225,7 @@ impl WorkerMap {
             .workers
             .iter()
             .filter(|(_, w)| w.shutdown_stopped_tasks())
-            .map(|w| (w.1.id(), w.0.clone()))
+            .map(|(o, w)| (o.id(), w.clone()))
             .collect();
 
         for worker in stopped_workers {
