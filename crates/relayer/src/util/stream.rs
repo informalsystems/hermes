@@ -114,9 +114,7 @@ where
         for await x in input {
             match x {
                 // timeout
-                Err(e) => {
-                    tracing::debug!("{e}");
-
+                Err(_) => {
                     if let Some(mut cur_state) = mem::take(&mut state) {
                         cur_state.group.push(cur_state.cur);
                         yield Ok(cur_state.group);
