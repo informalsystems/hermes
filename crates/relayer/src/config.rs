@@ -204,6 +204,11 @@ pub mod default {
     pub fn max_grpc_decoding_size() -> Byte {
         Byte::from_bytes(33554432)
     }
+
+    pub fn client_refresh_rate() -> f64 {
+        // Refresh the client three times per trusting period
+        1.0 / 3.0
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -545,6 +550,11 @@ pub struct ChainConfig {
     /// (must be shorter than the chain's unbonding period).
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
+
+    /// The rate at which to refresh the client referencing this chain,
+    /// expressed as a fraction of the trusting period.
+    #[serde(default = "default::client_refresh_rate")]
+    pub client_refresh_rate: f64,
 
     /// CCV consumer chain
     #[serde(default = "default::ccv_consumer_chain")]

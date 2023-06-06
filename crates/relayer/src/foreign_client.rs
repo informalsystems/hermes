@@ -587,6 +587,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 e,
             )
         })?;
+
         let dst_config = self.dst_chain.config().map_err(|e| {
             ForeignClientError::client_create(
                 self.dst_chain.id(),
@@ -832,15 +833,22 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     fn try_refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
         let (client_state, elapsed) = self.validated_client_state()?;
 
-        // The refresh_window is the maximum duration
-        // we can backoff between subsequent client updates.
-        let refresh_window = client_state.refresh_period();
+        let src_config = self.src_chain.config().map_err(|e| {
+            ForeignClientError::client_create(
+                self.src_chain.id(),
+                "failed while querying the source chain for configuration".to_string(),
+                e,
+            )
+        })?;
 
-        match (elapsed, refresh_window) {
-            (None, _) | (_, None) => Ok(None),
-            (Some(elapsed), Some(refresh_window)) => {
-                if elapsed > refresh_window {
-                    info!(?elapsed, ?refresh_window, "client needs to be refreshed");
+        let refresh_rate = src_config.client_refresh_rate;
+        let refresh_period = client_state.trusting_period().mul_f64(refresh_rate);
+
+        match (elapsed, refresh_period) {
+            (None, _) => Ok(None),
+            (Some(elapsed), refresh_period) => {
+                if elapsed > refresh_period {
+                    info!(?elapsed, ?refresh_period, "client needs to be refreshed");
 
                     self.build_latest_update_client_and_send()
                         .map_or_else(Err, |ev| Ok(Some(ev)))
