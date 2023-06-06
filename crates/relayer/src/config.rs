@@ -4,6 +4,8 @@ pub mod error;
 pub mod filter;
 pub mod gas_multiplier;
 pub mod proof_specs;
+pub mod refresh_rate;
+pub mod trust_threshold;
 pub mod types;
 
 use alloc::collections::BTreeMap;
@@ -41,6 +43,7 @@ pub use crate::config::Error as ConfigError;
 pub use error::Error;
 
 pub use filter::PacketFilter;
+pub use refresh_rate::RefreshRate;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -203,6 +206,15 @@ pub mod default {
 
     pub fn max_grpc_decoding_size() -> Byte {
         Byte::from_bytes(33554432)
+    }
+
+    pub fn trust_threshold() -> TrustThreshold {
+        TrustThreshold::ONE_THIRD
+    }
+
+    pub fn client_refresh_rate() -> RefreshRate {
+        // Refresh the client three times per trusting period
+        RefreshRate::new(1, 3)
     }
 }
 
@@ -546,6 +558,11 @@ pub struct ChainConfig {
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
 
+    /// The rate at which to refresh the client referencing this chain,
+    /// expressed as a fraction of the trusting period.
+    #[serde(default = "default::client_refresh_rate")]
+    pub client_refresh_rate: RefreshRate,
+
     /// CCV consumer chain
     #[serde(default = "default::ccv_consumer_chain")]
     pub ccv_consumer_chain: bool,
@@ -573,7 +590,7 @@ pub struct ChainConfig {
     // These last few need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     /// The trust threshold defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
-    #[serde(default)]
+    #[serde(default = "default::trust_threshold", with = "self::trust_threshold")]
     pub trust_threshold: TrustThreshold,
 
     pub gas_price: GasPrice,
