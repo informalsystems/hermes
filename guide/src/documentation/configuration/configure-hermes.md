@@ -115,6 +115,13 @@ list = [
 ]
 ```
 
+## Configuring Support for Chains that Utilize Cross-Chain Validation 
+
+As of version 1.4.1, Hermes supports relaying for consumer chains that utilize cross-chain validation (CCV).
+
+In order to enable this, set `ccv_consumer_chain = true` in the `config.toml` file. By default, this 
+option is set to `false`. It should *ONLY* be toggled on for CCV consumer chains, *NOT* for sovereign chains.
+
 ## Connecting to a full node protected by HTTP Basic Authentication
 
 To connect to a full node protected by [HTTP Basic Authentication][http-basic-auth],
