@@ -65,13 +65,13 @@ please refer to the [Keys](../commands/keys/index.md) sections in order to learn
 
 Hermes supports connection via TLS for use-cases such as connecting from behind
 a proxy or a load balancer. In order to enable this, you'll want to set the
-`rpc_addr`, `grpc_addr`, or `websocket_addr` parameters to specify a TLS
+`rpc_addr`, `grpc_addr`, or `event_source` parameters to specify a TLS
 connection via HTTPS using the following scheme (note that the port number 443
 is just used for example):
 ```
 rpc_addr = 'https://domain.com:443'
 grpc_addr = 'https://domain.com:443'
-websocket_addr = 'wss://domain.com:443/websocket'
+event_source = { mode = 'push', url = 'wss://domain.com:443/websocket', batch_delay = '500ms' }
 ```
 
 ## Configuring Support for Interchain Accounts
@@ -118,7 +118,7 @@ list = [
 ## Connecting to a full node protected by HTTP Basic Authentication
 
 To connect to a full node protected by [HTTP Basic Authentication][http-basic-auth],
-specify the username and password in the `rpc_addr`, `grpc_addr` and `websocket_addr` settings
+specify the username and password in the `rpc_addr`, `grpc_addr` and `event_source` settings
 under the chain configuration in `config.toml`.
 
 Here is an example with username `hello` and password `world`, assuming the RPC, WebSocket and gRPC servers
@@ -132,13 +132,38 @@ id = 'my-chain-0'
 
 rpc_addr = 'https://hello:world@mydomain.com:26657'
 grpc_addr = 'https://hello:world@mydomain.com:9090'
-websocket_addr = 'wss://hello:world@mydomain.com:26657/websocket'
+event_source = { mode = 'push', url = 'wss://hello:world@mydomain.com:26657/websocket', batch_delay = '500ms' }
 
 # ...
 ```
 
-> **Caution:** Warning: The "Basic" authentication scheme sends the credentials encoded but not encrypted.
+> **Caution:** The "Basic" authentication scheme sends the credentials encoded but not encrypted.
 > This would be completely insecure unless the exchange was over a secure connection (HTTPS/TLS).
+
+## Configuring Support for Wasm Relaying
+
+As of version 1.6.0, Hermes supports the relaying of wasm messages natively. This is facilitated by configuring
+Hermes to use pull-based relaying by polling for IBC events via the `/block_results` RPC endpoint. Set
+the `event_source` parameter to pull mode in `config.toml`:
+
+```toml
+event_source = 'poll'
+```
+
+The default interval at which Hermes polls the RPC endpoint is 1 second. If you need to change the interval,
+you can do so like this:
+
+```toml
+event_source = { mode = 'pull', interval = '2s' }
+```
+
+The pull model of relaying is in contrast with Hermes' default push model, where IBC events are received
+over WebSocket. 
+
+> **Note:** This mode should only be used in situations where Hermes misses events that it should
+be receiving, such as when relaying for CosmWasm-enabled blockchains which emit IBC events without the
+`message` attribute. Without this attribute, the WebSocket is not able to catch these events to stream
+to Hermes, so the `/block_results` RPC endpoint must be used instead. 
 
 [http-basic-auth]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication
 [ica]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md

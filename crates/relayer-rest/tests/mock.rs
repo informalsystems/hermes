@@ -98,7 +98,7 @@ const MOCK_CHAIN_CONFIG: &str = r#"
 id = 'mock-0'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
-websocket_addr = 'ws://127.0.0.1:26557/websocket'
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'

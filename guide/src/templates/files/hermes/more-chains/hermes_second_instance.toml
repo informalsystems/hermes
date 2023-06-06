@@ -29,7 +29,7 @@ port = 3002
 id = 'ibc-0'
 rpc_addr = 'http://localhost:27050'
 grpc_addr = 'http://localhost:27052'
-websocket_addr = 'ws://localhost:27050/websocket'
+event_source = { mode = 'push', url = 'ws://localhost:27050/websocket', batch_delay = '500ms' }
 rpc_timeout = '15s'
 account_prefix = 'cosmos'
 key_name = 'wallet1'
@@ -50,7 +50,7 @@ list = [
 id = 'ibc-1'
 rpc_addr = 'http://localhost:27060'
 grpc_addr = 'http://localhost:27062'
-websocket_addr = 'ws://localhost:27060/websocket'
+event_source = { mode = 'push', url = 'ws://localhost:27060/websocket', batch_delay = '500ms' }
 rpc_timeout = '15s'
 account_prefix = 'cosmos'
 key_name = 'wallet1'
@@ -72,7 +72,7 @@ list = [
 id = 'ibc-2'
 rpc_addr = 'http://localhost:27070'
 grpc_addr = 'http://localhost:27072'
-websocket_addr = 'ws://localhost:27070/websocket'
+event_source = { mode = 'push', url = 'ws://localhost:27070/websocket', batch_delay = '500ms' }
 rpc_timeout = '15s'
 account_prefix = 'cosmos'
 key_name = 'wallet1'
@@ -93,7 +93,7 @@ list = [
 id = 'ibc-3'
 rpc_addr = 'http://localhost:27080'
 grpc_addr = 'http://localhost:27082'
-websocket_addr = 'ws://localhost:27080/websocket'
+event_source = { mode = 'push', url = 'ws://localhost:27080/websocket', batch_delay = '500ms' }
 rpc_timeout = '15s'
 account_prefix = 'cosmos'
 key_name = 'wallet1'
