@@ -248,14 +248,16 @@ impl ChannelScan {
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
     ) -> Option<Vec<Sequence>> {
-        self.counterparty
+        let ids = self
+            .counterparty
             .as_ref()
-            .and_then(|c| PathIdentifiers::from_channel_end(c.clone()))
-            .map(|ids| {
-                unreceived_acknowledgements(counterparty_chain, chain, &ids)
-                    .map(|(sns, _)| sns)
-                    .unwrap_or_default()
-            })
+            .and_then(|c| PathIdentifiers::from_channel_end(c.clone()))?;
+
+        let acks = unreceived_acknowledgements(counterparty_chain, chain, &ids)
+            .map(|sns| sns.map_or(vec![], |(sns, _)| sns))
+            .unwrap_or_default();
+
+        Some(acks)
     }
 }
 

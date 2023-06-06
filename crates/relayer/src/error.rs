@@ -41,7 +41,7 @@ use ibc_relayer_types::{
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
 use crate::config::Error as ConfigError;
-use crate::event::monitor;
+use crate::event::source;
 use crate::keyring::{errors::Error as KeyringError, KeyType};
 use crate::sdk_error::SdkError;
 
@@ -87,9 +87,9 @@ define_error! {
             { url: tendermint_rpc::Url }
             |e| { format!("Websocket error to endpoint {}", e.url) },
 
-        EventMonitor
-            [ monitor::Error ]
-            |_| { "event monitor error" },
+        EventSource
+            [ source::Error ]
+            |_| { "event source error" },
 
         Grpc
             |_| { "gRPC error" },

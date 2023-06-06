@@ -1,6 +1,4 @@
-use crate::prelude::*;
-
-use core::time::Duration;
+use std::time::Duration;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use ibc_proto::protobuf::Protobuf;
@@ -72,7 +70,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -104,7 +102,6 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
 
     use test_log::test;
 

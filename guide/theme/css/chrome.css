@@ -185,6 +185,12 @@ a > .hljs {
     .sidebar-visible .nav-wrapper { display: block; }
 }
 
+/* Block code */
+code {
+    padding: 0.8em 1em;
+    border-radius: 3px;
+}
+
 /* Inline code */
 
 :not(pre) > .hljs {

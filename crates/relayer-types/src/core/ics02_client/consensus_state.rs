@@ -1,6 +1,4 @@
-use crate::prelude::*;
-
-use core::marker::{Send, Sync};
+use std::marker::{Send, Sync};
 
 use dyn_clone::DynClone;
 use erased_serde::Serialize as ErasedSerialize;

@@ -1,7 +1,7 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 
-use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
+use std::fmt::{Display, Error as FmtError, Formatter};
 use tendermint::abci;
 
 use super::header::Header;
@@ -9,7 +9,6 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::{IbcEvent, IbcEventType};
-use crate::prelude::*;
 
 /// The content of the `key` field for the attribute containing the client identifier.
 pub const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";

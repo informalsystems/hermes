@@ -7,6 +7,7 @@ use tendermint::abci::Event;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
+use tracing::warn;
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::chain::cosmos::types::events;
@@ -96,6 +97,7 @@ pub async fn query_txs(
 }
 
 /// This function queries transactions for packet events matching certain criteria.
+///
 /// It returns at most one packet event for each sequence specified in the request.
 ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
 ///    sequence (the query conditions can only be AND-ed).
@@ -121,34 +123,46 @@ pub async fn query_packets_from_txs(
     let mut result: Vec<IbcEventWithHeight> = vec![];
 
     for seq in &request.sequences {
-        // query first (and only) Tx that includes the event specified in the query request
-        let mut response = rpc_client
-            .tx_search(
-                packet_query(request, *seq),
-                false,
-                1,
-                1, // get only the first Tx matching the query
-                Order::Ascending,
-            )
+        // Query the latest 10 txs which include the event specified in the query request
+        let response = rpc_client
+            .tx_search(packet_query(request, *seq), false, 1, 10, Order::Descending)
             .await
             .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
-
-        debug_assert!(
-            response.txs.len() <= 1,
-            "packet_from_tx_search_response: unexpected number of txs"
-        );
 
         if response.txs.is_empty() {
             continue;
         }
 
-        let tx = response.txs.remove(0);
-        let event = packet_from_tx_search_response(chain_id, request, *seq, tx)?;
+        let mut tx_events = vec![];
 
-        if let Some(event) = event {
-            result.push(event);
+        // Process each tx in descending order
+        for tx in response.txs {
+            // Check if the tx contains and event which matches the query
+            if let Some(event) = packet_from_tx_search_response(chain_id, request, *seq, &tx)? {
+                // We found the event
+                tx_events.push((event, tx.hash, tx.height));
+            }
         }
+
+        // If no event was found for this sequence, continue to the next sequence
+        if tx_events.is_empty() {
+            continue;
+        }
+
+        // If more than one event was found for this sequence, log a warning
+        if tx_events.len() > 1 {
+            warn!("more than one packet event found for sequence {seq}, this should not happen",);
+
+            for (event, hash, height) in &tx_events {
+                warn!("seq: {seq}, tx hash: {hash}, tx height: {height}, event: {event}",);
+            }
+        }
+
+        // In either case, use the first (latest) event found for this sequence
+        let (first_event, _, _) = tx_events.remove(0);
+        result.push(first_event);
     }
+
     Ok(result)
 }
 
@@ -193,9 +207,9 @@ pub async fn query_packets_from_block(
             tx_events.append(
                 &mut tx
                     .events
-                    .into_iter()
-                    .filter_map(|e| filter_matching_event(e, request, &request.sequences))
-                    .map(|e| IbcEventWithHeight::new(e, height))
+                    .iter()
+                    .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
+                    .map(|ev| IbcEventWithHeight::new(ev, height))
                     .collect(),
             )
         }
@@ -205,7 +219,7 @@ pub async fn query_packets_from_block(
         &mut block_results
             .begin_block_events
             .unwrap_or_default()
-            .into_iter()
+            .iter()
             .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
             .map(|ev| IbcEventWithHeight::new(ev, height))
             .collect(),
@@ -215,7 +229,7 @@ pub async fn query_packets_from_block(
         &mut block_results
             .end_block_events
             .unwrap_or_default()
-            .into_iter()
+            .iter()
             .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
             .map(|ev| IbcEventWithHeight::new(ev, height))
             .collect(),
@@ -278,7 +292,7 @@ fn packet_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
-    response: TxResponse,
+    response: &TxResponse,
 ) -> Result<Option<IbcEventWithHeight>, Error> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height))
         .map_err(|_| Error::invalid_height_no_source())?;
@@ -292,7 +306,7 @@ fn packet_from_tx_search_response(
     Ok(response
         .tx_result
         .events
-        .into_iter()
+        .iter()
         .find_map(|ev| filter_matching_event(ev, request, &[seq]))
         .map(|ibc_event| IbcEventWithHeight::new(ibc_event, height)))
 }
@@ -301,7 +315,7 @@ fn packet_from_tx_search_response(
 /// is consistent with the request parameters.
 /// Returns `None` otherwise.
 pub fn filter_matching_event(
-    event: Event,
+    event: &Event,
     request: &QueryPacketEventDataRequest,
     seqs: &[Sequence],
 ) -> Option<IbcEvent> {
@@ -321,7 +335,8 @@ pub fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = ibc_event_try_from_abci_event(&event).ok()?;
+    let ibc_event = ibc_event_try_from_abci_event(event).ok()?;
+
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev)
             if matches_packet(request, seqs.to_vec(), &send_ev.packet) =>

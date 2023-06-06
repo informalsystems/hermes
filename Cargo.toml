@@ -11,9 +11,15 @@ members = [
     "crates/chain-registry",
     "tools/integration-test",
     "tools/test-framework",
+]
+
+exclude = [
     "tools/check-guide",
     "tools/query-events",
 ]
+
+[profile.release]
+overflow-checks = true
 
 [patch.crates-io]
 # ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "main" }

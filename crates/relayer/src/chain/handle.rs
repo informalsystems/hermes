@@ -35,7 +35,7 @@ use crate::{
     denom::DenomTrace,
     error::Error,
     event::{
-        monitor::{EventBatch, Result as MonitorResult},
+        source::{EventBatch, Result as MonitorResult},
         IbcEventWithHeight,
     },
     keyring::AnySigningKeyPair,

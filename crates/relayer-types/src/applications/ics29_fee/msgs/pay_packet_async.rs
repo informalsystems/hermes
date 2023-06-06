@@ -8,7 +8,7 @@ use crate::applications::ics29_fee::error::Error;
 use crate::applications::transfer::coin::RawCoin;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::prelude::*;
+
 use crate::signer::Signer;
 use crate::tx_msg::encode_message;
 

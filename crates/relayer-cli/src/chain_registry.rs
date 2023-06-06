@@ -1,15 +1,13 @@
 //! Contains functions to generate a relayer config for a given chain
 
-use futures::future::join_all;
-use http::Uri;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::marker::Send;
+
+use futures::future::join_all;
+use http::Uri;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::trace;
-
-use tendermint_light_client_verifier::types::TrustThreshold;
-use tendermint_rpc::Url;
 
 use ibc_chain_registry::asset_list::AssetList;
 use ibc_chain_registry::chain::ChainData;
@@ -17,15 +15,15 @@ use ibc_chain_registry::error::RegistryError;
 use ibc_chain_registry::fetchable::Fetchable;
 use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
 use ibc_chain_registry::paths::IBCPath;
-use ibc_chain_registry::querier::GrpcHealthCheckQuerier;
-use ibc_chain_registry::querier::HermesConfigData;
-use ibc_chain_registry::querier::QueryContext;
-use ibc_chain_registry::querier::SimpleHermesRpcQuerier;
+use ibc_chain_registry::querier::*;
 use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use ibc_relayer::config::{default, AddressType, ChainConfig, GasPrice};
+use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
 use ibc_relayer::keyring::Store;
+
+use tendermint_light_client_verifier::types::TrustThreshold;
+use tendermint_rpc::Url;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
 
@@ -109,6 +107,7 @@ where
         MAX_HEALTHY_QUERY_RETRIES,
     )
     .await?;
+
     let websocket_address =
         rpc_data.websocket.clone().try_into().map_err(|e| {
             RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
@@ -118,11 +117,14 @@ where
         id: chain_data.chain_id,
         r#type: default::chain_type(),
         rpc_addr: rpc_data.rpc_address,
-        websocket_addr: websocket_address,
         grpc_addr: grpc_address,
+        event_source: EventSourceMode::Push {
+            url: websocket_address,
+            batch_delay: default::batch_delay(),
+        },
         rpc_timeout: default::rpc_timeout(),
         max_concurrency: default::max_concurrency(),
-        batch_delay: default::batch_delay(),
+        trusted_node: default::trusted_node(),
         genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,
         key_name: String::new(),
@@ -215,7 +217,7 @@ async fn get_data_from_handles<T>(
     data_array
 }
 
-/// Generates a `Vec<ChainConfig>` for a slice of chains names by fetching data from
+/// Generates a `Vec<ChainConfig>` for a slice of chain names by fetching data from
 /// <https://github.com/cosmos/chain-registry>. Gas settings are set to default values.
 ///
 /// # Arguments
@@ -322,6 +324,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore]
     async fn fetch_chain_config_with_packet_filters() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[
             "cosmoshub".to_string(),
@@ -407,6 +410,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore]
     async fn fetch_chain_config_without_packet_filters() -> Result<(), RegistryError> {
         // The commit from 28.04.23 does not have `evmos-juno.json` nor `juno-evmos.json` file:
         // https://github.com/cosmos/chain-registry/tree/master/_IBC
@@ -416,6 +420,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore]
     async fn fetch_one_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &["cosmoshub".to_string()]; // Must be sorted
         should_have_no_filter(test_chains).await
@@ -423,6 +428,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore]
     async fn fetch_no_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[];
         let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;

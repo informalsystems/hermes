@@ -1,4 +1,5 @@
 use ibc_relayer::supervisor::SupervisorOptions;
+use ibc_relayer::util::debug_section::DebugSection;
 use std::error::Error;
 use std::io;
 
@@ -27,17 +28,20 @@ pub struct StartCmd {
 
 impl Runnable for StartCmd {
     fn run(&self) {
-        #[cfg(feature = "profiling")]
-        {
+        let app = app_reader();
+
+        if app.debug_enabled(DebugSection::ProfilingJson) {
             use chrono::prelude::*;
             use std::env;
             use std::path::Path;
 
-            let profile_dir = env::var("PROFILE_DIR").unwrap_or_else(|_| ".".to_string());
+            use ibc_relayer::util::profiling::open_or_create_profile_file;
+
+            let profile_dir = env::var("PROFILING_DIR").unwrap_or_else(|_| ".".to_string());
 
             let now = Utc::now();
             let path_str = format!(
-                "{}/hermes-{:04}-{:02}-{:02}-{:02}{:02}{:02}.prof",
+                "{}/hermes-{:04}-{:02}-{:02}-{:02}{:02}{:02}-prof.json",
                 profile_dir,
                 now.year(),
                 now.month(),
@@ -46,8 +50,8 @@ impl Runnable for StartCmd {
                 now.minute(),
                 now.second()
             );
-            let file_name = Path::new(&path_str);
-            ibc_relayer::macros::profiling::open_or_create_profile_file(file_name);
+
+            open_or_create_profile_file(Path::new(&path_str));
         }
 
         let config = (*app_config()).clone();

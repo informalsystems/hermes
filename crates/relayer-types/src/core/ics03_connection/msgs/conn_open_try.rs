@@ -1,6 +1,4 @@
-use crate::prelude::*;
-
-use core::{
+use std::{
     convert::{TryFrom, TryInto},
     str::FromStr,
     time::Duration,
@@ -163,7 +161,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
@@ -229,7 +227,6 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
 
     use test_log::test;
 

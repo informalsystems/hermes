@@ -35,7 +35,8 @@ This section includes a summary of the supported and planned features. It also i
     > Relaying between Interchain Security-enabled chains requires Hermes v1.2+.
 - Monitor and submit misbehaviour for clients
     - Monitor client updates for misbehaviour (fork and BFT time violation).
-    - Submit misbehaviour evidence to the on-chain IBC client.
+    - Submit misbehaviour evidence to the reference chain via `/broadcast_evidence` tendermint RPC.
+    - Submit misbehaviour evidence to the on-chain IBC client in a transaction that includes the `MsgMisbehaviour` message.
     > Misbehaviour submission to full node not yet supported.
 - Individual commands that build and send transactions for:
     - Creating and updating IBC Tendermint light clients.
