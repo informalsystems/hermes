@@ -9,7 +9,7 @@ use itertools::Itertools;
 use moka::sync::Cache;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
-use tracing::debug;
+use tracing::{debug, info};
 
 use crossbeam_channel::Receiver;
 use ibc_proto::ibc::apps::fee::v1::{IdentifiedPacketFees, QueryIncentivizedPacketRequest};
@@ -199,11 +199,14 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     if do_clear {
+        info!("clearing packets");
+
         // Reset the `clear_on_start` flag and attempt packet clearing once now.
         // More clearing will be done at clear interval.
         if *should_clear_on_start {
             *should_clear_on_start = false;
         }
+
         handle_clear_packet(link, clear_interval, path, maybe_height)?;
     }
 
