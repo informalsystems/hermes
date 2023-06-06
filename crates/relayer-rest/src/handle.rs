@@ -64,6 +64,8 @@ pub fn supervisor_state(
     submit_request(sender, |reply_to| Request::State { reply_to })
 }
 
+/// Submit a request to clear all packets for the chain with the
+/// specified `chain_id`.
 pub fn trigger_clear_packets(
     sender: &channel::Sender<Request>,
     chain_id: Option<ChainId>,
