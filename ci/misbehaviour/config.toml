@@ -120,7 +120,7 @@ grpc_addr = 'http://127.0.0.1:9090'
 
 # Specify the WebSocket address and port where the chain WebSocket server
 # listens on. Required
-websocket_addr = 'ws://127.0.0.1:26657/websocket'
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
 
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
@@ -301,7 +301,7 @@ memo_prefix = ''
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
-websocket_addr = 'ws://127.0.0.1:26557/websocket'
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'

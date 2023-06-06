@@ -18,6 +18,9 @@ exclude = [
     "tools/query-events",
 ]
 
+[profile.release]
+overflow-checks = true
+
 [patch.crates-io]
 # ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "main" }
 # tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }

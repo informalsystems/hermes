@@ -1,7 +1,3 @@
-use alloc::string::{String, ToString};
-use alloc::vec;
-use alloc::vec::Vec;
-
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::stride::interchainquery::v1::MsgSubmitQueryResponse;
 use prost::Message;

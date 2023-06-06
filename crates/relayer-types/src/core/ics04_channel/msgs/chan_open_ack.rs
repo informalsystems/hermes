@@ -1,7 +1,7 @@
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::prelude::*;
+
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -105,7 +105,7 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
@@ -131,7 +131,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
     use test_log::test;
 

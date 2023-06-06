@@ -11,7 +11,7 @@ where
 }
 
 pub mod serde_string {
-    use alloc::string::String;
+
     use core::fmt::Display;
     use core::str::FromStr;
 

@@ -1,10 +1,9 @@
-use core::{convert::TryFrom, fmt};
 use serde::{Deserialize, Serialize};
+use std::{convert::TryFrom, fmt};
 use subtle_encoding::{Encoding, Hex};
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
-use crate::prelude::*;
 use crate::proofs::ProofError;
 use crate::tx_msg::encode_message;
 
@@ -159,7 +158,7 @@ impl Serialize for CommitmentPrefix {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
     use ibc_proto::ics23::CommitmentProof;
 

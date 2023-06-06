@@ -1,3 +1,5 @@
+pub mod extract;
+
 use alloc::sync::Arc;
 use core::cmp::Ordering;
 use std::time::Duration;
@@ -13,16 +15,15 @@ use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
 use tendermint_rpc::{
-    client::CompatMode, event::Event as RpcEvent, query::Query, Error as RpcError,
-    SubscriptionClient, WebSocketClient, WebSocketClientDriver, WebSocketClientUrl,
+    client::CompatMode, event::Event as RpcEvent, query::Query, SubscriptionClient,
+    WebSocketClient, WebSocketClientDriver, WebSocketClientUrl,
 };
 
-use ibc_relayer_types::{
-    core::ics02_client::height::Height, core::ics24_host::identifier::ChainId, events::IbcEvent,
-};
+use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
 use crate::{
-    chain::{handle::Subscription, tracking::TrackingId},
+    chain::tracking::TrackingId,
+    event::{bus::EventBus, error::*, IbcEventWithHeight},
     telemetry,
     util::{
         retry::{retry_with_index, RetryResult},
@@ -30,12 +31,9 @@ use crate::{
     },
 };
 
-mod error;
-pub use error::*;
+use super::{EventBatch, EventSourceCmd, Result, SubscriptionStream, TxEventSourceCmd};
 
-use super::{bus::EventBus, IbcEventWithHeight};
-
-pub type Result<T> = core::result::Result<T, Error>;
+use self::extract::extract_events;
 
 mod retry_strategy {
     use crate::util::retry::clamp_total;
@@ -52,49 +50,9 @@ mod retry_strategy {
     }
 }
 
-/// A batch of events from a chain at a specific height
-#[derive(Clone, Debug)]
-pub struct EventBatch {
-    pub chain_id: ChainId,
-    pub tracking_id: TrackingId,
-    pub height: Height,
-    pub events: Vec<IbcEventWithHeight>,
-}
-
-type SubscriptionResult = core::result::Result<RpcEvent, RpcError>;
-type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
-
-pub type EventSender = channel::Sender<Result<EventBatch>>;
-pub type EventReceiver = channel::Receiver<Result<EventBatch>>;
-
-#[derive(Clone, Debug)]
-pub struct TxMonitorCmd(channel::Sender<MonitorCmd>);
-
-impl TxMonitorCmd {
-    pub fn shutdown(&self) -> Result<()> {
-        self.0
-            .send(MonitorCmd::Shutdown)
-            .map_err(|_| Error::channel_send_failed())
-    }
-
-    pub fn subscribe(&self) -> Result<Subscription> {
-        let (tx, rx) = crossbeam_channel::bounded(1);
-
-        self.0
-            .send(MonitorCmd::Subscribe(tx))
-            .map_err(|_| Error::channel_send_failed())?;
-
-        let subscription = rx.recv().map_err(|_| Error::channel_recv_failed())?;
-        Ok(subscription)
-    }
-}
-
-#[derive(Debug)]
-pub enum MonitorCmd {
-    Shutdown,
-    Subscribe(channel::Sender<Subscription>),
-}
-
+/// A batch of events received from a WebSocket endpoint from a
+/// chain at a specific height.
+///
 /// Connect to a Tendermint node, subscribe to a set of queries,
 /// receive push events over a websocket, and filter them for the
 /// event handler.
@@ -102,7 +60,7 @@ pub enum MonitorCmd {
 /// The default events that are queried are:
 /// - [`EventType::NewBlock`](tendermint_rpc::query::EventType::NewBlock)
 /// - [`EventType::Tx`](tendermint_rpc::query::EventType::Tx)
-pub struct EventMonitor {
+pub struct EventSource {
     chain_id: ChainId,
     /// Delay until batch is emitted
     batch_delay: Duration,
@@ -117,7 +75,7 @@ pub struct EventMonitor {
     /// Channel where to send client driver errors
     tx_err: mpsc::UnboundedSender<tendermint_rpc::Error>,
     /// Channel where to receive commands
-    rx_cmd: channel::Receiver<MonitorCmd>,
+    rx_cmd: channel::Receiver<EventSourceCmd>,
     /// Node Address
     ws_url: WebSocketClientUrl,
     /// RPC compatibility mode
@@ -130,48 +88,10 @@ pub struct EventMonitor {
     rt: Arc<TokioRuntime>,
 }
 
-// TODO: These are SDK specific, should be eventually moved.
-pub mod queries {
-    use tendermint_rpc::query::{EventType, Query};
-
-    pub fn all() -> Vec<Query> {
-        // Note: Tendermint-go supports max 5 query specifiers!
-        vec![
-            new_block(),
-            ibc_client(),
-            ibc_connection(),
-            ibc_channel(),
-            ibc_query(),
-            // This will be needed when we send misbehavior evidence to full node
-            // Query::eq("message.module", "evidence"),
-        ]
-    }
-
-    pub fn new_block() -> Query {
-        Query::from(EventType::NewBlock)
-    }
-
-    pub fn ibc_client() -> Query {
-        Query::eq("message.module", "ibc_client")
-    }
-
-    pub fn ibc_connection() -> Query {
-        Query::eq("message.module", "ibc_connection")
-    }
-
-    pub fn ibc_channel() -> Query {
-        Query::eq("message.module", "ibc_channel")
-    }
-
-    pub fn ibc_query() -> Query {
-        Query::eq("message.module", "interchainquery")
-    }
-}
-
-impl EventMonitor {
-    /// Create an event monitor, and connect to a node
+impl EventSource {
+    /// Create an event source, and connect to a node
     #[instrument(
-        name = "event_monitor.create",
+        name = "event_source.create",
         level = "error",
         skip_all,
         fields(chain = %chain_id, url = %ws_url)
@@ -182,7 +102,7 @@ impl EventMonitor {
         rpc_compat: CompatMode,
         batch_delay: Duration,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(Self, TxMonitorCmd)> {
+    ) -> Result<(Self, TxEventSourceCmd)> {
         let event_bus = EventBus::new();
         let (tx_cmd, rx_cmd) = channel::unbounded();
 
@@ -196,9 +116,9 @@ impl EventMonitor {
         let driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
 
         // TODO: move them to config file(?)
-        let event_queries = queries::all();
+        let event_queries = super::queries::all();
 
-        let monitor = Self {
+        let source = Self {
             rt,
             chain_id,
             batch_delay,
@@ -214,16 +134,16 @@ impl EventMonitor {
             subscriptions: Box::new(futures::stream::empty()),
         };
 
-        Ok((monitor, TxMonitorCmd(tx_cmd)))
+        Ok((source, TxEventSourceCmd(tx_cmd)))
     }
 
-    /// The list of [`Query`] that this event monitor is subscribing for.
+    /// The list of [`Query`] that this event source is subscribing for.
     pub fn queries(&self) -> &[Query] {
         &self.event_queries
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
-    #[instrument(name = "event_monitor.init_subscriptions", skip_all, fields(chain = %self.chain_id))]
+    #[instrument(name = "event_source.init_subscriptions", skip_all, fields(chain = %self.chain_id))]
     pub fn init_subscriptions(&mut self) -> Result<()> {
         let mut subscriptions = vec![];
 
@@ -246,7 +166,7 @@ impl EventMonitor {
     }
 
     #[instrument(
-        name = "event_monitor.try_reconnect",
+        name = "event_source.try_reconnect",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)
@@ -286,7 +206,7 @@ impl EventMonitor {
 
     /// Try to resubscribe to events
     #[instrument(
-        name = "event_monitor.try_resubscribe",
+        name = "event_source.try_resubscribe",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)
@@ -301,7 +221,7 @@ impl EventMonitor {
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
     #[instrument(
-        name = "event_monitor.reconnect",
+        name = "event_source.reconnect",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)
@@ -335,16 +255,16 @@ impl EventMonitor {
         }
     }
 
-    /// Event monitor loop
+    /// Event source loop
     #[allow(clippy::while_let_loop)]
     #[instrument(
-        name = "event_monitor",
+        name = "event_source.websocket",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)
     )]
     pub fn run(mut self) {
-        debug!("starting event monitor");
+        debug!("collecting events");
 
         // work around double borrow
         let rt = self.rt.clone();
@@ -364,7 +284,7 @@ impl EventMonitor {
             }
         }
 
-        debug!("event monitor is shutting down");
+        debug!("event source is shutting down");
 
         // Close the WebSocket connection
         let _ = self.client.close();
@@ -372,7 +292,7 @@ impl EventMonitor {
         // Wait for the WebSocket driver to finish
         let _ = self.rt.block_on(self.driver_handle);
 
-        trace!("event monitor has successfully shut down");
+        trace!("event source has successfully shut down");
     }
 
     async fn run_loop(&mut self) -> Next {
@@ -387,16 +307,9 @@ impl EventMonitor {
         pin_mut!(batches);
 
         loop {
-            // Process any shutdown or subscription commands
-            if let Ok(cmd) = self.rx_cmd.try_recv() {
-                match cmd {
-                    MonitorCmd::Shutdown => return Next::Abort,
-                    MonitorCmd::Subscribe(tx) => {
-                        if let Err(e) = tx.send(self.event_bus.subscribe()) {
-                            error!("failed to send back subscription: {e}");
-                        }
-                    }
-                }
+            // Process any shutdown or subscription commands before we start doing any work.
+            if let Next::Abort = self.try_process_cmd() {
+                return Next::Abort;
             }
 
             let result = tokio::select! {
@@ -405,19 +318,19 @@ impl EventMonitor {
             };
 
             // Before handling the batch, check if there are any pending shutdown or subscribe commands.
-            if let Ok(cmd) = self.rx_cmd.try_recv() {
-                match cmd {
-                    MonitorCmd::Shutdown => return Next::Abort,
-                    MonitorCmd::Subscribe(tx) => {
-                        if let Err(e) = tx.send(self.event_bus.subscribe()) {
-                            error!("failed to send back subscription: {e}");
-                        }
-                    }
-                }
+            //
+            // This avoids having the supervisor process an event batch after the event source has been shutdown,
+            // and issues during testing where the WebSocket connection might get closed before the event
+            // source has been shutdown.
+            //
+            // It also allows subscribers to receive the latest event batch even if they
+            // subscribe while the batch being fetched.
+            if let Next::Abort = self.try_process_cmd() {
+                return Next::Abort;
             }
 
             match result {
-                Ok(batch) => self.process_batch(batch),
+                Ok(batch) => self.broadcast_batch(batch),
                 Err(e) => {
                     if let ErrorDetail::SubscriptionCancelled(reason) = e.detail() {
                         error!("subscription cancelled, reason: {}", reason);
@@ -448,13 +361,36 @@ impl EventMonitor {
         self.event_bus.broadcast(Arc::new(Err(error)));
     }
 
-    /// Collect the IBC events from the subscriptions
-    fn process_batch(&mut self, batch: EventBatch) {
+    /// Broadcast a batch of events to all subscribers.
+    fn broadcast_batch(&mut self, batch: EventBatch) {
         telemetry!(ws_events, &batch.chain_id, batch.events.len() as u64);
 
-        debug!(chain = %batch.chain_id, len = %batch.events.len(), "emitting batch");
+        trace!(
+            chain = %batch.chain_id,
+            count = %batch.events.len(),
+            height = %batch.height,
+            "broadcasting batch of {} events",
+            batch.events.len()
+        );
 
         self.event_bus.broadcast(Arc::new(Ok(batch)));
+    }
+
+    /// Process a pending command, if any.
+    fn try_process_cmd(&mut self) -> Next {
+        if let Ok(cmd) = self.rx_cmd.try_recv() {
+            match cmd {
+                EventSourceCmd::Shutdown => return Next::Abort,
+
+                EventSourceCmd::Subscribe(tx) => {
+                    if let Err(e) = tx.send(self.event_bus.subscribe()) {
+                        error!("failed to send back subscription: {e}");
+                    }
+                }
+            }
+        }
+
+        Next::Continue
     }
 }
 
@@ -463,7 +399,7 @@ fn collect_events(
     chain_id: &ChainId,
     event: RpcEvent,
 ) -> impl Stream<Item = Result<IbcEventWithHeight>> {
-    let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
+    let events = extract_events(chain_id, event).unwrap_or_default();
     stream::iter(events).map(Ok)
 }
 
@@ -478,7 +414,7 @@ fn stream_batches(
     // Collect IBC events from each RPC event
     let events = subscriptions
         .map_ok(move |rpc_event| {
-            debug!(chain = %id, "received an RPC event: {}", rpc_event.query);
+            trace!(chain = %id, "received an RPC event: {}", rpc_event.query);
             collect_events(&id, rpc_event)
         })
         .map_err(Error::canceled_or_generic)
@@ -496,7 +432,7 @@ fn stream_batches(
 
         sort_events(&mut events_with_heights);
 
-        debug!(chain = %chain_id, len = %events_with_heights.len(), "assembled batch");
+        trace!(chain = %chain_id, len = %events_with_heights.len(), "assembled batch");
 
         EventBatch {
             height,
@@ -522,7 +458,7 @@ async fn run_driver(
 ) {
     if let Err(e) = driver.run().await {
         if tx.send(e).is_err() {
-            error!("failed to relay driver error to event monitor");
+            error!("failed to relay driver error to event source");
         }
     }
 }

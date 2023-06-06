@@ -11,10 +11,10 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::cosmos::types::events::channel::RawObject;
-use crate::event::monitor::queries;
+use crate::event::source::queries;
 use crate::telemetry;
 
-use super::{ibc_event_try_from_abci_event, IbcEventWithHeight};
+use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
 /// Extract IBC events from Tendermint RPC events
 ///
@@ -116,7 +116,7 @@ use super::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 /// {Begin,End}Block events however do not have any such `message.action` associated with them, so
 /// this doesn't work. For this reason, we extract block events in the following order ->
 /// OpenInit -> OpenTry -> OpenAck -> OpenConfirm -> SendPacket -> CloseInit -> CloseConfirm.
-pub fn get_all_events(
+pub fn extract_events(
     chain_id: &ChainId,
     result: RpcEvent,
 ) -> Result<Vec<IbcEventWithHeight>, String> {
