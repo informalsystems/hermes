@@ -16,7 +16,7 @@ The relayer is a central element in the IBC network architecture. This is becaus
 
 We sometimes refer to Hermes as "IBC Relayer CLI", to make it clear that this is a relayer CLI (i.e., a binary) and distinguish it from the relayer core library (that is the crate called ibc-relayer).
 
-Hermes is actively developed and maintained by [Informal Systems](https://informal.systems) in the [ibc-rs](https://github.com/informalsystems/hermes) repository.
+Hermes is actively developed and maintained by [Informal Systems](https://informal.systems) in the [`informalsystems/hermes`](https://github.com/informalsystems/hermes) repository.
 
 > Note that Hermes is packaged as part of the `ibc-relayer-cli` crate and not the `hermes` crate, which is unrelated.
 
