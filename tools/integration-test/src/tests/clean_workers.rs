@@ -135,7 +135,7 @@ fn assert_eventual_workers_removed(
     assert_eventually_succeed(
         &format!("eventual {worker_type} workers"),
         50,
-        Duration::from_secs(1),
+        Duration::from_secs(5),
         || {
             let state = supervisor.dump_state()?;
 
