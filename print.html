@@ -155,7 +155,10 @@ packets between two or more IBC-enabled chains.</p>
 <p>An IBC relayer is an off-chain process responsible for relaying IBC datagrams between any two chains. The way it does so is by scanning chain states, building transactions based on these states, and submitting the transactions to the chains involved in the network.</p>
 <p>The relayer is a central element in the IBC network architecture. This is because chain modules in this architecture are not directly sending messages to each other over networking infrastructure, but instead they create and store the data to be retrieved and used by a relayer to build the IBC datagrams.</p>
 <p>We sometimes refer to Hermes as &quot;IBC Relayer CLI&quot;, to make it clear that this is a relayer CLI (i.e., a binary) and distinguish it from the relayer core library (that is the crate called ibc-relayer).</p>
-<p>Hermes is actively developed and maintained by <a href="https://informal.systems">Informal Systems</a> in the <a href="https://github.com/informalsystems/hermes">ibc-rs</a> repository.</p>
+<p>Hermes is actively developed and maintained by <a href="https://informal.systems">Informal Systems</a> in the <a href="https://github.com/informalsystems/hermes"><code>informalsystems/hermes</code></a> repository.</p>
+<blockquote>
+<p>Note that Hermes is packaged as part of the <code>ibc-relayer-cli</code> crate and not the <code>hermes</code> crate, which is unrelated.</p>
+</blockquote>
 <h2 id="where-to-go"><a class="header" href="#where-to-go">Where to go</a></h2>
 <ul>
 <li>
@@ -293,11 +296,9 @@ problem together;</li>
 </ul>
 <p>Lastly, for general questions, you can reach us at <code>hello@informal.systems</code>,
 or on Twitter <a href="https://twitter.com/informalinc">@informalinc</a>.</p>
-<blockquote>
-<p>Note that Hermes is packaged as part of the <code>ibc-relayer-cli</code> crate.</p>
-</blockquote>
 <hr />
-<p><strong>Disclaimer</strong> This project is undergoing heavy development, use at your own risk.</p>
+<p><strong>Disclaimer</strong> As with all software offered by Informal Systems, Hermes is offered on an “as is” basis and you use at your own risk.
+Informal makes no warranties of any kind, express or implied, relating to Hermes, including no warranties of a “bug-free” nature.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
 <p>In order to run Hermes, please make sure you have all the 
@@ -428,7 +429,7 @@ For most shells, this can be done by adding the following line to your
 </code></pre>
 <h2 id="build-from-source"><a class="header" href="#build-from-source">Build from source</a></h2>
 <h3 id="clone-the-repository"><a class="header" href="#clone-the-repository">Clone the repository</a></h3>
-<p>Open a terminal and clone the <code>ibc-rs</code> repository:</p>
+<p>Open a terminal and clone the <code>hermes</code> repository:</p>
 <pre><code class="language-shell">git clone https://github.com/informalsystems/hermes.git
 
 </code></pre>
@@ -441,7 +442,7 @@ For most shells, this can be done by adding the following line to your
 <pre><code class="language-shell">git checkout v1.5.1
 </code></pre>
 <h3 id="building-with-cargo-build"><a class="header" href="#building-with-cargo-build">Building with <code>cargo build</code></a></h3>
-<p>This command builds all the crates from the <a href="https://github.com/informalsystems/hermes"><strong><code>ibc-rs</code></strong></a> repository, namely: the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer"><strong><code>ibc-relayer</code></strong></a> crate, and the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli"><strong><code>ibc-relayer-cli</code></strong></a> crate.
+<p>This command builds all the crates from the <a href="https://github.com/informalsystems/hermes"><strong><code>hermes</code></strong></a> repository, namely: the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer"><strong><code>ibc-relayer</code></strong></a> crate, and the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli"><strong><code>ibc-relayer-cli</code></strong></a> crate.
 The last of these crates contains the <code>hermes</code> binary.</p>
 <pre><code class="language-shell">cargo build --release --bin hermes
 </code></pre>
@@ -1750,7 +1751,7 @@ rm -r $HOME/.gm/ibc-*
   wallet_mnemonic = &quot;&quot;
 
   [global.hermes]
-    binary = &quot;$HOME/ibc-rs/target/release/hermes&quot; #change this path according to your setup
+    binary = &quot;$HOME/hermes/target/release/hermes&quot; # change this path according to your setup
     config = &quot;~/.hermes/config.toml&quot;
     log_level = &quot;info&quot;
     telemetry_enabled = true
@@ -2096,17 +2097,17 @@ SUCCESS Added key 'wallet1' (cosmos15jxyjskrx7s8yqpfn3xddlrx7qcq0f8r69mp4g) on c
 <pre><code class="language-shell">gm hermes cc 
 </code></pre>
 <p>If this command runs successfully, it should output the following:</p>
-<pre><code class="language-shell">&quot;$HOME/ibc-rs/target/release/hermes&quot; create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection
+<pre><code class="language-shell">&quot;$HOME/hermes/target/release/hermes&quot; create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection
 
-&quot;$HOME/ibc-rs/target/release/hermes&quot; create channel --a-chain ibc-0 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-connection
+&quot;$HOME/hermes/target/release/hermes&quot; create channel --a-chain ibc-0 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-connection
 
-&quot;$HOME/ibc-rs/target/release/hermes&quot; create channel --a-chain ibc-0 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection
+&quot;$HOME/hermes/target/release/hermes&quot; create channel --a-chain ibc-0 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection
 
-&quot;$HOME/ibc-rs/target/release/hermes&quot; create channel --a-chain ibc-1 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-connection
+&quot;$HOME/hermes/target/release/hermes&quot; create channel --a-chain ibc-1 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-connection
 
-&quot;$HOME/ibc-rs/target/release/hermes&quot; create channel --a-chain ibc-1 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection
+&quot;$HOME/hermes/target/release/hermes&quot; create channel --a-chain ibc-1 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection
 
-&quot;$HOME/ibc-rs/target/release/hermes&quot; create channel --a-chain ibc-2 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection
+&quot;$HOME/hermes/target/release/hermes&quot; create channel --a-chain ibc-2 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection
 
 </code></pre>
 <p>Executing these commands will:</p>
