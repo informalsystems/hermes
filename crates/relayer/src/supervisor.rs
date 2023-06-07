@@ -137,10 +137,14 @@ impl SupervisorHandle {
 /// The supervisor should scan if any of the following conditions are met:
 /// - the clear_on_start option is enabled
 /// - the client refresh or misbehavior workers are enabled
+/// - the channel workers are enabled
+/// - the connection workers are enabled
 /// - the full_scan option is enabled
 fn should_scan(config: &Config, options: &SupervisorOptions) -> bool {
     options.force_full_scan
         || (config.mode.packets.enabled && config.mode.packets.clear_on_start)
+        || config.mode.connections.enabled
+        || config.mode.channels.enabled
         || (config.mode.clients.enabled
             && (config.mode.clients.misbehaviour || config.mode.clients.refresh))
 }
