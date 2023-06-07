@@ -19,7 +19,7 @@ use ibc_chain_registry::querier::*;
 use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use ibc_relayer::config::{default, AddressType, ChainConfig, GasPrice};
+use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
 use ibc_relayer::keyring::Store;
 
 use tendermint_light_client_verifier::types::TrustThreshold;
@@ -107,6 +107,7 @@ where
         MAX_HEALTHY_QUERY_RETRIES,
     )
     .await?;
+
     let websocket_address =
         rpc_data.websocket.clone().try_into().map_err(|e| {
             RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
@@ -116,10 +117,12 @@ where
         id: chain_data.chain_id,
         r#type: default::chain_type(),
         rpc_addr: rpc_data.rpc_address,
-        websocket_addr: websocket_address,
         grpc_addr: grpc_address,
+        event_source: EventSourceMode::Push {
+            url: websocket_address,
+            batch_delay: default::batch_delay(),
+        },
         rpc_timeout: default::rpc_timeout(),
-        batch_delay: default::batch_delay(),
         trusted_node: default::trusted_node(),
         genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,

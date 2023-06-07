@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v1.5.1
+ 
+*June 5th, 2023*
+ 
+This is a patch release for Hermes, which includes a single bugfix and enables overflow checks in production builds.
+ 
+### BUG FIXES
+ 
+- Fix a panic which can occur when querying connections filtered
+  by counterparty chain using `hermes query connections`
+  ([\#3381](https://github.com/informalsystems/hermes/issues/3381))
+ 
+### IMPROVEMENTS
+ 
+- Overflow checks are now enabled when Hermes is built in release mode, in
+  order to better catch and address potential logic errors leading to overflows
+  ([\#3390](https://github.com/informalsystems/hermes/issues/3390))
+
 ## v1.5.0
 
 *May 24th, 2023*

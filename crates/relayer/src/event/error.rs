@@ -36,10 +36,10 @@ define_error! {
             |e| { format!("failed to extract IBC events: {0}", e.reason) },
 
         ChannelSendFailed
-            |_| { "event monitor: internal message-passing failure: could not send message" },
+            |_| { "event source: internal message-passing failure: could not send message" },
 
         ChannelRecvFailed
-            |_| { "event monitor: internal message-passing failure: could not receive message" },
+            |_| { "event source: internal message-passing failure: could not receive message" },
 
         SubscriptionCancelled
             [ TraceError<RpcError> ]

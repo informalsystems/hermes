@@ -1,4 +1,7 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
+use serde::Serialize;
+use tendermint::abci::Event as AbciEvent;
+
 use ibc_relayer_types::{
     applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
     applications::ics31_icq::events::CrossChainQueryPacket,
@@ -21,14 +24,12 @@ use ibc_relayer_types::{
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
     Height,
 };
-use serde::Serialize;
-use tendermint::abci::Event as AbciEvent;
 
 use crate::light_client::decode_header;
 
 pub mod bus;
-pub mod monitor;
-pub mod rpc;
+pub mod error;
+pub mod source;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct IbcEventWithHeight {
