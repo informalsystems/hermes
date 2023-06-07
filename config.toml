@@ -141,9 +141,34 @@ rpc_addr = 'http://127.0.0.1:26657'
 # Specify the GRPC address and port where the chain GRPC server listens on. Required
 grpc_addr = 'http://127.0.0.1:9090'
 
-# Specify the WebSocket address and port where the chain WebSocket server
-# listens on. Required
-websocket_addr = 'ws://127.0.0.1:26657/websocket'
+# The type of event source to use for getting events from the chain.
+#
+# This setting can take two types of values, as an inline table:
+# 
+# a) Push: for receiving IBC events over WebSocket
+#
+#      `{ mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }`
+#
+#    where
+#
+#    - `url` is the WebSocket URL to connect to. Required
+#    - `batch_delay` is the delay until event batch is
+#      emitted in the absence of NewBlock event. Default: 500ms
+#      Lower values will result in faster event processing, improving the latency of Hermes,
+#      but may split the events into more batches than necessary, requiring more client updates
+#      to be submitted, yielding higher costs. Higher values will result in slower event
+#      processing, increasing the latency of Hermes, but are more likely to batch events together.
+#      The default value provides good latency while minimizing the number of client updates needed.
+
+# b) Pull: for polling for IBC events via the `/block_results` RPC endpoint
+#
+#     `{ mode = 'pull', interval = '1s' }`
+#
+#    where
+#
+#    - `interval` is the interval at which to poll for blocks. Default: 1s
+#
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
 
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
@@ -161,18 +186,6 @@ rpc_timeout = '10s'
 #
 # Default: false
 trusted_node = false
-
-# Delay until event batch is emitted if no NewBlock events have come yet.
-#
-# Lower values will result in faster event processing, improving the latency of Hermes,
-# but may split the events into more batches than necessary, requiring more client updates
-# to be submitted, yielding higher costs. Higher values will result in slower event
-# processing, increasing the latency of Hermes, but are more likely to batch events together.
-#
-# The default value provides good latency while minimizing the number of client updates needed.
-#
-# Default: 500ms
-batch_delay = '500ms'
 
 # Specify the prefix used by the chain. Required
 account_prefix = 'cosmos'
@@ -351,9 +364,8 @@ memo_prefix = ''
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
-websocket_addr = 'ws://127.0.0.1:26557/websocket'
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }
 rpc_timeout = '10s'
-batch_delay = '500ms'
 trusted_node = false
 account_prefix = 'cosmos'
 key_name = 'testkey'

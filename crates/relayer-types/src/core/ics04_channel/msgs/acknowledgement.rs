@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use derive_more::{From, Into};
 use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 use ibc_proto::protobuf::Protobuf;
@@ -155,7 +153,6 @@ pub mod test_util {
 
 #[cfg(test)]
 mod test {
-    use crate::prelude::*;
 
     use test_log::test;
 

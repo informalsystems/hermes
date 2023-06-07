@@ -1,8 +1,7 @@
-use crate::prelude::*;
 use crate::utils::pretty::PrettySlice;
 
-use core::fmt::{Display, Error as FmtError, Formatter};
-use core::str::FromStr;
+use std::fmt::{Display, Error as FmtError, Formatter};
+use std::str::FromStr;
 
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
@@ -439,7 +438,7 @@ impl Display for State {
 #[cfg(test)]
 pub mod test_util {
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
@@ -466,7 +465,6 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
 
     use core::str::FromStr;
     use test_log::test;

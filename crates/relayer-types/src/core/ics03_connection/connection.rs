@@ -1,8 +1,6 @@
-use crate::prelude::*;
-
-use core::str::FromStr;
-use core::time::Duration;
-use core::{
+use std::str::FromStr;
+use std::time::Duration;
+use std::{
     fmt::{Display, Error as FmtError, Formatter},
     u64,
 };

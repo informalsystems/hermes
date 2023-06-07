@@ -174,6 +174,10 @@ pub mod default {
         Duration::from_secs(10)
     }
 
+    pub fn poll_interval() -> Duration {
+        Duration::from_secs(1)
+    }
+
     pub fn batch_delay() -> Duration {
         Duration::from_millis(500)
     }
@@ -527,20 +531,54 @@ pub struct GenesisRestart {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(tag = "mode", rename_all = "lowercase")]
+pub enum EventSourceMode {
+    /// Push-based event source, via WebSocket
+    Push {
+        /// The WebSocket URL to connect to
+        url: WebSocketClientUrl,
+
+        /// Maximum amount of time to wait for a NewBlock event before emitting the event batch
+        #[serde(default = "default::batch_delay", with = "humantime_serde")]
+        batch_delay: Duration,
+    },
+
+    /// Pull-based event source, via RPC /block_results
+    #[serde(alias = "poll")]
+    Pull {
+        /// The polling interval
+        #[serde(default = "default::poll_interval", with = "humantime_serde")]
+        interval: Duration,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
+    /// The chain's network identifier
     pub id: ChainId,
+
+    /// The chain type
     #[serde(default = "default::chain_type")]
     pub r#type: ChainType,
+
+    /// The RPC URL to connect to
     pub rpc_addr: Url,
-    pub websocket_addr: WebSocketClientUrl,
+
+    /// The gRPC URL to connect to
     pub grpc_addr: Url,
+
+    /// The type of event source and associated settings
+    pub event_source: EventSourceMode,
+
+    /// Timeout used when issuing RPC queries
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
-    #[serde(default = "default::batch_delay", with = "humantime_serde")]
-    pub batch_delay: Duration,
+
+    /// Whether or not the full node Hermes connects to is trusted
     #[serde(default = "default::trusted_node")]
     pub trusted_node: bool,
+
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]

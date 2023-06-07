@@ -1,5 +1,5 @@
-use core::convert::{TryFrom, TryInto};
-use core::time::Duration;
+use std::convert::{TryFrom, TryInto};
+use std::time::Duration;
 
 use prost::Message;
 use serde::{Deserialize, Serialize};
@@ -21,7 +21,6 @@ use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
 use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::ChainId;
-use crate::prelude::*;
 use crate::timestamp::{Timestamp, ZERO_DURATION};
 use crate::Height;
 
@@ -368,7 +367,7 @@ impl From<ClientState> for Any {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+
     use crate::Height;
     use core::time::Duration;
     use test_log::test;
@@ -673,7 +672,6 @@ mod tests {
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
-    use crate::prelude::*;
     use core::time::Duration;
 
     use tendermint::block::Header;
