@@ -80,15 +80,11 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 ## Contact
 
 - Request a [new feature](#new-feature-request) via the [feature request][feature-request] issue template;
-- Consult the [list of reported issues][issues] and search by relevant
-  keywords to see if you're dealing with a known problem;
-- We would be grateful if you can submit a [bug report][bug-report]
-  discussing any problem you find, and from there on we can look at the
-  problem together;
-- Reach Hermes developpers and other relayer operators on the [Cosmos Network Discord server](https://discord.com/invite/cosmosnetwork).
+- Consult the [list of reported issues][issues] and search by relevant keywords to see if you're dealing with a known problem;
+- We would be grateful if you can submit a [bug report][bug-report] discussing any problem you find, and from there on we can look at the problem together;
+- Reach Hermes developpers and other relayer operators in the `#hermes` channel on the [IBC Gang Discord](https://discord.com/invite/A9VqJSyUXU).
 
-Lastly, for general questions, you can reach us at `hello@informal.systems`,
-or on Twitter [@informalinc][twitter].
+Lastly, for general questions, you can reach us at `hello@informal.systems`, or on Twitter [@informalinc][twitter].
 
 ---
 
