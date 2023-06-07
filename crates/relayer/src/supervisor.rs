@@ -287,7 +287,7 @@ pub fn spawn_rest_worker<Chain: ChainHandle>(
 pub fn spawn_cleanup_worker(workers: Arc<RwLock<WorkerMap>>) -> TaskHandle {
     spawn_background_task(
         error_span!("cleanup_worker"),
-        Some(Duration::from_secs(300)),
+        Some(Duration::from_secs(1)),
         move || -> Result<Next, TaskError<Infallible>> {
             workers.acquire_write().clean_stopped_workers();
             Ok(Next::Continue)
