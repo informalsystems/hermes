@@ -166,13 +166,14 @@ impl TestOverrides for SupervisorScanTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode = ModeConfig {
             clients: config::Clients {
-                enabled: true,
+                enabled: false, // disable client workers, otherwise we have to scan
                 refresh: true,
                 misbehaviour: true,
             },
             connections: config::Connections { enabled: true },
             channels: config::Channels { enabled: true },
             packets: config::Packets {
+                enabled: true,
                 clear_on_start: self.clear_on_start,
                 ..Default::default()
             },
