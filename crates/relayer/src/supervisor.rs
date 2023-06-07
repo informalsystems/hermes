@@ -133,6 +133,18 @@ impl SupervisorHandle {
     }
 }
 
+/// Whether the supervisor should scan the chains for clients, connections, and channels.
+/// The supervisor should scan if any of the following conditions are met:
+/// - the clear_on_start option is enabled
+/// - the client refresh or misbehavior workers are enabled
+/// - the full_scan option is enabled
+fn should_scan(config: &Config, options: &SupervisorOptions) -> bool {
+    options.force_full_scan
+        || (config.mode.packets.enabled && config.mode.packets.clear_on_start)
+        || (config.mode.clients.enabled
+            && (config.mode.clients.misbehaviour || config.mode.clients.refresh))
+}
+
 pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     config: Config,
     registry: SharedRegistry<Chain>,
@@ -157,8 +169,8 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     let workers = Arc::new(RwLock::new(WorkerMap::new()));
     let client_state_filter = Arc::new(RwLock::new(FilterPolicy::default()));
 
-    // Only scan if clear_on_start is enabled
-    if config.mode.packets.clear_on_start {
+    // Only scan when needed
+    if should_scan(&config, &options) {
         let scan = chain_scanner(
             &config,
             &mut registry.write(),
