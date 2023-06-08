@@ -19,7 +19,7 @@ use crate::{
     chain::{endpoint::HealthCheck, handle::ChainHandle, tracking::TrackingId},
     config::Config,
     event::{
-        monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+        source::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
         IbcEventWithHeight,
     },
     object::Object,
@@ -51,7 +51,7 @@ use cmd::SupervisorCmd;
 
 use self::{scan::ChainScanner, spawn::SpawnContext};
 
-type ArcBatch = Arc<monitor::Result<EventBatch>>;
+type ArcBatch = Arc<source::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
 
 /**

@@ -15,7 +15,7 @@ use crate::chain::tracking::TrackingId;
 use crate::event::IbcEventWithHeight;
 use crate::util::lock::{LockExt, RwArc};
 use crate::util::task::TaskHandle;
-use crate::{event::monitor::EventBatch, object::Object};
+use crate::{event::source::EventBatch, object::Object};
 
 use super::{WorkerCmd, WorkerId};
 

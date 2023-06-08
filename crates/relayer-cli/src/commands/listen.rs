@@ -14,7 +14,11 @@ use tendermint_rpc::{client::CompatMode, Client, HttpClient};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 
-use ibc_relayer::{chain::handle::Subscription, config::ChainConfig, event::monitor::EventMonitor};
+use ibc_relayer::{
+    chain::handle::Subscription,
+    config::{ChainConfig, EventSourceMode},
+    event::source::websocket::EventSource,
+};
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
 use crate::prelude::*;
@@ -140,23 +144,27 @@ fn subscribe(
     compat_mode: CompatMode,
     rt: Arc<TokioRuntime>,
 ) -> eyre::Result<Subscription> {
-    let (mut event_monitor, tx_cmd) = EventMonitor::new(
+    let EventSourceMode::Push { url, batch_delay } = &chain_config.event_source else {
+        return Err(eyre!("unsupported event source mode, only 'push' is supported for listening to events"));
+    };
+
+    let (mut event_source, tx_cmd) = EventSource::new(
         chain_config.id.clone(),
-        chain_config.websocket_addr.clone(),
+        url.clone(),
         compat_mode,
-        chain_config.batch_delay,
+        *batch_delay,
         rt,
     )
-    .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;
+    .map_err(|e| eyre!("could not initialize event source: {}", e))?;
 
-    event_monitor
+    event_source
         .init_subscriptions()
         .map_err(|e| eyre!("could not initialize subscriptions: {}", e))?;
 
-    let queries = event_monitor.queries();
+    let queries = event_source.queries();
     info!("listening for queries: {}", queries.iter().format(", "),);
 
-    thread::spawn(|| event_monitor.run());
+    thread::spawn(|| event_source.run());
 
     let subscription = tx_cmd.subscribe()?;
     Ok(subscription)
@@ -168,7 +176,10 @@ fn detect_compatibility_mode(
 ) -> eyre::Result<CompatMode> {
     let client = HttpClient::new(config.rpc_addr.clone())?;
     let status = rt.block_on(client.status())?;
-    let compat_mode = CompatMode::from_version(status.node_info.version)?;
+    let compat_mode = CompatMode::from_version(status.node_info.version).unwrap_or_else(|e| {
+        warn!("Unsupported tendermint version, will use v0.37 compatibility mode but relaying might not work as desired: {e}");
+        CompatMode::V0_37
+    });
     Ok(compat_mode)
 }
 
