@@ -126,7 +126,7 @@ together in this way, consumer chains inherit the economic security guarantees o
 >
 > You can read more about consumer chains, and Interchain Security more generally, at [https://cosmos.github.io/interchain-security][cosmos-github-io].
 
-If you are configuring Hermes in order to relay for a consumer chain, set `ccv_consumer_chain = true` in the `config.toml` file. 
+If you are configuring Hermes in order to relay for a consumer chain, set `ccv_consumer_chain = true` under its `[[chains]]` section in the `config.toml` file. 
 By default, this option is set to `false`. It should *ONLY* be toggled on for CCV consumer chains, *NOT* for sovereign chains.
 
 This parameter is required because consumer chains do not utilize the same staking module as sovereign chains.

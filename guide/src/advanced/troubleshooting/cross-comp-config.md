@@ -265,7 +265,7 @@ Depending on how old the missing events are:
 
 ## Unimplemented gRPC for Cosmos Staking Service
 
-When relaying for a consumer chain, the `ccv_consumer_chain` parameter in `config.toml` *must* be set to `true`.
+When relaying for a consumer chain, the `ccv_consumer_chain` parameter *must* be set to `true` under its `[[chains]]` section in the `config.toml` file.
 If it is not, then when Hermes attempts to relay for a consumer chain, it will typically report an error related 
 to a gRPC endpoint being unimplemented for the staking service:
 
