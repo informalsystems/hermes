@@ -33,7 +33,7 @@ latency_confirmed = { start = 5000, end = 10000, buckets = 10 }
 id = 'chain_A'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://localhost:26657/websocket'
+event_source = { mode = 'push', url = 'ws://localhost:26657/websocket' }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
@@ -58,7 +58,7 @@ list = [
 id = 'chain_B'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://localhost:26557/websocket'
+event_source = { mode = 'push', url = 'ws://localhost:26557/websocket' }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
