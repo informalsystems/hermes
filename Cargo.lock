@@ -3307,7 +3307,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -3337,7 +3337,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
 dependencies = [
  "flex-error",
  "serde",
@@ -3350,7 +3350,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3374,7 +3374,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-detector"
 version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3397,7 +3397,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3409,7 +3409,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3426,7 +3426,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3461,7 +3461,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#2406f5a9e72266973be026958a4ad5b889b82c70"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
