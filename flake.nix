@@ -34,7 +34,6 @@
               gaia7
               gaia8
               gaia9
-              ica
               osmosis
               wasmd
               gaia6-ordered
