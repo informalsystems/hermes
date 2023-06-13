@@ -7,6 +7,7 @@ use ibc_relayer::config::{
     filter::{ChannelFilters, ChannelPolicy, FilterPattern},
     PacketFilter,
 };
+use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer_types::applications::ics27_ica::msgs::send_tx::MsgSendTx;
 use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
 use ibc_relayer_types::core::ics04_channel::version::Version;
@@ -145,7 +146,6 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
             }],
         };
 
-        //let raw_msg = InterchainAccountPacketData::new(bincode::serialize(&msg).unwrap());
         let raw_msg = msg.to_any();
 
         let cosmos_tx = CosmosTx {
@@ -183,7 +183,7 @@ fn interchain_send_tx<ChainA: ChainHandle>(
     connection: &ConnectionId,
     msg: InterchainAccountPacketData,
     relative_timeout: Timestamp,
-) -> Result<(), Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     let msg = MsgSendTx {
         owner: from.clone(),
         connection_id: connection.clone(),
@@ -195,11 +195,9 @@ fn interchain_send_tx<ChainA: ChainHandle>(
 
     let tm = TrackedMsgs::new_static(vec![msg_any], "SendTx");
 
-    let _events = chain
+    chain
         .send_messages_and_wait_commit(tm)
-        .map_err(Error::relayer)?;
-
-    Ok(())
+        .map_err(Error::relayer)
 }
 
 #[test]
