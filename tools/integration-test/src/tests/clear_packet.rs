@@ -23,8 +23,13 @@ pub struct ClearPacketRecoveryTest;
 
 impl TestOverrides for ClearPacketTest {
     fn modify_relayer_config(&self, config: &mut Config) {
-        // Disabling clear_on_start should make the relayer not
+        // Disabling client workers and clear_on_start should make the relayer not
         // relay any packet it missed before starting.
+        config.mode.clients.enabled = false;
+        config.mode.connections.enabled = false;
+        config.mode.channels.enabled = false;
+
+        config.mode.packets.enabled = true;
         config.mode.packets.clear_on_start = false;
         config.mode.packets.clear_interval = 0;
     }
@@ -180,8 +185,13 @@ pub struct ClearPacketNoScanTest;
 
 impl TestOverrides for ClearPacketNoScanTest {
     fn modify_relayer_config(&self, config: &mut Config) {
-        // Disabling clear_on_start should make the relayer not
+        // Disabling the client workers and clear_on_start should make the relayer not
         // relay any packet it missed before starting.
+        config.mode.clients.enabled = false;
+        config.mode.connections.enabled = false;
+        config.mode.channels.enabled = false;
+
+        config.mode.packets.enabled = true;
         config.mode.packets.clear_on_start = false;
         config.mode.packets.clear_interval = 10;
     }
