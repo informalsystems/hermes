@@ -210,9 +210,12 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     tasks.extend(batch_tasks);
 
     if let Some(rest_rx) = rest_rx {
-        let rest_task = spawn_rest_worker(config, registry, workers, rest_rx);
+        let rest_task = spawn_rest_worker(config, registry, workers.clone(), rest_rx);
         tasks.push(rest_task);
     }
+
+    let cleanup_task = spawn_cleanup_worker(workers);
+    tasks.push(cleanup_task);
 
     Ok(tasks)
 }
@@ -291,6 +294,18 @@ pub fn spawn_rest_worker<Chain: ChainHandle>(
         move || -> Result<Next, TaskError<Infallible>> {
             handle_rest_requests(&config, &registry.read(), &workers.acquire_read(), &rest_rx);
 
+            Ok(Next::Continue)
+        },
+    )
+}
+
+/// Spawn a background task which verifies if there are idle workers and removes them if.
+pub fn spawn_cleanup_worker(workers: Arc<RwLock<WorkerMap>>) -> TaskHandle {
+    spawn_background_task(
+        error_span!("cleanup_worker"),
+        Some(Duration::from_secs(30)),
+        move || -> Result<Next, TaskError<Infallible>> {
+            workers.acquire_write().clean_stopped_workers();
             Ok(Next::Continue)
         },
     )
