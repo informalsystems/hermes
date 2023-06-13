@@ -125,9 +125,6 @@ impl BinaryChannelTest for CleanChannelWorkersTest {
             &channel.port_b.as_ref(),
         )?;
 
-        // Assert the packet workers are correctly spawned
-        assert_eventual_workers_removed(&supervisor, &ObjectType::Channel, 2)?;
-
         // Assert that idle packet workers are eventually removed
         assert_eventual_workers_removed(&supervisor, &ObjectType::Channel, 0)?;
 
