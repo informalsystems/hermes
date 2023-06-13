@@ -148,6 +148,16 @@ jobs:
 
   ica-filter-test:
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: ibc-go-v6-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v7-simapp
+            command: simd
+            account_prefix: cosmos
     steps:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v21
@@ -172,9 +182,10 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATHS: icad
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#python .#ica -c cargo \
+          nix shell .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features ica --no-fail-fast -- \
             --nocapture --test-threads=1 test_ica_filter
 
