@@ -34,6 +34,10 @@ impl TestOverrides for CleanPacketWorkersTest {
             },
         };
     }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
 }
 
 impl BinaryChannelTest for CleanPacketWorkersTest {
@@ -93,6 +97,10 @@ impl TestOverrides for CleanChannelWorkersTest {
             },
         };
     }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
 }
 
 impl BinaryChannelTest for CleanChannelWorkersTest {
@@ -103,6 +111,8 @@ impl BinaryChannelTest for CleanChannelWorkersTest {
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
+        let supervisor = relayer.spawn_supervisor()?;
+
         // Optimistically send chan-open-init to B, without a connection available yet on A
         init_channel(
             &chains.handle_a,
@@ -114,8 +124,6 @@ impl BinaryChannelTest for CleanChannelWorkersTest {
             &channel.port_a.as_ref(),
             &channel.port_b.as_ref(),
         )?;
-
-        let supervisor = relayer.spawn_supervisor()?;
 
         // Assert the packet workers are correctly spawned
         assert_eventual_workers_removed(&supervisor, &ObjectType::Channel, 2)?;
