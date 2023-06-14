@@ -23,7 +23,7 @@ serde_json = "1"
 time = "0.3"
 toml = "0.7"
 tonic = { version = "0.9", features = ["tls", "tls-roots"] }
-serde = "1.0.149"
+serde = "1.0.164"
 
 [features]
 default = []
@@ -36,10 +36,11 @@ experimental = []
 mbt = []
 forward-packet = []
 ics31 = []
+clean-workers = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
 doc = true
 
 [dev-dependencies]
-tempfile = "3.5.0"
+tempfile = "3.6.0"

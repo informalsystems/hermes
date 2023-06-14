@@ -31,7 +31,7 @@
     - [Configure Hermes](./documentation/configuration/configure-hermes.md)
     - [Description of the parameters](./documentation/configuration/description.md)
     - [Filter incentivized packets](./documentation/configuration/filter-incentivized.md)
-    - [Performance Tuning](./documentation/configuration/performance.md)
+    - [Performance tuning](./documentation/configuration/performance.md)
 
 - [Telemetry](./documentation/telemetry/index.md)
     - [Operators guide](./documentation/telemetry/operators.md)
@@ -53,7 +53,7 @@
 - [Commands Reference](./documentation/commands/index.md)
   - [Global options and JSON output](./documentation/commands/global.md)
   - [Keys](./documentation/commands/keys/index.md)
-  - [Genearting and Validating Config Files](./documentation/commands/config.md)
+  - [Generating and Validating Config Files](./documentation/commands/config.md)
   - [Path setup](./documentation/commands/path-setup/index.md)
     - [Clients](./documentation/commands/path-setup/clients.md)
     - [Connections](./documentation/commands/path-setup/connections.md)

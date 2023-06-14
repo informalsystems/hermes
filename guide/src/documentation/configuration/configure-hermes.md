@@ -115,6 +115,24 @@ list = [
 ]
 ```
 
+## Configuring Support for Consumer Chains that Utilize Cross-Chain Validation 
+
+As of version 1.4.1, Hermes supports relaying for consumer chains that utilize [cross-chain validation][ccv] (CCV).
+
+> **Note:** A consumer chain is essentially a regular Cosmos-SDK based chain that uses the interchain security
+module to achieve economic security by stake deposited on a provider chain instead of on the consumer chain 
+itself. Consumer chains are bound to their provider chains by the provider's validator set. By being bound 
+together in this way, consumer chains inherit the economic security guarantees of the provider chain.
+>
+> You can read more about consumer chains, and Interchain Security more generally, at [https://cosmos.github.io/interchain-security][cosmos-github-io].
+
+If you are configuring Hermes in order to relay for a consumer chain, set `ccv_consumer_chain = true` under its `[[chains]]` section in the `config.toml` file. 
+By default, this option is set to `false`. It should *ONLY* be toggled on for CCV consumer chains, *NOT* for sovereign chains.
+
+This parameter is required because consumer chains do not utilize the same staking module as sovereign chains.
+Consumer chains must query a different gRPC endpoint in order to fetch the relevant `ccvconsumer` parameters that Hermes 
+needs in order to relay on behalf of consumer chains.
+
 ## Connecting to a full node protected by HTTP Basic Authentication
 
 To connect to a full node protected by [HTTP Basic Authentication][http-basic-auth],
@@ -165,6 +183,8 @@ be receiving, such as when relaying for CosmWasm-enabled blockchains which emit 
 `message` attribute. Without this attribute, the WebSocket is not able to catch these events to stream
 to Hermes, so the `/block_results` RPC endpoint must be used instead. 
 
+[ccv]: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/README.md
+[cosmos-github-io]: https://cosmos.github.io/interchain-security
 [http-basic-auth]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication
 [ica]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
 [chain-registry]: https://github.com/cosmos/chain-registry
