@@ -1494,8 +1494,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.31.0-alpha.2"
-source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=luca_joss/update-ibc-go-to-6-1-0#22ec4a6a50d778c586c6f3869bbc2e6f8f7c6675"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c888103095b45bee90cb9104513ade30abd69902153b0682b5ad81940ae1f865"
 dependencies = [
  "base64 0.21.2",
  "bytes",
