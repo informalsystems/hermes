@@ -97,7 +97,6 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
     ) -> Result<(), Error> {
         // Register an interchain account on behalf of
         // controller wallet `user1` where the counterparty chain is the interchain accounts host.
-        // Then spawn the supervisor.
         let (wallet, channel_id, port_id) = register_interchain_account(&chains, &connection)?;
 
         // Check that the corresponding ICA channel is eventually established.
