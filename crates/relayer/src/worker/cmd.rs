@@ -17,6 +17,32 @@ pub enum WorkerCmd {
     ClearPendingPackets,
 }
 
+impl WorkerCmd {
+    /// Returns `true` if the worker cmd is [`IbcEvents`].
+    ///
+    /// [`IbcEvents`]: WorkerCmd::IbcEvents
+    #[must_use]
+    pub fn is_ibc_events(&self) -> bool {
+        matches!(self, Self::IbcEvents { .. })
+    }
+
+    /// Returns `true` if the worker cmd is [`NewBlock`].
+    ///
+    /// [`NewBlock`]: WorkerCmd::NewBlock
+    #[must_use]
+    pub fn is_new_block(&self) -> bool {
+        matches!(self, Self::NewBlock { .. })
+    }
+
+    /// Returns `true` if the worker cmd is [`ClearPendingPackets`].
+    ///
+    /// [`ClearPendingPackets`]: WorkerCmd::ClearPendingPackets
+    #[must_use]
+    pub fn is_clear_pending_packets(&self) -> bool {
+        matches!(self, Self::ClearPendingPackets)
+    }
+}
+
 impl Display for WorkerCmd {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
