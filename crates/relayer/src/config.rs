@@ -210,7 +210,7 @@ pub mod default {
         HistogramConfig {
             range: Range {
                 start: 500,
-                end: 10000,
+                end: 20000,
             },
             buckets: 10,
         }
@@ -220,7 +220,7 @@ pub mod default {
         HistogramConfig {
             range: Range {
                 start: 1000,
-                end: 20000,
+                end: 30000,
             },
             buckets: 10,
         }

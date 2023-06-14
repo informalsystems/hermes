@@ -114,14 +114,14 @@ port = 3001
 # Specify the range of the 10 histogram buckets in ms for the `tx_latency_submitted` metric.
 # Default: { start = 500, end = 10000, buckets = 10 }
 # The default will give the following buckets:
-# [500, 1450, 2400, 3350, 4300, 5250, 6200, 7150, 8100, 9050, 10000]
-# latency_submitted = { start = 500, end = 10000, buckets = 10 }
+# [500, 2450, 4400, 6350, 8300, 10250, 12200, 14150, 16100, 18050, 20000]
+# latency_submitted = { start = 500, end = 20000, buckets = 10 }
 
 # Specify the range of the 10 histogram buckets in ms for the `tx_latency_confirmed` metric.
 # Default: { start = 1000, end = 20000, buckets = 10 }
 # The default will give the following buckets:
-# [1000, 2900, 4800, 6700, 8600, 10500, 12400, 14300, 16200, 18100, 20000]
-# latency_confirmed = { start = 1000, end = 20000, buckets = 10 }
+# [1000, 3900, 6800, 9700, 12600, 15500, 18400, 21300, 24200, 27100, 30000]
+# latency_confirmed = { start = 1000, end = 30000, buckets = 10 }
 
 
 # A chains section includes parameters related to a chain and the full node to which
