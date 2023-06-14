@@ -24,8 +24,7 @@ mocks = ["tendermint-testgen", "clock"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-#ibc-proto = { version = "0.31.0" }
-ibc-proto  = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "luca_joss/update-ibc-go-to-6-1-0", default-features = false }
+ibc-proto = { version = "0.32.0" }
 ics23 = { version = "0.10.1", features = ["std", "host-functions"] }
 time = { version = ">=0.3.0, <0.3.21" }
 serde_derive = { version = "1.0.104" }

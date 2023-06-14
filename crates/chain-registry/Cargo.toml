@@ -12,8 +12,7 @@ description  = """
 """
 
 [dependencies]
-#ibc-proto         = { version = "0.31.0" }
-ibc-proto  = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "luca_joss/update-ibc-go-to-6-1-0" }
+ibc-proto         = { version = "0.32.0" }
 ibc-relayer-types = { version = "0.24.1", path = "../relayer-types" }
 tendermint-rpc    = { version = "0.32.0", features = ["http-client", "websocket-client"] }
 
