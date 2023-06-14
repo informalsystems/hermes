@@ -59,6 +59,19 @@ into a full node's mempool.
 **A note on wallet balances.**
 For the `wallet_balance`, we convert from a String into a f64, which can lead to a loss in precision in the displayed value.
 
+**latency histogram**
+The `tx_latency_submitted` and `tx_latency_confirmed` are displayed with histogram buckets which each contain the number of values less or equal to their bucket label. This means that if there are 5 buckets with label `500`, `2000`, `3000`, `4000` and `5000` and 2 `tx_latency_submitted` were recorded of respectively `1800ms` and `3100ms` then the `tx_latency_submitted` will look like this:
+
+```text
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version="",le="500"} 0
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version="",le="2000"} 1
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version="",le="3000"} 1
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version="",le="4000"} 2
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version="",le="5000"} 2
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version="",le="+Inf"} 2
+```
+The range of the buckets can be configured using the `latency_submitted` and `latency_confirmed` seen [here](./index.md)
+
 
 ## Are Hermes transactions successful?
 
