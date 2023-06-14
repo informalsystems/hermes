@@ -1477,7 +1477,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "time 0.3.20",
+ "time 0.3.22",
  "toml 0.7.4",
  "tonic",
 ]
@@ -1649,7 +1649,7 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
- "time 0.3.20",
+ "time 0.3.22",
  "tracing",
  "tracing-subscriber",
  "uint",
@@ -1671,6 +1671,7 @@ dependencies = [
  "serde_json",
  "tendermint",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1953,14 +1954,13 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36506f2f935238463605f3bb13b362f1949daafc3b347d05d60ae08836db2bd2"
+checksum = "206bf83f415b0579fd885fe0804eb828e727636657dc1bf73d80d2f1218e14a1"
 dependencies = [
  "crossbeam-channel 0.5.8",
  "crossbeam-epoch",
  "crossbeam-utils 0.8.15",
- "num_cpus",
  "once_cell",
  "parking_lot",
  "quanta",
@@ -2948,9 +2948,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.163"
+version = "1.0.164"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2113ab51b87a539ae008b5c6c02dc020ffa39afd2d83cffcb3f4eb2722cebec2"
+checksum = "9e8c8cf938e98f769bc164923b06dce91cea1751522f46f8466461af04c9027d"
 dependencies = [
  "serde_derive",
 ]
@@ -2976,9 +2976,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.163"
+version = "1.0.164"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c805777e3930c8883389c602315a24224bcc738b63905ef87cd1420353ea93e"
+checksum = "d9735b638ccc51c28bf6914d90a2e9725b377144fc612c49a611fddd1b631d68"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3335,15 +3335,16 @@ checksum = "7b2093cf4c8eb1e67749a6762251bc9cd836b6fc171623bd0a9d324d37af2417"
 
 [[package]]
 name = "tempfile"
-version = "3.5.0"
+version = "3.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9fbec84f381d5795b08656e4912bec604d162bff9291d6189a78f4c8ab87998"
+checksum = "31c0432476357e58790aaa47a8efb0c5138f137343f3b5f23bd36a27e3b0a6d6"
 dependencies = [
+ "autocfg",
  "cfg-if 1.0.0",
  "fastrand",
  "redox_syscall 0.3.5",
  "rustix",
- "windows-sys 0.45.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -3373,7 +3374,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.3.20",
+ "time 0.3.22",
  "zeroize",
 ]
 
@@ -3411,7 +3412,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-rpc",
- "time 0.3.20",
+ "time 0.3.22",
  "tokio",
  "tracing",
 ]
@@ -3436,7 +3437,7 @@ dependencies = [
  "tendermint-light-client",
  "tendermint-proto",
  "tendermint-rpc",
- "time 0.3.20",
+ "time 0.3.22",
  "tracing",
 ]
 
@@ -3450,7 +3451,7 @@ dependencies = [
  "flex-error",
  "serde",
  "tendermint",
- "time 0.3.20",
+ "time 0.3.22",
 ]
 
 [[package]]
@@ -3468,7 +3469,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time 0.3.20",
+ "time 0.3.22",
 ]
 
 [[package]]
@@ -3499,7 +3500,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
- "time 0.3.20",
+ "time 0.3.22",
  "tokio",
  "tracing",
  "url",
@@ -3520,7 +3521,7 @@ dependencies = [
  "simple-error",
  "tempfile",
  "tendermint",
- "time 0.3.20",
+ "time 0.3.22",
 ]
 
 [[package]]
@@ -3592,9 +3593,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.20"
+version = "0.3.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd0cbfecb4d19b5ea75bb31ad904eb5b9fa13f21079c3b92017ebdf4999a5890"
+checksum = "ea9e1b3cf1243ae005d9e74085d4d542f3125458f3a81af210d901dcd7411efd"
 dependencies = [
  "serde",
  "time-core",
@@ -3603,15 +3604,15 @@ dependencies = [
 
 [[package]]
 name = "time-core"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e153e1f1acaef8acc537e68b44906d2db6436e2b35ac2c6b42640fff91f00fd"
+checksum = "7300fbefb4dadc1af235a9cef3737cea692a9d97e1b9cbcd4ebdae6f8868e6fb"
 
 [[package]]
 name = "time-macros"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd80a657e71da814b8e5d60d3374fc6d35045062245d80224748ae522dd76f36"
+checksum = "372950940a5f07bf38dbe211d7283c9e6d7327df53794992d293e534c733d09b"
 dependencies = [
  "time-core",
 ]

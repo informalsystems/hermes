@@ -193,7 +193,12 @@ fn spawn_telemetry_server(config: &Config) {
 
     let _span = tracing::error_span!("telemetry").entered();
 
-    let state = ibc_telemetry::global();
+    let state = ibc_telemetry::init(
+        config.telemetry.buckets.latency_submitted.range.clone(),
+        config.telemetry.buckets.latency_submitted.buckets,
+        config.telemetry.buckets.latency_confirmed.range.clone(),
+        config.telemetry.buckets.latency_confirmed.buckets,
+    );
     let telemetry = config.telemetry.clone();
 
     if !telemetry.enabled {
