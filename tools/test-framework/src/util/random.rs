@@ -48,9 +48,7 @@ pub fn random_string() -> String {
 /// Generates a random non-privileged port that is greater than 1024.
 fn random_port() -> u16 {
     let mut rng = rand::thread_rng();
-    rng.gen::<u16>()
-        .checked_add(1024)
-        .unwrap_or_else(random_port)
+    rng.gen_range(1024..=u16::MAX)
 }
 
 /// Find a random unused non-privileged TCP port.
