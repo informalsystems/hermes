@@ -103,8 +103,12 @@ impl ChainBuilder {
 
         let rpc_port = random_unused_tcp_port();
         let grpc_port = random_unused_tcp_port();
-        let grpc_web_port = random_unused_tcp_port();
-        let p2p_port = random_unused_tcp_port();
+
+        // We let the OS choose a random port for these, since we do not need to know them before
+        // starting the chain, nor do we use them for anything afterwards.
+        let grpc_web_port = 0;
+        let p2p_port = 0;
+        let pprof_port = 0;
 
         let home_path = format!("{}/{}", self.base_store_dir, chain_id);
 
@@ -118,6 +122,7 @@ impl ChainBuilder {
             grpc_port,
             grpc_web_port,
             p2p_port,
+            pprof_port,
             self.runtime.clone(),
         )?;
 
