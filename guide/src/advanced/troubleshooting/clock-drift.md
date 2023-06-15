@@ -9,13 +9,13 @@ there are two configuration parameters that exist to specify how much clock drif
 	 whether to accept or reject a new header from the source chain for this client.
  - `max_block_time` is the maximum amount of time that can occur before a new block is created on the chain. 
 
-> *Note:* When it comes to Cosmos SDK chains, a good approximation for `max_block_time` is
+> **Note:** When it comes to Cosmos SDK chains, a good approximation for `max_block_time` is
 `timeout_propose` + `timeout_commit`, which together sum up to the total amount of time before
 the proposal and commitment steps for a new block time out. 
 
 `max_block_time` and the `clock_drift` parameter values on both the source and destination chains 
-are summed up to get the an estimate of the `total_clock_drift` that is tolerable when creating a
-client on this chain. More succinctly, this can be summarized in the following equation: 
+are summed to get the `total_clock_drift` that is tolerable when creating a client on this chain. 
+This can be summarized more succinctly in the following equation: 
 ```
 total_clock_drift = max_block_time + source_clock_drift + destination_clock_drift
 ```
@@ -25,3 +25,8 @@ parameters will be used. If the total clock drift is too small, then we run the 
 updates being rejected because a new block won't have been created yet. It's better to err on the
 side of total clock drift being larger than smaller, however, if this value ends up being _too_
 large, then this becomes a security vulnerability.
+
+For a more concrete example of what could happen when clock drift is mis-configured, take a look
+at the [Mishandling Clock Drift][mishandling-clock-drift] troubleshooting section.
+
+[mishandling-clock-drift]: ./cross-comp-config.md#mishandling-clock-drift

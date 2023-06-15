@@ -279,3 +279,21 @@ that it needs in order to relay on behalf of a consumer chain.
 
 ### Fix
 Set `ccv_consumer_chain = true` in `config.toml`.
+
+## Mishandling Clock Drift
+
+If a client is created with a `max_clock_drift`, which is defined as the sum of the source chain's `clock_drift`,
+the destination chain's `clock_drift`, as well as the `max_block_time` parameter, that doesn't take into account
+the proper block time, an error such as the following may be encountered when performing client updates:
+
+```
+$ hermes --config config.toml update client --client 07-tendermint-1 --host-chain ibc-0
+2023-06-15T17:57:08.231696Z  INFO ThreadId(01) running Hermes v1.5.0+048d3f78
+2023-06-15T17:57:08.266205Z  WARN ThreadId(01) foreign_client.build_update_client_and_send{client=ibc-1->ibc-0:07-tendermint-1 target_query_height=latest height}:foreign_client.wait_and_build_update_client_with_trusted{client=ibc-1->ibc-0:07-tendermint-1 target_height=1-16063}:foreign_client.build_update_client_with_trusted{client=ibc-1->ibc-0:07-tendermint-1 target_height=1-16063}:foreign_client.wait_for_header_validation_delay{client=ibc-1->ibc-0:07-tendermint-1}: src header 2023-06-15T17:57:06.06131Z is after dst latest header 2023-06-15T17:56:31.809548Z + client state drift 4s,wait for next height on ibc-0
+ERROR foreign client error: update header from ibc-1 with height 1-16063 and time 2023-06-15T17:57:06.06131Z is in the future compared with latest header on ibc-0 with height 0-1023 and time 2023-06-15T17:56:51.942517Z, adjusted with drift 4s
+```
+
+This error was encountered with a Hermes configuration that had `max_block_time` set to 2 seconds and `clock_drift`
+set to 1 second on both the source and destination chains. This means the client is created with a `max_clock_drift`
+of 4 seconds, though the two chains had block times of 15 seconds. Thus, the `max_clock_drift` duration ended up
+being much too short, resulting in the above error. 
