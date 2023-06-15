@@ -1,3 +1,15 @@
+//! This test tests the fee_grant configuration:
+//!
+//! - The `FeeGrant` will register the address of `user2` as the granter
+//!   for `user1` and will configure the `fee_granter` in Hermes. It will
+//!   then assert that the `user1` doesn't pay any fees for a transfer and
+//!   `user2` pays the fees.
+//!
+//! - The `NoFeeGrant` will register the address of `user2` as the granter
+//!   for `user1`, but it will not configure the `fee_granter` in Hermes. It will
+//!   then assert that the `user1` pays the fees and
+//!   `user2` doesn't pay any fees.
+
 use std::thread;
 
 use ibc_relayer::config::ChainConfig;
@@ -135,6 +147,7 @@ impl BinaryChannelTest for FeeGrantTest {
             "subtraction between queried amounts should be Some"
         );
 
+        // Only assert that the paid fees are non zero since they might vary
         assert_ne!(
             paid_fees.unwrap().0,
             U256::from(0),
@@ -211,7 +224,7 @@ impl BinaryChannelTest for NoFeeGrantTest {
             &denom_a.with_amount(a_to_b_amount).as_ref(),
         )?;
 
-        thread::sleep(Duration::from_secs(20));
+        thread::sleep(Duration::from_secs(10));
 
         let balance_user1_after = chains.node_a.chain_driver().query_balance(
             &chains.node_a.wallets().user1().address(),
@@ -239,6 +252,7 @@ impl BinaryChannelTest for NoFeeGrantTest {
             "subtraction between queried amounts should be Some"
         );
 
+        // Only assert that the paid fees are non zero since they might vary
         assert_ne!(
             paid_fees.unwrap().0,
             U256::from(0),
