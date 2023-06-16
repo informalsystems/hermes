@@ -323,6 +323,48 @@ jobs:
           nix shell ${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features ics31 --no-fail-fast -- \
             --nocapture --test-threads=1 ics31::
+  fee-grant:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: stride
+            command: strided
+            account_prefix: stride
+          - package: evmos
+            command: evmosd
+            account_prefix: evmos
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v21
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --features fee-grant --no-fail-fast --no-run
+      - env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+        run: |
+          nix shell .#${{ matrix.chain.package }} -c cargo \
+            test -p ibc-integration-test --features fee-grant --no-fail-fast -- \
+            --nocapture --test-threads=1 fee_grant::
 
   clean-workers:
     runs-on: ubuntu-20.04
