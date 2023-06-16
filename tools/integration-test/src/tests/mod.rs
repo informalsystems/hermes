@@ -51,3 +51,6 @@ pub mod ics31;
 
 #[cfg(any(doc, feature = "clean-workers"))]
 pub mod clean_workers;
+
+#[cfg(any(doc, feature = "fee-grant"))]
+pub mod fee_grant;
