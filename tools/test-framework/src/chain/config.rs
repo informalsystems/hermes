@@ -67,6 +67,19 @@ pub fn set_p2p_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+/// Set the `pprof_laddr` field in the full node config.
+pub fn set_pprof_port(config: &mut Value, port: u16) -> Result<(), Error> {
+    config
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert(
+            "pprof_laddr".to_string(),
+            format!("tcp://0.0.0.0:{port}").into(),
+        );
+
+    Ok(())
+}
+
 pub fn set_mempool_version(config: &mut Value, version: &str) -> Result<(), Error> {
     config
         .get_mut("mempool")
