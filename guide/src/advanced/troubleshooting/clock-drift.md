@@ -9,9 +9,8 @@ IBC light client security model requires that the clocks of the reference and ho
  - `clock_drift` is a correction parameter that specifies how far in the future or past a chain's clock may be from the current time..
  - `max_block_time` is the maximum amount of time that can occur before a new block is created on the chain. 
 
-> **Note:** When it comes to Cosmos SDK chains, a good approximation for `max_block_time` is
-`timeout_propose` + `timeout_commit`, which together sum up to the total amount of time before
-the proposal and commitment steps for a new block time out. 
+> **Note:** For Cosmos SDK chains, a good approximation for `max_block_time` is
+`C * (timeout_propose + timeout_commit)`. To allow for some variance in block times while still detecting forward lunatic attacks (todo - add reference), it is recommended to set `C` to be in the `3..5` range. Hermes uses the default value of `30s` which is a good approximation for most Cosmos SDK chains that have 6-10sec block times.
 
 The `clock_drift` parameter values on both the reference and host chains, and `max_block_time` of the host chain are summed to get the `max_clock_drift` when creating a client on the host chain.
 This can be summarized more succinctly in the following equation: 
