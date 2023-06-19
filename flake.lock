@@ -63,6 +63,7 @@
         "ixo-src": "ixo-src",
         "juno-src": "juno-src",
         "migaloo-src": "migaloo-src",
+        "neutron-src": "neutron-src",
         "nix-std": "nix-std",
         "nixpkgs": "nixpkgs",
         "osmosis-src": "osmosis-src",
@@ -92,11 +93,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1684334331,
-        "narHash": "sha256-/DPav4Oe1W2ZGuajxdBrjUL1SJGmwSllay8AW9+C+J8=",
+        "lastModified": 1687166981,
+        "narHash": "sha256-i2InpsghhsqpwmcbCAUY080YRyHAVLfh/XOLUMAZW9c=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "1411ae567f88b220cbaedbf816a8664ac9b49608",
+        "rev": "ac19ce691708acd52b74e5843a541b49e684e511",
         "type": "github"
       },
       "original": {
@@ -207,11 +208,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1681202837,
-        "narHash": "sha256-H+Rh19JDwRtpVPAWp64F+rlEtxUWBAQW28eAi3SRSzg=",
+        "lastModified": 1685518550,
+        "narHash": "sha256-o2d0KcvaXzTrPRIo0kOLV0/QXHhDQ5DTi+OxcjO8xqY=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "cfacdce06f30d2b68473a46042957675eebb3401",
+        "rev": "a1720a10a6cfe8234c0e93907ffe81be440f4cef",
         "type": "github"
       },
       "original": {
@@ -448,16 +449,16 @@
     "ibc-go-v7-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1678970403,
-        "narHash": "sha256-vdsDqLHpP0Bp0j8gtDOdouzyQXKioZsxJA+znkQw6JY=",
+        "lastModified": 1686298823,
+        "narHash": "sha256-8ModVWpRWbwWQLj5BCCopn7vpOJjFp4ISESCCp4pqWQ=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "7fb65c76000f207ece1b83d8950e3aaff3dfc0e7",
+        "rev": "000e9d20b15b3c6939cefc0e26daa4b64c1be8fb",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "v7.0.0",
+        "ref": "v7.1.0",
         "repo": "ibc-go",
         "type": "github"
       }
@@ -597,6 +598,23 @@
         "type": "github"
       }
     },
+    "neutron-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1685114240,
+        "narHash": "sha256-xHi4W4fOT3kTmkPEKdGp6JbzKQELdWy9PIn0qsZhprY=",
+        "owner": "neutron-org",
+        "repo": "neutron",
+        "rev": "3c8dde1ff524551e24295d393a3913c25199d265",
+        "type": "github"
+      },
+      "original": {
+        "owner": "neutron-org",
+        "ref": "v1.0.2",
+        "repo": "neutron",
+        "type": "github"
+      }
+    },
     "nix-std": {
       "locked": {
         "lastModified": 1658944356,
@@ -662,11 +680,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1684363872,
-        "narHash": "sha256-jkvhzrICFSmj+NBHksKTWzs8Q3+D7RsVK0wLKacbu8s=",
+        "lastModified": 1687103638,
+        "narHash": "sha256-dwy/TK6Db5W7ivcgmcxUykhFwodIg0jrRzOFt7H5NUc=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "1d77f3b72756ca36f16440c59e6b89a957908647",
+        "rev": "91430887645a0953568da2f3e9a3a3bb0a0378ac",
         "type": "github"
       },
       "original": {
