@@ -101,6 +101,7 @@ where
         MAX_HEALTHY_QUERY_RETRIES,
     )
     .await?;
+
     let grpc_address = query_healthy_retry::<GrpcQuerier>(
         chain_name.to_string(),
         grpc_endpoints,
@@ -112,6 +113,12 @@ where
         rpc_data.websocket.clone().try_into().map_err(|e| {
             RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
         })?;
+
+    let avg_gas_price = if let Some(fee_token) = chain_data.fees.fee_tokens.first() {
+        fee_token.average_gas_price
+    } else {
+        0.1
+    };
 
     Ok(ChainConfig {
         id: chain_data.chain_id,
@@ -146,7 +153,7 @@ where
         proof_specs: Default::default(),
         trust_threshold: TrustThreshold::default(),
         gas_price: GasPrice {
-            price: 0.1,
+            price: avg_gas_price,
             denom: asset.base.to_owned(),
         },
         packet_filter: packet_filter.unwrap_or_default(),
@@ -213,6 +220,7 @@ async fn get_data_from_handles<T>(
         .map_err(|e| RegistryError::join_error(error_task.to_string(), e))?
         .into_iter()
         .collect();
+
     data_array
 }
 
@@ -236,6 +244,7 @@ pub async fn get_configs(
     commit: Option<String>,
 ) -> Result<Vec<ChainConfig>, RegistryError> {
     let n = chains.len();
+
     if n == 0 {
         return Ok(Vec::new());
     }
@@ -245,6 +254,7 @@ pub async fn get_configs(
     let asset_lists_handle = get_handles::<AssetList>(chains, &commit).await;
 
     let mut path_handles = Vec::with_capacity(n * (n - 1) / 2);
+
     for i in 0..n {
         for chain_j in &chains[i + 1..] {
             let chain_i = &chains[i];
@@ -255,8 +265,8 @@ pub async fn get_configs(
             }));
         }
     }
-    // Collect data from the spawned tasks
 
+    // Collect data from the spawned tasks
     let chain_data_array =
         get_data_from_handles::<ChainData>(chain_data_handle, "chain_data_join").await?;
     let asset_lists =
@@ -288,6 +298,7 @@ pub async fn get_configs(
             })
         })
         .collect();
+
     get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
 }
 
