@@ -13,8 +13,7 @@ there are two configuration parameters that exist to specify how much clock drif
 `timeout_propose` + `timeout_commit`, which together sum up to the total amount of time before
 the proposal and commitment steps for a new block time out. 
 
-`max_block_time` and the `clock_drift` parameter values on both the source and destination chains 
-are summed to get the `total_clock_drift` that is tolerable when creating a client on this chain. 
+The `clock_drift` parameter values on both the reference and host chains, and `max_block_time` of the host chain are summed to get the `max_clock_drift` when creating a client on the host chain.
 This can be summarized more succinctly in the following equation: 
 ```
 total_clock_drift = max_block_time + source_clock_drift + destination_clock_drift
