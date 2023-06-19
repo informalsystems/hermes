@@ -16,7 +16,7 @@ the proposal and commitment steps for a new block time out.
 The `clock_drift` parameter values on both the reference and host chains, and `max_block_time` of the host chain are summed to get the `max_clock_drift` when creating a client on the host chain.
 This can be summarized more succinctly in the following equation: 
 ```
-total_clock_drift = max_block_time + source_clock_drift + destination_clock_drift
+client.max_clock_drift = reference.clock_drift + host.max_block_time + host.clock_drift
 ```
 
 Thus, when configuring these values in Hermes' `config.toml`, keep in mind that this is how these 
