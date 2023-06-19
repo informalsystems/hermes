@@ -120,7 +120,7 @@ impl Runnable for AutoCmd {
 
                 match store(&config, &self.path) {
                     Ok(_) => Output::success(format!(
-                        "Config file written successfully : {}.",
+                        "Config file written successfully at {}.",
                         self.path.to_str().unwrap()
                     ))
                     .exit(),
