@@ -1,12 +1,12 @@
 # Handling Clock Drift
 
-When it comes to distributed systems, clock drift is always a consideration that needs to be 
-taken into account. There is always some amount of drift between the clock of the source chain 
-and the clock of the destination chain that must be accounted for. As far as Hermes is concerned,
-there are two configuration parameters that exist to specify how much clock drift ought to be tolerated: 
- - `clock_drift` is a correction parameter that specifies how far in the future or past a chain's clock may
-   drift in relation to this client. The destination chain for this client uses this parameter when deciding
-	 whether to accept or reject a new header from the source chain for this client.
+IBC light client security model requires that the timestamp of a header included in client updates for some `client` is within `[now - client.trusting_period, now + client.max_clock_drift)`.
+
+The `trusting_period` is a parameter that is configurable under the `[[chains]]` section and its default value is two thirds of the chain `unbonding_period`.
+The rest of this section describes the configuration parameters that determine the `max_clock_drift`.
+
+IBC light client security model requires that the clocks of the reference and host chains are roughly synchronized. Hermes uses the `clock_drift` and `max_block_time` configuration parameters to determine how much clock drift is tolerable between the reference and host chains.
+ - `clock_drift` is a correction parameter that specifies how far in the future or past a chain's clock may be from the current time..
  - `max_block_time` is the maximum amount of time that can occur before a new block is created on the chain. 
 
 > **Note:** When it comes to Cosmos SDK chains, a good approximation for `max_block_time` is
