@@ -1690,6 +1690,7 @@ dependencies = [
  "ibc-relayer-cli",
  "ibc-relayer-types",
  "itertools",
+ "once_cell",
  "prost",
  "rand 0.8.5",
  "semver",
