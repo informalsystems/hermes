@@ -839,7 +839,7 @@ dependencies = [
  "derivation-path",
  "ed25519-dalek",
  "hmac",
- "sha2 0.10.6",
+ "sha2 0.10.7",
 ]
 
 [[package]]
@@ -1543,7 +1543,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "serial_test",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "signature 1.6.4",
  "strum",
  "subtle-encoding",
@@ -1697,7 +1697,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "subtle-encoding",
  "tendermint-rpc",
  "tokio",
@@ -1720,7 +1720,7 @@ dependencies = [
  "prost",
  "ripemd",
  "serde",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "sha3",
 ]
 
@@ -1836,7 +1836,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "ecdsa",
  "elliptic-curve",
- "sha2 0.10.6",
+ "sha2 0.10.7",
 ]
 
 [[package]]
@@ -3102,9 +3102,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.6"
+version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82e6b795fe2e3b1e845bafcb27aa35405c4d47cdfc92af5fc8d3002f76cebdc0"
+checksum = "479fb9d862239e610720565ca91403019f2f00410f1864c5aa7479b950a76ed8"
 dependencies = [
  "cfg-if 1.0.0",
  "cpufeatures",
@@ -3370,7 +3370,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "serde_repr",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "signature 2.1.0",
  "subtle",
  "subtle-encoding",
@@ -3630,7 +3630,7 @@ dependencies = [
  "pbkdf2",
  "rand 0.8.5",
  "rustc-hash",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "thiserror",
  "unicode-normalization",
  "wasm-bindgen",
