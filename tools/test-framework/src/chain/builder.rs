@@ -105,6 +105,7 @@ impl ChainBuilder {
         let grpc_port = random_unused_tcp_port();
         let grpc_web_port = random_unused_tcp_port();
         let p2p_port = random_unused_tcp_port();
+        let pprof_port = random_unused_tcp_port();
 
         let home_path = format!("{}/{}", self.base_store_dir, chain_id);
 
@@ -118,6 +119,7 @@ impl ChainBuilder {
             grpc_port,
             grpc_web_port,
             p2p_port,
+            pprof_port,
             self.runtime.clone(),
         )?;
 
