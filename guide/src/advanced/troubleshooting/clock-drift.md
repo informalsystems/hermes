@@ -11,7 +11,7 @@ IBC light client security model requires that the clocks of the reference and ho
 
 > **Note:** For Cosmos SDK chains, a good approximation for `max_block_time` is `C * (timeout_propose + timeout_commit)`,
 where `C` is a constant to allow for variation in block times, mainly due to tx execution time which is outside of 
-consensus params. To allow for some variance in block times while still detecting forward lunatic attacks (todo - add reference), 
+consensus params. To allow for some variance in block times while still detecting [forward lunatic attacks][forward-lunatic], 
 it is recommended to set `C` to be in the `3..5` range. Hermes uses the default value of `30s` which is a good approximation 
 for most Cosmos SDK chains that have 6-10sec block times.
 
@@ -30,4 +30,5 @@ large, then this becomes a security vulnerability.
 For a more concrete example of what could happen when clock drift is mis-configured, take a look
 at the [Mishandling Clock Drift][mishandling-clock-drift] troubleshooting section.
 
+[forward-lunatic]: https://github.com/cometbft/cometbft/blob/main/docs/architecture/tendermint-core/adr-047-handling-evidence-from-light-client.md#appendix-b
 [mishandling-clock-drift]: ./cross-comp-config.md#mishandling-clock-drift
