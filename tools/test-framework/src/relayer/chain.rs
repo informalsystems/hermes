@@ -21,6 +21,7 @@
 */
 
 use crossbeam_channel as channel;
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeResponse};
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::{
@@ -429,5 +430,9 @@ where
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error> {
         self.value().query_incentivized_packet(request)
+    }
+
+    fn query_upgrade(&self, request: QueryUpgradeRequest) -> Result<QueryUpgradeResponse, Error> {
+        self.value().query_upgrade(request)
     }
 }

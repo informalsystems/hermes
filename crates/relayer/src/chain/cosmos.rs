@@ -18,7 +18,7 @@ use tracing::{error, instrument, trace, warn};
 use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
 };
-
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeResponse};
 use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvConsumerParams;
 
 use ibc_proto::ibc::apps::fee::v1::{
@@ -82,6 +82,7 @@ use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::{
     filter_matching_event, query_packets_from_block, query_packets_from_txs, query_txs,
 };
+use crate::chain::cosmos::query::upgrade::query_upgrade;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
@@ -2208,6 +2209,11 @@ impl ChainEndpoint for CosmosSdkChain {
         let incentivized_response =
             self.block_on(query_incentivized_packet(&self.grpc_addr, request))?;
         Ok(incentivized_response)
+    }
+
+    fn query_upgrade(&self, request: QueryUpgradeRequest) -> Result<QueryUpgradeResponse, Error> {
+        let upgrade_response = self.block_on(query_upgrade(&self.grpc_addr, request))?;
+        Ok(upgrade_response)
     }
 }
 

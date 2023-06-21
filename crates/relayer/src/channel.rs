@@ -1,5 +1,5 @@
 pub use error::ChannelError;
-use ibc_proto::ibc::core::channel::v1::FlushStatus;
+use ibc_proto::ibc::core::channel::v1::{FlushStatus, QueryUpgradeRequest};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::upgrade_fields::UpgradeFields;
 
@@ -20,7 +20,7 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelO
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;
-// use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_try::MsgChannelUpgradeTry;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_try::MsgChannelUpgradeTry;
 use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc_relayer_types::core::ics24_host::identifier::{
@@ -1593,11 +1593,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
     pub fn build_chan_upgrade_try(
         &self,
-        _timeout: UpgradeTimeout,
+        timeout: UpgradeTimeout,
+        upgrade_sequence: Sequence,
     ) -> Result<Vec<Any>, ChannelError> {
         // Source channel ID must exist
         let src_channel_id = self
             .src_channel_id()
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
+
+        let dst_channel_id = self
+            .dst_channel_id()
             .ok_or_else(ChannelError::missing_local_channel_id)?;
 
         let src_port_id = self.src_port_id();
@@ -1615,6 +1620,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 IncludeProof::Yes,
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        let upgrade_response = self
+            .dst_chain()
+            .query_upgrade(QueryUpgradeRequest {
+                port_id: self.dst_port_id().to_string(),
+                channel_id: dst_channel_id.to_string(),
+            })
+            .unwrap();
+
+        let proof_upgrade = CommitmentProofBytes::try_from(upgrade_response.proof)
+            .map_err(ChannelError::malformed_proof)?;
+
+        let proof_height = upgrade_response
+            .proof_height
+            .ok_or(ChannelError::missing_channel_proof())?
+            .try_into()
+            .unwrap();
 
         // TODO: Is this check necessary?
         if channel_end.counterparty().port_id() != self.dst_port_id() {
@@ -1646,42 +1668,56 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             return Err(ChannelError::missing_channel_proof());
         };
 
-        let _channel_proof_bytes =
+        let channel_proof_bytes =
             CommitmentProofBytes::try_from(channel_proof).map_err(ChannelError::malformed_proof)?;
 
         if channel_end.state != State::InitUpgrade {
             return Err(ChannelError::invalid_channel_upgrade_state());
         }
 
-        let _signer = self
+        let signer = self
             .dst_chain()
             .get_signer()
             .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         // Build the domain type message
-        /*let new_msg = MsgChannelUpgradeTry {
+        let new_msg = MsgChannelUpgradeTry {
             port_id: src_port_id.clone(),
             channel_id: src_channel_id.clone(),
-            proposed_upgrade_channel,
-            signer,
-            counterparty_channel: channel_end,
-            counterparty_sequence,
-            timeout,
+            proposed_upgrade_connection_hops: vec![], // UPGRADE TODO
+            upgrade_timeout: timeout,
+            counterparty_proposed_upgrade: upgrade_response.upgrade.unwrap().try_into().unwrap(),
+            counterparty_upgrade_sequence: upgrade_sequence,
             proof_channel: channel_proof_bytes,
-            proof_upgrade_timeout,
-            proof_upgrade_sequence,
+            proof_upgrade,
             proof_height,
+            signer,
         };
 
-        Ok(vec![new_msg.to_any()])*/
-        Ok(vec![])
+        Ok(vec![new_msg.to_any()])
     }
 
     pub fn build_chan_upgrade_try_and_send(
         &self,
         timeout: UpgradeTimeout,
     ) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = self.build_chan_upgrade_try(timeout)?;
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
+
+        let dst_port_id = self.dst_port_id();
+        let (channel_end, _maybe_channel_proof) = self
+            .dst_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: dst_port_id.clone(),
+                    channel_id: dst_channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+        let dst_msgs = self.build_chan_upgrade_try(timeout, channel_end.upgraded_sequence)?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeTry");
 
@@ -1724,6 +1760,59 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             b_side: self.b_side.map_chain(mapper_b),
             connection_delay: self.connection_delay,
         }
+    }
+
+    pub fn get_upgrade_fields(
+        &self,
+        new_version: Option<Version>,
+        new_ordering: Option<Ordering>,
+        new_connection_hops: Option<Vec<ConnectionId>>,
+    ) -> Result<UpgradeFields, ChannelError> {
+        // Destination channel ID must exist
+        let channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let port_id = self.dst_port_id();
+
+        // Channel must exist on destination
+        let (mut channel_end, _proof) = self
+            .dst_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+
+        if channel_end.state != State::Open {
+            return Err(ChannelError::invalid_channel_upgrade_state());
+        }
+
+        if let Some(new_ordering) = new_ordering {
+            if new_ordering == Ordering::Uninitialized || new_ordering > channel_end.ordering {
+                return Err(ChannelError::invalid_channel_upgrade_ordering());
+            }
+
+            channel_end.ordering = new_ordering;
+        }
+
+        if let Some(new_version) = new_version {
+            channel_end.version = new_version;
+        }
+
+        if let Some(new_connection_hops) = new_connection_hops {
+            channel_end.connection_hops = new_connection_hops;
+        }
+
+        Ok(UpgradeFields::new(
+            channel_end.ordering,
+            channel_end.connection_hops,
+            channel_end.version,
+        ))
     }
 }
 

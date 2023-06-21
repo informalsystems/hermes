@@ -30,7 +30,7 @@ pub struct MsgChannelUpgradeTry {
     pub counterparty_upgrade_sequence: Sequence,
     pub proof_channel: CommitmentProofBytes,
     pub proof_upgrade: CommitmentProofBytes,
-    /// The height at whch the proofs were queried.
+    /// The height at which the proofs were queried.
     pub proof_height: Height,
     pub signer: Signer,
 }
