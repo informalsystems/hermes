@@ -1,8 +1,6 @@
 use flex_error::define_error;
 use serde::Serialize;
 
-use crate::prelude::*;
-
 define_error! {
     #[derive(Debug, PartialEq, Eq, Serialize)]
     ValidationError {

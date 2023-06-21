@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/guide-templates.yaml
-      - crates/**
+      - crates/relayer-cli/**
       - scripts/**
       - tools/check-guide/**
 
@@ -11,7 +11,7 @@ on:
     branches: master
     paths:
       - .github/workflows/guide-templates.yaml
-      - crates/**
+      - crates/relayer-cli/**
       - scripts/**
       - tools/check-guide/**
 
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -33,7 +33,12 @@ jobs:
       - name: Check templates
         run: bash scripts/auto_gen_templates.sh --mode "check"
       - uses: actions-rs/cargo@v1
+        name: Update lockfile
+        with:
+          command: generate-lockfile
+          args: --manifest-path tools/check-guide/Cargo.toml
+      - uses: actions-rs/cargo@v1
         name: Check guide
         with:
           command: run
-          args: -p check-guide
+          args: --manifest-path tools/check-guide/Cargo.toml

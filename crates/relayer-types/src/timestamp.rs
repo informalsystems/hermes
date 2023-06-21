@@ -1,11 +1,9 @@
-use crate::prelude::*;
-
-use core::fmt::{Display, Error as FmtError, Formatter};
-use core::hash::{Hash, Hasher};
-use core::num::ParseIntError;
-use core::ops::{Add, Sub};
-use core::str::FromStr;
-use core::time::Duration;
+use std::fmt::{Display, Error as FmtError, Formatter};
+use std::hash::Hash;
+use std::num::ParseIntError;
+use std::ops::{Add, Sub};
+use std::str::FromStr;
+use std::time::Duration;
 
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
@@ -21,19 +19,11 @@ pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 /// a `u64` value and a raw timestamp. In protocol buffer, the timestamp is
 /// represented as a `u64` Unix timestamp in nanoseconds, with 0 representing the absence
 /// of timestamp.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Default, Deserialize, Serialize, PartialOrd, Ord)]
+#[derive(
+    Copy, Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash,
+)]
 pub struct Timestamp {
     time: Option<Time>,
-}
-
-// TODO: derive when tendermint::Time supports it:
-// https://github.com/informalsystems/tendermint-rs/pull/1054
-#[allow(clippy::derived_hash_with_manual_eq)]
-impl Hash for Timestamp {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let odt: Option<OffsetDateTime> = self.time.map(Into::into);
-        odt.hash(state);
-    }
 }
 
 /// The expiry result when comparing two timestamps.
@@ -43,7 +33,7 @@ impl Hash for Timestamp {
 ///
 /// User of this result may want to determine whether error should be raised,
 /// when either of the timestamp being compared is invalid.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Deserialize, Serialize, Hash)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub enum Expiry {
     Expired,
     NotExpired,
@@ -169,9 +159,9 @@ impl Display for Timestamp {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(
             f,
-            "Timestamp({})",
+            "{}",
             self.time
-                .map_or("NoTimestamp".to_string(), |time| time.to_rfc3339())
+                .map_or_else(|| "NoTimestamp".to_string(), |time| time.to_rfc3339())
         )
     }
 }

@@ -10,7 +10,7 @@ use abscissa_core::{
     terminal::ColorChoice,
     Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
 };
-use ibc_relayer::config::Config;
+use ibc_relayer::{config::Config, util::debug_section::DebugSection};
 
 use crate::{
     components::{JsonTracing, PrettyTracing},
@@ -47,6 +47,9 @@ pub struct CliApp {
     /// Toggle json output on/off. Changed with the global config option `-j` / `--json`.
     json_output: bool,
 
+    /// Enable the given debug sections.
+    debug_sections: Vec<DebugSection>,
+
     /// Path to the config file.
     config_path: Option<PathBuf>,
 }
@@ -61,6 +64,7 @@ impl Default for CliApp {
             config: CfgCell::default(),
             state: application::State::default(),
             json_output: false,
+            debug_sections: Vec::default(),
             config_path: None,
         }
     }
@@ -70,6 +74,16 @@ impl CliApp {
     /// Whether or not JSON output is enabled
     pub fn json_output(&self) -> bool {
         self.json_output
+    }
+
+    /// Returns the enabled debug sections
+    pub fn debug_sections(&self) -> &[DebugSection] {
+        &self.debug_sections
+    }
+
+    /// Returns `true` if the given debug section is enabled
+    pub fn debug_enabled(&self, section: DebugSection) -> bool {
+        self.debug_sections.contains(&section)
     }
 
     /// Returns the path to the configuration file
@@ -173,13 +187,21 @@ impl Application for CliApp {
         // Update the `json_output` flag used by `conclude::Output`
         self.json_output = command.json;
 
+        // Update the `debug_sections` flag
+        self.debug_sections = command.debug.iter().copied().map(Into::into).collect();
+
+        // Enable profiling if requested
+        let enable_console = self.debug_enabled(DebugSection::Profiling);
+        let enable_json = self.debug_enabled(DebugSection::ProfilingJson);
+        ibc_relayer::util::profiling::enable(enable_console, enable_json);
+
         if command.json {
             // Enable JSON by using the crate-level `Tracing`
-            let tracing = JsonTracing::new(config.global)?;
+            let tracing = JsonTracing::new(config.global, &self.debug_sections)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
             // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
-            let tracing = PrettyTracing::new(config.global)?;
+            let tracing = PrettyTracing::new(config.global, &self.debug_sections)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
     }

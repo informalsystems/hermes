@@ -43,16 +43,12 @@ pub enum QueryHeight {
     Specific(Height),
 }
 
-impl TryFrom<QueryHeight> for TMBlockHeight {
-    type Error = Error;
-
-    fn try_from(height_query: QueryHeight) -> Result<Self, Self::Error> {
-        let height = match height_query {
-            QueryHeight::Latest => 0u64,
-            QueryHeight::Specific(height) => height.revision_height(),
-        };
-
-        Self::try_from(height).map_err(Error::invalid_height)
+impl From<QueryHeight> for TMBlockHeight {
+    fn from(height_query: QueryHeight) -> Self {
+        match height_query {
+            QueryHeight::Latest => Self::from(0_u32),
+            QueryHeight::Specific(height) => Self::from(height),
+        }
     }
 }
 

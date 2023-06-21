@@ -10,6 +10,7 @@ use prost::{DecodeError, EncodeError};
 use regex::Regex;
 use tendermint::abci;
 use tendermint::Error as TendermintError;
+use tendermint_light_client::builder::error::Error as LightClientBuilderError;
 use tendermint_light_client::components::io::IoError as LightClientIoError;
 use tendermint_light_client::errors::{
     Error as LightClientError, ErrorDetail as LightClientErrorDetail,
@@ -40,7 +41,7 @@ use ibc_relayer_types::{
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
 use crate::config::Error as ConfigError;
-use crate::event::monitor;
+use crate::event::source;
 use crate::keyring::{errors::Error as KeyringError, KeyType};
 use crate::sdk_error::SdkError;
 
@@ -86,16 +87,16 @@ define_error! {
             { url: tendermint_rpc::Url }
             |e| { format!("Websocket error to endpoint {}", e.url) },
 
-        EventMonitor
-            [ monitor::Error ]
-            |_| { "event monitor error" },
+        EventSource
+            [ source::Error ]
+            |_| { "event source error" },
 
         Grpc
             |_| { "gRPC error" },
 
         GrpcStatus
-            { status: GrpcStatus }
-            |e| { format!("gRPC call failed with status: {0}", e.status) },
+            { status: GrpcStatus, query: String }
+            |e| { format!("gRPC call `{}` failed with status: {1}", e.query, e.status) },
 
         GrpcTransport
             [ TraceError<TransportError> ]
@@ -108,6 +109,10 @@ define_error! {
         Decode
             [ TendermintProtoError ]
             |_| { "error decoding protobuf" },
+
+        LightClientBuilder
+            [ LightClientBuilderError ]
+            |_| { "light client builder error" },
 
         LightClientVerification
             { chain_id: String }

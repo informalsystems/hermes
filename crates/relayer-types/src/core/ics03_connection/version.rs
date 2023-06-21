@@ -1,6 +1,5 @@
-use core::fmt::Display;
+use std::fmt::Display;
 
-use crate::prelude::*;
 use crate::utils::pretty::PrettySlice;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
@@ -111,7 +110,6 @@ pub fn pick_version(
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
 
     use test_log::test;
 

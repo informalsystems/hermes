@@ -60,7 +60,7 @@ pub fn boostrap_chains_with_any_nodes(
     let mut config = Config::default();
 
     for node in full_nodes.iter() {
-        add_chain_config(&mut config, node)?;
+        add_chain_config(&mut config, node, test_config)?;
     }
 
     config_modifier(&mut config);

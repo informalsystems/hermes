@@ -1,10 +1,10 @@
 use core::str::FromStr;
 
-use alloc::string::ToString;
-use alloc::vec::Vec;
 use ibc_proto::ibc::core::channel::v1::UpgradeFields as RawUpgradeFields;
 use ibc_proto::protobuf::Protobuf;
 use itertools::Itertools;
+use std::string::ToString;
+use std::vec::Vec;
 
 use crate::core::ics04_channel::channel::Ordering;
 use crate::core::ics04_channel::error::Error as ChannelError;
@@ -71,8 +71,8 @@ impl From<UpgradeFields> for RawUpgradeFields {
 
 #[cfg(test)]
 pub mod test_util {
-    use alloc::{string::ToString, vec};
     use ibc_proto::ibc::core::channel::v1::UpgradeFields as RawUpgradeFields;
+    use std::{string::ToString, vec};
 
     pub fn get_dummy_upgrade_fields() -> RawUpgradeFields {
         RawUpgradeFields {

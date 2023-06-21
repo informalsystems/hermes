@@ -1,8 +1,6 @@
 //! Definition of domain type msg `MsgUpgradeAnyClient`.
 
-use crate::prelude::*;
-
-use core::str::FromStr;
+use std::str::FromStr;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;

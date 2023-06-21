@@ -363,7 +363,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(client_updates_submitted{job=\"hermes\"}[1m])",
+          "expr": "delta(client_updates_submitted_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{src_chain}} -> {{dst_chain}}:{{client}} ({{instance}})",
           "range": true,
           "refId": "A"
@@ -453,13 +453,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(total_messages_submitted{job=\"hermes\"}[1m])",
+          "expr": "delta(messages_submitted_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "total_messages_submitted over 1 minute",
+      "title": "messages_submitted over 1 minute",
       "type": "timeseries"
     },
     {
@@ -1227,7 +1227,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(receive_packets_confirmed{job=\"hermes\"}[1m])",
+          "expr": "delta(receive_packets_confirmed_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{src_chain}}:{{src_channel}}/{{src_port}} ({{instance}})",
           "range": true,
           "refId": "A"
@@ -1317,7 +1317,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(timeout_packets_confirmed{job=\"hermes\"}[1m])",
+          "expr": "delta(timeout_packets_confirmed_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{src_chain}}:{{src_channel}}/{{src_port}} ({{instance}})",
           "range": true,
           "refId": "A"
@@ -1407,7 +1407,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(acknowledgment_packets_confirmed{job=\"hermes\"}[1m])",
+          "expr": "delta(acknowledgment_packets_confirmed_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{src_chain}}:{{src_channel}}/{{src_port}} ({{instance}})",
           "range": true,
           "refId": "A"
@@ -1520,7 +1520,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(send_packet_events{job=\"hermes\"}[1m])",
+          "expr": "delta(send_packet_events_total{job=\"hermes\"}[1m])",
           "interval": "",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
@@ -1611,7 +1611,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(acknowledgement_events{job=\"hermes\"}[1m])",
+          "expr": "delta(acknowledgement_events_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
@@ -1701,7 +1701,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(timeout_events{job=\"hermes\"}[1m])",
+          "expr": "delta(timeout_events_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
@@ -1791,7 +1791,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(ws_events{job=\"hermes\"}[1m])",
+          "expr": "delta(ws_events_total{job=\"hermes\"}[1m])",
           "interval": "",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
@@ -1882,7 +1882,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(ws_reconnect{job=\"hermes\"}[1m])",
+          "expr": "delta(ws_reconnect_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
           "refId": "A"
@@ -1972,7 +1972,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(delta(queries{job=\"hermes\"}[1m])) by(instance,chain)",
+          "expr": "sum(delta(queries_total{job=\"hermes\"}[1m])) by(instance,chain)",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
           "refId": "A"
@@ -2078,7 +2078,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(cleared_acknowledgment_events{job=\"hermes\"}[1m])",
+          "expr": "delta(cleared_acknowledgment_events_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
@@ -2168,7 +2168,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(cleared_send_packet_events{job=\"hermes\"}[1m])",
+          "expr": "delta(cleared_send_packet_events_total{job=\"hermes\"}[1m])",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
@@ -2349,7 +2349,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "sum by(chain, instance) (delta(queries_cache_hits{job=\"hermes\"}[1m]))",
+          "expr": "sum by(chain, instance) (delta(queries_cache_hits_total{job=\"hermes\"}[1m]))",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
           "refId": "A"
@@ -2359,11 +2359,143 @@
       "type": "timeseries"
     },
     {
+      "description": "Indicates the latency rate for all transactions submitted from ibc-0",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 98
+      },
+      "id": 63,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "pluginVersion": "9.0.7",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "builder",
+          "exemplar": true,
+          "expr": "increase(tx_latency_submitted_bucket{chain=\"ibc-0\"}[$__range])",
+          "format": "heatmap",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{le}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "tx_latency_submitted histogram ibc-0",
+      "transformations": [],
+      "type": "bargauge"
+    },
+    {
+      "description": "Indicates the latency rate for all transactions confirmed from ibc-0",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 98
+      },
+      "id": 64,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "pluginVersion": "9.0.7",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "builder",
+          "exemplar": true,
+          "expr": "increase(tx_latency_confirmed_bucket{chain=\"ibc-0\"}[$__range])",
+          "format": "heatmap",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{le}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "tx_latency_confirmed_bucket histogram ibc-0",
+      "transformations": [],
+      "type": "bargauge"
+    },
+    {
       "gridPos": {
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 98
+        "y": 106
       },
       "id": 58,
       "options": {
@@ -2454,7 +2586,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(client_misbehaviours_submitted[5m])",
+          "expr": "delta(client_misbehaviours_submitted_total[5m])",
           "legendFormat": "{{src_chain}}-{{dst_chain}}:{{client}} ({{instance}})",
           "range": true,
           "refId": "A"

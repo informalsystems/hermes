@@ -17,7 +17,7 @@ use crate::core::ics02_client::header::Header;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::mock::consensus_state::MockConsensusState;
 use crate::mock::header::MockHeader;
-use crate::prelude::*;
+
 use crate::timestamp::Timestamp;
 use crate::Height;
 

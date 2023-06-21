@@ -1,5 +1,194 @@
 # CHANGELOG
 
+## v1.5.1
+ 
+*June 5th, 2023*
+ 
+This is a patch release for Hermes, which includes a single bugfix and enables overflow checks in production builds.
+ 
+### BUG FIXES
+ 
+- Fix a panic which can occur when querying connections filtered
+  by counterparty chain using `hermes query connections`
+  ([\#3381](https://github.com/informalsystems/hermes/issues/3381))
+ 
+### IMPROVEMENTS
+ 
+- Overflow checks are now enabled when Hermes is built in release mode, in
+  order to better catch and address potential logic errors leading to overflows
+  ([\#3390](https://github.com/informalsystems/hermes/issues/3390))
+
+## v1.5.0
+
+*May 24th, 2023*
+
+🎉 **Hermes v1.5.0** is here, packed with a slew of exciting updates, including
+breaking changes💥, brand-new features🎁, performance enhancements🚀, and
+sweeping improvements✨. 
+
+The one breaking change is the removal of the `unbonding_period` setting
+from the chain configuration. This is now replaced by a fresh
+`ccv_consumer_chain` setting for Cross-Chain Validation (CCV) consumer chains. 
+
+Also, Hermes has strengthened its misbehavior detection. With the
+`mode.misbehaviour.enabled` setting enabled (now the case by default)
+the relayer was already closely monitoring on-chain client updates,
+comparing submitted headers with those fetched from its RPC node.
+In the event of any discrepancy, Hermes would report the misbehaviour
+to the chain hosting the IBC client. As of this version,
+Hermes will also report the misbehaviour evidence to the reference chain.
+
+This version rolls out a string of performance enhancements. Event batches
+are now delivered after a configurable delay, greatly trimming down latency
+when relaying, particularly on high-traffic channels. This can be adjusted
+using the `batch_delay` setting in the per-chain configuration. Plus, packet
+acknowledgments are only queried when there are packet commitments on the
+counterparty, resulting in a major speed boost for packet clearing and
+on-start scanning! 🚀
+
+In addition, the `trusted_node` setting can now specify whether the full node
+Hermes connects to is trusted or not. If untrusted, the light client will
+verify headers included in the `ClientUpdate` message.
+However, a word of caution: configuring the full node as trusted may cut
+down latency but could risk sending invalid client updates to the chain. Use wisely! ⚠️
+
+Our [Hermes guide](https://hermes.informal.systems/) has been re-organized a bit,
+now featuring a new [*Performance Tuning*][perf-guide] page that details the
+settings for optimizing the performance of the relayer.
+
+For all the debuggers out there, Hermes now equips a new `--debug` global
+flag with several selectable values, and two bonus flags, `--archive-address`
+and `--restart-height` that enable a client update following a genesis restart
+without an IBC upgrade proposal.
+
+When it comes to telemetry, the destination chain is now added to the labels of
+the confirmed packet metrics.
+
+Take note that some metrics now have the suffix `_total`. If you're using a running a
+Grafana dashboard or any other tool relying on the metric names or labels, an update might be needed.
+The [corresponding page in the guide][telemetry-guide] reflects the new metric names and
+labels for your convenience.
+
+There's also a fresh configuration option to specify the directory used for the
+keyring store.
+
+From this version onwards, multi-platform (arm64 and amd64) images will be
+distributed both on Docker Hub and the GitHub Content Repository.
+
+### Note for operators
+
+> ⚠️  Be aware that this release contains a couple breaking
+> ⚠️  changes to the Hermes configuration and telemetry metrics.
+> ⚠️  Please consult the [`UPGRADING.md`](UPGRADING.md) document for more details.
+
+[perf-guide]: https://hermes.informal.systems/documentation/configuration/performance.html
+[telemetry-guide]: https://hermes.informal.systems/documentation/telemetry/operators.html
+
+### BREAKING CHANGES
+
+- Remove the `unbonding_period` setting from the chain configuration,
+  which was only used for CCV consumern chains.
+  Instead, use the `ccv_consumer_chain` setting to identify a CCV consumer chains.
+  ([\#3125](https://github.com/informalsystems/hermes/issues/3125))
+
+- Due to the update of an internal dependency, some Prometheus metrics now have a `_total` suffix.
+  Check the corresponding [guide page][telemetry-guide] for the list of all metrics,
+  including their new suffixes and labels.
+
+### BUG FIXES
+
+- Support CometBFT when running version checks
+  ([\#3288](https://github.com/informalsystems/hermes/issues/3288))
+
+### FEATURES
+
+- Add `ccv_consumer_chain` setting to the chain configuration
+  to properly fetch the unbonding period of CCV consumer chains
+  ([\#3125](https://github.com/informalsystems/hermes/issues/3125))
+
+- Publish multi-platform (arm64/amd64) images to Docker Hub and GHCR
+  ([\#3303](https://github.com/informalsystems/hermes/issues/3303))
+
+- When enabled for misbehaviour (ie. when `mode.misbehaviour.enabled = true`),
+  Hermes will now monitor on-chain client updates and verifies the submitted
+  headers comparing with headers it retrieves from its RPC node.
+  If it detects conflicting headers, it will submit a `MisbehaviourMsg`
+  to the chain hosting the IBC client.
+  In addition, Hermes will now also submit the evidence to the reference chain.
+  ([\#3224](https://github.com/informalsystems/hermes/issues/3224))
+
+- Add a global flag `--debug` which can take one or more of the following values, separated by commas:
+    * `rpc`: show RPC debug logs
+    * `profiling`: show profiling information in the console
+    * `profiling-json`: dump the profiling information to a JSON file in the directory specified in `PROFILING_DIR` env variable if present, or the current directory otherwise.
+  ([#2852](https://github.com/informalsystems/hermes/issues/2852))
+  [#3332](https://github.com/informalsystems/hermes/issues/3332))
+
+- Add two optional flags `--archive-address` and `--restart-height` to
+  `hermes update client` CLI allowing a client update after a genesis
+  restart without an IBC upgrade proposal.
+  ([#1152](https://github.com/informalsystems/hermes/issues/1152))
+
+
+### PERFORMANCE
+
+- Emit event batches after a configurable delay.
+  This considerably reduces the latency when relaying
+  and therefore increases performance substantially on high traffic channels.
+  See the `batch_delay` setting in the per-chain configuration.
+  ([\#3331](https://github.com/informalsystems/hermes/issues/3331))
+
+- Only query for packet acknowledgments when there are packet
+  commitments on the counterparty, otherwise the query would
+  return all acknowledments on chain, which is excruciatingly slow
+  ([\#3348](https://github.com/informalsystems/hermes/issues/3348))
+
+- Use `/header` RPC endpoint instead of `/block` to
+  reduce pressure on the node and improve performance
+  ([\#3226](https://github.com/informalsystems/hermes/issues/3226))
+
+- Add a new `trusted_node` setting to the per-chain configuration to
+  specify whether or not the full node Hermes connects to is trusted.
+  If not trusted (ie. `trusted_node = false`), Hermes will verify headers
+  included in the `ClientUpdate` message using the light client.
+  
+  If the full node is configured as trusted then, in addition to headers not being verified,
+  the verification traces will not be provided.
+  This may cause failure in client updates after significant change in validator sets.
+  
+  > **Warning**
+  > Setting this flag to `true` may reduce latency but at the expense of
+  > potentially sending invalid client updates to the chain, only use
+  > when latency is more critical than operating costs. Use at your own risk.
+  
+  ([\#3330](https://github.com/informalsystems/hermes/issues/3330))
+
+### IMPROVEMENTS
+
+- Enable misbehaviour detection by default
+  ([#3001](https://github.com/informalsystems/hermes/issues/3001))
+- Add the destination chain to the labels of the confirmed packet metrics
+  ([#3297](https://github.com/informalsystems/hermes/issues/3297))
+- Added a configuration to specify the directory used to the keyring store
+  ([#1541](https://github.com/informalsystems/hermes/issues/1541))
+- Switch away from `rouille` to `axum` in telemetry and REST servers
+  ([\#1658](https://github.com/informalsystems/hermes/issues/1658))
+- Add Juno to chains tested in the integration tests
+  ([#3235](https://github.com/informalsystems/hermes/issues/3235))
+- Add White Whale migaloo chain to ICS29 tests
+  ([#3345](https://github.com/informalsystems/hermes/issues/3345))
+
+## v1.4.1
+ 
+*May 2nd, 2023*
+ 
+This patch release adds support for CometBFT in version checks.
+ 
+### BUG FIXES
+ 
+- Support CometBFT when running version checks
+  ([\#3288](https://github.com/informalsystems/hermes/issues/3288))
+
 ## v1.4.0
 *March 27th, 2023*
 

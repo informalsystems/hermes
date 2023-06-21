@@ -24,7 +24,7 @@ Run the `make` command to build and install `gaiad`
 
 ```shell
 cd ~/go/src/github.com/cosmos/gaia
-git checkout v4.2.1 
+git checkout {{#template ../../templates/gaia-version.md}}
 make install
 ```
 
@@ -41,8 +41,7 @@ Output:
 ```shell
 name: gaia
 server_name: gaiad
-version: v4.2.1
-commit: dbd8a6fb522c571debf958837f9113c56d418f6b
+version: {{#template ../../templates/gaia-version.md}}
 ```
 
 ---

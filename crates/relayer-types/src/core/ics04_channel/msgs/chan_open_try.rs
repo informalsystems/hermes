@@ -1,8 +1,9 @@
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::error::Error as ChannelError;
 use crate::core::ics04_channel::version::Version;
+use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::prelude::*;
+
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -57,7 +58,7 @@ impl Msg for MsgChannelOpenTry {
         TYPE_URL.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    fn validate_basic(&self) -> Result<(), ValidationError> {
         // TODO: adapt error
         // match self.channel.counterparty().channel_id() {
         //     None => Err(ValidationError::invalid_counterparty_channel_id()),
@@ -108,7 +109,8 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             signer: raw_msg.signer.parse().map_err(ChannelError::signer)?,
         };
 
-        msg.validate_basic()?;
+        msg.validate_basic()
+            .map_err(ChannelError::invalid_counterparty_channel_id)?;
 
         Ok(msg)
     }
@@ -133,7 +135,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
     use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
@@ -163,7 +165,6 @@ pub mod test_util {
 mod tests {
     use crate::core::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-    use crate::prelude::*;
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
     use ibc_proto::ibc::core::client::v1::Height;

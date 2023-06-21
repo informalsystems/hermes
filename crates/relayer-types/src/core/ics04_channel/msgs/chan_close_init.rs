@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
@@ -68,7 +66,7 @@ impl From<MsgChannelCloseInit> for RawMsgChannelCloseInit {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
@@ -86,7 +84,6 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
 
     use test_log::test;
 
