@@ -58,6 +58,15 @@ pub enum AnyClientState {
 }
 
 impl AnyClientState {
+    pub fn chain_id(&self) -> ChainId {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
+
+            #[cfg(test)]
+            AnyClientState::Mock(mock_state) => mock_state.chain_id(),
+        }
+    }
+
     pub fn latest_height(&self) -> Height {
         match self {
             Self::Tendermint(tm_state) => tm_state.latest_height(),
