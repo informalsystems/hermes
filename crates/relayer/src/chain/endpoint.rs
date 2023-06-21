@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeResponse};
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -686,4 +687,6 @@ pub trait ChainEndpoint: Sized {
         &self,
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
+
+    fn query_upgrade(&self, request: QueryUpgradeRequest) -> Result<QueryUpgradeResponse, Error>;
 }

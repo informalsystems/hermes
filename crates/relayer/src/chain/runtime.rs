@@ -5,8 +5,9 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, Span};
 
-use ibc_proto::ibc::apps::fee::v1::{
-    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+use ibc_proto::ibc::{
+    apps::fee::v1::{QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse},
+    core::channel::v1::{QueryUpgradeRequest, QueryUpgradeResponse},
 };
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
@@ -348,6 +349,10 @@ where
 
                         ChainRequest::QueryIncentivizedPacket { request, reply_to } => {
                             self.query_incentivized_packet(request, reply_to)?
+                        },
+
+                        ChainRequest::QueryUpgrade { request, reply_to } => {
+                            self.query_upgrade(request, reply_to)?
                         },
                     }
                 },
@@ -846,6 +851,17 @@ where
         reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
     ) -> Result<(), Error> {
         let result = self.chain.query_incentivized_packet(request);
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        reply_to: ReplyTo<QueryUpgradeResponse>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_upgrade(request);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())
