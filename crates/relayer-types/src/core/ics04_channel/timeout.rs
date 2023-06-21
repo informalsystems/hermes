@@ -1,10 +1,8 @@
-use crate::prelude::*;
-
 use core::fmt::{Display, Error as FmtError, Formatter};
 
 use serde::{Deserialize, Serialize};
 
-use ibc_proto::ibc::core::channel::v1::UpgradeTimeout as RawUpgradeTimeout;
+use ibc_proto::ibc::core::channel::v1::Timeout as RawUpgradeTimeout;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::protobuf::Protobuf;
 
@@ -261,6 +259,21 @@ impl From<UpgradeTimeout> for RawUpgradeTimeout {
                 height: RawHeight::try_from(height).ok(),
                 timestamp: timestamp.nanoseconds(),
             },
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod test_util {
+    use ibc_proto::ibc::core::channel::v1::Timeout as RawUpgradeTimeout;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+
+    use crate::core::ics02_client::height::Height;
+
+    pub fn get_dummy_upgrade_timeout() -> RawUpgradeTimeout {
+        RawUpgradeTimeout {
+            height: Some(RawHeight::from(Height::new(1, 50).unwrap())),
+            timestamp: 0,
         }
     }
 }

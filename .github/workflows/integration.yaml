@@ -80,8 +80,8 @@ jobs:
             account_prefix: juno
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v18
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
@@ -118,8 +118,8 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
@@ -148,9 +148,19 @@ jobs:
 
   ica-filter-test:
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: ibc-go-v6-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v7-simapp
+            command: simd
+            account_prefix: cosmos
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
@@ -172,9 +182,10 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATHS: icad
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#python .#ica -c cargo \
+          nix shell .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features ica --no-fail-fast -- \
             --nocapture --test-threads=1 test_ica_filter
 
@@ -193,9 +204,12 @@ jobs:
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
+          - package: migaloo
+            command: migalood
+            account_prefix: migaloo
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
@@ -240,8 +254,8 @@ jobs:
             command: junod
             account_prefix: juno
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
@@ -280,8 +294,8 @@ jobs:
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
@@ -309,6 +323,88 @@ jobs:
           nix shell ${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features ics31 --no-fail-fast -- \
             --nocapture --test-threads=1 ics31::
+  fee-grant:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: stride
+            command: strided
+            account_prefix: stride
+          - package: evmos
+            command: evmosd
+            account_prefix: evmos
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --features fee-grant --no-fail-fast --no-run
+      - env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+        run: |
+          nix shell .#${{ matrix.chain.package }} -c cargo \
+            test -p ibc-integration-test --features fee-grant --no-fail-fast -- \
+            --nocapture --test-threads=1 fee_grant::
+
+  clean-workers:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: gaia9
+            command: gaiad
+            account_prefix: cosmos
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --features ics31 --no-fail-fast --no-run
+      - env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+        run: |
+          nix shell .#${{ matrix.chain.package }} -c cargo \
+            test -p ibc-integration-test --features clean-workers --no-fail-fast -- \
+            --nocapture --test-threads=1 clean_workers::
 
   channel-upgrade:
     runs-on: ubuntu-20.04
@@ -358,8 +454,8 @@ jobs:
         gaiad:
           - gaia6
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'

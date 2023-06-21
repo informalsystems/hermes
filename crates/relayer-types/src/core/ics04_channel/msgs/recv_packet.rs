@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
@@ -120,7 +118,6 @@ pub mod test_util {
 
 #[cfg(test)]
 mod test {
-    use crate::prelude::*;
 
     use test_log::test;
 

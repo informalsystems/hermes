@@ -1,9 +1,7 @@
-use core::fmt::{Debug, Display, Error as FmtError, Formatter};
-use core::time::Duration;
+use std::fmt::{Debug, Display, Error as FmtError, Formatter};
+use std::time::Duration;
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
-
-use alloc::vec::Vec;
 
 pub struct PrettyDuration<'a>(pub &'a Duration);
 
@@ -83,7 +81,6 @@ impl<'a, T: Display> Display for PrettySlice<'a, T> {
 mod tests {
     use super::*;
 
-    use crate::alloc::string::ToString;
     use std::{string::String, vec};
 
     #[test]

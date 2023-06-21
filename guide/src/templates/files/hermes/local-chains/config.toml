@@ -29,7 +29,7 @@ port = 3001
 id = 'ibc-0'
 rpc_addr = 'http://localhost:27030'
 grpc_addr = 'http://localhost:27032'
-websocket_addr = 'ws://localhost:27030/websocket'
+event_source = { mode = 'push', url = 'ws://localhost:27030/websocket', batch_delay = '500ms' }
 rpc_timeout = '15s'
 account_prefix = 'cosmos'
 key_name = 'wallet'
@@ -44,7 +44,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 id = 'ibc-1'
 rpc_addr = 'http://localhost:27040'
 grpc_addr = 'http://localhost:27042'
-websocket_addr = 'ws://localhost:27040/websocket'
+event_source = { mode = 'push', url = 'ws://localhost:27040/websocket', batch_delay = '500ms' }
 rpc_timeout = '15s'
 account_prefix = 'cosmos'
 key_name = 'wallet'

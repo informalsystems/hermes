@@ -1,7 +1,7 @@
 use ibc_proto::google::protobuf::Any;
 use prost::{EncodeError, Message};
 
-use crate::prelude::*;
+use crate::core::ics24_host::error::ValidationError;
 
 pub trait Msg: Clone {
     type ValidationError;
@@ -32,7 +32,7 @@ pub trait Msg: Clone {
         })
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    fn validate_basic(&self) -> Result<(), ValidationError> {
         Ok(())
     }
 }

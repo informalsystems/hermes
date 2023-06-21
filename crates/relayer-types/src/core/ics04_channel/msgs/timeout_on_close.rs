@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
 use ibc_proto::protobuf::Protobuf;
 
@@ -110,7 +108,7 @@ impl From<MsgTimeoutOnClose> for RawMsgTimeoutOnClose {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
     use test_log::test;
 

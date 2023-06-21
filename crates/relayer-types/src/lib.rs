@@ -2,7 +2,6 @@
 // https://github.com/informalsystems/hermes/issues/987
 // #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
-#![no_std]
 #![allow(clippy::large_enum_variant)]
 #![deny(
     // warnings,
@@ -43,13 +42,6 @@
 //! [ics-standards]: https://github.com/cosmos/ibc#interchain-standards
 //! [relayer]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/relayer
 //! [relayer-repo]: https://github.com/informalsystems/hermes/tree/master/crates/relayer
-
-extern crate alloc;
-
-#[cfg(feature = "std")]
-extern crate std;
-
-mod prelude;
 
 pub mod applications;
 pub mod bigint;

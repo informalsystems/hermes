@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
@@ -90,7 +88,7 @@ impl From<MsgChannelCloseConfirm> for RawMsgChannelCloseConfirm {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
     use ibc_proto::ibc::core::client::v1::Height;
 
@@ -114,7 +112,6 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
     use ibc_proto::ibc::core::client::v1::Height;

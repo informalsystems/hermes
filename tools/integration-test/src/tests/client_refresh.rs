@@ -119,15 +119,19 @@ impl TestOverrides for ClientFailsTest {
 impl BinaryChainTest for ClientFailsTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         // Override the configuration in order to use a small `gas_multiplier` which will cause the update client to fail.
-        let chains2 = override_connected_chains(chains, |config| {
-            config.chains[0].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
-            config.chains[1].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
-        })?;
+        let chains2 = override_connected_chains(
+            chains,
+            |config| {
+                config.chains[0].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
+                config.chains[1].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
+            },
+            config,
+        )?;
 
         // Use chains with misconfiguration in order to trigger a ChainError when submitting `MsgClientUpdate`
         // during the refresh call.
@@ -156,6 +160,7 @@ impl BinaryChainTest for ClientFailsTest {
 fn override_connected_chains<ChainA, ChainB>(
     chains: ConnectedChains<ChainA, ChainB>,
     config_modifier: impl FnOnce(&mut Config),
+    test_config: &TestConfig,
 ) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error>
 where
     ChainA: ChainHandle,
@@ -163,8 +168,8 @@ where
 {
     let mut config = Config::default();
 
-    add_chain_config(&mut config, chains.node_a.value())?;
-    add_chain_config(&mut config, chains.node_b.value())?;
+    add_chain_config(&mut config, chains.node_a.value(), test_config)?;
+    add_chain_config(&mut config, chains.node_b.value(), test_config)?;
 
     config_modifier(&mut config);
 

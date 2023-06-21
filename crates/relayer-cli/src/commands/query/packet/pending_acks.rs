@@ -69,9 +69,10 @@ impl QueryPendingAcksCmd {
         let path_identifiers = PathIdentifiers::from_channel_end(channel.clone())
             .ok_or_else(|| Error::missing_counterparty_channel_id(channel))?;
 
-        unreceived_acknowledgements(&chains.src, &chains.dst, &path_identifiers)
-            .map(|(sns, _)| sns)
-            .map_err(Error::supervisor)
+        let acks = unreceived_acknowledgements(&chains.src, &chains.dst, &path_identifiers)
+            .map_err(Error::supervisor)?;
+
+        Ok(acks.map_or(vec![], |(sns, _)| sns))
     }
 }
 
