@@ -10,8 +10,8 @@ use crate::std_prelude::*;
 
 pub struct EmptySubscription<T>(pub PhantomData<T>);
 
-impl<T> EmptySubscription<T> {
-    pub fn new() -> Self {
+impl<T> Default for EmptySubscription<T> {
+    fn default() -> Self {
         Self(PhantomData)
     }
 }

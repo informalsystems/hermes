@@ -11,7 +11,7 @@ use crate::transaction::traits::logs::nonce::CanLogNonce;
 use crate::transaction::traits::nonce::{CanQueryNonce, NonceAllocator};
 use crate::transaction::traits::types::HasTxTypes;
 
-/**!
+/**
    A naive nonce allocator that simply query the current nonce from the context
    and then pass it to the continuation.
 
@@ -20,7 +20,6 @@ use crate::transaction::traits::types::HasTxTypes;
    the time when the nonce is being allocated and used. Because of this, the naive
    allocator only allows one transaction to be submitted at a time.
 */
-
 pub trait HasMutexForNonceAllocation: HasRuntime + HasTxTypes
 where
     Self::Runtime: HasMutex,

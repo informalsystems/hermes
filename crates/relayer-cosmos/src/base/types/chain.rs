@@ -37,7 +37,7 @@ where
             ),
             EventSourceMode::Pull { interval: _ } => {
                 // TODO: implement pull-based event source
-                Arc::new(EmptySubscription::new())
+                Arc::new(EmptySubscription::default())
             }
         };
 
