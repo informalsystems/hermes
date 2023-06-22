@@ -1,5 +1,4 @@
-use alloc::string::ToString;
-use core::fmt::{Display, Error as FmtError, Formatter};
+use std::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::mock::Header as RawMockHeader;
@@ -115,8 +114,7 @@ impl From<MockHeader> for Any {
     fn from(header: MockHeader) -> Self {
         Any {
             type_url: MOCK_HEADER_TYPE_URL.to_string(),
-            value: Protobuf::<RawMockHeader>::encode_vec(&header)
-                .expect("encoding to `Any` from `TmHeader`"),
+            value: Protobuf::<RawMockHeader>::encode_vec(&header),
         }
     }
 }
@@ -129,7 +127,7 @@ mod tests {
     #[test]
     fn encode_any() {
         let header = MockHeader::new(Height::new(1, 10).unwrap()).with_timestamp(Timestamp::none());
-        let bytes = <MockHeader as Protobuf<Any>>::encode_vec(&header).unwrap();
+        let bytes = <MockHeader as Protobuf<Any>>::encode_vec(&header);
 
         assert_eq!(
             &bytes,

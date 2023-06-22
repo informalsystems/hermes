@@ -1,7 +1,9 @@
 use alloc::sync::Arc;
 
-use ibc_relayer::event::monitor::queries::all;
+use ibc_relayer::config::EventSourceMode;
+use ibc_relayer::event::source::queries::all;
 use ibc_relayer_all_in_one::base::one_for_all::types::transaction::OfaTxWrapper;
+use ibc_relayer_components::runtime::impls::subscription::empty::EmptySubscription;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_types::core::ics02_client::height::Height;
 use tendermint::abci::Event as AbciEvent;
@@ -22,12 +24,22 @@ where
 {
     pub fn new(chain: Arc<Chain>) -> Self {
         let chain_version = chain.tx_config().chain_id.version();
-        let subscription = chain.runtime().new_abci_event_subscription(
-            chain_version,
-            chain.websocket_url().clone(),
-            *chain.compat_mode(),
-            all(),
-        );
+
+        let subscription = match chain.event_source_mode() {
+            EventSourceMode::Push {
+                url,
+                batch_delay: _,
+            } => chain.runtime().new_abci_event_subscription(
+                chain_version,
+                url.clone(),
+                *chain.compat_mode(),
+                all(),
+            ),
+            EventSourceMode::Pull { interval: _ } => {
+                // TODO: implement pull-based event source
+                Arc::new(EmptySubscription::new())
+            }
+        };
 
         let tx_context = OfaTxWrapper::new(CosmosTxWrapper::new(chain.clone()));
 

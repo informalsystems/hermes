@@ -1,17 +1,16 @@
 [package]
-name       = "ibc-integration-test"
-version    = "0.22.0"
-edition    = "2021"
-license    = "Apache-2.0"
-readme     = "README.md"
-keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-homepage   = "https://hermes.informal.systems/"
-repository = "https://github.com/informalsystems/hermes"
-authors    = ["Informal Systems <hello@informal.systems>"]
+name         = "ibc-integration-test"
+version      = "0.24.1"
+edition      = "2021"
 rust-version = "1.65"
-description = """
-  Integration tests for IBC Relayer
-"""
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+homepage     = "https://hermes.informal.systems/"
+repository   = "https://github.com/informalsystems/hermes"
+authors      = ["Informal Systems <hello@informal.systems>"]
+description  = "Integration tests for Hermes"
+publish      = false
 
 [dependencies]
 ibc-relayer-types  = { path = "../../crates/relayer-types" }
@@ -24,12 +23,12 @@ ibc-test-framework = { path = "../test-framework" }
 
 http = "0.2.9"
 prost = { version = "0.11" }
-serde = "1.0.149"
 serde_json = "1"
 time = "0.3"
 tokio = { version = "1.0", features = ["rt"] }
-toml = "0.5"
-tonic = { version = "0.8", features = ["tls", "tls-roots"] }
+toml = "0.7"
+tonic = { version = "0.9", features = ["tls", "tls-roots"] }
+serde = "1.0.164"
 
 [features]
 default = []
@@ -42,11 +41,12 @@ experimental = []
 mbt = []
 forward-packet = []
 ics31 = []
-next = ["ibc-test-framework/next"]
+clean-workers = []
+fee-grant = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
 doc = true
 
 [dev-dependencies]
-tempfile = "3.3.0"
+tempfile = "3.6.0"

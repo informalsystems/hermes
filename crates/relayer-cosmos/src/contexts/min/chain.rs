@@ -1,12 +1,13 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::EventSourceMode;
 use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_all_in_one::base::one_for_all::presets::min::MinimalPreset;
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::signer::Signer;
 use tendermint_rpc::client::CompatMode;
-use tendermint_rpc::{HttpClient, WebSocketClientUrl};
+use tendermint_rpc::HttpClient;
 
 use crate::base::traits::chain::CosmosChain;
 
@@ -16,8 +17,8 @@ pub struct MinCosmosChainContext<Handle: ChainHandle> {
     pub tx_config: TxConfig,
     pub rpc_client: HttpClient,
     pub compat_mode: CompatMode,
-    pub websocket_url: WebSocketClientUrl,
     pub key_entry: Secp256k1KeyPair,
+    pub event_source_mode: EventSourceMode,
     pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
 }
 
@@ -28,8 +29,8 @@ impl<Handle: ChainHandle> MinCosmosChainContext<Handle> {
         tx_config: TxConfig,
         rpc_client: HttpClient,
         compat_mode: CompatMode,
-        websocket_url: WebSocketClientUrl,
         key_entry: Secp256k1KeyPair,
+        event_source_mode: EventSourceMode,
         runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
     ) -> Self {
         Self {
@@ -38,8 +39,8 @@ impl<Handle: ChainHandle> MinCosmosChainContext<Handle> {
             tx_config,
             rpc_client,
             compat_mode,
-            websocket_url,
             key_entry,
+            event_source_mode,
             runtime,
         }
     }
@@ -77,11 +78,11 @@ where
         &self.compat_mode
     }
 
-    fn websocket_url(&self) -> &WebSocketClientUrl {
-        &self.websocket_url
-    }
-
     fn key_entry(&self) -> &Secp256k1KeyPair {
         &self.key_entry
+    }
+
+    fn event_source_mode(&self) -> &EventSourceMode {
+        &self.event_source_mode
     }
 }

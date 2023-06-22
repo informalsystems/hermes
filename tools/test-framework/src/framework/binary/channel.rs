@@ -6,7 +6,7 @@
 use tracing::info;
 
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
 
@@ -140,9 +140,9 @@ pub trait PortsOverride {
 */
 pub trait ChannelOrderOverride {
     /**
-       Return the channel ordering as [`Order`].
+       Return the channel ordering as [`Ordering`].
     */
-    fn channel_order(&self) -> Order;
+    fn channel_order(&self) -> Ordering;
 }
 
 /** Facility for overriding the channel version */

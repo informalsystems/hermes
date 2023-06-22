@@ -35,8 +35,8 @@
 //!         false
 //!     }
 //!
-//!     fn channel_order(&self) -> Order {
-//!         Order::Ordered
+//!     fn channel_order(&self) -> Ordering {
+//!         Ordering::Ordered
 //!     }
 //! }
 //!

@@ -14,8 +14,8 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- macOS: `hermes-{{#include ../templates/version.md}}-x86_64-apple-darwin.tar.gz` (or .zip),
-- Linux: `hermes-{{#include ../templates/version.md}}-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+- macOS: `hermes-{{#include ../templates/hermes-version.md}}-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-{{#include ../templates/hermes-version.md}}-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
 
@@ -49,7 +49,7 @@ You should now be able to run Hermes by invoking the `hermes` executable.
 Which should be:
 
 ```
-hermes {{#include ../templates/version.md}}
+hermes {{#include ../templates/hermes-version.md}}
 ```
 
 ## Install via Cargo
@@ -85,37 +85,37 @@ You should now be able to run Hermes by invoking the `hermes` executable.
 Which should be:
 
 ```
-hermes {{#include ../templates/version.md}}
+hermes {{#include ../templates/hermes-version.md}}
 ```
 
 ## Build from source
 
 ### Clone the repository
 
-Open a terminal and clone the `ibc-rs` repository:
+Open a terminal and clone the `hermes` repository:
 
 ```shell
-{{#template ../templates/commands/git/clone_ibc_rs.md}}
+{{#template ../templates/commands/git/clone_hermes.md}}
 ```
 
 Change to the repository directory
 ```shell
-cd ibc-rs
+cd hermes
 ```
 
 ### Checkout the latest release
 
-Go to the [ibc-rs releases](https://github.com/informalsystems/hermes/releases) page to see what is the most recent release.
+Go to the [hermes releases](https://github.com/informalsystems/hermes/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `{{#template ../templates/version.md}}` then execute the command:
+Then checkout the release, for example if the most recent release is `{{#template ../templates/hermes-version.md}}` then execute the command:
 
 ```shell
-git checkout {{#include ../templates/version.md}}
+git checkout {{#include ../templates/hermes-version.md}}
 ```
 
 ### Building with `cargo build`
 
-This command builds all the crates from the [__`ibc-rs`__](https://github.com/informalsystems/hermes) repository, namely: the [__`ibc-relayer`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli) crate.
+This command builds all the crates from the [__`hermes`__](https://github.com/informalsystems/hermes) repository, namely: the [__`ibc-relayer`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli) crate.
 The last of these crates contains the `hermes` binary.
 
 ```shell

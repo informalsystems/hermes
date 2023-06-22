@@ -185,6 +185,8 @@ function generate_templates(){
             local dir="${tmp%/*}"
             mkdir -p $dir
 
+            echo "Generating template for command '$command'..."
+
             local cpt=1
             cargo run -q --bin hermes $command | $SED -n '/USAGE:/, /OPTIONS:/{ /USAGE:/! { /OPTIONS:/! p }}'  | $SED -r '/^\s*$/d ; s/^\s+// ; s/</[[#/g ; s/>/]]/g; s/hermes/[[#BINARY hermes]][[#GLOBALOPTIONS]]/ ; s/ \[(OPTIONS|SUBCOMMAND)]/\[\[#\1]]/g ;' | while read line || [[ -n $line ]]
             do

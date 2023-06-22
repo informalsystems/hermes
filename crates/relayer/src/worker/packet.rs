@@ -1,9 +1,15 @@
+#[cfg(feature = "telemetry")]
+use {
+    ibc_relayer_types::core::ics24_host::identifier::ChannelId,
+    ibc_relayer_types::core::ics24_host::identifier::PortId,
+};
+
 use core::time::Duration;
 use itertools::Itertools;
 use moka::sync::Cache;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
-use tracing::debug;
+use tracing::{debug, warn};
 
 use crossbeam_channel::Receiver;
 use ibc_proto::ibc::apps::fee::v1::{IdentifiedPacketFees, QueryIncentivizedPacketRequest};
@@ -19,7 +25,7 @@ use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::config::filter::FeePolicy;
-use crate::event::monitor::EventBatch;
+use crate::event::source::EventBatch;
 use crate::foreign_client::HasExpiredOrFrozenError;
 use crate::link::Resubmit;
 use crate::link::{error::LinkError, Link};
@@ -33,6 +39,10 @@ use super::WorkerCmd;
 
 const INCENTIVIZED_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const INCENTIVIZED_CACHE_MAX_CAPACITY: u64 = 1000;
+
+// Number of NewBlock consecutive NewBlock events before aborting the
+// packet cmd worker.
+const IDLE_TIMEOUT_BLOCKS: u64 = 100;
 
 fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     if e.is_expired_or_frozen_error() {
@@ -88,8 +98,18 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
         )
     };
 
+    let packet_cmd_worker_idle_timeout = if clear_interval > 0 {
+        clear_interval * 5
+    } else {
+        IDLE_TIMEOUT_BLOCKS
+    };
+
+    let mut idle_worker_timer = 0;
+
     spawn_background_task(span, Some(Duration::from_millis(200)), move || {
         if let Ok(cmd) = cmd_rx.try_recv() {
+            let is_new_batch = cmd.is_ibc_events();
+
             // Try to clear pending packets. At different levels down in `handle_packet_cmd` there
             // are retries mechanisms for MAX_RETRIES (current value hardcoded at 5).
             // If clearing fails after all these retries with ignorable error the task continues
@@ -102,6 +122,20 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                 &path,
                 cmd,
             )?;
+
+            if is_new_batch {
+                idle_worker_timer = 0;
+                trace!("packet worker processed an event batch, reseting idle timer");
+            } else {
+                idle_worker_timer += 1;
+                trace!("packet worker has not processed an event batch after {idle_worker_timer} blocks, incrementing idle timer");
+            }
+
+            if idle_worker_timer > packet_cmd_worker_idle_timeout {
+                warn!("packet worker has been idle for more than {packet_cmd_worker_idle_timeout} blocks, aborting");
+
+                return Ok(Next::Abort);
+            }
         }
 
         Ok(Next::Continue)
@@ -203,10 +237,10 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     // Handle command-specific task
     if let WorkerCmd::IbcEvents { batch } = cmd {
-        handle_update_schedule(link, clear_interval, path, batch)
-    } else {
-        Ok(())
+        handle_update_schedule(link, clear_interval, path, batch)?;
     }
+
+    Ok(())
 }
 
 /// Receives incentivized worker commands and handles them accordingly.
@@ -391,7 +425,13 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !summary.is_empty() {
         trace!("produced relay summary: {:?}", summary);
-        telemetry!(packet_metrics(_path, &summary));
+
+        telemetry!(packet_metrics(
+            _path,
+            &summary,
+            &link.a_to_b.path_id.counterparty_channel_id,
+            &link.a_to_b.path_id.counterparty_port_id
+        ));
     }
 
     Ok(())
@@ -401,14 +441,24 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 use crate::link::RelaySummary;
 
 #[cfg(feature = "telemetry")]
-fn packet_metrics(path: &Packet, summary: &RelaySummary) {
-    receive_packet_metrics(path, summary);
-    acknowledgment_metrics(path, summary);
-    timeout_metrics(path, summary);
+fn packet_metrics(
+    path: &Packet,
+    summary: &RelaySummary,
+    dst_channel: &ChannelId,
+    dst_port: &PortId,
+) {
+    receive_packet_metrics(path, summary, dst_channel, dst_port);
+    acknowledgment_metrics(path, summary, dst_channel, dst_port);
+    timeout_metrics(path, summary, dst_channel, dst_port);
 }
 
 #[cfg(feature = "telemetry")]
-fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
+fn receive_packet_metrics(
+    path: &Packet,
+    summary: &RelaySummary,
+    dst_channel: &ChannelId,
+    dst_port: &PortId,
+) {
     use ibc_relayer_types::events::IbcEvent::WriteAcknowledgement;
 
     let count = summary
@@ -420,14 +470,22 @@ fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
     telemetry!(
         receive_packets_confirmed,
         &path.src_chain_id,
+        &path.dst_chain_id,
         &path.src_channel_id,
+        dst_channel,
         &path.src_port_id,
+        dst_port,
         count as u64,
     );
 }
 
 #[cfg(feature = "telemetry")]
-fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
+fn acknowledgment_metrics(
+    path: &Packet,
+    summary: &RelaySummary,
+    dst_channel: &ChannelId,
+    dst_port: &PortId,
+) {
     use ibc_relayer_types::events::IbcEvent::AcknowledgePacket;
 
     let count = summary
@@ -439,14 +497,22 @@ fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
     telemetry!(
         acknowledgment_packets_confirmed,
         &path.src_chain_id,
+        &path.dst_chain_id,
         &path.src_channel_id,
+        dst_channel,
         &path.src_port_id,
+        dst_port,
         count as u64,
     );
 }
 
 #[cfg(feature = "telemetry")]
-fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
+fn timeout_metrics(
+    path: &Packet,
+    summary: &RelaySummary,
+    dst_channel: &ChannelId,
+    dst_port: &PortId,
+) {
     use ibc_relayer_types::events::IbcEvent::TimeoutPacket;
     let count = summary
         .events
@@ -457,8 +523,11 @@ fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
     telemetry!(
         timeout_packets_confirmed,
         &path.src_chain_id,
+        &path.dst_chain_id,
         &path.src_channel_id,
+        dst_channel,
         &path.src_port_id,
+        dst_port,
         count as u64,
     );
 }

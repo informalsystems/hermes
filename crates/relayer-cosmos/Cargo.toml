@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-cosmos"
-version      = "0.22.0"
+version      = "0.24.1"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -19,14 +19,14 @@ all-features = true
 default   = ["flex-error/std", "flex-error/eyre_tracer"]
 
 [dependencies]
-ibc-proto          = { version = "0.28.0" }
-ibc-relayer     = { version = "0.22.0", path = "../relayer" }
-ibc-relayer-types = { version = "0.22.0", path = "../relayer-types" }
+ibc-proto          = { version = "0.32.0" }
+ibc-relayer     = { version = "0.24.1", path = "../relayer" }
+ibc-relayer-types = { version = "0.24.1", path = "../relayer-types" }
 ibc-relayer-runtime = { version = "0.1.0", path = "../relayer-runtime" }
 ibc-relayer-all-in-one = { version = "0.1.0", path = "../relayer-all-in-one" }
 ibc-relayer-components = { version = "0.1.0", path = "../relayer-components" }
 ibc-relayer-components-extra = { version = "0.1.0", path = "../relayer-components-extra" }
-ibc-telemetry = { version = "0.22.0", path = "../telemetry" }
+ibc-telemetry = { version = "0.24.1", path = "../telemetry" }
 
 serde = "1.0"
 serde_derive = "1.0"
@@ -44,21 +44,21 @@ tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 moka = { version = "0.10", features = ["future"] }
 
 [dependencies.tendermint]
-version = "=0.30.0"
+version = "=0.32.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.30.0"
+version = "=0.32.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.30.0"
+version = "=0.32.0"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.30.0"
+version = "=0.32.0"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.30.0"
+version = "=0.32.0"

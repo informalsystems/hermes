@@ -13,3 +13,4 @@ SUBCOMMANDS:
     header         Query for the header used in a client update at a certain height
     help           Print this message or the help of the given subcommand(s)
     state          Query the client state
+    status         Query the client status (frozen, expired or active)

@@ -203,7 +203,7 @@ impl CosmosRelayBuilder {
             Ok((handle, key, signer, chain_config))
         })?;
 
-        let websocket_addr = chain_config.websocket_addr.clone();
+        let event_source_mode = chain_config.event_source.clone();
 
         let tx_config = TxConfig::try_from(&chain_config).map_err(BaseError::relayer)?;
 
@@ -221,8 +221,8 @@ impl CosmosRelayBuilder {
             tx_config,
             rpc_client,
             compat_mode,
-            websocket_addr,
             key,
+            event_source_mode,
             self.runtime.clone(),
             self.telemetry.clone(),
         );

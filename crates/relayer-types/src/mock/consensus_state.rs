@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use ibc_proto::protobuf::Protobuf;
@@ -88,8 +86,7 @@ impl From<MockConsensusState> for Any {
     fn from(consensus_state: MockConsensusState) -> Self {
         Any {
             type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawMockConsensusState>::encode_vec(&consensus_state)
-                .expect("encoding to `Any` from `MockConsensusState`"),
+            value: Protobuf::<RawMockConsensusState>::encode_vec(&consensus_state),
         }
     }
 }

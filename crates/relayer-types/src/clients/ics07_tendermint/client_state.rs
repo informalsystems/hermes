@@ -1,5 +1,5 @@
-use core::convert::{TryFrom, TryInto};
-use core::time::Duration;
+use std::convert::{TryFrom, TryInto};
+use std::time::Duration;
 
 use prost::Message;
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,6 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientStat
 use ibc_proto::protobuf::Protobuf;
 
 use tendermint_light_client_verifier::options::Options;
-use tendermint_light_client_verifier::ProdVerifier;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header as TmHeader;
@@ -22,13 +21,12 @@ use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
 use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::ChainId;
-use crate::prelude::*;
 use crate::timestamp::{Timestamp, ZERO_DURATION};
 use crate::Height;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: ChainId,
     pub trust_threshold: TrustThreshold,
@@ -40,8 +38,6 @@ pub struct ClientState {
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
     pub frozen_height: Option<Height>,
-    #[serde(skip)]
-    pub verifier: ProdVerifier,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -117,7 +113,6 @@ impl ClientState {
             upgrade_path,
             allow_update,
             frozen_height: None,
-            verifier: ProdVerifier::default(),
         })
     }
 
@@ -150,15 +145,12 @@ impl ClientState {
 
     /// Helper method to produce a [`Options`] struct for use in
     /// Tendermint-specific light client verification.
-    pub fn as_light_client_options(&self) -> Result<Options, Error> {
-        Ok(Options {
-            trust_threshold: self
-                .trust_threshold
-                .try_into()
-                .map_err(|e: Ics02Error| Error::invalid_trust_threshold(e.to_string()))?,
+    pub fn as_light_client_options(&self) -> Options {
+        Options {
+            trust_threshold: self.trust_threshold.into(),
             trusting_period: self.trusting_period,
             clock_drift: self.max_clock_drift,
-        })
+        }
     }
 
     /// Verify the time and height delays
@@ -312,7 +304,6 @@ impl TryFrom<RawTmClientState> for ClientState {
                 after_misbehaviour: raw.allow_update_after_misbehaviour,
             },
             proof_specs: raw.proof_specs.into(),
-            verifier: ProdVerifier::default(),
         })
     }
 }
@@ -369,15 +360,14 @@ impl From<ClientState> for Any {
     fn from(client_state: ClientState) -> Self {
         Any {
             type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawTmClientState>::encode_vec(&client_state)
-                .expect("encoding to `Any` from `TmClientState`"),
+            value: Protobuf::<RawTmClientState>::encode_vec(&client_state),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+
     use crate::Height;
     use core::time::Duration;
     use test_log::test;
@@ -682,7 +672,6 @@ mod tests {
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
-    use crate::prelude::*;
     use core::time::Duration;
 
     use tendermint::block::Header;

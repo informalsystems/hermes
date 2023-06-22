@@ -3,8 +3,13 @@
 */
 
 use ibc_relayer_types::applications::transfer::amount::Amount;
+use once_cell::sync::Lazy;
 use rand::Rng;
-use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
+use std::{
+    collections::HashSet,
+    net::{Ipv4Addr, SocketAddrV4, TcpListener},
+    sync::Mutex,
+};
 
 /// Generates a random `u32` value.
 pub fn random_u32() -> u32 {
@@ -48,18 +53,18 @@ pub fn random_string() -> String {
 /// Generates a random non-privileged port that is greater than 1024.
 fn random_port() -> u16 {
     let mut rng = rand::thread_rng();
-    rng.gen::<u16>()
-        .checked_add(1024)
-        .unwrap_or_else(random_port)
+    rng.gen_range(1024..=u16::MAX)
 }
 
 /// Find a random unused non-privileged TCP port.
 pub fn random_unused_tcp_port() -> u16 {
+    static ALLOCATED_PORTS: Lazy<Mutex<HashSet<u16>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+
     let port = random_port();
     let loopback = Ipv4Addr::new(127, 0, 0, 1);
     let address = SocketAddrV4::new(loopback, port);
     match TcpListener::bind(address) {
-        Ok(_) => port,
-        Err(_) => random_unused_tcp_port(),
+        Ok(_) if ALLOCATED_PORTS.lock().unwrap().insert(port) => port,
+        _ => random_unused_tcp_port(),
     }
 }

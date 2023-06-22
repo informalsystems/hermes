@@ -245,14 +245,14 @@ impl OperationalData {
 
     /// Sets the scheduled time that is used for connection-delay calculations
     pub fn set_scheduled_time(&mut self, scheduled_time: Instant) {
-        if let Some(mut delay) = self.connection_delay.as_mut() {
+        if let Some(delay) = self.connection_delay.as_mut() {
             delay.scheduled_time = scheduled_time;
         }
     }
 
     /// Sets the update height that is used for connection-delay calculations
     pub fn set_update_height(&mut self, update_height: Height) {
-        if let Some(mut delay) = self.connection_delay.as_mut() {
+        if let Some(delay) = self.connection_delay.as_mut() {
             delay.update_height = Some(update_height);
         }
     }

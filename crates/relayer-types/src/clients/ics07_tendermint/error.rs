@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use flex_error::{define_error, TraceError};
 
 use crate::core::ics02_client::error::Error as Ics02Error;

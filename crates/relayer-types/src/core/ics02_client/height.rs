@@ -1,8 +1,6 @@
-use crate::prelude::*;
-use core::cmp::Ordering;
-
-use core::num::ParseIntError;
-use core::str::FromStr;
+use std::cmp::Ordering;
+use std::num::ParseIntError;
+use std::str::FromStr;
 
 use flex_error::{define_error, TraceError};
 use ibc_proto::protobuf::Protobuf;
@@ -11,6 +9,7 @@ use serde_derive::{Deserialize, Serialize};
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
 use crate::core::ics02_client::error::Error;
+use crate::core::ics24_host::identifier::ChainId;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
@@ -31,6 +30,13 @@ impl Height {
             revision_number,
             revision_height,
         })
+    }
+
+    pub fn from_tm(height: tendermint::block::Height, chain_id: &ChainId) -> Self {
+        Self {
+            revision_number: chain_id.version(),
+            revision_height: height.value(),
+        }
     }
 
     pub fn revision_number(&self) -> u64 {
@@ -117,6 +123,13 @@ impl From<Height> for RawHeight {
     }
 }
 
+impl From<Height> for tendermint::block::Height {
+    fn from(height: Height) -> Self {
+        tendermint::block::Height::try_from(height.revision_height)
+            .expect("revision height is a valid height")
+    }
+}
+
 impl core::fmt::Debug for Height {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         f.debug_struct("Height")
@@ -139,42 +152,40 @@ define_error! {
         HeightConversion
             { height: String }
             [ TraceError<ParseIntError> ]
-            | e | {
-                format_args!("cannot convert into a `Height` type from string {0}",
-                    e.height)
-            },
+            |e| { format_args!("cannot convert into a `Height` type from string {0}", e.height) },
+
+        InvalidHeight
+            { height: String }
+            |e| { format_args!("invalid height {0}", e.height) },
+
         ZeroHeight
-            |_| { "attempted to parse an invalid zero height" }
-    }
-}
-
-impl TryFrom<&str> for Height {
-    type Error = HeightError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let split: Vec<&str> = value.split('-').collect();
-
-        let revision_number = split[0]
-            .parse::<u64>()
-            .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?;
-        let revision_height = split[1]
-            .parse::<u64>()
-            .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?;
-
-        Height::new(revision_number, revision_height).map_err(|_| HeightError::zero_height())
-    }
-}
-
-impl From<Height> for String {
-    fn from(height: Height) -> Self {
-        format!("{}-{}", height.revision_number, height.revision_height)
+            |_| { "attempted to parse invalid height 0-0" }
     }
 }
 
 impl FromStr for Height {
     type Err = HeightError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Height::try_from(s)
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let split: Vec<&str> = value.split('-').collect();
+
+        if split.len() != 2 {
+            return Err(HeightError::invalid_height(value.to_owned()));
+        }
+
+        let revision_number = split[0]
+            .parse::<u64>()
+            .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?;
+
+        let revision_height = split[1]
+            .parse::<u64>()
+            .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?;
+
+        if revision_number == 0 && revision_height == 0 {
+            return Err(HeightError::zero_height());
+        }
+
+        Height::new(revision_number, revision_height)
+            .map_err(|_| HeightError::invalid_height(value.to_owned()))
     }
 }

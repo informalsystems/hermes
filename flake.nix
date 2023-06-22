@@ -33,7 +33,7 @@
               gaia6
               gaia7
               gaia8
-              ica
+              gaia9
               osmosis
               wasmd
               gaia6-ordered
@@ -45,7 +45,10 @@
               ibc-go-v7-simapp
               apalache
               evmos
+              juno
+              stride
               stride-no-admin
+              migaloo
             ;
 
             inherit (nixpkgs)

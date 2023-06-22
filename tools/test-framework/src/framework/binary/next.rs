@@ -103,6 +103,44 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> CanSpawnRelayer for TestContextV1
     }
 }
 
+pub fn wait_for_acks<Chain, Counterparty>(
+    chain: &Chain,
+    counterparty: &Counterparty,
+    path_identifiers: &PathIdentifiers,
+) -> Result<(), Error>
+where
+    Chain: ChainHandle,
+    Counterparty: ChainHandle,
+{
+    assert_eventually_succeed(
+        "waiting on pending acks on chain",
+        WAIT_PENDING_ACKS_ATTEMPTS,
+        Duration::from_secs(1),
+        || {
+            let unreceived_acks =
+                unreceived_acknowledgements(chain, counterparty, path_identifiers);
+
+            match unreceived_acks {
+                Ok(Some((acks, _))) => {
+                    if acks.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(Error::generic(eyre!(
+                            "there are still {} pending acks",
+                            acks.len()
+                        )))
+                    }
+                }
+                Ok(None) => Ok(()),
+                Err(e) => Err(Error::generic(eyre!(
+                    "error retrieving number of pending acks {}",
+                    e
+                ))),
+            }
+        },
+    )
+}
+
 impl<ChainA: ChainHandle, ChainB: ChainHandle> CanWaitForAck for TestContextV1<ChainA, ChainB> {
     fn wait_for_src_acks(&self) -> Result<(), Error> {
         let src_chain = self.chain_a();
@@ -131,29 +169,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> CanWaitForAck for TestContextV1<C
                 }
             };
 
-        assert_eventually_succeed(
-            "waiting on pending acks on src chain",
-            WAIT_PENDING_ACKS_ATTEMPTS,
-            Duration::from_secs(1),
-            || match unreceived_acknowledgements(src_chain, dst_chain, &path_identifiers_a)
-                .map(|(sns, _)| sns)
-            {
-                Ok(acks) => {
-                    if acks.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(Error::generic(eyre!(
-                            "there are still {} pending acks",
-                            acks.len()
-                        )))
-                    }
-                }
-                Err(e) => Err(Error::generic(eyre!(
-                    "error retrieving number of pending acks {}",
-                    e
-                ))),
-            },
-        )?;
+        wait_for_acks(src_chain, dst_chain, &path_identifiers_a)?;
 
         Ok(())
     }
@@ -188,29 +204,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> CanWaitForAck for TestContextV1<C
                 }
             };
 
-        assert_eventually_succeed(
-            "waiting on pending acks on dst chain",
-            WAIT_PENDING_ACKS_ATTEMPTS,
-            Duration::from_secs(1),
-            || match unreceived_acknowledgements(dst_chain, src_chain, &path_identifiers_b)
-                .map(|(sns, _)| sns)
-            {
-                Ok(acks) => {
-                    if acks.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(Error::generic(eyre!(
-                            "there are still {} pending acks",
-                            acks.len()
-                        )))
-                    }
-                }
-                Err(e) => Err(Error::generic(eyre!(
-                    "error retrieving number of pending acks {}",
-                    e
-                ))),
-            },
-        )?;
+        wait_for_acks(dst_chain, src_chain, &path_identifiers_b)?;
 
         Ok(())
     }
@@ -333,29 +327,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> CanWaitForAck for TestContextV2<C
                 }
             };
 
-        assert_eventually_succeed(
-            "waiting on pending acks on src chain",
-            WAIT_PENDING_ACKS_ATTEMPTS,
-            Duration::from_secs(1),
-            || match unreceived_acknowledgements(src_chain, dst_chain, &path_identifiers_a)
-                .map(|(sns, _)| sns)
-            {
-                Ok(acks) => {
-                    if acks.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(Error::generic(eyre!(
-                            "there are still {} pending acks",
-                            acks.len()
-                        )))
-                    }
-                }
-                Err(e) => Err(Error::generic(eyre!(
-                    "error retrieving number of pending acks {}",
-                    e
-                ))),
-            },
-        )?;
+        wait_for_acks(src_chain, dst_chain, &path_identifiers_a)?;
 
         Ok(())
     }
@@ -390,29 +362,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> CanWaitForAck for TestContextV2<C
                 }
             };
 
-        assert_eventually_succeed(
-            "waiting on pending acks on dst chain",
-            WAIT_PENDING_ACKS_ATTEMPTS,
-            Duration::from_secs(1),
-            || match unreceived_acknowledgements(dst_chain, src_chain, &path_identifiers_b)
-                .map(|(sns, _)| sns)
-            {
-                Ok(acks) => {
-                    if acks.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(Error::generic(eyre!(
-                            "there are still {} pending acks",
-                            acks.len()
-                        )))
-                    }
-                }
-                Err(e) => Err(Error::generic(eyre!(
-                    "error retrieving number of pending acks {}",
-                    e
-                ))),
-            },
-        )?;
+        wait_for_acks(dst_chain, src_chain, &path_identifiers_b)?;
 
         Ok(())
     }

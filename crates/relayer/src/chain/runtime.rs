@@ -53,7 +53,7 @@ use super::{
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
-    pub event_monitor: Option<thread::JoinHandle<()>>,
+    pub event_source: Option<thread::JoinHandle<()>>,
 }
 
 pub struct ChainRuntime<Endpoint: ChainEndpoint> {

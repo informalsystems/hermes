@@ -1,12 +1,13 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::EventSourceMode;
 use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::signer::Signer;
 use tendermint_rpc::client::CompatMode;
-use tendermint_rpc::{HttpClient, WebSocketClientUrl};
+use tendermint_rpc::HttpClient;
 
 pub trait CosmosChain: Async {
     type Preset: Async;
@@ -25,7 +26,7 @@ pub trait CosmosChain: Async {
 
     fn compat_mode(&self) -> &CompatMode;
 
-    fn websocket_url(&self) -> &WebSocketClientUrl;
-
     fn key_entry(&self) -> &Secp256k1KeyPair;
+
+    fn event_source_mode(&self) -> &EventSourceMode;
 }

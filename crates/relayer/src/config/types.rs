@@ -24,7 +24,7 @@ pub mod max_msg_num {
         }
     }
 
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub struct MaxMsgNum(usize);
 
     impl MaxMsgNum {
@@ -108,7 +108,7 @@ pub mod max_tx_size {
         }
     }
 
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub struct MaxTxSize(usize);
 
     impl MaxTxSize {
@@ -193,7 +193,7 @@ pub mod memo {
     /// each transaction it submits.
     /// The memo can be configured on a per-chain basis.
     ///
-    #[derive(Clone, Debug, Default)]
+    #[derive(Clone, Debug, Default, PartialEq, Eq)]
     pub struct Memo(String);
 
     impl Memo {
