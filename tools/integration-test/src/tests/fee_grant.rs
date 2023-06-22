@@ -15,6 +15,7 @@ use std::thread;
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer_types::bigint::U256;
 use ibc_test_framework::chain::ext::fee_grant::FeeGrantMethodsExt;
+use ibc_test_framework::framework::next::chain::{CanSpawnRelayer, HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 
 #[test]
@@ -32,13 +33,13 @@ struct FeeGrantTest;
 impl TestOverrides for FeeGrantTest {}
 
 impl BinaryChannelTest for FeeGrantTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channels: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
+    {
+        let chains = context.chains();
+        let channels = context.channel();
+
         let denom_a = chains.node_a.denom();
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -73,7 +74,7 @@ impl BinaryChannelTest for FeeGrantTest {
             &denom_a,
         )?;
 
-        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base("stake".to_owned()));
+        let gas_denom = MonoTagged::new(Denom::Base("stake".to_owned()));
 
         let balance_user1_before = chains
             .node_a
@@ -109,7 +110,7 @@ impl BinaryChannelTest for FeeGrantTest {
 
         modified_driver.tx_config = modified_tx_config;
 
-        let md: MonoTagged<ChainA, &ChainDriver> = MonoTagged::new(&modified_driver);
+        let md = MonoTagged::new(&modified_driver);
 
         md.ibc_transfer_token(
             &channels.port_a.as_ref(),
@@ -163,13 +164,13 @@ struct NoFeeGrantTest;
 impl TestOverrides for NoFeeGrantTest {}
 
 impl BinaryChannelTest for NoFeeGrantTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channels: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, _relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
+    {
+        let chains = context.chains();
+        let channels = context.channel();
+
         let denom_a = chains.node_a.denom();
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_a2 = chains.node_a.wallets().user2().cloned();
@@ -205,7 +206,7 @@ impl BinaryChannelTest for NoFeeGrantTest {
             &denom_a,
         )?;
 
-        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base("stake".to_owned()));
+        let gas_denom = MonoTagged::new(Denom::Base("stake".to_owned()));
 
         let balance_user1_before = chains
             .node_a

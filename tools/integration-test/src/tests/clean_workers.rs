@@ -1,5 +1,6 @@
 use ibc_relayer::config::{self, ModeConfig};
 use ibc_relayer::object::ObjectType;
+use ibc_test_framework::framework::next::chain::{CanSpawnRelayer, HasTwoChains, HasTwoChannels};
 use ibc_test_framework::relayer::channel::init_channel;
 use ibc_test_framework::{prelude::*, util::random::random_u128_range};
 
@@ -41,13 +42,12 @@ impl TestOverrides for CleanPacketWorkersTest {
 }
 
 impl BinaryChannelTest for CleanPacketWorkersTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let denom_a = chains.node_a.denom();
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
@@ -104,13 +104,12 @@ impl TestOverrides for CleanChannelWorkersTest {
 }
 
 impl BinaryChannelTest for CleanChannelWorkersTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
+    fn run<Context>(&self, relayer: RelayerDriver, context: &Context) -> Result<(), Error>
+    where
+        Context: HasTwoChains + HasTwoChannels + CanSpawnRelayer,
+    {
+        let chains = context.chains();
+        let channel = context.channel();
         let supervisor = relayer.spawn_supervisor()?;
 
         // Optimistically send chan-open-init to B, without a connection available yet on A

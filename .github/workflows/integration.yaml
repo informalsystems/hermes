@@ -192,7 +192,7 @@ jobs:
           timeout_minutes: 45
           command: |
             nix shell .#python .#${{ matrix.chain.package }} -c cargo \
-              test -p ibc-integration-test --features next --no-fail-fast -- \
+              test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2
 
   ordered-channel-test:
