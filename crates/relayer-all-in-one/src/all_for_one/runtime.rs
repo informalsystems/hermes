@@ -3,18 +3,18 @@ use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 use ibc_relayer_components::runtime::traits::time::HasTime;
 
-pub trait AfoBaseRuntime: HasMutex + CanSleep + HasTime {}
+pub trait AfoRuntime: HasMutex + CanSleep + HasTime {}
 
-impl<Runtime> AfoBaseRuntime for Runtime where Runtime: HasMutex + CanSleep + HasTime {}
+impl<Runtime> AfoRuntime for Runtime where Runtime: HasMutex + CanSleep + HasTime {}
 
-pub trait HasAfoBaseRuntime: HasRuntime<Runtime = Self::AfoBaseRuntime> {
-    type AfoBaseRuntime: AfoBaseRuntime;
+pub trait HasAfoRuntime: HasRuntime<Runtime = Self::AfoRuntime> {
+    type AfoRuntime: AfoRuntime;
 }
 
-impl<Context, Runtime> HasAfoBaseRuntime for Context
+impl<Context, Runtime> HasAfoRuntime for Context
 where
     Context: HasRuntime<Runtime = Runtime>,
-    Runtime: AfoBaseRuntime,
+    Runtime: AfoRuntime,
 {
-    type AfoBaseRuntime = Runtime;
+    type AfoRuntime = Runtime;
 }

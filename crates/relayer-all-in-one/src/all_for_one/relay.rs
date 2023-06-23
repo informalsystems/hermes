@@ -12,14 +12,14 @@ use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_pa
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_components::relay::traits::types::HasRelayTypes;
 
-use crate::base::all_for_one::chain::AfoBaseChain;
-use crate::base::all_for_one::runtime::HasAfoBaseRuntime;
+use crate::all_for_one::chain::AfoChain;
+use crate::all_for_one::runtime::HasAfoRuntime;
 
 /// The functionality that a relay context gains access to once that relay
 /// context implements the `OfaRelayWrapper` trait.
-pub trait AfoBaseRelay:
+pub trait AfoRelay:
     Clone
-    + HasAfoBaseRuntime
+    + HasAfoRuntime
     + HasLoggerWithBaseLevels
     + HasRelayTypes<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
     + CanBuildUpdateClientMessage<SourceTarget>
@@ -35,21 +35,21 @@ pub trait AfoBaseRelay:
     + CanRelayAckPacket
     + CanRelayTimeoutUnorderedPacket
 {
-    type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
+    type AfoSrcChain: AfoChain<Self::AfoDstChain>;
 
-    type AfoDstChain: AfoBaseChain<
+    type AfoDstChain: AfoChain<
         Self::AfoSrcChain,
         IncomingPacket = OutgoingPacket<Self::AfoSrcChain, Self::AfoDstChain>,
         OutgoingPacket = IncomingPacket<Self::AfoSrcChain, Self::AfoDstChain>,
     >;
 }
 
-impl<Relay, SrcChain, DstChain, Packet, ReversePacket> AfoBaseRelay for Relay
+impl<Relay, SrcChain, DstChain, Packet, ReversePacket> AfoRelay for Relay
 where
-    SrcChain: AfoBaseChain<DstChain, IncomingPacket = ReversePacket, OutgoingPacket = Packet>,
-    DstChain: AfoBaseChain<SrcChain, IncomingPacket = Packet, OutgoingPacket = ReversePacket>,
+    SrcChain: AfoChain<DstChain, IncomingPacket = ReversePacket, OutgoingPacket = Packet>,
+    DstChain: AfoChain<SrcChain, IncomingPacket = Packet, OutgoingPacket = ReversePacket>,
     Relay: Clone
-        + HasAfoBaseRuntime
+        + HasAfoRuntime
         + HasLoggerWithBaseLevels
         + HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain>
         + CanBuildUpdateClientMessage<SourceTarget>

@@ -6,11 +6,11 @@ use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWrit
 use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
 use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
 
-use crate::base::all_for_one::runtime::HasAfoBaseRuntime;
+use crate::all_for_one::runtime::HasAfoRuntime;
 
-pub trait AfoBaseChain<Counterparty>:
+pub trait AfoChain<Counterparty>:
     Clone
-    + HasAfoBaseRuntime
+    + HasAfoRuntime
     + HasLoggerWithBaseLevels
     + HasIbcPacketTypes<Counterparty>
     + HasWriteAcknowledgementEvent<Counterparty>
@@ -35,11 +35,11 @@ where
 {
 }
 
-impl<Chain, Counterparty> AfoBaseChain<Counterparty> for Chain
+impl<Chain, Counterparty> AfoChain<Counterparty> for Chain
 where
     Counterparty: AfoCounterpartyChain<Self>,
     Chain: Clone
-        + HasAfoBaseRuntime
+        + HasAfoRuntime
         + HasLoggerWithBaseLevels
         + HasIbcPacketTypes<Counterparty>
         + HasWriteAcknowledgementEvent<Counterparty>

@@ -3,18 +3,15 @@ use ibc_relayer_components::builder::traits::birelay::{CanBuildBiRelay, HasBiRel
 use ibc_relayer_components::builder::types::aliases::{ChainIdA, ChainIdB, ClientIdA, ClientIdB};
 use ibc_relayer_components::core::traits::error::HasErrorType;
 
-use crate::base::all_for_one::birelay::AfoBaseBiRelay;
-use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::base::one_for_all::traits::builder::OfaBuilder;
-use crate::base::one_for_all::types::birelay::OfaBiRelayWrapper;
-use crate::base::one_for_all::types::builder::OfaBuilderWrapper;
+use crate::all_for_one::birelay::AfoBiRelay;
+use crate::one_for_all::traits::builder::OfaBuilder;
+use crate::one_for_all::types::birelay::OfaBiRelayWrapper;
+use crate::one_for_all::types::builder::OfaBuilderWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanBuildAfoBaseBiRelay:
-    HasBiRelayType<BiRelay = Self::AfoBaseBiRelay> + HasErrorType
-{
-    type AfoBaseBiRelay: AfoBaseBiRelay;
+pub trait CanBuildAfoBiRelay: HasBiRelayType<BiRelay = Self::AfoBiRelay> + HasErrorType {
+    type AfoBiRelay: AfoBiRelay;
 
     async fn build_afo_base_birelay(
         &self,
@@ -22,16 +19,16 @@ pub trait CanBuildAfoBaseBiRelay:
         chain_id_b: &ChainIdB<Self>,
         client_id_a: &ClientIdA<Self>,
         client_id_b: &ClientIdB<Self>,
-    ) -> Result<Self::AfoBaseBiRelay, Self::Error>;
+    ) -> Result<Self::AfoBiRelay, Self::Error>;
 }
 
 #[async_trait]
-impl<Build> CanBuildAfoBaseBiRelay for Build
+impl<Build> CanBuildAfoBiRelay for Build
 where
     Build: CanBuildBiRelay,
-    Build::BiRelay: AfoBaseBiRelay,
+    Build::BiRelay: AfoBiRelay,
 {
-    type AfoBaseBiRelay = Build::BiRelay;
+    type AfoBiRelay = Build::BiRelay;
 
     async fn build_afo_base_birelay(
         &self,
@@ -46,10 +43,10 @@ where
 }
 
 #[async_trait]
-pub trait CanBuildAfoBaseBiRelayFromOfa:
-    HasBiRelayType<BiRelay = Self::AfoBaseBiRelay> + HasErrorType
+pub trait CanBuildAfoBiRelayFromOfa:
+    HasBiRelayType<BiRelay = Self::AfoBiRelay> + HasErrorType
 {
-    type AfoBaseBiRelay: AfoBaseBiRelay;
+    type AfoBiRelay: AfoBiRelay;
 
     async fn build_afo_base_birelay_from_ofa(
         &self,
@@ -57,16 +54,15 @@ pub trait CanBuildAfoBaseBiRelayFromOfa:
         chain_id_b: &ChainIdB<Self>,
         client_id_a: &ClientIdA<Self>,
         client_id_b: &ClientIdB<Self>,
-    ) -> Result<Self::AfoBaseBiRelay, Self::Error>;
+    ) -> Result<Self::AfoBiRelay, Self::Error>;
 }
 
 #[async_trait]
-impl<Build> CanBuildAfoBaseBiRelayFromOfa for OfaBuilderWrapper<Build>
+impl<Build> CanBuildAfoBiRelayFromOfa for OfaBuilderWrapper<Build>
 where
     Build: OfaBuilder,
-    Build::Preset: OfaBiRelayPreset<Build::BiRelay>,
 {
-    type AfoBaseBiRelay = OfaBiRelayWrapper<Build::BiRelay>;
+    type AfoBiRelay = OfaBiRelayWrapper<Build::BiRelay>;
 
     async fn build_afo_base_birelay_from_ofa(
         &self,

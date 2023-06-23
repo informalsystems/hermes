@@ -9,7 +9,7 @@ use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
-impl<Relay, Preset> CanRelayEvent<SourceTarget> for OfaRelayWrapper<Relay>
+impl<Relay> CanRelayEvent<SourceTarget> for OfaRelayWrapper<Relay>
 where
     Relay: OfaRelay,
 {
