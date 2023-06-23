@@ -104,7 +104,7 @@ impl Runnable for AutoCmd {
                         let chain_id = &chain_config.id;
                         let key = find_key(chain_config);
                         if let Some(key) = key {
-                            info!("{}: uses key \"{}\"", &chain_id, &key);
+                            info!("{}: uses key '{}'", &chain_id, &key);
                             chain_config.key_name = key;
                         } else {
                             // If no key is found, warn the user and continue
@@ -119,17 +119,15 @@ impl Runnable for AutoCmd {
                 };
 
                 match store(&config, &self.path) {
-                    Ok(_) => Output::success(format!(
-                        "Config file written successfully at {}.",
-                        self.path.to_str().unwrap()
+                    Ok(_) => Output::success_msg(format!(
+                        "Config file written successfully at '{}'",
+                        self.path.display()
                     ))
                     .exit(),
-                    Err(e) => Output::error(e.to_string()).exit(),
+                    Err(e) => Output::error(e).exit(),
                 }
             }
-            Err(e) => {
-                Output::error(e.to_string()).exit();
-            }
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
