@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::fmt::{self, Debug, Display};
+use ibc_relayer_types::core::ics04_channel::upgrade::Upgrade;
 
 use crossbeam_channel as channel;
 use tracing::Span;
@@ -7,7 +8,7 @@ use tracing::Span;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
-use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeResponse};
+use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
@@ -371,7 +372,8 @@ pub enum ChainRequest {
 
     QueryUpgrade {
         request: QueryUpgradeRequest,
-        reply_to: ReplyTo<QueryUpgradeResponse>,
+        height: Height,
+        reply_to: ReplyTo<(Upgrade, Option<MerkleProof>)>,
     },
 }
 
@@ -685,5 +687,9 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
 
-    fn query_upgrade(&self, request: QueryUpgradeRequest) -> Result<QueryUpgradeResponse, Error>;
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error>;
 }

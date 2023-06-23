@@ -1,7 +1,7 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
-use ibc_proto::ibc::core::channel::v1::QueryUpgradeResponse;
+use ibc_relayer_types::core::ics04_channel::upgrade::Upgrade;
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketRequest;
@@ -513,7 +513,11 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner.query_incentivized_packet(request)
     }
 
-    fn query_upgrade(&self, request: QueryUpgradeRequest) -> Result<QueryUpgradeResponse, Error> {
-        self.inner.query_upgrade(request)
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
+        self.inner.query_upgrade(request, height)
     }
 }

@@ -18,14 +18,13 @@ use tracing::{error, instrument, trace, warn};
 use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
 };
-use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeResponse};
+use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
 use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvConsumerParams;
 
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
 use ibc_proto::protobuf::Protobuf;
-use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
@@ -45,14 +44,18 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
 use ibc_relayer_types::core::ics24_host::path::{
-    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
-    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+    AcksPath, ChannelEndsPath, ChannelUpgradePath, ClientConsensusStatePath, ClientStatePath,
+    CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
 use ibc_relayer_types::core::ics24_host::{
     ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
+use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
+    core::{ics02_client::height::Height, ics04_channel::upgrade::Upgrade},
+};
 
 use tendermint::block::Height as TmHeight;
 use tendermint::node::{self, info::TxIndexStatus};
@@ -82,7 +85,6 @@ use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::{
     filter_matching_event, query_packets_from_block, query_packets_from_txs, query_txs,
 };
-use crate::chain::cosmos::query::upgrade::query_upgrade;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
@@ -2211,9 +2213,27 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(incentivized_response)
     }
 
-    fn query_upgrade(&self, request: QueryUpgradeRequest) -> Result<QueryUpgradeResponse, Error> {
-        let upgrade_response = self.block_on(query_upgrade(&self.grpc_addr, request))?;
-        Ok(upgrade_response)
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
+        let port_id = PortId::from_str(&request.port_id)
+            .map_err(|_| Error::invalid_port_string(request.port_id))?;
+        let channel_id = ChannelId::from_str(&request.channel_id)
+            .map_err(|_| Error::invalid_channel_string(request.channel_id))?;
+        let res = self.query(
+            ChannelUpgradePath {
+                port_id,
+                channel_id,
+            },
+            QueryHeight::Specific(height),
+            true,
+        )?;
+        let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+        let upgrade = Upgrade::decode_vec(&res.value).map_err(Error::decode)?;
+
+        Ok((upgrade, Some(proof)))
     }
 }
 

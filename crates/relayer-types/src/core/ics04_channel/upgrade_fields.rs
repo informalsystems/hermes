@@ -71,14 +71,18 @@ impl From<UpgradeFields> for RawUpgradeFields {
 
 #[cfg(test)]
 pub mod test_util {
+    use std::string::ToString;
+    use std::vec;
+
     use ibc_proto::ibc::core::channel::v1::UpgradeFields as RawUpgradeFields;
-    use std::{string::ToString, vec};
+
+    use crate::core::ics04_channel::version::Version;
 
     pub fn get_dummy_upgrade_fields() -> RawUpgradeFields {
         RawUpgradeFields {
             ordering: 1,
             connection_hops: vec![],
-            version: "ics20".to_string(),
+            version: Version::ics20_with_fee().to_string(),
         }
     }
 }

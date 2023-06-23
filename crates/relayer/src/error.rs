@@ -591,6 +591,14 @@ define_error! {
             { address: String }
             [ TendermintRpcError ]
             |e| { format!("invalid archive node address {}", e.address) },
+
+        InvalidPortString
+            { port: String }
+            |e| { format!("invalid port string {}", e.port) },
+
+        InvalidChannelString
+            { channel: String }
+            |e| { format!("invalid channel string {}", e.channel) },
     }
 }
 

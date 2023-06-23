@@ -66,6 +66,9 @@ define_error! {
         MissingChannelProof
             |_| { "missing channel proof" },
 
+        MissingUpgradeProof
+            |_| { "missing upgrade proof" },
+
         MalformedProof
             [ ProofError ]
             |_| { "malformed proof" },
