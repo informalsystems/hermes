@@ -5,8 +5,11 @@ use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, Re
 use ibc_relayer_components::builder::types::aliases::{
     ChainACache, ChainBCache, RelayAToBCache, RelayBToACache,
 };
+use ibc_relayer_components_extra::builder::traits::cache::HasBatchSenderCache;
 
-use crate::one_for_all::traits::builder::OfaBuilder;
+use crate::one_for_all::traits::builder::{
+    BatchSenderCacheA, BatchSenderCacheB, OfaBuilder, RelayError,
+};
 use crate::one_for_all::types::builder::OfaBuilderWrapper;
 
 #[async_trait]
@@ -46,5 +49,25 @@ where
 {
     fn relay_cache(&self) -> &RelayBToACache<Self> {
         &self.relay_b_to_a_cache
+    }
+}
+
+#[async_trait]
+impl<Build> HasBatchSenderCache<ChainATarget, RelayError<Build>> for OfaBuilderWrapper<Build>
+where
+    Build: OfaBuilder,
+{
+    fn batch_sender_cache(&self, _target: ChainATarget) -> &BatchSenderCacheA<Build> {
+        &self.batch_sender_cache_a
+    }
+}
+
+#[async_trait]
+impl<Build> HasBatchSenderCache<ChainBTarget, RelayError<Build>> for OfaBuilderWrapper<Build>
+where
+    Build: OfaBuilder,
+{
+    fn batch_sender_cache(&self, _target: ChainBTarget) -> &BatchSenderCacheB<Build> {
+        &self.batch_sender_cache_b
     }
 }

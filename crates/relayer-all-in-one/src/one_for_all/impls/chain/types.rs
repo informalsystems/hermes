@@ -19,10 +19,6 @@ use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
-impl<Chain: OfaChain> HasErrorType for OfaChainWrapper<Chain> {
-    type Error = Chain::Error;
-}
-
 impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
     type Runtime = OfaRuntimeWrapper<Chain::Runtime>;
 

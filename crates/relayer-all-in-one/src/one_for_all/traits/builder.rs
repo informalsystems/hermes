@@ -2,6 +2,7 @@ use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use core::fmt::Debug;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
+use ibc_relayer_components_extra::batch::types::config::BatchConfig;
 
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
@@ -10,6 +11,7 @@ use crate::one_for_all::traits::birelay::OfaBiRelay;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::types::batch::aliases::MessageBatchSender;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -31,6 +33,8 @@ pub trait OfaBuilder: Async {
 
     fn logger(&self) -> &Self::Logger;
 
+    fn batch_config(&self) -> &BatchConfig;
+
     async fn build_chain_a(&self, chain_id: &ChainIdA<Self>) -> Result<ChainA<Self>, Self::Error>;
 
     async fn build_chain_b(&self, chain_id: &ChainIdB<Self>) -> Result<ChainB<Self>, Self::Error>;
@@ -41,6 +45,8 @@ pub trait OfaBuilder: Async {
         dst_client_id: &ClientIdB<Self>,
         src_chain: OfaChainWrapper<ChainA<Self>>,
         dst_chain: OfaChainWrapper<ChainB<Self>>,
+        src_batch_sender: MessageBatchSender<ChainA<Self>, RelayError<Self>>,
+        dst_batch_sender: MessageBatchSender<ChainB<Self>, RelayError<Self>>,
     ) -> Result<RelayAToB<Self>, Self::Error>;
 
     async fn build_relay_b_to_a(
@@ -49,6 +55,8 @@ pub trait OfaBuilder: Async {
         dst_client_id: &ClientIdA<Self>,
         src_chain: OfaChainWrapper<ChainB<Self>>,
         dst_chain: OfaChainWrapper<ChainA<Self>>,
+        src_batch_sender: MessageBatchSender<ChainB<Self>, RelayError<Self>>,
+        dst_batch_sender: MessageBatchSender<ChainA<Self>, RelayError<Self>>,
     ) -> Result<RelayBToA<Self>, Self::Error>;
 
     async fn build_birelay(
@@ -115,5 +123,31 @@ pub type RelayBToACache<Builder> = Arc<
             ),
             OfaRelayWrapper<RelayBToA<Builder>>,
         >,
+    >,
+>;
+
+pub type BatchSenderCacheA<Build> = Mutex<
+    Build,
+    BTreeMap<
+        (
+            ChainIdA<Build>,
+            ChainIdB<Build>,
+            ClientIdA<Build>,
+            ClientIdB<Build>,
+        ),
+        MessageBatchSender<ChainA<Build>, RelayError<Build>>,
+    >,
+>;
+
+pub type BatchSenderCacheB<Build> = Mutex<
+    Build,
+    BTreeMap<
+        (
+            ChainIdB<Build>,
+            ChainIdA<Build>,
+            ClientIdB<Build>,
+            ClientIdA<Build>,
+        ),
+        MessageBatchSender<ChainB<Build>, RelayError<Build>>,
     >,
 >;

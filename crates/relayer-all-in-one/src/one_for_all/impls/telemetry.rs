@@ -2,8 +2,8 @@ use ibc_relayer_components_extra::telemetry::traits::metrics::{
     HasLabel, HasMetric, TelemetryCounter, TelemetryUpDownCounter, TelemetryValueRecorder,
 };
 
-use crate::extra::one_for_all::traits::telemetry::OfaTelemetry;
-use crate::extra::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use crate::one_for_all::traits::telemetry::OfaTelemetry;
+use crate::one_for_all::types::telemetry::OfaTelemetryWrapper;
 
 impl<Telemetry: HasLabel> HasLabel for OfaTelemetryWrapper<Telemetry> {
     type Label = Telemetry::Label;

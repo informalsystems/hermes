@@ -12,7 +12,9 @@ use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 
 use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::traits::telemetry::OfaTelemetry;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -30,6 +32,8 @@ pub trait OfaChain: Async {
     type Runtime: OfaRuntime;
 
     type Logger: HasBaseLogLevels;
+
+    type Telemetry: OfaTelemetry;
 
     /**
        Corresponds to
@@ -116,6 +120,8 @@ pub trait OfaChain: Async {
     fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
 
     fn logger(&self) -> &Self::Logger;
+
+    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry>;
 
     fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a>;
 

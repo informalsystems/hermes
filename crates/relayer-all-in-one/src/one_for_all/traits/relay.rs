@@ -10,6 +10,7 @@ use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 
 use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::types::batch::aliases::MessageBatchSender;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
@@ -43,6 +44,10 @@ pub trait OfaRelay: Async {
     fn src_chain_error(e: <Self::SrcChain as OfaChain>::Error) -> Self::Error;
 
     fn dst_chain_error(e: <Self::DstChain as OfaChain>::Error) -> Self::Error;
+
+    fn is_retryable_error(e: &Self::Error) -> bool;
+
+    fn max_retry_exceeded_error(e: Self::Error) -> Self::Error;
 
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChain>::PortId;
 
@@ -86,6 +91,12 @@ pub trait OfaRelay: Async {
         &'a self,
         packet: &'a Self::Packet,
     ) -> Option<Self::PacketLock<'a>>;
+
+    async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error>;
+
+    fn src_chain_message_batch_sender(&self) -> &MessageBatchSender<Self::SrcChain, Self::Error>;
+
+    fn dst_chain_message_batch_sender(&self) -> &MessageBatchSender<Self::DstChain, Self::Error>;
 }
 
 pub trait OfaHomogeneousRelay: OfaRelay<SrcChain = Self::Chain, DstChain = Self::Chain> {

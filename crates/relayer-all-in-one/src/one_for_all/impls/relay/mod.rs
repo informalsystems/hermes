@@ -1,4 +1,5 @@
 pub mod auto_relayer;
+pub mod batch;
 pub mod event_relayer;
 pub mod logger;
 pub mod message_builders;

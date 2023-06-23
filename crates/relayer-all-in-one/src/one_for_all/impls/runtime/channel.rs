@@ -10,13 +10,13 @@ use ibc_relayer_components_extra::runtime::traits::channel_once::{
     CanCreateChannelsOnce, CanUseChannelsOnce, HasChannelOnceTypes,
 };
 
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-use crate::extra::one_for_all::traits::runtime::OfaFullRuntime;
+use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
 impl<Runtime> HasChannelTypes for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaFullRuntime,
+    Runtime: OfaRuntime,
 {
     type Sender<T> = Runtime::Sender<T>
     where
@@ -29,7 +29,7 @@ where
 
 impl<Runtime> HasChannelOnceTypes for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaFullRuntime,
+    Runtime: OfaRuntime,
 {
     type SenderOnce<T> = Runtime::SenderOnce<T>
     where
@@ -42,7 +42,7 @@ where
 
 impl<Runtime> CanCreateChannels for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaFullRuntime,
+    Runtime: OfaRuntime,
 {
     fn new_channel<T>() -> (Self::Sender<T>, Self::Receiver<T>)
     where
@@ -54,7 +54,7 @@ where
 
 impl<Runtime> CanCreateChannelsOnce for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaFullRuntime,
+    Runtime: OfaRuntime,
 {
     fn new_channel_once<T>() -> (Self::SenderOnce<T>, Self::ReceiverOnce<T>)
     where
@@ -67,7 +67,7 @@ where
 #[async_trait]
 impl<Runtime> CanUseChannelsOnce for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaFullRuntime,
+    Runtime: OfaRuntime,
 {
     fn send_once<T>(sender: Self::SenderOnce<T>, value: T) -> Result<(), Self::Error>
     where
@@ -87,7 +87,7 @@ where
 #[async_trait]
 impl<Runtime> CanUseChannels for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaFullRuntime,
+    Runtime: OfaRuntime,
 {
     fn send<T>(sender: &Self::Sender<T>, value: T) -> Result<(), Self::Error>
     where
@@ -113,7 +113,7 @@ where
 
 impl<Runtime> CanStreamReceiver for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaFullRuntime,
+    Runtime: OfaRuntime,
 {
     fn receiver_to_stream<T>(
         receiver: Self::Receiver<T>,
