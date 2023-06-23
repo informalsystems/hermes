@@ -42,6 +42,14 @@ pub enum Path {
     Acks(AcksPath),
     Receipts(ReceiptsPath),
     Upgrade(ClientUpgradePath),
+    ChannelUpgrade(ChannelUpgradePath),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "channelUpgrades/upgrades/ports/{port_id}/channels/{channel_id}")]
+pub struct ChannelUpgradePath {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
