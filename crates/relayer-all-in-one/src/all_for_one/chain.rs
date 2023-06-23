@@ -5,6 +5,7 @@ use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusS
 use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
 use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
+use ibc_relayer_components_extra::telemetry::traits::telemetry::HasTelemetry;
 
 use crate::all_for_one::runtime::HasAfoRuntime;
 
@@ -12,6 +13,7 @@ pub trait AfoChain<Counterparty>:
     Clone
     + HasAfoRuntime
     + HasLoggerWithBaseLevels
+    + HasTelemetry
     + HasIbcPacketTypes<Counterparty>
     + HasWriteAcknowledgementEvent<Counterparty>
     + HasConsensusStateType<Counterparty>
@@ -41,6 +43,7 @@ where
     Chain: Clone
         + HasAfoRuntime
         + HasLoggerWithBaseLevels
+        + HasTelemetry
         + HasIbcPacketTypes<Counterparty>
         + HasWriteAcknowledgementEvent<Counterparty>
         + HasConsensusStateType<Counterparty>

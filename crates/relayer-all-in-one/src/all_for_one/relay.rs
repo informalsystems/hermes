@@ -11,6 +11,8 @@ use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::CanR
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components_extra::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
+use ibc_relayer_components_extra::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 
 use crate::all_for_one::chain::AfoChain;
 use crate::all_for_one::runtime::HasAfoRuntime;
@@ -34,6 +36,9 @@ pub trait AfoRelay:
     + CanRelayPacket
     + CanRelayAckPacket
     + CanRelayTimeoutUnorderedPacket
+    + CanSendIbcMessagesFromBatchWorker<SourceTarget>
+    + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
+    + SupportsPacketRetry
 {
     type AfoSrcChain: AfoChain<Self::AfoDstChain>;
 
@@ -63,7 +68,10 @@ where
         + CanRelayReceivePacket
         + CanRelayPacket
         + CanRelayAckPacket
-        + CanRelayTimeoutUnorderedPacket,
+        + CanRelayTimeoutUnorderedPacket
+        + CanSendIbcMessagesFromBatchWorker<SourceTarget>
+        + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
+        + SupportsPacketRetry,
 {
     type AfoSrcChain = SrcChain;
 

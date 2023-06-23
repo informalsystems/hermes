@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use ibc_relayer_components::builder::impls::cache::BuildWithCache;
 use ibc_relayer_components::builder::impls::relay::BuildRelayFromChains;
 use ibc_relayer_components::builder::traits::relay::{
-    CanBuildRelay, RelayBuilder, RelayFromChainsBuilder,
+    CanBuildRelay, RelayBuilder, 
 };
 use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
 use ibc_relayer_components_extra::builder::impls::batch::BuildBatchWorker;
