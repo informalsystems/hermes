@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use futures::channel::oneshot::{channel, Sender};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_all_in_one::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
-use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::one_for_all::traits::relay::OfaRelay;
+use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
@@ -15,11 +15,11 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
-use crate::base::error::{BaseError, Error};
-use crate::base::traits::relay::CosmosRelay;
-use crate::base::types::chain::CosmosChainWrapper;
-use crate::base::types::message::CosmosIbcMessage;
-use crate::base::types::relay::CosmosRelayWrapper;
+use crate::contexts::chain::CosmosChain;
+use crate::contexts::relay::CosmosRelay;
+use crate::types::batch::CosmosBatchSender;
+use crate::types::error::{BaseError, Error};
+use crate::types::message::CosmosIbcMessage;
 
 pub struct PacketLock {
     pub release_sender: Option<Sender<()>>,
@@ -33,12 +33,12 @@ impl Drop for PacketLock {
     }
 }
 
-impl<Relay> OfaRelayTypes for CosmosRelayWrapper<Relay>
+#[async_trait]
+impl<SrcChain, DstChain> OfaRelay for CosmosRelay<SrcChain, DstChain>
 where
-    Relay: CosmosRelay,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
-    type Preset = Relay::Preset;
-
     type Error = Error;
 
     type Runtime = TokioRuntimeContext;
@@ -47,18 +47,12 @@ where
 
     type Packet = Packet;
 
-    type SrcChain = CosmosChainWrapper<Relay::SrcChain>;
+    type SrcChain = CosmosChain<SrcChain>;
 
-    type DstChain = CosmosChainWrapper<Relay::DstChain>;
+    type DstChain = CosmosChain<DstChain>;
 
     type PacketLock<'a> = PacketLock;
-}
 
-#[async_trait]
-impl<Relay> OfaBaseRelay for CosmosRelayWrapper<Relay>
-where
-    Relay: CosmosRelay,
-{
     fn runtime_error(e: TokioError) -> Error {
         BaseError::tokio(e).into()
     }
@@ -103,7 +97,7 @@ where
     }
 
     fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
-        self.relay.runtime()
+        &self.runtime
     }
 
     fn logger(&self) -> &TracingLogger {
@@ -111,19 +105,19 @@ where
     }
 
     fn src_client_id(&self) -> &ClientId {
-        &self.relay.dst_to_src_client().id
+        &self.dst_to_src_client.id
     }
 
     fn dst_client_id(&self) -> &ClientId {
-        &self.relay.src_to_dst_client().id
+        &self.src_to_dst_client.id
     }
 
     fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain> {
-        self.relay.src_chain()
+        &self.src_chain
     }
 
     fn dst_chain(&self) -> &OfaChainWrapper<Self::DstChain> {
-        self.relay.dst_chain()
+        &self.dst_chain
     }
 
     async fn build_src_update_client_messages(
@@ -131,9 +125,9 @@ where
         height: &Height,
     ) -> Result<Vec<CosmosIbcMessage>, Self::Error> {
         let height = *height;
-        let client = self.relay.dst_to_src_client().clone();
+        let client = self.dst_to_src_client.clone();
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || build_update_client_messages(&client, height))
@@ -146,9 +140,9 @@ where
         height: &Height,
     ) -> Result<Vec<CosmosIbcMessage>, Self::Error> {
         let height = *height;
-        let client = self.relay.src_to_dst_client().clone();
+        let client = self.src_to_dst_client.clone();
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || build_update_client_messages(&client, height))
@@ -165,7 +159,7 @@ where
             packet.sequence,
         );
 
-        let mutex = self.relay.packet_lock_mutex();
+        let mutex = &self.packet_lock_mutex;
 
         let mut lock_table = mutex.lock().await;
 
@@ -190,6 +184,29 @@ where
                 release_sender: Some(sender),
             })
         }
+    }
+
+    fn is_retryable_error(_: &Error) -> bool {
+        false
+    }
+
+    fn max_retry_exceeded_error(e: Error) -> Error {
+        e
+    }
+
+    async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {
+        Ok(self
+            .packet_filter
+            .channel_policy
+            .is_allowed(&packet.source_port, &packet.source_channel))
+    }
+
+    fn src_chain_message_batch_sender(&self) -> &CosmosBatchSender {
+        &self.src_chain_message_batch_sender
+    }
+
+    fn dst_chain_message_batch_sender(&self) -> &CosmosBatchSender {
+        &self.dst_chain_message_batch_sender
     }
 }
 

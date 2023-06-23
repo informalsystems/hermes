@@ -14,8 +14,8 @@ use ibc_relayer::chain::cosmos::types::account::Account;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::types::Memo;
 use ibc_relayer::keyring::{Secp256k1KeyPair, SigningKeyPair};
-use ibc_relayer_all_in_one::base::one_for_all::traits::transaction::{OfaTxContext, OfaTxTypes};
-use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::one_for_all::traits::transaction::OfaTxContext;
+use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
@@ -26,15 +26,12 @@ use tendermint::abci::Event as AbciEvent;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 
-use crate::base::error::{BaseError, Error};
-use crate::base::traits::chain::CosmosChain;
-use crate::base::types::message::CosmosIbcMessage;
-use crate::base::types::transaction::CosmosTxWrapper;
+use crate::contexts::transaction::CosmosTxContext;
+use crate::types::error::{BaseError, Error};
+use crate::types::message::CosmosIbcMessage;
 
-impl<Chain> OfaTxTypes for CosmosTxWrapper<Chain>
-where
-    Chain: CosmosChain,
-{
+#[async_trait]
+impl OfaTxContext for CosmosTxContext {
     type Error = Error;
 
     type Runtime = TokioRuntimeContext;
@@ -58,15 +55,9 @@ where
     type TxHash = TxHash;
 
     type TxResponse = TxResponse;
-}
 
-#[async_trait]
-impl<Chain> OfaTxContext for CosmosTxWrapper<Chain>
-where
-    Chain: CosmosChain,
-{
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
-        self.chain.runtime()
+        &self.runtime
     }
 
     fn runtime_error(e: TokioError) -> Error {
@@ -96,15 +87,15 @@ where
     }
 
     fn chain_id(&self) -> &Self::ChainId {
-        &self.chain.tx_config().chain_id
+        &self.tx_config.chain_id
     }
 
     fn get_signer(&self) -> &Self::Signer {
-        self.chain.key_entry()
+        &self.key_entry
     }
 
     fn fee_for_simulation(&self) -> &Self::Fee {
-        &self.chain.tx_config().gas_config.max_fee
+        &self.tx_config.gas_config.max_fee
     }
 
     fn poll_timeout(&self) -> Duration {
@@ -122,7 +113,7 @@ where
         fee: &Fee,
         messages: &[CosmosIbcMessage],
     ) -> Result<SignedTx, Error> {
-        let tx_config = self.chain.tx_config();
+        let tx_config = &self.tx_config;
         let memo = Memo::default();
         let signer = key_pair_to_signer(key_pair).map_err(BaseError::relayer)?;
 
@@ -140,8 +131,8 @@ where
     async fn submit_tx(&self, tx: &SignedTx) -> Result<TxHash, Error> {
         let data = encode_tx_raw(tx)?;
 
-        let tx_config = self.chain.tx_config();
-        let rpc_client = self.chain.rpc_client();
+        let tx_config = &self.tx_config;
+        let rpc_client = &self.rpc_client;
 
         let response = broadcast_tx_sync(rpc_client, &tx_config.rpc_address, data)
             .await
@@ -161,7 +152,7 @@ where
             signatures: tx.signatures.clone(),
         };
 
-        let tx_config = self.chain.tx_config();
+        let tx_config = &self.tx_config;
 
         let response = send_tx_simulate(&tx_config.grpc_address, tx)
             .await
@@ -177,8 +168,8 @@ where
     }
 
     async fn query_tx_response(&self, tx_hash: &TxHash) -> Result<Option<TxResponse>, Error> {
-        let tx_config = self.chain.tx_config();
-        let rpc_client = self.chain.rpc_client();
+        let tx_config = &self.tx_config;
+        let rpc_client = &self.rpc_client;
 
         let response = query_tx_response(rpc_client, &tx_config.rpc_address, tx_hash)
             .await
@@ -188,7 +179,7 @@ where
     }
 
     async fn query_nonce(&self, key_pair: &Secp256k1KeyPair) -> Result<Account, Error> {
-        let tx_config = self.chain.tx_config();
+        let tx_config = &self.tx_config;
         let address = key_pair.account();
 
         let account = query_account(&tx_config.grpc_address, &address)

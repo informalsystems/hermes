@@ -19,7 +19,7 @@ use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{SubscriptionClient, WebSocketClient, WebSocketClientUrl};
 
-use crate::base::error::{BaseError, Error};
+use crate::types::error::{BaseError, Error};
 
 /**
    Creates a new ABCI event subscription that automatically reconnects.

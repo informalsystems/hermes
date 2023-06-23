@@ -7,9 +7,8 @@ use std::time::Instant;
 use async_trait::async_trait;
 use futures::lock::{Mutex, MutexGuard};
 use futures::stream::Stream;
-use ibc_relayer_all_in_one::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use ibc_relayer_all_in_one::base::one_for_all::types::runtime::LogLevel;
-use ibc_relayer_all_in_one::extra::one_for_all::traits::runtime::OfaFullRuntime;
+use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaRuntime;
+use ibc_relayer_all_in_one::one_for_all::types::runtime::LogLevel;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components_extra::runtime::traits::spawn::TaskHandle;
 use tokio::runtime::Runtime;
@@ -34,7 +33,7 @@ impl TokioRuntimeContext {
 }
 
 #[async_trait]
-impl OfaBaseRuntime for TokioRuntimeContext {
+impl OfaRuntime for TokioRuntimeContext {
     type Error = TokioError;
 
     type Time = Instant;
@@ -42,6 +41,22 @@ impl OfaBaseRuntime for TokioRuntimeContext {
     type Mutex<T: Async> = Mutex<T>;
 
     type MutexGuard<'a, T: Async> = MutexGuard<'a, T>;
+
+    type Sender<T> = mpsc::UnboundedSender<T>
+    where
+        T: Async;
+
+    type Receiver<T> = mpsc::UnboundedReceiver<T>
+    where
+        T: Async;
+
+    type SenderOnce<T> = oneshot::Sender<T>
+    where
+        T: Async;
+
+    type ReceiverOnce<T> = oneshot::Receiver<T>
+    where
+        T: Async;
 
     async fn log(&self, level: LogLevel, message: &str) {
         match level {
@@ -72,25 +87,6 @@ impl OfaBaseRuntime for TokioRuntimeContext {
     async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T> {
         mutex.lock().await
     }
-}
-
-#[async_trait]
-impl OfaFullRuntime for TokioRuntimeContext {
-    type Sender<T> = mpsc::UnboundedSender<T>
-    where
-        T: Async;
-
-    type Receiver<T> = mpsc::UnboundedReceiver<T>
-    where
-        T: Async;
-
-    type SenderOnce<T> = oneshot::Sender<T>
-    where
-        T: Async;
-
-    type ReceiverOnce<T> = oneshot::Receiver<T>
-    where
-        T: Async;
 
     fn spawn<F>(&self, task: F) -> Box<dyn TaskHandle>
     where

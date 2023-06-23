@@ -9,9 +9,5 @@ impl<Chain> OfaFullChain for CosmosChainWrapper<Chain>
 where
     Chain: CosmosFullChain,
 {
-    type Telemetry = CosmosTelemetry;
 
-    fn telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry> {
-        self.chain.telemetry()
-    }
 }

@@ -9,6 +9,7 @@ use crate::telemetry;
 
 use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
+#[allow(unused_variables)]
 pub fn extract_events(
     chain_id: &ChainId,
     height: Height,

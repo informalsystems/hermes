@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use ibc_relayer_all_in_one::extra::one_for_all::traits::telemetry::OfaTelemetry;
+use ibc_relayer_all_in_one::one_for_all::traits::telemetry::OfaTelemetry;
 use ibc_relayer_components_extra::telemetry::traits::metrics::HasLabel;
 use opentelemetry::{
     global,

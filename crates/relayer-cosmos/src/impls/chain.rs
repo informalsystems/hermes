@@ -11,10 +11,9 @@ use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
-use ibc_relayer_all_in_one::base::one_for_all::traits::chain::{
-    OfaBaseChain, OfaChainTypes, OfaIbcChain,
-};
-use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
@@ -41,22 +40,23 @@ use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::base::error::{BaseError, Error};
-use crate::base::traits::chain::CosmosChain;
-use crate::base::types::chain::CosmosChainWrapper;
-use crate::base::types::message::CosmosIbcMessage;
+use crate::contexts::chain::CosmosChain;
+use crate::types::error::{BaseError, Error};
+use crate::types::message::CosmosIbcMessage;
+use crate::types::telemetry::CosmosTelemetry;
 
-impl<Chain> OfaChainTypes for CosmosChainWrapper<Chain>
+#[async_trait]
+impl<Chain> OfaChain for CosmosChain<Chain>
 where
-    Chain: CosmosChain,
+    Chain: ChainHandle,
 {
-    type Preset = Chain::Preset;
-
     type Error = Error;
 
     type Runtime = TokioRuntimeContext;
 
     type Logger = TracingLogger;
+
+    type Telemetry = CosmosTelemetry;
 
     type Height = Height;
 
@@ -85,15 +85,9 @@ where
     type ChainStatus = ChainStatus;
 
     type SendPacketEvent = SendPacket;
-}
 
-#[async_trait]
-impl<Chain> OfaBaseChain for CosmosChainWrapper<Chain>
-where
-    Chain: CosmosChain,
-{
     fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
-        self.chain.runtime()
+        &self.runtime
     }
 
     fn runtime_error(e: TokioError) -> Error {
@@ -106,6 +100,10 @@ where
 
     fn log_event(event: &Arc<AbciEvent>) -> LogValue<'_> {
         LogValue::Debug(event)
+    }
+
+    fn telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry> {
+        &self.telemetry
     }
 
     fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error> {
@@ -143,8 +141,8 @@ where
         }
     }
 
-    fn chain_id(&self) -> &Self::ChainId {
-        &self.chain.tx_config().chain_id
+    fn chain_id(&self) -> &ChainId {
+        &self.chain_id
     }
 
     async fn send_messages(
@@ -157,9 +155,9 @@ where
     }
 
     async fn query_chain_status(&self) -> Result<ChainStatus, Self::Error> {
-        let chain_handle = self.chain.chain_handle().clone();
+        let chain_handle = self.handle.clone();
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || {
@@ -179,11 +177,10 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> OfaIbcChain<CosmosChainWrapper<Counterparty>>
-    for CosmosChainWrapper<Chain>
+impl<Chain, Counterparty> OfaIbcChain<CosmosChain<Counterparty>> for CosmosChain<Chain>
 where
-    Chain: CosmosChain,
-    Counterparty: CosmosChain,
+    Chain: ChainHandle,
+    Counterparty: ChainHandle,
 {
     type IncomingPacket = Packet;
 
@@ -294,12 +291,12 @@ where
         channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<ChainId, Error> {
-        let chain_handle = self.chain.chain_handle().clone();
+        let chain_handle = self.handle.clone();
 
         let port_id = port_id.clone();
         let channel_id = channel_id.clone();
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || {
@@ -318,12 +315,12 @@ where
         client_id: &ClientId,
         height: &Height,
     ) -> Result<ConsensusState, Error> {
-        let chain_handle = self.chain.chain_handle().clone();
+        let chain_handle = self.handle.clone();
 
         let client_id = client_id.clone();
         let height = *height;
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || {
@@ -353,13 +350,13 @@ where
         channel_id: &ChannelId,
         sequence: &Sequence,
     ) -> Result<bool, Error> {
-        let chain_handle = self.chain.chain_handle().clone();
+        let chain_handle = self.handle.clone();
 
         let port_id = port_id.clone();
         let channel_id = channel_id.clone();
         let sequence = *sequence;
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || {
@@ -385,8 +382,7 @@ where
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
         let status = self.query_chain_status().await?;
 
-        let query_height =
-            Qualified::Equal(*CosmosChainWrapper::<Chain>::chain_status_height(&status));
+        let query_height = Qualified::Equal(status.height);
 
         let path_ident = PathIdentifiers {
             port_id: packet.destination_port.clone(),
@@ -395,11 +391,11 @@ where
             counterparty_channel_id: packet.source_channel.clone(),
         };
 
-        let chain_handle = self.chain.chain_handle().clone();
+        let chain_handle = self.handle.clone();
 
         let packet = packet.clone();
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || {
@@ -437,9 +433,9 @@ where
         let height = *height;
         let packet = packet.clone();
 
-        let chain_handle = self.chain.chain_handle().clone();
+        let chain_handle = self.handle.clone();
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || {
@@ -478,9 +474,9 @@ where
         let packet = packet.clone();
         let ack = ack.clone();
 
-        let chain_handle = self.chain.chain_handle().clone();
+        let chain_handle = self.handle.clone();
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || {
@@ -524,9 +520,9 @@ where
         let height = *height;
         let packet = packet.clone();
 
-        let chain_handle = self.chain.chain_handle().clone();
+        let chain_handle = self.handle.clone();
 
-        self.runtime()
+        self.runtime
             .runtime
             .runtime
             .spawn_blocking(move || {
