@@ -1,7 +1,7 @@
 use ibc_relayer_components::chain::traits::types::chain_id::{HasChainId, HasChainIdType};
 
-use crate::base::one_for_all::traits::transaction::OfaTxContext;
-use crate::base::one_for_all::types::transaction::OfaTxWrapper;
+use crate::one_for_all::traits::transaction::OfaTxContext;
+use crate::one_for_all::types::transaction::OfaTxWrapper;
 
 impl<TxContext> HasChainIdType for OfaTxWrapper<TxContext>
 where

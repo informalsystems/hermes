@@ -3,19 +3,19 @@ use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::types::chain::OfaChainWrapper;
 
 impl<Chain> HasLoggerType for OfaChainWrapper<Chain>
 where
-    Chain: OfaBaseChain,
+    Chain: OfaChain,
 {
     type Logger = Chain::Logger;
 }
 
 impl<Chain> HasLogger for OfaChainWrapper<Chain>
 where
-    Chain: OfaBaseChain,
+    Chain: OfaChain,
 {
     fn logger(&self) -> &Self::Logger {
         self.chain.logger()
@@ -24,7 +24,7 @@ where
 
 impl<Chain> CanLogChainEvent for OfaChainWrapper<Chain>
 where
-    Chain: OfaBaseChain,
+    Chain: OfaChain,
 {
     fn log_event<'a>(event: &'a Chain::Event) -> <Chain::Logger as BaseLogger>::LogValue<'a> {
         Chain::log_event(event)

@@ -4,15 +4,14 @@ use ibc_relayer_components::relay::impls::event_relayers::packet_event::PacketEv
 use ibc_relayer_components::relay::traits::event_relayer::{CanRelayEvent, EventRelayer};
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
-use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::one_for_all::traits::relay::OfaRelay;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
 impl<Relay, Preset> CanRelayEvent<SourceTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Preset = Preset>,
-    Preset: OfaRelayPreset<Relay>,
+    Relay: OfaRelay,
 {
     async fn relay_chain_event(
         &self,
@@ -27,10 +26,9 @@ where
 }
 
 #[async_trait]
-impl<Relay, Preset> CanRelayEvent<DestinationTarget> for OfaRelayWrapper<Relay>
+impl<Relay> CanRelayEvent<DestinationTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Preset = Preset>,
-    Preset: OfaRelayPreset<Relay>,
+    Relay: OfaRelay,
 {
     async fn relay_chain_event(
         &self,

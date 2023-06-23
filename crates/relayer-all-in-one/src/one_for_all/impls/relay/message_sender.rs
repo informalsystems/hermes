@@ -4,23 +4,22 @@ use ibc_relayer_components::relay::traits::ibc_message_sender::{
 };
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
-use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::traits::relay::OfaRelayPreset;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::one_for_all::components;
+use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::relay::OfaRelay;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
-impl<Relay, Preset> CanSendIbcMessages<SourceTarget> for OfaRelayWrapper<Relay>
+impl<Relay> CanSendIbcMessages<SourceTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Preset = Preset>,
-    Preset: OfaRelayPreset<Relay>,
+    Relay: OfaRelay,
 {
     async fn send_messages(
         &self,
-        messages: Vec<<Relay::SrcChain as OfaChainTypes>::Message>,
-    ) -> Result<Vec<Vec<<Relay::SrcChain as OfaChainTypes>::Event>>, Self::Error> {
-        <Preset::IbcMessageSender as IbcMessageSender<Self, SourceTarget>>::send_messages(
+        messages: Vec<<Relay::SrcChain as OfaChain>::Message>,
+    ) -> Result<Vec<Vec<<Relay::SrcChain as OfaChain>::Event>>, Self::Error> {
+        <components::IbcMessageSender as IbcMessageSender<Self, SourceTarget>>::send_messages(
             self, messages,
         )
         .await
@@ -28,16 +27,15 @@ where
 }
 
 #[async_trait]
-impl<Relay, Preset> CanSendIbcMessages<DestinationTarget> for OfaRelayWrapper<Relay>
+impl<Relay> CanSendIbcMessages<DestinationTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Preset = Preset>,
-    Preset: OfaRelayPreset<Relay>,
+    Relay: OfaRelay,
 {
     async fn send_messages(
         &self,
-        messages: Vec<<Relay::DstChain as OfaChainTypes>::Message>,
-    ) -> Result<Vec<Vec<<Relay::DstChain as OfaChainTypes>::Event>>, Self::Error> {
-        <Preset::IbcMessageSender as IbcMessageSender<Self, DestinationTarget>>::send_messages(
+        messages: Vec<<Relay::DstChain as OfaChain>::Message>,
+    ) -> Result<Vec<Vec<<Relay::DstChain as OfaChain>::Event>>, Self::Error> {
+        <components::IbcMessageSender as IbcMessageSender<Self, DestinationTarget>>::send_messages(
             self, messages,
         )
         .await

@@ -1,17 +1,17 @@
 use async_trait::async_trait;
 use ibc_relayer_components::relay::traits::packet_relayer::{CanRelayPacket, PacketRelayer};
 
-use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::one_for_all::components;
+use crate::one_for_all::traits::relay::OfaRelay;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
-impl<Relay, Preset> CanRelayPacket for OfaRelayWrapper<Relay>
+impl<Relay> CanRelayPacket for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Preset = Preset>,
-    Preset: OfaRelayPreset<Relay>,
+    Relay: OfaRelay,
 {
     async fn relay_packet(&self, packet: &Self::Packet) -> Result<(), Self::Error> {
-        Preset::PacketRelayer::relay_packet(self, packet).await
+        components::PacketRelayer::relay_packet(self, packet).await
     }
 }

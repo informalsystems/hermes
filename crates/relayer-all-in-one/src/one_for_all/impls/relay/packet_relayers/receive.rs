@@ -1,32 +1,26 @@
 use async_trait::async_trait;
-use ibc_relayer_components::relay::impls::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
-use ibc_relayer_components::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::{
     CanRelayReceivePacket, ReceivePacketRelayer,
 };
 
-use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::one_for_all::components;
+use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::relay::OfaRelay;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
 impl<Relay> CanRelayReceivePacket for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay,
-    SkipReceivedPacketRelayer<BaseReceivePacketRelayer>: ReceivePacketRelayer<Self>,
+    Relay: OfaRelay,
+    components::ReceivePacketRelayer: ReceivePacketRelayer<Self>,
 {
     async fn relay_receive_packet(
         &self,
-        source_height: &<Relay::SrcChain as OfaChainTypes>::Height,
+        source_height: &<Relay::SrcChain as OfaChain>::Height,
         packet: &Relay::Packet,
-    ) -> Result<Option<<Relay::DstChain as OfaChainTypes>::WriteAcknowledgementEvent>, Relay::Error>
+    ) -> Result<Option<<Relay::DstChain as OfaChain>::WriteAcknowledgementEvent>, Relay::Error>
     {
-        <SkipReceivedPacketRelayer<BaseReceivePacketRelayer>>::relay_receive_packet(
-            self,
-            source_height,
-            packet,
-        )
-        .await
+        components::ReceivePacketRelayer::relay_receive_packet(self, source_height, packet).await
     }
 }

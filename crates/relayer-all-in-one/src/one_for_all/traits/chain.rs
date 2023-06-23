@@ -8,19 +8,15 @@ use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 
 use async_trait::async_trait;
-use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
-use ibc_relayer_components::chain::traits::queries::status::ChainStatusQuerier;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
-pub trait OfaChainTypes: Async {
-    type Preset: Async;
-
+#[async_trait]
+pub trait OfaChain: Async {
     /**
        Corresponds to
        [`HasErrorType::Error`](ibc_relayer_components::core::traits::error::HasErrorType::Error).
@@ -31,7 +27,7 @@ pub trait OfaChainTypes: Async {
        Corresponds to
        [`HasRuntime::Runtime`](ibc_relayer_components::runtime::traits::runtime::HasRuntime::Runtime).
     */
-    type Runtime: OfaBaseRuntime;
+    type Runtime: OfaRuntime;
 
     type Logger: HasBaseLogLevels;
 
@@ -114,13 +110,10 @@ pub trait OfaChainTypes: Async {
     type WriteAcknowledgementEvent: Async;
 
     type SendPacketEvent: Async;
-}
 
-#[async_trait]
-pub trait OfaBaseChain: OfaChainTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
-    fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
+    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
 
     fn logger(&self) -> &Self::Logger;
 
@@ -155,7 +148,7 @@ pub trait OfaBaseChain: OfaChainTypes {
 }
 
 #[async_trait]
-pub trait OfaIbcChain<Counterparty>: OfaBaseChain
+pub trait OfaIbcChain<Counterparty>: OfaChain
 where
     Counterparty: OfaIbcChain<
         Self,
@@ -267,26 +260,4 @@ where
         height: &Self::Height,
         packet: &Self::IncomingPacket,
     ) -> Result<Counterparty::Message, Self::Error>;
-}
-
-pub trait OfaChainPreset<Chain>
-where
-    Chain: OfaBaseChain,
-{
-    type ChainStatusQuerier: ChainStatusQuerier<OfaChainWrapper<Chain>>;
-}
-
-pub trait OfaIbcChainPreset<Chain, Counterparty>: OfaChainPreset<Chain>
-where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
-{
-    type ConsensusStateQuerier: ConsensusStateQuerier<
-        OfaChainWrapper<Chain>,
-        OfaChainWrapper<Counterparty>,
-    >;
 }

@@ -3,10 +3,9 @@ use ibc_relayer_components::builder::impls::cache::BuildWithCache;
 use ibc_relayer_components::builder::traits::chain::{CanBuildChain, ChainBuilder};
 use ibc_relayer_components::builder::traits::target::chain::{ChainATarget, ChainBTarget};
 
-use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::base::one_for_all::traits::builder::{ChainA, ChainB, ChainIdA, ChainIdB, OfaBuilder};
-use crate::base::one_for_all::types::builder::OfaBuilderWrapper;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::traits::builder::{ChainA, ChainB, ChainIdA, ChainIdB, OfaBuilder};
+use crate::one_for_all::types::builder::OfaBuilderWrapper;
+use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub struct BuildChainFromOfa;
@@ -15,7 +14,6 @@ pub struct BuildChainFromOfa;
 impl<Builder> ChainBuilder<OfaBuilderWrapper<Builder>, ChainATarget> for BuildChainFromOfa
 where
     Builder: OfaBuilder,
-    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     async fn build_chain(
         builder: &OfaBuilderWrapper<Builder>,
@@ -32,7 +30,6 @@ where
 impl<Builder> ChainBuilder<OfaBuilderWrapper<Builder>, ChainBTarget> for BuildChainFromOfa
 where
     Builder: OfaBuilder,
-    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     async fn build_chain(
         builder: &OfaBuilderWrapper<Builder>,
@@ -49,7 +46,6 @@ where
 impl<Builder> CanBuildChain<ChainATarget> for OfaBuilderWrapper<Builder>
 where
     Builder: OfaBuilder,
-    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     async fn build_chain(
         &self,
@@ -64,7 +60,6 @@ where
 impl<Builder> CanBuildChain<ChainBTarget> for OfaBuilderWrapper<Builder>
 where
     Builder: OfaBuilder,
-    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     async fn build_chain(
         &self,

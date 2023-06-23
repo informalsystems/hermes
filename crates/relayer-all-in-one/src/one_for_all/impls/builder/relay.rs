@@ -6,13 +6,12 @@ use ibc_relayer_components::builder::traits::relay::{
 };
 use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
 
-use crate::base::one_for_all::traits::birelay::OfaBiRelayPreset;
-use crate::base::one_for_all::traits::builder::{
+use crate::one_for_all::traits::builder::{
     ChainA, ChainB, ChainIdA, ChainIdB, ClientIdA, ClientIdB, OfaBuilder, RelayAToB, RelayBToA,
 };
-use crate::base::one_for_all::types::builder::OfaBuilderWrapper;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::one_for_all::types::builder::OfaBuilderWrapper;
+use crate::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 pub struct BuildRelayFromChainsWithOfa;
@@ -22,7 +21,6 @@ impl<Build> RelayFromChainsBuilder<OfaBuilderWrapper<Build>, RelayAToBTarget>
     for BuildRelayFromChainsWithOfa
 where
     Build: OfaBuilder,
-    Build::Preset: OfaBiRelayPreset<Build::BiRelay>,
 {
     async fn build_relay_from_chains(
         build: &OfaBuilderWrapper<Build>,
@@ -50,7 +48,6 @@ impl<Build> RelayFromChainsBuilder<OfaBuilderWrapper<Build>, RelayBToATarget>
     for BuildRelayFromChainsWithOfa
 where
     Build: OfaBuilder,
-    Build::Preset: OfaBiRelayPreset<Build::BiRelay>,
 {
     async fn build_relay_from_chains(
         build: &OfaBuilderWrapper<Build>,
@@ -77,7 +74,6 @@ where
 impl<Builder> CanBuildRelay<RelayAToBTarget> for OfaBuilderWrapper<Builder>
 where
     Builder: OfaBuilder,
-    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     async fn build_relay(
         &self,
@@ -103,7 +99,6 @@ where
 impl<Builder> CanBuildRelay<RelayBToATarget> for OfaBuilderWrapper<Builder>
 where
     Builder: OfaBuilder,
-    Builder::Preset: OfaBiRelayPreset<Builder::BiRelay>,
 {
     async fn build_relay(
         &self,

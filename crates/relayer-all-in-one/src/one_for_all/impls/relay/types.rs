@@ -2,17 +2,23 @@ use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::relay::traits::types::HasRelayTypes;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
-use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::relay::OfaRelay;
+use crate::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 
-impl<Relay: OfaBaseRelay> HasErrorType for OfaRelayWrapper<Relay> {
+impl<Relay: OfaRelay> HasErrorType for OfaRelayWrapper<Relay>
+where
+    Relay: OfaRelay,
+{
     type Error = Relay::Error;
 }
 
-impl<Relay: OfaBaseRelay> HasRuntime for OfaRelayWrapper<Relay> {
+impl<Relay> HasRuntime for OfaRelayWrapper<Relay>
+where
+    Relay: OfaRelay,
+{
     type Runtime = OfaRuntimeWrapper<Relay::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
@@ -24,7 +30,10 @@ impl<Relay: OfaBaseRelay> HasRuntime for OfaRelayWrapper<Relay> {
     }
 }
 
-impl<Relay: OfaBaseRelay> HasRelayTypes for OfaRelayWrapper<Relay> {
+impl<Relay> HasRelayTypes for OfaRelayWrapper<Relay>
+where
+    Relay: OfaRelay,
+{
     type SrcChain = OfaChainWrapper<Relay::SrcChain>;
 
     type DstChain = OfaChainWrapper<Relay::DstChain>;
@@ -47,11 +56,11 @@ impl<Relay: OfaBaseRelay> HasRelayTypes for OfaRelayWrapper<Relay> {
         self.relay.dst_chain()
     }
 
-    fn source_client_id(&self) -> &<Relay::SrcChain as OfaChainTypes>::ClientId {
+    fn source_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {
         self.relay.src_client_id()
     }
 
-    fn destination_client_id(&self) -> &<Relay::DstChain as OfaChainTypes>::ClientId {
+    fn destination_client_id(&self) -> &<Relay::DstChain as OfaChain>::ClientId {
         self.relay.dst_client_id()
     }
 }

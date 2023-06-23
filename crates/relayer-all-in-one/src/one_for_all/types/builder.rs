@@ -1,15 +1,15 @@
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 
-use crate::base::one_for_all::traits::birelay::OfaHomogeneousBiRelay;
-use crate::base::one_for_all::traits::builder::{
-    ChainACache, ChainBCache, OfaBuilderTypes, RelayAToBCache, RelayBToACache,
+use crate::one_for_all::traits::birelay::OfaHomogeneousBiRelay;
+use crate::one_for_all::traits::builder::{
+    ChainACache, ChainBCache, OfaBuilder, RelayAToBCache, RelayBToACache,
 };
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
+use crate::one_for_all::traits::runtime::OfaRuntime;
 
 pub struct OfaBuilderWrapper<Builder>
 where
-    Builder: OfaBuilderTypes,
+    Builder: OfaBuilder,
 {
     pub builder: Arc<Builder>,
     pub chain_a_cache: ChainACache<Builder>,
@@ -20,7 +20,7 @@ where
 
 impl<Builder> OfaBuilderWrapper<Builder>
 where
-    Builder: OfaBuilderTypes,
+    Builder: OfaBuilder,
 {
     pub fn new_with_heterogenous_cache(builder: Builder) -> Self {
         let chain_a_cache = Arc::new(Builder::Runtime::new_mutex(BTreeMap::new()));
@@ -43,7 +43,7 @@ where
 
 impl<Builder> OfaBuilderWrapper<Builder>
 where
-    Builder: OfaBuilderTypes,
+    Builder: OfaBuilder,
     Builder::BiRelay: OfaHomogeneousBiRelay,
 {
     pub fn new_with_homogenous_cache(builder: Builder) -> Self {
@@ -63,7 +63,7 @@ where
 
 impl<Builder> Clone for OfaBuilderWrapper<Builder>
 where
-    Builder: OfaBuilderTypes,
+    Builder: OfaBuilder,
 {
     fn clone(&self) -> Self {
         Self {

@@ -2,10 +2,13 @@ use core::time::Duration;
 
 use ibc_relayer_components::runtime::traits::time::HasTime;
 
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 
-impl<Runtime: OfaBaseRuntime> HasTime for OfaRuntimeWrapper<Runtime> {
+impl<Runtime> HasTime for OfaRuntimeWrapper<Runtime>
+where
+    Runtime: OfaRuntime,
+{
     type Time = Runtime::Time;
 
     fn now(&self) -> Self::Time {

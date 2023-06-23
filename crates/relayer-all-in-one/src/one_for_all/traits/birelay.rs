@@ -2,39 +2,30 @@ use core::fmt::Debug;
 
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
-use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayer;
 
-use crate::base::one_for_all::traits::relay::{
-    OfaBaseRelay, OfaHomogeneousRelay, OfaRelayPreset, OfaRelayTypes,
-};
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::base::one_for_all::types::birelay::OfaBiRelayWrapper;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::one_for_all::traits::relay::{OfaHomogeneousRelay, OfaRelay};
+use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 
-pub trait OfaBiRelayTypes: Async {
-    type Preset: Async;
-
+pub trait OfaBiRelay: Async {
     type Error: Debug + Async;
 
-    type Runtime: OfaBaseRuntime;
+    type Runtime: OfaRuntime;
 
     type Logger: HasBaseLogLevels;
 
-    type RelayAToB: OfaBaseRelay<Preset = Self::Preset>;
+    type RelayAToB: OfaRelay;
 
-    type RelayBToA: OfaBaseRelay<
-        Preset = Self::Preset,
-        SrcChain = <Self::RelayAToB as OfaRelayTypes>::DstChain,
-        DstChain = <Self::RelayAToB as OfaRelayTypes>::SrcChain,
-        Error = <Self::RelayAToB as OfaRelayTypes>::Error,
+    type RelayBToA: OfaRelay<
+        SrcChain = <Self::RelayAToB as OfaRelay>::DstChain,
+        DstChain = <Self::RelayAToB as OfaRelay>::SrcChain,
+        Error = <Self::RelayAToB as OfaRelay>::Error,
     >;
-}
 
-pub trait OfaBiRelay: OfaBiRelayTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
-    fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
+    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
 
     fn logger(&self) -> &Self::Logger;
 
@@ -42,26 +33,18 @@ pub trait OfaBiRelay: OfaBiRelayTypes {
 
     fn relay_b_to_a(&self) -> &OfaRelayWrapper<Self::RelayBToA>;
 
-    fn relay_error(e: <Self::RelayAToB as OfaRelayTypes>::Error) -> Self::Error;
-}
-
-pub trait OfaBiRelayPreset<BiRelay>:
-    OfaRelayPreset<BiRelay::RelayAToB> + OfaRelayPreset<BiRelay::RelayBToA>
-where
-    BiRelay: OfaBiRelayTypes,
-{
-    type TwoWayAutoRelayer: AutoRelayer<OfaBiRelayWrapper<BiRelay>>;
+    fn relay_error(e: <Self::RelayAToB as OfaRelay>::Error) -> Self::Error;
 }
 
 pub trait OfaHomogeneousBiRelay:
-    OfaBiRelayTypes<RelayAToB = Self::Relay, RelayBToA = Self::Relay>
+    OfaBiRelay<RelayAToB = Self::Relay, RelayBToA = Self::Relay>
 {
     type Relay: OfaHomogeneousRelay;
 }
 
 impl<BiRelay, Relay> OfaHomogeneousBiRelay for BiRelay
 where
-    BiRelay: OfaBiRelayTypes<RelayAToB = Relay, RelayBToA = Relay>,
+    BiRelay: OfaBiRelay<RelayAToB = Relay, RelayBToA = Relay>,
     Relay: OfaHomogeneousRelay,
 {
     type Relay = Relay;

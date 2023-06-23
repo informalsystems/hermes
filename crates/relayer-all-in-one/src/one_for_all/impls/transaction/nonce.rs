@@ -8,8 +8,8 @@ use ibc_relayer_components::transaction::traits::nonce::{
     CanAllocateNonce, CanQueryNonce, NonceAllocator,
 };
 
-use crate::base::one_for_all::traits::transaction::OfaTxContext;
-use crate::base::one_for_all::types::transaction::OfaTxWrapper;
+use crate::one_for_all::traits::transaction::OfaTxContext;
+use crate::one_for_all::types::transaction::OfaTxWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]

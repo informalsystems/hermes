@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::queries::write_ack::CanQueryWriteAcknowledgement;
 
-use crate::base::one_for_all::traits::chain::OfaIbcChain;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]

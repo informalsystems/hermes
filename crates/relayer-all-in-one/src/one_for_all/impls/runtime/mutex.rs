@@ -2,14 +2,14 @@ use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
 impl<Runtime> HasMutex for OfaRuntimeWrapper<Runtime>
 where
-    Runtime: OfaBaseRuntime,
+    Runtime: OfaRuntime,
 {
     type Mutex<T: Async> = Runtime::Mutex<T>;
 

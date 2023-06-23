@@ -1,12 +1,12 @@
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::transaction::impls::poll::InjectNoTxResponseError;
 
-use crate::base::one_for_all::traits::transaction::{OfaTxContext, OfaTxTypes};
-use crate::base::one_for_all::types::transaction::OfaTxWrapper;
+use crate::one_for_all::traits::transaction::OfaTxContext;
+use crate::one_for_all::types::transaction::OfaTxWrapper;
 
 impl<TxContext> HasErrorType for OfaTxWrapper<TxContext>
 where
-    TxContext: OfaTxTypes,
+    TxContext: OfaTxContext,
 {
     type Error = TxContext::Error;
 }

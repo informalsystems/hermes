@@ -2,19 +2,19 @@ use ibc_relayer_components::chain::traits::types::event::HasEventType;
 use ibc_relayer_components::chain::traits::types::message::HasMessageType;
 use ibc_relayer_components::transaction::traits::types::HasTxTypes;
 
-use crate::base::one_for_all::traits::transaction::{OfaTxContext, OfaTxTypes};
-use crate::base::one_for_all::types::transaction::OfaTxWrapper;
+use crate::one_for_all::traits::transaction::OfaTxContext;
+use crate::one_for_all::types::transaction::OfaTxWrapper;
 
 impl<TxContext> HasMessageType for OfaTxWrapper<TxContext>
 where
-    TxContext: OfaTxTypes,
+    TxContext: OfaTxContext,
 {
     type Message = TxContext::Message;
 }
 
 impl<TxContext> HasEventType for OfaTxWrapper<TxContext>
 where
-    TxContext: OfaTxTypes,
+    TxContext: OfaTxContext,
 {
     type Event = TxContext::Event;
 }

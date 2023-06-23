@@ -14,16 +14,16 @@ use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes, OfaIbcChain};
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
-impl<Chain: OfaBaseChain> HasErrorType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> HasErrorType for OfaChainWrapper<Chain> {
     type Error = Chain::Error;
 }
 
-impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
     type Runtime = OfaRuntimeWrapper<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
@@ -35,39 +35,39 @@ impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
     }
 }
 
-impl<Chain: OfaBaseChain> HasMessageType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> HasMessageType for OfaChainWrapper<Chain> {
     type Message = Chain::Message;
 }
 
-impl<Chain: OfaBaseChain> CanEstimateMessageSize for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> CanEstimateMessageSize for OfaChainWrapper<Chain> {
     fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error> {
         Chain::estimate_message_size(message)
     }
 }
 
-impl<Chain: OfaChainTypes> HasEventType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> HasEventType for OfaChainWrapper<Chain> {
     type Event = Chain::Event;
 }
 
-impl<Chain: OfaBaseChain> HasHeightType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> HasHeightType for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
 }
 
-impl<Chain: OfaBaseChain> CanIncrementHeight for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> CanIncrementHeight for OfaChainWrapper<Chain> {
     fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error> {
         Chain::increment_height(height)
     }
 }
 
-impl<Chain: OfaBaseChain> HasChainIdType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> HasChainIdType for OfaChainWrapper<Chain> {
     type ChainId = Chain::ChainId;
 }
 
-impl<Chain: OfaBaseChain> HasTimestampType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> HasTimestampType for OfaChainWrapper<Chain> {
     type Timestamp = Chain::Timestamp;
 }
 
-impl<Chain: OfaBaseChain> HasChainId for OfaChainWrapper<Chain> {
+impl<Chain: OfaChain> HasChainId for OfaChainWrapper<Chain> {
     fn chain_id(&self) -> &Self::ChainId {
         self.chain.chain_id()
     }

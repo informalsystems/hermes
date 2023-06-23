@@ -2,8 +2,8 @@ use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerTyp
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use ibc_relayer_components::transaction::traits::logs::nonce::CanLogNonce;
 
-use crate::base::one_for_all::traits::transaction::OfaTxContext;
-use crate::base::one_for_all::types::transaction::OfaTxWrapper;
+use crate::one_for_all::traits::transaction::OfaTxContext;
+use crate::one_for_all::types::transaction::OfaTxWrapper;
 
 impl<TxContext> HasLoggerType for OfaTxWrapper<TxContext>
 where

@@ -1,26 +1,26 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use ibc_relayer_components::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
+use crate::one_for_all::components;
+use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::relay::OfaRelay;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::std_prelude::*;
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::{
     CanRelayTimeoutUnorderedPacket, TimeoutUnorderedPacketRelayer,
 };
-use crate::std_prelude::*;
 
 #[async_trait]
 impl<Relay> CanRelayTimeoutUnorderedPacket for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay,
-    BaseTimeoutUnorderedPacketRelayer: TimeoutUnorderedPacketRelayer<Self>,
+    Relay: OfaRelay,
+    components::TimeoutUnorderedPacketRelayer: TimeoutUnorderedPacketRelayer<Self>,
 {
     async fn relay_timeout_unordered_packet(
         &self,
-        destination_height: &<Relay::DstChain as OfaChainTypes>::Height,
+        destination_height: &<Relay::DstChain as OfaChain>::Height,
         packet: &Self::Packet,
     ) -> Result<(), Self::Error> {
-        BaseTimeoutUnorderedPacketRelayer::relay_timeout_unordered_packet(
+        components::TimeoutUnorderedPacketRelayer::relay_timeout_unordered_packet(
             self,
             destination_height,
             packet,

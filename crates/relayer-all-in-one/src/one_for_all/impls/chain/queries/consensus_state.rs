@@ -4,9 +4,9 @@ use ibc_relayer_components::chain::traits::queries::consensus_state::{
 };
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
 
-use crate::base::one_for_all::traits::chain::OfaIbcChain;
-use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::components;
+use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub struct SendConsensusStateQueryToOfa;
@@ -48,22 +48,21 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty, Preset> CanQueryConsensusState<OfaChainWrapper<Counterparty>>
+impl<Chain, Counterparty> CanQueryConsensusState<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty, Preset = Preset>,
+    Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<
         Chain,
         IncomingPacket = Chain::OutgoingPacket,
         OutgoingPacket = Chain::IncomingPacket,
     >,
-    Preset: OfaIbcChainPreset<Chain, Counterparty>,
 {
     async fn query_consensus_state(
         &self,
         client_id: &Self::ClientId,
         height: &Counterparty::Height,
     ) -> Result<Counterparty::ConsensusState, Self::Error> {
-        Preset::ConsensusStateQuerier::query_consensus_state(self, client_id, height).await
+        components::ConsensusStateQuerier::query_consensus_state(self, client_id, height).await
     }
 }

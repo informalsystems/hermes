@@ -4,14 +4,17 @@ use ibc_relayer_components::chain::traits::queries::status::{
 };
 use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 
-use crate::base::one_for_all::traits::chain::OfaBaseChain;
-use crate::base::one_for_all::traits::chain::OfaChainPreset;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::components;
+use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub struct SendChainStatusQueryToOfa;
 
-impl<Chain: OfaBaseChain> HasChainStatusType for OfaChainWrapper<Chain> {
+impl<Chain> HasChainStatusType for OfaChainWrapper<Chain>
+where
+    Chain: OfaChain,
+{
     type ChainStatus = Chain::ChainStatus;
 
     fn chain_status_height(status: &Chain::ChainStatus) -> &Chain::Height {
@@ -24,7 +27,10 @@ impl<Chain: OfaBaseChain> HasChainStatusType for OfaChainWrapper<Chain> {
 }
 
 #[async_trait]
-impl<Chain: OfaBaseChain> ChainStatusQuerier<OfaChainWrapper<Chain>> for SendChainStatusQueryToOfa {
+impl<Chain> ChainStatusQuerier<OfaChainWrapper<Chain>> for SendChainStatusQueryToOfa
+where
+    Chain: OfaChain,
+{
     async fn query_chain_status(
         context: &OfaChainWrapper<Chain>,
     ) -> Result<Chain::ChainStatus, Chain::Error> {
@@ -35,12 +41,11 @@ impl<Chain: OfaBaseChain> ChainStatusQuerier<OfaChainWrapper<Chain>> for SendCha
 }
 
 #[async_trait]
-impl<Chain, Preset> CanQueryChainStatus for OfaChainWrapper<Chain>
+impl<Chain> CanQueryChainStatus for OfaChainWrapper<Chain>
 where
-    Chain: OfaBaseChain<Preset = Preset>,
-    Preset: OfaChainPreset<Chain>,
+    Chain: OfaChain,
 {
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
-        Preset::ChainStatusQuerier::query_chain_status(self).await
+        components::ChainStatusQuerier::query_chain_status(self).await
     }
 }

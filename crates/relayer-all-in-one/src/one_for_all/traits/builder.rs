@@ -6,32 +6,28 @@ use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
 
-use crate::base::one_for_all::traits::birelay::{OfaBiRelay, OfaBiRelayTypes};
-use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::relay::OfaRelayTypes;
-use crate::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::one_for_all::traits::birelay::OfaBiRelay;
+use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::relay::OfaRelay;
+use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::types::relay::OfaRelayWrapper;
+use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
-pub trait OfaBuilderTypes: Async {
-    type Preset: Async;
-
+#[async_trait]
+pub trait OfaBuilder: Async {
     type Error: Debug + Async;
 
-    type Runtime: OfaBaseRuntime;
+    type Runtime: OfaRuntime;
 
     type Logger: HasBaseLogLevels;
 
-    type BiRelay: OfaBiRelay<Preset = Self::Preset>;
-}
+    type BiRelay: OfaBiRelay;
 
-#[async_trait]
-pub trait OfaBuilder: OfaBuilderTypes {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
-    fn runtime_error(e: <Self::Runtime as OfaBaseRuntime>::Error) -> Self::Error;
+    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
 
     fn logger(&self) -> &Self::Logger;
 
@@ -62,29 +58,29 @@ pub trait OfaBuilder: OfaBuilderTypes {
     ) -> Result<Self::BiRelay, Self::Error>;
 }
 
-pub type BiRelay<Builder> = <Builder as OfaBuilderTypes>::BiRelay;
+pub type BiRelay<Builder> = <Builder as OfaBuilder>::BiRelay;
 
-pub type RelayAToB<Builder> = <BiRelay<Builder> as OfaBiRelayTypes>::RelayAToB;
+pub type RelayAToB<Builder> = <BiRelay<Builder> as OfaBiRelay>::RelayAToB;
 
-pub type RelayBToA<Builder> = <BiRelay<Builder> as OfaBiRelayTypes>::RelayBToA;
+pub type RelayBToA<Builder> = <BiRelay<Builder> as OfaBiRelay>::RelayBToA;
 
-pub type ChainA<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::SrcChain;
+pub type ChainA<Builder> = <RelayAToB<Builder> as OfaRelay>::SrcChain;
 
-pub type RelayError<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::Error;
+pub type RelayError<Builder> = <RelayAToB<Builder> as OfaRelay>::Error;
 
-pub type ChainB<Builder> = <RelayAToB<Builder> as OfaRelayTypes>::DstChain;
+pub type ChainB<Builder> = <RelayAToB<Builder> as OfaRelay>::DstChain;
 
-pub type ChainIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ChainId;
+pub type ChainIdA<Builder> = <ChainA<Builder> as OfaChain>::ChainId;
 
-pub type ChainIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ChainId;
+pub type ChainIdB<Builder> = <ChainB<Builder> as OfaChain>::ChainId;
 
-pub type ClientIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ClientId;
+pub type ClientIdA<Builder> = <ChainA<Builder> as OfaChain>::ClientId;
 
-pub type ClientIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ClientId;
+pub type ClientIdB<Builder> = <ChainB<Builder> as OfaChain>::ClientId;
 
-pub type Runtime<Builder> = <Builder as OfaBuilderTypes>::Runtime;
+pub type Runtime<Builder> = <Builder as OfaBuilder>::Runtime;
 
-pub type Mutex<Builder, T> = <Runtime<Builder> as OfaBaseRuntime>::Mutex<T>;
+pub type Mutex<Builder, T> = <Runtime<Builder> as OfaRuntime>::Mutex<T>;
 
 pub type ChainACache<Builder> =
     Arc<Mutex<Builder, BTreeMap<ChainIdA<Builder>, OfaChainWrapper<ChainA<Builder>>>>>;
