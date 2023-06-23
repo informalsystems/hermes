@@ -150,24 +150,30 @@ pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::{
         MsgChannelUpgradeTry as RawMsgChannelUpgradeTry, Timeout,
     };
-    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
+    use crate::core::ics02_client::height::Height;
     use crate::core::ics04_channel::upgrade::test_util::get_dummy_upgrade;
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+    use crate::timestamp::Timestamp;
 
     /// Returns a dummy `RawMsgChannelUpgradeTry`, for testing only!
     pub fn get_dummy_raw_msg_chan_upgrade_try() -> RawMsgChannelUpgradeTry {
+        let dummy_timeout = Timeout {
+            height: Some(Height::new(0, 10).unwrap().into()),
+            timestamp: Timestamp::now().nanoseconds(),
+        };
         RawMsgChannelUpgradeTry {
             port_id: PortId::default().to_string(),
             channel_id: ChannelId::default().to_string(),
             proposed_upgrade_connection_hops: vec![],
-            upgrade_timeout: Some(Timeout::default()),
+            upgrade_timeout: Some(dummy_timeout),
             counterparty_proposed_upgrade: Some(get_dummy_upgrade()),
             counterparty_upgrade_sequence: 1,
             proof_upgrade: get_dummy_proof(),
             proof_channel: get_dummy_proof(),
-            proof_height: Some(Height {
+            proof_height: Some(RawHeight {
                 revision_number: 1,
                 revision_height: 1,
             }),
