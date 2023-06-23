@@ -10,7 +10,7 @@ use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::versi
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_init,
-    ChannelUpgradableAttributes,
+    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -103,7 +103,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             Some(new_version),
             new_ordering,
             new_connection_hops,
-            timeout,
+            timeout.clone(),
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
@@ -118,16 +118,15 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
 
         info!("Set channel in (INITUPGRADE, TRYUPGRADE) state...");
 
-        // FIXME: Waiting for the TRY step to be implemented
-        //channel.build_chan_upgrade_try_and_send(timeout)?;
+        channel.build_chan_upgrade_try_and_send(timeout)?;
 
-        /*assert_eventually_channel_upgrade_try(
+        assert_eventually_channel_upgrade_try(
             &chains.handle_b,
             &chains.handle_a,
             &channels.channel_id_b.as_ref(),
             &channels.port_b.as_ref(),
-            &upgrade_attrs,
-        )?;*/
+            &upgrade_attrs.flipped(),
+        )?;
 
         Ok(())
     }

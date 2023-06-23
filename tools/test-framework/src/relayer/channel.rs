@@ -59,6 +59,15 @@ impl ChannelUpgradableAttributes {
         }
     }
 
+    pub fn flipped(&self) -> Self {
+        Self {
+            version: self.version.clone(),
+            ordering: self.ordering,
+            connection_hops_a: self.connection_hops_b.clone(),
+            connection_hops_b: self.connection_hops_a.clone(),
+        }
+    }
+
     pub fn version(&self) -> &Version {
         &self.version
     }
@@ -293,15 +302,15 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
     upgrade_attrs: &ChannelUpgradableAttributes,
 ) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
     assert_eventually_succeed(
-        "channel upgrade should be initialised",
+        "channel upgrade try step should be done",
         20,
         Duration::from_secs(1),
         || {
             assert_channel_upgrade_state(
-                ChannelState::InitUpgrade,
                 ChannelState::TryUpgrade,
+                ChannelState::InitUpgrade,
+                FlushStatus::Flushing,
                 FlushStatus::NotinflushUnspecified,
-                FlushStatus::Flushcomplete,
                 handle_a,
                 handle_b,
                 channel_id_a,
