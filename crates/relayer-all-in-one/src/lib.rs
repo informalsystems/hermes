@@ -107,6 +107,6 @@
 mod std_prelude;
 extern crate alloc;
 
-pub mod base;
+pub mod all_for_one;
 pub mod docs;
-pub mod extra;
+pub mod one_for_all;

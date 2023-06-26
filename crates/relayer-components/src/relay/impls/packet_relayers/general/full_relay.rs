@@ -29,7 +29,7 @@ where
 {
     async fn relay_packet(relay: &Relay, packet: &Packet<Relay>) -> Result<(), Relay::Error> {
         let destination_status = relay
-            .destination_chain()
+            .dst_chain()
             .query_chain_status()
             .await
             .map_err(Relay::dst_chain_error)?;
@@ -60,8 +60,8 @@ where
                 .relay_timeout_unordered_packet(destination_height, packet)
                 .await?;
         } else {
-            let source_chain_status = relay
-                .source_chain()
+            let src_chain_status = relay
+                .src_chain()
                 .query_chain_status()
                 .await
                 .map_err(Relay::src_chain_error)?;
@@ -72,13 +72,13 @@ where
 
             let write_ack = relay
                 .relay_receive_packet(
-                    Relay::SrcChain::chain_status_height(&source_chain_status),
+                    Relay::SrcChain::chain_status_height(&src_chain_status),
                     packet,
                 )
                 .await?;
 
             let destination_status = relay
-                .destination_chain()
+                .dst_chain()
                 .query_chain_status()
                 .await
                 .map_err(Relay::dst_chain_error)?;

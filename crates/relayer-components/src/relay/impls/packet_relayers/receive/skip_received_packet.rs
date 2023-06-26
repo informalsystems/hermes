@@ -28,7 +28,7 @@ where
     ) -> Result<Option<WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>>, Relay::Error>
     {
         let is_packet_received = relay
-            .destination_chain()
+            .dst_chain()
             .query_is_packet_received(
                 Relay::packet_dst_port(packet),
                 Relay::packet_dst_channel_id(packet),

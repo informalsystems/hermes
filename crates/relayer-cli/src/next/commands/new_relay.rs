@@ -3,9 +3,9 @@ use abscissa_core::{Command, Runnable};
 use alloc::sync::Arc;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc_relayer_all_in_one::extra::all_for_one::builder::CanBuildAfoFullBiRelay;
+use ibc_relayer_all_in_one::all_for_one::builder::CanBuildAfoBiRelay;
 use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
-use ibc_relayer_cosmos::contexts::full::builder::CosmosRelayBuilder;
+use ibc_relayer_cosmos::contexts::builder::CosmosBuilder;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
 use crate::conclude::Output;
@@ -67,7 +67,7 @@ impl Runnable for NewRelayPacketsCmd {
 
         let runtime = Arc::new(TokioRuntime::new().unwrap());
 
-        let builder = CosmosRelayBuilder::new_wrapped(
+        let builder = CosmosBuilder::new_wrapped(
             (*config).clone(),
             runtime.clone(),
             Default::default(),
@@ -78,7 +78,7 @@ impl Runnable for NewRelayPacketsCmd {
 
         let res: Result<(), Error> = runtime.block_on(async {
             let birelay = builder
-                .build_afo_full_birelay(
+                .build_afo_birelay(
                     &self.chain_a_id,
                     &self.chain_b_id,
                     &self.client_a_id,

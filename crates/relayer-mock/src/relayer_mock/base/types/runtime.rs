@@ -1,13 +1,12 @@
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use core::time::Duration;
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::runtime::traits::sleep::CanSleep;
+use ibc_relayer_components::runtime::traits::time::HasTime;
 
 use async_trait::async_trait;
-use ibc_relayer_all_in_one::base::one_for_all::traits::runtime::OfaBaseRuntime;
-use ibc_relayer_all_in_one::base::one_for_all::types::runtime::LogLevel;
-use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
-use tokio::sync::{Mutex, MutexGuard};
 
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::util::clock::MockClock;
@@ -33,28 +32,14 @@ impl Clone for MockRuntimeContext {
     }
 }
 
-#[async_trait]
-impl OfaBaseRuntime for MockRuntimeContext {
+impl HasErrorType for MockRuntimeContext {
     type Error = TokioError;
+}
 
-    type Time = MockTimestamp;
-
-    type Mutex<T: Async> = Mutex<T>;
-
-    type MutexGuard<'a, T: Async> = MutexGuard<'a, T>;
-
-    async fn log(&self, level: LogLevel, message: &str) {
-        match level {
-            LogLevel::Error => tracing::error!(message),
-            LogLevel::Warn => tracing::warn!(message),
-            LogLevel::Info => tracing::info!(message),
-            LogLevel::Debug => tracing::debug!(message),
-            LogLevel::Trace => tracing::trace!(message),
-        }
-    }
-
-    // Increment the shared MockClock by the duration is milliseconds.
+#[async_trait]
+impl CanSleep for MockRuntimeContext {
     async fn sleep(&self, duration: Duration) {
+        // Increment the shared MockClock by the duration is milliseconds.
         if self
             .clock
             .increment_timestamp(MockTimestamp(duration.as_millis()))
@@ -63,20 +48,16 @@ impl OfaBaseRuntime for MockRuntimeContext {
             tracing::warn!("MockClock failed to sleep for {}ms", duration.as_millis());
         }
     }
+}
+
+impl HasTime for MockRuntimeContext {
+    type Time = MockTimestamp;
 
     fn now(&self) -> Self::Time {
         self.get_time()
     }
 
-    fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration {
-        Duration::from_millis((time.0 - other.0) as u64)
-    }
-
-    fn new_mutex<T: Async>(item: T) -> Self::Mutex<T> {
-        Mutex::new(item)
-    }
-
-    async fn acquire_mutex<'a, T: Async>(mutex: &'a Self::Mutex<T>) -> Self::MutexGuard<'a, T> {
-        mutex.lock().await
+    fn duration_since(current_time: &Self::Time, other_time: &Self::Time) -> Duration {
+        Duration::from_millis((current_time.0 - other_time.0) as u64)
     }
 }

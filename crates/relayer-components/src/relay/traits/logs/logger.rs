@@ -29,10 +29,10 @@ where
     ) {
         self.log(level, message, |log| {
             log.nested("relay_context", |log| {
-                log.display("src_chain_id", self.source_chain().chain_id());
-                log.display("dst_chain_id", self.destination_chain().chain_id());
-                log.display("src_client_id", self.source_client_id());
-                log.display("dst_client_id", self.destination_client_id());
+                log.display("src_chain_id", self.src_chain().chain_id());
+                log.display("dst_chain_id", self.dst_chain().chain_id());
+                log.display("src_client_id", self.src_client_id());
+                log.display("dst_client_id", self.dst_client_id());
             });
 
             build_log(log);

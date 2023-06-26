@@ -1757,7 +1757,6 @@ dependencies = [
  "async-trait",
  "eyre",
  "flex-error",
- "ibc-relayer-all-in-one",
  "ibc-relayer-components",
  "ibc-relayer-runtime",
  "tokio",

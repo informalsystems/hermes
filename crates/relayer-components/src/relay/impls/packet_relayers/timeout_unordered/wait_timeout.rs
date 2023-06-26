@@ -37,7 +37,7 @@ where
         destination_height: &Height,
         packet: &Relay::Packet,
     ) -> Result<Message<Relay::SrcChain>, Relay::Error> {
-        let chain = context.destination_chain();
+        let chain = context.dst_chain();
 
         loop {
             let counterparty_status = chain

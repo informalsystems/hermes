@@ -16,6 +16,12 @@ impl<T> Default for EmptySubscription<T> {
     }
 }
 
+impl<T> EmptySubscription<T> {
+    pub fn new() -> Self {
+        Self(PhantomData)
+    }
+}
+
 #[async_trait]
 impl<T: Async> Subscription for EmptySubscription<T> {
     type Item = T;

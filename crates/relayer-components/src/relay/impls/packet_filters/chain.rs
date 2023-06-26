@@ -25,12 +25,12 @@ where
         let dst_port = Relay::packet_dst_port(packet);
 
         let src_chain_id = relay
-            .destination_chain()
+            .dst_chain()
             .query_chain_id_from_channel_id(dst_channel_id, dst_port)
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        let same_chain = &src_chain_id == relay.source_chain().chain_id();
+        let same_chain = &src_chain_id == relay.src_chain().chain_id();
 
         Ok(same_chain)
     }
@@ -51,12 +51,12 @@ where
         let src_port = Relay::packet_src_port(packet);
 
         let dst_chain_id = relay
-            .source_chain()
+            .src_chain()
             .query_chain_id_from_channel_id(src_channel_id, src_port)
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let same_chain = &dst_chain_id == relay.destination_chain().chain_id();
+        let same_chain = &dst_chain_id == relay.dst_chain().chain_id();
 
         Ok(same_chain)
     }

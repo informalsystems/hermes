@@ -1,29 +1,25 @@
 use alloc::string::String;
 use std::sync::Arc;
 
-use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
-
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::contexts::chain::MockChainContext;
 
 pub struct MockRelayContext {
-    pub src_chain: Arc<OfaChainWrapper<MockChainContext>>,
-    pub dst_chain: Arc<OfaChainWrapper<MockChainContext>>,
+    pub src_chain: Arc<MockChainContext>,
+    pub dst_chain: Arc<MockChainContext>,
     pub src_to_dst_client: String,
     pub dst_to_src_client: String,
-    pub runtime: OfaRuntimeWrapper<MockRuntimeContext>,
+    pub runtime: MockRuntimeContext,
 }
 
 impl MockRelayContext {
     pub fn new(
-        src_chain: Arc<OfaChainWrapper<MockChainContext>>,
-        dst_chain: Arc<OfaChainWrapper<MockChainContext>>,
+        src_chain: Arc<MockChainContext>,
+        dst_chain: Arc<MockChainContext>,
         src_to_dst_client: String,
         dst_to_src_client: String,
         runtime: MockRuntimeContext,
     ) -> Self {
-        let runtime = OfaRuntimeWrapper::new(runtime);
         Self {
             src_chain,
             dst_chain,
@@ -33,11 +29,11 @@ impl MockRelayContext {
         }
     }
 
-    pub fn src_chain(&self) -> &Arc<OfaChainWrapper<MockChainContext>> {
+    pub fn src_chain(&self) -> &Arc<MockChainContext> {
         &self.src_chain
     }
 
-    pub fn dst_chain(&self) -> &Arc<OfaChainWrapper<MockChainContext>> {
+    pub fn dst_chain(&self) -> &Arc<MockChainContext> {
         &self.dst_chain
     }
 
