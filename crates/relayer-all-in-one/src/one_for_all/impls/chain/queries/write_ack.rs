@@ -10,11 +10,7 @@ impl<Chain, Counterparty> CanQueryWriteAcknowledgement<OfaChainWrapper<Counterpa
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     async fn query_write_acknowledgement_event(
         &self,

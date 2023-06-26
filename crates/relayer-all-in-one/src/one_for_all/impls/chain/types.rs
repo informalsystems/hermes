@@ -72,11 +72,7 @@ impl<Chain: OfaChain> HasChainId for OfaChainWrapper<Chain> {
 impl<Chain, Counterparty> HasIbcChainTypes<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     type ClientId = Chain::ClientId;
 
@@ -93,11 +89,7 @@ impl<Chain, Counterparty> HasCounterpartyMessageHeight<OfaChainWrapper<Counterpa
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height> {
         Chain::counterparty_message_height(message)
@@ -108,11 +100,7 @@ impl<Chain, Counterparty> HasIbcPacketTypes<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     type IncomingPacket = Chain::IncomingPacket;
 
@@ -183,11 +171,7 @@ impl<Chain, Counterparty> HasWriteAcknowledgementEvent<OfaChainWrapper<Counterpa
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 
@@ -208,11 +192,7 @@ impl<Chain, Counterparty> HasSendPacketEvent<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     type SendPacketEvent = Chain::SendPacketEvent;
 

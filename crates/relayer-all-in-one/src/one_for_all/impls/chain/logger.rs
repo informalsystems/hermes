@@ -35,11 +35,7 @@ impl<Chain, Counterparty> CanLogChainPacket<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     fn log_incoming_packet<'a>(
         packet: &'a Self::IncomingPacket,

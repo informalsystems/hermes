@@ -2,6 +2,7 @@
    Trait definitions for [`HasWriteAcknowledgementEvent`].
 */
 
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::core::traits::sync::Async;
 
@@ -12,11 +13,7 @@ use crate::core::traits::sync::Async;
 */
 pub trait HasWriteAcknowledgementEvent<Counterparty>: HasIbcPacketTypes<Counterparty>
 where
-    Counterparty: HasIbcPacketTypes<
-        Self,
-        IncomingPacket = Self::OutgoingPacket,
-        OutgoingPacket = Self::IncomingPacket,
-    >,
+    Counterparty: HasIbcChainTypes<Self>,
 {
     /**
        The write acknowledgement event that is emitted when a `RecvPacket`
