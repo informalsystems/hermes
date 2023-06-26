@@ -27,7 +27,7 @@ where
         packet: &Packet<Relay>,
     ) -> Result<(), Relay::Error> {
         let message = relay
-            .destination_chain()
+            .dst_chain()
             .build_timeout_unordered_packet_message(destination_height, packet)
             .await
             .map_err(Relay::dst_chain_error)?;

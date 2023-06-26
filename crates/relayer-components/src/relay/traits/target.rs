@@ -51,21 +51,21 @@ impl<Relay: HasRelayTypes> ChainTarget<Relay> for SourceTarget {
     }
 
     fn target_chain(context: &Relay) -> &Self::TargetChain {
-        context.source_chain()
+        context.src_chain()
     }
 
     fn counterparty_chain(context: &Relay) -> &Self::CounterpartyChain {
-        context.destination_chain()
+        context.dst_chain()
     }
 
     fn target_client_id(context: &Relay) -> &ClientId<Self::TargetChain, Self::CounterpartyChain> {
-        context.source_client_id()
+        context.src_client_id()
     }
 
     fn counterparty_client_id(
         context: &Relay,
     ) -> &ClientId<Self::CounterpartyChain, Self::TargetChain> {
-        context.destination_client_id()
+        context.dst_client_id()
     }
 }
 
@@ -85,21 +85,21 @@ impl<Relay: HasRelayTypes> ChainTarget<Relay> for DestinationTarget {
     }
 
     fn target_chain(context: &Relay) -> &Self::TargetChain {
-        context.destination_chain()
+        context.dst_chain()
     }
 
     fn counterparty_chain(context: &Relay) -> &Self::CounterpartyChain {
-        context.source_chain()
+        context.src_chain()
     }
 
     fn target_client_id(context: &Relay) -> &ClientId<Self::TargetChain, Self::CounterpartyChain> {
-        context.destination_client_id()
+        context.dst_client_id()
     }
 
     fn counterparty_client_id(
         context: &Relay,
     ) -> &ClientId<Self::CounterpartyChain, Self::TargetChain> {
-        context.source_client_id()
+        context.src_client_id()
     }
 }
 

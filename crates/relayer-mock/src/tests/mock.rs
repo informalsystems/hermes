@@ -21,8 +21,8 @@ async fn test_mock_chain_relay() -> Result<(), Error> {
     let src_channel_id = "channel-0".to_owned();
     let dst_channel_id = "channel-1".to_owned();
 
-    let source_client_id = relay_context.source_client_id().clone();
-    let destination_client_id = relay_context.destination_client_id().clone();
+    let source_client_id = relay_context.src_client_id().clone();
+    let destination_client_id = relay_context.dst_client_id().clone();
 
     src_chain.map_channel_to_client(src_channel_id.clone(), source_client_id);
     dst_chain.map_channel_to_client(dst_channel_id.clone(), destination_client_id);
@@ -97,8 +97,8 @@ async fn test_mock_chain_timeout_timestamp() -> Result<(), Error> {
     let src_channel_id = "channel-0".to_owned();
     let dst_channel_id = "channel-1".to_owned();
 
-    let source_client_id = relay_context.source_client_id().clone();
-    let destination_client_id = relay_context.destination_client_id().clone();
+    let source_client_id = relay_context.src_client_id().clone();
+    let destination_client_id = relay_context.dst_client_id().clone();
 
     src_chain.map_channel_to_client(src_channel_id.clone(), source_client_id);
     dst_chain.map_channel_to_client(dst_channel_id.clone(), destination_client_id);
@@ -177,8 +177,8 @@ async fn test_mock_chain_timeout_height() -> Result<(), Error> {
     let src_channel_id = "channel-0".to_owned();
     let dst_channel_id = "channel-1".to_owned();
 
-    let source_client_id = relay_context.source_client_id().clone();
-    let destination_client_id = relay_context.destination_client_id().clone();
+    let source_client_id = relay_context.src_client_id().clone();
+    let destination_client_id = relay_context.dst_client_id().clone();
 
     src_chain.map_channel_to_client(src_channel_id.clone(), source_client_id);
     dst_chain.map_channel_to_client(dst_channel_id.clone(), destination_client_id);
@@ -260,9 +260,9 @@ async fn test_mock_chain_query_write_ack() -> Result<(), Error> {
     let src_channel_id = "channel-0".to_owned();
     let dst_channel_id = "channel-1".to_owned();
 
-    let source_client_id = relay_context.source_client_id().clone();
+    let source_client_id = relay_context.src_client_id().clone();
     let src_port_id = String::from("transfer");
-    let destination_client_id = relay_context.destination_client_id().clone();
+    let destination_client_id = relay_context.dst_client_id().clone();
     let dst_port_id = String::from("transfer");
 
     src_chain.map_channel_to_client(src_channel_id.clone(), source_client_id);
@@ -358,8 +358,8 @@ async fn test_mock_chain_process_update_client_message() -> Result<(), Error> {
     let src_channel_id = "channel-0".to_owned();
     let dst_channel_id = "channel-1".to_owned();
 
-    let source_client_id = relay_context.source_client_id().clone();
-    let destination_client_id = relay_context.destination_client_id().clone();
+    let source_client_id = relay_context.src_client_id().clone();
+    let destination_client_id = relay_context.dst_client_id().clone();
 
     src_chain.map_channel_to_client(src_channel_id, source_client_id.clone());
     dst_chain.map_channel_to_client(dst_channel_id, destination_client_id);
@@ -409,8 +409,8 @@ async fn test_mock_chain_process_recv_packet() -> Result<(), Error> {
     let src_channel_id = "channel-0".to_owned();
     let dst_channel_id = "channel-1".to_owned();
 
-    let source_client_id = relay_context.source_client_id().clone();
-    let destination_client_id = relay_context.destination_client_id().clone();
+    let source_client_id = relay_context.src_client_id().clone();
+    let destination_client_id = relay_context.dst_client_id().clone();
 
     src_chain.map_channel_to_client(dst_channel_id.clone(), source_client_id.clone());
     dst_chain.map_channel_to_client(dst_channel_id.clone(), destination_client_id);

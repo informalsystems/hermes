@@ -48,19 +48,19 @@ where
         Relay::dst_chain_error(e)
     }
 
-    fn source_chain(&self) -> &Self::SrcChain {
+    fn src_chain(&self) -> &Self::SrcChain {
         self.relay.src_chain()
     }
 
-    fn destination_chain(&self) -> &Self::DstChain {
+    fn dst_chain(&self) -> &Self::DstChain {
         self.relay.dst_chain()
     }
 
-    fn source_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {
+    fn src_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {
         self.relay.src_client_id()
     }
 
-    fn destination_client_id(&self) -> &<Relay::DstChain as OfaChain>::ClientId {
+    fn dst_client_id(&self) -> &<Relay::DstChain as OfaChain>::ClientId {
         self.relay.dst_client_id()
     }
 }

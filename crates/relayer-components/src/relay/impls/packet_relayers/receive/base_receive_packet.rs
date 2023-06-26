@@ -27,7 +27,7 @@ where
         packet: &Packet<Relay>,
     ) -> Result<Option<AckEvent>, Relay::Error> {
         let message = relay
-            .source_chain()
+            .src_chain()
             .build_receive_packet_message(source_height, packet)
             .await
             .map_err(Relay::src_chain_error)?;

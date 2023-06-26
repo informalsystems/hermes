@@ -56,12 +56,12 @@ pub trait HasRelayTypes: HasErrorType {
     /**
         Get a reference to the source chain context from the relay context.
     */
-    fn source_chain(&self) -> &Self::SrcChain;
+    fn src_chain(&self) -> &Self::SrcChain;
 
     /**
         Get a reference to the destination chain context from the relay context.
     */
-    fn destination_chain(&self) -> &Self::DstChain;
+    fn dst_chain(&self) -> &Self::DstChain;
 
     fn src_chain_error(e: <Self::SrcChain as HasErrorType>::Error) -> Self::Error;
 
@@ -76,13 +76,13 @@ pub trait HasRelayTypes: HasErrorType {
         the connection and channel IDs, because a relay context may handle
         more than one of them.
     */
-    fn source_client_id(&self) -> &ClientId<Self::SrcChain, Self::DstChain>;
+    fn src_client_id(&self) -> &ClientId<Self::SrcChain, Self::DstChain>;
 
     /**
         Get the client ID on the destination chain that corresponds to the source
         chain.
     */
-    fn destination_client_id(&self) -> &ClientId<Self::DstChain, Self::SrcChain>;
+    fn dst_client_id(&self) -> &ClientId<Self::DstChain, Self::SrcChain>;
 }
 
 pub trait HasRelayPacketFields: HasRelayTypes {

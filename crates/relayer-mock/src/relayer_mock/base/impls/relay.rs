@@ -81,19 +81,19 @@ impl HasRelayTypes for MockRelayContext {
         e
     }
 
-    fn source_chain(&self) -> &MockChainContext {
+    fn src_chain(&self) -> &MockChainContext {
         &self.src_chain
     }
 
-    fn destination_chain(&self) -> &MockChainContext {
+    fn dst_chain(&self) -> &MockChainContext {
         &self.dst_chain
     }
 
-    fn source_client_id(&self) -> &ClientId {
+    fn src_client_id(&self) -> &ClientId {
         self.dst_to_src_client()
     }
 
-    fn destination_client_id(&self) -> &ClientId {
+    fn dst_client_id(&self) -> &ClientId {
         self.src_to_dst_client()
     }
 }
@@ -109,7 +109,7 @@ impl UpdateClientMessageBuilder<MockRelayContext, SourceTarget> for MockBuildUpd
     ) -> Result<Vec<MockMessage>, Error> {
         let state = context.dst_chain.query_state_at_height(*height)?;
         Ok(vec![MockMessage::UpdateClient(
-            context.source_client_id().to_string(),
+            context.src_client_id().to_string(),
             *height,
             state,
         )])
@@ -127,7 +127,7 @@ impl UpdateClientMessageBuilder<MockRelayContext, DestinationTarget>
     ) -> Result<Vec<MockMessage>, Error> {
         let state = context.src_chain.query_state_at_height(*height)?;
         Ok(vec![MockMessage::UpdateClient(
-            context.destination_client_id().to_string(),
+            context.dst_client_id().to_string(),
             *height,
             state,
         )])
