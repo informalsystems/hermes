@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::types::aliases::{Event, Height};
 use crate::core::traits::sync::Async;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayChains;
 use crate::std_prelude::*;
 
 /**

@@ -2,8 +2,8 @@ use crate::chain::traits::logs::event::CanLogChainEvent;
 use crate::chain::traits::types::event::HasEventType;
 use crate::logger::traits::has_logger::HasLoggerType;
 use crate::logger::traits::logger::BaseLogger;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayChains;
 
 pub trait CanLogRelayEvent: HasRelayChains + HasLoggerType {
     fn log_src_event<'a>(

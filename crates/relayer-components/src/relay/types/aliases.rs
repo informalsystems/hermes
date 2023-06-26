@@ -1,4 +1,5 @@
-use crate::relay::traits::types::{HasRelayChains, HasRelayPacket};
+use crate::relay::traits::chains::HasRelayChains;
+use crate::relay::traits::packet::HasRelayPacket;
 
 pub type Packet<Context> = <Context as HasRelayPacket>::Packet;
 

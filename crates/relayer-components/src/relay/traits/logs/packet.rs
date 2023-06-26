@@ -1,7 +1,7 @@
 use crate::chain::traits::logs::packet::CanLogChainPacket;
 use crate::logger::traits::has_logger::HasLoggerType;
 use crate::logger::traits::logger::BaseLogger;
-use crate::relay::traits::types::HasRelayPacket;
+use crate::relay::traits::packet::HasRelayPacket;
 
 pub trait CanLogRelayPacket: HasRelayPacket + HasLoggerType {
     fn log_packet<'a>(packet: &'a Self::Packet) -> <Self::Logger as BaseLogger>::LogValue<'a>;

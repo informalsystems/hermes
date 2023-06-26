@@ -6,8 +6,8 @@ use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::chain::traits::types::chain_id::HasChainIdType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::core::traits::error::HasErrorType;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::two_way::HasTwoWayRelay;
-use crate::relay::traits::types::HasRelayChains;
 use crate::runtime::traits::runtime::HasRuntime;
 use crate::runtime::types::aliases::Mutex;
 

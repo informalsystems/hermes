@@ -2,8 +2,8 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 use ibc_relayer_components::relay::traits::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components::relay::traits::types::HasRelayChains;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 use crate::runtime::traits::spawn::{HasSpawner, Spawner};

@@ -2,7 +2,7 @@ use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::types::aliases::ClientId;
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
-use crate::relay::traits::types::HasRelayChains;
+use crate::relay::traits::chains::HasRelayChains;
 
 #[derive(Default)]
 pub struct SourceTarget;

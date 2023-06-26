@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::chain::types::aliases::{Height, Message};
-use crate::relay::traits::types::HasRelayPacket;
+use crate::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
 
 #[async_trait]

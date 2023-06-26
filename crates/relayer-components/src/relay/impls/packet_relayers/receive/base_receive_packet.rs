@@ -3,10 +3,10 @@ use async_trait::async_trait;
 use crate::chain::traits::message_builders::receive_packet::CanBuildReceivePacketMessage;
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::types::aliases::Height;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
 use crate::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::relay::traits::target::DestinationTarget;
-use crate::relay::traits::types::HasRelayChains;
 use crate::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 

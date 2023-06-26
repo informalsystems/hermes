@@ -2,8 +2,8 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayer;
-use ibc_relayer_components::relay::traits::types::HasRelayChains;
 use ibc_relayer_components::relay::types::aliases::Packet;
 
 use crate::std_prelude::*;

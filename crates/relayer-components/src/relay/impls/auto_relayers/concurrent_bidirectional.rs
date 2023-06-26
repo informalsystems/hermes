@@ -6,8 +6,8 @@ use async_trait::async_trait;
 use futures_util::stream::{self, StreamExt};
 
 use crate::relay::traits::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::relay::traits::types::HasRelayChains;
 use crate::std_prelude::*;
 
 /// A concurrent bidirectional relay context that supports auto-relaying between two

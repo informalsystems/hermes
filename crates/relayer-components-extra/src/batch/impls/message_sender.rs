@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::ibc_message_sender::IbcMessageSender;
 use ibc_relayer_components::relay::traits::target::ChainTarget;
-use ibc_relayer_components::relay::traits::types::HasRelayChains;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 use crate::batch::traits::channel::HasMessageBatchSender;

@@ -9,8 +9,8 @@ use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
 use crate::chain::traits::types::timestamp::HasTimestampType;
 use crate::core::traits::error::HasErrorType;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayChains;
 use crate::std_prelude::*;
 
 /**

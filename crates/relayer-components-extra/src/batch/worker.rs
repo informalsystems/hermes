@@ -9,8 +9,8 @@ use ibc_relayer_components::chain::traits::types::message::{
 };
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::target::ChainTarget;
-use ibc_relayer_components::relay::traits::types::HasRelayChains;
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;

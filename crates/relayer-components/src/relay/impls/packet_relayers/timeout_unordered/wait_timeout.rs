@@ -9,7 +9,7 @@ use crate::chain::traits::types::status::HasChainStatusType;
 use crate::chain::types::aliases::Message;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::messages::timeout_unordered_packet::TimeoutUnorderedPacketMessageBuilder;
-use crate::relay::traits::types::HasRelayPacket;
+use crate::relay::traits::packet::HasRelayPacket;
 use crate::runtime::traits::runtime::HasRuntime;
 use crate::runtime::traits::sleep::CanSleep;
 use crate::std_prelude::*;

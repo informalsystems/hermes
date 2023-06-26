@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer_components::chain::types::aliases::{Event, Message};
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::target::ChainTarget;
-use ibc_relayer_components::relay::traits::types::HasRelayChains;
 
 use crate::std_prelude::*;
 

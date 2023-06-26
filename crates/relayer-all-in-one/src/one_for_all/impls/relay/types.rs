@@ -1,5 +1,5 @@
 use ibc_relayer_components::core::traits::error::HasErrorType;
-use ibc_relayer_components::relay::traits::types::HasRelayChains;
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 use crate::one_for_all::traits::chain::OfaChain;

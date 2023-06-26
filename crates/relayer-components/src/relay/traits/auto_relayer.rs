@@ -2,8 +2,8 @@ use async_trait::async_trait;
 
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayChains;
 use crate::std_prelude::*;
 
 /// Trait that encodes the capability of a relayer to relay

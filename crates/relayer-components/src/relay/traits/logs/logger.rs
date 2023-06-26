@@ -3,8 +3,8 @@ use crate::logger::traits::level::HasLoggerWithBaseLevels;
 use crate::logger::traits::log::CanLog;
 use crate::logger::traits::logger::BaseLogger;
 use crate::logger::types::wrapper::LogWrapper;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayChains;
 
 pub trait CanLogRelay: HasLoggerWithBaseLevels {
     fn log_relay<'a>(

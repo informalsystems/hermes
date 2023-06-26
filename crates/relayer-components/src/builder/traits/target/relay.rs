@@ -2,7 +2,7 @@ use crate::builder::traits::birelay::HasBiRelayType;
 use crate::builder::traits::target::chain::{ChainATarget, ChainBTarget, ChainBuildTarget};
 use crate::builder::types::aliases::{RelayAToB, RelayBToA, RelayError};
 use crate::core::traits::sync::Async;
-use crate::relay::traits::types::HasRelayChains;
+use crate::relay::traits::chains::HasRelayChains;
 
 #[derive(Default)]
 pub struct RelayAToBTarget;

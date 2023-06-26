@@ -1,5 +1,5 @@
 use crate::core::traits::error::HasErrorType;
-use crate::relay::traits::types::HasRelayChains;
+use crate::relay::traits::chains::HasRelayChains;
 
 /// Trait for types that have a two-way relay context, i.e.,
 /// those that can relay in both directions between two connected

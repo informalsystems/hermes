@@ -4,8 +4,8 @@ use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::types::aliases::{Event, Message};
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayChains;
 use crate::std_prelude::*;
 
 #[async_trait]
