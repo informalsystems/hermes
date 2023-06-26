@@ -6,11 +6,10 @@ use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::path::PathIdentifiers;
-use ibc_relayer_all_in_one::base::one_for_all::traits::birelay::OfaBiRelay;
-use ibc_relayer_all_in_one::base::one_for_all::types::birelay::OfaBiRelayWrapper;
+use ibc_relayer_all_in_one::one_for_all::traits::birelay::OfaBiRelay;
+use ibc_relayer_all_in_one::one_for_all::types::birelay::OfaBiRelayWrapper;
 use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
-use ibc_relayer_cosmos::base::types::birelay::CosmosBiRelayWrapper;
-use ibc_relayer_cosmos::contexts::full::birelay::FullCosmosBiRelay;
+use ibc_relayer_cosmos::contexts::birelay::CosmosBiRelay;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
 use tokio::task::JoinHandle;
 
@@ -225,9 +224,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> HasContextId for TestContextV1<Ch
 pub struct TestContextV2<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub context_id: String,
     pub config: TestConfig,
-    pub relayer: OfaBiRelayWrapper<
-        CosmosBiRelayWrapper<FullCosmosBiRelay<BaseChainHandle, BaseChainHandle>>,
-    >,
+    pub relayer: OfaBiRelayWrapper<CosmosBiRelay<BaseChainHandle, BaseChainHandle>>,
     pub chains: ConnectedChains<ChainA, ChainB>,
     pub channel: ConnectedChannel<ChainA, ChainB>,
 }

@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::config::Config;
-use ibc_relayer_all_in_one::extra::all_for_one::builder::CanBuildAfoFullBiRelay;
-use ibc_relayer_cosmos::contexts::full::builder::CosmosRelayBuilder;
-use ibc_relayer_cosmos::full::all_for_one::birelay::AfoCosmosFullBiRelay;
+use ibc_relayer_all_in_one::all_for_one::builder::CanBuildAfoBiRelay;
+use ibc_relayer_cosmos::all_for_one::birelay::AfoCosmosBiRelay;
+use ibc_relayer_cosmos::contexts::builder::CosmosBuilder;
 use ibc_test_framework::error::{handle_generic_error, Error};
 use ibc_test_framework::prelude::TaggedFullNodeExt;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
@@ -14,7 +14,7 @@ pub fn build_cosmos_relay_context<ChainA, ChainB>(
     config: &Config,
     chains: &ConnectedChains<ChainA, ChainB>,
     packet_filter: PacketFilter,
-) -> Result<impl AfoCosmosFullBiRelay, Error>
+) -> Result<impl AfoCosmosBiRelay, Error>
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
@@ -30,7 +30,7 @@ where
         (chains.chain_id_b().cloned_value(), key_b),
     ]);
 
-    let builder = CosmosRelayBuilder::new_wrapped(
+    let builder = CosmosBuilder::new_wrapped(
         config.clone(),
         runtime.clone(),
         Default::default(),
@@ -40,7 +40,7 @@ where
     );
 
     let birelay = runtime
-        .block_on(builder.build_afo_full_birelay(
+        .block_on(builder.build_afo_birelay(
             chains.chain_id_a().value(),
             chains.chain_id_b().value(),
             chains.client_id_a().value(),

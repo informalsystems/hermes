@@ -14,7 +14,7 @@ use crate::contexts::builder::CosmosBuilder;
 pub trait CanBuildAfoCosmosBaseBiRelay: HasErrorType {
     type AfoCosmosBaseBiRelay: AfoCosmosBiRelay;
 
-    async fn build_afo_cosmos_base_birelay(
+    async fn build_afo_cosmos_birelay(
         &self,
         chain_id_a: &ChainId,
         chain_id_b: &ChainId,
@@ -27,14 +27,14 @@ pub trait CanBuildAfoCosmosBaseBiRelay: HasErrorType {
 impl CanBuildAfoCosmosBaseBiRelay for OfaBuilderWrapper<CosmosBuilder> {
     type AfoCosmosBaseBiRelay = OfaBiRelayWrapper<CosmosBiRelay<BaseChainHandle, BaseChainHandle>>;
 
-    async fn build_afo_cosmos_base_birelay(
+    async fn build_afo_cosmos_birelay(
         &self,
         chain_id_a: &ChainId,
         chain_id_b: &ChainId,
         client_id_a: &ClientId,
         client_id_b: &ClientId,
     ) -> Result<Self::AfoCosmosBaseBiRelay, Self::Error> {
-        self.build_afo_base_birelay(chain_id_a, chain_id_b, client_id_a, client_id_b)
+        self.build_afo_birelay(chain_id_a, chain_id_b, client_id_a, client_id_b)
             .await
     }
 }
