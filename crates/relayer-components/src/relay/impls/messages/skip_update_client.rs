@@ -9,7 +9,7 @@ use crate::logger::traits::level::HasBaseLogLevels;
 use crate::relay::traits::logs::logger::CanLogRelayTarget;
 use crate::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::types::HasRelayChains;
 use crate::std_prelude::*;
 
 pub struct SkipUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);
@@ -18,7 +18,7 @@ pub struct SkipUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);
 impl<Relay, Target, InUpdateClient, TargetChain, CounterpartyChain>
     UpdateClientMessageBuilder<Relay, Target> for SkipUpdateClient<InUpdateClient>
 where
-    Relay: HasRelayTypes + CanLogRelayTarget<Target>,
+    Relay: HasRelayChains + CanLogRelayTarget<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
     CounterpartyChain: HasConsensusStateType<TargetChain>,

@@ -31,12 +31,12 @@ use crate::core::traits::sync::Async;
     additional constraints such as restricting a relay context to handle
     only a single channel or connection.
 */
-pub trait HasRelayTypes: HasErrorType {
+pub trait HasRelayChains: HasErrorType {
     /**
         A source chain context that has the IBC chain types that are correspond
         to the destination chain.
     */
-    type SrcChain: HasIbcPacketTypes<Self::DstChain, OutgoingPacket = Self::Packet>;
+    type SrcChain: HasIbcPacketTypes<Self::DstChain>;
 
     /**
         A destination chain context that has the IBC chain types that are correspond
@@ -44,14 +44,9 @@ pub trait HasRelayTypes: HasErrorType {
     */
     type DstChain: HasIbcPacketTypes<
         Self::SrcChain,
-        IncomingPacket = Self::Packet,
+        IncomingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::OutgoingPacket,
         OutgoingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::IncomingPacket,
     >;
-
-    /**
-        An IBC packet from the source chain to the destination chain.
-    */
-    type Packet: Async;
 
     /**
         Get a reference to the source chain context from the relay context.
@@ -85,7 +80,22 @@ pub trait HasRelayTypes: HasErrorType {
     fn dst_client_id(&self) -> &ClientId<Self::DstChain, Self::SrcChain>;
 }
 
-pub trait HasRelayPacketFields: HasRelayTypes {
+pub trait HasRelayPacket: HasRelayChains<SrcChain = Self::SrcChainWithPacket> {
+    type Packet: Async;
+
+    type SrcChainWithPacket: HasIbcPacketTypes<Self::DstChain, OutgoingPacket = Self::Packet>;
+}
+
+impl<Relay> HasRelayPacket for Relay
+where
+    Relay: HasRelayChains,
+{
+    type Packet = <Relay::SrcChain as HasIbcPacketTypes<Relay::DstChain>>::OutgoingPacket;
+
+    type SrcChainWithPacket = Relay::SrcChain;
+}
+
+pub trait HasRelayPacketFields: HasRelayPacket {
     /**
         The source port of a packet, which is a port ID on the source chain
         that corresponds to the destination chain.
@@ -129,7 +139,7 @@ pub trait HasRelayPacketFields: HasRelayTypes {
 
 impl<Relay> HasRelayPacketFields for Relay
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
 {
     fn packet_src_port(packet: &Self::Packet) -> &PortId<Self::SrcChain, Self::DstChain> {
         Self::SrcChain::outgoing_packet_src_port(packet)

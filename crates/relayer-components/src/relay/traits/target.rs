@@ -2,7 +2,7 @@ use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::types::aliases::ClientId;
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::types::HasRelayChains;
 
 #[derive(Default)]
 pub struct SourceTarget;
@@ -10,7 +10,7 @@ pub struct SourceTarget;
 #[derive(Default)]
 pub struct DestinationTarget;
 
-pub trait ChainTarget<Relay: HasRelayTypes>: Async + Default + private::Sealed {
+pub trait ChainTarget<Relay: HasRelayChains>: Async + Default + private::Sealed {
     type TargetChain: HasIbcChainTypes<Self::CounterpartyChain>;
 
     type CounterpartyChain: HasIbcChainTypes<Self::TargetChain>;
@@ -35,7 +35,7 @@ pub trait ChainTarget<Relay: HasRelayTypes>: Async + Default + private::Sealed {
 impl private::Sealed for SourceTarget {}
 impl private::Sealed for DestinationTarget {}
 
-impl<Relay: HasRelayTypes> ChainTarget<Relay> for SourceTarget {
+impl<Relay: HasRelayChains> ChainTarget<Relay> for SourceTarget {
     type TargetChain = Relay::SrcChain;
 
     type CounterpartyChain = Relay::DstChain;
@@ -69,7 +69,7 @@ impl<Relay: HasRelayTypes> ChainTarget<Relay> for SourceTarget {
     }
 }
 
-impl<Relay: HasRelayTypes> ChainTarget<Relay> for DestinationTarget {
+impl<Relay: HasRelayChains> ChainTarget<Relay> for DestinationTarget {
     type TargetChain = Relay::DstChain;
 
     type CounterpartyChain = Relay::SrcChain;

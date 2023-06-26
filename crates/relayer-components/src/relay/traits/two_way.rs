@@ -1,5 +1,5 @@
 use crate::core::traits::error::HasErrorType;
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::types::HasRelayChains;
 
 /// Trait for types that have a two-way relay context, i.e.,
 /// those that can relay in both directions between two connected
@@ -10,7 +10,7 @@ use crate::relay::traits::types::HasRelayTypes;
 /// other that relays from chain B to chain A.
 pub trait HasTwoWayRelay: HasErrorType {
     /// The relay context that relays from chain A to chain B.
-    type RelayAToB: HasRelayTypes;
+    type RelayAToB: HasRelayChains;
 
     /// The relay context that relays from chain B to chain A.
     ///
@@ -20,9 +20,9 @@ pub trait HasTwoWayRelay: HasErrorType {
     /// chain is the `RelayAToB` context's destination chain and
     /// vice versa. In addition, we also assert that both relay
     /// context's have the same error type.
-    type RelayBToA: HasRelayTypes<
-        SrcChain = <Self::RelayAToB as HasRelayTypes>::DstChain,
-        DstChain = <Self::RelayAToB as HasRelayTypes>::SrcChain,
+    type RelayBToA: HasRelayChains<
+        SrcChain = <Self::RelayAToB as HasRelayChains>::DstChain,
+        DstChain = <Self::RelayAToB as HasRelayChains>::SrcChain,
         Error = <Self::RelayAToB as HasErrorType>::Error,
     >;
 

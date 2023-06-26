@@ -80,7 +80,7 @@
     A good starting point to understand the relayer framework internals
     is to look at how abstract types are defined in
     [`HasChainTypes`](ibc_relayer_components::chain::traits::types::chain::HasChainTypes) and
-    [`HasRelayTypes`](ibc_relayer_components::relay::traits::types::HasRelayTypes).
+    [`HasRelayChains`](ibc_relayer_components::relay::traits::types::HasRelayChains).
     There are also simple components like
     [`CanQueryChainStatus`](ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus)
     that can be understood as standalone pieces.

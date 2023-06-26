@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 
 use crate::core::traits::sync::Async;
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::types::HasRelayPacket;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait PacketFilter<Relay>: Async
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayPacket,
 {
     async fn should_relay_packet(
         relay: &Relay,
@@ -16,6 +16,6 @@ where
 }
 
 #[async_trait]
-pub trait CanFilterPackets: HasRelayTypes {
+pub trait CanFilterPackets: HasRelayPacket {
     async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error>;
 }

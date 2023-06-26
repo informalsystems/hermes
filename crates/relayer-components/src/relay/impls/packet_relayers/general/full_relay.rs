@@ -9,7 +9,7 @@ use crate::relay::traits::packet_relayer::PacketRelayer;
 use crate::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
 use crate::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
 use crate::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
-use crate::relay::traits::types::{HasRelayPacketFields, HasRelayTypes};
+use crate::relay::traits::types::{HasRelayChains, HasRelayPacketFields};
 use crate::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 
@@ -18,7 +18,7 @@ pub struct FullCycleRelayer;
 #[async_trait]
 impl<Relay> PacketRelayer<Relay> for FullCycleRelayer
 where
-    Relay: HasRelayTypes
+    Relay: HasRelayChains
         + CanLogRelay
         + CanLogRelayPacket
         + CanRelayAckPacket

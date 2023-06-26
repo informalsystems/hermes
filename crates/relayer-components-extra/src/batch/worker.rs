@@ -10,7 +10,7 @@ use ibc_relayer_components::chain::traits::types::message::{
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_components::relay::traits::target::ChainTarget;
-use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::relay::traits::types::HasRelayChains;
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
@@ -26,7 +26,7 @@ use crate::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanSpawnBatchMessageWorker<Target>: HasRelayTypes
+pub trait CanSpawnBatchMessageWorker<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasRuntime,
@@ -62,7 +62,7 @@ where
 }
 
 #[async_trait]
-trait CanRunLoop<Target>: HasRelayTypes
+trait CanRunLoop<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasRuntime,
@@ -144,7 +144,7 @@ where
 }
 
 #[async_trait]
-trait CanProcessMessageBatches<Target>: HasRelayTypes
+trait CanProcessMessageBatches<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasRuntime,
@@ -270,7 +270,7 @@ where
 }
 
 #[async_trait]
-trait CanSendReadyBatches<Target>: HasRelayTypes
+trait CanSendReadyBatches<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasRuntime,

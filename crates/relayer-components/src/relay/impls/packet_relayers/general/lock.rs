@@ -7,6 +7,7 @@ use crate::relay::traits::logs::logger::CanLogRelay;
 use crate::relay::traits::logs::packet::CanLogRelayPacket;
 use crate::relay::traits::packet_relayer::PacketRelayer;
 use crate::relay::traits::packet_relayers::lock::HasPacketLock;
+use crate::relay::traits::types::HasRelayPacket;
 use crate::std_prelude::*;
 
 /**
@@ -21,7 +22,7 @@ pub struct LockPacketRelayer<InRelayer>(pub PhantomData<InRelayer>);
 #[async_trait]
 impl<Relay, InRelayer> PacketRelayer<Relay> for LockPacketRelayer<InRelayer>
 where
-    Relay: HasPacketLock + CanLogRelay + CanLogRelayPacket,
+    Relay: HasRelayPacket + HasPacketLock + CanLogRelay + CanLogRelayPacket,
     InRelayer: PacketRelayer<Relay>,
 {
     async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error> {

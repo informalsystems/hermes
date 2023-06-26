@@ -21,7 +21,7 @@ use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_pa
     CanRelayTimeoutUnorderedPacket, TimeoutUnorderedPacketRelayer,
 };
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::relay::traits::types::HasRelayChains;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use std::vec;
@@ -66,12 +66,10 @@ impl HasLogger for MockRelayContext {
     }
 }
 
-impl HasRelayTypes for MockRelayContext {
+impl HasRelayChains for MockRelayContext {
     type SrcChain = MockChainContext;
 
     type DstChain = MockChainContext;
-
-    type Packet = PacketKey;
 
     fn src_chain_error(e: Error) -> Self::Error {
         e

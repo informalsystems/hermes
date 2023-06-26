@@ -2,7 +2,7 @@ use crate::builder::traits::birelay::HasBiRelayType;
 use crate::builder::traits::target::chain::{ChainATarget, ChainBTarget, ChainBuildTarget};
 use crate::builder::types::aliases::{RelayAToB, RelayBToA, RelayError};
 use crate::core::traits::sync::Async;
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::types::HasRelayChains;
 
 #[derive(Default)]
 pub struct RelayAToBTarget;
@@ -14,18 +14,18 @@ pub trait RelayBuildTarget<Build>: Default + Async
 where
     Build: HasBiRelayType,
 {
-    type TargetRelay: HasRelayTypes<Error = RelayError<Build>>;
+    type TargetRelay: HasRelayChains<Error = RelayError<Build>>;
 
     type SrcChainTarget: ChainBuildTarget<
         Build,
-        TargetChain = <Self::TargetRelay as HasRelayTypes>::SrcChain,
-        CounterpartyChain = <Self::TargetRelay as HasRelayTypes>::DstChain,
+        TargetChain = <Self::TargetRelay as HasRelayChains>::SrcChain,
+        CounterpartyChain = <Self::TargetRelay as HasRelayChains>::DstChain,
     >;
 
     type DstChainTarget: ChainBuildTarget<
         Build,
-        TargetChain = <Self::TargetRelay as HasRelayTypes>::DstChain,
-        CounterpartyChain = <Self::TargetRelay as HasRelayTypes>::SrcChain,
+        TargetChain = <Self::TargetRelay as HasRelayChains>::DstChain,
+        CounterpartyChain = <Self::TargetRelay as HasRelayChains>::SrcChain,
     >;
 }
 

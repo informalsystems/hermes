@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::chain::types::aliases::Height;
 use crate::core::traits::sync::Async;
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::types::HasRelayPacket;
 use crate::std_prelude::*;
 
 /// Encapsulates the capability of a relayer to send timeout packets over
@@ -16,7 +16,7 @@ use crate::std_prelude::*;
 /// receive back a `WriteAcknowledgementEvent` in response to the receive
 /// packet.
 #[async_trait]
-pub trait CanRelayTimeoutUnorderedPacket: HasRelayTypes {
+pub trait CanRelayTimeoutUnorderedPacket: HasRelayPacket {
     async fn relay_timeout_unordered_packet(
         &self,
         destination_height: &Height<Self::DstChain>,
@@ -27,7 +27,7 @@ pub trait CanRelayTimeoutUnorderedPacket: HasRelayTypes {
 #[async_trait]
 pub trait TimeoutUnorderedPacketRelayer<Relay>: Async
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayPacket,
 {
     async fn relay_timeout_unordered_packet(
         context: &Relay,

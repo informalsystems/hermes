@@ -10,7 +10,7 @@ use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::CanRelay
 use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::relay::traits::types::{HasRelayChains, HasRelayPacket};
 use ibc_relayer_components_extra::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use ibc_relayer_components_extra::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 
@@ -23,7 +23,8 @@ pub trait AfoRelay:
     Clone
     + HasAfoRuntime
     + HasLoggerWithBaseLevels
-    + HasRelayTypes<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
+    + HasRelayChains<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
+    + HasRelayPacket<SrcChainWithPacket = Self::AfoSrcChain>
     + CanBuildUpdateClientMessage<SourceTarget>
     + CanBuildUpdateClientMessage<DestinationTarget>
     + CanSendIbcMessages<SourceTarget>
@@ -56,7 +57,8 @@ where
     Relay: Clone
         + HasAfoRuntime
         + HasLoggerWithBaseLevels
-        + HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain>
+        + HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
+        + HasRelayPacket<SrcChainWithPacket = SrcChain>
         + CanBuildUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>
         + CanSendIbcMessages<SourceTarget>

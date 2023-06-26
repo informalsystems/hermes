@@ -1,7 +1,7 @@
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::types::{HasRelayChains, HasRelayPacket};
 
-pub type Packet<Context> = <Context as HasRelayTypes>::Packet;
+pub type Packet<Context> = <Context as HasRelayPacket>::Packet;
 
-pub type SrcChain<Context> = <Context as HasRelayTypes>::SrcChain;
+pub type SrcChain<Context> = <Context as HasRelayChains>::SrcChain;
 
-pub type DstChain<Context> = <Context as HasRelayTypes>::DstChain;
+pub type DstChain<Context> = <Context as HasRelayChains>::DstChain;

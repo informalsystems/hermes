@@ -13,7 +13,7 @@ use ibc_relayer_components::chain::traits::types::chain_id::HasChainId;
 use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::relay::traits::types::HasRelayChains;
 use ibc_relayer_components::runtime::traits::mutex::{HasMutex, HasRuntimeWithMutex};
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
@@ -37,7 +37,7 @@ where
     Build:
         CanBuildBatchChannel<Target::SrcChainTarget> + CanBuildBatchChannel<Target::DstChainTarget>,
     Target: RelayBuildTarget<Build, TargetRelay = Relay>,
-    Relay: HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain, Error = RelayError<Build>>,
+    Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain, Error = RelayError<Build>>,
     Relay: CanSpawnBatchMessageWorker<SourceTarget>
         + CanSpawnBatchMessageWorker<DestinationTarget>
         + Clone,

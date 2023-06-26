@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use async_trait::async_trait;
 use ibc_relayer_components::relay::traits::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::relay::traits::types::HasRelayChains;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 use crate::runtime::traits::spawn::{HasSpawner, Spawner};
@@ -17,7 +17,7 @@ pub struct ParallelBidirectionalRelayer<InRelayer>(pub PhantomData<InRelayer>);
 #[async_trait]
 impl<Relay, InRelayer, Runtime> AutoRelayer<Relay> for ParallelBidirectionalRelayer<InRelayer>
 where
-    Relay: HasRelayTypes + HasRuntime<Runtime = Runtime> + Clone,
+    Relay: HasRelayChains + HasRuntime<Runtime = Runtime> + Clone,
     InRelayer: AutoRelayerWithTarget<Relay, SourceTarget>,
     InRelayer: AutoRelayerWithTarget<Relay, DestinationTarget>,
     Runtime: HasSpawner,
