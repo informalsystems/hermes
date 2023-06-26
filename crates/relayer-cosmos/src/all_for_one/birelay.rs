@@ -18,8 +18,10 @@ impl<BiRelay, RelayAToB, RelayBToA> AfoCosmosBiRelay for BiRelay
 where
     BiRelay: AfoBiRelay<AfoRelayAToB = RelayAToB, AfoRelayBToA = RelayBToA>,
     RelayAToB: AfoCosmosRelay,
-    RelayBToA:
-        AfoCosmosRelay<CosmosSrcChain = RelayAToB::DstChain, CosmosDstChain = RelayAToB::SrcChain>,
+    RelayBToA: AfoCosmosRelay<
+        CosmosSrcChain = RelayAToB::CosmosDstChain,
+        CosmosDstChain = RelayAToB::CosmosSrcChain,
+    >,
 {
     type CosmosRelayAToB = RelayAToB;
 

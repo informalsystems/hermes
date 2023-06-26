@@ -1,5 +1,5 @@
 use ibc_relayer_components::core::traits::error::HasErrorType;
-use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 use crate::one_for_all::traits::chain::OfaChain;
@@ -30,15 +30,13 @@ where
     }
 }
 
-impl<Relay> HasRelayTypes for OfaRelayWrapper<Relay>
+impl<Relay> HasRelayChains for OfaRelayWrapper<Relay>
 where
     Relay: OfaRelay,
 {
     type SrcChain = OfaChainWrapper<Relay::SrcChain>;
 
     type DstChain = OfaChainWrapper<Relay::DstChain>;
-
-    type Packet = Relay::Packet;
 
     fn src_chain_error(e: <Self::SrcChain as HasErrorType>::Error) -> Self::Error {
         Relay::src_chain_error(e)

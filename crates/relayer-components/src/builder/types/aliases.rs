@@ -6,8 +6,8 @@ use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::chain::traits::types::chain_id::HasChainIdType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::core::traits::error::HasErrorType;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::two_way::HasTwoWayRelay;
-use crate::relay::traits::types::HasRelayTypes;
 use crate::runtime::traits::runtime::HasRuntime;
 use crate::runtime::types::aliases::Mutex;
 
@@ -15,9 +15,9 @@ pub type RelayAToB<Build> = <<Build as HasBiRelayType>::BiRelay as HasTwoWayRela
 
 pub type RelayBToA<Build> = <<Build as HasBiRelayType>::BiRelay as HasTwoWayRelay>::RelayBToA;
 
-pub type ChainA<Build> = <RelayAToB<Build> as HasRelayTypes>::SrcChain;
+pub type ChainA<Build> = <RelayAToB<Build> as HasRelayChains>::SrcChain;
 
-pub type ChainB<Build> = <RelayAToB<Build> as HasRelayTypes>::DstChain;
+pub type ChainB<Build> = <RelayAToB<Build> as HasRelayChains>::DstChain;
 
 pub type ChainIdA<Build> = <ChainA<Build> as HasChainIdType>::ChainId;
 
@@ -87,9 +87,9 @@ pub type SrcChainTarget<Build, Target> = <Target as RelayBuildTarget<Build>>::Sr
 
 pub type DstChainTarget<Build, Target> = <Target as RelayBuildTarget<Build>>::DstChainTarget;
 
-pub type TargetSrcChain<Build, Target> = <TargetRelay<Build, Target> as HasRelayTypes>::SrcChain;
+pub type TargetSrcChain<Build, Target> = <TargetRelay<Build, Target> as HasRelayChains>::SrcChain;
 
-pub type TargetDstChain<Build, Target> = <TargetRelay<Build, Target> as HasRelayTypes>::DstChain;
+pub type TargetDstChain<Build, Target> = <TargetRelay<Build, Target> as HasRelayChains>::DstChain;
 
 pub type TargetSrcChainId<Build, Target> =
     <TargetSrcChain<Build, Target> as HasChainIdType>::ChainId;

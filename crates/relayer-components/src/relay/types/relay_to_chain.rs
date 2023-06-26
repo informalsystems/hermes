@@ -9,8 +9,8 @@ use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::message::{CanEstimateMessageSize, HasMessageType};
 use crate::chain::traits::types::timestamp::HasTimestampType;
 use crate::core::traits::error::HasErrorType;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 /**
@@ -44,7 +44,7 @@ pub struct RelayToChain<Relay, Target> {
 
 impl<Relay, Target> HasErrorType for RelayToChain<Relay, Target>
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
 {
     type Error = Relay::Error;
@@ -52,7 +52,7 @@ where
 
 impl<Relay, Target> HasMessageType for RelayToChain<Relay, Target>
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
 {
     type Message = <Target::TargetChain as HasMessageType>::Message;
@@ -60,7 +60,7 @@ where
 
 impl<Relay, Target> CanEstimateMessageSize for RelayToChain<Relay, Target>
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
     Target::TargetChain: CanEstimateMessageSize,
 {
@@ -71,7 +71,7 @@ where
 
 impl<Relay, Target> HasEventType for RelayToChain<Relay, Target>
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
 {
     type Event = <Target::TargetChain as HasEventType>::Event;
@@ -79,7 +79,7 @@ where
 
 impl<Relay, Target> HasHeightType for RelayToChain<Relay, Target>
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
 {
     type Height = <Target::TargetChain as HasHeightType>::Height;
@@ -87,7 +87,7 @@ where
 
 impl<Relay, Target> HasChainIdType for RelayToChain<Relay, Target>
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
 {
     type ChainId = <Target::TargetChain as HasChainIdType>::ChainId;
@@ -95,7 +95,7 @@ where
 
 impl<Relay, Target> HasTimestampType for RelayToChain<Relay, Target>
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
 {
     type Timestamp = <Target::TargetChain as HasTimestampType>::Timestamp;
@@ -104,7 +104,7 @@ where
 #[async_trait]
 impl<Relay, Target> CanSendMessages for RelayToChain<Relay, Target>
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
     Target::TargetChain: CanSendMessages,
 {

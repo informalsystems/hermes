@@ -156,11 +156,7 @@ pub trait OfaChain: Async {
 #[async_trait]
 pub trait OfaIbcChain<Counterparty>: OfaChain
 where
-    Counterparty: OfaIbcChain<
-        Self,
-        IncomingPacket = Self::OutgoingPacket,
-        OutgoingPacket = Self::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Self>,
 {
     /**
        Corresponds to

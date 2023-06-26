@@ -2,8 +2,8 @@ use async_trait::async_trait;
 
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 /// Trait that encodes the capability of a relayer to relay
@@ -39,7 +39,7 @@ where
 #[async_trait]
 pub trait AutoRelayerWithTarget<Relay, Target>: Async
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
 {
     /// Starts the auto-relaying process of relaying to the given `Relay` context's

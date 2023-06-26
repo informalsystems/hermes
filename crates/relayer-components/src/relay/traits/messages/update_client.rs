@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 
 use crate::chain::types::aliases::{Height, Message};
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanBuildUpdateClientMessage<Target>: HasRelayTypes
+pub trait CanBuildUpdateClientMessage<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
 {
@@ -20,7 +20,7 @@ where
 #[async_trait]
 pub trait UpdateClientMessageBuilder<Relay, Target>
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
 {
     async fn build_update_client_messages(

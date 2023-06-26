@@ -1,16 +1,13 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CanBuildReceivePacketMessage<Counterparty>: HasIbcPacketTypes<Counterparty>
 where
-    Counterparty: HasIbcPacketTypes<
-        Self,
-        IncomingPacket = Self::OutgoingPacket,
-        OutgoingPacket = Self::IncomingPacket,
-    >,
+    Counterparty: HasIbcChainTypes<Self>,
 {
     async fn build_receive_packet_message(
         &self,

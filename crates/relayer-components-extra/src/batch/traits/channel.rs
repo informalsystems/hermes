@@ -1,14 +1,14 @@
 use ibc_relayer_components::chain::traits::types::chain::HasChainTypes;
 use ibc_relayer_components::core::traits::sync::Async;
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::target::ChainTarget;
-use ibc_relayer_components::relay::traits::types::HasRelayTypes;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 use crate::batch::types::aliases::MessageBatchSender;
 use crate::runtime::traits::channel::HasChannelTypes;
 use crate::runtime::traits::channel_once::HasChannelOnceTypes;
 
-pub trait HasMessageBatchSender<Target>: HasRelayTypes
+pub trait HasMessageBatchSender<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasRuntime,
@@ -40,7 +40,7 @@ impl<Relay, SrcMessageBatchSender, DstMessageBatchSender> HasMessageBatchSenderT
 where
     SrcMessageBatchSender: Async,
     DstMessageBatchSender: Async,
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Relay::SrcChain:
         HasMessageBatchSenderType<Relay::Error, MessageBatchSender = SrcMessageBatchSender>,
     Relay::DstChain:

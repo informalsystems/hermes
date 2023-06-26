@@ -3,6 +3,7 @@ use alloc::string::ToString;
 use alloc::vec::Vec;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::ibc_message_sender::{
     CanSendIbcMessages, IbcMessageSender,
 };
@@ -21,7 +22,6 @@ use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_pa
     CanRelayTimeoutUnorderedPacket, TimeoutUnorderedPacketRelayer,
 };
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components::relay::traits::types::HasRelayTypes;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use std::vec;
@@ -66,12 +66,10 @@ impl HasLogger for MockRelayContext {
     }
 }
 
-impl HasRelayTypes for MockRelayContext {
+impl HasRelayChains for MockRelayContext {
     type SrcChain = MockChainContext;
 
     type DstChain = MockChainContext;
-
-    type Packet = PacketKey;
 
     fn src_chain_error(e: Error) -> Self::Error {
         e

@@ -17,11 +17,7 @@ impl<Chain, Counterparty>
     for SendConsensusStateQueryToOfa
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     async fn query_consensus_state(
         chain: &OfaChainWrapper<Chain>,
@@ -38,11 +34,7 @@ impl<Chain, Counterparty> HasConsensusStateType<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     type ConsensusState = Chain::ConsensusState;
 }
@@ -52,11 +44,7 @@ impl<Chain, Counterparty> CanQueryConsensusState<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     async fn query_consensus_state(
         &self,

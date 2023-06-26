@@ -9,7 +9,7 @@ use crate::chain::traits::types::status::HasChainStatusType;
 use crate::chain::types::aliases::Message;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::messages::timeout_unordered_packet::TimeoutUnorderedPacketMessageBuilder;
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::packet::HasRelayPacket;
 use crate::runtime::traits::runtime::HasRuntime;
 use crate::runtime::traits::sleep::CanSleep;
 use crate::std_prelude::*;
@@ -25,7 +25,7 @@ pub struct WaitTimeoutUnorderedPacketMessageBuilder<InMessageBuilder>(
 impl<Relay, InMessageBuilder, Runtime, Height, Error> TimeoutUnorderedPacketMessageBuilder<Relay>
     for WaitTimeoutUnorderedPacketMessageBuilder<InMessageBuilder>
 where
-    Relay: HasRelayTypes<Error = Error>,
+    Relay: HasRelayPacket<Error = Error>,
     Relay: HasRuntime<Runtime = Runtime>,
     Relay::DstChain: CanQueryChainStatus<Height = Height>,
     InMessageBuilder: TimeoutUnorderedPacketMessageBuilder<Relay>,

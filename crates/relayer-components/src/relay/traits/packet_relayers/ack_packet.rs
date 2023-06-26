@@ -3,11 +3,11 @@ use async_trait::async_trait;
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::core::traits::sync::Async;
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanRelayAckPacket: HasRelayTypes
+pub trait CanRelayAckPacket: HasRelayPacket
 where
     Self::DstChain: HasWriteAcknowledgementEvent<Self::SrcChain>,
 {
@@ -22,7 +22,7 @@ where
 #[async_trait]
 pub trait AckPacketRelayer<Relay>: Async
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayPacket,
     Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
 {
     async fn relay_ack_packet(

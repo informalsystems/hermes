@@ -1,14 +1,17 @@
 use async_trait::async_trait;
 
 use crate::chain::types::aliases::{Height, Message};
-use crate::relay::traits::types::HasRelayTypes;
+use crate::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
 
 /// Encapsulates the capability of the implementer to construct a timeout
 /// message that gets sent over an unordered channel from a destination chain
 /// to the source chain that originated the message that has timed out.
 #[async_trait]
-pub trait TimeoutUnorderedPacketMessageBuilder<Relay: HasRelayTypes> {
+pub trait TimeoutUnorderedPacketMessageBuilder<Relay>
+where
+    Relay: HasRelayPacket,
+{
     async fn build_timeout_unordered_packet_message(
         relay: &Relay,
         destination_height: &Height<Relay::DstChain>,
@@ -20,7 +23,7 @@ pub trait TimeoutUnorderedPacketMessageBuilder<Relay: HasRelayTypes> {
 /// timeout message that gets sent over an unordered channel from a
 /// destination chain to the source chain that originated the timed out message.
 #[async_trait]
-pub trait CanBuildTimeoutUnorderedPacketMessage: HasRelayTypes {
+pub trait CanBuildTimeoutUnorderedPacketMessage: HasRelayPacket {
     async fn build_timeout_unordered_packet_message(
         &self,
         destination_height: &Height<Self::DstChain>,

@@ -3,8 +3,8 @@ use crate::logger::traits::level::HasLoggerWithBaseLevels;
 use crate::logger::traits::log::CanLog;
 use crate::logger::traits::logger::BaseLogger;
 use crate::logger::types::wrapper::LogWrapper;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayTypes;
 
 pub trait CanLogRelay: HasLoggerWithBaseLevels {
     fn log_relay<'a>(
@@ -17,7 +17,7 @@ pub trait CanLogRelay: HasLoggerWithBaseLevels {
 
 impl<Relay> CanLogRelay for Relay
 where
-    Relay: CanLog + HasRelayTypes,
+    Relay: CanLog + HasRelayChains,
     Relay::SrcChain: HasChainId,
     Relay::DstChain: HasChainId,
 {
@@ -40,7 +40,7 @@ where
     }
 }
 
-pub trait CanLogRelayTarget<Target>: HasRelayTypes + HasLoggerWithBaseLevels
+pub trait CanLogRelayTarget<Target>: HasRelayChains + HasLoggerWithBaseLevels
 where
     Target: ChainTarget<Self>,
 {
@@ -54,7 +54,7 @@ where
 
 impl<Relay, Target> CanLogRelayTarget<Target> for Relay
 where
-    Relay: CanLogRelay + HasRelayTypes,
+    Relay: CanLogRelay + HasRelayChains,
     Target::TargetChain: HasChainId,
     Target::CounterpartyChain: HasChainId,
     Target: ChainTarget<Relay>,

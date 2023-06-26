@@ -1,18 +1,14 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
-use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CanQueryWriteAcknowledgement<Counterparty>:
     HasWriteAcknowledgementEvent<Counterparty>
 where
-    Counterparty: HasIbcPacketTypes<
-        Self,
-        IncomingPacket = Self::OutgoingPacket,
-        OutgoingPacket = Self::IncomingPacket,
-    >,
+    Counterparty: HasIbcChainTypes<Self>,
 {
     async fn query_write_acknowledgement_event(
         &self,

@@ -10,11 +10,7 @@ impl<Chain, Counterparty> CanQueryCounterpartyChainIdFromChannel<OfaChainWrapper
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     async fn query_chain_id_from_channel_id(
         &self,

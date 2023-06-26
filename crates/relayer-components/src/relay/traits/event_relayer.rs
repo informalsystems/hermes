@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::types::aliases::{Event, Height};
 use crate::core::traits::sync::Async;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 /**
@@ -19,7 +19,7 @@ use crate::std_prelude::*;
 #[async_trait]
 pub trait EventRelayer<Relay, Target>: Async
 where
-    Relay: HasRelayTypes,
+    Relay: HasRelayChains,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasEventType,
 {
@@ -38,7 +38,7 @@ where
 }
 
 #[async_trait]
-pub trait CanRelayEvent<Target>: HasRelayTypes
+pub trait CanRelayEvent<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasEventType,

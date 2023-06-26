@@ -4,12 +4,12 @@ use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::types::aliases::{Event, Message};
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanSendIbcMessages<Target>: HasRelayTypes
+pub trait CanSendIbcMessages<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
 {
@@ -22,7 +22,7 @@ where
 #[async_trait]
 pub trait IbcMessageSender<Context, Target>: Async
 where
-    Context: HasRelayTypes,
+    Context: HasRelayChains,
     Target: ChainTarget<Context>,
 {
     async fn send_messages(
@@ -38,7 +38,7 @@ pub trait InjectMismatchIbcEventsCountError: HasErrorType {
 #[async_trait]
 pub trait IbcMessageSenderExt<Context, Target>
 where
-    Context: HasRelayTypes,
+    Context: HasRelayChains,
     Target: ChainTarget<Context>,
 {
     async fn send_messages_fixed<const COUNT: usize>(

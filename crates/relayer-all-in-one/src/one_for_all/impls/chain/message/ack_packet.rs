@@ -10,11 +10,7 @@ impl<Chain, Counterparty> CanBuildAckPacketMessage<OfaChainWrapper<Counterparty>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<
-        Chain,
-        IncomingPacket = Chain::OutgoingPacket,
-        OutgoingPacket = Chain::IncomingPacket,
-    >,
+    Counterparty: OfaIbcChain<Chain>,
 {
     async fn build_ack_packet_message(
         &self,

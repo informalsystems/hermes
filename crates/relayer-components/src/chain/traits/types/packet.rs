@@ -37,11 +37,7 @@ use crate::core::traits::sync::Async;
 */
 pub trait HasIbcPacketTypes<Counterparty>: HasIbcChainTypes<Counterparty>
 where
-    Counterparty: HasIbcPacketTypes<
-        Self,
-        IncomingPacket = Self::OutgoingPacket,
-        OutgoingPacket = Self::IncomingPacket,
-    >,
+    Counterparty: HasIbcChainTypes<Self>,
 {
     /**
        A packet sent from counterparty to self.

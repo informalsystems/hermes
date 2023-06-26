@@ -2,10 +2,10 @@ use crate::chain::traits::logs::event::CanLogChainEvent;
 use crate::chain::traits::types::event::HasEventType;
 use crate::logger::traits::has_logger::HasLoggerType;
 use crate::logger::traits::logger::BaseLogger;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::types::HasRelayTypes;
 
-pub trait CanLogRelayEvent: HasRelayTypes + HasLoggerType {
+pub trait CanLogRelayEvent: HasRelayChains + HasLoggerType {
     fn log_src_event<'a>(
         event: &'a <Self::SrcChain as HasEventType>::Event,
     ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
@@ -18,7 +18,7 @@ pub trait CanLogRelayEvent: HasRelayTypes + HasLoggerType {
 impl<Relay, Logger> CanLogRelayEvent for Relay
 where
     Logger: BaseLogger,
-    Relay: HasRelayTypes + HasLoggerType<Logger = Logger>,
+    Relay: HasRelayChains + HasLoggerType<Logger = Logger>,
     Relay::SrcChain: CanLogChainEvent<Logger = Logger>,
     Relay::DstChain: CanLogChainEvent<Logger = Logger>,
 {
@@ -35,7 +35,7 @@ where
     }
 }
 
-pub trait CanLogTargetEvent<Target>: HasRelayTypes + HasLoggerType
+pub trait CanLogTargetEvent<Target>: HasRelayChains + HasLoggerType
 where
     Target: ChainTarget<Self>,
 {
@@ -47,7 +47,7 @@ where
 impl<Relay, Target, Logger> CanLogTargetEvent<Target> for Relay
 where
     Logger: BaseLogger,
-    Relay: HasRelayTypes + HasLoggerType<Logger = Logger>,
+    Relay: HasRelayChains + HasLoggerType<Logger = Logger>,
     Target: ChainTarget<Relay>,
     Target::TargetChain: CanLogChainEvent<Logger = Logger>,
 {

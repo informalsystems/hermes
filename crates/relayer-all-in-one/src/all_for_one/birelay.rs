@@ -22,7 +22,7 @@ pub trait AfoBiRelay:
 impl<BiRelay, RelayAToB, RelayBToA> AfoBiRelay for BiRelay
 where
     RelayAToB: AfoRelay,
-    RelayBToA: AfoRelay<AfoSrcChain = RelayAToB::DstChain, AfoDstChain = RelayAToB::SrcChain>,
+    RelayBToA: AfoRelay<AfoSrcChain = RelayAToB::AfoDstChain, AfoDstChain = RelayAToB::AfoSrcChain>,
     BiRelay: HasAfoRuntime
         + HasLoggerWithBaseLevels
         + CanAutoRelay
