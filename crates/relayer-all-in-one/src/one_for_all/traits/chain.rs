@@ -236,7 +236,7 @@ where
         height: &Counterparty::Height,
     ) -> Result<Counterparty::ConsensusState, Self::Error>;
 
-    async fn is_packet_received(
+    async fn query_is_packet_received(
         &self,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,

@@ -1,47 +1,77 @@
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use alloc::vec::Vec;
+use ibc_relayer_components::core::traits::error::HasErrorType;
+use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
+use ibc_relayer_components::relay::traits::ibc_message_sender::{
+    CanSendIbcMessages, IbcMessageSender,
+};
+use ibc_relayer_components::relay::traits::messages::update_client::{
+    CanBuildUpdateClientMessage, UpdateClientMessageBuilder,
+};
+use ibc_relayer_components::relay::traits::packet_relayer::{CanRelayPacket, PacketRelayer};
+use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::{
+    AckPacketRelayer, CanRelayAckPacket,
+};
+use ibc_relayer_components::relay::traits::packet_relayers::lock::HasPacketLock;
+use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::{
+    CanRelayReceivePacket, ReceivePacketRelayer,
+};
+use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::{
+    CanRelayTimeoutUnorderedPacket, TimeoutUnorderedPacketRelayer,
+};
+use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
+use ibc_relayer_components::relay::traits::types::HasRelayTypes;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use std::vec;
 
 use async_trait::async_trait;
-use ibc_relayer_all_in_one::base::one_for_all::presets::min::MinimalPreset;
-use ibc_relayer_all_in_one::base::one_for_all::traits::chain::OfaChainTypes;
-use ibc_relayer_all_in_one::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
-use ibc_relayer_all_in_one::base::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 use crate::relayer_mock::base::error::{BaseError, Error};
+use crate::relayer_mock::base::types::aliases::ClientId;
+use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
+use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::packet::PacketKey;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
+use crate::relayer_mock::components;
 use crate::relayer_mock::contexts::chain::MockChainContext;
 use crate::relayer_mock::contexts::relay::MockRelayContext;
 
-impl OfaRelayTypes for MockRelayContext {
-    type Preset = MinimalPreset;
-
+impl HasErrorType for MockRelayContext {
     type Error = Error;
+}
 
+impl HasRuntime for MockRelayContext {
     type Runtime = MockRuntimeContext;
 
+    fn runtime(&self) -> &Self::Runtime {
+        &self.runtime
+    }
+
+    fn runtime_error(e: TokioError) -> Error {
+        BaseError::tokio(e).into()
+    }
+}
+
+impl HasLoggerType for MockRelayContext {
     type Logger = TracingLogger;
+}
 
-    type Packet = PacketKey;
+impl HasLogger for MockRelayContext {
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
+    }
+}
 
+impl HasRelayTypes for MockRelayContext {
     type SrcChain = MockChainContext;
 
     type DstChain = MockChainContext;
 
-    type PacketLock<'a> = ();
-}
-
-#[async_trait]
-impl OfaBaseRelay for MockRelayContext {
-    fn runtime_error(e: TokioError) -> Self::Error {
-        BaseError::tokio(e).into()
-    }
+    type Packet = PacketKey;
 
     fn src_chain_error(e: Error) -> Self::Error {
         e
@@ -51,94 +81,148 @@ impl OfaBaseRelay for MockRelayContext {
         e
     }
 
-    fn packet_src_channel_id(
-        packet: &Self::Packet,
-    ) -> &<Self::SrcChain as OfaChainTypes>::ChannelId {
-        &packet.src_channel_id
-    }
-
-    fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::PortId {
-        &packet.src_port_id
-    }
-
-    fn packet_dst_port(packet: &Self::Packet) -> &<Self::DstChain as OfaChainTypes>::PortId {
-        &packet.dst_port_id
-    }
-
-    fn packet_dst_channel_id(
-        packet: &Self::Packet,
-    ) -> &<Self::DstChain as OfaChainTypes>::ChannelId {
-        &packet.dst_channel_id
-    }
-
-    fn packet_sequence(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::Sequence {
-        &packet.sequence
-    }
-
-    fn packet_timeout_height(
-        packet: &Self::Packet,
-    ) -> Option<&<Self::DstChain as OfaChainTypes>::Height> {
-        Some(&packet.timeout_height)
-    }
-
-    fn packet_timeout_timestamp(
-        packet: &Self::Packet,
-    ) -> &<Self::DstChain as OfaChainTypes>::Timestamp {
-        &packet.timeout_timestamp
-    }
-
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
-        &self.runtime
-    }
-
-    fn logger(&self) -> &TracingLogger {
-        &TracingLogger
-    }
-
-    fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId {
-        self.dst_to_src_client()
-    }
-
-    fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain> {
+    fn source_chain(&self) -> &MockChainContext {
         &self.src_chain
     }
 
-    fn dst_client_id(&self) -> &<Self::DstChain as OfaChainTypes>::ClientId {
-        self.src_to_dst_client()
-    }
-
-    fn dst_chain(&self) -> &OfaChainWrapper<Self::DstChain> {
+    fn destination_chain(&self) -> &MockChainContext {
         &self.dst_chain
     }
 
-    async fn build_src_update_client_messages(
-        &self,
-        height: &<Self::DstChain as OfaChainTypes>::Height,
-    ) -> Result<Vec<<Self::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        let state = self.dst_chain().chain.query_state_at_height(*height)?;
+    fn source_client_id(&self) -> &ClientId {
+        self.dst_to_src_client()
+    }
+
+    fn destination_client_id(&self) -> &ClientId {
+        self.src_to_dst_client()
+    }
+}
+
+pub struct MockBuildUpdateClientMessage;
+
+#[async_trait]
+impl UpdateClientMessageBuilder<MockRelayContext, SourceTarget> for MockBuildUpdateClientMessage {
+    async fn build_update_client_messages(
+        context: &MockRelayContext,
+        _target: SourceTarget,
+        height: &MockHeight,
+    ) -> Result<Vec<MockMessage>, Error> {
+        let state = context.dst_chain.query_state_at_height(*height)?;
         Ok(vec![MockMessage::UpdateClient(
-            self.src_client_id().to_string(),
+            context.source_client_id().to_string(),
             *height,
             state,
         )])
     }
+}
 
-    async fn build_dst_update_client_messages(
-        &self,
-        height: &<Self::SrcChain as OfaChainTypes>::Height,
-    ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
-        let state = self.src_chain().chain.query_state_at_height(*height)?;
+#[async_trait]
+impl UpdateClientMessageBuilder<MockRelayContext, DestinationTarget>
+    for MockBuildUpdateClientMessage
+{
+    async fn build_update_client_messages(
+        context: &MockRelayContext,
+        _target: DestinationTarget,
+        height: &MockHeight,
+    ) -> Result<Vec<MockMessage>, Error> {
+        let state = context.src_chain.query_state_at_height(*height)?;
         Ok(vec![MockMessage::UpdateClient(
-            self.dst_client_id().to_string(),
+            context.destination_client_id().to_string(),
             *height,
             state,
         )])
     }
+}
 
-    async fn try_acquire_packet_lock<'a>(
-        &'a self,
-        _packet: &'a Self::Packet,
-    ) -> Option<Self::PacketLock<'a>> {
+#[async_trait]
+impl CanBuildUpdateClientMessage<SourceTarget> for MockRelayContext {
+    async fn build_update_client_messages(
+        &self,
+        target: SourceTarget,
+        height: &MockHeight,
+    ) -> Result<Vec<MockMessage>, Error> {
+        components::UpdateClientMessageBuilder::build_update_client_messages(self, target, height)
+            .await
+    }
+}
+
+#[async_trait]
+impl CanBuildUpdateClientMessage<DestinationTarget> for MockRelayContext {
+    async fn build_update_client_messages(
+        &self,
+        target: DestinationTarget,
+        height: &MockHeight,
+    ) -> Result<Vec<MockMessage>, Error> {
+        components::UpdateClientMessageBuilder::build_update_client_messages(self, target, height)
+            .await
+    }
+}
+
+#[async_trait]
+impl HasPacketLock for MockRelayContext {
+    type PacketLock<'a> = ();
+
+    async fn try_acquire_packet_lock<'a>(&'a self, _packet: &'a PacketKey) -> Option<()> {
         Some(())
+    }
+}
+
+#[async_trait]
+impl CanSendIbcMessages<SourceTarget> for MockRelayContext {
+    async fn send_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
+        <components::IbcMessageSender as IbcMessageSender<MockRelayContext, SourceTarget>>::send_messages(self, messages).await
+    }
+}
+
+#[async_trait]
+impl CanSendIbcMessages<DestinationTarget> for MockRelayContext {
+    async fn send_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
+        <components::IbcMessageSender as IbcMessageSender<MockRelayContext, DestinationTarget>>::send_messages(self, messages).await
+    }
+}
+
+#[async_trait]
+impl CanRelayAckPacket for MockRelayContext {
+    async fn relay_ack_packet(
+        &self,
+        destination_height: &MockHeight,
+        packet: &PacketKey,
+        ack: &WriteAcknowledgementEvent,
+    ) -> Result<(), Error> {
+        components::AckPacketRelayer::relay_ack_packet(self, destination_height, packet, ack).await
+    }
+}
+
+#[async_trait]
+impl CanRelayReceivePacket for MockRelayContext {
+    async fn relay_receive_packet(
+        &self,
+        source_height: &MockHeight,
+        packet: &PacketKey,
+    ) -> Result<Option<WriteAcknowledgementEvent>, Error> {
+        components::ReceivePacketRelayer::relay_receive_packet(self, source_height, packet).await
+    }
+}
+
+#[async_trait]
+impl CanRelayTimeoutUnorderedPacket for MockRelayContext {
+    async fn relay_timeout_unordered_packet(
+        &self,
+        destination_height: &MockHeight,
+        packet: &PacketKey,
+    ) -> Result<(), Self::Error> {
+        components::TimeoutUnorderedPacketRelayer::relay_timeout_unordered_packet(
+            self,
+            destination_height,
+            packet,
+        )
+        .await
+    }
+}
+
+#[async_trait]
+impl CanRelayPacket for MockRelayContext {
+    async fn relay_packet(&self, packet: &PacketKey) -> Result<(), Error> {
+        components::PacketRelayer::relay_packet(self, packet).await
     }
 }

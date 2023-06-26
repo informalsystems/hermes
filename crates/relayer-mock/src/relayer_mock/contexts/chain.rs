@@ -16,7 +16,6 @@ use std::vec;
 use std::{collections::HashMap, sync::Arc};
 
 use eyre::eyre;
-use ibc_relayer_all_in_one::base::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 use crate::relayer_mock::base::error::{BaseError, Error};
 use crate::relayer_mock::base::types::aliases::{
@@ -39,12 +38,12 @@ pub struct MockChainContext {
     pub current_state: Arc<Mutex<ChainState>>,
     pub consensus_states: Arc<Mutex<HashMap<ClientId, StateStore>>>,
     pub channel_to_client: Arc<Mutex<HashMap<ChannelId, ClientId>>>,
-    pub runtime: OfaRuntimeWrapper<MockRuntimeContext>,
+    pub runtime: MockRuntimeContext,
 }
 
 impl MockChainContext {
     pub fn new(name: String, clock: Arc<MockClock>) -> Self {
-        let runtime = OfaRuntimeWrapper::new(MockRuntimeContext::new(clock));
+        let runtime = MockRuntimeContext::new(clock);
         let chain_state = State::default();
         let initial_state: StateStore =
             HashMap::from([(MockHeight::default(), chain_state.clone())]);
@@ -63,7 +62,7 @@ impl MockChainContext {
         &self.name
     }
 
-    pub fn runtime(&self) -> &OfaRuntimeWrapper<MockRuntimeContext> {
+    pub fn runtime(&self) -> &MockRuntimeContext {
         &self.runtime
     }
 
@@ -233,7 +232,7 @@ impl MockChainContext {
 
         // Check that the packet is not timed out. Current height < packet timeout height.
         let current_height = self.get_current_height();
-        let current_time = self.runtime().runtime.get_time();
+        let current_time = self.runtime.get_time();
 
         if current_state.check_timeout(packet.clone(), current_height, current_time.clone()) {
             return Err(BaseError::timeout_receive(
@@ -393,8 +392,7 @@ impl MockChainContext {
         let mut locked_current_height = self.current_height.acquire_mutex();
         *locked_current_height = new_height;
 
-        self.runtime()
-            .runtime
+        self.runtime
             .clock
             .increment_timestamp(MockTimestamp::default())?;
 

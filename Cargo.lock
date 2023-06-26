@@ -1751,6 +1751,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-relayer-mock"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "eyre",
+ "flex-error",
+ "ibc-relayer-components",
+ "ibc-relayer-runtime",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "ibc-relayer-rest"
 version = "0.24.1"
 dependencies = [

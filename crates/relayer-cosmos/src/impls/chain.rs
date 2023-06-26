@@ -344,7 +344,7 @@ where
             .map_err(BaseError::join)?
     }
 
-    async fn is_packet_received(
+    async fn query_is_packet_received(
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,

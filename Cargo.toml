@@ -10,7 +10,7 @@ members = [
     "crates/relayer-components",
     "crates/relayer-components-extra",
     "crates/relayer-all-in-one",
-    # "crates/relayer-mock",
+    "crates/relayer-mock",
     "crates/relayer-runtime",
     "crates/relayer-cosmos",
     "crates/telemetry",

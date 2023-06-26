@@ -49,22 +49,6 @@ pub trait OfaRelay: Async {
 
     fn max_retry_exceeded_error(e: Self::Error) -> Self::Error;
 
-    fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChain>::PortId;
-
-    fn packet_src_channel_id(packet: &Self::Packet) -> &<Self::SrcChain as OfaChain>::ChannelId;
-
-    fn packet_dst_port(packet: &Self::Packet) -> &<Self::DstChain as OfaChain>::PortId;
-
-    fn packet_dst_channel_id(packet: &Self::Packet) -> &<Self::DstChain as OfaChain>::ChannelId;
-
-    fn packet_sequence(packet: &Self::Packet) -> &<Self::SrcChain as OfaChain>::Sequence;
-
-    fn packet_timeout_height(
-        packet: &Self::Packet,
-    ) -> Option<&<Self::DstChain as OfaChain>::Height>;
-
-    fn packet_timeout_timestamp(packet: &Self::Packet) -> &<Self::DstChain as OfaChain>::Timestamp;
-
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn logger(&self) -> &Self::Logger;

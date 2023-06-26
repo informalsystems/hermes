@@ -24,7 +24,7 @@ where
     ) -> Result<bool, Self::Error> {
         let is_received = self
             .chain
-            .is_packet_received(port_id, channel_id, sequence)
+            .query_is_packet_received(port_id, channel_id, sequence)
             .await?;
 
         Ok(is_received)
