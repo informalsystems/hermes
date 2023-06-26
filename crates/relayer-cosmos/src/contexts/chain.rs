@@ -48,12 +48,9 @@ impl<Handle: ChainHandle> CosmosChain<Handle> {
             EventSourceMode::Push {
                 url,
                 batch_delay: _,
-            } => runtime.new_abci_event_subscription(
-                chain_version,
-                url.clone(),
-                compat_mode,
-                all_queries(),
-            ),
+            } => {
+                runtime.new_abci_event_subscription(chain_version, url, compat_mode, all_queries())
+            }
             EventSourceMode::Pull { interval: _ } => {
                 // TODO: implement pull-based event source
                 Arc::new(EmptySubscription::new())
