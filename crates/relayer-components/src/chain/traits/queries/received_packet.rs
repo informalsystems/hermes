@@ -1,12 +1,13 @@
 use async_trait::async_trait;
 
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait ReceivedPacketQuerier<Chain, Counterparty>
 where
-    Chain: HasIbcChainTypes<Counterparty>,
+    Chain: HasIbcChainTypes<Counterparty> + HasErrorType,
     Counterparty: HasIbcChainTypes<Chain>,
 {
     async fn query_is_packet_received(
@@ -18,7 +19,8 @@ where
 }
 
 #[async_trait]
-pub trait CanQueryReceivedPacket<Counterparty>: HasIbcChainTypes<Counterparty>
+pub trait CanQueryReceivedPacket<Counterparty>:
+    HasIbcChainTypes<Counterparty> + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {

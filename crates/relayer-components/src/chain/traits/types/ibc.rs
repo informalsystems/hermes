@@ -46,10 +46,7 @@ use crate::std_prelude::*;
    access to two chain contexts are handled by the
    [relay context](crate::relay).
 */
-pub trait HasIbcChainTypes<Counterparty>: HasChainTypes
-where
-    Counterparty: HasChainTypes,
-{
+pub trait HasIbcChainTypes<Counterparty>: HasChainTypes {
     /**
        The client ID of the counterparty chain, that is stored on the self
        chain.

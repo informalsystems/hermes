@@ -2,11 +2,12 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
+use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CanQueryWriteAcknowledgement<Counterparty>:
-    HasWriteAcknowledgementEvent<Counterparty>
+    HasWriteAcknowledgementEvent<Counterparty> + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {

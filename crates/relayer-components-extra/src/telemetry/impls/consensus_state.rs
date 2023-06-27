@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
 use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
+use ibc_relayer_components::core::traits::error::HasErrorType;
 
 use crate::std_prelude::*;
 use crate::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
@@ -15,7 +16,7 @@ pub struct ConsensusStateTelemetryQuerier<InQuerier> {
 impl<InQuerier, Chain, Counterparty, Telemetry> ConsensusStateQuerier<Chain, Counterparty>
     for ConsensusStateTelemetryQuerier<InQuerier>
 where
-    Chain: HasIbcChainTypes<Counterparty> + HasTelemetry<Telemetry = Telemetry>,
+    Chain: HasIbcChainTypes<Counterparty> + HasTelemetry<Telemetry = Telemetry> + HasErrorType,
     Counterparty: HasConsensusStateType<Chain>,
     InQuerier: ConsensusStateQuerier<Chain, Counterparty>,
     Telemetry: HasMetric<TelemetryCounter>,

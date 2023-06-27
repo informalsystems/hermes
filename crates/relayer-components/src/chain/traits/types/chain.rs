@@ -7,15 +7,11 @@ use crate::chain::traits::types::event::HasEventType;
 use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::message::HasMessageType;
 use crate::chain::traits::types::timestamp::HasTimestampType;
-use crate::core::traits::error::HasErrorType;
 
 /**
    This covers the minimal abstract types that are used inside a chain context.
 
    A chain context have the following abstract types:
-
-   -   [`Error`](HasErrorType::Error) - the error type encapsulating errors occured
-       during chain operations.
 
    -   [`Height`](HasHeightType::Height) - the height of a chain, which should
         behave like natural numbers.
@@ -41,16 +37,11 @@ use crate::core::traits::error::HasErrorType;
     about the transaction context.
 */
 pub trait HasChainTypes:
-    HasHeightType + HasMessageType + HasEventType + HasChainIdType + HasTimestampType + HasErrorType
+    HasHeightType + HasMessageType + HasEventType + HasChainIdType + HasTimestampType
 {
 }
 
 impl<Chain> HasChainTypes for Chain where
-    Chain: HasHeightType
-        + HasMessageType
-        + HasEventType
-        + HasChainIdType
-        + HasTimestampType
-        + HasErrorType
+    Chain: HasHeightType + HasMessageType + HasEventType + HasChainIdType + HasTimestampType
 {
 }

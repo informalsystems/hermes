@@ -11,9 +11,9 @@ pub struct SourceTarget;
 pub struct DestinationTarget;
 
 pub trait ChainTarget<Relay: HasRelayChains>: Async + Default + private::Sealed {
-    type TargetChain: HasIbcChainTypes<Self::CounterpartyChain>;
+    type TargetChain: HasIbcChainTypes<Self::CounterpartyChain> + HasErrorType;
 
-    type CounterpartyChain: HasIbcChainTypes<Self::TargetChain>;
+    type CounterpartyChain: HasIbcChainTypes<Self::TargetChain> + HasErrorType;
 
     fn target_chain_error(e: <Self::TargetChain as HasErrorType>::Error) -> Relay::Error;
 

@@ -6,6 +6,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::traits::types::message::HasMessageType;
+use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
 
@@ -60,7 +61,7 @@ use crate::std_prelude::*;
    provides the same interface for sending messages using this trait.
 */
 #[async_trait]
-pub trait CanSendMessages: HasMessageType + HasEventType {
+pub trait CanSendMessages: HasMessageType + HasEventType + HasErrorType {
     /**
         Given a list of [messages](HasMessageType::Message), submit the messages
         atomically to the chain.
@@ -89,7 +90,7 @@ pub trait CanSendMessages: HasMessageType + HasEventType {
 #[async_trait]
 pub trait MessageSender<Chain>: Async
 where
-    Chain: HasMessageType + HasEventType,
+    Chain: HasMessageType + HasEventType + HasErrorType,
 {
     /**
        Corresponds to [`CanSendMessages::send_messages`]

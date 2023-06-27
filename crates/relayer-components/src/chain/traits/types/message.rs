@@ -17,7 +17,7 @@ use crate::std_prelude::*;
    we want to avoid defining multiple associated `Message` types so that
    they can never be ambiguous.
 */
-pub trait HasMessageType: HasErrorType {
+pub trait HasMessageType: Async {
     /**
        The messages that can be assembled into transactions and be submitted to
        a blockchain.
@@ -55,7 +55,7 @@ pub trait HasMessageType: HasErrorType {
     type Message: Async;
 }
 
-pub trait CanEstimateMessageSize: HasMessageType {
+pub trait CanEstimateMessageSize: HasMessageType + HasErrorType {
     /**
        Estimate the size of a message after it is encoded into raw bytes
        inside a transaction.

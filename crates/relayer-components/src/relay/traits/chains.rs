@@ -35,17 +35,17 @@ pub trait HasRelayChains: HasErrorType {
         A source chain context that has the IBC chain types that are correspond
         to the destination chain.
     */
-    type SrcChain: HasIbcPacketTypes<Self::DstChain>;
+    type SrcChain: HasIbcPacketTypes<Self::DstChain> + HasErrorType;
 
     /**
         A destination chain context that has the IBC chain types that are correspond
         to the source chain.
     */
     type DstChain: HasIbcPacketTypes<
-        Self::SrcChain,
-        IncomingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::OutgoingPacket,
-        OutgoingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::IncomingPacket,
-    >;
+            Self::SrcChain,
+            IncomingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::OutgoingPacket,
+            OutgoingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::IncomingPacket,
+        > + HasErrorType;
 
     /**
         Get a reference to the source chain context from the relay context.
