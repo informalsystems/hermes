@@ -248,7 +248,7 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
         .and_then(|app_state| app_state.get_mut("gov"))
         .and_then(|gov| get_mut_with_fallback(gov, "params", "voting_params"))
         .and_then(|voting_params| voting_params.as_object_mut())
-        .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
+        .ok_or_else(|| eyre!("failed to get voting_params in genesis file"))?;
 
     voting_period
         .insert(
