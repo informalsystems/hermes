@@ -1,5 +1,6 @@
 pub mod auto_relayer;
 pub mod chains;
+pub mod connection;
 pub mod event_relayer;
 pub mod ibc_message_sender;
 pub mod logs;

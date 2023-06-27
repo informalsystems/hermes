@@ -1,4 +1,5 @@
 pub mod client;
+pub mod connection;
 pub mod event_subscription;
 pub mod logs;
 pub mod message_builders;
