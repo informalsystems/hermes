@@ -14,7 +14,10 @@ use crate::chain::cli::bootstrap::{
     add_genesis_account, add_genesis_validator, add_wallet, collect_gen_txs, initialize,
     start_chain,
 };
-use crate::chain::cli::provider::submit_consumer_chain_proposal;
+use crate::chain::cli::provider::{
+    copy_validator_key_pair, query_consumer_genesis, replace_genesis_state,
+    submit_consumer_chain_proposal,
+};
 use crate::chain::driver::ChainDriver;
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
@@ -103,6 +106,25 @@ pub trait ChainBootstrapMethodsExt {
         consumer_chain_id: &str,
         spawn_time: &str,
     ) -> Result<(), Error>;
+
+    /**
+       Query a consumer chain's genesis.
+    */
+    fn query_consumer_genesis(
+        &self,
+        consumer_chain_driver: &ChainDriver,
+        consumer_chain_id: &str,
+    ) -> Result<(), Error>;
+
+    /**
+       Replace genesis state.
+    */
+    fn replace_genesis_state(&self) -> Result<(), Error>;
+
+    /**
+       Copy validator key pair.
+    */
+    fn copy_validator_key_pair(&self, provider_chain_driver: &ChainDriver) -> Result<(), Error>;
 }
 
 impl ChainBootstrapMethodsExt for ChainDriver {
@@ -280,5 +302,39 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             &self.home_path,
             &self.rpc_listen_address(),
         )
+    }
+
+    fn query_consumer_genesis(
+        &self,
+        consumer_chain_driver: &ChainDriver,
+        consumer_chain_id: &str,
+    ) -> Result<(), Error> {
+        let consumer_genesis = query_consumer_genesis(
+            self.chain_id.as_str(),
+            &self.command_path,
+            &self.home_path,
+            &self.rpc_listen_address(),
+            consumer_chain_id,
+        )?;
+        consumer_chain_driver.write_file("config/consumer_genesis.json", &consumer_genesis)?;
+
+        Ok(())
+    }
+
+    fn replace_genesis_state(&self) -> Result<(), Error> {
+        let genesis_output = replace_genesis_state(self.chain_id.as_str(), &self.home_path)?;
+        self.write_file("config/genesis.json", &genesis_output)?;
+
+        Ok(())
+    }
+
+    fn copy_validator_key_pair(&self, provider_chain_driver: &ChainDriver) -> Result<(), Error> {
+        copy_validator_key_pair(
+            self.chain_id.as_str(),
+            &provider_chain_driver.home_path,
+            &self.home_path,
+        )?;
+
+        Ok(())
     }
 }

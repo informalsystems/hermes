@@ -1,8 +1,6 @@
 use std::str;
 
-use crate::chain::driver::ChainDriver;
 use crate::chain::exec::simple_exec;
-use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use crate::error::Error;
 
 pub fn submit_consumer_chain_proposal(
@@ -40,13 +38,12 @@ pub fn submit_consumer_chain_proposal(
 }
 
 pub fn query_consumer_genesis(
-    chain_driver: &ChainDriver,
     chain_id: &str,
     command_path: &str,
     home_path: &str,
     rpc_listen_address: &str,
     consumer_chain_id: &str,
-) -> Result<(), Error> {
+) -> Result<String, Error> {
     let exec_output = simple_exec(
         chain_id,
         command_path,
@@ -64,12 +61,10 @@ pub fn query_consumer_genesis(
         ],
     )?;
 
-    chain_driver.write_file("config/consumer_genesis.json", &exec_output.stdout)?;
-
-    Ok(())
+    Ok(exec_output.stdout)
 }
 
-pub fn jq_exp(chain_driver: &ChainDriver, home_path: &str, chain_id: &str) -> Result<(), Error> {
+pub fn replace_genesis_state(chain_id: &str, home_path: &str) -> Result<String, Error> {
     let exec_output = simple_exec(
         chain_id,
         "jq",
@@ -81,7 +76,22 @@ pub fn jq_exp(chain_driver: &ChainDriver, home_path: &str, chain_id: &str) -> Re
         ],
     )?;
 
-    chain_driver.write_file("config/genesis.json", &exec_output.stdout)?;
+    Ok(exec_output.stdout)
+}
+
+pub fn copy_validator_key_pair(
+    chain_id: &str,
+    provider_home_path: &str,
+    consumer_home_path: &str,
+) -> Result<(), Error> {
+    simple_exec(
+        chain_id,
+        "cp",
+        &[
+            &format!("{}/config/priv_validator_key.json", provider_home_path),
+            &format!("{}/config/priv_validator_key.json", consumer_home_path),
+        ],
+    )?;
 
     Ok(())
 }

@@ -72,6 +72,8 @@ pub fn bootstrap_chains_with_full_nodes(
     // See [`spawn_chain_handle`] for more details.
     let handle_a = spawn_chain_handle(|| {}, &registry, &node_a)?;
     let handle_b = spawn_chain_handle(|| {}, &registry, &node_b)?;
+
+    // Wait for the chain handles to be spawned
     thread::sleep(Duration::from_secs(10));
 
     pad_client_ids(&handle_a, &handle_b, options.pad_client_id_a_to_b)?;

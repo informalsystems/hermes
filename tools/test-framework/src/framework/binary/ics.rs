@@ -32,7 +32,7 @@ pub trait InterchainSecurityChainTest {
 
 /**
  A wrapper type that lifts a test case that implements [`InterchainSecurityChainTest`]
- into a test case the implements [`BinaryNodeTest`].
+ into a test case the implements [`BasicTest`].
 */
 pub struct RunInterchainSecurityChainTest<'a, Test> {
     /// Inner test
@@ -56,10 +56,10 @@ where
     Overrides: NodeConfigOverride + NodeGenesisOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        // Bootstrap producer
+        // Bootstrap provider
         let node_a = bootstrap_single_node(
             builder,
-            "producer",
+            "provider",
             false,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),

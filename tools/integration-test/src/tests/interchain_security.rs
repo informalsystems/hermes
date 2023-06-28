@@ -1,13 +1,6 @@
-//! The following tests are for the Cross-chain Queries, ICS31.
-//! These tests require the first chain to be a Gaia chain and
-//! the second chain a Stride chain. Only the Stride chain requires
-//! to have the ICS31 enabled.
-//!
-//! The test `ICS31Test` registers the cosmos account as a host-zone
-//! using `strided tx stakeibc register-host-zone` in order to have
-//! the Stride chain trigger Cross-chain Queries.
-//! The test then waits for a Cross-chain Query to be pending and
-//! then processed.
+//! The following tests are for the Interchain Security.
+//! These tests require the first chain to be a Producer chain and
+//! the second chain a Consumer chain.
 use ibc_test_framework::chain::config::set_voting_period;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
@@ -33,6 +26,10 @@ impl TestOverrides for InterchainSecurityTest {
         Ok(())
     }
 
+    // The `ccv_consumer_chain` must be `true` for the Consumer chain.
+    // The `trusting_period` must be strictly smaller than the `unbonding_period`
+    // specified in the Consumer chain proposal. The test framework uses 100s in
+    // the proposal.
     fn modify_relayer_config(&self, config: &mut Config) {
         for chain_config in config.chains.iter_mut() {
             if chain_config.id == ChainId::from_string("ibcconsumer") {

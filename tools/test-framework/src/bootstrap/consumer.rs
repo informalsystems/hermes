@@ -9,14 +9,11 @@ use toml;
 use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
-use crate::chain::cli::provider::{jq_exp, query_consumer_genesis};
 use crate::chain::config;
-use crate::chain::exec::simple_exec;
 use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use crate::error::Error;
 use crate::prelude::{ChainDriver, Denom, FullNode, TestWallets, Token};
-use crate::types::wallet::Wallet;
-use crate::util::random::{random_u128_range, random_u32};
+use crate::util::random::random_u128_range;
 
 pub fn bootstrap_consumer_node(
     builder: &ChainBuilder,
@@ -46,10 +43,10 @@ pub fn bootstrap_consumer_node(
 
     chain_driver.initialize()?;
 
-    let validator = add_wallet(&chain_driver, "validator", false)?;
-    let relayer = add_wallet(&chain_driver, "relayer", false)?;
-    let user1 = add_wallet(&chain_driver, "user1", false)?;
-    let user2 = add_wallet(&chain_driver, "user2", false)?;
+    let validator = chain_driver.add_wallet("validator")?;
+    let relayer = chain_driver.add_wallet("relayer")?;
+    let user1 = chain_driver.add_wallet("user1")?;
+    let user2 = chain_driver.add_wallet("user2")?;
 
     chain_driver.add_genesis_account(&validator.address, &[&additional_initial_stake])?;
     chain_driver.add_genesis_account(&relayer.address, &[&initial_stake, &initial_coin])?;
@@ -59,20 +56,11 @@ pub fn bootstrap_consumer_node(
     // Wait for the consumer chain to be initialized before querying the genesis
     thread::sleep(Duration::from_secs(10));
 
-    query_consumer_genesis(
-        &chain_driver,
-        node_a.chain_driver.chain_id.as_str(),
-        &node_a.chain_driver.command_path,
-        &node_a.chain_driver.home_path,
-        &node_a.chain_driver.rpc_listen_address(),
-        chain_driver.chain_id.as_str(),
-    )?;
+    node_a
+        .chain_driver
+        .query_consumer_genesis(&chain_driver, chain_driver.chain_id.as_str())?;
 
-    jq_exp(
-        &chain_driver,
-        &chain_driver.home_path,
-        node_a.chain_driver.chain_id.as_str(),
-    )?;
+    chain_driver.replace_genesis_state()?;
 
     chain_driver.update_genesis_file("genesis.json", genesis_modifier)?;
     // The configuration `soft_opt_out_threshold` might be missing and is required
@@ -107,17 +95,7 @@ pub fn bootstrap_consumer_node(
         Ok(())
     })?;
 
-    simple_exec(
-        chain_driver.chain_id.as_str(),
-        "cp",
-        &[
-            &format!(
-                "{}/config/priv_validator_key.json",
-                provider_chain_driver.home_path
-            ),
-            &format!("{}/config/priv_validator_key.json", chain_driver.home_path),
-        ],
-    )?;
+    chain_driver.copy_validator_key_pair(provider_chain_driver)?;
 
     let process = chain_driver.start()?;
 
@@ -155,14 +133,4 @@ pub fn bootstrap_consumer_node(
     };
 
     Ok(node)
-}
-
-fn add_wallet(driver: &ChainDriver, prefix: &str, use_random_id: bool) -> Result<Wallet, Error> {
-    if use_random_id {
-        let num = random_u32();
-        let wallet_id = format!("{prefix}-{num:x}");
-        driver.add_wallet(&wallet_id)
-    } else {
-        driver.add_wallet(prefix)
-    }
 }
