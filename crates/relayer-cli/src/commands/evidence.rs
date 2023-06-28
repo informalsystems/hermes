@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::chain::ChainType;
+use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
 use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc_relayer_types::tx_msg::Msg;
 use std::collections::HashMap;
@@ -104,7 +105,7 @@ fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> ey
 
 use tendermint_rpc::{Client, Paging};
 
-/// Check for misbehavior evidence in the block at the given height.
+/// Check for misbehaviour evidence in the block at the given height.
 /// If such evidence is found, handle it by submitting it to all counterparty
 /// clients of the chain, freezing them.
 fn check_misbehaviour_at(
@@ -145,10 +146,10 @@ fn handle_light_client_attack(
 
     let mut chains = HashMap::new();
 
-    // For each counterparty client, build the misbehavior evidence and submit it to the chain,
+    // For each counterparty client, build the misbehaviour evidence and submit it to the chain,
     // freezing that client.
     for (counterparty_chain_id, counterparty_client_id) in counterparty_clients {
-        let misbehavior = TendermintMisbehaviour {
+        let misbehaviour = TendermintMisbehaviour {
             client_id: counterparty_client_id.clone(),
             header1: header1.clone(),
             header2: header2.clone(),
@@ -163,13 +164,28 @@ fn handle_light_client_attack(
             .get_mut(&counterparty_chain_id)
             .ok_or_else(|| eyre::eyre!("failed to spawn chain {counterparty_chain_id}"))?;
 
-        let msg = MsgSubmitMisbehaviour {
-            client_id: counterparty_client_id,
-            misbehaviour: misbehavior.to_any(),
-            signer: counterparty_chain.get_signer()?,
+        let signer = counterparty_chain.get_signer()?;
+
+        let msg = if chain.config().ccv_consumer_chain {
+            info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
+
+            MsgSubmitIcsConsumerMisbehaviour {
+                submitter: signer,
+                misbehaviour,
+            }
+            .to_any()
+        } else {
+            info!("submitting sovereign misbehaviour to chain {counterparty_chain_id}");
+
+            MsgSubmitMisbehaviour {
+                client_id: counterparty_client_id,
+                misbehaviour: misbehaviour.to_any(),
+                signer,
+            }
+            .to_any()
         };
 
-        let tracked_msgs = TrackedMsgs::new_single(msg.to_any(), "submit_misbehaviour");
+        let tracked_msgs = TrackedMsgs::new_single(msg, "submit_misbehaviour");
         let responses = counterparty_chain.send_messages_and_wait_check_tx(tracked_msgs)?;
 
         for response in responses {
