@@ -166,15 +166,24 @@ fn handle_light_client_attack(
 
         let signer = counterparty_chain.get_signer()?;
 
-        let is_consumer_chain = chain.config().ccv_consumer_chain;
-        let counterparty_is_provider = if is_consumer_chain {
-            // TODO: Figure out if counterparty is a provider chain or not
-            false
+        // If the misbehaving chain is a CCV consumer chain,
+        // then try fetch the consumer chains of the counterparty chains.
+        // If that fails, then that chain is not a provider chain.
+        // Otherwise, check if the misbehaving chain is a consumer of the counterparty chain,
+        // which is definitely a provider.
+        let counterparty_is_provider = if chain.config().ccv_consumer_chain {
+            let consumer_chains = counterparty_chain
+                .query_consumer_chains()
+                .unwrap_or_default(); // If the query fails, use an empty list of consumers
+
+            consumer_chains
+                .iter()
+                .any(|(chain_id, _)| chain_id == chain.id())
         } else {
             false
         };
 
-        let msg = if is_consumer_chain && counterparty_is_provider {
+        let msg = if counterparty_is_provider {
             info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
 
             MsgSubmitIcsConsumerMisbehaviour {

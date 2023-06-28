@@ -835,6 +835,40 @@ impl CosmosSdkChain {
 
         Ok((begin_block_events, end_block_events))
     }
+
+    pub fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+        crate::time!(
+            "query_consumer_chains",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
+        crate::telemetry!(query, self.id(), "query_consumer_chains");
+
+        let mut client = self.block_on(
+            ibc_proto::interchain_security::ccv::provider::v1::query_client::QueryClient::connect(
+                self.grpc_addr.clone(),
+            ),
+        )
+        .map_err(Error::grpc_transport)?;
+
+        let request = tonic::Request::new(
+            ibc_proto::interchain_security::ccv::provider::v1::QueryConsumerChainsRequest {},
+        );
+
+        let response = self
+            .block_on(client.query_consumer_chains(request))
+            .map_err(|e| Error::grpc_status(e, "query_consumer_chains".to_owned()))?
+            .into_inner();
+
+        let result = response
+            .chains
+            .into_iter()
+            .map(|c| (c.chain_id.parse().unwrap(), c.client_id.parse().unwrap()))
+            .collect();
+
+        Ok(result)
+    }
 }
 
 impl ChainEndpoint for CosmosSdkChain {

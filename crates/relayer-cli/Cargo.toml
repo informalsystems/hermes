@@ -29,7 +29,7 @@ ibc-relayer-types  = { version = "0.24.1", path = "../relayer-types" }
 ibc-relayer        = { version = "0.24.1", path = "../relayer" }
 ibc-telemetry      = { version = "0.24.1", path = "../telemetry", optional = true }
 ibc-relayer-rest   = { version = "0.24.1", path = "../relayer-rest", optional = true }
-ibc-chain-registry = { version = "0.24.1" , path = "../chain-registry" }
+ibc-chain-registry = { version = "0.24.1" ,path = "../chain-registry" }
 
 atty                     = "0.2.14"
 chrono = "0.4.24"
