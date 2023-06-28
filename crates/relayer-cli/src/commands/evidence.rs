@@ -1,7 +1,9 @@
 use alloc::sync::Arc;
 use ibc_relayer::chain::tracking::TrackedMsgs;
+use ibc_relayer::chain::ChainType;
 use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc_relayer_types::tx_msg::Msg;
+use std::collections::HashMap;
 use std::ops::Deref;
 
 use abscissa_core::clap::Parser;
@@ -42,8 +44,12 @@ impl Runnable for EvidenceCmd {
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain_config = config.find_chain(&self.chain_id).cloned().unwrap();
 
+        if chain_config.r#type != ChainType::CosmosSdk {
+            Output::error(format!("Chain {} is not a Cosmos SDK chain", self.chain_id)).exit();
+        }
+
         let chain = CosmosSdkChain::bootstrap(chain_config, rt.clone()).unwrap();
-        let res = rt.block_on(monitor_equivocation(rt.clone(), chain));
+        let res = monitor_misbehaviours(rt, chain);
 
         match res {
             Ok(()) => Output::success(()).exit(),
@@ -52,10 +58,7 @@ impl Runnable for EvidenceCmd {
     }
 }
 
-async fn monitor_equivocation(
-    rt: Arc<TokioRuntime>,
-    mut chain: CosmosSdkChain,
-) -> eyre::Result<()> {
+fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> eyre::Result<()> {
     let subscription = chain.subscribe()?;
 
     // check previous blocks for equivocation that may have been missed
@@ -86,7 +89,7 @@ async fn monitor_equivocation(
                     if let IbcEvent::NewBlock(new_block) = &event_with_height.event {
                         debug!("{new_block:?}");
 
-                        check_misbehaviour_at(rt.clone(), &chain, new_block.height).await?;
+                        check_misbehaviour_at(rt.clone(), &chain, new_block.height)?;
                     }
                 }
             }
@@ -101,16 +104,16 @@ async fn monitor_equivocation(
 
 use tendermint_rpc::{Client, Paging};
 
-#[allow(unused_variables, unreachable_code, clippy::diverging_sub_expression)]
-async fn check_misbehaviour_at(
+/// Check for misbehavior evidence in the block at the given height.
+/// If such evidence is found, handle it by submitting it to all counterparty
+/// clients of the chain, freezing them.
+fn check_misbehaviour_at(
     rt: Arc<TokioRuntime>,
     chain: &CosmosSdkChain,
     height: Height,
 ) -> eyre::Result<()> {
-    let block = chain
-        .rpc_client
-        .block(TendermintHeight::from(height))
-        .await?
+    let block = rt
+        .block_on(chain.rpc_client.block(TendermintHeight::from(height)))?
         .block;
 
     for evidence in block.evidence.into_vec() {
@@ -121,7 +124,7 @@ async fn check_misbehaviour_at(
             tendermint::evidence::Evidence::LightClientAttack(lc) => {
                 debug!("found light client attack evidence {lc:?}");
 
-                handle_light_client_attack(rt.clone(), chain, *lc).await?;
+                handle_light_client_attack(rt.clone(), chain, *lc)?;
             }
         }
     }
@@ -129,49 +132,21 @@ async fn check_misbehaviour_at(
     Ok(())
 }
 
-async fn handle_light_client_attack(
+fn handle_light_client_attack(
     rt: Arc<TokioRuntime>,
     chain: &CosmosSdkChain,
     lc: LightClientAttackEvidence,
 ) -> eyre::Result<()> {
-    let trusted_validator_set = chain
-        .rpc_client
-        .validators(lc.common_height, Paging::All)
-        .await?
-        .validators;
+    // Build the two headers to submit as part of the `MsgSubmitMisbehaviour` message.
+    let (header1, header2) = build_evidence_headers(rt.clone(), chain, lc)?;
 
-    let header1 = {
-        TendermintHeader {
-            signed_header: lc.conflicting_block.signed_header,
-            validator_set: lc.conflicting_block.validator_set,
-            trusted_height: Height::from_tm(lc.common_height, chain.id()),
-            trusted_validator_set: validator::Set::new(trusted_validator_set.clone(), None),
-        }
-    };
+    // Fetch all the counterparty clients of this chain.
+    let counterparty_clients = fetch_all_counterparty_clients(chain)?;
 
-    let header2 = {
-        let signed_header = chain
-            .rpc_client
-            .commit(header1.signed_header.header.height)
-            .await?
-            .signed_header;
+    let mut chains = HashMap::new();
 
-        let validators = chain
-            .rpc_client
-            .validators(header1.signed_header.header.height, Paging::All)
-            .await?
-            .validators;
-
-        TendermintHeader {
-            signed_header,
-            validator_set: validator::Set::new(validators, None),
-            trusted_height: Height::from_tm(lc.common_height, chain.id()),
-            trusted_validator_set: validator::Set::new(trusted_validator_set, None),
-        }
-    };
-
-    let counterparty_clients = fetch_all_counterparty_clients(chain).await?;
-
+    // For each counterparty client, build the misbehavior evidence and submit it to the chain,
+    // freezing that client.
     for (counterparty_chain_id, counterparty_client_id) in counterparty_clients {
         let misbehavior = TendermintMisbehaviour {
             client_id: counterparty_client_id.clone(),
@@ -179,18 +154,14 @@ async fn handle_light_client_attack(
             header2: header2.clone(),
         };
 
-        // TODO: Cache chain handles
-        let mut counterparty_chain = {
-            let config = app_config();
-            let chain_config = config
-                .find_chain(&counterparty_chain_id)
-                .cloned()
-                .ok_or_else(|| {
-                    eyre::eyre!("cannot find chain config for chain {counterparty_chain_id}")
-                })?;
-
-            CosmosSdkChain::bootstrap(chain_config, rt.clone())?
+        if !chains.contains_key(&counterparty_chain_id) {
+            let chain = spawn_chain_by_id(rt.clone(), &counterparty_chain_id)?;
+            chains.insert(counterparty_chain_id.clone(), chain);
         };
+
+        let counterparty_chain = chains
+            .get_mut(&counterparty_chain_id)
+            .ok_or_else(|| eyre::eyre!("failed to spawn chain {counterparty_chain_id}"))?;
 
         let msg = MsgSubmitMisbehaviour {
             client_id: counterparty_client_id,
@@ -215,7 +186,37 @@ async fn handle_light_client_attack(
     Ok(())
 }
 
-async fn fetch_all_counterparty_clients(
+fn spawn_chain_by_id(
+    rt: Arc<TokioRuntime>,
+    counterparty_chain_id: &ChainId,
+) -> Result<CosmosSdkChain, eyre::ErrReport> {
+    let config = app_config();
+
+    let chain_config = config
+        .find_chain(counterparty_chain_id)
+        .cloned()
+        .ok_or_else(|| eyre::eyre!("cannot find chain config for chain {counterparty_chain_id}"))?;
+
+    if chain_config.r#type != ChainType::CosmosSdk {
+        return Err(eyre::eyre!(
+            "chain {counterparty_chain_id} is not a Cosmos SDK chain"
+        ));
+    }
+
+    let chain = CosmosSdkChain::bootstrap(chain_config, rt)?;
+
+    Ok(chain)
+}
+
+/// Fetch all the counterparty clients of the given chain.
+/// A counterparty client is a client that has a connection with that chain.
+///
+/// 1. Fetch all connections on the given chain
+/// 2. For each connection:
+///     2.1. Fetch the client state of the counterparty client of that connection.
+///     2.2. From the client state, extract the chain id of the counterparty chain.
+/// 4. Return a list of all counterparty chains and counterparty clients.
+fn fetch_all_counterparty_clients(
     chain: &CosmosSdkChain,
 ) -> eyre::Result<Vec<(ChainId, ClientId)>> {
     use ibc_relayer::chain::requests::PageRequest;
@@ -255,6 +256,49 @@ async fn fetch_all_counterparty_clients(
     }
 
     Ok(counterparty_clients)
+}
+
+/// Build the two headers to submit as part of the `MsgSubmitMisbehaviour` message.
+fn build_evidence_headers(
+    rt: Arc<TokioRuntime>,
+    chain: &CosmosSdkChain,
+    lc: LightClientAttackEvidence,
+) -> eyre::Result<(TendermintHeader, TendermintHeader)> {
+    let trusted_validator_set = rt
+        .block_on(chain.rpc_client.validators(lc.common_height, Paging::All))?
+        .validators;
+
+    let header1 = {
+        TendermintHeader {
+            signed_header: lc.conflicting_block.signed_header,
+            validator_set: lc.conflicting_block.validator_set,
+            trusted_height: Height::from_tm(lc.common_height, chain.id()),
+            trusted_validator_set: validator::Set::new(trusted_validator_set.clone(), None),
+        }
+    };
+
+    let header2 = {
+        let signed_header = rt
+            .block_on(chain.rpc_client.commit(header1.signed_header.header.height))?
+            .signed_header;
+
+        let validators = rt
+            .block_on(
+                chain
+                    .rpc_client
+                    .validators(header1.signed_header.header.height, Paging::All),
+            )?
+            .validators;
+
+        TendermintHeader {
+            signed_header,
+            validator_set: validator::Set::new(validators, None),
+            trusted_height: Height::from_tm(lc.common_height, chain.id()),
+            trusted_validator_set: validator::Set::new(trusted_validator_set, None),
+        }
+    };
+
+    Ok((header1, header2))
 }
 
 #[cfg(test)]
