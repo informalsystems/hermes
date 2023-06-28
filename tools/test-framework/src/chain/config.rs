@@ -260,6 +260,26 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
     Ok(())
 }
 
+pub fn set_soft_opt_out_threshold(
+    genesis: &mut serde_json::Value,
+    threshold: &str,
+) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("ccvconsumer"))
+        .and_then(|ccvconsumer| ccvconsumer.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get ccvconsumer params in genesis file"))?;
+
+    // Might be none if the entry `soft_opt_out_threshold` didn't exist
+    params.insert(
+        "soft_opt_out_threshold".to_owned(),
+        serde_json::Value::String(threshold.to_string()),
+    );
+
+    Ok(())
+}
+
 /// Look up a key in a JSON object, falling back to the second key if the first one cannot be found.
 ///
 /// This lets us support both Tendermint 0.34 and 0.37, which sometimes use different keys for the

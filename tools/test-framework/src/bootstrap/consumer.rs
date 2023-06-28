@@ -75,6 +75,12 @@ pub fn bootstrap_consumer_node(
     )?;
 
     chain_driver.update_genesis_file("genesis.json", genesis_modifier)?;
+    // The configuration `soft_opt_out_threshold` might be missing and is required
+    // for chains such as Neutron
+    chain_driver.update_genesis_file("genesis.json", |genesis| {
+        config::set_soft_opt_out_threshold(genesis, "0.05")?;
+        Ok(())
+    })?;
 
     let log_level = std::env::var("CHAIN_LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
 
