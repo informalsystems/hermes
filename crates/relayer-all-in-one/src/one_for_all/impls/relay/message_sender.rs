@@ -17,6 +17,7 @@ where
 {
     async fn send_messages(
         &self,
+        _target: SourceTarget,
         messages: Vec<<Relay::SrcChain as OfaChain>::Message>,
     ) -> Result<Vec<Vec<<Relay::SrcChain as OfaChain>::Event>>, Self::Error> {
         <components::IbcMessageSender as IbcMessageSender<Self, SourceTarget>>::send_messages(
@@ -33,6 +34,7 @@ where
 {
     async fn send_messages(
         &self,
+        _target: DestinationTarget,
         messages: Vec<<Relay::DstChain as OfaChain>::Message>,
     ) -> Result<Vec<Vec<<Relay::DstChain as OfaChain>::Event>>, Self::Error> {
         <components::IbcMessageSender as IbcMessageSender<Self, DestinationTarget>>::send_messages(

@@ -32,7 +32,7 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let events = relay.send_message(message).await?;
+        let events = relay.send_message(DestinationTarget, message).await?;
 
         let ack_event = events
             .iter()

@@ -32,7 +32,7 @@ where
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        relay.send_message(message).await?;
+        relay.send_message(SourceTarget, message).await?;
 
         Ok(())
     }

@@ -167,14 +167,22 @@ impl HasPacketLock for MockRelayContext {
 
 #[async_trait]
 impl CanSendIbcMessages<SourceTarget> for MockRelayContext {
-    async fn send_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
+    async fn send_messages(
+        &self,
+        _target: SourceTarget,
+        messages: Vec<MockMessage>,
+    ) -> Result<Vec<Vec<Event>>, Error> {
         <components::IbcMessageSender as IbcMessageSender<MockRelayContext, SourceTarget>>::send_messages(self, messages).await
     }
 }
 
 #[async_trait]
 impl CanSendIbcMessages<DestinationTarget> for MockRelayContext {
-    async fn send_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
+    async fn send_messages(
+        &self,
+        _target: DestinationTarget,
+        messages: Vec<MockMessage>,
+    ) -> Result<Vec<Vec<Event>>, Error> {
         <components::IbcMessageSender as IbcMessageSender<MockRelayContext, DestinationTarget>>::send_messages(self, messages).await
     }
 }

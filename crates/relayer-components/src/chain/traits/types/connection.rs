@@ -1,3 +1,5 @@
+use core::time::Duration;
+
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::core::traits::sync::Async;
 
@@ -6,7 +8,7 @@ pub trait HasConnectionVersionType<Counterparty>: HasIbcChainTypes<Counterparty>
 }
 
 pub trait HasConnectionStateType<Counterparty>: HasIbcChainTypes<Counterparty> {
-    type ConnectionState;
+    type ConnectionState: Async;
 
     fn is_connection_state_init(connection_state: &Self::ConnectionState) -> bool;
 
@@ -15,8 +17,20 @@ pub trait HasConnectionStateType<Counterparty>: HasIbcChainTypes<Counterparty> {
     fn is_connection_state_open(connection_state: &Self::ConnectionState) -> bool;
 }
 
-pub trait HasConnectionEndType<Counterparty>: HasConnectionStateType<Counterparty> {
-    type ConnectionEnd;
+pub trait HasConnectionDetailsType<Counterparty>: HasIbcChainTypes<Counterparty> {
+    type ConnectionDetails: Async;
+}
 
-    fn connection_state(connection: &Self::ConnectionEnd) -> &Self::ConnectionState;
+pub trait HasConnectionDetailsFields<Counterparty>:
+    HasConnectionDetailsType<Counterparty>
+    + HasConnectionStateType<Counterparty>
+    + HasConnectionVersionType<Counterparty>
+{
+    fn connection_details_state(connection: &Self::ConnectionDetails) -> &Self::ConnectionState;
+
+    fn connection_details_delay(connection: &Self::ConnectionDetails) -> Duration;
+
+    fn connection_details_versions(
+        connection: &Self::ConnectionDetails,
+    ) -> &[Self::ConnectionVersion];
 }

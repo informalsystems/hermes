@@ -179,12 +179,6 @@ impl HasWriteAcknowledgementEvent<MockChainContext> for MockChainContext {
             _ => None,
         }
     }
-
-    fn extract_packet_from_write_acknowledgement_event(
-        _ack: &Self::WriteAcknowledgementEvent,
-    ) -> &Self::IncomingPacket {
-        todo!()
-    }
 }
 
 impl HasConsensusStateType<MockChainContext> for MockChainContext {

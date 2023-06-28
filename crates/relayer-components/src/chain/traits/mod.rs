@@ -6,3 +6,4 @@ pub mod message_builders;
 pub mod message_sender;
 pub mod queries;
 pub mod types;
+pub mod wait;

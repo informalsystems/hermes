@@ -15,6 +15,7 @@ where
 {
     async fn send_messages(
         &self,
+        target: Target,
         messages: Vec<Message<Target::TargetChain>>,
     ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Self::Error>;
 }
@@ -43,6 +44,7 @@ where
 {
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
+        target: Target,
         messages: [Message<Target::TargetChain>; COUNT],
     ) -> Result<[Vec<Event<Target::TargetChain>>; COUNT], Context::Error>
     where
@@ -50,6 +52,7 @@ where
 
     async fn send_message(
         &self,
+        target: Target,
         message: Message<Target::TargetChain>,
     ) -> Result<Vec<Event<Target::TargetChain>>, Context::Error>;
 }
@@ -64,13 +67,14 @@ where
 {
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
+        target: Target,
         messages: [Message; COUNT],
     ) -> Result<[Vec<Event>; COUNT], Context::Error>
     where
         Context: InjectMismatchIbcEventsCountError,
     {
         let events = self
-            .send_messages(messages.into())
+            .send_messages(target, messages.into())
             .await?
             .try_into()
             .map_err(|e: Vec<_>| Context::mismatch_ibc_events_count_error(COUNT, e.len()))?;
@@ -78,9 +82,13 @@ where
         Ok(events)
     }
 
-    async fn send_message(&self, message: Message) -> Result<Vec<Event>, Context::Error> {
+    async fn send_message(
+        &self,
+        target: Target,
+        message: Message,
+    ) -> Result<Vec<Event>, Context::Error> {
         let events = self
-            .send_messages(vec![message])
+            .send_messages(target, vec![message])
             .await?
             .into_iter()
             .flatten()

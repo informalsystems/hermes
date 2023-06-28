@@ -3,8 +3,8 @@ use core::time::Duration;
 use async_trait::async_trait;
 
 use crate::chain::traits::types::client_state::HasClientStateType;
-use crate::chain::traits::types::commitment::{HasCommitmentPrefixType, HasCommitmentProofsType};
-use crate::chain::traits::types::connection::HasConnectionVersionType;
+use crate::chain::traits::types::commitment::HasCommitmentProofsType;
+use crate::chain::traits::types::connection::{HasConnectionDetailsType, HasConnectionVersionType};
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::message::HasMessageType;
 use crate::core::traits::error::HasErrorType;
@@ -32,20 +32,16 @@ where
 pub trait CanBuildConnectionOpenTryMessage<Counterparty>:
     HasIbcChainTypes<Counterparty> + HasMessageType + HasErrorType
 where
-    Counterparty: HasIbcChainTypes<Self>
-        + HasConnectionVersionType<Self>
-        + HasCommitmentPrefixType<Self>
-        + HasCommitmentProofsType<Self>,
+    Counterparty:
+        HasIbcChainTypes<Self> + HasConnectionDetailsType<Self> + HasCommitmentProofsType<Self>,
 {
     async fn build_connection_open_try_message(
         &self,
         client_id: &Self::ClientId,
         counterparty_client_id: &Counterparty::ClientId,
         counterparty_connection_id: &Counterparty::ConnectionId,
-        counterparty_commitment: &Counterparty::CommitmentPrefix,
-        connection_version: &Counterparty::ConnectionVersion,
+        connection_end: &Counterparty::ConnectionDetails,
         commitment_proofs: &Counterparty::CommitmentProofs,
-        delay_period: Duration,
     ) -> Result<Self::Message, Self::Error>;
 }
 

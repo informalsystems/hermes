@@ -1,7 +1,9 @@
 use async_trait::async_trait;
 
 use crate::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
-use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
+use crate::chain::traits::types::ibc_events::write_ack::{
+    CanBuildPacketFromWriteAckEvent, HasWriteAcknowledgementEvent,
+};
 use crate::chain::types::aliases::{Event, Height};
 use crate::logger::traits::level::HasBaseLogLevels;
 use crate::relay::impls::packet_filters::chain::{
@@ -64,7 +66,7 @@ where
 impl<Relay> EventRelayer<Relay, DestinationTarget> for PacketEventRelayer
 where
     Relay: CanRelayAckPacket + CanFilterPackets + HasPacketLock + CanLogRelay + CanLogRelayPacket,
-    Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
+    Relay::DstChain: CanBuildPacketFromWriteAckEvent<Relay::SrcChain>,
     MatchPacketSourceChain: PacketFilter<Relay>,
 {
     async fn relay_chain_event(
@@ -75,8 +77,7 @@ where
         let m_ack_event = Relay::DstChain::try_extract_write_acknowledgement_event(event);
 
         if let Some(ack_event) = m_ack_event {
-            let packet =
-                Relay::DstChain::extract_packet_from_write_acknowledgement_event(&ack_event);
+            let packet = Relay::DstChain::build_packet_from_write_acknowledgement_event(&ack_event);
 
             /*
                First check whether the packet is targetted for the destination chain,
