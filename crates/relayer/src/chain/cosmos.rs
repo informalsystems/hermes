@@ -516,7 +516,6 @@ impl CosmosSdkChain {
 
     /// Run a future to completion on the Tokio runtime.
     fn block_on<F: Future>(&self, f: F) -> F::Output {
-        crate::time!("block_on");
         self.rt.block_on(f)
     }
 
