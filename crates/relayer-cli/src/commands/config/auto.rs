@@ -111,7 +111,7 @@ impl Runnable for AutoCmd {
             Err(e) => Output::error(e).exit(),
         }
 
-        //match runtime.block_on(get_configs(&sorted_names, commit)) {
+        // match runtime.block_on(get_configs(&sorted_names, commit)) {
         //    Ok(mut chain_configs) => {
         //        let configs_and_keys = chain_configs
         //            .iter_mut()
@@ -151,7 +151,7 @@ impl Runnable for AutoCmd {
         //        }
         //    }
         //    Err(e) => Output::error(e).exit(),
-        //}
+        // }
     }
 }
 
