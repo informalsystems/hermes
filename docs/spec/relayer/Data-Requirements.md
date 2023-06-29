@@ -7,6 +7,7 @@
   * [`/consensus_params`](#--consensus-params-)
   * [`/status`](#--status-)
   * [`/header`](#--header-)
+  * [`/latest_commit`, `/commit`, `/validators`](#--latest-commit-----commit-----validators-)
   * [`/abci_query`](#--abci-query-)
   * [`/tx_search`](#--tx-search-)
   * [`/block_search`](#--block-search-)
