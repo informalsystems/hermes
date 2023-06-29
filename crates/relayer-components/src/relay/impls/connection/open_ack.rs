@@ -36,6 +36,8 @@ where
         let src_chain = relay.src_chain();
         let dst_chain = relay.dst_chain();
 
+        let dst_client_id = relay.dst_client_id();
+
         let src_height = src_chain
             .query_chain_height()
             .await
@@ -55,11 +57,7 @@ where
             .await?;
 
         let open_ack_payload = dst_chain
-            .build_connection_open_ack_payload(
-                &dst_height,
-                relay.dst_client_id(),
-                dst_connection_id,
-            )
+            .build_connection_open_ack_payload(&dst_height, dst_client_id, dst_connection_id)
             .await
             .map_err(Relay::dst_chain_error)?;
 

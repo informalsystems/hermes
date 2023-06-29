@@ -69,7 +69,6 @@ where
 
     async fn build_connection_open_confirm_message(
         &self,
-        client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
         counterparty_payload: Counterparty::ConnectionOpenConfirmPayload,
     ) -> Result<Self::Message, Self::Error>;
