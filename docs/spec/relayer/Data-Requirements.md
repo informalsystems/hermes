@@ -12,6 +12,7 @@
   * [`/block_search`](#--block-search-)
   * [`/block_results`](#--block-results-)
   * [`/broadcast_tx_sync`](#--broadcast-tx-sync-)
+  * [`/broadcast_evidence`](#--broadcast-evidence-)
 - [CometBFT WebSocket](#cometbft-websocket)
 
 ## CometBFT RPC
@@ -53,6 +54,10 @@ Used in two situations:
 
 - To pull the header in the latest block that the application committed, in order to compute the latest app height and app timestamp
 - To get the a block header at a specific/latest height and extract the consensus state from it
+
+### `/latest_commit`, `/commit`, `/validators`
+
+- For the CometBFT light client operations, mainly used to build `LightBlocks` and verify them
 
 ### `/abci_query`
 
@@ -118,6 +123,10 @@ Used in two situations ([diagram for reference](https://app.excalidraw.com/l/4Xq
 - For submitting transactions into the mempool.
 
 __Note__: The above list is partly inspired from [cosmos-sdk/#11012](https://github.com/cosmos/cosmos-sdk/issues/11012) but extended and updated.
+
+### `/broadcast_evidence`
+
+- For submitting evidence of a chain misbehaving
 
 ## CometBFT WebSocket
 
