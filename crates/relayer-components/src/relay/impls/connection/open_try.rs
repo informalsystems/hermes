@@ -5,8 +5,7 @@ use crate::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
 use crate::chain::traits::message_sender::CanSendMessages;
-use crate::chain::traits::queries::status::CanQueryChainStatus;
-use crate::chain::traits::types::height::HasHeightType;
+use crate::chain::traits::queries::status::CanQueryChainHeight;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::connection::HasConnectionOpenTryEvent;
 use crate::chain::traits::wait::CanWaitChainSurpassHeight;
@@ -34,45 +33,45 @@ where
         + CanSendUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>
         + InjectMissingConnectionTryEventError,
+    SrcChain: CanSendMessages + CanQueryChainHeight + CanBuildConnectionHandshakePayloads<DstChain>,
     DstChain: CanSendMessages
-        + CanQueryChainStatus
+        + CanQueryChainHeight
         + CanWaitChainSurpassHeight
         + CanBuildConnectionHandshakeMessages<SrcChain>
         + HasConnectionOpenTryEvent<SrcChain, ConnectionOpenTryEvent = OpenTryEvent>,
-    SrcChain: CanSendMessages + CanQueryChainStatus + CanBuildConnectionHandshakePayloads<DstChain>,
+    DstChain::ConnectionId: Clone,
 {
     async fn relay_connection_open_try(
         relay: &Relay,
-        src_connection_id: &<Relay::SrcChain as HasIbcChainTypes<Relay::DstChain>>::ConnectionId,
-    ) -> Result<OpenTryEvent, Relay::Error> {
+        src_connection_id: &SrcChain::ConnectionId,
+    ) -> Result<DstChain::ConnectionId, Relay::Error> {
         let src_chain = relay.src_chain();
         let dst_chain = relay.dst_chain();
 
-        let dst_status = dst_chain
-            .query_chain_status()
+        let dst_height = dst_chain
+            .query_chain_height()
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        let dst_height = Relay::DstChain::chain_status_height(&dst_status);
-
         relay
-            .send_update_client_messages(SourceTarget, dst_height)
+            .send_update_client_messages(SourceTarget, &dst_height)
             .await?;
 
-        let src_status = src_chain
-            .query_chain_status()
+        let src_height = src_chain
+            .query_chain_height()
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let src_height: &<SrcChain as HasHeightType>::Height =
-            Relay::SrcChain::chain_status_height(&src_status);
-
         let update_client_messages = relay
-            .build_update_client_messages(DestinationTarget, src_height)
+            .build_update_client_messages(DestinationTarget, &src_height)
             .await?;
 
         let open_try_payload = src_chain
-            .build_connection_open_try_payload(src_height, relay.src_client_id(), src_connection_id)
+            .build_connection_open_try_payload(
+                &src_height,
+                relay.src_client_id(),
+                src_connection_id,
+            )
             .await
             .map_err(Relay::src_chain_error)?;
 
@@ -88,7 +87,7 @@ where
         };
 
         dst_chain
-            .wait_chain_surpass_height(dst_height)
+            .wait_chain_surpass_height(&dst_height)
             .await
             .map_err(Relay::dst_chain_error)?;
 
@@ -104,6 +103,8 @@ where
             .find_map(|event| DstChain::try_extract_connection_open_try_event(event))
             .ok_or_else(|| relay.missing_connection_try_event_error(src_connection_id))?;
 
-        Ok(open_try_event)
+        let dst_connection_id = DstChain::connection_open_try_event_connection_id(&open_try_event);
+
+        Ok(dst_connection_id.clone())
     }
 }

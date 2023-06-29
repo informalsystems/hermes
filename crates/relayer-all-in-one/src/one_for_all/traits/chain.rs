@@ -75,25 +75,25 @@ pub trait OfaChain: Async {
        Corresponds to
        [`HasIbcChainTypes::ConnectionId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::ConnectionId).
     */
-    type ConnectionId: Display + Async;
+    type ConnectionId: Display + Clone + Async;
 
     /**
        Corresponds to
        [`HasIbcChainTypes::ChannelId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::ChannelId).
     */
-    type ChannelId: Display + Async;
+    type ChannelId: Display + Clone + Async;
 
     /**
        Corresponds to
        [`HasIbcChainTypes::PortId`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::PortId).
     */
-    type PortId: Display + Async;
+    type PortId: Display + Clone + Async;
 
     /**
        Corresponds to
        [`HasIbcChainTypes::Sequence`](ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes::Sequence).
     */
-    type Sequence: Display + Async;
+    type Sequence: Display + Clone + Async;
 
     /**
        Corresponds to

@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::status::HasChainStatusType;
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
@@ -38,4 +39,22 @@ where
     Chain: HasChainStatusType + HasErrorType,
 {
     async fn query_chain_status(context: &Chain) -> Result<Chain::ChainStatus, Chain::Error>;
+}
+
+#[async_trait]
+pub trait CanQueryChainHeight: HasHeightType + HasErrorType {
+    async fn query_chain_height(&self) -> Result<Self::Height, Self::Error>;
+}
+
+#[async_trait]
+impl<Chain> CanQueryChainHeight for Chain
+where
+    Chain: CanQueryChainStatus,
+    Chain::Height: Clone,
+{
+    async fn query_chain_height(&self) -> Result<Chain::Height, Chain::Error> {
+        let status = self.query_chain_status().await?;
+        let height = Chain::chain_status_height(&status);
+        Ok(height.clone())
+    }
 }

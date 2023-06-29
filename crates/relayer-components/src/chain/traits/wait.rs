@@ -2,7 +2,7 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 
-use crate::chain::traits::queries::status::CanQueryChainStatus;
+use crate::chain::traits::queries::status::CanQueryChainHeight;
 use crate::chain::traits::types::height::HasHeightType;
 use crate::core::traits::error::HasErrorType;
 use crate::runtime::traits::runtime::HasRuntime;
@@ -20,7 +20,7 @@ pub trait CanWaitChainSurpassHeight: HasHeightType + HasErrorType {
 #[async_trait]
 impl<Chain> CanWaitChainSurpassHeight for Chain
 where
-    Chain: CanQueryChainStatus + HasRuntime,
+    Chain: CanQueryChainHeight + HasRuntime,
     Chain::Runtime: CanSleep,
     Chain::Height: Clone,
 {
@@ -29,11 +29,9 @@ where
         height: &Chain::Height,
     ) -> Result<Chain::Height, Chain::Error> {
         loop {
-            let current_status = self.query_chain_status().await?;
+            let current_height = self.query_chain_height().await?;
 
-            let current_height = Chain::chain_status_height(&current_status);
-
-            if current_height >= height {
+            if &current_height >= height {
                 return Ok(current_height.clone());
             } else {
                 self.runtime().sleep(Duration::from_millis(100)).await;

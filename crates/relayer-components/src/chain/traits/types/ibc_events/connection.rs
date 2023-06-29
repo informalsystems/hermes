@@ -13,15 +13,5 @@ where
 
     fn connection_open_try_event_connection_id(
         event: &Self::ConnectionOpenTryEvent,
-    ) -> Self::ConnectionId;
-
-    fn connection_open_try_event_client_id(event: &Self::ConnectionOpenTryEvent) -> Self::ClientId;
-
-    fn connection_open_try_event_counterparty_connection_id(
-        event: &Self::ConnectionOpenTryEvent,
-    ) -> Counterparty::ConnectionId;
-
-    fn connection_open_try_event_counterparty_client_id(
-        event: &Self::ConnectionOpenTryEvent,
-    ) -> Counterparty::ClientId;
+    ) -> &Self::ConnectionId;
 }
