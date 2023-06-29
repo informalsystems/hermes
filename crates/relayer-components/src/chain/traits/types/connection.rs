@@ -3,18 +3,34 @@ use core::time::Duration;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::core::traits::sync::Async;
 
-pub trait HasConnectionVersionType<Counterparty>: HasIbcChainTypes<Counterparty> {
-    type ConnectionVersion: Async;
+pub enum ConnectionBaseState {
+    Init,
+    TryOpen,
+    Open,
 }
 
 pub trait HasConnectionStateType<Counterparty>: HasIbcChainTypes<Counterparty> {
     type ConnectionState: Async;
 
-    fn is_connection_state_init(connection_state: &Self::ConnectionState) -> bool;
+    fn connection_base_state(state: &Self::ConnectionState) -> Option<ConnectionBaseState>;
+}
 
-    fn is_connection_state_try_open(connection_state: &Self::ConnectionState) -> bool;
+/**
+    Payload that contains necessary counterparty information such as proofs and parameters
+    in order for a self chain to build a connection handshake message.
+*/
+pub trait HasConnectionHandshakePayloads<Counterparty>: HasIbcChainTypes<Counterparty> {
+    type ConnectionInitPayload: Async;
 
-    fn is_connection_state_open(connection_state: &Self::ConnectionState) -> bool;
+    type ConnectionOpenTryPayload: Async;
+
+    type ConnectionOpenAckPayload: Async;
+
+    type ConnectionOpenConfirmPayload: Async;
+}
+
+pub trait HasConnectionVersionType<Counterparty>: HasIbcChainTypes<Counterparty> {
+    type ConnectionVersion: Async;
 }
 
 pub trait HasConnectionDetailsType<Counterparty>: HasIbcChainTypes<Counterparty> {

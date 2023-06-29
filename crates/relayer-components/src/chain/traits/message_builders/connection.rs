@@ -2,22 +2,49 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 
-use crate::chain::traits::types::client_state::HasClientStateType;
-use crate::chain::traits::types::commitment::HasCommitmentProofsType;
-use crate::chain::traits::types::connection::{HasConnectionDetailsType, HasConnectionVersionType};
-use crate::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::chain::traits::types::message::HasMessageType;
+use crate::chain::traits::types::connection::{
+    HasConnectionHandshakePayloads, HasConnectionVersionType,
+};
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanBuildConnectionOpenInitMessage<Counterparty>:
-    HasIbcChainTypes<Counterparty>
-    + HasConnectionVersionType<Counterparty>
-    + HasMessageType
-    + HasErrorType
+pub trait CanBuildConnectionHandshakePayloads<Counterparty>:
+    HasConnectionHandshakePayloads<Counterparty> + HasErrorType
+{
+    async fn build_connection_init_payload(
+        &self,
+        height: &Self::Height,
+        client_id: &Self::ClientId,
+    ) -> Result<Self::ConnectionInitPayload, Self::Error>;
+
+    async fn build_connection_open_try_payload(
+        &self,
+        height: &Self::Height,
+        client_id: &Self::ClientId,
+        connection_id: &Self::ConnectionId,
+    ) -> Result<Self::ConnectionOpenTryPayload, Self::Error>;
+
+    async fn build_connection_open_ack_payload(
+        &self,
+        height: &Self::Height,
+        client_id: &Self::ClientId,
+        connection_id: &Self::ConnectionId,
+    ) -> Result<Self::ConnectionOpenAckPayload, Self::Error>;
+
+    async fn build_connection_open_confirm_payload(
+        &self,
+        height: &Self::Height,
+        client_id: &Self::ClientId,
+        connection_id: &Self::ConnectionId,
+    ) -> Result<Self::ConnectionOpenConfirmPayload, Self::Error>;
+}
+
+#[async_trait]
+pub trait CanBuildConnectionHandshakeMessages<Counterparty>:
+    HasConnectionVersionType<Counterparty> + HasErrorType
 where
-    Counterparty: HasIbcChainTypes<Self>,
+    Counterparty: HasConnectionHandshakePayloads<Self>,
 {
     async fn build_connection_open_init_message(
         &self,
@@ -25,50 +52,26 @@ where
         counterparty_client_id: &Counterparty::ClientId,
         connection_version: &Self::ConnectionVersion,
         delay_period: Duration,
+        counterparty_payload: Counterparty::ConnectionInitPayload,
     ) -> Result<Self::Message, Self::Error>;
-}
 
-#[async_trait]
-pub trait CanBuildConnectionOpenTryMessage<Counterparty>:
-    HasIbcChainTypes<Counterparty> + HasMessageType + HasErrorType
-where
-    Counterparty:
-        HasIbcChainTypes<Self> + HasConnectionDetailsType<Self> + HasCommitmentProofsType<Self>,
-{
     async fn build_connection_open_try_message(
         &self,
         client_id: &Self::ClientId,
-        counterparty_client_id: &Counterparty::ClientId,
-        counterparty_connection_id: &Counterparty::ConnectionId,
-        connection_end: &Counterparty::ConnectionDetails,
-        commitment_proofs: &Counterparty::CommitmentProofs,
+        counterparty_payload: Counterparty::ConnectionOpenTryPayload,
     ) -> Result<Self::Message, Self::Error>;
-}
 
-#[async_trait]
-pub trait CanBuildConnectionOpenAckMessage<Counterparty>:
-    HasIbcChainTypes<Counterparty> + HasClientStateType<Counterparty> + HasMessageType + HasErrorType
-where
-    Counterparty: HasIbcChainTypes<Self> + HasCommitmentProofsType<Self>,
-{
     async fn build_connection_open_ack_message(
         &self,
+        client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
-        counterparty_connection_id: &Counterparty::ConnectionId,
-        client_state: &Self::ClientState,
-        commitment_proofs: &Counterparty::CommitmentProofs,
+        counterparty_payload: Counterparty::ConnectionOpenAckPayload,
     ) -> Result<Self::Message, Self::Error>;
-}
 
-#[async_trait]
-pub trait CanBuildConnectionOpenConfirmMessage<Counterparty>:
-    HasIbcChainTypes<Counterparty> + HasMessageType + HasErrorType
-where
-    Counterparty: HasIbcChainTypes<Self> + HasCommitmentProofsType<Self>,
-{
     async fn build_connection_open_confirm_message(
         &self,
+        client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
-        commitment_proofs: &Counterparty::CommitmentProofs,
+        counterparty_payload: Counterparty::ConnectionOpenConfirmPayload,
     ) -> Result<Self::Message, Self::Error>;
 }
