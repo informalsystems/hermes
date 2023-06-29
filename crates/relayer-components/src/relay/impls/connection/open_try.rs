@@ -26,19 +26,18 @@ pub trait InjectMissingConnectionTryEventError: HasRelayChains {
 pub struct RelayConnectionOpenTry;
 
 #[async_trait]
-impl<Relay, SrcChain, DstChain, OpenTryEvent> ConnectionOpenTryRelayer<Relay>
-    for RelayConnectionOpenTry
+impl<Relay, SrcChain, DstChain> ConnectionOpenTryRelayer<Relay> for RelayConnectionOpenTry
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + CanSendUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>
         + InjectMissingConnectionTryEventError,
-    SrcChain: CanSendMessages + CanQueryChainHeight + CanBuildConnectionHandshakePayloads<DstChain>,
+    SrcChain: CanQueryChainHeight + CanBuildConnectionHandshakePayloads<DstChain>,
     DstChain: CanSendMessages
         + CanQueryChainHeight
         + CanWaitChainSurpassHeight
         + CanBuildConnectionHandshakeMessages<SrcChain>
-        + HasConnectionOpenTryEvent<SrcChain, ConnectionOpenTryEvent = OpenTryEvent>,
+        + HasConnectionOpenTryEvent<SrcChain>,
     DstChain::ConnectionId: Clone,
 {
     async fn relay_connection_open_try(
@@ -62,7 +61,7 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let update_client_messages = relay
+        let dst_update_client_messages = relay
             .build_update_client_messages(DestinationTarget, &src_height)
             .await?;
 
@@ -81,7 +80,7 @@ where
             .map_err(Relay::dst_chain_error)?;
 
         let dst_messages = {
-            let mut messages = update_client_messages;
+            let mut messages = dst_update_client_messages;
             messages.push(open_try_message);
             messages
         };

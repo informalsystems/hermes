@@ -63,7 +63,6 @@ where
 
     async fn build_connection_open_ack_message(
         &self,
-        client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
         counterparty_payload: Counterparty::ConnectionOpenAckPayload,
     ) -> Result<Self::Message, Self::Error>;
