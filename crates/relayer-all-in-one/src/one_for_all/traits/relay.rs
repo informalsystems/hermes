@@ -49,6 +49,13 @@ pub trait OfaRelay: Async {
 
     fn max_retry_exceeded_error(e: Self::Error) -> Self::Error;
 
+    fn missing_connection_init_event_error(&self) -> Self::Error;
+
+    fn missing_connection_try_event_error(
+        &self,
+        src_connection_id: &<Self::SrcChain as OfaChain>::ConnectionId,
+    ) -> Self::Error;
+
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn logger(&self) -> &Self::Logger;

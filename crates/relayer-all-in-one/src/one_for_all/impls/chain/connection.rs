@@ -1,3 +1,6 @@
+use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::types::chain::OfaChainWrapper;
+use crate::std_prelude::*;
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
@@ -6,10 +9,7 @@ use ibc_relayer_components::chain::traits::types::connection::{
     HasConnectionDetailsType, HasConnectionHandshakePayloads, HasConnectionVersionType,
     HasInitConnectionOptionsType,
 };
-
-use crate::one_for_all::traits::chain::OfaIbcChain;
-use crate::one_for_all::types::chain::OfaChainWrapper;
-use crate::std_prelude::*;
+use ibc_relayer_components::chain::traits::types::ibc_events::connection::HasConnectionOpenInitEvent;
 
 impl<Chain, Counterparty> HasConnectionHandshakePayloads<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
@@ -51,6 +51,27 @@ where
     Counterparty: OfaIbcChain<Chain>,
 {
     type ConnectionDetails = Chain::ConnectionDetails;
+}
+
+impl<Chain, Counterparty> HasConnectionOpenInitEvent<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<Chain>,
+{
+    type ConnectionOpenInitEvent = Chain::ConnectionOpenInitEvent;
+
+    fn try_extract_connection_open_init_event(
+        event: Chain::Event,
+    ) -> Option<Chain::ConnectionOpenInitEvent> {
+        Chain::try_extract_connection_open_init_event(event)
+    }
+
+    fn connection_open_init_event_connection_id(
+        event: &Chain::ConnectionOpenInitEvent,
+    ) -> &Chain::ConnectionId {
+        Chain::connection_open_init_event_connection_id(event)
+    }
 }
 
 #[async_trait]

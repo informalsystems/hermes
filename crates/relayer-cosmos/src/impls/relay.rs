@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use eyre::eyre;
 use futures::channel::oneshot::{channel, Sender};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -9,7 +10,7 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
-use ibc_relayer_types::core::ics24_host::identifier::ClientId;
+use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
@@ -159,6 +160,18 @@ where
 
     fn max_retry_exceeded_error(e: Error) -> Error {
         e
+    }
+
+    fn missing_connection_init_event_error(&self) -> Error {
+        BaseError::generic(eyre!("missing_connection_init_event_error")).into()
+    }
+
+    fn missing_connection_try_event_error(&self, src_connection_id: &ConnectionId) -> Error {
+        BaseError::generic(eyre!(
+            "missing_connection_try_event_error: {}",
+            src_connection_id
+        ))
+        .into()
     }
 
     async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {

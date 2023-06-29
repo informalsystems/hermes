@@ -3,6 +3,7 @@ use core::time::Duration;
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer_types::core::ics03_connection::version::Version;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 use ibc_relayer_types::proofs::Proofs;
 
 pub struct CosmosInitConnectionOptions {
@@ -30,4 +31,8 @@ pub struct CosmosConnectionOpenAckPayload {
 
 pub struct CosmosConnectionOpenConfirmPayload {
     pub proofs: Proofs,
+}
+
+pub struct CosmosConnectionOpenInitEvent {
+    pub connection_id: ConnectionId,
 }

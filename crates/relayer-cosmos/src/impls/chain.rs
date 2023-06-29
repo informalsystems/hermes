@@ -10,7 +10,9 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::consensus_state::AnyConsensusState;
-use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
+use ibc_relayer::event::{
+    connection_open_ack_try_from_abci_event, extract_packet_and_write_ack_from_tx,
+};
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
@@ -52,7 +54,8 @@ use tendermint::abci::Event as AbciEvent;
 use crate::contexts::chain::CosmosChain;
 use crate::types::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
-    CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
+    CosmosConnectionOpenInitEvent, CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload,
+    CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
@@ -203,6 +206,8 @@ where
 
     type ConnectionDetails = ConnectionEnd;
 
+    type ConnectionOpenInitEvent = CosmosConnectionOpenInitEvent;
+
     type InitConnectionOptions = CosmosInitConnectionOptions;
 
     type ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload;
@@ -311,6 +316,28 @@ where
         ack: &Self::WriteAcknowledgementEvent,
     ) -> &Self::IncomingPacket {
         &ack.packet
+    }
+
+    fn try_extract_connection_open_init_event(
+        event: Arc<AbciEvent>,
+    ) -> Option<CosmosConnectionOpenInitEvent> {
+        let event_type = event.kind.parse().ok()?;
+
+        if let IbcEventType::OpenInitConnection = event_type {
+            let open_ack_event = connection_open_ack_try_from_abci_event(&event).ok()?;
+
+            let connection_id = open_ack_event.connection_id()?;
+
+            Some(CosmosConnectionOpenInitEvent { connection_id })
+        } else {
+            None
+        }
+    }
+
+    fn connection_open_init_event_connection_id(
+        event: &CosmosConnectionOpenInitEvent,
+    ) -> &ConnectionId {
+        &event.connection_id
     }
 
     async fn query_chain_id_from_channel_id(
