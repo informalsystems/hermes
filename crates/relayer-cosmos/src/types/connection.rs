@@ -27,3 +27,7 @@ pub struct CosmosConnectionOpenAckPayload {
     pub proofs: Proofs,
     pub version: Version,
 }
+
+pub struct CosmosConnectionOpenConfirmPayload {
+    pub proofs: Proofs,
+}

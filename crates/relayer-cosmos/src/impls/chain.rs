@@ -26,6 +26,7 @@ use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusStat
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
@@ -50,8 +51,8 @@ use tendermint::abci::Event as AbciEvent;
 
 use crate::contexts::chain::CosmosChain;
 use crate::types::connection::{
-    CosmosConnectionOpenAckPayload, CosmosConnectionOpenInitPayload,
-    CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
+    CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
+    CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
@@ -210,7 +211,7 @@ where
 
     type ConnectionOpenAckPayload = CosmosConnectionOpenAckPayload;
 
-    type ConnectionOpenConfirmPayload = ();
+    type ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload;
 
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
         &packet.source_channel
@@ -713,7 +714,30 @@ where
         client_id: &ClientId,
         connection_id: &ConnectionId,
     ) -> Result<Self::ConnectionOpenConfirmPayload, Error> {
-        todo!()
+        let height = *height;
+        let client_id = client_id.clone();
+        let connection_id = connection_id.clone();
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let (_, proofs) = chain_handle
+                    .build_connection_proofs_and_client_state(
+                        ConnectionMsgType::OpenConfirm,
+                        &connection_id,
+                        &client_id,
+                        height,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let payload = CosmosConnectionOpenConfirmPayload { proofs };
+
+                Ok(payload)
+            })
+            .await
+            .map_err(BaseError::join)?
     }
 
     async fn build_connection_open_init_message(
@@ -779,7 +803,7 @@ where
             let client_state = counterparty_payload.client_state.clone().map(Into::into);
             let counterparty_versions: Vec<ConnectionVersion> =
                 counterparty_payload.versions.clone();
-            let proofs: ibc_relayer_types::proofs::Proofs = counterparty_payload.proofs.clone();
+            let proofs = counterparty_payload.proofs.clone();
             let delay_period = counterparty_payload.delay_period;
             let counterparty = counterparty.clone();
 
@@ -812,7 +836,7 @@ where
         let message = CosmosIbcMessage::new(None, move |signer| {
             let version = counterparty_payload.version.clone();
             let client_state = counterparty_payload.client_state.clone().map(Into::into);
-            let proofs: ibc_relayer_types::proofs::Proofs = counterparty_payload.proofs.clone();
+            let proofs = counterparty_payload.proofs.clone();
 
             let message = MsgConnectionOpenAck {
                 connection_id: connection_id.clone(),
@@ -832,8 +856,22 @@ where
     async fn build_connection_open_confirm_message(
         &self,
         connection_id: &ConnectionId,
-        counterparty_payload: Self::ConnectionOpenConfirmPayload,
+        counterparty_payload: CosmosConnectionOpenConfirmPayload,
     ) -> Result<CosmosIbcMessage, Error> {
-        todo!()
+        let connection_id = connection_id.clone();
+
+        let message = CosmosIbcMessage::new(None, move |signer| {
+            let proofs: ibc_relayer_types::proofs::Proofs = counterparty_payload.proofs.clone();
+
+            let message = MsgConnectionOpenConfirm {
+                connection_id: connection_id.clone(),
+                proofs,
+                signer: signer.clone(),
+            };
+
+            Ok(message.to_any())
+        });
+
+        Ok(message)
     }
 }
