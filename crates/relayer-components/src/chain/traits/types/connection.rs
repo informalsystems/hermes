@@ -30,7 +30,7 @@ pub trait HasConnectionHandshakePayloads<Counterparty>: HasIbcChainTypes<Counter
 }
 
 pub trait HasConnectionVersionType<Counterparty>: HasIbcChainTypes<Counterparty> {
-    type ConnectionVersion: Async;
+    type ConnectionVersion: Eq + Async;
 }
 
 pub trait HasConnectionDetailsType<Counterparty>: HasIbcChainTypes<Counterparty> {

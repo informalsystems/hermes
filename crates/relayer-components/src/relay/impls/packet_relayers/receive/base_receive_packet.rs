@@ -4,7 +4,7 @@ use crate::chain::traits::message_builders::receive_packet::CanBuildReceivePacke
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::types::aliases::Height;
 use crate::relay::traits::chains::HasRelayChains;
-use crate::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
+use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
 use crate::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::relay::traits::target::DestinationTarget;
 use crate::relay::types::aliases::Packet;
@@ -16,7 +16,7 @@ pub struct BaseReceivePacketRelayer;
 impl<Relay, AckEvent> ReceivePacketRelayer<Relay> for BaseReceivePacketRelayer
 where
     Relay::SrcChain: CanBuildReceivePacketMessage<Relay::DstChain>,
-    Relay: CanSendIbcMessages<DestinationTarget>,
+    Relay: CanSendSingleIbcMessage<DestinationTarget>,
     Relay: HasRelayChains,
     Relay::DstChain:
         HasWriteAcknowledgementEvent<Relay::SrcChain, WriteAcknowledgementEvent = AckEvent>,

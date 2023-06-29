@@ -12,10 +12,8 @@ use crate::std_prelude::*;
 pub trait CanBuildConnectionHandshakePayloads<Counterparty>:
     HasConnectionHandshakePayloads<Counterparty> + HasErrorType
 {
-    async fn build_connection_init_payload(
+    async fn build_connection_open_init_payload(
         &self,
-        height: &Self::Height,
-        client_id: &Self::ClientId,
     ) -> Result<Self::ConnectionInitPayload, Self::Error>;
 
     async fn build_connection_open_try_payload(
