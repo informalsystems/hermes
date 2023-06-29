@@ -1,12 +1,11 @@
 use async_trait::async_trait;
 use core::iter::Iterator;
-use core::time::Duration;
 
 use crate::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
 use crate::chain::traits::message_sender::CanSendSingleMessage;
-use crate::chain::traits::types::connection::HasConnectionVersionType;
+use crate::chain::traits::types::connection::HasInitConnectionOptionsType;
 use crate::chain::traits::types::ibc_events::connection::HasConnectionOpenInitEvent;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::connection::open_init::ConnectionInitializer;
@@ -24,7 +23,7 @@ where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + InjectMissingConnectionInitEventError,
     SrcChain: CanSendSingleMessage
-        + HasConnectionVersionType<DstChain>
+        + HasInitConnectionOptionsType<DstChain>
         + CanBuildConnectionHandshakeMessages<DstChain>
         + HasConnectionOpenInitEvent<DstChain>,
     DstChain: CanBuildConnectionHandshakePayloads<SrcChain>,
@@ -32,8 +31,7 @@ where
 {
     async fn init_connection(
         relay: &Relay,
-        connection_version: &SrcChain::ConnectionVersion,
-        delay_period: Duration,
+        init_connection_options: &SrcChain::InitConnectionOptions,
     ) -> Result<SrcChain::ConnectionId, Relay::Error> {
         let src_chain = relay.src_chain();
         let dst_chain = relay.dst_chain();
@@ -50,8 +48,7 @@ where
             .build_connection_open_init_message(
                 src_client_id,
                 dst_client_id,
-                connection_version,
-                delay_period,
+                init_connection_options,
                 open_init_payload,
             )
             .await

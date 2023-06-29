@@ -1,9 +1,7 @@
-use core::time::Duration;
-
 use async_trait::async_trait;
 
 use crate::chain::traits::types::connection::{
-    HasConnectionHandshakePayloads, HasConnectionVersionType,
+    HasConnectionHandshakePayloads, HasInitConnectionOptionsType,
 };
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
@@ -14,7 +12,7 @@ pub trait CanBuildConnectionHandshakePayloads<Counterparty>:
 {
     async fn build_connection_open_init_payload(
         &self,
-    ) -> Result<Self::ConnectionInitPayload, Self::Error>;
+    ) -> Result<Self::ConnectionOpenInitPayload, Self::Error>;
 
     async fn build_connection_open_try_payload(
         &self,
@@ -40,7 +38,7 @@ pub trait CanBuildConnectionHandshakePayloads<Counterparty>:
 
 #[async_trait]
 pub trait CanBuildConnectionHandshakeMessages<Counterparty>:
-    HasConnectionVersionType<Counterparty> + HasErrorType
+    HasInitConnectionOptionsType<Counterparty> + HasErrorType
 where
     Counterparty: HasConnectionHandshakePayloads<Self>,
 {
@@ -48,9 +46,8 @@ where
         &self,
         client_id: &Self::ClientId,
         counterparty_client_id: &Counterparty::ClientId,
-        connection_version: &Self::ConnectionVersion,
-        delay_period: Duration,
-        counterparty_payload: Counterparty::ConnectionInitPayload,
+        init_connection_options: &Self::InitConnectionOptions,
+        counterparty_payload: Counterparty::ConnectionOpenInitPayload,
     ) -> Result<Self::Message, Self::Error>;
 
     async fn build_connection_open_try_message(

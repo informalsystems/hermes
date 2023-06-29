@@ -15,12 +15,16 @@ pub trait HasConnectionStateType<Counterparty>: HasIbcChainTypes<Counterparty> {
     fn connection_base_state(state: &Self::ConnectionState) -> Option<ConnectionBaseState>;
 }
 
+pub trait HasInitConnectionOptionsType<Counterparty>: HasIbcChainTypes<Counterparty> {
+    type InitConnectionOptions: Async;
+}
+
 /**
     Payload that contains necessary counterparty information such as proofs and parameters
     in order for a self chain to build a connection handshake message.
 */
 pub trait HasConnectionHandshakePayloads<Counterparty>: HasIbcChainTypes<Counterparty> {
-    type ConnectionInitPayload: Async;
+    type ConnectionOpenInitPayload: Async;
 
     type ConnectionOpenTryPayload: Async;
 

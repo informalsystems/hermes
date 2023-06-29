@@ -170,6 +170,18 @@ where
     */
     type OutgoingPacket: Async;
 
+    type ConnectionDetails: Async;
+
+    type ConnectionVersion: Eq + Default + Async;
+
+    type ConnectionOpenInitPayload: Async;
+
+    type ConnectionOpenTryPayload: Async;
+
+    type ConnectionOpenAckPayload: Async;
+
+    type ConnectionOpenConfirmPayload: Async;
+
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
 
     fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId;

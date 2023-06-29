@@ -21,6 +21,8 @@ use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_runtime::tokio::logger::value::LogValue;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
+use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
+use ibc_relayer_types::core::ics03_connection::version::Version;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
@@ -185,6 +187,18 @@ where
     type IncomingPacket = Packet;
 
     type OutgoingPacket = Packet;
+
+    type ConnectionVersion = Version;
+
+    type ConnectionDetails = ConnectionEnd;
+
+    type ConnectionOpenInitPayload = ();
+
+    type ConnectionOpenTryPayload = ();
+
+    type ConnectionOpenAckPayload = ();
+
+    type ConnectionOpenConfirmPayload = ();
 
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
         &packet.source_channel
