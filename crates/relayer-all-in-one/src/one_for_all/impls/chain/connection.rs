@@ -144,10 +144,15 @@ where
     async fn build_connection_open_ack_message(
         &self,
         connection_id: &Self::ConnectionId,
+        counterparty_connection_id: &Counterparty::ConnectionId,
         counterparty_payload: Counterparty::ConnectionOpenAckPayload,
     ) -> Result<Self::Message, Self::Error> {
         self.chain
-            .build_connection_open_ack_message(connection_id, counterparty_payload)
+            .build_connection_open_ack_message(
+                connection_id,
+                counterparty_connection_id,
+                counterparty_payload,
+            )
             .await
     }
 

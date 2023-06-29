@@ -25,6 +25,7 @@ use ibc_relayer_runtime::tokio::logger::value::LogValue;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
@@ -49,7 +50,8 @@ use tendermint::abci::Event as AbciEvent;
 
 use crate::contexts::chain::CosmosChain;
 use crate::types::connection::{
-    CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
+    CosmosConnectionOpenAckPayload, CosmosConnectionOpenInitPayload,
+    CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
@@ -206,7 +208,7 @@ where
 
     type ConnectionOpenTryPayload = CosmosConnectionOpenTryPayload;
 
-    type ConnectionOpenAckPayload = ();
+    type ConnectionOpenAckPayload = CosmosConnectionOpenAckPayload;
 
     type ConnectionOpenConfirmPayload = ();
 
@@ -658,7 +660,51 @@ where
         client_id: &ClientId,
         connection_id: &ConnectionId,
     ) -> Result<Self::ConnectionOpenAckPayload, Error> {
-        todo!()
+        let height = *height;
+        let client_id = client_id.clone();
+        let connection_id = connection_id.clone();
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let (connection, _) = chain_handle
+                    .query_connection(
+                        QueryConnectionRequest {
+                            connection_id: connection_id.clone(),
+                            height: QueryHeight::Latest,
+                        },
+                        IncludeProof::No,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let version = connection
+                    .versions()
+                    .into_iter()
+                    .next()
+                    .cloned()
+                    .unwrap_or_default();
+
+                let (client_state, proofs) = chain_handle
+                    .build_connection_proofs_and_client_state(
+                        ConnectionMsgType::OpenAck,
+                        &connection_id,
+                        &client_id,
+                        height,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let payload = CosmosConnectionOpenAckPayload {
+                    proofs,
+                    client_state,
+                    version,
+                };
+
+                Ok(payload)
+            })
+            .await
+            .map_err(BaseError::join)?
     }
 
     async fn build_connection_open_confirm_payload(
@@ -757,9 +803,30 @@ where
     async fn build_connection_open_ack_message(
         &self,
         connection_id: &ConnectionId,
-        counterparty_payload: Self::ConnectionOpenAckPayload,
+        counterparty_connection_id: &ConnectionId,
+        counterparty_payload: CosmosConnectionOpenAckPayload,
     ) -> Result<CosmosIbcMessage, Error> {
-        todo!()
+        let connection_id = connection_id.clone();
+        let counterparty_connection_id = counterparty_connection_id.clone();
+
+        let message = CosmosIbcMessage::new(None, move |signer| {
+            let version = counterparty_payload.version.clone();
+            let client_state = counterparty_payload.client_state.clone().map(Into::into);
+            let proofs: ibc_relayer_types::proofs::Proofs = counterparty_payload.proofs.clone();
+
+            let message = MsgConnectionOpenAck {
+                connection_id: connection_id.clone(),
+                counterparty_connection_id: counterparty_connection_id.clone(),
+                version,
+                client_state,
+                proofs,
+                signer: signer.clone(),
+            };
+
+            Ok(message.to_any())
+        });
+
+        Ok(message)
     }
 
     async fn build_connection_open_confirm_message(

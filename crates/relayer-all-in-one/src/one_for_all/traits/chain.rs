@@ -321,6 +321,7 @@ where
     async fn build_connection_open_ack_message(
         &self,
         connection_id: &Self::ConnectionId,
+        counterparty_connection_id: &Counterparty::ConnectionId,
         counterparty_payload: Counterparty::ConnectionOpenAckPayload,
     ) -> Result<Self::Message, Self::Error>;
 

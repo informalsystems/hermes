@@ -62,7 +62,11 @@ where
             .map_err(Relay::dst_chain_error)?;
 
         let open_ack_message = src_chain
-            .build_connection_open_ack_message(src_connection_id, open_ack_payload)
+            .build_connection_open_ack_message(
+                src_connection_id,
+                dst_connection_id,
+                open_ack_payload,
+            )
             .await
             .map_err(Relay::src_chain_error)?;
 

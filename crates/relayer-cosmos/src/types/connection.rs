@@ -17,7 +17,13 @@ pub struct CosmosConnectionOpenInitPayload {
 pub struct CosmosConnectionOpenTryPayload {
     pub commitment_prefix: CommitmentPrefix,
     pub proofs: Proofs,
-    pub client_state: Option<AnyClientState>,
+    pub client_state: Option<AnyClientState>, // TODO: remove Option
     pub versions: Vec<Version>,
     pub delay_period: Duration,
+}
+
+pub struct CosmosConnectionOpenAckPayload {
+    pub client_state: Option<AnyClientState>, // TODO: remove Option
+    pub proofs: Proofs,
+    pub version: Version,
 }
