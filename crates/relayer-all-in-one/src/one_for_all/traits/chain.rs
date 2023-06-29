@@ -39,7 +39,7 @@ pub trait OfaChain: Async {
        Corresponds to
        [`HasChainTypes::Height`](ibc_relayer_components::chain::traits::types::height::HasHeightType::Height).
     */
-    type Height: Ord + Display + Async;
+    type Height: Clone + Ord + Display + Async;
 
     /**
        Corresponds to

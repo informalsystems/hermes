@@ -1,12 +1,10 @@
 use async_trait::async_trait;
 use core::iter::Iterator;
 
-use crate::chain::traits::connection::proofs::CanBuildConnectionProofs;
 use crate::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
 use crate::chain::traits::message_sender::CanSendMessages;
-use crate::chain::traits::queries::connection::CanQueryConnection;
 use crate::chain::traits::queries::status::CanQueryChainStatus;
 use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
@@ -40,15 +38,11 @@ where
         + CanWaitChainSurpassHeight
         + CanBuildConnectionHandshakeMessages<SrcChain>
         + HasConnectionOpenTryEvent<SrcChain, ConnectionOpenTryEvent = OpenTryEvent>,
-    SrcChain: CanSendMessages
-        + CanQueryChainStatus
-        + CanQueryConnection<DstChain>
-        + CanBuildConnectionProofs<DstChain>
-        + CanBuildConnectionHandshakePayloads<DstChain>,
+    SrcChain: CanSendMessages + CanQueryChainStatus + CanBuildConnectionHandshakePayloads<DstChain>,
 {
     async fn relay_connection_open_try(
         relay: &Relay,
-        connection_id: &<Relay::SrcChain as HasIbcChainTypes<Relay::DstChain>>::ConnectionId,
+        src_connection_id: &<Relay::SrcChain as HasIbcChainTypes<Relay::DstChain>>::ConnectionId,
     ) -> Result<OpenTryEvent, Relay::Error> {
         let src_chain = relay.src_chain();
         let dst_chain = relay.dst_chain();
@@ -82,7 +76,7 @@ where
             .await?;
 
         let open_try_payload = src_chain
-            .build_connection_open_try_payload(src_height, relay.src_client_id(), connection_id)
+            .build_connection_open_try_payload(src_height, relay.src_client_id(), src_connection_id)
             .await
             .map_err(Relay::src_chain_error)?;
 
@@ -109,10 +103,10 @@ where
 
         let open_try_event = events
             .pop()
-            .ok_or_else(|| relay.missing_connection_try_event_error(connection_id))?
+            .ok_or_else(|| relay.missing_connection_try_event_error(src_connection_id))?
             .into_iter()
             .find_map(|event| DstChain::try_extract_connection_open_try_event(event))
-            .ok_or_else(|| relay.missing_connection_try_event_error(connection_id))?;
+            .ok_or_else(|| relay.missing_connection_try_event_error(src_connection_id))?;
 
         Ok(open_try_event)
     }
