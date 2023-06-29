@@ -5,8 +5,10 @@ use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    IncludeProof, Qualified, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
+    IncludeProof, Qualified, QueryConnectionRequest, QueryConsensusStateRequest, QueryHeight,
+    QueryUnreceivedPacketsRequest,
 };
+use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::link::packet_events::query_write_ack_events;
@@ -24,6 +26,7 @@ use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusStat
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
@@ -45,7 +48,9 @@ use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::contexts::chain::CosmosChain;
-use crate::types::connection::{CosmosConnectionOpenInitPayload, CosmosInitConnectionOptions};
+use crate::types::connection::{
+    CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
+};
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
 use crate::types::telemetry::CosmosTelemetry;
@@ -199,7 +204,7 @@ where
 
     type ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload;
 
-    type ConnectionOpenTryPayload = ();
+    type ConnectionOpenTryPayload = CosmosConnectionOpenTryPayload;
 
     type ConnectionOpenAckPayload = ();
 
@@ -598,7 +603,53 @@ where
         client_id: &ClientId,
         connection_id: &ConnectionId,
     ) -> Result<Self::ConnectionOpenTryPayload, Error> {
-        todo!()
+        let height = *height;
+        let client_id = client_id.clone();
+        let connection_id = connection_id.clone();
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let commitment_prefix = chain_handle
+                    .query_commitment_prefix()
+                    .map_err(BaseError::relayer)?;
+
+                let (connection, _) = chain_handle
+                    .query_connection(
+                        QueryConnectionRequest {
+                            connection_id: connection_id.clone(),
+                            height: QueryHeight::Latest,
+                        },
+                        IncludeProof::No,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let versions = connection.versions().to_vec();
+                let delay_period = connection.delay_period();
+
+                let (client_state, proofs) = chain_handle
+                    .build_connection_proofs_and_client_state(
+                        ConnectionMsgType::OpenTry,
+                        &connection_id,
+                        &client_id,
+                        height,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let payload = CosmosConnectionOpenTryPayload {
+                    commitment_prefix,
+                    proofs,
+                    client_state,
+                    versions,
+                    delay_period,
+                };
+
+                Ok(payload)
+            })
+            .await
+            .map_err(BaseError::join)?
     }
 
     async fn build_connection_open_ack_payload(
@@ -667,9 +718,40 @@ where
     async fn build_connection_open_try_message(
         &self,
         client_id: &ClientId,
-        counterparty_payload: Self::ConnectionOpenTryPayload,
+        counterparty_client_id: &ClientId,
+        counterparty_connection_id: &ConnectionId,
+        counterparty_payload: CosmosConnectionOpenTryPayload,
     ) -> Result<CosmosIbcMessage, Error> {
-        todo!()
+        let client_id = client_id.clone();
+        let counterparty = ConnectionCounterparty::new(
+            counterparty_client_id.clone(),
+            Some(counterparty_connection_id.clone()),
+            counterparty_payload.commitment_prefix.clone(),
+        );
+
+        let message = CosmosIbcMessage::new(None, move |signer| {
+            let client_state = counterparty_payload.client_state.clone().map(Into::into);
+            let counterparty_versions: Vec<ConnectionVersion> =
+                counterparty_payload.versions.clone();
+            let proofs: ibc_relayer_types::proofs::Proofs = counterparty_payload.proofs.clone();
+            let delay_period = counterparty_payload.delay_period;
+            let counterparty = counterparty.clone();
+
+            let message = MsgConnectionOpenTry {
+                client_id: client_id.clone(),
+                client_state,
+                counterparty,
+                counterparty_versions,
+                delay_period,
+                proofs,
+                signer: signer.clone(),
+                previous_connection_id: None, // deprecated
+            };
+
+            Ok(message.to_any())
+        });
+
+        Ok(message)
     }
 
     async fn build_connection_open_ack_message(

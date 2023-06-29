@@ -313,6 +313,8 @@ where
     async fn build_connection_open_try_message(
         &self,
         client_id: &Self::ClientId,
+        counterparty_client_id: &Counterparty::ClientId,
+        counterparty_connection_id: &Counterparty::ConnectionId,
         counterparty_payload: Counterparty::ConnectionOpenTryPayload,
     ) -> Result<Self::Message, Self::Error>;
 

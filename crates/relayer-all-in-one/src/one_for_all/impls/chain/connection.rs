@@ -1,5 +1,7 @@
 use async_trait::async_trait;
-use ibc_relayer_components::chain::traits::message_builders::connection::CanBuildConnectionHandshakePayloads;
+use ibc_relayer_components::chain::traits::message_builders::connection::{
+    CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
+};
 use ibc_relayer_components::chain::traits::types::connection::{
     HasConnectionDetailsType, HasConnectionHandshakePayloads, HasConnectionVersionType,
     HasInitConnectionOptionsType,
@@ -94,6 +96,68 @@ where
     ) -> Result<Self::ConnectionOpenConfirmPayload, Self::Error> {
         self.chain
             .build_connection_open_confirm_payload(height, client_id, connection_id)
+            .await
+    }
+}
+
+#[async_trait]
+impl<Chain, Counterparty> CanBuildConnectionHandshakeMessages<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<Chain>,
+{
+    async fn build_connection_open_init_message(
+        &self,
+        client_id: &Self::ClientId,
+        counterparty_client_id: &Counterparty::ClientId,
+        init_connection_options: &Self::InitConnectionOptions,
+        counterparty_payload: Counterparty::ConnectionOpenInitPayload,
+    ) -> Result<Self::Message, Self::Error> {
+        self.chain
+            .build_connection_open_init_message(
+                client_id,
+                counterparty_client_id,
+                init_connection_options,
+                counterparty_payload,
+            )
+            .await
+    }
+
+    async fn build_connection_open_try_message(
+        &self,
+        client_id: &Self::ClientId,
+        counterparty_client_id: &Counterparty::ClientId,
+        counterparty_connection_id: &Counterparty::ConnectionId,
+        counterparty_payload: Counterparty::ConnectionOpenTryPayload,
+    ) -> Result<Self::Message, Self::Error> {
+        self.chain
+            .build_connection_open_try_message(
+                client_id,
+                counterparty_client_id,
+                counterparty_connection_id,
+                counterparty_payload,
+            )
+            .await
+    }
+
+    async fn build_connection_open_ack_message(
+        &self,
+        connection_id: &Self::ConnectionId,
+        counterparty_payload: Counterparty::ConnectionOpenAckPayload,
+    ) -> Result<Self::Message, Self::Error> {
+        self.chain
+            .build_connection_open_ack_message(connection_id, counterparty_payload)
+            .await
+    }
+
+    async fn build_connection_open_confirm_message(
+        &self,
+        connection_id: &Self::ConnectionId,
+        counterparty_payload: Counterparty::ConnectionOpenConfirmPayload,
+    ) -> Result<Self::Message, Self::Error> {
+        self.chain
+            .build_connection_open_confirm_message(connection_id, counterparty_payload)
             .await
     }
 }

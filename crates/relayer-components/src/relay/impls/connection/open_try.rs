@@ -74,7 +74,12 @@ where
             .map_err(Relay::src_chain_error)?;
 
         let open_try_message = dst_chain
-            .build_connection_open_try_message(dst_client_id, open_try_payload)
+            .build_connection_open_try_message(
+                dst_client_id,
+                src_client_id,
+                src_connection_id,
+                open_try_payload,
+            )
             .await
             .map_err(Relay::dst_chain_error)?;
 
