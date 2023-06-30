@@ -31,7 +31,7 @@ where
         loop {
             let current_height = self.query_chain_height().await?;
 
-            if &current_height >= height {
+            if &current_height > height {
                 return Ok(current_height.clone());
             } else {
                 self.runtime().sleep(Duration::from_millis(100)).await;

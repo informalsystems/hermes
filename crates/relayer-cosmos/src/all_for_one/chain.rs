@@ -12,6 +12,7 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 use tendermint::abci::Event as AbciEvent;
 
+use crate::types::connection::CosmosInitConnectionOptions;
 use crate::types::error::Error;
 use crate::types::message::CosmosIbcMessage;
 
@@ -34,6 +35,7 @@ pub trait AfoCosmosChain<Counterparty>:
     ChainStatus = ChainStatus,
     IncomingPacket = Packet,
     OutgoingPacket = Packet,
+    InitConnectionOptions = CosmosInitConnectionOptions,
 >
 where
     Counterparty: AfoCounterpartyChain<Self>,
@@ -60,6 +62,7 @@ where
         ChainStatus = ChainStatus,
         IncomingPacket = Packet,
         OutgoingPacket = Packet,
+        InitConnectionOptions = CosmosInitConnectionOptions,
     >,
     Counterparty: AfoCounterpartyChain<Chain>,
 {

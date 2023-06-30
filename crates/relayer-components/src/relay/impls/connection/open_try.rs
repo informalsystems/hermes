@@ -6,6 +6,7 @@ use crate::chain::traits::message_builders::connection::{
 };
 use crate::chain::traits::message_sender::CanSendMessages;
 use crate::chain::traits::queries::status::CanQueryChainHeight;
+use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::connection::HasConnectionOpenTryEvent;
 use crate::chain::traits::wait::CanWaitChainSurpassHeight;
@@ -32,9 +33,11 @@ where
         + CanSendUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>
         + InjectMissingConnectionTryEventError,
-    SrcChain: CanQueryChainHeight + CanBuildConnectionHandshakePayloads<DstChain>,
+    SrcChain:
+        CanQueryChainHeight + CanIncrementHeight + CanBuildConnectionHandshakePayloads<DstChain>,
     DstChain: CanSendMessages
         + CanQueryChainHeight
+        + CanIncrementHeight
         + CanWaitChainSurpassHeight
         + CanBuildConnectionHandshakeMessages<SrcChain>
         + HasConnectionOpenTryEvent<SrcChain>,
@@ -59,17 +62,20 @@ where
             .send_update_client_messages(SourceTarget, &dst_height)
             .await?;
 
-        let src_height = src_chain
+        let src_update_height = src_chain
             .query_chain_height()
             .await
             .map_err(Relay::src_chain_error)?;
 
         let dst_update_client_messages = relay
-            .build_update_client_messages(DestinationTarget, &src_height)
+            .build_update_client_messages(DestinationTarget, &src_update_height)
             .await?;
 
+        let src_proof_height =
+            SrcChain::increment_height(&src_update_height).map_err(Relay::src_chain_error)?;
+
         let open_try_payload = src_chain
-            .build_connection_open_try_payload(&src_height, src_client_id, src_connection_id)
+            .build_connection_open_try_payload(&src_proof_height, src_client_id, src_connection_id)
             .await
             .map_err(Relay::src_chain_error)?;
 
@@ -88,6 +94,9 @@ where
             messages.push(open_try_message);
             messages
         };
+
+        // let wait_height =
+        //     DstChain::increment_height(&dst_height).map_err(Relay::dst_chain_error)?;
 
         dst_chain
             .wait_chain_surpass_height(&dst_height)
