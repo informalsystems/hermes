@@ -5,6 +5,7 @@ use crate::chain::traits::message_builders::connection::{
 };
 use crate::chain::traits::message_sender::CanSendMessages;
 use crate::chain::traits::queries::status::CanQueryChainHeight;
+use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::connection::open_confirm::ConnectionOpenConfirmRelayer;
 use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
@@ -18,7 +19,8 @@ impl<Relay, SrcChain, DstChain> ConnectionOpenConfirmRelayer<Relay> for RelayCon
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + CanBuildUpdateClientMessage<DestinationTarget>,
-    SrcChain: CanQueryChainHeight + CanBuildConnectionHandshakePayloads<DstChain>,
+    SrcChain:
+        CanQueryChainHeight + CanIncrementHeight + CanBuildConnectionHandshakePayloads<DstChain>,
     DstChain: CanSendMessages + CanQueryChainHeight + CanBuildConnectionHandshakeMessages<SrcChain>,
     DstChain::ConnectionId: Clone,
 {
@@ -32,19 +34,26 @@ where
 
         let src_client_id = relay.src_client_id();
 
-        let src_height = src_chain
+        let src_proof_height = src_chain
             .query_chain_height()
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let dst_update_client_messages = relay
-            .build_update_client_messages(DestinationTarget, &src_height)
-            .await?;
-
         let open_confirm_payload = src_chain
-            .build_connection_open_confirm_payload(&src_height, src_client_id, src_connection_id)
+            .build_connection_open_confirm_payload(
+                &src_proof_height,
+                src_client_id,
+                src_connection_id,
+            )
             .await
             .map_err(Relay::src_chain_error)?;
+
+        let src_update_height =
+            SrcChain::increment_height(&src_proof_height).map_err(Relay::src_chain_error)?;
+
+        let dst_update_client_messages = relay
+            .build_update_client_messages(DestinationTarget, &src_update_height)
+            .await?;
 
         let open_confirm_message = dst_chain
             .build_connection_open_confirm_message(dst_connection_id, open_confirm_payload)
