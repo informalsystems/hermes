@@ -176,9 +176,13 @@ fn handle_light_client_attack(
                 .query_consumer_chains()
                 .unwrap_or_default(); // If the query fails, use an empty list of consumers
 
+            // FIXME: Do do we need to check if the client id also matches?
+            // ie. is it okay to submit a `MsgSubmitIcsConsumerMisbehaviour` to all clients
+            // of the provider chain, or should we only do this for the CCV client, and
+            // use the standard message for other clients?
             consumer_chains
                 .iter()
-                .any(|(chain_id, _)| chain_id == chain.id())
+                .any(|(chain_id, _client_id)| chain_id == chain.id())
         } else {
             false
         };
