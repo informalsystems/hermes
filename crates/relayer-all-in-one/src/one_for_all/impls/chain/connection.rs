@@ -9,7 +9,9 @@ use ibc_relayer_components::chain::traits::types::connection::{
     HasConnectionDetailsType, HasConnectionHandshakePayloads, HasConnectionVersionType,
     HasInitConnectionOptionsType,
 };
-use ibc_relayer_components::chain::traits::types::ibc_events::connection::HasConnectionOpenInitEvent;
+use ibc_relayer_components::chain::traits::types::ibc_events::connection::{
+    HasConnectionOpenInitEvent, HasConnectionOpenTryEvent,
+};
 
 impl<Chain, Counterparty> HasConnectionHandshakePayloads<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
@@ -71,6 +73,27 @@ where
         event: &Chain::ConnectionOpenInitEvent,
     ) -> &Chain::ConnectionId {
         Chain::connection_open_init_event_connection_id(event)
+    }
+}
+
+impl<Chain, Counterparty> HasConnectionOpenTryEvent<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<Chain>,
+{
+    type ConnectionOpenTryEvent = Chain::ConnectionOpenTryEvent;
+
+    fn try_extract_connection_open_try_event(
+        event: Chain::Event,
+    ) -> Option<Chain::ConnectionOpenTryEvent> {
+        Chain::try_extract_connection_open_try_event(event)
+    }
+
+    fn connection_open_try_event_connection_id(
+        event: &Chain::ConnectionOpenTryEvent,
+    ) -> &Chain::ConnectionId {
+        Chain::connection_open_try_event_connection_id(event)
     }
 }
 

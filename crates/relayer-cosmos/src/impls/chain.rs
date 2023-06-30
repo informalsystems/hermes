@@ -11,7 +11,8 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::{
-    connection_open_ack_try_from_abci_event, extract_packet_and_write_ack_from_tx,
+    connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
+    extract_packet_and_write_ack_from_tx,
 };
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
@@ -54,8 +55,8 @@ use tendermint::abci::Event as AbciEvent;
 use crate::contexts::chain::CosmosChain;
 use crate::types::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
-    CosmosConnectionOpenInitEvent, CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload,
-    CosmosInitConnectionOptions,
+    CosmosConnectionOpenInitEvent, CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryEvent,
+    CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
@@ -208,6 +209,8 @@ where
 
     type ConnectionOpenInitEvent = CosmosConnectionOpenInitEvent;
 
+    type ConnectionOpenTryEvent = CosmosConnectionOpenTryEvent;
+
     type InitConnectionOptions = CosmosInitConnectionOptions;
 
     type ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload;
@@ -326,7 +329,7 @@ where
         if let IbcEventType::OpenInitConnection = event_type {
             let open_ack_event = connection_open_ack_try_from_abci_event(&event).ok()?;
 
-            let connection_id = open_ack_event.connection_id()?;
+            let connection_id = open_ack_event.connection_id()?.clone();
 
             Some(CosmosConnectionOpenInitEvent { connection_id })
         } else {
@@ -337,6 +340,28 @@ where
     fn connection_open_init_event_connection_id(
         event: &CosmosConnectionOpenInitEvent,
     ) -> &ConnectionId {
+        &event.connection_id
+    }
+
+    fn try_extract_connection_open_try_event(
+        event: Self::Event,
+    ) -> Option<Self::ConnectionOpenTryEvent> {
+        let event_type = event.kind.parse().ok()?;
+
+        if let IbcEventType::OpenTryConnection = event_type {
+            let open_try_event = connection_open_try_try_from_abci_event(&event).ok()?;
+
+            let connection_id = open_try_event.connection_id()?.clone();
+
+            Some(CosmosConnectionOpenTryEvent { connection_id })
+        } else {
+            None
+        }
+    }
+
+    fn connection_open_try_event_connection_id(
+        event: &Self::ConnectionOpenTryEvent,
+    ) -> &Self::ConnectionId {
         &event.connection_id
     }
 

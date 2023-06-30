@@ -186,6 +186,8 @@ where
 
     type ConnectionOpenInitEvent: Async;
 
+    type ConnectionOpenTryEvent: Async;
+
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
 
     fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId;
@@ -242,6 +244,14 @@ where
 
     fn connection_open_init_event_connection_id(
         event: &Self::ConnectionOpenInitEvent,
+    ) -> &Self::ConnectionId;
+
+    fn try_extract_connection_open_try_event(
+        event: Self::Event,
+    ) -> Option<Self::ConnectionOpenTryEvent>;
+
+    fn connection_open_try_event_connection_id(
+        event: &Self::ConnectionOpenTryEvent,
     ) -> &Self::ConnectionId;
 
     async fn query_chain_id_from_channel_id(
