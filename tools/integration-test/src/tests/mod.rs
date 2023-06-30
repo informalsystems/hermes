@@ -54,3 +54,6 @@ pub mod clean_workers;
 
 #[cfg(any(doc, feature = "fee-grant"))]
 pub mod fee_grant;
+
+#[cfg(any(doc, feature = "interchain-security"))]
+pub mod interchain_security;
