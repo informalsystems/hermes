@@ -32,10 +32,15 @@ where
         height: &Height<Target::CounterpartyChain>,
     ) -> Result<(), Self::Error> {
         let messages = self.build_update_client_messages(target, height).await?;
-        Target::target_chain(self)
-            .send_messages(messages)
-            .await
-            .map_err(Target::target_chain_error)?;
+
+        // If there are no UpdateClient messages returned, it means that the IBC client is
+        // already up to date.
+        if messages.len() > 0 {
+            Target::target_chain(self)
+                .send_messages(messages)
+                .await
+                .map_err(Target::target_chain_error)?;
+        }
 
         Ok(())
     }
