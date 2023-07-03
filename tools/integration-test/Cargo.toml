@@ -43,6 +43,7 @@ forward-packet = []
 ics31 = []
 clean-workers = []
 fee-grant = []
+interchain-security = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
