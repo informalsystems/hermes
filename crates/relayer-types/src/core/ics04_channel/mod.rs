@@ -5,6 +5,7 @@ pub mod channel;
 pub mod commitment;
 pub mod error;
 pub mod events;
+pub mod flush_status;
 pub mod msgs;
 pub mod packet;
 pub mod packet_id;
