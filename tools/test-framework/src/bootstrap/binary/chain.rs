@@ -4,7 +4,7 @@
 */
 
 use eyre::Report as Error;
-use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle, CountingChainHandle};
+use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
 use ibc_relayer::foreign_client::{
@@ -13,8 +13,9 @@ use ibc_relayer::foreign_client::{
 use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
-use std::fs;
 use std::path::Path;
+use std::time::Duration;
+use std::{fs, thread};
 use tracing::{debug, info};
 
 use crate::relayer::driver::RelayerDriver;
@@ -55,8 +56,8 @@ pub fn bootstrap_chains_with_full_nodes(
 > {
     let mut config = Config::default();
 
-    add_chain_config(&mut config, &node_a)?;
-    add_chain_config(&mut config, &node_b)?;
+    add_chain_config(&mut config, &node_a, test_config)?;
+    add_chain_config(&mut config, &node_b, test_config)?;
 
     config_modifier(&mut config);
 
@@ -71,6 +72,9 @@ pub fn bootstrap_chains_with_full_nodes(
     // See [`spawn_chain_handle`] for more details.
     let handle_a = spawn_chain_handle(|| {}, &registry, &node_a)?;
     let handle_b = spawn_chain_handle(|| {}, &registry, &node_b)?;
+
+    // Wait for the chain handles to be spawned
+    thread::sleep(Duration::from_secs(10));
 
     pad_client_ids(&handle_a, &handle_b, options.pad_client_id_a_to_b)?;
     pad_client_ids(&handle_b, &handle_a, options.pad_client_id_b_to_a)?;
@@ -238,21 +242,24 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
 }
 
 /**
-   Create a new [`SharedRegistry`] that uses [`ibc_relayer::chain::handle::CountingAndCachingChainHandle`]
+   Create a new [`SharedRegistry`] that uses [`CountingAndCachingChainHandle`]
    as the [`ChainHandle`] implementation.
 */
-// FIXME: Temporarily disable CachingChainHandle for Chain Upgrade tests as the
-// caching causes the queried Channel End to not have the correct information.
-pub fn new_registry(config: Config) -> SharedRegistry<CountingChainHandle<BaseChainHandle>> {
-    <SharedRegistry<CountingChainHandle<BaseChainHandle>>>::new(config)
+pub fn new_registry(config: Config) -> SharedRegistry<CountingAndCachingChainHandle> {
+    <SharedRegistry<CountingAndCachingChainHandle>>::new(config)
 }
 
 /**
    Generate [`ChainConfig`](ibc_relayer::config::ChainConfig) from a running
    [`FullNode`] and add it to the relayer's [`Config`].
 */
-pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), Error> {
-    let chain_config = running_node.generate_chain_config(&running_node.chain_driver.chain_type)?;
+pub fn add_chain_config(
+    config: &mut Config,
+    running_node: &FullNode,
+    test_config: &TestConfig,
+) -> Result<(), Error> {
+    let chain_config =
+        running_node.generate_chain_config(&running_node.chain_driver.chain_type, test_config)?;
 
     config.chains.push(chain_config);
     Ok(())

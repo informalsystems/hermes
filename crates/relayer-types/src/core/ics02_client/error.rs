@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use flex_error::{define_error, TraceError};
 use ibc_proto::protobuf::Error as TendermintProtoError;
 

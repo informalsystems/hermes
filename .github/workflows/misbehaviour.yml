@@ -1,0 +1,96 @@
+name: Misbehaviour
+on:
+  pull_request:
+    paths:
+      - .github/workflows/misbehaviour.yaml
+      - Cargo.toml
+      - Cargo.lock
+      - flake.nix
+      - flake.lock
+      - ci/**
+      - scripts/**
+      - crates/**
+  push:
+    branches: master
+    paths:
+      - .github/workflows/misbehaviour.yaml
+      - Cargo.toml
+      - Cargo.lock
+      - flake.nix
+      - flake.lock
+      - ci/**
+      - scripts/**
+      - crates/**
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 1
+  CARGO_PROFILE_RELEASE_DEBUG: 1
+  RUST_BACKTRACE: short
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
+# Cancel previous runs of this workflow when a new commit is added to the PR, branch or tag
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  misbehaviour:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: gaia8
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia9
+            command: gaiad
+            account_prefix: cosmos
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Nix
+        uses: cachix/install-nix-action@v22
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Use cachix cache
+        uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - name: Install sconfig
+        uses: jaxxstorm/action-install-gh-release@v1.10.0
+        with:
+          repo: freshautomations/sconfig
+          platform: linux
+          arch: amd64
+          extension-matching: disable
+          rename-to: sconfig
+          chmod: 0755
+      - name: Install stoml
+        uses: jaxxstorm/action-install-gh-release@v1.10.0
+        with:
+          repo: freshautomations/stoml
+          platform: linux
+          arch: amd64
+          extension-matching: disable
+          rename-to: stoml
+          chmod: 0755
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Use Rust cache
+        uses: Swatinem/rust-cache@v1
+      - name: Build Hermes
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Run test
+        working-directory: ci/misbehaviour
+        run: |
+          nix shell .#${{ matrix.chain.package }} -c bash misbehaviour_test.sh
+

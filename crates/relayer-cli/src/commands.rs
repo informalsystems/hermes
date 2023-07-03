@@ -41,7 +41,7 @@ pub fn default_config_file() -> Option<PathBuf> {
 /// Cli Subcommands
 #[derive(Command, Parser, Debug, Runnable)]
 pub enum CliCmd {
-    /// Validate Hermes configuration file
+    /// Generate a new Hermes configuration file or validate an existing one
     #[clap(subcommand)]
     Config(ConfigCmd),
 

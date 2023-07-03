@@ -1,10 +1,8 @@
-use crate::prelude::*;
-
 /// Path-space as listed in ICS-024
 /// https://github.com/cosmos/ibc/tree/master/spec/core/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
 ///
-use core::str::FromStr;
+use std::str::FromStr;
 
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
@@ -44,6 +42,14 @@ pub enum Path {
     Acks(AcksPath),
     Receipts(ReceiptsPath),
     Upgrade(ClientUpgradePath),
+    ChannelUpgrade(ChannelUpgradePath),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "channelUpgrades/upgrades/ports/{port_id}/channels/{channel_id}")]
+pub struct ChannelUpgradePath {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]

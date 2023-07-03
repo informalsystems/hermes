@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
     flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix;
+    cosmos-nix.url = github:informalsystems/cosmos.nix/ibc-go-channel-upgrade;
   };
 
   outputs = inputs:
@@ -34,7 +34,6 @@
               gaia7
               gaia8
               gaia9
-              ica
               osmosis
               wasmd
               gaia6-ordered
@@ -44,11 +43,14 @@
               ibc-go-v5-simapp
               ibc-go-v6-simapp
               ibc-go-v7-simapp
+          ibc-go-v7-channel-upgrade
               apalache
               evmos
               juno
               stride
               stride-no-admin
+              migaloo
+              neutron
             ;
 
             python = nixpkgs.python3.withPackages (p: [

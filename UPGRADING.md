@@ -1,5 +1,24 @@
 # Upgrading Hermes to a newer version
 
+## v.1.5.0
+
+> These instructions assume that you are running Hermes v1.0.0 or newer.
+> If you are running an older version, please refer to the upgrading instructions
+> for the older release candidates in reverse chronological order to update to
+> v1.0.0 first and then follow these instructions.
+
+- The `unbonding_period` chain setting was removed. That setting was only meant
+  to be used for CCV consumer chains when there was no way to query their unbonding
+  period. Instead, for CCV consumer chains, just set the new `ccv_consumer_chain`
+  chain setting to `true` to identify that chain as a consumer chain.
+
+- The following metrics now have a `_total` suffix:
+  - `client_updates_submitted` -> `client_updates_submitted_total`
+  - `total_messages_submitted` -> `messages_submitted_total`
+  - `receive_packets_confirmed` -> `receive_packets_confirmed_total`
+  - `acknowledgment_packets_confirmed` -> `acknowledgment_packets_confirmed_total`
+  - `timeout_packets_confirmed_total` -> `timeout_packets_confirmed_total`
+
 ## v1.0.0
 
 > These instructions assume that you are running Hermes v1.0.0-rc.2.

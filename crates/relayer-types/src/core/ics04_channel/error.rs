@@ -5,7 +5,7 @@ use crate::core::ics03_connection::error as connection_error;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::prelude::*;
+
 use crate::proofs::ProofError;
 use crate::signer::SignerError;
 use crate::timestamp::Timestamp;
@@ -53,6 +53,11 @@ define_error! {
         InvalidVersion
             [ TraceError<TendermintError> ]
             | _ | { "invalid version" },
+
+        InvalidFlushStatus
+            { flush_status: i32 }
+            | e | { format_args!("invalid flush_status value: {}", e.flush_status) },
+
 
         Signer
             [ SignerError ]
@@ -107,6 +112,9 @@ define_error! {
 
         MissingUpgradeTimeout
             | _ | { "missing upgrade timeout, either a height or a timestamp must be set" },
+
+        MissingUpgrade
+            | _ | { "missing upgrade" },
 
         MissingUpgradeFields
             | _ | { "missing upgrade fields" },

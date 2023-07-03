@@ -1,8 +1,8 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 
-use core::fmt::{Display, Error as FmtError, Formatter};
-use core::str;
 use serde_derive::{Deserialize, Serialize};
+use std::fmt::{Display, Error as FmtError, Formatter};
+use std::str;
 use tendermint::abci;
 
 use crate::core::ics04_channel::channel::Ordering;
@@ -12,7 +12,7 @@ use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::{Error as EventError, IbcEvent, IbcEventType};
-use crate::prelude::*;
+
 use crate::utils::pretty::PrettySlice;
 
 /// Channel event attribute keys
@@ -134,6 +134,7 @@ impl TryFrom<Packet> for Vec<abci::EventAttribute> {
     }
 }
 
+/// The attributes emitted by upon receiving a channel upgrade init message.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct UpgradeAttributes {
     pub port_id: PortId,

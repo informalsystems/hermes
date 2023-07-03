@@ -1,5 +1,4 @@
 use crate::core::ics04_channel::upgrade_fields::UpgradeFields;
-use crate::prelude::*;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
 use ibc_proto::protobuf::Protobuf;
@@ -91,12 +90,11 @@ impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
 #[cfg(test)]
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
-    use ibc_proto::ibc::core::channel::v1::UpgradeTimeout as RawUpgradeTimeout;
+    use ibc_proto::ibc::core::channel::v1::Timeout as RawUpgradeTimeout;
 
     use crate::core::ics02_client::height::Height;
     use crate::core::ics04_channel::upgrade_fields::test_util::get_dummy_upgrade_fields;
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
-    use crate::prelude::*;
     use crate::test_utils::get_dummy_bech32_account;
     use crate::timestamp::Timestamp;
 
@@ -118,12 +116,10 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
-
     use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
-    use ibc_proto::ibc::core::channel::v1::UpgradeTimeout as RawUpgradeTimeout;
+    use ibc_proto::ibc::core::channel::v1::Timeout as RawUpgradeTimeout;
 
     use crate::core::ics04_channel::msgs::chan_upgrade_init::test_util::get_dummy_raw_msg_chan_upgrade_init;
     use crate::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;

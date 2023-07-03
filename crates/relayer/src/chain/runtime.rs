@@ -5,8 +5,9 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, Span};
 
-use ibc_proto::ibc::apps::fee::v1::{
-    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+use ibc_proto::ibc::{
+    apps::fee::v1::{QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse},
+    core::channel::v1::QueryUpgradeRequest,
 };
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
@@ -19,6 +20,7 @@ use ibc_relayer_types::{
         ics04_channel::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
+            upgrade::Upgrade,
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
@@ -53,7 +55,7 @@ use super::{
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
-    pub event_monitor: Option<thread::JoinHandle<()>>,
+    pub event_source: Option<thread::JoinHandle<()>>,
 }
 
 pub struct ChainRuntime<Endpoint: ChainEndpoint> {
@@ -348,6 +350,10 @@ where
 
                         ChainRequest::QueryIncentivizedPacket { request, reply_to } => {
                             self.query_incentivized_packet(request, reply_to)?
+                        },
+
+                        ChainRequest::QueryUpgrade { request, height, reply_to } => {
+                            self.query_upgrade(request, height, reply_to)?
                         },
                     }
                 },
@@ -846,6 +852,18 @@ where
         reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
     ) -> Result<(), Error> {
         let result = self.chain.query_incentivized_packet(request);
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+        reply_to: ReplyTo<(Upgrade, Option<MerkleProof>)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_upgrade(request, height);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())

@@ -1,5 +1,8 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
+use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
+use ibc_relayer_types::core::ics02_client::height::Height;
+use ibc_relayer_types::core::ics04_channel::upgrade::Upgrade;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -75,6 +78,9 @@ pub trait ChainEndpoint: Sized {
     /// Type of the client state for this chain
     type ClientState: ClientState + Into<AnyClientState>;
 
+    /// The type of time for this chain
+    type Time;
+
     /// Type of the key pair used for signatures of messages on chain
     type SigningKeyPair: SigningKeyPairSized + Into<AnySigningKeyPair>;
 
@@ -112,8 +118,6 @@ pub trait ChainEndpoint: Sized {
 
     /// Get the signing key pair
     fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
-        crate::time!("get_key");
-
         // Get the key from key seed file
         let key_pair = self
             .keybase()
@@ -685,4 +689,10 @@ pub trait ChainEndpoint: Sized {
         &self,
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error>;
 }

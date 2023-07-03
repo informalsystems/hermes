@@ -661,7 +661,9 @@ impl Runnable for TxChanCloseConfirmCmd {
     }
 }
 
-/// Build and send a `ChanUpgradeInit` message to a destination
+/// Initiate a channel upgrade (ChannelUpgradeInit)
+///
+/// Build and send a `ChannelUpgradeInit` message to a destination
 /// chain that the source chain has an already-existing channel open
 /// with, signaling the intent by the source chain to perform
 /// the channel upgrade handshake.
@@ -803,8 +805,10 @@ impl Runnable for TxChanUpgradeInitCmd {
     }
 }
 
-/// Build and send a `ChanUpgradeTry` message in response to
-/// a `ChanUpgradeInnit` message, signaling the chain's intent to
+/// Relay the channel upgrade attempt (ChannelUpgradeTry)
+///
+/// Build and send a `ChannelUpgradeTry` message in response to
+/// a `ChannelUpgradeInnit` message, signaling the chain's intent to
 /// cooperate with the source chain on upgrading the specified channel
 ///  and initiating the upgrade handshake.
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]

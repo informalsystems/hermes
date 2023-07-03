@@ -19,10 +19,10 @@ jobs:
   guide:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: cache .cargo directory
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.cargo
           key: cargo-dir

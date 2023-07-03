@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use crossbeam_channel as channel;
+use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
+use ibc_relayer_types::core::ics04_channel::upgrade::Upgrade;
 use tracing::{debug, Span};
 
 use ibc_proto::ibc::apps::fee::v1::{
@@ -502,5 +504,14 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     ) -> Result<QueryIncentivizedPacketResponse, Error> {
         self.inc_metric("query_incentivized_packet");
         self.inner.query_incentivized_packet(request)
+    }
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
+        self.inc_metric("query_upgrade");
+        self.inner.query_upgrade(request, height)
     }
 }

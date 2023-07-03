@@ -1,15 +1,11 @@
 use crate::chain_registry::get_configs;
-use abscissa_core::{
-    clap::Parser,
-    {Command, Runnable},
-};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use crate::conclude::Output;
 
-use ibc_relayer::{
-    config::{store, ChainConfig, Config},
-    keyring::list_keys,
-};
+use ibc_relayer::config::{store, ChainConfig, Config};
+use ibc_relayer::keyring::list_keys;
 
 use std::path::PathBuf;
 use tracing::{info, warn};
@@ -98,7 +94,7 @@ impl Runnable for AutoCmd {
                     .iter_mut()
                     .zip(names_and_keys.iter().map(|n| &n.1).cloned());
 
-                for (mut chain_config, key_option) in configs_and_keys {
+                for (chain_config, key_option) in configs_and_keys {
                     // If a key is provided, use it
                     if let Some(key_name) = key_option {
                         info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
@@ -108,7 +104,7 @@ impl Runnable for AutoCmd {
                         let chain_id = &chain_config.id;
                         let key = find_key(chain_config);
                         if let Some(key) = key {
-                            info!("{}: uses key \"{}\"", &chain_id, &key);
+                            info!("{}: uses key '{}'", &chain_id, &key);
                             chain_config.key_name = key;
                         } else {
                             // If no key is found, warn the user and continue
@@ -123,20 +119,15 @@ impl Runnable for AutoCmd {
                 };
 
                 match store(&config, &self.path) {
-                    Ok(_) => {
-                        warn!("Gas parameters are set to default values.");
-                        Output::success(format!(
-                            "Config file written successfully : {}.",
-                            self.path.to_str().unwrap()
-                        ))
-                        .exit()
-                    }
-                    Err(e) => Output::error(e.to_string()).exit(),
+                    Ok(_) => Output::success_msg(format!(
+                        "Config file written successfully at '{}'",
+                        self.path.display()
+                    ))
+                    .exit(),
+                    Err(e) => Output::error(e).exit(),
                 }
             }
-            Err(e) => {
-                Output::error(e.to_string()).exit();
-            }
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
