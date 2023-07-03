@@ -9,7 +9,7 @@ use crate::chain::traits::queries::status::CanQueryChainHeight;
 use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::connection::HasConnectionOpenTryEvent;
-use crate::chain::traits::wait::CanWaitChainSurpassHeight;
+use crate::chain::traits::wait::CanWaitChainReachHeight;
 use crate::relay::impls::update_client::CanSendUpdateClientMessage;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::connection::open_try::ConnectionOpenTryRelayer;
@@ -37,7 +37,7 @@ where
         CanQueryChainHeight + CanIncrementHeight + CanBuildConnectionHandshakePayloads<DstChain>,
     DstChain: CanSendMessages
         + CanQueryChainHeight
-        + CanWaitChainSurpassHeight
+        + CanWaitChainReachHeight
         + CanBuildConnectionHandshakeMessages<SrcChain>
         + HasConnectionOpenTryEvent<SrcChain>,
     DstChain::ConnectionId: Clone,
@@ -95,7 +95,7 @@ where
         };
 
         dst_chain
-            .wait_chain_surpass_height(&dst_height)
+            .wait_chain_reach_height(&dst_height)
             .await
             .map_err(Relay::dst_chain_error)?;
 

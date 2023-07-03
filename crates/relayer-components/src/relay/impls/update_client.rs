@@ -35,7 +35,7 @@ where
 
         // If there are no UpdateClient messages returned, it means that the IBC client is
         // already up to date.
-        if messages.len() > 0 {
+        if !messages.is_empty() {
             Target::target_chain(self)
                 .send_messages(messages)
                 .await

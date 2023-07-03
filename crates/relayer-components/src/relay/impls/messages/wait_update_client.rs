@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use async_trait::async_trait;
 
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::chain::traits::wait::CanWaitChainSurpassHeight;
+use crate::chain::traits::wait::CanWaitChainReachHeight;
 use crate::logger::traits::level::HasBaseLogLevels;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::logs::logger::CanLogRelayTarget;
@@ -26,7 +26,7 @@ where
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
     TargetChain: HasIbcChainTypes<CounterpartyChain>,
-    CounterpartyChain: CanWaitChainSurpassHeight + HasIbcChainTypes<TargetChain>,
+    CounterpartyChain: CanWaitChainReachHeight + HasIbcChainTypes<TargetChain>,
 {
     async fn build_update_client_messages(
         relay: &Relay,
@@ -44,7 +44,7 @@ where
         );
 
         let current_height = counterparty_chain
-            .wait_chain_surpass_height(height)
+            .wait_chain_reach_height(height)
             .await
             .map_err(Target::counterparty_chain_error)?;
 

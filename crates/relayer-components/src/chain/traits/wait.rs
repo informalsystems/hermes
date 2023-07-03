@@ -10,21 +10,21 @@ use crate::runtime::traits::sleep::CanSleep;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanWaitChainSurpassHeight: HasHeightType + HasErrorType {
-    async fn wait_chain_surpass_height(
+pub trait CanWaitChainReachHeight: HasHeightType + HasErrorType {
+    async fn wait_chain_reach_height(
         &self,
         height: &Self::Height,
     ) -> Result<Self::Height, Self::Error>;
 }
 
 #[async_trait]
-impl<Chain> CanWaitChainSurpassHeight for Chain
+impl<Chain> CanWaitChainReachHeight for Chain
 where
     Chain: CanQueryChainHeight + HasRuntime,
     Chain::Runtime: CanSleep,
     Chain::Height: Clone,
 {
-    async fn wait_chain_surpass_height(
+    async fn wait_chain_reach_height(
         &self,
         height: &Chain::Height,
     ) -> Result<Chain::Height, Chain::Error> {
