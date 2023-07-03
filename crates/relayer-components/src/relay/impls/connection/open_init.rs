@@ -15,6 +15,12 @@ pub trait InjectMissingConnectionInitEventError: HasRelayChains {
     fn missing_connection_init_event_error(&self) -> Self::Error;
 }
 
+/**
+   A base implementation for [`ConnectionInitializer`] which submits a
+   `ConnectionOpenInit` message to the source chain.
+
+   This implements the `ConnInit` step in the IBC connection handshake protocol.
+*/
 pub struct InitializeConnection;
 
 #[async_trait]

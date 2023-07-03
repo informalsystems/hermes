@@ -8,6 +8,18 @@ use crate::relay::traits::connection::open_handshake::ConnectionOpenHandshakeRel
 use crate::relay::traits::connection::open_try::CanRelayConnectionOpenTry;
 use crate::std_prelude::*;
 
+/**
+   Relays a connection open handshake using a connection ID that has been
+   initialized at the source chain.
+
+   Specifically, the `ConnOpenTry`, `ConnOpenAck`, and `ConnOpenConfirm` steps of
+   the handshake protocol are performed between both chains. Upon successful
+   completion of the handshake protocol, a connection will have been established
+   between both chains.
+
+   This can be used for relaying of connections that are created by external
+   users.
+*/
 pub struct RelayConnectionOpenHandshake;
 
 #[async_trait]

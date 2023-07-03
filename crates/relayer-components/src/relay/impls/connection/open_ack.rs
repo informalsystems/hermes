@@ -14,6 +14,17 @@ use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
+/**
+   A base implementation of [`ConnectionOpenAckRelayer`] that relays a new connection
+   at the destination chain that is in `OPEN_TRY` state, and submits it as a
+   `ConnectionOpenAck` message to the destination chain.
+
+   This implements the `ConnOpenAck` step of the IBC connection handshake protocol.
+
+   Note that this implementation does not check that the connections at the
+   source and destination chain are really in the `OPEN_TRY` state. This will be
+   implemented as a separate wrapper component. (TODO)
+*/
 pub struct RelayConnectionOpenAck;
 
 #[async_trait]

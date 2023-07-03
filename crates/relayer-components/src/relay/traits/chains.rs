@@ -10,7 +10,7 @@ use crate::core::traits::error::HasErrorType;
     connected to each others. This is reflected by both types being required
     to implement [`HasIbcPacketTypes`] with each others being the counterparty.
 
-    The relay context also has an abstract [`Packet`](Self::Packet) type, which
+    The relay context also has an abstract [`Packet`](crate::relay::traits::packet::HasRelayPacket::Packet) type, which
     represents the IBC packet sent from the source chain to the destination
     chain. In other words, the relay context only covers relaying of IBC packets
     in one direction. To support bi-directional relaying between two chains,

@@ -8,6 +8,18 @@ use crate::relay::traits::connection::open_init::CanInitConnection;
 use crate::relay::types::aliases::{DstConnectionId, SrcConnectionId};
 use crate::std_prelude::*;
 
+/**
+   This is an autotrait implementation by the relay context to allow bootstrapping
+   of new IBC connections as initiated by the relayer.
+
+   This can be used by the users of the relayer to create new connections. It can
+   also be used in integration tests to create new connections.
+
+   Note that this should _not_ be used when relaying connection creation that
+   are initiated by external users. For that purpose, use
+   [`RelayConnectionOpenHandshake`](crate::relay::impls::connection::open_handshake::RelayConnectionOpenHandshake),
+   which would reuse the given connection ID instead of creating new ones.
+*/
 #[async_trait]
 pub trait CanBootstrapConnection: HasRelayChains
 where

@@ -11,7 +11,7 @@ use crate::std_prelude::*;
 /// A concurrent two-way relay context that is composed of a `BiRelay` type that
 /// can auto-relay between two connected targets.
 ///
-/// As opposed to the [`ParallelTwoWayAutoRelay`] variant, this concurrent variant
+/// As opposed to the `ParallelTwoWayAutoRelay` variant, this concurrent variant
 /// runs in a single thread and achieves concurrency via cooperative multi-tasking.
 pub struct ConcurrentTwoWayAutoRelay;
 

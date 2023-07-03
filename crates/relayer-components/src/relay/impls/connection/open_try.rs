@@ -24,6 +24,17 @@ pub trait InjectMissingConnectionTryEventError: HasRelayChains {
     ) -> Self::Error;
 }
 
+/**
+   A base implementation of [`ConnectionOpenTryRelayer`] that relays a new connection
+   at the source chain that is in `OPEN_INIT` state, and submits it as a
+   `ConnectionOpenTry` message to the destination chain.
+
+   This implements the `ConnOpenTry` step of the IBC connection handshake protocol.
+
+   Note that this implementation does not check that the connection at the source
+   chain is really in the `OPEN_INIT` state. This will be implemented as a separate
+   wrapper component. (TODO)
+*/
 pub struct RelayConnectionOpenTry;
 
 #[async_trait]

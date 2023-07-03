@@ -12,6 +12,17 @@ use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::relay::traits::target::DestinationTarget;
 use crate::std_prelude::*;
 
+/**
+   A base implementation of [`ConnectionOpenConfirmRelayer`] that relays a new connection
+   at the source chain that is in `OPEN` state, and submits it as a
+   `ConnectionOpenConfirm` message to the destination chain.
+
+   This implements the `ConnOpenConfirm` step of the IBC connection handshake protocol.
+
+   Note that this implementation does not check that the connection at the source
+   chain is really in the `OPEN` state, and that the connection at the destination chain
+   is in the `OPEN_TRY` state. This will be implemented as a separate wrapper component. (TODO)
+*/
 pub struct RelayConnectionOpenConfirm;
 
 #[async_trait]

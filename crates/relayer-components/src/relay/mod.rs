@@ -7,7 +7,7 @@
    chain.
 
    At its core, a relay context should implement
-   [`HasRelayChains`](traits::types::HasRelayChains), which declares the chain
+   [`HasRelayChains`](traits::chains::HasRelayChains), which declares the chain
    sub-contexts as well as the abstract types that are used when relaying.
 
    Since the relay context only supports relaying in one direction, two relay
