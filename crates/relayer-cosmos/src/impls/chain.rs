@@ -734,7 +734,7 @@ where
 
                 let version = connection
                     .versions()
-                    .into_iter()
+                    .iter()
                     .next()
                     .cloned()
                     .unwrap_or_default();
@@ -817,7 +817,7 @@ where
                     .query_compatible_versions()
                     .map_err(BaseError::relayer)?;
 
-                let version = versions.into_iter().next().unwrap_or_else(Default::default);
+                let version = versions.into_iter().next().unwrap_or_default();
 
                 let message = CosmosIbcMessage::new(None, move |signer| {
                     let message = MsgConnectionOpenInit {
