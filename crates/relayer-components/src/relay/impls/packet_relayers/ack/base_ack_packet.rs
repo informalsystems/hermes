@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::chain::traits::message_builders::ack_packet::CanBuildAckPacketMessage;
 use crate::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::relay::traits::chains::HasRelayChains;
-use crate::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
+use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
 use crate::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::relay::traits::target::SourceTarget;
 use crate::relay::types::aliases::Packet;
@@ -18,7 +18,7 @@ pub struct BaseAckPacketRelayer;
 impl<Relay> AckPacketRelayer<Relay> for BaseAckPacketRelayer
 where
     Relay: HasRelayChains,
-    Relay: CanSendIbcMessages<SourceTarget>,
+    Relay: CanSendSingleIbcMessage<SourceTarget>,
     Relay::DstChain: CanBuildAckPacketMessage<Relay::SrcChain>,
 {
     async fn relay_ack_packet(
@@ -33,7 +33,7 @@ where
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        relay.send_message(message).await?;
+        relay.send_message(SourceTarget, message).await?;
 
         Ok(())
     }

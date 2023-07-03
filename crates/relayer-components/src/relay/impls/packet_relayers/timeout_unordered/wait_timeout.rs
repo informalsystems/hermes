@@ -4,8 +4,7 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 
-use crate::chain::traits::queries::status::CanQueryChainStatus;
-use crate::chain::traits::types::status::HasChainStatusType;
+use crate::chain::traits::queries::status::CanQueryChainHeight;
 use crate::chain::types::aliases::Message;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::messages::timeout_unordered_packet::TimeoutUnorderedPacketMessageBuilder;
@@ -27,7 +26,7 @@ impl<Relay, InMessageBuilder, Runtime, Height, Error> TimeoutUnorderedPacketMess
 where
     Relay: HasRelayPacket<Error = Error>,
     Relay: HasRuntime<Runtime = Runtime>,
-    Relay::DstChain: CanQueryChainStatus<Height = Height>,
+    Relay::DstChain: CanQueryChainHeight<Height = Height>,
     InMessageBuilder: TimeoutUnorderedPacketMessageBuilder<Relay>,
     Runtime: CanSleep,
     Height: Ord + Async,
@@ -40,14 +39,12 @@ where
         let chain = context.dst_chain();
 
         loop {
-            let counterparty_status = chain
-                .query_chain_status()
+            let counterparty_height = chain
+                .query_chain_height()
                 .await
                 .map_err(Relay::dst_chain_error)?;
 
-            let counterparty_height = Relay::DstChain::chain_status_height(&counterparty_status);
-
-            if counterparty_height > destination_height {
+            if &counterparty_height > destination_height {
                 return InMessageBuilder::build_timeout_unordered_packet_message(
                     context,
                     destination_height,

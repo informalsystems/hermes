@@ -23,40 +23,18 @@
     For a quick introduction, check here for a
     [crash course on context-generic programming](crate::docs::context_generic_programming)
 
-    ## Relayer Variants
-
-    There are currently two variants of relayers supported by the relayer
-    framework. The [`base`] or minimal variant provides the base components
-    required to implement a minimal version of an IBC relayer. The [`extra`]
-    variant provides all the additional components that can be used to run
-    a full-featured relayer.
-
-    Note that all the components in both [`base`] and [`extra`] are implemented
-    in a fully modular fashion. As a result, power users can choose to use only
-    a subset of components provided by the framework, or introduce new
-    components that provide additional functionalities.
-
     ## All-In-One Traits
 
-    The relayer framework provides several
+    The relayer framework provides
     _[all-in-one traits](crate::docs::context_generic_programming#all-in-one-traits)_
-    for users to
-    easily implement and use custom relayers. The all-in-one traits are
+    for users to easily implement and use custom relayers. The all-in-one traits are
     configured with a _preset_ list of components, and is best suited
     for users who find the presets to be sufficient.
 
     A good starting point to learn about the all-in-one traits is to look at
     the _one-for-all_ consumer traits like
-    [`OfaBaseChain`](base::one_for_all::traits::chain::OfaBaseChain) and
-    [`OfaBaseRelay`](base::one_for_all::traits::relay::OfaBaseRelay).
-
-    There are currently two all-in-one variants of the relayer. The
-    [`base`] or minimal variant expose the minimal set of requirements
-    that a context needs to implement in order to construct a minimal
-    relayer. The [`extra`] variant requires the context to implement
-    additional traits, such as
-    [OfaFullChain](crate::extra::one_for_all::traits::chain::OfaFullChain),
-    in order to construct a full-featured relayer.
+    [`OfaChain`](one_for_all::traits::chain::OfaChain) and
+    [`OfaRelay`](one_for_all::traits::relay::OfaRelay).
 
     The all-in-one traits provided by the relayer framework for convenience,
     and they are _not_ meant to cover all possible use cases of using the relayer.
@@ -70,7 +48,7 @@
 
     For basic users who just want quick and easy way to creat custom relayers,
     it is usually sufficient to learn how to use the all-in-one traits like
-    [`OfaBaseRelay`](base::one_for_all::traits::relay::OfaBaseRelay).
+    [`OfaRelay`](crate::one_for_all::traits::relay::OfaRelay).
     But for power users who want to have more customization, or developers
     who are maintaining the relayer framework itself, it is necessary to
     have a deeper understanding of how context-generic programming works,
@@ -80,7 +58,7 @@
     A good starting point to understand the relayer framework internals
     is to look at how abstract types are defined in
     [`HasChainTypes`](ibc_relayer_components::chain::traits::types::chain::HasChainTypes) and
-    [`HasRelayChains`](ibc_relayer_components::relay::traits::types::HasRelayChains).
+    [`HasRelayChains`](ibc_relayer_components::relay::traits::chains::HasRelayChains).
     There are also simple components like
     [`CanQueryChainStatus`](ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus)
     that can be understood as standalone pieces.

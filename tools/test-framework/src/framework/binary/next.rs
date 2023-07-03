@@ -366,7 +366,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> CanWaitForAck for TestContextV2<C
 }
 
 /// This is a temporary solution. When the clean shutdown is implemented in the runtime
-/// context, this should be replaced, see https://github.com/informalsystems/hermes/issues/3245.
+/// context, this should be replaced, see <https://github.com/informalsystems/hermes/issues/3245>.
 impl<ChainA: ChainHandle, ChainB: ChainHandle> CanShutdown for TestContextV2<ChainA, ChainB> {
     fn shutdown(&self, auto_relay_handle: Option<JoinHandle<()>>) {
         if let Some(handle) = auto_relay_handle {

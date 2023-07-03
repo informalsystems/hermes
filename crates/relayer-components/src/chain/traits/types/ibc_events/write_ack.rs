@@ -45,7 +45,13 @@ where
     fn try_extract_write_acknowledgement_event(
         event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
+}
 
+pub trait CanBuildPacketFromWriteAckEvent<Counterparty>:
+    HasWriteAcknowledgementEvent<Counterparty>
+where
+    Counterparty: HasIbcChainTypes<Self>,
+{
     /**
        Extract the [`IncomingPacket`](HasIbcPacketTypes::IncomingPacket)
        from a write acknowledgement event.
@@ -60,7 +66,7 @@ where
        refactored into a method like
        `query_packet_from_write_acknowledgement_event`.
     */
-    fn extract_packet_from_write_acknowledgement_event(
+    fn build_packet_from_write_acknowledgement_event(
         ack: &Self::WriteAcknowledgementEvent,
     ) -> &Self::IncomingPacket;
 }

@@ -6,6 +6,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::traits::types::message::HasMessageType;
+use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
 
@@ -60,7 +61,7 @@ use crate::std_prelude::*;
    provides the same interface for sending messages using this trait.
 */
 #[async_trait]
-pub trait CanSendMessages: HasMessageType + HasEventType {
+pub trait CanSendMessages: HasMessageType + HasEventType + HasErrorType {
     /**
         Given a list of [messages](HasMessageType::Message), submit the messages
         atomically to the chain.
@@ -89,7 +90,7 @@ pub trait CanSendMessages: HasMessageType + HasEventType {
 #[async_trait]
 pub trait MessageSender<Chain>: Async
 where
-    Chain: HasMessageType + HasEventType,
+    Chain: HasMessageType + HasEventType + HasErrorType,
 {
     /**
        Corresponds to [`CanSendMessages::send_messages`]
@@ -98,4 +99,60 @@ where
         chain: &Chain,
         messages: Vec<Chain::Message>,
     ) -> Result<Vec<Vec<Chain::Event>>, Chain::Error>;
+}
+
+pub trait InjectMismatchIbcEventsCountError: HasErrorType {
+    fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error;
+}
+
+#[async_trait]
+pub trait CanSendFixSizedMessages: HasMessageType + HasEventType + HasErrorType {
+    async fn send_messages_fixed<const COUNT: usize>(
+        &self,
+        messages: [Self::Message; COUNT],
+    ) -> Result<[Vec<Self::Event>; COUNT], Self::Error>;
+}
+
+#[async_trait]
+pub trait CanSendSingleMessage: HasMessageType + HasEventType + HasErrorType {
+    async fn send_message(&self, message: Self::Message) -> Result<Vec<Self::Event>, Self::Error>;
+}
+
+#[async_trait]
+impl<Chain> CanSendFixSizedMessages for Chain
+where
+    Chain: CanSendMessages + InjectMismatchIbcEventsCountError,
+{
+    async fn send_messages_fixed<const COUNT: usize>(
+        &self,
+        messages: [Chain::Message; COUNT],
+    ) -> Result<[Vec<Chain::Event>; COUNT], Self::Error> {
+        let events_vec = self.send_messages(messages.into()).await?;
+
+        let events = events_vec
+            .try_into()
+            .map_err(|e: Vec<_>| Chain::mismatch_ibc_events_count_error(COUNT, e.len()))?;
+
+        Ok(events)
+    }
+}
+
+#[async_trait]
+impl<Chain> CanSendSingleMessage for Chain
+where
+    Chain: CanSendMessages,
+{
+    async fn send_message(
+        &self,
+        message: Chain::Message,
+    ) -> Result<Vec<Chain::Event>, Chain::Error> {
+        let events = self
+            .send_messages(vec![message])
+            .await?
+            .into_iter()
+            .flatten()
+            .collect();
+
+        Ok(events)
+    }
 }

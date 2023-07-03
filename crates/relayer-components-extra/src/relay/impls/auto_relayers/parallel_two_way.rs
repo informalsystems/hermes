@@ -9,7 +9,9 @@ use crate::std_prelude::*;
 /// A parallel two-way relay context that is composed of a `BiRelay` type that
 /// can auto-relay between two connected targets.
 ///
-/// As opposed to the [`ConcurrentTwoWayAutoRelay`] variant, this type achieves
+/// As opposed to the
+/// [`ConcurrentTwoWayAutoRelay`](ibc_relayer_components::relay::impls::auto_relayers::concurrent_two_way::ConcurrentTwoWayAutoRelay)
+/// variant, this type achieves
 /// concurrency by spawning two tasks, each one responsible for relaying in
 /// different directions. As such, it has an additional `HasSpawner` constraint
 /// that the concurrent variant does not require.

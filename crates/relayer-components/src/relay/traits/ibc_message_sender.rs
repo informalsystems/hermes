@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::message_sender::InjectMismatchIbcEventsCountError;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::types::aliases::{Event, Message};
-use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
@@ -15,6 +15,7 @@ where
 {
     async fn send_messages(
         &self,
+        target: Target,
         messages: Vec<Message<Target::TargetChain>>,
     ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Self::Error>;
 }
@@ -31,56 +32,68 @@ where
     ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Context::Error>;
 }
 
-pub trait InjectMismatchIbcEventsCountError: HasErrorType {
-    fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error;
-}
-
 #[async_trait]
-pub trait IbcMessageSenderExt<Context, Target>
+pub trait CanSendFixSizedIbcMessages<Target>: HasRelayChains
 where
-    Context: HasRelayChains,
-    Target: ChainTarget<Context>,
+    Target: ChainTarget<Self>,
 {
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
+        target: Target,
         messages: [Message<Target::TargetChain>; COUNT],
-    ) -> Result<[Vec<Event<Target::TargetChain>>; COUNT], Context::Error>
-    where
-        Context: InjectMismatchIbcEventsCountError;
-
-    async fn send_message(
-        &self,
-        message: Message<Target::TargetChain>,
-    ) -> Result<Vec<Event<Target::TargetChain>>, Context::Error>;
+    ) -> Result<[Vec<Event<Target::TargetChain>>; COUNT], Self::Error>;
 }
 
 #[async_trait]
-impl<Context, Target, TargetChain, Event, Message> IbcMessageSenderExt<Context, Target> for Context
+pub trait CanSendSingleIbcMessage<Target>: HasRelayChains
 where
-    Context: CanSendIbcMessages<Target>,
-    Target: ChainTarget<Context, TargetChain = TargetChain>,
+    Target: ChainTarget<Self>,
+{
+    async fn send_message(
+        &self,
+        target: Target,
+        message: Message<Target::TargetChain>,
+    ) -> Result<Vec<Event<Target::TargetChain>>, Self::Error>;
+}
+
+#[async_trait]
+impl<Relay, Target, TargetChain, Event, Message> CanSendFixSizedIbcMessages<Target> for Relay
+where
+    Relay: CanSendIbcMessages<Target> + InjectMismatchIbcEventsCountError,
+    Target: ChainTarget<Relay, TargetChain = TargetChain>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Event = Event, Message = Message>,
     Message: Async,
 {
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
+        target: Target,
         messages: [Message; COUNT],
-    ) -> Result<[Vec<Event>; COUNT], Context::Error>
-    where
-        Context: InjectMismatchIbcEventsCountError,
-    {
-        let events = self
-            .send_messages(messages.into())
-            .await?
+    ) -> Result<[Vec<Event>; COUNT], Relay::Error> {
+        let events_vec = self.send_messages(target, messages.into()).await?;
+
+        let events = events_vec
             .try_into()
-            .map_err(|e: Vec<_>| Context::mismatch_ibc_events_count_error(COUNT, e.len()))?;
+            .map_err(|e: Vec<_>| Relay::mismatch_ibc_events_count_error(COUNT, e.len()))?;
 
         Ok(events)
     }
+}
 
-    async fn send_message(&self, message: Message) -> Result<Vec<Event>, Context::Error> {
+#[async_trait]
+impl<Relay, Target, TargetChain, Event, Message> CanSendSingleIbcMessage<Target> for Relay
+where
+    Relay: CanSendIbcMessages<Target>,
+    Target: ChainTarget<Relay, TargetChain = TargetChain>,
+    TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Event = Event, Message = Message>,
+    Message: Async,
+{
+    async fn send_message(
+        &self,
+        target: Target,
+        message: Message,
+    ) -> Result<Vec<Event>, Relay::Error> {
         let events = self
-            .send_messages(vec![message])
+            .send_messages(target, vec![message])
             .await?
             .into_iter()
             .flatten()

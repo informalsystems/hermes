@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::queries::status::*;
 use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
+use ibc_relayer_components::core::traits::error::HasErrorType;
 
 use crate::std_prelude::*;
 use crate::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
@@ -15,7 +16,7 @@ impl<InQuerier, Chain, Telemetry> ChainStatusQuerier<Chain>
     for ChainStatusTelemetryQuerier<InQuerier>
 where
     InQuerier: ChainStatusQuerier<Chain>,
-    Chain: HasChainStatusType + HasTelemetry<Telemetry = Telemetry>,
+    Chain: HasChainStatusType + HasTelemetry<Telemetry = Telemetry> + HasErrorType,
     Telemetry: HasMetric<TelemetryCounter>,
     Telemetry::Value: From<u64>,
 {

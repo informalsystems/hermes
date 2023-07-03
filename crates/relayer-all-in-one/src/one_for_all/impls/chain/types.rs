@@ -5,7 +5,9 @@ use ibc_relayer_components::chain::traits::types::ibc::{
     HasCounterpartyMessageHeight, HasIbcChainTypes,
 };
 use ibc_relayer_components::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
-use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
+use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::{
+    CanBuildPacketFromWriteAckEvent, HasWriteAcknowledgementEvent,
+};
 use ibc_relayer_components::chain::traits::types::message::{
     CanEstimateMessageSize, HasMessageType,
 };
@@ -180,8 +182,15 @@ where
     ) -> Option<Self::WriteAcknowledgementEvent> {
         Chain::try_extract_write_acknowledgement_event(event)
     }
+}
 
-    fn extract_packet_from_write_acknowledgement_event(
+impl<Chain, Counterparty> CanBuildPacketFromWriteAckEvent<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<Chain>,
+{
+    fn build_packet_from_write_acknowledgement_event(
         ack: &Self::WriteAcknowledgementEvent,
     ) -> &Self::IncomingPacket {
         Chain::extract_packet_from_write_acknowledgement_event(ack)

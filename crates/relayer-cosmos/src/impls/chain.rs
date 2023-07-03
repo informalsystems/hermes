@@ -5,10 +5,15 @@ use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    IncludeProof, Qualified, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
+    IncludeProof, Qualified, QueryConnectionRequest, QueryConsensusStateRequest, QueryHeight,
+    QueryUnreceivedPacketsRequest,
 };
+use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::consensus_state::AnyConsensusState;
-use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
+use ibc_relayer::event::{
+    connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
+    extract_packet_and_write_ack_from_tx,
+};
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
@@ -21,6 +26,13 @@ use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_runtime::tokio::logger::value::LogValue;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
+use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
+use ibc_relayer_types::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
@@ -41,6 +53,11 @@ use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::contexts::chain::CosmosChain;
+use crate::types::connection::{
+    CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
+    CosmosConnectionOpenInitEvent, CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryEvent,
+    CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
+};
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
 use crate::types::telemetry::CosmosTelemetry;
@@ -186,6 +203,24 @@ where
 
     type OutgoingPacket = Packet;
 
+    type ConnectionVersion = ConnectionVersion;
+
+    type ConnectionDetails = ConnectionEnd;
+
+    type ConnectionOpenInitEvent = CosmosConnectionOpenInitEvent;
+
+    type ConnectionOpenTryEvent = CosmosConnectionOpenTryEvent;
+
+    type InitConnectionOptions = CosmosInitConnectionOptions;
+
+    type ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload;
+
+    type ConnectionOpenTryPayload = CosmosConnectionOpenTryPayload;
+
+    type ConnectionOpenAckPayload = CosmosConnectionOpenAckPayload;
+
+    type ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload;
+
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
         &packet.source_channel
     }
@@ -284,6 +319,50 @@ where
         ack: &Self::WriteAcknowledgementEvent,
     ) -> &Self::IncomingPacket {
         &ack.packet
+    }
+
+    fn try_extract_connection_open_init_event(
+        event: Arc<AbciEvent>,
+    ) -> Option<CosmosConnectionOpenInitEvent> {
+        let event_type = event.kind.parse().ok()?;
+
+        if let IbcEventType::OpenInitConnection = event_type {
+            let open_ack_event = connection_open_ack_try_from_abci_event(&event).ok()?;
+
+            let connection_id = open_ack_event.connection_id()?.clone();
+
+            Some(CosmosConnectionOpenInitEvent { connection_id })
+        } else {
+            None
+        }
+    }
+
+    fn connection_open_init_event_connection_id(
+        event: &CosmosConnectionOpenInitEvent,
+    ) -> &ConnectionId {
+        &event.connection_id
+    }
+
+    fn try_extract_connection_open_try_event(
+        event: Self::Event,
+    ) -> Option<Self::ConnectionOpenTryEvent> {
+        let event_type = event.kind.parse().ok()?;
+
+        if let IbcEventType::OpenTryConnection = event_type {
+            let open_try_event = connection_open_try_try_from_abci_event(&event).ok()?;
+
+            let connection_id = open_try_event.connection_id()?.clone();
+
+            Some(CosmosConnectionOpenTryEvent { connection_id })
+        } else {
+            None
+        }
+    }
+
+    fn connection_open_try_event_connection_id(
+        event: &Self::ConnectionOpenTryEvent,
+    ) -> &Self::ConnectionId {
+        &event.connection_id
     }
 
     async fn query_chain_id_from_channel_id(
@@ -552,5 +631,299 @@ where
             })
             .await
             .map_err(BaseError::join)?
+    }
+
+    async fn build_connection_open_init_payload(
+        &self,
+    ) -> Result<CosmosConnectionOpenInitPayload, Error> {
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let commitment_prefix = chain_handle
+                    .query_commitment_prefix()
+                    .map_err(BaseError::relayer)?;
+
+                Ok(CosmosConnectionOpenInitPayload { commitment_prefix })
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
+    async fn build_connection_open_try_payload(
+        &self,
+        height: &Height,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<Self::ConnectionOpenTryPayload, Error> {
+        let height = *height;
+        let client_id = client_id.clone();
+        let connection_id = connection_id.clone();
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let commitment_prefix = chain_handle
+                    .query_commitment_prefix()
+                    .map_err(BaseError::relayer)?;
+
+                let (connection, _) = chain_handle
+                    .query_connection(
+                        QueryConnectionRequest {
+                            connection_id: connection_id.clone(),
+                            height: QueryHeight::Latest,
+                        },
+                        IncludeProof::No,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let versions = connection.versions().to_vec();
+                let delay_period = connection.delay_period();
+
+                let (client_state, proofs) = chain_handle
+                    .build_connection_proofs_and_client_state(
+                        ConnectionMsgType::OpenTry,
+                        &connection_id,
+                        &client_id,
+                        height,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let payload = CosmosConnectionOpenTryPayload {
+                    commitment_prefix,
+                    proofs,
+                    client_state,
+                    versions,
+                    delay_period,
+                };
+
+                Ok(payload)
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
+    async fn build_connection_open_ack_payload(
+        &self,
+        height: &Height,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<Self::ConnectionOpenAckPayload, Error> {
+        let height = *height;
+        let client_id = client_id.clone();
+        let connection_id = connection_id.clone();
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let (connection, _) = chain_handle
+                    .query_connection(
+                        QueryConnectionRequest {
+                            connection_id: connection_id.clone(),
+                            height: QueryHeight::Latest,
+                        },
+                        IncludeProof::No,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let version = connection
+                    .versions()
+                    .iter()
+                    .next()
+                    .cloned()
+                    .unwrap_or_default();
+
+                let (client_state, proofs) = chain_handle
+                    .build_connection_proofs_and_client_state(
+                        ConnectionMsgType::OpenAck,
+                        &connection_id,
+                        &client_id,
+                        height,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let payload = CosmosConnectionOpenAckPayload {
+                    proofs,
+                    client_state,
+                    version,
+                };
+
+                Ok(payload)
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
+    async fn build_connection_open_confirm_payload(
+        &self,
+        height: &Height,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<Self::ConnectionOpenConfirmPayload, Error> {
+        let height = *height;
+        let client_id = client_id.clone();
+        let connection_id = connection_id.clone();
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let (_, proofs) = chain_handle
+                    .build_connection_proofs_and_client_state(
+                        ConnectionMsgType::OpenConfirm,
+                        &connection_id,
+                        &client_id,
+                        height,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let payload = CosmosConnectionOpenConfirmPayload { proofs };
+
+                Ok(payload)
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
+    async fn build_connection_open_init_message(
+        &self,
+        client_id: &ClientId,
+        counterparty_client_id: &ClientId,
+        init_connection_options: &CosmosInitConnectionOptions,
+        counterparty_payload: CosmosConnectionOpenInitPayload,
+    ) -> Result<CosmosIbcMessage, Error> {
+        let counterparty = ConnectionCounterparty::new(
+            counterparty_client_id.clone(),
+            None,
+            counterparty_payload.commitment_prefix,
+        );
+
+        let client_id = client_id.clone();
+        let delay_period = init_connection_options.delay_period;
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let versions = chain_handle
+                    .query_compatible_versions()
+                    .map_err(BaseError::relayer)?;
+
+                let version = versions.into_iter().next().unwrap_or_default();
+
+                let message = CosmosIbcMessage::new(None, move |signer| {
+                    let message = MsgConnectionOpenInit {
+                        client_id: client_id.clone(),
+                        counterparty: counterparty.clone(),
+                        version: Some(version.clone()),
+                        delay_period,
+                        signer: signer.clone(),
+                    };
+
+                    Ok(message.to_any())
+                });
+
+                Ok(message)
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
+    async fn build_connection_open_try_message(
+        &self,
+        client_id: &ClientId,
+        counterparty_client_id: &ClientId,
+        counterparty_connection_id: &ConnectionId,
+        counterparty_payload: CosmosConnectionOpenTryPayload,
+    ) -> Result<CosmosIbcMessage, Error> {
+        let client_id = client_id.clone();
+        let counterparty = ConnectionCounterparty::new(
+            counterparty_client_id.clone(),
+            Some(counterparty_connection_id.clone()),
+            counterparty_payload.commitment_prefix.clone(),
+        );
+
+        let message = CosmosIbcMessage::new(None, move |signer| {
+            let client_state = counterparty_payload.client_state.clone().map(Into::into);
+            let counterparty_versions: Vec<ConnectionVersion> =
+                counterparty_payload.versions.clone();
+            let proofs = counterparty_payload.proofs.clone();
+            let delay_period = counterparty_payload.delay_period;
+            let counterparty = counterparty.clone();
+
+            let message = MsgConnectionOpenTry {
+                client_id: client_id.clone(),
+                client_state,
+                counterparty,
+                counterparty_versions,
+                delay_period,
+                proofs,
+                signer: signer.clone(),
+                previous_connection_id: None, // deprecated
+            };
+
+            Ok(message.to_any())
+        });
+
+        Ok(message)
+    }
+
+    async fn build_connection_open_ack_message(
+        &self,
+        connection_id: &ConnectionId,
+        counterparty_connection_id: &ConnectionId,
+        counterparty_payload: CosmosConnectionOpenAckPayload,
+    ) -> Result<CosmosIbcMessage, Error> {
+        let connection_id = connection_id.clone();
+        let counterparty_connection_id = counterparty_connection_id.clone();
+
+        let message = CosmosIbcMessage::new(None, move |signer| {
+            let version = counterparty_payload.version.clone();
+            let client_state = counterparty_payload.client_state.clone().map(Into::into);
+            let proofs = counterparty_payload.proofs.clone();
+
+            let message = MsgConnectionOpenAck {
+                connection_id: connection_id.clone(),
+                counterparty_connection_id: counterparty_connection_id.clone(),
+                version,
+                client_state,
+                proofs,
+                signer: signer.clone(),
+            };
+
+            Ok(message.to_any())
+        });
+
+        Ok(message)
+    }
+
+    async fn build_connection_open_confirm_message(
+        &self,
+        connection_id: &ConnectionId,
+        counterparty_payload: CosmosConnectionOpenConfirmPayload,
+    ) -> Result<CosmosIbcMessage, Error> {
+        let connection_id = connection_id.clone();
+
+        let message = CosmosIbcMessage::new(None, move |signer| {
+            let proofs: ibc_relayer_types::proofs::Proofs = counterparty_payload.proofs.clone();
+
+            let message = MsgConnectionOpenConfirm {
+                connection_id: connection_id.clone(),
+                proofs,
+                signer: signer.clone(),
+            };
+
+            Ok(message.to_any())
+        });
+
+        Ok(message)
     }
 }
