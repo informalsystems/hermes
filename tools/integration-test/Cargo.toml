@@ -39,6 +39,7 @@ ics31 = []
 clean-workers = []
 fee-grant = []
 channel-upgrade = []
+interchain-security = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
