@@ -1,3 +1,7 @@
+use std::fmt::Display;
+use std::fmt::Error as FmtError;
+use std::fmt::Formatter;
+
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -10,6 +14,16 @@ pub enum FlushStatus {
     NotinflushUnspecified = 0,
     Flushing = 1,
     Flushcomplete = 2,
+}
+
+impl Display for FlushStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match self {
+            FlushStatus::NotinflushUnspecified => write!(f, "FLUSH_STATUS_NOTINFLUSH_UNSPECIFIED"),
+            FlushStatus::Flushing => write!(f, "FLUSH_STATUS_FLUSHING"),
+            FlushStatus::Flushcomplete => write!(f, "FLUSH_STATUS_FLUSHCOMPLETE"),
+        }
+    }
 }
 
 impl TryFrom<RawFlushStatus> for FlushStatus {
