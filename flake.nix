@@ -50,6 +50,7 @@
               stride
               stride-no-admin
               migaloo
+              neutron
             ;
 
             python = nixpkgs.python3.withPackages (p: [

@@ -22,6 +22,7 @@ use crate::framework::binary::chain::{
 use crate::framework::binary::connection::{
     BinaryConnectionTest, ConnectionDelayOverride, RunBinaryConnectionTest,
 };
+use crate::framework::binary::ics::run_binary_interchain_security_node_test;
 use crate::framework::binary::node::{
     run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
 };
@@ -79,6 +80,28 @@ where
     run_binary_node_test(&RunBinaryChainTest::new(&RunBinaryConnectionTest::new(
         &RunBinaryChannelTest::new(&RunWithSupervisor::new(test)),
     )))
+}
+
+pub fn run_binary_interchain_security_channel_test<Test, Overrides>(
+    test: &Test,
+) -> Result<(), Error>
+where
+    Test: BinaryChannelTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
+        + NodeGenesisOverride
+        + RelayerConfigOverride
+        + ClientOptionsOverride
+        + SupervisorOverride
+        + ConnectionDelayOverride
+        + PortsOverride
+        + ChannelOrderOverride
+        + ChannelVersionOverride,
+{
+    run_binary_interchain_security_node_test(&RunBinaryChainTest::new(
+        &RunBinaryConnectionTest::new(&RunBinaryChannelTest::new(&RunWithSupervisor::new(test))),
+    ))
 }
 
 /**
