@@ -7,12 +7,12 @@ use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::{
-    Channel as RawChannel, Counterparty as RawCounterparty, FlushStatus,
+    Channel as RawChannel, Counterparty as RawCounterparty, FlushStatus as RawFlushStatus,
     IdentifiedChannel as RawIdentifiedChannel,
 };
 
 use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics04_channel::{error::Error, version::Version};
+use crate::core::ics04_channel::{error::Error, flush_status::FlushStatus, version::Version};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -140,8 +140,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
 
         let version = value.version.into();
 
-        let flush_status = FlushStatus::from_i32(value.flush_status)
-            .ok_or_else(|| Error::invalid_flush_status(value.flush_status))?;
+        let flush_status = FlushStatus::try_from(value.flush_status)?;
 
         Ok(ChannelEnd::new(
             chan_state,
@@ -168,7 +167,7 @@ impl From<ChannelEnd> for RawChannel {
                 .collect(),
             version: value.version.to_string(),
             upgrade_sequence: value.upgraded_sequence.into(),
-            flush_status: value.flush_status.into(),
+            flush_status: RawFlushStatus::from(value.flush_status).into(),
         }
     }
 }

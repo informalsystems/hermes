@@ -26,6 +26,10 @@ define_error! {
             { state: i32 }
             | e | { format_args!("channel state unknown: {}", e.state) },
 
+        UnknownFlushStatus
+            { state: i32 }
+            | e | { format_args!("flush status unknown: {}", e.state) },
+
         Identifier
             [ ValidationError ]
             | _ | { "identifier error" },
