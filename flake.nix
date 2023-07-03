@@ -49,6 +49,7 @@
               stride
               stride-no-admin
               migaloo
+              neutron
             ;
 
             inherit (nixpkgs)
