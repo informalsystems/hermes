@@ -309,7 +309,7 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
             assert_channel_upgrade_state(
                 ChannelState::TryUpgrade,
                 ChannelState::InitUpgrade,
-                FlushStatus::Flushing,
+                FlushStatus::Flushcomplete,
                 FlushStatus::NotinflushUnspecified,
                 handle_a,
                 handle_b,
