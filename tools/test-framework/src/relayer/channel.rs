@@ -1,12 +1,12 @@
 use core::time::Duration;
 use eyre::eyre;
-use ibc_proto::ibc::core::channel::v1::FlushStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState,
 };
+use ibc_relayer_types::core::ics04_channel::flush_status::FlushStatus;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 
@@ -377,8 +377,8 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     {
         return Err(Error::generic(eyre!(
             "expected channel end A flush status to be `{}`, but is instead `{}`",
-            a_side_flush_status.as_str_name(),
-            channel_end_a.value().flush_status().as_str_name()
+            a_side_flush_status,
+            channel_end_a.value().flush_status()
         )));
     }
 
@@ -437,8 +437,8 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     {
         return Err(Error::generic(eyre!(
             "expected channel end B flush status to be `{}`, but is instead `{}`",
-            b_side_flush_status.as_str_name(),
-            channel_end_b.value().flush_status().as_str_name()
+            b_side_flush_status,
+            channel_end_b.value().flush_status()
         )));
     }
 

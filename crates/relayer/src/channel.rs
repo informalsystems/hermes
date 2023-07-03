@@ -1,5 +1,6 @@
 pub use error::ChannelError;
-use ibc_proto::ibc::core::channel::v1::{FlushStatus, QueryUpgradeRequest};
+use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
+use ibc_relayer_types::core::ics04_channel::flush_status::FlushStatus;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::upgrade_fields::UpgradeFields;
 
