@@ -425,6 +425,8 @@ pub enum State {
     /// The counterparty chain that accepts the upgrade should set the channel state from
     /// OPEN to TRYUPGRADE.
     TryUpgrade = 6,
+
+    AckUpgrade = 7,
 }
 
 impl State {
@@ -438,6 +440,7 @@ impl State {
             Self::Closed => "CLOSED",
             Self::InitUpgrade => "INITUPGRADE",
             Self::TryUpgrade => "TRYUPGRADE",
+            Self::AckUpgrade => "ACKUPGRADE",
         }
     }
 
@@ -451,6 +454,7 @@ impl State {
             4 => Ok(Self::Closed),
             5 => Ok(Self::InitUpgrade),
             6 => Ok(Self::TryUpgrade),
+            7 => Ok(Self::AckUpgrade),
             _ => Err(Error::unknown_state(s)),
         }
     }
@@ -486,6 +490,10 @@ impl State {
 
             InitUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open),
             TryUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open | InitUpgrade),
+            AckUpgrade => !matches!(
+                other,
+                Uninitialized | Init | TryOpen | Open | InitUpgrade | TryUpgrade
+            ),
 
             Closed => false,
         }
