@@ -4,7 +4,7 @@
 */
 
 use eyre::Report as Error;
-use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle, CountingChainHandle};
+use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
 use ibc_relayer::foreign_client::{
@@ -242,13 +242,11 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
 }
 
 /**
-   Create a new [`SharedRegistry`] that uses [`ibc_relayer::chain::handle::CountingAndCachingChainHandle`]
+   Create a new [`SharedRegistry`] that uses [`CountingAndCachingChainHandle`]
    as the [`ChainHandle`] implementation.
 */
-// FIXME: Temporarily disable CachingChainHandle for Chain Upgrade tests as the
-// caching causes the queried Channel End to not have the correct information.
-pub fn new_registry(config: Config) -> SharedRegistry<CountingChainHandle<BaseChainHandle>> {
-    <SharedRegistry<CountingChainHandle<BaseChainHandle>>>::new(config)
+pub fn new_registry(config: Config) -> SharedRegistry<CountingAndCachingChainHandle> {
+    <SharedRegistry<CountingAndCachingChainHandle>>::new(config)
 }
 
 /**

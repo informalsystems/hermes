@@ -1,30 +1,28 @@
+//! Tests the successful channel upgrade handshake:
+//!
+//! - `ChannelUpgradeManualHandshake` tests that after the channel can be upgraded
+//!   without relaying on the supervisor. This test manually calls the INIT, TRY,
+//!   ACK and CONFIRM steps.
+
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
 use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::version::Version};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_init,
-    init_channel_upgrade, ChannelUpgradeAssertionAttributes,
+    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes,
 };
 
 #[test]
-fn test_channel_upgrade_init_handshake() -> Result<(), Error> {
-    run_binary_channel_test(&ChannelUpgradeInitHandshake)
+fn test_channel_upgrade_manual_handshake() -> Result<(), Error> {
+    run_binary_channel_test(&ChannelUpgradeManualHandshake)
 }
 
-pub struct ChannelUpgradeInitHandshake;
+pub struct ChannelUpgradeManualHandshake;
 
-impl TestOverrides for ChannelUpgradeInitHandshake {
+impl TestOverrides for ChannelUpgradeManualHandshake {
     fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
-    fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode.connections.enabled = true;
-
-        config.mode.channels.enabled = false;
-        config.mode.packets.enabled = false;
-        config.mode.clients.enabled = false;
+        config.bootstrap_with_random_ids = true;
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -32,7 +30,7 @@ impl TestOverrides for ChannelUpgradeInitHandshake {
     }
 }
 
-impl BinaryChannelTest for ChannelUpgradeInitHandshake {
+impl BinaryChannelTest for ChannelUpgradeManualHandshake {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
@@ -50,11 +48,11 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
         )?;
 
         let channel_end_a = chains
-            .handle_b
+            .handle_a
             .query_channel(
                 QueryChannelRequest {
-                    port_id: channels.port_b.0.clone(),
-                    channel_id: channels.channel_id_b.0.clone(),
+                    port_id: channels.port_a.0.clone(),
+                    channel_id: channels.channel_id_a.0.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -63,11 +61,11 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
             .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
 
         let channel_end_b = chains
-            .handle_a
+            .handle_b
             .query_channel(
                 QueryChannelRequest {
-                    port_id: channels.port_a.0.clone(),
-                    channel_id: channels.channel_id_a.0.clone(),
+                    port_id: channels.port_b.0.clone(),
+                    channel_id: channels.channel_id_b.0.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -85,12 +83,7 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
         let new_ordering = None;
         let new_connection_hops = None;
 
-        // Only Version is changed in this test.
-        let upgrade_attrs = ChannelUpgradeAssertionAttributes::new(
-            old_version.clone(),
-            old_ordering,
-            old_connection_hops_a.clone(),
-            old_connection_hops_b.clone(),
+        let upgrade_attrs = ChannelUpgradableAttributes::new(
             old_version,
             old_ordering,
             old_connection_hops_a,
@@ -104,24 +97,35 @@ impl BinaryChannelTest for ChannelUpgradeInitHandshake {
         .map_err(|e| eyre!("error creating height for timeout height: {e}"))?;
         let timeout = UpgradeTimeout::Height(timeout_height);
 
-        info!("Initialise channel upgrade process...");
+        info!("Set channel in (INITUPGRADE, OPEN) state...");
 
-        init_channel_upgrade(
-            channel,
+        channel.flipped().build_chan_upgrade_init_and_send(
             Some(new_version),
             new_ordering,
             new_connection_hops,
-            timeout,
+            timeout.clone(),
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
 
         assert_eventually_channel_upgrade_init(
+            &chains.handle_a,
+            &chains.handle_b,
+            &channels.channel_id_a.as_ref(),
+            &channels.port_a.as_ref(),
+            &upgrade_attrs,
+        )?;
+
+        info!("Set channel in (INITUPGRADE, TRYUPGRADE) state...");
+
+        channel.build_chan_upgrade_try_and_send(timeout)?;
+
+        assert_eventually_channel_upgrade_try(
             &chains.handle_b,
             &chains.handle_a,
             &channels.channel_id_b.as_ref(),
             &channels.port_b.as_ref(),
-            &upgrade_attrs,
+            &upgrade_attrs.flipped(),
         )?;
 
         Ok(())
