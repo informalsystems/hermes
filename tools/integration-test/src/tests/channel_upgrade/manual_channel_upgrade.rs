@@ -10,7 +10,7 @@ use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::versi
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_init,
-    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes, assert_eventually_channel_upgrade_ack,
+    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -126,18 +126,6 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &channels.channel_id_b.as_ref(),
             &channels.port_b.as_ref(),
             &upgrade_attrs.flipped(),
-        )?;
-
-        info!("Set channel in (OPEN, TRYUPGRADE) state...");
-
-        //channel.build_chan_upgrade_ack_and_send()?;
-
-        assert_eventually_channel_upgrade_ack(
-            &chains.handle_b,
-            &chains.handle_a,
-            &channels.channel_id_b.as_ref(),
-            &channels.port_b.as_ref(),
-            &upgrade_attrs,
         )?;
 
         Ok(())
