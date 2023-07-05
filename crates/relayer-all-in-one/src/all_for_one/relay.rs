@@ -1,5 +1,6 @@
 use ibc_relayer_components::chain::types::aliases::{IncomingPacket, OutgoingPacket};
 use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
+use ibc_relayer_components::relay::impls::client::create::CanCreateClient;
 use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::connection::open_handshake::CanRelayConnectionOpenHandshake;
@@ -42,6 +43,8 @@ pub trait AfoRelay:
     + CanRelayTimeoutUnorderedPacket
     + CanSendIbcMessagesFromBatchWorker<SourceTarget>
     + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
+    + CanCreateClient<SourceTarget>
+    + CanCreateClient<DestinationTarget>
     + CanInitConnection
     + CanRelayConnectionOpenHandshake
     + SupportsPacketRetry
@@ -78,6 +81,8 @@ where
         + CanRelayTimeoutUnorderedPacket
         + CanSendIbcMessagesFromBatchWorker<SourceTarget>
         + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
+        + CanCreateClient<SourceTarget>
+        + CanCreateClient<DestinationTarget>
         + CanInitConnection
         + CanRelayConnectionOpenHandshake
         + SupportsPacketRetry,
