@@ -26,6 +26,7 @@ pub trait CanBuildCreateClientPayload<Counterparty>:
     HasCreateClientOptionsType<Counterparty> + HasCreateClientPayloadType<Counterparty> + HasErrorType
 {
     async fn build_create_client_payload(
+        &self,
         create_client_options: &Self::CreateClientOptions,
     ) -> Result<Self::CreateClientPayload, Self::Error>;
 }
@@ -37,6 +38,7 @@ where
     Counterparty: HasCreateClientPayloadType<Self>,
 {
     async fn build_create_client_message(
+        &self,
         counterparty_payload: Counterparty::CreateClientPayload,
     ) -> Result<Self::Message, Self::Error>;
 }
