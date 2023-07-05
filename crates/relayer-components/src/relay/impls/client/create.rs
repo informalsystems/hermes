@@ -14,7 +14,7 @@ pub trait InjectMissingCreateClientEventError<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
 {
-    fn missing_create_client_event(
+    fn missing_create_client_event_error(
         target_chain: &Target::TargetChain,
         counterparty_chain: &Target::CounterpartyChain,
     ) -> Self::Error;
@@ -84,7 +84,9 @@ where
         let create_client_event = events
             .into_iter()
             .find_map(|event| TargetChain::try_extract_create_client_event(event))
-            .ok_or_else(|| Relay::missing_create_client_event(target_chain, counterparty_chain))?;
+            .ok_or_else(|| {
+                Relay::missing_create_client_event_error(target_chain, counterparty_chain)
+            })?;
 
         let client_id = TargetChain::create_client_event_client_id(&create_client_event);
 

@@ -170,6 +170,12 @@ where
     */
     type OutgoingPacket: Async;
 
+    type CreateClientPayloadOptions: Async;
+
+    type CreateClientPayload: Async;
+
+    type CreateClientEvent: Async;
+
     type ConnectionDetails: Async;
 
     type ConnectionVersion: Eq + Default + Async;
@@ -238,6 +244,10 @@ where
         ack: &Self::WriteAcknowledgementEvent,
     ) -> &Self::IncomingPacket;
 
+    fn try_extract_create_client_event(event: Self::Event) -> Option<Self::CreateClientEvent>;
+
+    fn create_client_event_client_id(event: &Self::CreateClientEvent) -> &Self::ClientId;
+
     fn try_extract_connection_open_init_event(
         event: Self::Event,
     ) -> Option<Self::ConnectionOpenInitEvent>;
@@ -296,6 +306,16 @@ where
         height: &Self::Height,
         packet: &Self::IncomingPacket,
     ) -> Result<Counterparty::Message, Self::Error>;
+
+    async fn build_create_client_payload(
+        &self,
+        create_client_options: &Self::CreateClientPayloadOptions,
+    ) -> Result<Self::CreateClientPayload, Self::Error>;
+
+    async fn build_create_client_message(
+        &self,
+        counterparty_payload: Counterparty::CreateClientPayload,
+    ) -> Result<Self::Message, Self::Error>;
 
     async fn build_connection_open_init_payload(
         &self,
