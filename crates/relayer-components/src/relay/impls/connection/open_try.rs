@@ -105,6 +105,7 @@ where
             messages
         };
 
+        // TODO: investigate whether there is a need to wait, and whether we need to wait at height + 1
         dst_chain
             .wait_chain_reach_height(&dst_height)
             .await
