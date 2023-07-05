@@ -248,7 +248,7 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
         .and_then(|app_state| app_state.get_mut("gov"))
         .and_then(|gov| get_mut_with_fallback(gov, "params", "voting_params"))
         .and_then(|voting_params| voting_params.as_object_mut())
-        .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
+        .ok_or_else(|| eyre!("failed to get voting_params in genesis file"))?;
 
     voting_period
         .insert(
@@ -256,6 +256,26 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
             serde_json::Value::String(period.to_string()),
         )
         .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
+
+    Ok(())
+}
+
+pub fn set_soft_opt_out_threshold(
+    genesis: &mut serde_json::Value,
+    threshold: &str,
+) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("ccvconsumer"))
+        .and_then(|ccvconsumer| ccvconsumer.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get ccvconsumer params in genesis file"))?;
+
+    // Might be none if the entry `soft_opt_out_threshold` didn't exist
+    params.insert(
+        "soft_opt_out_threshold".to_owned(),
+        serde_json::Value::String(threshold.to_string()),
+    );
 
     Ok(())
 }
