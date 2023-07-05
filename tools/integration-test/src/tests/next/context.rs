@@ -33,7 +33,7 @@ where
 
     let builder = CosmosBuilder::new_wrapped(
         config.clone(),
-        runtime.clone(),
+        runtime,
         Default::default(),
         packet_filter,
         Default::default(),
