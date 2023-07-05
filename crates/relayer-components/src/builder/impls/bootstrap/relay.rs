@@ -7,7 +7,7 @@ use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::builder::types::aliases::{
     RelayError, TargetDstChain, TargetDstChainId, TargetRelay, TargetSrcChain, TargetSrcChainId,
 };
-use crate::chain::traits::client::create::HasCreateClientOptionsType;
+use crate::chain::traits::client::create::HasCreateClientOptions;
 use crate::core::traits::error::HasErrorType;
 use crate::relay::impls::client::create::CanCreateClient;
 use crate::relay::traits::chains::HasRelayChains;
@@ -19,20 +19,20 @@ use crate::std_prelude::*;
 pub trait CanBootstrapRelay<Target>: HasBiRelayType + HasErrorType
 where
     Target: RelayBuildTarget<Self>,
-    TargetSrcChain<Self, Target>: HasCreateClientOptionsType<TargetDstChain<Self, Target>>,
-    TargetDstChain<Self, Target>: HasCreateClientOptionsType<TargetSrcChain<Self, Target>>,
+    TargetSrcChain<Self, Target>: HasCreateClientOptions<TargetDstChain<Self, Target>>,
+    TargetDstChain<Self, Target>: HasCreateClientOptions<TargetSrcChain<Self, Target>>,
 {
     async fn bootstrap_relay(
         &self,
         target: Target,
         src_chain_id: &TargetSrcChainId<Self, Target>,
         dst_chain_id: &TargetDstChainId<Self, Target>,
-        src_options: &<TargetSrcChain<Self, Target> as HasCreateClientOptionsType<
+        src_options: &<TargetSrcChain<Self, Target> as HasCreateClientOptions<
             TargetDstChain<Self, Target>,
-        >>::CreateClientOptions,
-        dst_options: &<TargetDstChain<Self, Target> as HasCreateClientOptionsType<
+        >>::CreateClientPayloadOptions,
+        dst_options: &<TargetDstChain<Self, Target> as HasCreateClientOptions<
             TargetSrcChain<Self, Target>,
-        >>::CreateClientOptions,
+        >>::CreateClientPayloadOptions,
     ) -> Result<TargetRelay<Self, Target>, Self::Error>;
 }
 
@@ -46,16 +46,16 @@ where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain, Error = RelayError<Build>>
         + CanCreateClient<SourceTarget>
         + CanCreateClient<DestinationTarget>,
-    SrcChain: HasCreateClientOptionsType<DstChain>,
-    DstChain: HasCreateClientOptionsType<SrcChain>,
+    SrcChain: HasCreateClientOptions<DstChain>,
+    DstChain: HasCreateClientOptions<SrcChain>,
 {
     async fn bootstrap_relay(
         &self,
         target: Target,
         src_chain_id: &SrcChain::ChainId,
         dst_chain_id: &DstChain::ChainId,
-        src_options: &SrcChain::CreateClientOptions,
-        dst_options: &DstChain::CreateClientOptions,
+        src_payload_options: &SrcChain::CreateClientPayloadOptions,
+        dst_payload_options: &DstChain::CreateClientPayloadOptions,
     ) -> Result<Relay, Self::Error> {
         let src_chain = self
             .build_chain(Target::SrcChainTarget::default(), src_chain_id)
@@ -65,16 +65,21 @@ where
             .build_chain(Target::DstChainTarget::default(), dst_chain_id)
             .await?;
 
-        let src_client_id = Relay::create_client(SourceTarget, &src_chain, &dst_chain, dst_options)
-            .await
-            .map_err(Build::BiRelay::relay_error)
-            .map_err(Build::birelay_error)?;
-
-        let dst_client_id =
-            Relay::create_client(DestinationTarget, &dst_chain, &src_chain, src_options)
+        let src_client_id =
+            Relay::create_client(SourceTarget, &src_chain, &dst_chain, dst_payload_options)
                 .await
                 .map_err(Build::BiRelay::relay_error)
                 .map_err(Build::birelay_error)?;
+
+        let dst_client_id = Relay::create_client(
+            DestinationTarget,
+            &dst_chain,
+            &src_chain,
+            src_payload_options,
+        )
+        .await
+        .map_err(Build::BiRelay::relay_error)
+        .map_err(Build::birelay_error)?;
 
         let relay = self
             .build_relay(

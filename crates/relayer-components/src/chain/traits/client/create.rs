@@ -5,11 +5,11 @@ use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
 
-pub trait HasCreateClientOptionsType<Counterparty>: HasIbcChainTypes<Counterparty> {
-    type CreateClientOptions: Async;
+pub trait HasCreateClientOptions<Counterparty>: HasIbcChainTypes<Counterparty> {
+    type CreateClientPayloadOptions: Async;
 }
 
-pub trait HasCreateClientPayloadType<Counterparty>: HasIbcChainTypes<Counterparty> {
+pub trait HasCreateClientPayload<Counterparty>: HasIbcChainTypes<Counterparty> {
     type CreateClientPayload: Async;
 }
 
@@ -23,11 +23,11 @@ pub trait HasCreateClientEvent<Counterparty>: HasIbcChainTypes<Counterparty> {
 
 #[async_trait]
 pub trait CanBuildCreateClientPayload<Counterparty>:
-    HasCreateClientOptionsType<Counterparty> + HasCreateClientPayloadType<Counterparty> + HasErrorType
+    HasCreateClientOptions<Counterparty> + HasCreateClientPayload<Counterparty> + HasErrorType
 {
     async fn build_create_client_payload(
         &self,
-        create_client_options: &Self::CreateClientOptions,
+        create_client_options: &Self::CreateClientPayloadOptions,
     ) -> Result<Self::CreateClientPayload, Self::Error>;
 }
 
@@ -35,7 +35,7 @@ pub trait CanBuildCreateClientPayload<Counterparty>:
 pub trait CanBuildCreateClientMessage<Counterparty>:
     HasIbcChainTypes<Counterparty> + HasErrorType
 where
-    Counterparty: HasCreateClientPayloadType<Self>,
+    Counterparty: HasCreateClientPayload<Self>,
 {
     async fn build_create_client_message(
         &self,

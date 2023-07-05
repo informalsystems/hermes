@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::client::create::{
     CanBuildCreateClientMessage, CanBuildCreateClientPayload, HasCreateClientEvent,
-    HasCreateClientOptionsType, HasCreateClientPayloadType,
+    HasCreateClientOptions, HasCreateClientPayload,
 };
 use crate::chain::traits::message_sender::CanSendSingleMessage;
 use crate::chain::types::aliases::ClientId;
@@ -24,7 +24,7 @@ where
 pub trait CanCreateClient<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
-    Target::CounterpartyChain: HasCreateClientOptionsType<Target::TargetChain>,
+    Target::CounterpartyChain: HasCreateClientOptions<Target::TargetChain>,
 {
     /**
        Create a new IBC client on the target chain.
@@ -42,9 +42,9 @@ where
         target: Target,
         target_chain: &Target::TargetChain,
         counterparty_chain: &Target::CounterpartyChain,
-        create_client_options: &<Target::CounterpartyChain as HasCreateClientOptionsType<
+        create_client_options: &<Target::CounterpartyChain as HasCreateClientOptions<
             Target::TargetChain,
-        >>::CreateClientOptions,
+        >>::CreateClientPayloadOptions,
     ) -> Result<ClientId<Target::TargetChain, Target::CounterpartyChain>, Self::Error>;
 }
 
@@ -57,14 +57,14 @@ where
         + CanBuildCreateClientMessage<CounterpartyChain>
         + HasCreateClientEvent<CounterpartyChain>,
     CounterpartyChain:
-        CanBuildCreateClientPayload<TargetChain> + HasCreateClientPayloadType<TargetChain>,
+        CanBuildCreateClientPayload<TargetChain> + HasCreateClientPayload<TargetChain>,
     TargetChain::ClientId: Clone,
 {
     async fn create_client(
         _target: Target,
         target_chain: &TargetChain,
         counterparty_chain: &CounterpartyChain,
-        create_client_options: &CounterpartyChain::CreateClientOptions,
+        create_client_options: &CounterpartyChain::CreateClientPayloadOptions,
     ) -> Result<TargetChain::ClientId, Self::Error> {
         let payload = counterparty_chain
             .build_create_client_payload(create_client_options)
