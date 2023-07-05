@@ -88,9 +88,9 @@ impl Runnable for AutoCmd {
         // Fetch chain configs from the chain registry
         info!("Fetching configuration for chains: {sorted_names:?}");
 
-        let (chain_configs, diagnostic) = runtime.block_on(get_configs(&sorted_names, commit));
+        let (chain_configs, maybe_diagnostic) = runtime.block_on(get_configs(&sorted_names, commit));
 
-        if let Some(diagnostic) = diagnostic {
+        if let Some(diagnostic) = maybe_diagnostic {
             warn!(
                 "Unable to populate all config fields. The following fields were not populated: {}",
                 diagnostic
