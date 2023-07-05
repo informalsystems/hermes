@@ -39,6 +39,7 @@ where
        which may be of different types.
     */
     async fn create_client(
+        target: Target,
         target_chain: &Target::TargetChain,
         counterparty_chain: &Target::CounterpartyChain,
         create_client_options: &<Target::CounterpartyChain as HasCreateClientOptionsType<
@@ -60,6 +61,7 @@ where
     TargetChain::ClientId: Clone,
 {
     async fn create_client(
+        _target: Target,
         target_chain: &TargetChain,
         counterparty_chain: &CounterpartyChain,
         create_client_options: &CounterpartyChain::CreateClientOptions,

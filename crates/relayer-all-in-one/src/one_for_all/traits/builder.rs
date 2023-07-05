@@ -31,6 +31,8 @@ pub trait OfaBuilder: Async {
 
     fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
 
+    fn birelay_error(e: <Self::BiRelay as OfaBiRelay>::Error) -> Self::Error;
+
     fn logger(&self) -> &Self::Logger;
 
     fn batch_config(&self) -> &BatchConfig;
