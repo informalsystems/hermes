@@ -17,3 +17,7 @@ pub type DstConnectionId<Relay> =
 
 pub type SrcConnectionVersion<Relay> =
     <SrcChain<Relay> as HasConnectionVersionType<DstChain<Relay>>>::ConnectionVersion;
+
+pub type SrcChannelId<Relay> = <SrcChain<Relay> as HasIbcChainTypes<DstChain<Relay>>>::ChannelId;
+
+pub type DstChannelId<Relay> = <DstChain<Relay> as HasIbcChainTypes<SrcChain<Relay>>>::ChannelId;

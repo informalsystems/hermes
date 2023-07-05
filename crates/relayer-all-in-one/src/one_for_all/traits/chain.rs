@@ -188,6 +188,10 @@ where
 
     type ConnectionOpenTryEvent: Async;
 
+    type InitChannelOptions: Async;
+
+    type ChannelOpenInitEvent: Async;
+
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
 
     fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId;
@@ -253,6 +257,12 @@ where
     fn connection_open_try_event_connection_id(
         event: &Self::ConnectionOpenTryEvent,
     ) -> &Self::ConnectionId;
+
+    fn try_extract_channel_open_init_event(
+        event: Self::Event,
+    ) -> Option<Self::ChannelOpenInitEvent>;
+
+    fn channel_open_init_event_channel_id(event: &Self::ChannelOpenInitEvent) -> &Self::ChannelId;
 
     async fn query_chain_id_from_channel_id(
         &self,
@@ -349,5 +359,10 @@ where
         &self,
         connection_id: &Self::ConnectionId,
         counterparty_payload: Counterparty::ConnectionOpenConfirmPayload,
+    ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_channel_open_init_message(
+        &self,
+        init_channel_options: &Self::InitChannelOptions,
     ) -> Result<Self::Message, Self::Error>;
 }

@@ -174,6 +174,10 @@ where
         .into()
     }
 
+    fn missing_channel_init_event_error(&self) -> Error {
+        BaseError::generic(eyre!("missing_channel_init_event_error")).into()
+    }
+
     async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {
         Ok(self
             .packet_filter

@@ -7,6 +7,7 @@
 
 pub mod chain;
 pub mod chain_id;
+pub mod channel;
 pub mod client_state;
 pub mod commitment;
 pub mod connection;

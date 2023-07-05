@@ -2,6 +2,7 @@ use ibc_relayer_components::chain::types::aliases::{IncomingPacket, OutgoingPack
 use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
 use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
+use ibc_relayer_components::relay::traits::channel::open_init::CanInitChannel;
 use ibc_relayer_components::relay::traits::connection::open_handshake::CanRelayConnectionOpenHandshake;
 use ibc_relayer_components::relay::traits::connection::open_init::CanInitConnection;
 use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
@@ -44,6 +45,7 @@ pub trait AfoRelay:
     + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
     + CanInitConnection
     + CanRelayConnectionOpenHandshake
+    + CanInitChannel
     + SupportsPacketRetry
 {
     type AfoSrcChain: AfoChain<Self::AfoDstChain>;
@@ -80,6 +82,7 @@ where
         + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
         + CanInitConnection
         + CanRelayConnectionOpenHandshake
+        + CanInitChannel
         + SupportsPacketRetry,
 {
     type AfoSrcChain = SrcChain;

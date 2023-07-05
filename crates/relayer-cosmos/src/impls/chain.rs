@@ -11,8 +11,8 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::{
-    connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
-    extract_packet_and_write_ack_from_tx,
+    channel_open_init_try_from_abci_event, connection_open_ack_try_from_abci_event,
+    connection_open_try_try_from_abci_event, extract_packet_and_write_ack_from_tx,
 };
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
@@ -33,8 +33,12 @@ use ibc_relayer_types::core::ics03_connection::msgs::conn_open_confirm::MsgConne
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
+use ibc_relayer_types::core::ics04_channel::channel::{
+    ChannelEnd, Counterparty as ChannelCounterparty, State,
+};
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
@@ -53,6 +57,7 @@ use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::contexts::chain::CosmosChain;
+use crate::types::channel::{CosmosChannelOpenInitEvent, CosmosInitChannelOptions};
 use crate::types::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
     CosmosConnectionOpenInitEvent, CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryEvent,
@@ -221,6 +226,10 @@ where
 
     type ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload;
 
+    type InitChannelOptions = CosmosInitChannelOptions;
+
+    type ChannelOpenInitEvent = CosmosChannelOpenInitEvent;
+
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
         &packet.source_channel
     }
@@ -363,6 +372,26 @@ where
         event: &Self::ConnectionOpenTryEvent,
     ) -> &Self::ConnectionId {
         &event.connection_id
+    }
+
+    fn try_extract_channel_open_init_event(
+        event: Self::Event,
+    ) -> Option<Self::ChannelOpenInitEvent> {
+        let event_type = event.kind.parse().ok()?;
+
+        if let IbcEventType::OpenInitChannel = event_type {
+            let open_init_event = channel_open_init_try_from_abci_event(&event).ok()?;
+
+            let channel_id = open_init_event.channel_id()?.clone();
+
+            Some(CosmosChannelOpenInitEvent { channel_id })
+        } else {
+            None
+        }
+    }
+
+    fn channel_open_init_event_channel_id(event: &Self::ChannelOpenInitEvent) -> &Self::ChannelId {
+        &event.channel_id
     }
 
     async fn query_chain_id_from_channel_id(
@@ -925,5 +954,45 @@ where
         });
 
         Ok(message)
+    }
+
+    async fn build_channel_open_init_message(
+        &self,
+        init_channel_options: &CosmosInitChannelOptions,
+    ) -> Result<CosmosIbcMessage, Error> {
+        let port_id = init_channel_options.port_id.clone();
+        let ordering = init_channel_options.ordering;
+        let connection_hops = init_channel_options.connection_hops.clone();
+        let channel_version = init_channel_options.channel_version.clone();
+
+        let counterparty =
+            ChannelCounterparty::new(init_channel_options.counterparty_port_id.clone(), None);
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let channel = ChannelEnd::new(
+                    State::Init,
+                    ordering,
+                    counterparty,
+                    connection_hops,
+                    channel_version,
+                );
+
+                let message = CosmosIbcMessage::new(None, move |signer| {
+                    let message = MsgChannelOpenInit {
+                        port_id: port_id.clone(),
+                        channel: channel.clone(),
+                        signer: signer.clone(),
+                    };
+
+                    Ok(message.to_any())
+                });
+
+                Ok(message)
+            })
+            .await
+            .map_err(BaseError::join)?
     }
 }

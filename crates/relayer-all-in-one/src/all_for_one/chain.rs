@@ -1,6 +1,7 @@
 use ibc_relayer_components::chain::traits::queries::consensus_state::CanQueryConsensusState;
 use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus;
+use ibc_relayer_components::chain::traits::types::channel::HasInitChannelOptionsType;
 use ibc_relayer_components::chain::traits::types::connection::{
     HasConnectionHandshakePayloads, HasInitConnectionOptionsType,
 };
@@ -25,6 +26,7 @@ pub trait AfoChain<Counterparty>:
     + CanQueryReceivedPacket<Counterparty>
     + HasInitConnectionOptionsType<Counterparty>
     + HasConnectionHandshakePayloads<Counterparty>
+    + HasInitChannelOptionsType<Counterparty>
 where
     Counterparty: AfoCounterpartyChain<Self>,
 {
@@ -56,7 +58,8 @@ where
         + CanQueryConsensusState<Counterparty>
         + CanQueryReceivedPacket<Counterparty>
         + HasInitConnectionOptionsType<Counterparty>
-        + HasConnectionHandshakePayloads<Counterparty>,
+        + HasConnectionHandshakePayloads<Counterparty>
+        + HasInitChannelOptionsType<Counterparty>,
 {
 }
 
