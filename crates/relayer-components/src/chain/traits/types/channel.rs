@@ -13,4 +13,6 @@ pub trait HasChannelHandshakePayloads<Counterparty>: HasIbcChainTypes<Counterpar
     type ChannelOpenTryPayload: Async;
 
     type ChannelOpenAckPayload: Async;
+
+    type ChannelOpenConfirmPayload: Async;
 }

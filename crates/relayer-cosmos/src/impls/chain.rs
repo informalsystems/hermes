@@ -45,6 +45,7 @@ use ibc_relayer_types::core::ics04_channel::channel::{
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
@@ -66,8 +67,8 @@ use tendermint::abci::Event as AbciEvent;
 
 use crate::contexts::chain::CosmosChain;
 use crate::types::channel::{
-    CosmosChannelOpenAckPayload, CosmosChannelOpenInitEvent, CosmosChannelOpenTryEvent,
-    CosmosChannelOpenTryPayload, CosmosInitChannelOptions,
+    CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenInitEvent,
+    CosmosChannelOpenTryEvent, CosmosChannelOpenTryPayload, CosmosInitChannelOptions,
 };
 use crate::types::client::CosmosCreateClientEvent;
 use crate::types::connection::{
@@ -249,6 +250,8 @@ where
     type ChannelOpenTryPayload = CosmosChannelOpenTryPayload;
 
     type ChannelOpenAckPayload = CosmosChannelOpenAckPayload;
+
+    type ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload;
 
     type ChannelOpenInitEvent = CosmosChannelOpenInitEvent;
 
@@ -1175,6 +1178,33 @@ where
             .map_err(BaseError::join)?
     }
 
+    async fn build_channel_open_confirm_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenConfirmPayload, Self::Error> {
+        let height = *height;
+        let port_id = port_id.clone();
+        let channel_id = channel_id.clone();
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let proofs = chain_handle
+                    .build_channel_proofs(&port_id, &channel_id, height)
+                    .map_err(BaseError::relayer)?;
+
+                let payload = CosmosChannelOpenConfirmPayload { proofs };
+
+                Ok(payload)
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
     async fn build_channel_open_init_message(
         &self,
         port_id: &PortId,
@@ -1287,6 +1317,37 @@ where
                         channel_id: channel_id.clone(),
                         counterparty_channel_id: counterparty_channel_id.clone(),
                         counterparty_version: counterparty_version.clone(),
+                        proofs: proofs.clone(),
+                        signer: signer.clone(),
+                    };
+
+                    Ok(message.to_any())
+                });
+
+                Ok(message)
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
+    async fn build_channel_open_confirm_message(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        counterparty_payload: CosmosChannelOpenConfirmPayload,
+    ) -> Result<CosmosIbcMessage, Error> {
+        let port_id = port_id.clone();
+        let channel_id = channel_id.clone();
+        let proofs = counterparty_payload.proofs.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let message = CosmosIbcMessage::new(None, move |signer| {
+                    let message = MsgChannelOpenConfirm {
+                        port_id: port_id.clone(),
+                        channel_id: channel_id.clone(),
                         proofs: proofs.clone(),
                         signer: signer.clone(),
                     };

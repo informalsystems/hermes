@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 use ibc_relayer_components::relay::impls::channel::open_ack::RelayChannelOpenAck;
+use ibc_relayer_components::relay::impls::channel::open_confirm::RelayChannelOpenConfirm;
 use ibc_relayer_components::relay::impls::channel::open_init::{
     InitializeChannel, InjectMissingChannelInitEventError,
 };
@@ -9,6 +10,9 @@ use ibc_relayer_components::relay::impls::channel::open_try::{
 };
 use ibc_relayer_components::relay::traits::channel::open_ack::{
     CanRelayChannelOpenAck, ChannelOpenAckRelayer,
+};
+use ibc_relayer_components::relay::traits::channel::open_confirm::{
+    CanRelayChannelOpenConfirm, ChannelOpenConfirmRelayer,
 };
 use ibc_relayer_components::relay::traits::channel::open_init::{
     CanInitChannel, ChannelInitializer,
@@ -91,6 +95,29 @@ where
             src_channel_id,
             dst_port_id,
             dst_channel_id,
+        )
+        .await
+    }
+}
+
+#[async_trait]
+impl<Relay> CanRelayChannelOpenConfirm for OfaRelayWrapper<Relay>
+where
+    Relay: OfaRelay,
+{
+    async fn relay_channel_open_confirm(
+        &self,
+        dst_port_id: &<Relay::DstChain as OfaChain>::PortId,
+        dst_channel_id: &<Relay::DstChain as OfaChain>::ChannelId,
+        src_port_id: &<Relay::SrcChain as OfaChain>::PortId,
+        src_channel_id: &<Relay::SrcChain as OfaChain>::ChannelId,
+    ) -> Result<(), Self::Error> {
+        RelayChannelOpenConfirm::relay_channel_open_confirm(
+            self,
+            dst_port_id,
+            dst_channel_id,
+            src_port_id,
+            src_channel_id,
         )
         .await
     }

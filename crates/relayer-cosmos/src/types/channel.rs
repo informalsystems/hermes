@@ -23,6 +23,10 @@ pub struct CosmosChannelOpenAckPayload {
     pub version: Version,
 }
 
+pub struct CosmosChannelOpenConfirmPayload {
+    pub proofs: Proofs,
+}
+
 pub struct CosmosChannelOpenInitEvent {
     pub channel_id: ChannelId,
 }

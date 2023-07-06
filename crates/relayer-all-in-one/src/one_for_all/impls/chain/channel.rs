@@ -23,6 +23,8 @@ where
     type ChannelOpenTryPayload = Chain::ChannelOpenTryPayload;
 
     type ChannelOpenAckPayload = Chain::ChannelOpenAckPayload;
+
+    type ChannelOpenConfirmPayload = Chain::ChannelOpenConfirmPayload;
 }
 
 impl<Chain, Counterparty> HasInitChannelOptionsType<OfaChainWrapper<Counterparty>>
@@ -102,6 +104,17 @@ where
             .build_channel_open_ack_payload(height, port_id, channel_id)
             .await
     }
+
+    async fn build_channel_open_confirm_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenConfirmPayload, Self::Error> {
+        self.chain
+            .build_channel_open_confirm_payload(height, port_id, channel_id)
+            .await
+    }
 }
 
 #[async_trait]
@@ -153,6 +166,17 @@ where
                 counterparty_channel_id,
                 counterparty_payload,
             )
+            .await
+    }
+
+    async fn build_channel_open_confirm_message(
+        &self,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+        counterparty_payload: Counterparty::ChannelOpenConfirmPayload,
+    ) -> Result<Self::Message, Self::Error> {
+        self.chain
+            .build_channel_open_confirm_message(port_id, channel_id, counterparty_payload)
             .await
     }
 }
