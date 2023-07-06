@@ -11,7 +11,7 @@ use tracing::trace;
 
 use ibc_chain_registry::asset_list::AssetList;
 use ibc_chain_registry::chain::ChainData;
-use ibc_chain_registry::error::RegistryError;
+use ibc_chain_registry::error::{RegistryError, ConfigAutoError};
 use ibc_chain_registry::fetchable::Fetchable;
 use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
 use ibc_chain_registry::paths::IBCPath;
@@ -26,18 +26,6 @@ use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
-
-/// A diagnostic used when an issue arises while generating a config file
-/// using the `hermes config auto` command. It communicates the error that
-/// occurred when generating the config file, as well as all of the config
-/// fields that could not be populated due to the error.
-#[derive(Debug)]
-pub struct Diagnostic {
-    /// The `RegistryError` that occurred while generating the config file.
-    pub error: RegistryError,
-    /// The config fields that were unable to be populated.
-    pub missing_fields: Vec<String>,
-}
 
 /// Generate packet filters from Vec<IBCPath> and load them in a Map(chain_name -> filter).
 fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFilter> {
@@ -75,7 +63,7 @@ async fn hermes_config<GrpcQuerier, RpcQuerier, GrpcFormatter>(
     chain_data: ChainData,
     assets: AssetList,
     packet_filter: Option<PacketFilter>,
-) -> (ChainConfig, Option<Diagnostic>)
+) -> Result<ChainConfig, ConfigAutoError>
 where
     GrpcQuerier:
         QueryContext<QueryInput = Uri, QueryOutput = Url, QueryError = RegistryError> + Send,
@@ -132,7 +120,7 @@ where
         0.1
     };
 
-    (ChainConfig {
+    Ok(ChainConfig {
         id: chain_data.chain_id,
         r#type: default::chain_type(),
         rpc_addr: rpc_data.rpc_address,
@@ -144,7 +132,7 @@ where
         rpc_timeout: default::rpc_timeout(),
         trusted_node: default::trusted_node(),
         genesis_restart: None,
-        account_prefix: chain_data.bech32_prefix,
+        account_prefix: Some(chain_data.bech32_prefix),
         key_name: String::new(),
         key_store_type: Store::default(),
         key_store_folder: None,
@@ -172,7 +160,7 @@ where
         address_type: AddressType::default(),
         sequential_batch_tx: false,
         extension_options: Vec::new(),
-    }, None)
+    })
 }
 
 /// Concurrent `query_healthy` might fail, this is a helper function which will retry a failed query a fixed

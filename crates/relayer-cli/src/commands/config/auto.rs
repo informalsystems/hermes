@@ -88,70 +88,67 @@ impl Runnable for AutoCmd {
         // Fetch chain configs from the chain registry
         info!("Fetching configuration for chains: {sorted_names:?}");
 
-        let (chain_configs, maybe_diagnostic) = runtime.block_on(get_configs(&sorted_names, commit));
+        match runtime.block_on(get_configs(&sorted_names, commit)) {
+           Ok(mut chain_configs) => {
+               let configs_and_keys = chain_configs
+                   .iter_mut()
+                   .zip(names_and_keys.iter().map(|n| &n.1).cloned());
 
-        if let Some(diagnostic) = maybe_diagnostic {
-            warn!(
-                "Unable to populate all config fields. The following fields were not populated: {}",
-                diagnostic
-            );
+               for (chain_config, key_option) in configs_and_keys {
+                   // If a key is provided, use it
+                   if let Some(key_name) = key_option {
+                       info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
+                       chain_config.key_name = key_name;
+                   } else {
+                       // Otherwise, find the key in the keystore
+                       let chain_id = &chain_config.id;
+                       let key = find_key(chain_config);
+                       if let Some(key) = key {
+                           info!("{}: uses key '{}'", &chain_id, &key);
+                           chain_config.key_name = key;
+                       } else {
+                           // If no key is found, warn the user and continue
+                           warn!("No key found for chain: {}", chain_id);
+                       }
+                   }
+               }
+
+               let config = Config {
+                   chains: chain_configs,
+                   ..Config::default()
+               };
+
+               match store(&config, &self.path) {
+                   Ok(_) => Output::success_msg(format!(
+                       "Config file written successfully at '{}'",
+                       self.path.display()
+                   ))
+                   .exit(),
+                   Err(e) => Output::error(e).exit(),
+               }
+           }
+           Err(e) => {
+                // In the case that we get a RegistryError, construct a Config with 
+                // the chain configs that were successfully generated. Print out the names
+                // of the chains whose configs were not successfully generated.
+
+                let missing_chain_configs: Vec<String> = Vec::new();
+                let config = Config::default();
+
+                match store(&config, &self.path) {
+                    Ok(_) => Output::success_msg(format!(
+                        "An error occurred while generating the chain config file: {:?}\n
+                        A default config file has been written at '{}'\n
+                        Configurations for the following chains were unable to be generated: {:?}",
+                        e,
+                        self.path.display(),
+                        missing_chain_configs,
+                    ))
+                    .exit(),
+                    Err(e) => Output::error(e).exit(),
+                }
+            }
         }
-
-        let config = Config {
-            chains: chain_configs,
-            ..Config::default()
-        };
-
-        match store(&config, &self.path) {
-            Ok(_) => Output::success_msg(format!(
-                "Config file written successfully at '{}'",
-                self.path.display(),
-            ))
-            .exit(),
-            Err(e) => Output::error(e).exit(),
-        }
-
-        // match runtime.block_on(get_configs(&sorted_names, commit)) {
-        //    Ok(mut chain_configs) => {
-        //        let configs_and_keys = chain_configs
-        //            .iter_mut()
-        //            .zip(names_and_keys.iter().map(|n| &n.1).cloned());
-
-        //        for (chain_config, key_option) in configs_and_keys {
-        //            // If a key is provided, use it
-        //            if let Some(key_name) = key_option {
-        //                info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
-        //                chain_config.key_name = key_name;
-        //            } else {
-        //                // Otherwise, find the key in the keystore
-        //                let chain_id = &chain_config.id;
-        //                let key = find_key(chain_config);
-        //                if let Some(key) = key {
-        //                    info!("{}: uses key '{}'", &chain_id, &key);
-        //                    chain_config.key_name = key;
-        //                } else {
-        //                    // If no key is found, warn the user and continue
-        //                    warn!("No key found for chain: {}", chain_id);
-        //                }
-        //            }
-        //        }
-
-        //        let config = Config {
-        //            chains: chain_configs,
-        //            ..Config::default()
-        //        };
-
-        //        match store(&config, &self.path) {
-        //            Ok(_) => Output::success_msg(format!(
-        //                "Config file written successfully at '{}'",
-        //                self.path.display()
-        //            ))
-        //            .exit(),
-        //            Err(e) => Output::error(e).exit(),
-        //        }
-        //    }
-        //    Err(e) => Output::error(e).exit(),
-        // }
     }
 }
 
