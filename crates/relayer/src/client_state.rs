@@ -50,6 +50,7 @@ impl UpgradeOptions for AnyUpgradeOptions {}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
+#[non_exhaustive]
 pub enum AnyClientState {
     Tendermint(TmClientState),
 

@@ -3,6 +3,7 @@ use eyre::eyre;
 use futures::channel::oneshot::{channel, Sender};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_all_in_one::one_for_all::traits::chain::OfaChain;
 use ibc_relayer_all_in_one::one_for_all::traits::relay::OfaRelay;
 use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -164,6 +165,26 @@ where
 
     fn missing_connection_init_event_error(&self) -> Error {
         BaseError::generic(eyre!("missing_connection_init_event_error")).into()
+    }
+
+    fn missing_src_create_client_event_error(
+        src_chain: &Self::SrcChain,
+        dst_chain: &Self::DstChain,
+    ) -> Self::Error {
+        BaseError::generic(eyre!("missing CreateClient event when creating client from chain {} with counterparty chain {}",
+            src_chain.chain_id(),
+            dst_chain.chain_id(),
+        )).into()
+    }
+
+    fn missing_dst_create_client_event_error(
+        dst_chain: &Self::DstChain,
+        src_chain: &Self::SrcChain,
+    ) -> Self::Error {
+        BaseError::generic(eyre!("missing CreateClient event when creating client from chain {} with counterparty chain {}",
+            dst_chain.chain_id(),
+            src_chain.chain_id(),
+        )).into()
     }
 
     fn missing_connection_try_event_error(&self, src_connection_id: &ConnectionId) -> Error {

@@ -35,6 +35,10 @@ impl OfaBuilder for CosmosBuilder {
         BaseError::tokio(e).into()
     }
 
+    fn birelay_error(e: Error) -> Error {
+        e
+    }
+
     fn logger(&self) -> &TracingLogger {
         &TracingLogger
     }
