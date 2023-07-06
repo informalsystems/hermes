@@ -49,6 +49,16 @@ pub trait OfaRelay: Async {
 
     fn max_retry_exceeded_error(e: Self::Error) -> Self::Error;
 
+    fn missing_src_create_client_event_error(
+        src_chain: &Self::SrcChain,
+        dst_chain: &Self::DstChain,
+    ) -> Self::Error;
+
+    fn missing_dst_create_client_event_error(
+        dst_chain: &Self::DstChain,
+        src_chain: &Self::SrcChain,
+    ) -> Self::Error;
+
     fn missing_connection_init_event_error(&self) -> Self::Error;
 
     fn missing_connection_try_event_error(

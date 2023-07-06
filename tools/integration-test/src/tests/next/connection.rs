@@ -1,9 +1,12 @@
+use ibc_relayer::chain::client::ClientSettings;
+use ibc_relayer::chain::cosmos::client::Settings;
 use ibc_relayer::config::PacketFilter;
+use ibc_relayer_components::builder::impls::bootstrap::birelay::CanBootstrapBiRelay;
 use ibc_relayer_components::relay::impls::connection::bootstrap::CanBootstrapConnection;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 use ibc_test_framework::prelude::*;
 
-use crate::tests::next::context::build_cosmos_relay_context;
+use crate::tests::next::context::new_cosmos_builder;
 
 #[test]
 fn test_connection_handshake_next() -> Result<(), Error> {
@@ -29,11 +32,25 @@ impl BinaryChainTest for ConnectionHandshakeTest {
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
-        let relay_context = build_cosmos_relay_context(&relayer.config, &chains, pf)?;
+        let builder = new_cosmos_builder(&relayer.config, &chains, pf)?;
+
+        let chain_id_a = chains.chain_id_a().cloned_value();
+        let chain_id_b = chains.chain_id_b().cloned_value();
+
+        // TODO: figure ways to build client settings easily without too much dependencies
+        let client_settings = ClientSettings::Tendermint(Settings {
+            max_clock_drift: Duration::from_secs(40),
+            trust_threshold: Default::default(),
+            trusting_period: None,
+        });
 
         let (connection_id_a, connection_id_b) = runtime
             .block_on(async move {
-                relay_context
+                let birelay = builder
+                    .bootstrap_birelay(&chain_id_a, &chain_id_b, &client_settings, &client_settings)
+                    .await?;
+
+                birelay
                     .relay_a_to_b()
                     .bootstrap_connection(&Default::default())
                     .await

@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
-
 use async_trait::async_trait;
+use eyre::eyre;
+use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -8,10 +9,10 @@ use ibc_relayer::chain::requests::{
     IncludeProof, Qualified, QueryChannelRequest, QueryConnectionRequest,
     QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
+use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::{
-    channel_open_init_try_from_abci_event, channel_open_try_try_from_abci_event,
     connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
     extract_packet_and_write_ack_from_tx,
 };
@@ -26,7 +27,10 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_runtime::tokio::logger::value::LogValue;
+use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
+use ibc_relayer_types::core::ics02_client::events::CLIENT_ID_ATTRIBUTE_KEY;
+use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -64,6 +68,7 @@ use crate::types::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenInitEvent, CosmosChannelOpenTryEvent,
     CosmosChannelOpenTryPayload, CosmosInitChannelOptions,
 };
+use crate::types::client::CosmosCreateClientEvent;
 use crate::types::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
     CosmosConnectionOpenInitEvent, CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryEvent,
@@ -214,6 +219,12 @@ where
 
     type OutgoingPacket = Packet;
 
+    type CreateClientPayloadOptions = ClientSettings;
+
+    type CreateClientPayload = (ClientState, ConsensusState);
+
+    type CreateClientEvent = CosmosCreateClientEvent;
+
     type ConnectionVersion = ConnectionVersion;
 
     type ConnectionDetails = ConnectionEnd;
@@ -340,6 +351,30 @@ where
         ack: &Self::WriteAcknowledgementEvent,
     ) -> &Self::IncomingPacket {
         &ack.packet
+    }
+
+    fn try_extract_create_client_event(event: Arc<AbciEvent>) -> Option<Self::CreateClientEvent> {
+        let event_type = event.kind.parse().ok()?;
+
+        if let IbcEventType::CreateClient = event_type {
+            for tag in &event.attributes {
+                let key = tag.key.as_str();
+                let value = tag.value.as_str();
+                if key == CLIENT_ID_ATTRIBUTE_KEY {
+                    let client_id = value.parse().ok()?;
+
+                    return Some(CosmosCreateClientEvent { client_id });
+                }
+            }
+
+            None
+        } else {
+            None
+        }
+    }
+
+    fn create_client_event_client_id(event: &CosmosCreateClientEvent) -> &Self::ClientId {
+        &event.client_id
     }
 
     fn try_extract_connection_open_init_event(
@@ -690,6 +725,74 @@ where
             })
             .await
             .map_err(BaseError::join)?
+    }
+
+    async fn build_create_client_payload(
+        &self,
+        client_settings: &ClientSettings,
+    ) -> Result<(ClientState, ConsensusState), Self::Error> {
+        let client_settings = client_settings.clone();
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let height = chain_handle
+                    .query_latest_height()
+                    .map_err(BaseError::relayer)?;
+
+                let any_client_state = chain_handle
+                    .build_client_state(height, client_settings)
+                    .map_err(BaseError::relayer)?;
+
+                let client_state = match &any_client_state {
+                    AnyClientState::Tendermint(client_state) => client_state.clone(),
+                    _ => {
+                        return Err(
+                            BaseError::generic(eyre!("expect Tendermint client state")).into()
+                        );
+                    }
+                };
+
+                let any_consensus_state = chain_handle
+                    .build_consensus_state(
+                        any_client_state.latest_height(),
+                        height,
+                        any_client_state,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let consensus_state = match any_consensus_state {
+                    AnyConsensusState::Tendermint(consensus_state) => consensus_state,
+                    _ => {
+                        return Err(
+                            BaseError::generic(eyre!("expect Tendermint consensus state")).into(),
+                        );
+                    }
+                };
+
+                Ok((client_state, consensus_state))
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
+    async fn build_create_client_message(
+        &self,
+        (client_state, consensus_state): (ClientState, ConsensusState),
+    ) -> Result<CosmosIbcMessage, Self::Error> {
+        let message = CosmosIbcMessage::new(None, move |signer| {
+            let message = MsgCreateClient {
+                client_state: client_state.clone().into(),
+                consensus_state: consensus_state.clone().into(),
+                signer: signer.clone(),
+            };
+
+            Ok(message.to_any())
+        });
+
+        Ok(message)
     }
 
     async fn build_connection_open_init_payload(

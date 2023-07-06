@@ -3,6 +3,7 @@ use core::pin::Pin;
 
 use futures_core::stream::Stream;
 
+use crate::chain::traits::types::chain_id::HasChainIdType;
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
@@ -29,6 +30,8 @@ pub type ChannelId<Chain, Counterparty> = <Chain as HasIbcChainTypes<Counterpart
 pub type PortId<Chain, Counterparty> = <Chain as HasIbcChainTypes<Counterparty>>::PortId;
 
 pub type Sequence<Chain, Counterparty> = <Chain as HasIbcChainTypes<Counterparty>>::Sequence;
+
+pub type ChainId<Chain> = <Chain as HasChainIdType>::ChainId;
 
 pub type Message<Chain> = <Chain as HasMessageType>::Message;
 
