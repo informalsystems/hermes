@@ -1,10 +1,14 @@
 use async_trait::async_trait;
 
+use ibc_relayer_components::relay::impls::channel::open_ack::RelayChannelOpenAck;
 use ibc_relayer_components::relay::impls::channel::open_init::{
     InitializeChannel, InjectMissingChannelInitEventError,
 };
 use ibc_relayer_components::relay::impls::channel::open_try::{
     InjectMissingChannelTryEventError, RelayChannelOpenTry,
+};
+use ibc_relayer_components::relay::traits::channel::open_ack::{
+    CanRelayChannelOpenAck, ChannelOpenAckRelayer,
 };
 use ibc_relayer_components::relay::traits::channel::open_init::{
     CanInitChannel, ChannelInitializer,
@@ -45,9 +49,11 @@ where
 {
     async fn init_channel(
         &self,
+        src_port_id: &<Relay::SrcChain as OfaChain>::PortId,
+        dst_port_id: &<Relay::DstChain as OfaChain>::PortId,
         init_channel_options: &<Relay::SrcChain as OfaIbcChain<Relay::DstChain>>::InitChannelOptions,
     ) -> Result<<Relay::SrcChain as OfaChain>::ChannelId, Self::Error> {
-        InitializeChannel::init_channel(self, init_channel_options).await
+        InitializeChannel::init_channel(self, src_port_id, dst_port_id, init_channel_options).await
     }
 }
 
@@ -58,9 +64,34 @@ where
 {
     async fn relay_channel_open_try(
         &self,
+        dst_port_id: &<Relay::DstChain as OfaChain>::PortId,
         src_port_id: &<Relay::SrcChain as OfaChain>::PortId,
         src_channel_id: &<Relay::SrcChain as OfaChain>::ChannelId,
     ) -> Result<<Relay::DstChain as OfaChain>::ChannelId, Self::Error> {
-        RelayChannelOpenTry::relay_channel_open_try(self, src_port_id, src_channel_id).await
+        RelayChannelOpenTry::relay_channel_open_try(self, dst_port_id, src_port_id, src_channel_id)
+            .await
+    }
+}
+
+#[async_trait]
+impl<Relay> CanRelayChannelOpenAck for OfaRelayWrapper<Relay>
+where
+    Relay: OfaRelay,
+{
+    async fn relay_channel_open_ack(
+        &self,
+        src_port_id: &<Relay::SrcChain as OfaChain>::PortId,
+        src_channel_id: &<Relay::SrcChain as OfaChain>::ChannelId,
+        dst_port_id: &<Relay::DstChain as OfaChain>::PortId,
+        dst_channel_id: &<Relay::DstChain as OfaChain>::ChannelId,
+    ) -> Result<(), Self::Error> {
+        RelayChannelOpenAck::relay_channel_open_ack(
+            self,
+            src_port_id,
+            src_channel_id,
+            dst_port_id,
+            dst_channel_id,
+        )
+        .await
     }
 }

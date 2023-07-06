@@ -21,6 +21,8 @@ where
     Counterparty: OfaIbcChain<Chain>,
 {
     type ChannelOpenTryPayload = Chain::ChannelOpenTryPayload;
+
+    type ChannelOpenAckPayload = Chain::ChannelOpenAckPayload;
 }
 
 impl<Chain, Counterparty> HasInitChannelOptionsType<OfaChainWrapper<Counterparty>>
@@ -89,6 +91,17 @@ where
             .build_channel_open_try_payload(height, port_id, channel_id)
             .await
     }
+
+    async fn build_channel_open_ack_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenAckPayload, Self::Error> {
+        self.chain
+            .build_channel_open_ack_payload(height, port_id, channel_id)
+            .await
+    }
 }
 
 #[async_trait]
@@ -100,19 +113,46 @@ where
 {
     async fn build_channel_open_init_message(
         &self,
+        port_id: &Self::PortId,
+        counterparty_port_id: &Counterparty::PortId,
         init_channel_options: &Self::InitChannelOptions,
     ) -> Result<Self::Message, Self::Error> {
         self.chain
-            .build_channel_open_init_message(init_channel_options)
+            .build_channel_open_init_message(port_id, counterparty_port_id, init_channel_options)
             .await
     }
 
     async fn build_channel_open_try_message(
         &self,
+        dst_port_id: &Self::PortId,
+        src_port_id: &Counterparty::PortId,
+        src_channel_id: &Counterparty::ChannelId,
         counterparty_payload: Counterparty::ChannelOpenTryPayload,
     ) -> Result<Self::Message, Self::Error> {
         self.chain
-            .build_channel_open_try_message(counterparty_payload)
+            .build_channel_open_try_message(
+                dst_port_id,
+                src_port_id,
+                src_channel_id,
+                counterparty_payload,
+            )
+            .await
+    }
+
+    async fn build_channel_open_ack_message(
+        &self,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+        counterparty_channel_id: &Counterparty::ChannelId,
+        counterparty_payload: Counterparty::ChannelOpenAckPayload,
+    ) -> Result<Self::Message, Self::Error> {
+        self.chain
+            .build_channel_open_ack_message(
+                port_id,
+                channel_id,
+                counterparty_channel_id,
+                counterparty_payload,
+            )
             .await
     }
 }

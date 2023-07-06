@@ -192,6 +192,8 @@ where
 
     type ChannelOpenTryPayload: Async;
 
+    type ChannelOpenAckPayload: Async;
+
     type ChannelOpenInitEvent: Async;
 
     type ChannelOpenTryEvent: Async;
@@ -376,13 +378,33 @@ where
         channel_id: &Self::ChannelId,
     ) -> Result<Self::ChannelOpenTryPayload, Self::Error>;
 
+    async fn build_channel_open_ack_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenAckPayload, Self::Error>;
+
     async fn build_channel_open_init_message(
         &self,
+        port_id: &Self::PortId,
+        counterparty_port_id: &Counterparty::PortId,
         init_channel_options: &Self::InitChannelOptions,
     ) -> Result<Self::Message, Self::Error>;
 
     async fn build_channel_open_try_message(
         &self,
+        port_id: &Self::PortId,
+        counterparty_port_id: &Counterparty::PortId,
+        counterparty_channel_id: &Counterparty::ChannelId,
         counterparty_payload: Counterparty::ChannelOpenTryPayload,
+    ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_channel_open_ack_message(
+        &self,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+        counterparty_channel_id: &Counterparty::ChannelId,
+        counterparty_payload: Counterparty::ChannelOpenAckPayload,
     ) -> Result<Self::Message, Self::Error>;
 }

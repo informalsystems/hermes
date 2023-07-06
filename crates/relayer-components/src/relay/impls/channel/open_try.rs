@@ -13,7 +13,7 @@ use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::channel::open_try::ChannelOpenTryRelayer;
 use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::relay::traits::target::DestinationTarget;
-use crate::relay::types::aliases::{DstChannelId, SrcChannelId, SrcPortId};
+use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
 
 pub trait InjectMissingChannelTryEventError: HasRelayChains {
@@ -42,6 +42,7 @@ where
 {
     async fn relay_channel_open_try(
         relay: &Relay,
+        dst_port: &DstPortId<Relay>,
         src_port_id: &SrcPortId<Relay>,
         src_channel_id: &SrcChannelId<Relay>,
     ) -> Result<DstChannelId<Relay>, Relay::Error> {
@@ -58,9 +59,6 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
-        // TODO: required ? Where to get connection id ?
-        //dst_chain.query_connection_details()
-
         let src_update_height =
             SrcChain::increment_height(&src_proof_height).map_err(Relay::src_chain_error)?;
 
@@ -69,7 +67,7 @@ where
             .await?;
 
         let open_try_message = dst_chain
-            .build_channel_open_try_message(open_try_payload)
+            .build_channel_open_try_message(dst_port, src_port_id, src_channel_id, open_try_payload)
             .await
             .map_err(Relay::dst_chain_error)?;
 

@@ -30,12 +30,14 @@ where
 {
     async fn init_channel(
         relay: &Relay,
+        src_port_id: &SrcChain::PortId,
+        dst_port_id: &DstChain::PortId,
         init_channel_options: &SrcChain::InitChannelOptions,
     ) -> Result<SrcChain::ChannelId, Relay::Error> {
         let src_chain = relay.src_chain();
 
         let src_message = src_chain
-            .build_channel_open_init_message(init_channel_options)
+            .build_channel_open_init_message(src_port_id, dst_port_id, init_channel_options)
             .await
             .map_err(Relay::src_chain_error)?;
 

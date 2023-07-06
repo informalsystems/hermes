@@ -11,4 +11,6 @@ pub trait HasInitChannelOptionsType<Counterparty>: HasIbcChainTypes<Counterparty
 */
 pub trait HasChannelHandshakePayloads<Counterparty>: HasIbcChainTypes<Counterparty> {
     type ChannelOpenTryPayload: Async;
+
+    type ChannelOpenAckPayload: Async;
 }

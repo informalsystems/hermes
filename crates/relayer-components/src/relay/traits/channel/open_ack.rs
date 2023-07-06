@@ -5,24 +5,26 @@ use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPor
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanRelayChannelOpenTry: HasRelayChains {
-    async fn relay_channel_open_try(
+pub trait CanRelayChannelOpenAck: HasRelayChains {
+    async fn relay_channel_open_ack(
         &self,
-        dst_port_id: &DstPortId<Self>,
         src_port_id: &SrcPortId<Self>,
         src_channel_id: &SrcChannelId<Self>,
-    ) -> Result<DstChannelId<Self>, Self::Error>;
+        dst_port_id: &DstPortId<Self>,
+        dst_channel_id: &DstChannelId<Self>,
+    ) -> Result<(), Self::Error>;
 }
 
 #[async_trait]
-pub trait ChannelOpenTryRelayer<Relay>
+pub trait ChannelOpenAckRelayer<Relay>
 where
     Relay: HasRelayChains,
 {
-    async fn relay_channel_open_try(
+    async fn relay_channel_open_ack(
         relay: &Relay,
-        dst_port_id: &DstPortId<Relay>,
         src_port_id: &SrcPortId<Relay>,
         src_channel_id: &SrcChannelId<Relay>,
-    ) -> Result<DstChannelId<Relay>, Relay::Error>;
+        dst_port_id: &DstPortId<Relay>,
+        dst_channel_id: &DstChannelId<Relay>,
+    ) -> Result<(), Relay::Error>;
 }
