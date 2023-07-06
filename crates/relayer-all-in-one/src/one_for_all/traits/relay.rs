@@ -58,6 +58,11 @@ pub trait OfaRelay: Async {
 
     fn missing_channel_init_event_error(&self) -> Self::Error;
 
+    fn missing_channel_try_event_error(
+        &self,
+        src_channel_id: &<Self::SrcChain as OfaChain>::ChannelId,
+    ) -> Self::Error;
+
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn logger(&self) -> &Self::Logger;

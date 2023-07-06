@@ -10,7 +10,7 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
-use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId};
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
@@ -176,6 +176,10 @@ where
 
     fn missing_channel_init_event_error(&self) -> Error {
         BaseError::generic(eyre!("missing_channel_init_event_error")).into()
+    }
+
+    fn missing_channel_try_event_error(&self, src_channel_id: &ChannelId) -> Error {
+        BaseError::generic(eyre!("missing_channel_try_event_error: {}", src_channel_id)).into()
     }
 
     async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {

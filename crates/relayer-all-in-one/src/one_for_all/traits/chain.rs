@@ -190,7 +190,11 @@ where
 
     type InitChannelOptions: Async;
 
+    type ChannelOpenTryPayload: Async;
+
     type ChannelOpenInitEvent: Async;
+
+    type ChannelOpenTryEvent: Async;
 
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
 
@@ -263,6 +267,10 @@ where
     ) -> Option<Self::ChannelOpenInitEvent>;
 
     fn channel_open_init_event_channel_id(event: &Self::ChannelOpenInitEvent) -> &Self::ChannelId;
+
+    fn try_extract_channel_open_try_event(event: Self::Event) -> Option<Self::ChannelOpenTryEvent>;
+
+    fn channel_open_try_event_channel_id(event: &Self::ChannelOpenTryEvent) -> &Self::ChannelId;
 
     async fn query_chain_id_from_channel_id(
         &self,
@@ -361,8 +369,20 @@ where
         counterparty_payload: Counterparty::ConnectionOpenConfirmPayload,
     ) -> Result<Self::Message, Self::Error>;
 
+    async fn build_channel_open_try_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenTryPayload, Self::Error>;
+
     async fn build_channel_open_init_message(
         &self,
         init_channel_options: &Self::InitChannelOptions,
+    ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_channel_open_try_message(
+        &self,
+        counterparty_payload: Counterparty::ChannelOpenTryPayload,
     ) -> Result<Self::Message, Self::Error>;
 }

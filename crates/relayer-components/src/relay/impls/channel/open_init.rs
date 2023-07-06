@@ -1,9 +1,10 @@
 use async_trait::async_trait;
 
-use crate::chain::traits::message_builders::channel::CanBuildChannelHandshakeMessages;
+use crate::chain::traits::message_builders::channel::{
+    CanBuildChannelHandshakeMessages, CanBuildChannelHandshakePayloads,
+};
 use crate::chain::traits::message_sender::CanSendSingleMessage;
 use crate::chain::traits::types::channel::HasInitChannelOptionsType;
-use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::channel::HasChannelOpenInitEvent;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::channel::open_init::ChannelInitializer;
@@ -24,7 +25,7 @@ where
         + HasInitChannelOptionsType<DstChain>
         + CanBuildChannelHandshakeMessages<DstChain>
         + HasChannelOpenInitEvent<DstChain>,
-    DstChain: HasIbcChainTypes<SrcChain>,
+    DstChain: CanBuildChannelHandshakePayloads<SrcChain>,
     SrcChain::ChannelId: Clone,
 {
     async fn init_channel(
