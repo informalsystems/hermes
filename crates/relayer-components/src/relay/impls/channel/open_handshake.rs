@@ -8,6 +8,18 @@ use crate::relay::traits::channel::open_handshake::ChannelOpenHandshakeRelayer;
 use crate::relay::traits::channel::open_try::CanRelayChannelOpenTry;
 use crate::std_prelude::*;
 
+/**
+   Relays a connection open handshake using a channel ID that has been
+   initialized at the source chain, and the port IDs used.
+
+   Specifically, the `ChanOpenTry`, `ChanOpenAck`, and `ChanOpenConfirm` steps of
+   the handshake protocol are performed between both chains. Upon successful
+   completion of the handshake protocol, a channel will have been established
+   between both chains.
+
+   This can be used for relaying of channels that are created by external
+   users.
+*/
 pub struct RelayChannelOpenHandshake;
 
 #[async_trait]

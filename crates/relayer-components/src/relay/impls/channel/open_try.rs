@@ -22,6 +22,19 @@ pub trait InjectMissingChannelTryEventError: HasRelayChains {
     ) -> Self::Error;
 }
 
+/**
+   A base implementation of [`ChannelOpenTryRelayer`] that relays a new channel
+   at the source chain that is in `OPEN_INIT` state, and submits it as a
+   `ChannelOpenTry` message to the destination chain.
+
+   This implements the `ChanOpenTry` step of the IBC channel handshake protocol.
+
+   Note that this implementation does not check that the connection exists on
+   the destination chain. It also doesn't check that the channel end at the
+   source chain is really in the `OPEN_INIT` state. This will be implemented as
+   a separate wrapper component. (TODO)
+*/
+
 pub struct RelayChannelOpenTry;
 
 #[async_trait]

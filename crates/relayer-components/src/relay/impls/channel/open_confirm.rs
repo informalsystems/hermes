@@ -13,6 +13,19 @@ use crate::relay::traits::target::DestinationTarget;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
 
+/**
+   A base implementation of [`ChannelOpenConfirmRelayer`] that relays a new channel
+   at the source chain that is in `OPEN` state, and submits it as a
+   `ChannelOpenConfirm` message to the destination chain.
+
+   This implements the `ChanOpenConfirm` step of the IBC channel handshake protocol.
+
+   Note that this implementation does not check that the connection exists on
+   the destination chain, that a channel exists on the source chain, and that the
+   channel end at the source chain is really in the `OPEN` state. This will be implemented
+   as a separate wrapper component. (TODO)
+*/
+
 pub struct RelayChannelOpenConfirm;
 
 #[async_trait]

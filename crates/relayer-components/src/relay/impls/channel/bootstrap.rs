@@ -8,6 +8,19 @@ use crate::relay::traits::channel::open_init::CanInitChannel;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
 
+/**
+   This is an autotrait implementation by the relay context to allow bootstrapping
+   of new IBC channels as initiated by the relayer.
+
+   This can be used by the users of the relayer to create new channels. It can
+   also be used in integration tests to create new channels.
+
+   Note that this should _not_ be used when relaying channel creation that
+   are initiated by external users. For that purpose, use
+   [`RelayChannelOpenHandshake`](crate::relay::impls::channel::open_handshake::RelayChannelOpenHandshake),
+   which would reuse the given channel ID instead of creating new ones.
+*/
+
 #[async_trait]
 pub trait CanBootstrapChannel: HasRelayChains
 where

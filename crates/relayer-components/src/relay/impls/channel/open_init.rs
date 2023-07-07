@@ -14,6 +14,13 @@ pub trait InjectMissingChannelInitEventError: HasRelayChains {
     fn missing_channel_init_event_error(&self) -> Self::Error;
 }
 
+/**
+   A base implementation for [`ChannelInitializer`] which submits a
+   `ChannelOpenInit` message to the source chain.
+
+   This implements the `ChanOpenInit` step in the IBC channel handshake protocol.
+*/
+
 pub struct InitializeChannel;
 
 #[async_trait]

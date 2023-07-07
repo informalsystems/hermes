@@ -13,6 +13,19 @@ use crate::relay::traits::target::SourceTarget;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
 
+/**
+   A base implementation of [`ChannelOpenAckRelayer`] that relays a new channel
+   at the destination chain that is in `OPEN_TRY` state, and submits it as a
+   `ChannelOpenAck` message to the destination chain.
+
+   This implements the `ChanOpenAck` step of the IBC channel handshake protocol.
+
+   Note that this implementation does not check that the connection exists on
+   the destination chain. It also doesn't check that the channel end at the
+   destination chain is really in the `OPEN_TRY` state. This will be implemented
+   as a separate wrapper component. (TODO)
+*/
+
 pub struct RelayChannelOpenAck;
 
 #[async_trait]
