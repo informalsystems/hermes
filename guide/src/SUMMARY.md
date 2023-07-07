@@ -49,6 +49,7 @@
         - [Inspecting the relayer's state](./advanced/troubleshooting/inspect.md)
         - [Cross Stack Misconfiguration](./advanced/troubleshooting/cross-comp-config.md)
         - [Genesis restart without IBC upgrade proposal](./advanced/troubleshooting/genesis-restart.md)
+        - [Handling Clock Drift](./advanced/troubleshooting/clock-drift.md)
 
 - [Commands Reference](./documentation/commands/index.md)
   - [Global options and JSON output](./documentation/commands/global.md)
