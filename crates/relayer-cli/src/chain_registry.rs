@@ -11,7 +11,7 @@ use tracing::trace;
 
 use ibc_chain_registry::asset_list::AssetList;
 use ibc_chain_registry::chain::ChainData;
-use ibc_chain_registry::error::{RegistryError, ConfigAutoError};
+use ibc_chain_registry::error::RegistryError;
 use ibc_chain_registry::fetchable::Fetchable;
 use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
 use ibc_chain_registry::paths::IBCPath;
@@ -63,7 +63,7 @@ async fn hermes_config<GrpcQuerier, RpcQuerier, GrpcFormatter>(
     chain_data: ChainData,
     assets: AssetList,
     packet_filter: Option<PacketFilter>,
-) -> Result<ChainConfig, ConfigAutoError>
+) -> Result<ChainConfig, RegistryError>
 where
     GrpcQuerier:
         QueryContext<QueryInput = Uri, QueryOutput = Url, QueryError = RegistryError> + Send,
@@ -132,7 +132,7 @@ where
         rpc_timeout: default::rpc_timeout(),
         trusted_node: default::trusted_node(),
         genesis_restart: None,
-        account_prefix: Some(chain_data.bech32_prefix),
+        account_prefix: chain_data.bech32_prefix,
         key_name: String::new(),
         key_store_type: Store::default(),
         key_store_folder: None,
@@ -298,6 +298,8 @@ pub async fn get_configs(
             })
         })
         .collect();
+
+    println!("config_handles: {:?}", config_handles);
 
     get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
 }

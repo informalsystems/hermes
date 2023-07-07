@@ -8,23 +8,10 @@ use tendermint_rpc;
 use tokio::task::JoinError;
 use tokio::time::error::Elapsed;
 
-define_error! {
-    /// A diagnostic used when an issue arises while generating a config file
-    /// using the `hermes config auto` command. It communicates the error that
-    /// occurred when generating the config file, as well as all of the config
-    /// fields that could not be populated due to the error.
-    ConfigAutoError {
-        Diagnostic
-            { missing_fields: Vec<String>, chain_name: String }
-            [ RegistryError ]
-            |e| {
-                let missing_fields = e.missing_fields
-                    .iter()
-                    .join("\n\t");
-
-                format!("Chain {} missing config fields: {}", e.chain_name, missing_fields)
-            },
-    }
+pub struct ConfigAutoDiagnostic {
+    pub chain_name: String,
+    pub missing_fields: Vec<String>,
+    pub error: RegistryError,
 }
 
 define_error! {

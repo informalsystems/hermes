@@ -88,7 +88,11 @@ impl Runnable for AutoCmd {
         // Fetch chain configs from the chain registry
         info!("Fetching configuration for chains: {sorted_names:?}");
 
-        match runtime.block_on(get_configs(&sorted_names, commit)) {
+        let fetched_configs = runtime.block_on(get_configs(&sorted_names, commit));
+
+        println!("fetched_configs: {:?}", fetched_configs);
+
+        match fetched_configs {
            Ok(mut chain_configs) => {
                let configs_and_keys = chain_configs
                    .iter_mut()
@@ -136,9 +140,9 @@ impl Runnable for AutoCmd {
                 let config = Config::default();
 
                 match store(&config, &self.path) {
-                    Ok(_) => Output::success_msg(format!(
-                        "An error occurred while generating the chain config file: {:?}\n
-                        A default config file has been written at '{}'\n
+                    Ok(_) => Output::error(format!(
+                        "An error occurred while generating the chain config file: {:?}
+                        A default config file has been written at '{}'
                         Configurations for the following chains were unable to be generated: {:?}",
                         e,
                         self.path.display(),

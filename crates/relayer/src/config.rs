@@ -579,7 +579,7 @@ pub struct ChainConfig {
     #[serde(default = "default::trusted_node")]
     pub trusted_node: bool,
 
-    pub account_prefix: Option<String>,
+    pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]
     pub key_store_type: Store,
