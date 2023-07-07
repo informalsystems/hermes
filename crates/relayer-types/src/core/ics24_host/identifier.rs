@@ -18,7 +18,7 @@ use crate::core::ics24_host::error::ValidationError;
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(from = "tendermint::chain::Id", into = "tendermint::chain::Id")]
 pub struct ChainId {
-    id: String,
+    pub id: String,
     version: u64,
 }
 
