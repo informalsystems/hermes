@@ -242,7 +242,7 @@ async fn get_data_from_handles<T>(
 pub async fn get_configs(
     chains: &[String],
     commit: Option<String>,
-) -> Result<Vec<ChainConfig>, RegistryError> {
+) -> Result<Vec<Result<ChainConfig, RegistryError>>, RegistryError> {
     let n = chains.len();
 
     if n == 0 {
@@ -299,9 +299,13 @@ pub async fn get_configs(
         })
         .collect();
 
-    println!("config_handles: {:?}", config_handles);
+    let config_results = join_all(config_handles)
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>, JoinError>>()
+        .map_err(|e| RegistryError::join_error("config_handle_join".to_string(), e))?;
 
-    get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
+    Ok(config_results)
 }
 
 /// Concurrent RPC and GRPC queries are likely to fail.
@@ -324,10 +328,13 @@ mod tests {
     // chain-registry repository: https://github.com/cosmos/chain-registry/tree/master/_IBC
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
         let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
+
         for config in configs {
-            match config.packet_filter.channel_policy {
-                ChannelPolicy::AllowAll => {}
-                _ => panic!("PacketFilter not allowed"),
+            match config {
+                Ok(config) => {
+                    assert_eq!(config.packet_filter.channel_policy, ChannelPolicy::AllowAll);
+                },
+                Err(e) => panic!("Encountered an unexpected error in chain registry test: {}", e)
             }
         }
 
@@ -347,73 +354,78 @@ mod tests {
         let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
 
         for config in configs {
-            match config.packet_filter.channel_policy {
-                ChannelPolicy::Allow(channel_filter) => {
-                    if config.id.as_str().contains("cosmoshub") {
-                        assert!(channel_filter.is_exact());
-
-                        let cosmoshub_juno = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-207").unwrap(),
-                        );
-
-                        let cosmoshub_osmosis = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-141").unwrap(),
-                        );
-
-                        assert!(channel_filter.matches(cosmoshub_juno));
-                        assert!(channel_filter.matches(cosmoshub_osmosis));
-                        assert!(channel_filter.len() == 2);
-                    } else if config.id.as_str().contains("juno") {
-                        assert!(channel_filter.is_exact());
-
-                        let juno_cosmoshub = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-1").unwrap(),
-                        );
-
-                        let juno_osmosis_1 = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-0").unwrap(),
-                        );
-
-                        let juno_osmosis_2 = (
-                            &PortId::from_str("wasm.juno1v4887y83d6g28puzvt8cl0f3cdhd3y6y9mpysnsp3k8krdm7l6jqgm0rkn").unwrap(),
-                            &ChannelId::from_str("channel-47").unwrap()
-                        );
-
-                        assert!(channel_filter.matches(juno_cosmoshub));
-                        assert!(channel_filter.matches(juno_osmosis_1));
-                        assert!(channel_filter.matches(juno_osmosis_2));
-                        assert!(channel_filter.len() == 3);
-                    } else if config.id.as_str().contains("osmosis") {
-                        assert!(channel_filter.is_exact());
-
-                        let osmosis_cosmoshub = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-0").unwrap(),
-                        );
-
-                        let osmosis_juno_1 = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-42").unwrap(),
-                        );
-
-                        let osmosis_juno_2 = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-169").unwrap(),
-                        );
-
-                        assert!(channel_filter.matches(osmosis_cosmoshub));
-                        assert!(channel_filter.matches(osmosis_juno_1));
-                        assert!(channel_filter.matches(osmosis_juno_2));
-                        assert!(channel_filter.len() == 3);
-                    } else {
-                        panic!("Unknown chain");
+            match config {
+                Ok(config) => {
+                    match config.packet_filter.channel_policy {
+                        ChannelPolicy::Allow(channel_filter) => {
+                            if config.id.as_str().contains("cosmoshub") {
+                                assert!(channel_filter.is_exact());
+    
+                                let cosmoshub_juno = (
+                                    &PortId::from_str("transfer").unwrap(),
+                                    &ChannelId::from_str("channel-207").unwrap(),
+                                );
+    
+                                let cosmoshub_osmosis = (
+                                    &PortId::from_str("transfer").unwrap(),
+                                    &ChannelId::from_str("channel-141").unwrap(),
+                                );
+    
+                                assert!(channel_filter.matches(cosmoshub_juno));
+                                assert!(channel_filter.matches(cosmoshub_osmosis));
+                                assert!(channel_filter.len() == 2);
+                            } else if config.id.as_str().contains("juno") {
+                                assert!(channel_filter.is_exact());
+    
+                                let juno_cosmoshub = (
+                                    &PortId::from_str("transfer").unwrap(),
+                                    &ChannelId::from_str("channel-1").unwrap(),
+                                );
+    
+                                let juno_osmosis_1 = (
+                                    &PortId::from_str("transfer").unwrap(),
+                                    &ChannelId::from_str("channel-0").unwrap(),
+                                );
+    
+                                let juno_osmosis_2 = (
+                                    &PortId::from_str("wasm.juno1v4887y83d6g28puzvt8cl0f3cdhd3y6y9mpysnsp3k8krdm7l6jqgm0rkn").unwrap(),
+                                    &ChannelId::from_str("channel-47").unwrap()
+                                );
+    
+                                assert!(channel_filter.matches(juno_cosmoshub));
+                                assert!(channel_filter.matches(juno_osmosis_1));
+                                assert!(channel_filter.matches(juno_osmosis_2));
+                                assert!(channel_filter.len() == 3);
+                            } else if config.id.as_str().contains("osmosis") {
+                                assert!(channel_filter.is_exact());
+    
+                                let osmosis_cosmoshub = (
+                                    &PortId::from_str("transfer").unwrap(),
+                                    &ChannelId::from_str("channel-0").unwrap(),
+                                );
+    
+                                let osmosis_juno_1 = (
+                                    &PortId::from_str("transfer").unwrap(),
+                                    &ChannelId::from_str("channel-42").unwrap(),
+                                );
+    
+                                let osmosis_juno_2 = (
+                                    &PortId::from_str("transfer").unwrap(),
+                                    &ChannelId::from_str("channel-169").unwrap(),
+                                );
+    
+                                assert!(channel_filter.matches(osmosis_cosmoshub));
+                                assert!(channel_filter.matches(osmosis_juno_1));
+                                assert!(channel_filter.matches(osmosis_juno_2));
+                                assert!(channel_filter.len() == 3);
+                            } else {
+                                panic!("Unknown chain");
+                            }
+                        }
+                        _ => panic!("PacketFilter not allowed"),
                     }
                 }
-                _ => panic!("PacketFilter not allowed"),
+                Err(e) => panic!("Encountered an unexpected error in chain registry test: {}", e)
             }
         }
 

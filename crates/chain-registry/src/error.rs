@@ -8,12 +8,6 @@ use tendermint_rpc;
 use tokio::task::JoinError;
 use tokio::time::error::Elapsed;
 
-pub struct ConfigAutoDiagnostic {
-    pub chain_name: String,
-    pub missing_fields: Vec<String>,
-    pub error: RegistryError,
-}
-
 define_error! {
     RegistryError {
 
