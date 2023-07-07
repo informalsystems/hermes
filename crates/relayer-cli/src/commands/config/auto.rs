@@ -83,7 +83,7 @@ impl Runnable for AutoCmd {
             .cloned()
             .collect::<Vec<_>>();
         
-        let sorted_names_set = HashSet::from_iter(sorted_names.iter().cloned());
+        let sorted_names_set: HashSet<String> = HashSet::from_iter(sorted_names.iter().cloned());
 
         let commit = self.commit.clone();
 
@@ -91,84 +91,80 @@ impl Runnable for AutoCmd {
         // Fetch chain configs from the chain registry
         info!("Fetching configuration for chains: {sorted_names:?}");
 
-        let Ok(config_results) = runtime.block_on(get_configs(&sorted_names, commit)) else {
+        let config_results = runtime.block_on(get_configs(&sorted_names, commit));
+
+        if let Err(e) = config_results {
             let config = Config::default();
 
             match store(&config, &self.path) {
                 Ok(_) => Output::error(format!(
-                    "An error occurred while generating the chain config file.
+                    "An error occurred while generating the chain config file: {}
                     A default config file has been written at '{}'",
+                    e,
                     self.path.display(),
                 ))
                 .exit(),
-                Err(e) => Output::error(e).exit(),
+                Err(e) => Output::error(format!("An error occurred while attempting to write the config file: {}", e)).exit(),
             }
         };
 
-        let fetched_configs: Vec<ChainConfig> = config_results
+        let mut chain_configs: Vec<ChainConfig> = config_results
+            .unwrap()
             .into_iter()
             .filter_map(|r| r.ok())
             .collect();
 
-        match fetched_configs {
-           Ok(mut chain_configs) => {
-               let configs_and_keys = chain_configs
-                   .iter_mut()
-                   .zip(names_and_keys.iter().map(|n| &n.1).cloned());
+        // Determine which chains were not fetched
+        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id.id.clone()));
+        let missing_chains_set: HashSet<_> = sorted_names_set.difference(&fetched_chains_set).collect();
 
-               for (chain_config, key_option) in configs_and_keys {
-                   // If a key is provided, use it
-                   if let Some(key_name) = key_option {
-                       info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
-                       chain_config.key_name = key_name;
-                   } else {
-                       // Otherwise, find the key in the keystore
-                       let chain_id = &chain_config.id;
-                       let key = find_key(chain_config);
-                       if let Some(key) = key {
-                           info!("{}: uses key '{}'", &chain_id, &key);
-                           chain_config.key_name = key;
-                       } else {
-                           // If no key is found, warn the user and continue
-                           warn!("No key found for chain: {}", chain_id);
-                       }
-                   }
-               }
+        let configs_and_keys = chain_configs
+            .iter_mut()
+            .zip(names_and_keys.iter().map(|n| &n.1).cloned());
 
-               let config = Config {
-                   chains: chain_configs,
-                   ..Config::default()
-               };
-
-               match store(&config, &self.path) {
-                   Ok(_) => Output::success_msg(format!(
-                       "Config file written successfully at '{}'",
-                       self.path.display()
-                   ))
-                   .exit(),
-                   Err(e) => Output::error(e).exit(),
-               }
-           }
-           Err(e) => {
-                // In the case that we get a RegistryError, construct a Config with 
-                // the chain configs that were successfully generated. Print out the names
-                // of the chains whose configs were not successfully generated.
-                let sorted_names_set = HashSet::from_iter(sorted_names);
-                let missing_chain_configs: Vec<String> = Vec::new();
-                let config = Config::default();
-
-                match store(&config, &self.path) {
-                    Ok(_) => Output::error(format!(
-                        "An error occurred while generating the chain config file.
-                        A default config file has been written at '{}'
-                        Configurations for the following chains were unable to be generated: {:?}",
-                        self.path.display(),
-                        missing_chain_configs,
-                    ))
-                    .exit(),
-                    Err(e) => Output::error(e).exit(),
+        for (chain_config, key_option) in configs_and_keys {
+            // If a key is provided, use it
+            if let Some(key_name) = key_option {
+                info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
+                chain_config.key_name = key_name;
+            } else {
+                // Otherwise, find the key in the keystore
+                let chain_id = &chain_config.id;
+                let key = find_key(chain_config);
+                if let Some(key) = key {
+                    info!("{}: uses key '{}'", &chain_id, &key);
+                    chain_config.key_name = key;
+                } else {
+                    // If no key is found, warn the user and continue
+                    warn!("No key found for chain: {}", chain_id);
                 }
             }
+        }
+
+        let config = Config {
+            chains: chain_configs,
+            ..Config::default()
+        };
+
+        match store(&config, &self.path) {
+            Ok(_) => { 
+                if missing_chains_set.is_empty() {
+                    Output::success_msg(format!(
+                        "Config file written successfully at '{}'",
+                        self.path.display()
+                    ))
+                    .exit()
+                } else {
+                    Output::success_msg(format!(
+                        "Config file written successfully at '{}'.
+                        However, configurations for the following chains were not able to be generated: {:?}",
+                        self.path.display(),
+                        missing_chains_set,
+                    ))
+                    .exit()
+                }
+            }   
+            Err(e) => Output::error(format!("An error occurred while attempting to write the config file: {}", e)).exit(),
         }
     }
 }
