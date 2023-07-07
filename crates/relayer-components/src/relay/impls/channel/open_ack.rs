@@ -5,14 +5,11 @@ use crate::chain::traits::message_builders::channel::{
 };
 use crate::chain::traits::message_sender::CanSendMessages;
 use crate::chain::traits::queries::status::CanQueryChainHeight;
-use crate::chain::traits::types::channel::HasChannelHandshakePayloads;
 use crate::chain::traits::types::height::CanIncrementHeight;
-use crate::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::relay::impls::update_client::CanSendUpdateClientMessage;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::channel::open_ack::ChannelOpenAckRelayer;
 use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
-use crate::relay::traits::target::{DestinationTarget, SourceTarget};
+use crate::relay::traits::target::SourceTarget;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
 
@@ -22,15 +19,9 @@ pub struct RelayChannelOpenAck;
 impl<Relay, SrcChain, DstChain> ChannelOpenAckRelayer<Relay> for RelayChannelOpenAck
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
-        + CanSendUpdateClientMessage<DestinationTarget>
         + CanBuildUpdateClientMessage<SourceTarget>,
-    SrcChain:
-        HasIbcChainTypes<DstChain> + CanSendMessages + CanBuildChannelHandshakeMessages<DstChain>,
-    DstChain: HasIbcChainTypes<SrcChain>
-        + CanQueryChainHeight
-        + CanIncrementHeight
-        + CanBuildChannelHandshakePayloads<SrcChain>
-        + HasChannelHandshakePayloads<SrcChain>,
+    SrcChain: CanSendMessages + CanBuildChannelHandshakeMessages<DstChain>,
+    DstChain: CanQueryChainHeight + CanIncrementHeight + CanBuildChannelHandshakePayloads<SrcChain>,
 {
     async fn relay_channel_open_ack(
         relay: &Relay,

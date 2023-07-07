@@ -1,9 +1,12 @@
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::cosmos::client::Settings;
+use ibc_relayer::channel::version::Version;
 use ibc_relayer::config::PacketFilter;
 use ibc_relayer_components::builder::impls::bootstrap::birelay::CanBootstrapBiRelay;
+use ibc_relayer_components::relay::impls::channel::bootstrap::CanBootstrapChannel;
 use ibc_relayer_components::relay::impls::connection::bootstrap::CanBootstrapConnection;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
+use ibc_relayer_cosmos::types::channel::CosmosInitChannelOptions;
 use ibc_test_framework::prelude::*;
 
 use crate::tests::next::context::new_cosmos_builder;
@@ -50,9 +53,24 @@ impl BinaryChainTest for ConnectionHandshakeTest {
                     .bootstrap_birelay(&chain_id_a, &chain_id_b, &client_settings, &client_settings)
                     .await?;
 
-                birelay
+                let (src_connection_id, _dst_connection_id) = birelay
                     .relay_a_to_b()
                     .bootstrap_connection(&Default::default())
+                    .await?;
+
+                let channel_init_options = CosmosInitChannelOptions {
+                    ordering: Ordering::Unordered,
+                    connection_hops: vec![src_connection_id],
+                    channel_version: Version::ics20(),
+                };
+
+                birelay
+                    .relay_a_to_b()
+                    .bootstrap_channel(
+                        &PortId::transfer(),
+                        &PortId::transfer(),
+                        &channel_init_options,
+                    )
                     .await
             })
             .unwrap();

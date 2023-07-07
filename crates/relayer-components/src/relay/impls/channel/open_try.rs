@@ -5,7 +5,6 @@ use crate::chain::traits::message_builders::channel::{
 };
 use crate::chain::traits::message_sender::CanSendMessages;
 use crate::chain::traits::queries::status::CanQueryChainHeight;
-use crate::chain::traits::types::channel::HasChannelHandshakePayloads;
 use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::channel::HasChannelOpenTryEvent;
@@ -31,10 +30,7 @@ where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + CanBuildUpdateClientMessage<DestinationTarget>
         + InjectMissingChannelTryEventError,
-    SrcChain: HasChannelHandshakePayloads<DstChain>
-        + CanQueryChainHeight
-        + CanIncrementHeight
-        + CanBuildChannelHandshakePayloads<DstChain>,
+    SrcChain: CanQueryChainHeight + CanIncrementHeight + CanBuildChannelHandshakePayloads<DstChain>,
     DstChain: CanSendMessages
         + CanBuildChannelHandshakeMessages<SrcChain>
         + HasChannelOpenTryEvent<SrcChain>,
