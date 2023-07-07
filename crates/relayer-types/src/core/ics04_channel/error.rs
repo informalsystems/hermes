@@ -30,6 +30,10 @@ define_error! {
             { state: i32 }
             | e | { format_args!("flush status unknown: {}", e.state) },
 
+        UnknownFlushStatusType
+            { type_id: String }
+            | e | { format_args!("flush status unknown: {}", e.type_id) },
+
         Identifier
             [ ValidationError ]
             | _ | { "identifier error" },

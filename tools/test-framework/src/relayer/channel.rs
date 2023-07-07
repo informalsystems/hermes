@@ -350,6 +350,35 @@ pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainH
     )
 }
 
+/// The field modified by the channel upgrade is only updated when the channel returns
+/// in the OPEN State
+pub fn assert_eventually_channel_upgrade_open<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    upgrade_attrs: &ChannelUpgradableAttributes,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel upgrade open step should be done",
+        20,
+        Duration::from_secs(1),
+        || {
+            assert_channel_upgrade_state(
+                ChannelState::Open,
+                ChannelState::Open,
+                FlushStatus::NotinflushUnspecified,
+                FlushStatus::NotinflushUnspecified,
+                handle_a,
+                handle_b,
+                channel_id_a,
+                port_id_a,
+                upgrade_attrs,
+            )
+        },
+    )
+}
+
 fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     a_side_state: ChannelState,
     b_side_state: ChannelState,
@@ -362,6 +391,17 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     upgrade_attrs: &ChannelUpgradableAttributes,
 ) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
     let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
+
+    let channel_id_b = channel_end_a
+        .tagged_counterparty_channel_id()
+        .ok_or_else(|| eyre!("expected counterparty channel id to present on open channel"))?;
+
+    let port_id_b = channel_end_a.tagged_counterparty_port_id();
+
+    let channel_end_b = query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
+
+    //tracing::warn!("{channel_end_a:#?}");
+    //tracing::warn!("{channel_end_b:#?}");
 
     if !channel_end_a.value().state_matches(&a_side_state) {
         return Err(Error::generic(eyre!(
@@ -414,14 +454,6 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
             channel_end_a.value().connection_hops()
         )));
     }
-
-    let channel_id_b = channel_end_a
-        .tagged_counterparty_channel_id()
-        .ok_or_else(|| eyre!("expected counterparty channel id to present on open channel"))?;
-
-    let port_id_b = channel_end_a.tagged_counterparty_port_id();
-
-    let channel_end_b = query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
 
     if !channel_end_b.value().state_matches(&b_side_state) {
         return Err(Error::generic(eyre!(

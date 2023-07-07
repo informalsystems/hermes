@@ -5,10 +5,6 @@ use tendermint::abci::Event as AbciEvent;
 use ibc_relayer_types::{
     applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
     applications::ics31_icq::events::CrossChainQueryPacket,
-    core::ics03_connection::{
-        error::Error as ConnectionError,
-        events::{self as connection_events, Attributes as ConnectionAttributes},
-    },
     core::ics04_channel::{
         error::Error as ChannelError,
         events::{
@@ -27,6 +23,13 @@ use ibc_relayer_types::{
         },
         ics04_channel::{channel::Ordering, packet::Sequence, version::Version},
         ics24_host::identifier::ConnectionId,
+    },
+    core::{
+        ics03_connection::{
+            error::Error as ConnectionError,
+            events::{self as connection_events, Attributes as ConnectionAttributes},
+        },
+        ics04_channel::flush_status::FlushStatus,
     },
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
     Height,
@@ -120,6 +123,15 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
         )),
         Ok(IbcEventType::UpgradeInitChannel) => Ok(IbcEvent::UpgradeInitChannel(
             channel_upgrade_init_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeTryChannel) => Ok(IbcEvent::UpgradeTryChannel(
+            channel_upgrade_try_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeAckChannel) => Ok(IbcEvent::UpgradeAckChannel(
+            channel_upgrade_ack_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeOpenChannel) => Ok(IbcEvent::UpgradeOpenChannel(
+            channel_upgrade_open_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
         )),
         Ok(IbcEventType::SendPacket) => Ok(IbcEvent::SendPacket(
             send_packet_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
@@ -267,6 +279,36 @@ pub fn channel_upgrade_init_try_from_abci_event(
 ) -> Result<channel_events::UpgradeInit, ChannelError> {
     match channel_upgrade_extract_attributes_from_tx(abci_event) {
         Ok(attrs) => channel_events::UpgradeInit::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_try_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeTry, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeTry::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_ack_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeAck, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeAck::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_open_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeOpen, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeOpen::try_from(attrs)
             .map_err(|_| ChannelError::implementation_specific()),
         Err(e) => Err(e),
     }
@@ -459,6 +501,9 @@ fn channel_upgrade_extract_attributes_from_tx(
             }
             channel_events::UPGRADE_ORDERING => {
                 attr.upgrade_ordering = Ordering::from_str(value)?;
+            }
+            channel_events::CHANNEL_FLUSH_STATUS => {
+                attr.channel_flush_status = FlushStatus::from_str(value)?;
             }
             _ => {}
         }

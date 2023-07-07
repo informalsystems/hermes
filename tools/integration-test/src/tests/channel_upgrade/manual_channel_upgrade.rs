@@ -10,8 +10,8 @@ use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::versi
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_ack,
-    assert_eventually_channel_upgrade_init, assert_eventually_channel_upgrade_try,
-    ChannelUpgradableAttributes,
+    assert_eventually_channel_upgrade_init, assert_eventually_channel_upgrade_open,
+    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -23,7 +23,7 @@ pub struct ChannelUpgradeManualHandshake;
 
 impl TestOverrides for ChannelUpgradeManualHandshake {
     fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = true;
+        config.bootstrap_with_random_ids = false;
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -84,8 +84,15 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
         let new_ordering = None;
         let new_connection_hops = None;
 
-        let upgrade_attrs = ChannelUpgradableAttributes::new(
+        let old_attrs = ChannelUpgradableAttributes::new(
             old_version,
+            old_ordering,
+            old_connection_hops_a.clone(),
+            old_connection_hops_b.clone(),
+        );
+
+        let upgraded_attrs = ChannelUpgradableAttributes::new(
+            new_version.clone(),
             old_ordering,
             old_connection_hops_a,
             old_connection_hops_b,
@@ -114,7 +121,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            &upgrade_attrs,
+            &old_attrs,
         )?;
 
         info!("Set channel in (INITUPGRADE, TRYUPGRADE) state...");
@@ -126,7 +133,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &chains.handle_a,
             &channels.channel_id_b.as_ref(),
             &channels.port_b.as_ref(),
-            &upgrade_attrs.flipped(),
+            &old_attrs.flipped(),
         )?;
 
         info!("Set channel in (OPEN, TRYUPGRADE) state...");
@@ -138,7 +145,20 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            &upgrade_attrs,
+            &old_attrs,
+        )?;
+
+        info!("Set channel in (ACKUPGRADE, OPEN) state...");
+
+        channel.flipped().build_chan_upgrade_open_and_send()?;
+        channel.build_chan_upgrade_open_and_send()?;
+
+        assert_eventually_channel_upgrade_open(
+            &chains.handle_b,
+            &chains.handle_a,
+            &channels.channel_id_b.as_ref(),
+            &channels.port_b.as_ref(),
+            &upgraded_attrs,
         )?;
 
         Ok(())

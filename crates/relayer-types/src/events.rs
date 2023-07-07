@@ -131,6 +131,8 @@ const CHANNEL_CLOSE_INIT_EVENT: &str = "channel_close_init";
 const CHANNEL_CLOSE_CONFIRM_EVENT: &str = "channel_close_confirm";
 const CHANNEL_UPGRADE_INIT_EVENT: &str = "channel_upgrade_init";
 const CHANNEL_UPGRADE_TRY_EVENT: &str = "channel_upgrade_try";
+const CHANNEL_UPGRADE_ACK_EVENT: &str = "channel_upgrade_ack";
+const CHANNEL_UPGRADE_OPEN_EVENT: &str = "channel_upgrade_open";
 /// Packet event types
 const SEND_PACKET_EVENT: &str = "send_packet";
 const RECEIVE_PACKET_EVENT: &str = "receive_packet";
@@ -164,6 +166,8 @@ pub enum IbcEventType {
     CloseConfirmChannel,
     UpgradeInitChannel,
     UpgradeTryChannel,
+    UpgradeAckChannel,
+    UpgradeOpenChannel,
     SendPacket,
     ReceivePacket,
     WriteAck,
@@ -198,6 +202,8 @@ impl IbcEventType {
             IbcEventType::CloseConfirmChannel => CHANNEL_CLOSE_CONFIRM_EVENT,
             IbcEventType::UpgradeInitChannel => CHANNEL_UPGRADE_INIT_EVENT,
             IbcEventType::UpgradeTryChannel => CHANNEL_UPGRADE_TRY_EVENT,
+            IbcEventType::UpgradeAckChannel => CHANNEL_UPGRADE_ACK_EVENT,
+            IbcEventType::UpgradeOpenChannel => CHANNEL_UPGRADE_OPEN_EVENT,
             IbcEventType::SendPacket => SEND_PACKET_EVENT,
             IbcEventType::ReceivePacket => RECEIVE_PACKET_EVENT,
             IbcEventType::WriteAck => WRITE_ACK_EVENT,
@@ -236,6 +242,8 @@ impl FromStr for IbcEventType {
             CHANNEL_CLOSE_CONFIRM_EVENT => Ok(IbcEventType::CloseConfirmChannel),
             CHANNEL_UPGRADE_INIT_EVENT => Ok(IbcEventType::UpgradeInitChannel),
             CHANNEL_UPGRADE_TRY_EVENT => Ok(IbcEventType::UpgradeTryChannel),
+            CHANNEL_UPGRADE_ACK_EVENT => Ok(IbcEventType::UpgradeAckChannel),
+            CHANNEL_UPGRADE_OPEN_EVENT => Ok(IbcEventType::UpgradeOpenChannel),
             SEND_PACKET_EVENT => Ok(IbcEventType::SendPacket),
             RECEIVE_PACKET_EVENT => Ok(IbcEventType::ReceivePacket),
             WRITE_ACK_EVENT => Ok(IbcEventType::WriteAck),
@@ -276,6 +284,8 @@ pub enum IbcEvent {
     CloseConfirmChannel(ChannelEvents::CloseConfirm),
     UpgradeInitChannel(ChannelEvents::UpgradeInit),
     UpgradeTryChannel(ChannelEvents::UpgradeTry),
+    UpgradeAckChannel(ChannelEvents::UpgradeAck),
+    UpgradeOpenChannel(ChannelEvents::UpgradeOpen),
 
     SendPacket(ChannelEvents::SendPacket),
     ReceivePacket(ChannelEvents::ReceivePacket),
@@ -317,6 +327,8 @@ impl Display for IbcEvent {
             IbcEvent::CloseConfirmChannel(ev) => write!(f, "CloseConfirmChannel({ev})"),
             IbcEvent::UpgradeInitChannel(ev) => write!(f, "UpgradeInitChannel({ev})"),
             IbcEvent::UpgradeTryChannel(ev) => write!(f, "UpgradeTryChannel({ev})"),
+            IbcEvent::UpgradeAckChannel(ev) => write!(f, "UpgradeAckChannel({ev})"),
+            IbcEvent::UpgradeOpenChannel(ev) => write!(f, "UpgradeOpenChannel({ev})"),
 
             IbcEvent::SendPacket(ev) => write!(f, "SendPacket({ev})"),
             IbcEvent::ReceivePacket(ev) => write!(f, "ReceivePacket({ev})"),
@@ -358,6 +370,8 @@ impl TryFrom<IbcEvent> for abci::Event {
             IbcEvent::CloseConfirmChannel(event) => event.into(),
             IbcEvent::UpgradeInitChannel(event) => event.into(),
             IbcEvent::UpgradeTryChannel(event) => event.into(),
+            IbcEvent::UpgradeAckChannel(event) => event.into(),
+            IbcEvent::UpgradeOpenChannel(event) => event.into(),
             IbcEvent::SendPacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::ReceivePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::WriteAcknowledgement(event) => event.try_into().map_err(Error::channel)?,
@@ -402,6 +416,8 @@ impl IbcEvent {
             IbcEvent::CloseConfirmChannel(_) => IbcEventType::CloseConfirmChannel,
             IbcEvent::UpgradeInitChannel(_) => IbcEventType::UpgradeInitChannel,
             IbcEvent::UpgradeTryChannel(_) => IbcEventType::UpgradeTryChannel,
+            IbcEvent::UpgradeAckChannel(_) => IbcEventType::UpgradeAckChannel,
+            IbcEvent::UpgradeOpenChannel(_) => IbcEventType::UpgradeOpenChannel,
             IbcEvent::SendPacket(_) => IbcEventType::SendPacket,
             IbcEvent::ReceivePacket(_) => IbcEventType::ReceivePacket,
             IbcEvent::WriteAcknowledgement(_) => IbcEventType::WriteAck,

@@ -44,13 +44,13 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
         &client_id_b,
         options.pad_connection_id_a,
     )?;
-    pad_connection_id(
+    /*pad_connection_id(
         &chain_b,
         &chain_a,
         &client_id_b,
         &client_id_a,
         options.pad_connection_id_b,
-    )?;
+    )?;*/
 
     let connection = Connection::new(
         foreign_clients.client_b_to_a.clone(),
