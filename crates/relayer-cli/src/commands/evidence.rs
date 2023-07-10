@@ -120,10 +120,10 @@ fn check_misbehaviour_at(
     for evidence in block.evidence.into_vec() {
         match evidence {
             tendermint::evidence::Evidence::DuplicateVote(dv) => {
-                debug!("found duplicate vote evidence {dv:?}");
+                warn!("found duplicate vote evidence {dv:?}");
             }
             tendermint::evidence::Evidence::LightClientAttack(lc) => {
-                debug!("found light client attack evidence {lc:?}");
+                warn!("found light client attack evidence {lc:?}");
 
                 handle_light_client_attack(rt.clone(), chain, *lc)?;
             }
@@ -327,9 +327,12 @@ fn build_evidence_headers(
             )?
             .validators;
 
+        let validator_set =
+            validator::Set::with_proposer(validators, signed_header.header.proposer_address)?;
+
         TendermintHeader {
             signed_header,
-            validator_set: validator::Set::new(validators, None),
+            validator_set,
             trusted_height: Height::from_tm(lc.common_height, chain.id()),
             trusted_validator_set: validator::Set::new(trusted_validator_set, None),
         }
