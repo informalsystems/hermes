@@ -22,10 +22,6 @@ fn test_channel_upgrade_manual_handshake() -> Result<(), Error> {
 pub struct ChannelUpgradeManualHandshake;
 
 impl TestOverrides for ChannelUpgradeManualHandshake {
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     fn should_spawn_supervisor(&self) -> bool {
         false
     }
@@ -150,8 +146,8 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
 
         info!("Set channel in (ACKUPGRADE, OPEN) state...");
 
-        channel.flipped().build_chan_upgrade_open_and_send()?;
         channel.build_chan_upgrade_open_and_send()?;
+        channel.flipped().build_chan_upgrade_open_and_send()?;
 
         assert_eventually_channel_upgrade_open(
             &chains.handle_b,

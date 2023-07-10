@@ -392,17 +392,6 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
     let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
 
-    let channel_id_b = channel_end_a
-        .tagged_counterparty_channel_id()
-        .ok_or_else(|| eyre!("expected counterparty channel id to present on open channel"))?;
-
-    let port_id_b = channel_end_a.tagged_counterparty_port_id();
-
-    let channel_end_b = query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
-
-    //tracing::warn!("{channel_end_a:#?}");
-    //tracing::warn!("{channel_end_b:#?}");
-
     if !channel_end_a.value().state_matches(&a_side_state) {
         return Err(Error::generic(eyre!(
             "expected channel end A state to be `{}`, but is instead `{}`",
@@ -454,6 +443,14 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
             channel_end_a.value().connection_hops()
         )));
     }
+
+    let channel_id_b = channel_end_a
+        .tagged_counterparty_channel_id()
+        .ok_or_else(|| eyre!("expected counterparty channel id to present on open channel"))?;
+
+    let port_id_b = channel_end_a.tagged_counterparty_port_id();
+
+    let channel_end_b = query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
 
     if !channel_end_b.value().state_matches(&b_side_state) {
         return Err(Error::generic(eyre!(

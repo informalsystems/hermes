@@ -91,13 +91,13 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
         port_a,
         options.pad_channel_id_a,
     )?;
-    /*pad_channel_id(
+    pad_channel_id(
         chain_b,
         chain_a,
         &connection.clone().flip(),
         port_b,
         options.pad_channel_id_b,
-    )?;*/
+    )?;
 
     let channel = Channel::new(
         connection.connection.clone(),
