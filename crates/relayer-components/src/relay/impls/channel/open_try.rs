@@ -29,7 +29,7 @@ pub trait InjectMissingChannelTryEventError: HasRelayChains {
 
    This implements the `ChanOpenTry` step of the IBC channel handshake protocol.
 
-   Note that this implementation does not check that the connection exists on
+   Note that this implementation does not check that the channel exists on
    the destination chain. It also doesn't check that the channel end at the
    source chain is really in the `OPEN_INIT` state. This will be implemented as
    a separate wrapper component. (TODO)

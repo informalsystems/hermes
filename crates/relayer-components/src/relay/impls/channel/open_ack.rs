@@ -20,7 +20,7 @@ use crate::std_prelude::*;
 
    This implements the `ChanOpenAck` step of the IBC channel handshake protocol.
 
-   Note that this implementation does not check that the connection exists on
+   Note that this implementation does not check that the channel exists on
    the destination chain. It also doesn't check that the channel end at the
    destination chain is really in the `OPEN_TRY` state. This will be implemented
    as a separate wrapper component. (TODO)

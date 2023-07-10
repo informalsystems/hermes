@@ -20,7 +20,7 @@ use crate::std_prelude::*;
 
    This implements the `ChanOpenConfirm` step of the IBC channel handshake protocol.
 
-   Note that this implementation does not check that the connection exists on
+   Note that this implementation does not check that the channel exists on
    the destination chain, that a channel exists on the source chain, and that the
    channel end at the source chain is really in the `OPEN` state. This will be implemented
    as a separate wrapper component. (TODO)
