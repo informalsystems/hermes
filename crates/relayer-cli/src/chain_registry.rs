@@ -214,14 +214,12 @@ async fn get_handles<T: Fetchable + Send + 'static>(
 async fn get_data_from_handles<T>(
     handles: Vec<JoinHandle<Result<T, RegistryError>>>,
     error_task: &str,
-) -> Result<Vec<T>, RegistryError> {
-    let data_array: Result<Vec<_>, JoinError> = join_all(handles).await.into_iter().collect();
-    let data_array: Result<Vec<T>, RegistryError> = data_array
-        .map_err(|e| RegistryError::join_error(error_task.to_string(), e))?
+) -> Result<Vec<Result<T, RegistryError>>, RegistryError> {
+    join_all(handles)
+        .await
         .into_iter()
-        .collect();
-
-    data_array
+        .collect::<Result<Vec<_>, JoinError>>()
+        .map_err(|e| RegistryError::join_error(error_task.to_string(), e))
 }
 
 /// Generates a `Vec<ChainConfig>` for a slice of chain names by fetching data from
@@ -298,6 +296,8 @@ pub async fn get_configs(
             })
         })
         .collect();
+
+    // get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
 
     let config_results = join_all(config_handles)
         .await
