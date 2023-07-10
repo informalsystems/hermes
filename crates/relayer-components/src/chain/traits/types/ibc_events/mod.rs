@@ -4,6 +4,7 @@
    [`HasWriteAcknowledgementEvent`](write_ack::HasWriteAcknowledgementEvent).
 */
 
+pub mod channel;
 pub mod connection;
 pub mod send_packet;
 pub mod write_ack;

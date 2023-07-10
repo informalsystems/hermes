@@ -194,6 +194,18 @@ where
 
     type ConnectionOpenTryEvent: Async;
 
+    type InitChannelOptions: Async;
+
+    type ChannelOpenTryPayload: Async;
+
+    type ChannelOpenAckPayload: Async;
+
+    type ChannelOpenConfirmPayload: Async;
+
+    type ChannelOpenInitEvent: Async;
+
+    type ChannelOpenTryEvent: Async;
+
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
 
     fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId;
@@ -263,6 +275,16 @@ where
     fn connection_open_try_event_connection_id(
         event: &Self::ConnectionOpenTryEvent,
     ) -> &Self::ConnectionId;
+
+    fn try_extract_channel_open_init_event(
+        event: Self::Event,
+    ) -> Option<Self::ChannelOpenInitEvent>;
+
+    fn channel_open_init_event_channel_id(event: &Self::ChannelOpenInitEvent) -> &Self::ChannelId;
+
+    fn try_extract_channel_open_try_event(event: Self::Event) -> Option<Self::ChannelOpenTryEvent>;
+
+    fn channel_open_try_event_channel_id(event: &Self::ChannelOpenTryEvent) -> &Self::ChannelId;
 
     async fn query_chain_id_from_channel_id(
         &self,
@@ -369,5 +391,56 @@ where
         &self,
         connection_id: &Self::ConnectionId,
         counterparty_payload: Counterparty::ConnectionOpenConfirmPayload,
+    ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_channel_open_try_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenTryPayload, Self::Error>;
+
+    async fn build_channel_open_ack_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenAckPayload, Self::Error>;
+
+    async fn build_channel_open_confirm_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenConfirmPayload, Self::Error>;
+
+    async fn build_channel_open_init_message(
+        &self,
+        port_id: &Self::PortId,
+        counterparty_port_id: &Counterparty::PortId,
+        init_channel_options: &Self::InitChannelOptions,
+    ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_channel_open_try_message(
+        &self,
+        port_id: &Self::PortId,
+        counterparty_port_id: &Counterparty::PortId,
+        counterparty_channel_id: &Counterparty::ChannelId,
+        counterparty_payload: Counterparty::ChannelOpenTryPayload,
+    ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_channel_open_ack_message(
+        &self,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+        counterparty_channel_id: &Counterparty::ChannelId,
+        counterparty_payload: Counterparty::ChannelOpenAckPayload,
+    ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_channel_open_confirm_message(
+        &self,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+        counterparty_payload: Counterparty::ChannelOpenConfirmPayload,
     ) -> Result<Self::Message, Self::Error>;
 }

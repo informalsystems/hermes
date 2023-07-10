@@ -1,4 +1,5 @@
 pub mod auto_relayers;
+pub mod channel;
 pub mod client;
 pub mod connection;
 pub mod event_relayers;
