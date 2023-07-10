@@ -67,11 +67,7 @@ impl ChainId {
     /// Extract the chain name from this chain identifier. The chain name
     /// consists of the first part of the identifier, before the dash.
     pub fn name(&self) -> String {
-        self.id
-            .split('-')
-            .take(1)
-            .collect::<Vec<_>>()
-            .join("")
+        self.id.split('-').take(1).collect::<Vec<_>>().join("")
     }
 
     /// Extract the version from the given chain identifier.

@@ -83,7 +83,7 @@ impl Runnable for AutoCmd {
             .map(|n| &n.0)
             .cloned()
             .collect::<Vec<_>>();
-        
+
         let sorted_names_set: HashSet<String> = HashSet::from_iter(sorted_names.iter().cloned());
 
         let commit = self.commit.clone();
@@ -102,7 +102,11 @@ impl Runnable for AutoCmd {
                     self.path.display(),
                 ))
                 .exit(),
-                Err(e) => Output::error(format!("An error occurred while attempting to write the config file: {}", e)).exit(),
+                Err(e) => Output::error(format!(
+                    "An error occurred while attempting to write the config file: {}",
+                    e
+                ))
+                .exit(),
             }
         };
 
@@ -114,7 +118,8 @@ impl Runnable for AutoCmd {
 
         // Determine which chains were not fetched
         let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id.name()));
-        let missing_chains_set: HashSet<_> = sorted_names_set.difference(&fetched_chains_set).collect();
+        let missing_chains_set: HashSet<_> =
+            sorted_names_set.difference(&fetched_chains_set).collect();
 
         let configs_and_keys = chain_configs
             .iter_mut()
@@ -145,7 +150,7 @@ impl Runnable for AutoCmd {
         };
 
         match store(&config, &self.path) {
-            Ok(_) => { 
+            Ok(_) => {
                 if missing_chains_set.is_empty() {
                     Output::success_msg(format!(
                         "Config file written successfully at '{}'",
@@ -161,8 +166,12 @@ impl Runnable for AutoCmd {
                     ))
                     .exit()
                 }
-            }   
-            Err(e) => Output::error(format!("An error occurred while attempting to write the config file: {}", e)).exit(),
+            }
+            Err(e) => Output::error(format!(
+                "An error occurred while attempting to write the config file: {}",
+                e
+            ))
+            .exit(),
         }
     }
 }
