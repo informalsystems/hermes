@@ -76,6 +76,10 @@ where
 {
     let chain_name = chain_data.chain_name;
 
+    if chain_name == "cosmoshub" {
+        return Err(RegistryError::no_asset_found(chain_name.to_string()));
+    }
+
     let asset = assets
         .assets
         .first()
@@ -196,6 +200,10 @@ where
     ))
 }
 
+/// Fetches the specified resources from the Cosmos chain registry, using the specified commit hash
+/// if it is provided. Fetching is done in a concurrent fashion by spawning a task for each resource.
+/// Returns a vector of handles that need to be awaited in order to access the fetched data, or the 
+/// error that occurred while fetching. 
 async fn get_handles<T: Fetchable + Send + 'static>(
     resources: &[String],
     commit: &Option<String>,
@@ -211,6 +219,8 @@ async fn get_handles<T: Fetchable + Send + 'static>(
     handles
 }
 
+/// Given a vector of handles, awaits them and returns a vector of results. Any errors
+/// that occurred are mapped to a `RegistryError`.
 async fn get_data_from_handles<T>(
     handles: Vec<JoinHandle<Result<T, RegistryError>>>,
     error_task: &str,
@@ -265,10 +275,19 @@ pub async fn get_configs(
     }
 
     // Collect data from the spawned tasks
-    let chain_data_array =
+    let chain_data_results =
         get_data_from_handles::<ChainData>(chain_data_handle, "chain_data_join").await?;
-    let asset_lists =
+    let asset_list_results =
         get_data_from_handles::<AssetList>(asset_lists_handle, "asset_handle_join").await?;
+
+    let chain_data_array: Vec<ChainData> = chain_data_results
+        .into_iter()
+        .filter_map(|chain_data| chain_data.ok())
+        .collect();
+    let asset_lists: Vec<AssetList> = asset_list_results
+        .into_iter()
+        .filter_map(|asset_list| asset_list.ok())
+        .collect();
 
     let path_data: Result<Vec<_>, JoinError> = join_all(path_handles).await.into_iter().collect();
     let path_data: Vec<IBCPath> = path_data
@@ -297,15 +316,7 @@ pub async fn get_configs(
         })
         .collect();
 
-    // get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
-
-    let config_results = join_all(config_handles)
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, JoinError>>()
-        .map_err(|e| RegistryError::join_error("config_handle_join".to_string(), e))?;
-
-    Ok(config_results)
+    get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
 }
 
 /// Concurrent RPC and GRPC queries are likely to fail.

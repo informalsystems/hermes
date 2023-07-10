@@ -76,23 +76,19 @@ impl Runnable for AutoCmd {
         // Assert that for every chain, a key name is provided
         let runtime = tokio::runtime::Runtime::new().unwrap();
 
+        // Extract keys and sort chains by name
         let names_and_keys = extract_chains_and_keys(&self.chain_names);
         let sorted_names = names_and_keys
             .iter()
             .map(|n| &n.0)
             .cloned()
             .collect::<Vec<_>>();
-
-        println!("sorted_names: {:?}", sorted_names);
         
         let sorted_names_set: HashSet<String> = HashSet::from_iter(sorted_names.iter().cloned());
 
         let commit = self.commit.clone();
 
-        // Extract keys and sort chains by name
         // Fetch chain configs from the chain registry
-        info!("Fetching configuration for chains: {sorted_names:?}");
-
         let config_results = runtime.block_on(get_configs(&sorted_names, commit));
 
         if let Err(e) = config_results {
@@ -118,9 +114,6 @@ impl Runnable for AutoCmd {
 
         // Determine which chains were not fetched
         let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id.name()));
-
-        println!("fetched_chains_set: {:?}", fetched_chains_set); 
-
         let missing_chains_set: HashSet<_> = sorted_names_set.difference(&fetched_chains_set).collect();
 
         let configs_and_keys = chain_configs
