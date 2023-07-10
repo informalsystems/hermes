@@ -20,9 +20,9 @@ default   = ["flex-error/std", "flex-error/eyre_tracer"]
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc-proto         = { version = "0.32.0" }
-ibc-telemetry     = { version = "0.24.1", path = "../telemetry", optional = true }
-ibc-relayer-types = { version = "0.24.1", path = "../relayer-types", features = ["mocks"] }
+ibc-proto         = { workspace = true }
+ibc-telemetry     = { workspace = true, optional = true }
+ibc-relayer-types = { workspace = true, features = ["mocks"] }
 
 subtle-encoding         = { workspace = true }
 humantime-serde         = { workspace = true }
@@ -101,7 +101,7 @@ workspace = true
 default-features = false
 
 [dev-dependencies]
-ibc-relayer-types       = { version = "0.24.1", path = "../relayer-types", features = ["mocks"] }
+ibc-relayer-types       = { workspace = true, features = ["mocks"] }
 serial_test             = { workspace = true }
 env_logger              = { workspace = true }
 tracing-subscriber      = { workspace = true, features = ["fmt", "env-filter", "json"] }

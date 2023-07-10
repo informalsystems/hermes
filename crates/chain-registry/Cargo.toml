@@ -13,7 +13,7 @@ description  = """
 
 [dependencies]
 ibc-proto         = { workspace = true }
-ibc-relayer-types = { version = "0.24.1", path = "../relayer-types" }
+ibc-relayer-types = { workspace = true }
 tendermint-rpc    = { workspace = true, features = ["http-client", "websocket-client"] }
 
 async-trait       = { workspace = true }

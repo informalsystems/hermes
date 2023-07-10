@@ -14,8 +14,8 @@ description  = """
 """
 
 [dependencies]
-ibc-relayer-types = { version = "0.24.1", path = "../relayer-types" }
-ibc-relayer       = { version = "0.24.1", path = "../relayer" }
+ibc-relayer-types = { workspace = true }
+ibc-relayer       = { workspace = true }
 
 crossbeam-channel = { workspace = true }
 serde             = { workspace = true }

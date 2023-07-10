@@ -128,6 +128,15 @@ tendermint-light-client-detector = { version = "0.32.0", default-features = fals
 tendermint-light-client-verifier = "0.32.0"
 tendermint-testgen               = "0.32.0"
 
+
+# local crates
+ibc-chain-registry = { version = "0.24.1", path = "./crates/chain-registry" }
+ibc-relayer = { version = "0.24.1", path = "./crates/relayer" }
+ibc-relayer-rest = { version = "0.24.1", path = "./crates/relayer-rest" }
+ibc-relayer-types = { version = "0.24.1", path = "./crates/relayer-types" }
+ibc-telemetry = { version = "0.24.1", path = "./crates/telemetry" }
+ibc-relayer-cli = { version = "1.5.1", path = "./crates/relayer-cli" }
+
 [patch.crates-io]
 # ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "main" }
 # tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/new-misbehavior-detector" }
