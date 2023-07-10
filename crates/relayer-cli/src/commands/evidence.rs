@@ -103,6 +103,7 @@ fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> ey
     Ok(())
 }
 
+use ibc_relayer::foreign_client::ForeignClient;
 use tendermint_rpc::{Client, Paging};
 
 /// Check for misbehaviour evidence in the block at the given height.
@@ -164,6 +165,18 @@ fn handle_light_client_attack(
             .get_mut(&counterparty_chain_id)
             .ok_or_else(|| eyre::eyre!("failed to spawn chain {counterparty_chain_id}"))?;
 
+        let mut msgs = vec![];
+
+        // let counterparty_client = ForeignClient::restore(
+        //     counterparty_client_id.clone(),
+        //     counterparty_chain,
+        //     chain,
+        // );
+        //
+        // let common_height = Height::from_tm(lc.common_height.clone(), chain.id());
+        // let mut client_msgs = counterparty_client.wait_and_build_update_client(common_height)?;
+        // msgs.extend(client_msgs);
+
         let signer = counterparty_chain.get_signer()?;
 
         // If the misbehaving chain is a CCV consumer chain,
@@ -187,7 +200,7 @@ fn handle_light_client_attack(
             false
         };
 
-        let msg = if counterparty_is_provider {
+        let msg_misbehaviour = if counterparty_is_provider {
             info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
 
             MsgSubmitIcsConsumerMisbehaviour {
@@ -206,7 +219,9 @@ fn handle_light_client_attack(
             .to_any()
         };
 
-        let tracked_msgs = TrackedMsgs::new_single(msg, "submit_misbehaviour");
+        msgs.push(msg_misbehaviour);
+
+        let tracked_msgs = TrackedMsgs::new_static(msgs, "submit_misbehaviour");
         let responses = counterparty_chain.send_messages_and_wait_check_tx(tracked_msgs)?;
 
         for response in responses {
