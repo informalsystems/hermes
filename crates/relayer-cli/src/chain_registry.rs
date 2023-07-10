@@ -76,10 +76,6 @@ where
 {
     let chain_name = chain_data.chain_name;
 
-    if chain_name == "cosmoshub" {
-        return Err(RegistryError::no_asset_found(chain_name.to_string()));
-    }
-
     let asset = assets
         .assets
         .first()
