@@ -1,34 +1,31 @@
 //! Contains functions to generate a relayer config for a given chain
 
-use ibc_chain_registry::{
-    asset_list::AssetList,
-    chain::ChainData,
-    error::RegistryError,
-    fetchable::Fetchable,
-    formatter::{SimpleGrpcFormatter, UriFormatter},
-    paths::IBCPath,
-    querier::*,
-};
+use std::collections::HashMap;
+use std::fmt::Display;
+use std::marker::Send;
 
 use futures::future::join_all;
 use http::Uri;
+use tokio::task::{JoinError, JoinHandle};
+use tracing::trace;
 
-use ibc_relayer::{
-    config::{
-        filter::{ChannelFilters, FilterPattern, PacketFilter},
-        gas_multiplier::GasMultiplier,
-        types::{MaxMsgNum, MaxTxSize, Memo},
-        {default, AddressType, ChainConfig, GasPrice},
-    },
-    keyring::Store,
-};
-
-use std::{collections::HashMap, marker::Send};
+use ibc_chain_registry::asset_list::AssetList;
+use ibc_chain_registry::chain::ChainData;
+use ibc_chain_registry::error::RegistryError;
+use ibc_chain_registry::fetchable::Fetchable;
+use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
+use ibc_chain_registry::paths::IBCPath;
+use ibc_chain_registry::querier::*;
+use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
+use ibc_relayer::config::gas_multiplier::GasMultiplier;
+use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
+use ibc_relayer::keyring::Store;
 
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
 
-use tokio::task::{JoinError, JoinHandle};
+const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
 
 /// Generate packet filters from Vec<IBCPath> and load them in a Map(chain_name -> filter).
 fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFilter> {
@@ -57,7 +54,7 @@ fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFi
 
     packet_filters
         .into_iter()
-        .map(|(k, v)| (k, PacketFilter::Allow(ChannelFilters::new(v))))
+        .map(|(k, v)| (k, PacketFilter::allow(v)))
         .collect()
 }
 
@@ -98,19 +95,47 @@ where
         .map(|rpc| rpc.address.to_owned())
         .collect();
 
-    let rpc_data = RpcQuerier::query_healthy(chain_name.to_string(), rpc_endpoints).await?;
-    let grpc_address = GrpcQuerier::query_healthy(chain_name.to_string(), grpc_endpoints).await?;
+    let rpc_data = query_healthy_retry::<RpcQuerier>(
+        chain_name.to_string(),
+        rpc_endpoints,
+        MAX_HEALTHY_QUERY_RETRIES,
+    )
+    .await?;
+
+    let grpc_address = query_healthy_retry::<GrpcQuerier>(
+        chain_name.to_string(),
+        grpc_endpoints,
+        MAX_HEALTHY_QUERY_RETRIES,
+    )
+    .await?;
+
+    let websocket_address =
+        rpc_data.websocket.clone().try_into().map_err(|e| {
+            RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
+        })?;
+
+    let avg_gas_price = if let Some(fee_token) = chain_data.fees.fee_tokens.first() {
+        fee_token.average_gas_price
+    } else {
+        0.1
+    };
 
     Ok(ChainConfig {
         id: chain_data.chain_id,
         r#type: default::chain_type(),
         rpc_addr: rpc_data.rpc_address,
-        websocket_addr: rpc_data.websocket,
         grpc_addr: grpc_address,
+        event_source: EventSourceMode::Push {
+            url: websocket_address,
+            batch_delay: default::batch_delay(),
+        },
         rpc_timeout: default::rpc_timeout(),
+        trusted_node: default::trusted_node(),
+        genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,
         key_name: String::new(),
         key_store_type: Store::default(),
+        key_store_folder: None,
         store_prefix: "ibc".to_string(),
         default_gas: Some(100000),
         max_gas: Some(400000),
@@ -119,15 +144,16 @@ where
         fee_granter: None,
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),
+        max_grpc_decoding_size: default::max_grpc_decoding_size(),
         clock_drift: default::clock_drift(),
         max_block_time: default::max_block_time(),
         trusting_period: None,
-        unbonding_period: None,
+        ccv_consumer_chain: false,
         memo_prefix: Memo::default(),
         proof_specs: Default::default(),
         trust_threshold: TrustThreshold::default(),
         gas_price: GasPrice {
-            price: 0.1,
+            price: avg_gas_price,
             denom: asset.base.to_owned(),
         },
         packet_filter: packet_filter.unwrap_or_default(),
@@ -135,6 +161,39 @@ where
         sequential_batch_tx: false,
         extension_options: Vec::new(),
     })
+}
+
+/// Concurrent `query_healthy` might fail, this is a helper function which will retry a failed query a fixed
+/// amount of times in order to avoid failure with healthy endpoints.
+async fn query_healthy_retry<QuerierType>(
+    chain_name: String,
+    endpoints: Vec<QuerierType::QueryInput>,
+    retries: u8,
+) -> Result<QuerierType::QueryOutput, RegistryError>
+where
+    QuerierType: QueryContext + Send,
+    QuerierType::QueryInput: Clone + Display,
+    QuerierType: QueryContext<QueryError = RegistryError>,
+{
+    for i in 0..retries {
+        let query_response =
+            QuerierType::query_healthy(chain_name.to_string(), endpoints.clone()).await;
+        match query_response {
+            Ok(r) => {
+                return Ok(r);
+            }
+            Err(_) => {
+                trace!("Retry {i} failed to query all endpoints");
+            }
+        }
+    }
+    Err(RegistryError::unhealthy_endpoints(
+        endpoints
+            .iter()
+            .map(|endpoint| endpoint.to_string())
+            .collect(),
+        retries,
+    ))
 }
 
 async fn get_handles<T: Fetchable + Send + 'static>(
@@ -161,10 +220,11 @@ async fn get_data_from_handles<T>(
         .map_err(|e| RegistryError::join_error(error_task.to_string(), e))?
         .into_iter()
         .collect();
+
     data_array
 }
 
-/// Generates a `Vec<ChainConfig>` for a slice of chains names by fetching data from
+/// Generates a `Vec<ChainConfig>` for a slice of chain names by fetching data from
 /// <https://github.com/cosmos/chain-registry>. Gas settings are set to default values.
 ///
 /// # Arguments
@@ -184,6 +244,7 @@ pub async fn get_configs(
     commit: Option<String>,
 ) -> Result<Vec<ChainConfig>, RegistryError> {
     let n = chains.len();
+
     if n == 0 {
         return Ok(Vec::new());
     }
@@ -193,6 +254,7 @@ pub async fn get_configs(
     let asset_lists_handle = get_handles::<AssetList>(chains, &commit).await;
 
     let mut path_handles = Vec::with_capacity(n * (n - 1) / 2);
+
     for i in 0..n {
         for chain_j in &chains[i + 1..] {
             let chain_i = &chains[i];
@@ -203,8 +265,8 @@ pub async fn get_configs(
             }));
         }
     }
-    // Collect data from the spawned tasks
 
+    // Collect data from the spawned tasks
     let chain_data_array =
         get_data_from_handles::<ChainData>(chain_data_handle, "chain_data_join").await?;
     let asset_lists =
@@ -236,21 +298,33 @@ pub async fn get_configs(
             })
         })
         .collect();
+
     get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
 }
 
+/// Concurrent RPC and GRPC queries are likely to fail.
+/// Since the RPC and GRPC endpoints are queried to confirm they are healthy,
+/// before generating the ChainConfig, the tests must not all run concurrently or
+/// else they will fail due to the amount of concurrent queries.
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ibc_relayer::config::filter::ChannelPolicy;
     use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
+    use serial_test::serial;
     use std::str::FromStr;
 
-    // Helper function for configs without filter
+    // Use commit from 28.04.23 for tests
+    const TEST_COMMIT: &str = "95b99457e828402bde994816ce57e548d7e1a76d";
+
+    // Helper function for configs without filter. The configuration doesn't have a packet filter
+    // if there is no `{chain-a}-{chain-b}.json` file in the `_IBC/` directory of the
+    // chain-registry repository: https://github.com/cosmos/chain-registry/tree/master/_IBC
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
-        let configs = get_configs(test_chains, None).await?;
+        let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
         for config in configs {
-            match config.packet_filter {
-                PacketFilter::AllowAll => {}
+            match config.packet_filter.channel_policy {
+                ChannelPolicy::AllowAll => {}
                 _ => panic!("PacketFilter not allowed"),
             }
         }
@@ -259,6 +333,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     #[ignore]
     async fn fetch_chain_config_with_packet_filters() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[
@@ -267,11 +342,11 @@ mod tests {
             "osmosis".to_string(),
         ]; // Must be sorted
 
-        let configs = get_configs(test_chains, None).await?;
+        let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
 
         for config in configs {
-            match config.packet_filter {
-                PacketFilter::Allow(channel_filter) => {
+            match config.packet_filter.channel_policy {
+                ChannelPolicy::Allow(channel_filter) => {
                     if config.id.as_str().contains("cosmoshub") {
                         assert!(channel_filter.is_exact());
 
@@ -344,13 +419,17 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     #[ignore]
     async fn fetch_chain_config_without_packet_filters() -> Result<(), RegistryError> {
-        let test_chains: &[String] = &["cosmoshub".to_string(), "evmos".to_string()]; // Must be sorted
+        // The commit from 28.04.23 does not have `evmos-juno.json` nor `juno-evmos.json` file:
+        // https://github.com/cosmos/chain-registry/tree/master/_IBC
+        let test_chains: &[String] = &["evmos".to_string(), "juno".to_string()]; // Must be sorted
         should_have_no_filter(test_chains).await
     }
 
     #[tokio::test]
+    #[serial]
     #[ignore]
     async fn fetch_one_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &["cosmoshub".to_string()]; // Must be sorted
@@ -358,9 +437,11 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
+    #[ignore]
     async fn fetch_no_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[];
-        let configs = get_configs(test_chains, None).await?;
+        let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
 
         assert_eq!(configs.len(), 0);
 

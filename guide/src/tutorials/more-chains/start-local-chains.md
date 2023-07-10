@@ -234,7 +234,7 @@ The `$HOME/.gm` directory has a tree structure similar to:
 
 ```
 
-> __Tip__: You can use the command `tree ./data/ -L 2` to view the folder structure above
+> __Tip__: You can use the command `tree $HOME/.gm/ -L 2` to view the folder structure above
 
 ### The `$HOME/.hermes` directory
 

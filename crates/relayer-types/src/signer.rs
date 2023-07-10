@@ -1,10 +1,8 @@
-use core::str::FromStr;
+use std::str::FromStr;
 
 use derive_more::Display;
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
-
-use crate::prelude::*;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -16,6 +14,12 @@ define_error! {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Display)]
 pub struct Signer(String);
+
+impl Signer {
+    pub fn dummy() -> Self {
+        Self("cosmos000000000000000000000000000000000000000".to_string())
+    }
+}
 
 impl FromStr for Signer {
     type Err = SignerError;

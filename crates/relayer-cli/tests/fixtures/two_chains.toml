@@ -24,7 +24,7 @@ tx_confirmation = true
 id = 'ibc-0'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://127.0.0.1:26657/websocket'
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
@@ -39,9 +39,9 @@ denominator = '3'
 
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'http://127.0.0.1:26657'
-grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://127.0.0.1:26657/websocket'
+rpc_addr = 'http://127.0.0.1:26457'
+grpc_addr = 'http://127.0.0.1:9091'
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26457/websocket', batch_delay = '500ms' }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'

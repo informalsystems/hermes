@@ -1,7 +1,11 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
-use std::time::{Duration, Instant};
+use std::{
+    ops::Range,
+    sync::Mutex,
+    time::{Duration, Instant},
+};
 
-use dashmap::DashMap;
+use dashmap::{DashMap, DashSet};
 use opentelemetry::{
     global,
     metrics::{Counter, ObservableGauge, UpDownCounter},
@@ -10,7 +14,11 @@ use opentelemetry::{
 use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use ibc_relayer_types::{
+    applications::transfer::Coin,
+    core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
+    signer::Signer,
+};
 
 use tendermint::Time;
 
@@ -55,6 +63,11 @@ const QUERY_TYPES: [&str; 26] = [
     "query_latest_height",
     "query_staking_params",
 ];
+
+// Constant value used to define the number of seconds
+// the rewarded fees Cache value live.
+// Current value is 7 days.
+const FEE_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 7);
 
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
@@ -113,7 +126,7 @@ pub struct TelemetryState {
     ws_events: Counter<u64>,
 
     /// Number of messages submitted to a specific chain
-    total_messages_submitted: Counter<u64>,
+    messages_submitted: Counter<u64>,
 
     /// The balance of each wallet Hermes uses per chain
     wallet_balance: ObservableGauge<f64>,
@@ -168,9 +181,190 @@ pub struct TelemetryState {
     /// that the relayer observed, and for which there was no associated Acknowledgement or
     /// Timeout event.
     backlogs: DashMap<PathIdentifier, DashMap<u64, u64>>,
+
+    /// Total amount of fees received from ICS29 fees.
+    fee_amounts: Counter<u64>,
+
+    /// List of addresses for which rewarded fees from ICS29 should be recorded.
+    visible_fee_addresses: DashSet<String>,
+
+    /// Vector of rewarded fees stored in a moka Cache value
+    cached_fees: Mutex<Vec<moka::sync::Cache<String, u64>>>,
+
+    /// Sum of rewarded fees over the past FEE_LIFETIME seconds
+    period_fees: ObservableGauge<u64>,
 }
 
 impl TelemetryState {
+    pub fn new(
+        tx_latency_submitted_range: Range<u64>,
+        tx_latency_submitted_buckets: u64,
+        tx_latency_confirmed_range: Range<u64>,
+        tx_latency_confirmed_buckets: u64,
+    ) -> Self {
+        use opentelemetry::sdk::export::metrics::aggregation;
+        use opentelemetry::sdk::metrics::{controllers, processors};
+
+        let controller = controllers::basic(processors::factory(
+            CustomAggregatorSelector::new(
+                tx_latency_submitted_range,
+                tx_latency_submitted_buckets,
+                tx_latency_confirmed_range,
+                tx_latency_confirmed_buckets,
+            ),
+            aggregation::cumulative_temporality_selector(),
+        ))
+        .build();
+
+        let exporter = opentelemetry_prometheus::ExporterBuilder::new(controller).init();
+
+        let meter = global::meter("hermes");
+
+        Self {
+            exporter,
+
+            workers: meter
+                .i64_up_down_counter("workers")
+                .with_description("Number of workers")
+                .init(),
+
+            client_updates_submitted: meter
+                .u64_counter("client_updates_submitted")
+                .with_description("Number of client update messages submitted")
+                .init(),
+
+            client_misbehaviours_submitted: meter
+                .u64_counter("client_misbehaviours_submitted")
+                .with_description("Number of misbehaviours detected and submitted")
+                .init(),
+
+            receive_packets_confirmed: meter
+                .u64_counter("receive_packets_confirmed")
+                .with_description("Number of confirmed receive packets. Available if relayer runs with Tx confirmation enabled")
+                .init(),
+
+            acknowledgment_packets_confirmed: meter
+                .u64_counter("acknowledgment_packets_confirmed")
+                .with_description("Number of confirmed acknowledgment packets. Available if relayer runs with Tx confirmation enabled")
+                .init(),
+
+            timeout_packets_confirmed: meter
+                .u64_counter("timeout_packets_confirmed")
+                .with_description("Number of confirmed timeout packets. Available if relayer runs with Tx confirmation enabled")
+                .init(),
+
+            queries: meter
+                .u64_counter("queries")
+                .with_description(
+                    "Number of queries submitted by Hermes",
+                )
+                .init(),
+
+            queries_cache_hits: meter
+                .u64_counter("queries_cache_hits")
+                .with_description("Number of cache hits for queries submitted by Hermes")
+                .init(),
+
+            ws_reconnect: meter
+                .u64_counter("ws_reconnect")
+                .with_description("Number of times Hermes reconnected to the websocket endpoint")
+                .init(),
+
+            ws_events: meter
+                .u64_counter("ws_events")
+                .with_description("How many IBC events did Hermes receive via the websocket subscription")
+                .init(),
+
+            messages_submitted: meter
+                .u64_counter("messages_submitted")
+                .with_description("Number of messages submitted to a specific chain")
+                .init(),
+
+            wallet_balance: meter
+                .f64_observable_gauge("wallet_balance")
+                .with_description("The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in precision might be introduced in the displayed value")
+                .init(),
+
+            send_packet_events: meter
+                .u64_counter("send_packet_events")
+                .with_description("Number of SendPacket events received")
+                .init(),
+
+            acknowledgement_events: meter
+                .u64_counter("acknowledgement_events")
+                .with_description("Number of WriteAcknowledgement events received")
+                .init(),
+
+            timeout_events: meter
+                .u64_counter("timeout_events")
+                .with_description("Number of TimeoutPacket events received")
+                .init(),
+
+            cleared_send_packet_events: meter
+                .u64_counter("cleared_send_packet_events")
+                .with_description("Number of SendPacket events received during the initial and periodic clearing")
+                .init(),
+
+            cleared_acknowledgment_events: meter
+                .u64_counter("cleared_acknowledgment_events")
+                .with_description("Number of WriteAcknowledgement events received during the initial and periodic clearing")
+                .init(),
+
+            tx_latency_submitted: meter
+                .u64_observable_gauge("tx_latency_submitted")
+                .with_unit(Unit::new("milliseconds"))
+                .with_description("The latency for all transactions submitted to a specific chain, \
+                    i.e. the difference between the moment when Hermes received a batch of events \
+                    and when it submitted the corresponding transaction(s). Milliseconds.")
+                .init(),
+
+            tx_latency_confirmed: meter
+                .u64_observable_gauge("tx_latency_confirmed")
+                .with_unit(Unit::new("milliseconds"))
+                .with_description("The latency for all transactions submitted & confirmed to a specific chain, \
+                    i.e. the difference between the moment when Hermes received a batch of events \
+                    until the corresponding transaction(s) were confirmed. Milliseconds.")
+                .init(),
+
+            in_flight_events: moka::sync::Cache::builder()
+                .time_to_live(Duration::from_secs(60 * 60)) // Remove entries after 1 hour
+                .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
+                .build(),
+
+            backlogs: DashMap::new(),
+
+            backlog_oldest_sequence: meter
+                .u64_observable_gauge("backlog_oldest_sequence")
+                .with_description("Sequence number of the oldest SendPacket event in the backlog")
+                .init(),
+
+            backlog_oldest_timestamp: meter
+                .u64_observable_gauge("backlog_oldest_timestamp")
+                .with_unit(Unit::new("seconds"))
+                .with_description("Local timestamp for the oldest SendPacket event in the backlog")
+                .init(),
+
+            backlog_size: meter
+                .u64_observable_gauge("backlog_size")
+                .with_description("Total number of SendPacket events in the backlog")
+                .init(),
+
+            fee_amounts: meter
+                .u64_counter("ics29_fee_amounts")
+                .with_description("Total amount received from ICS29 fees")
+                .init(),
+
+            visible_fee_addresses: DashSet::new(),
+
+            cached_fees: Mutex::new(Vec::new()),
+
+            period_fees: meter
+                .u64_observable_gauge("ics29_period_fees")
+                .with_description("Amount of ICS29 fees rewarded over the past 7 days")
+                .init(),
+        }
+    }
+
     /// Gather the metrics for export
     pub fn gather(&self) -> Vec<MetricFamily> {
         self.exporter.registry().gather()
@@ -187,7 +381,7 @@ impl TelemetryState {
 
         self.ws_reconnect.add(&cx, 0, labels);
         self.ws_events.add(&cx, 0, labels);
-        self.total_messages_submitted.add(&cx, 0, labels);
+        self.messages_submitted.add(&cx, 0, labels);
 
         self.init_queries(chain_id);
     }
@@ -195,15 +389,21 @@ impl TelemetryState {
     pub fn init_per_channel(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
     ) {
         let cx = Context::current();
 
         let labels = &[
             KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("src_channel", src_channel.to_string()),
+            KeyValue::new("dst_channel", dst_channel.to_string()),
             KeyValue::new("src_port", src_port.to_string()),
+            KeyValue::new("dst_port", dst_port.to_string()),
         ];
 
         self.receive_packets_confirmed.add(&cx, 0, labels);
@@ -332,11 +532,15 @@ impl TelemetryState {
     }
 
     /// Number of receive packets relayed, per channel
+    #[allow(clippy::too_many_arguments)]
     pub fn receive_packets_confirmed(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
         count: u64,
     ) {
         let cx = Context::current();
@@ -344,8 +548,11 @@ impl TelemetryState {
         if count > 0 {
             let labels = &[
                 KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
             ];
 
             self.receive_packets_confirmed.add(&cx, count, labels);
@@ -353,11 +560,15 @@ impl TelemetryState {
     }
 
     /// Number of acknowledgment packets relayed, per channel
+    #[allow(clippy::too_many_arguments)]
     pub fn acknowledgment_packets_confirmed(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
         count: u64,
     ) {
         let cx = Context::current();
@@ -365,8 +576,11 @@ impl TelemetryState {
         if count > 0 {
             let labels = &[
                 KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
             ];
 
             self.acknowledgment_packets_confirmed
@@ -375,11 +589,15 @@ impl TelemetryState {
     }
 
     /// Number of timeout packets relayed, per channel
+    #[allow(clippy::too_many_arguments)]
     pub fn timeout_packets_confirmed(
         &self,
         src_chain: &ChainId,
+        dst_chain: &ChainId,
         src_channel: &ChannelId,
+        dst_channel: &ChannelId,
         src_port: &PortId,
+        dst_port: &PortId,
         count: u64,
     ) {
         let cx = Context::current();
@@ -387,8 +605,11 @@ impl TelemetryState {
         if count > 0 {
             let labels = &[
                 KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
                 KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
             ];
 
             self.timeout_packets_confirmed.add(&cx, count, labels);
@@ -438,12 +659,12 @@ impl TelemetryState {
     }
 
     /// How many messages Hermes submitted to the chain
-    pub fn total_messages_submitted(&self, chain_id: &ChainId, count: u64) {
+    pub fn messages_submitted(&self, chain_id: &ChainId, count: u64) {
         let cx = Context::current();
 
         let labels = &[KeyValue::new("chain", chain_id.to_string())];
 
-        self.total_messages_submitted.add(&cx, count, labels);
+        self.messages_submitted.add(&cx, count, labels);
     }
 
     /// The balance in each wallet that Hermes is using, per account, denom and chain.
@@ -760,6 +981,65 @@ impl TelemetryState {
             }
         }
     }
+
+    /// Record the rewarded fee from ICS29 if the address is in the registered addresses
+    /// list.
+    pub fn fees_amount(&self, chain_id: &ChainId, receiver: &Signer, fee_amounts: Coin<String>) {
+        // If the address isn't in the filter list, don't record the metric.
+        if !self.visible_fee_addresses.contains(&receiver.to_string()) {
+            return;
+        }
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("receiver", receiver.to_string()),
+            KeyValue::new("denom", fee_amounts.denom.to_string()),
+        ];
+
+        let fee_amount = fee_amounts.amount.0.as_u64();
+
+        self.fee_amounts.add(&cx, fee_amount, labels);
+
+        let ephemeral_fee: moka::sync::Cache<String, u64> = moka::sync::Cache::builder()
+            .time_to_live(FEE_LIFETIME) // Remove entries after 1 hour without insert
+            .time_to_idle(FEE_LIFETIME) // Remove entries if they have been idle for 30 minutes without get or insert
+            .build();
+
+        let key = format!("fee_amount:{chain_id}/{receiver}/{}", fee_amounts.denom);
+        ephemeral_fee.insert(key.clone(), fee_amount);
+
+        let mut cached_fees = self.cached_fees.lock().unwrap();
+        cached_fees.push(ephemeral_fee);
+
+        let sum: u64 = cached_fees.iter().filter_map(|e| e.get(&key)).sum();
+
+        self.period_fees.observe(&cx, sum, labels);
+    }
+
+    pub fn update_period_fees(&self, chain_id: &ChainId, receiver: &String, denom: &String) {
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("receiver", receiver.to_string()),
+            KeyValue::new("denom", denom.to_string()),
+        ];
+
+        let key = format!("fee_amount:{chain_id}/{receiver}/{}", denom);
+
+        let cached_fees = self.cached_fees.lock().unwrap();
+
+        let sum: u64 = cached_fees.iter().filter_map(|e| e.get(&key)).sum();
+
+        self.period_fees.observe(&cx, sum, labels);
+    }
+
+    // Add an address to the list of addresses which will record
+    // the rewarded fees from ICS29.
+    pub fn add_visible_fee_address(&self, address: String) {
+        self.visible_fee_addresses.insert(address);
+    }
 }
 
 use std::sync::Arc;
@@ -771,7 +1051,51 @@ use opentelemetry::sdk::metrics::aggregators::{histogram, last_value, sum};
 use opentelemetry::sdk::metrics::sdk_api::Descriptor;
 
 #[derive(Debug)]
-struct CustomAggregatorSelector;
+struct CustomAggregatorSelector {
+    tx_latency_submitted_range: Range<u64>,
+    tx_latency_submitted_buckets: u64,
+    tx_latency_confirmed_range: Range<u64>,
+    tx_latency_confirmed_buckets: u64,
+}
+
+impl CustomAggregatorSelector {
+    pub fn new(
+        tx_latency_submitted_range: Range<u64>,
+        tx_latency_submitted_buckets: u64,
+        tx_latency_confirmed_range: Range<u64>,
+        tx_latency_confirmed_buckets: u64,
+    ) -> Self {
+        Self {
+            tx_latency_submitted_range,
+            tx_latency_submitted_buckets,
+            tx_latency_confirmed_range,
+            tx_latency_confirmed_buckets,
+        }
+    }
+
+    pub fn get_submitted_range(&self) -> Vec<f64> {
+        build_histogram_buckets(
+            self.tx_latency_submitted_range.start,
+            self.tx_latency_submitted_range.end,
+            self.tx_latency_submitted_buckets,
+        )
+    }
+
+    pub fn get_confirmed_range(&self) -> Vec<f64> {
+        build_histogram_buckets(
+            self.tx_latency_confirmed_range.start,
+            self.tx_latency_confirmed_range.end,
+            self.tx_latency_confirmed_buckets,
+        )
+    }
+}
+
+fn build_histogram_buckets(start: u64, end: u64, buckets: u64) -> Vec<f64> {
+    let step = (end - start) / buckets;
+    (0..=buckets)
+        .map(|i| (start + i * step) as f64)
+        .collect::<Vec<_>>()
+}
 
 impl AggregatorSelector for CustomAggregatorSelector {
     fn aggregator_for(&self, descriptor: &Descriptor) -> Option<Arc<dyn Aggregator + Send + Sync>> {
@@ -781,165 +1105,12 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "backlog_oldest_timestamp" => Some(Arc::new(last_value())),
             "backlog_size" => Some(Arc::new(last_value())),
             // Prometheus' supports only collector for histogram, sum, and last value aggregators.
-            // https://docs.rs/opentelemetry-prometheus/0.11.0/src/opentelemetry_prometheus/lib.rs.html#411-418
+            // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
             // TODO: Once quantile sketches are supported, replace histograms with that.
-            "tx_latency_submitted" => Some(Arc::new(histogram(&[
-                200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0,
-            ]))),
-            "tx_latency_confirmed" => Some(Arc::new(histogram(&[
-                1000.0, 5000.0, 9000.0, 13000.0, 17000.0, 20000.0,
-            ]))),
+            "tx_latency_submitted" => Some(Arc::new(histogram(&self.get_submitted_range()))),
+            "tx_latency_confirmed" => Some(Arc::new(histogram(&self.get_confirmed_range()))),
+            "ics29_period_fees" => Some(Arc::new(last_value())),
             _ => Some(Arc::new(sum())),
-        }
-    }
-}
-
-impl Default for TelemetryState {
-    fn default() -> Self {
-        use opentelemetry::sdk::export::metrics::aggregation;
-        use opentelemetry::sdk::metrics::{controllers, processors};
-
-        let controller = controllers::basic(
-            processors::factory(
-                CustomAggregatorSelector,
-                aggregation::cumulative_temporality_selector(),
-            )
-            .with_memory(true),
-        )
-        .build();
-
-        let exporter = opentelemetry_prometheus::ExporterBuilder::new(controller).init();
-
-        let meter = global::meter("hermes");
-
-        Self {
-            exporter,
-
-            workers: meter
-                .i64_up_down_counter("workers")
-                .with_description("Number of workers")
-                .init(),
-
-            client_updates_submitted: meter
-                .u64_counter("client_updates_submitted")
-                .with_description("Number of client update messages submitted")
-                .init(),
-
-            client_misbehaviours_submitted: meter
-                .u64_counter("client_misbehaviours_submitted")
-                .with_description("Number of misbehaviours detected and submitted")
-                .init(),
-
-            receive_packets_confirmed: meter
-                .u64_counter("receive_packets_confirmed")
-                .with_description("Number of confirmed receive packets. Available if relayer runs with Tx confirmation enabled")
-                .init(),
-
-            acknowledgment_packets_confirmed: meter
-                .u64_counter("acknowledgment_packets_confirmed")
-                .with_description("Number of confirmed acknowledgment packets. Available if relayer runs with Tx confirmation enabled")
-                .init(),
-
-            timeout_packets_confirmed: meter
-                .u64_counter("timeout_packets_confirmed")
-                .with_description("Number of confirmed timeout packets. Available if relayer runs with Tx confirmation enabled")
-                .init(),
-
-            queries: meter
-                .u64_counter("queries")
-                .with_description(
-                    "Number of queries submitted by Hermes",
-                )
-                .init(),
-
-            queries_cache_hits: meter
-                .u64_counter("queries_cache_hits")
-                .with_description("Number of cache hits for queries submitted by Hermes")
-                .init(),
-
-            ws_reconnect: meter
-                .u64_counter("ws_reconnect")
-                .with_description("Number of times Hermes reconnected to the websocket endpoint")
-                .init(),
-
-            ws_events: meter
-                .u64_counter("ws_events")
-                .with_description("How many IBC events did Hermes receive via the websocket subscription")
-                .init(),
-
-            total_messages_submitted: meter
-                .u64_counter("total_messages_submitted")
-                .with_description("Number of messages submitted to a specific chain")
-                .init(),
-
-            wallet_balance: meter
-                .f64_observable_gauge("wallet_balance")
-                .with_description("The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in precision might be introduced in the displayed value")
-                .init(),
-
-            send_packet_events: meter
-                .u64_counter("send_packet_events")
-                .with_description("Number of SendPacket events received")
-                .init(),
-
-            acknowledgement_events: meter
-                .u64_counter("acknowledgement_events")
-                .with_description("Number of WriteAcknowledgement events received")
-                .init(),
-
-            timeout_events: meter
-                .u64_counter("timeout_events")
-                .with_description("Number of TimeoutPacket events received")
-                .init(),
-
-            cleared_send_packet_events: meter
-                .u64_counter("cleared_send_packet_events")
-                .with_description("Number of SendPacket events received during the initial and periodic clearing")
-                .init(),
-
-            cleared_acknowledgment_events: meter
-                .u64_counter("cleared_acknowledgment_events")
-                .with_description("Number of WriteAcknowledgement events received during the initial and periodic clearing")
-                .init(),
-
-            tx_latency_submitted: meter
-                .u64_observable_gauge("tx_latency_submitted")
-                .with_unit(Unit::new("milliseconds"))
-                .with_description("The latency for all transactions submitted to a specific chain, \
-                    i.e. the difference between the moment when Hermes received a batch of events \
-                    and when it submitted the corresponding transaction(s). Milliseconds.")
-                .init(),
-
-            tx_latency_confirmed: meter
-                .u64_observable_gauge("tx_latency_confirmed")
-                .with_unit(Unit::new("milliseconds"))
-                .with_description("The latency for all transactions submitted & confirmed to a specific chain, \
-                    i.e. the difference between the moment when Hermes received a batch of events \
-                    until the corresponding transaction(s) were confirmed. Milliseconds.")
-                .init(),
-
-            in_flight_events: moka::sync::Cache::builder()
-                .time_to_live(Duration::from_secs(60 * 60)) // Remove entries after 1 hour
-                .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
-                .build(),
-
-            backlogs: DashMap::new(),
-
-            backlog_oldest_sequence: meter
-                .u64_observable_gauge("backlog_oldest_sequence")
-                .with_description("Sequence number of the oldest SendPacket event in the backlog")
-                .init(),
-
-            backlog_oldest_timestamp: meter
-                .u64_observable_gauge("backlog_oldest_timestamp")
-                .with_unit(Unit::new("seconds"))
-                .with_description("Local timestamp for the oldest SendPacket event in the backlog")
-                .init(),
-
-            backlog_size: meter
-                .u64_observable_gauge("backlog_size")
-                .with_description("Total number of SendPacket events in the backlog")
-                .init(),
         }
     }
 }

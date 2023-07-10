@@ -10,10 +10,15 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{application::fatal_error, Runnable};
 use eyre::eyre;
 use itertools::Itertools;
+use tendermint_rpc::{client::CompatMode, Client, HttpClient};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 
-use ibc_relayer::{chain::handle::Subscription, config::ChainConfig, event::monitor::EventMonitor};
+use ibc_relayer::{
+    chain::handle::Subscription,
+    config::{ChainConfig, EventSourceMode},
+    event::source::websocket::EventSource,
+};
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
 use crate::prelude::*;
@@ -100,7 +105,8 @@ impl Runnable for ListenCmd {
 #[instrument(skip_all, level = "error", fields(chain = %config.id))]
 pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()> {
     let rt = Arc::new(TokioRuntime::new()?);
-    let rx = subscribe(config, rt)?;
+    let compat_mode = detect_compatibility_mode(config, rt.clone())?;
+    let rx = subscribe(config, compat_mode, rt)?;
 
     while let Ok(event_batch) = rx.recv() {
         match event_batch.as_ref() {
@@ -133,25 +139,48 @@ fn event_match(event: &IbcEvent, filters: &[EventFilter]) -> bool {
     filters.iter().any(|f| f.matches(event))
 }
 
-fn subscribe(chain_config: &ChainConfig, rt: Arc<TokioRuntime>) -> eyre::Result<Subscription> {
-    let (mut event_monitor, tx_cmd) = EventMonitor::new(
+fn subscribe(
+    chain_config: &ChainConfig,
+    compat_mode: CompatMode,
+    rt: Arc<TokioRuntime>,
+) -> eyre::Result<Subscription> {
+    let EventSourceMode::Push { url, batch_delay } = &chain_config.event_source else {
+        return Err(eyre!("unsupported event source mode, only 'push' is supported for listening to events"));
+    };
+
+    let (mut event_source, tx_cmd) = EventSource::new(
         chain_config.id.clone(),
-        chain_config.websocket_addr.clone(),
+        url.clone(),
+        compat_mode,
+        *batch_delay,
         rt,
     )
-    .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;
+    .map_err(|e| eyre!("could not initialize event source: {}", e))?;
 
-    event_monitor
+    event_source
         .init_subscriptions()
         .map_err(|e| eyre!("could not initialize subscriptions: {}", e))?;
 
-    let queries = event_monitor.queries();
+    let queries = event_source.queries();
     info!("listening for queries: {}", queries.iter().format(", "),);
 
-    thread::spawn(|| event_monitor.run());
+    thread::spawn(|| event_source.run());
 
     let subscription = tx_cmd.subscribe()?;
     Ok(subscription)
+}
+
+fn detect_compatibility_mode(
+    config: &ChainConfig,
+    rt: Arc<TokioRuntime>,
+) -> eyre::Result<CompatMode> {
+    let client = HttpClient::new(config.rpc_addr.clone())?;
+    let status = rt.block_on(client.status())?;
+    let compat_mode = CompatMode::from_version(status.node_info.version).unwrap_or_else(|e| {
+        warn!("Unsupported tendermint version, will use v0.37 compatibility mode but relaying might not work as desired: {e}");
+        CompatMode::V0_37
+    });
+    Ok(compat_mode)
 }
 
 #[cfg(test)]

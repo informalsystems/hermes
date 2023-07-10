@@ -4,8 +4,8 @@ This section includes a summary of the supported and planned features. It also i
 
 > **Cosmos SDK & IBC compatibility:**
 > Hermes supports Cosmos SDK chains implementing the [IBC protocol v1][ibcv1-proto] protocol specification.
-> Cosmos SDK versions `0.41.3` through `0.45.x` are officially supported.
-> IBC-go versions `1.1.*` thorough `3.*` are officially supported.
+> Cosmos SDK versions `0.44.0` through `0.47.x` are officially supported.
+> IBC-go versions `1.1.*` thorough `7.*` are officially supported.
 > In case Hermes finds an incompatible SDK or IBC-go version, it will output a log warning upon initialization as part of the `start` command or upon `health-check` command.
 
 ---
@@ -35,7 +35,8 @@ This section includes a summary of the supported and planned features. It also i
     > Relaying between Interchain Security-enabled chains requires Hermes v1.2+.
 - Monitor and submit misbehaviour for clients
     - Monitor client updates for misbehaviour (fork and BFT time violation).
-    - Submit misbehaviour evidence to the on-chain IBC client.
+    - Submit misbehaviour evidence to the reference chain via `/broadcast_evidence` tendermint RPC.
+    - Submit misbehaviour evidence to the on-chain IBC client in a transaction that includes the `MsgMisbehaviour` message.
     > Misbehaviour submission to full node not yet supported.
 - Individual commands that build and send transactions for:
     - Creating and updating IBC Tendermint light clients.

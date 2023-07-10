@@ -1,43 +1,44 @@
 [package]
 name       = "ibc-test-framework"
-version    = "0.22.0"
-edition.workspace = true
-license.workspace = true
+version    = "0.24.1"
+edition    = { workspace = true }
+license    = { workspace = true }
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-homepage.workspace = true
-repository.workspace = true
-authors.workspace = true
+homepage   = { workspace = true }
+repository = { workspace = true }
+authors    = { workspace = true }
 
 description = """
   Framework for writing integration tests for IBC relayers
 """
 
 [dependencies]
-ibc-relayer-types = { version = "=0.22.0",     path = "../../crates/relayer-types" }
-ibc-relayer       = { version = "=0.22.0",     path = "../../crates/relayer" }
-ibc-relayer-cli   = { version = "=1.3.0",      path = "../../crates/relayer-cli" }
-ibc-proto.workspace = true
+ibc-relayer-types = { version = "=0.24.1",     path = "../../crates/relayer-types" }
+ibc-relayer       = { version = "=0.24.1",     path = "../../crates/relayer" }
+ibc-relayer-cli   = { version = "=1.5.1",      path = "../../crates/relayer-cli" }
+ibc-proto         = { workspace = true }
 tendermint-rpc    = { workspace = true, features = ["http-client", "websocket-client"] }
 
-http.workspace = true
-tokio = { workspace = true, features = ["full"] }
-tracing.workspace = true
-tracing-subscriber.workspace = true
-eyre.workspace = true
-color-eyre.workspace = true
-rand.workspace = true
-hex.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-serde_yaml.workspace = true
-itertools.workspace = true
-toml.workspace = true
-subtle-encoding.workspace = true
-sha2.workspace = true
-crossbeam-channel.workspace = true
-semver.workspace = true
-flex-error.workspace = true
-prost.workspace = true
-tonic = { workspace = true, features = ["tls", "tls-roots"] }
-hdpath.workspace = true
+http                = { workspace = true }
+tokio               = { workspace = true, features = ["full"] }
+tracing             = { workspace = true }
+tracing-subscriber  = { workspace = true }
+eyre                = { workspace = true }
+color-eyre          = { workspace = true }
+rand                = { workspace = true }
+hex                 = { workspace = true }
+serde               = { workspace = true }
+serde_json          = { workspace = true }
+serde_yaml          = { workspace = true }
+itertools           = { workspace = true }
+toml                = { workspace = true }
+subtle-encoding     = { workspace = true }
+sha2                = { workspace = true }
+crossbeam-channel   = { workspace = true }
+semver              = { workspace = true }
+flex-error          = { workspace = true }
+prost               = { workspace = true }
+tonic               = { workspace = true, features = ["tls", "tls-roots"] }
+hdpath              = { workspace = true }
+once_cell           = { workspace = true }

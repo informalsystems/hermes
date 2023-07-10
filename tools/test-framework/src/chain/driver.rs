@@ -87,6 +87,11 @@ pub struct ChainDriver {
     */
     pub p2p_port: u16,
 
+    /**
+       The port used for pprof. (Currently unused other than for setup)
+    */
+    pub pprof_port: u16,
+
     pub tx_config: TxConfig,
 
     pub runtime: Arc<Runtime>,
@@ -113,6 +118,7 @@ impl ChainDriver {
         grpc_port: u16,
         grpc_web_port: u16,
         p2p_port: u16,
+        pprof_port: u16,
         runtime: Arc<Runtime>,
     ) -> Result<Self, Error> {
         let tx_config = new_tx_config_for_test(
@@ -132,6 +138,7 @@ impl ChainDriver {
             grpc_port,
             grpc_web_port,
             p2p_port,
+            pprof_port,
             tx_config,
             runtime,
         })

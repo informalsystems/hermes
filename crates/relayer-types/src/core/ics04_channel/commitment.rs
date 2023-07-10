@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use serde_derive::{Deserialize, Serialize};
 
 /// Packet commitment

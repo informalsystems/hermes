@@ -112,6 +112,13 @@ pub struct TxIcs20MsgTransferCmd {
         help = "Use the given signing key name (default: `key_name` config)"
     )]
     key_name: Option<String>,
+
+    #[clap(
+        long = "memo",
+        value_name = "MEMO",
+        help = "Optional memo included in the transfer"
+    )]
+    memo: Option<String>,
 }
 
 impl Override<Config> for TxIcs20MsgTransferCmd {
@@ -163,6 +170,7 @@ impl TxIcs20MsgTransferCmd {
             timeout_height_offset: self.timeout_height_offset,
             timeout_duration: Duration::from_secs(self.timeout_seconds),
             number_msgs,
+            memo: self.memo.clone(),
         };
 
         Ok(opts)
@@ -227,7 +235,8 @@ mod tests {
                 receiver: None,
                 denom: "samoleans".to_owned(),
                 number_msgs: None,
-                key_name: None
+                key_name: None,
+                memo: None,
             },
             TxIcs20MsgTransferCmd::parse_from([
                 "test",
@@ -259,7 +268,8 @@ mod tests {
                 receiver: None,
                 denom: "samoleans".to_owned(),
                 number_msgs: None,
-                key_name: None
+                key_name: None,
+                memo: None,
             },
             TxIcs20MsgTransferCmd::parse_from([
                 "test",
@@ -291,7 +301,8 @@ mod tests {
                 receiver: None,
                 denom: "my_denom".to_owned(),
                 number_msgs: None,
-                key_name: None
+                key_name: None,
+                memo: None,
             },
             TxIcs20MsgTransferCmd::parse_from([
                 "test",
@@ -325,7 +336,8 @@ mod tests {
                 receiver: None,
                 denom: "samoleans".to_owned(),
                 number_msgs: None,
-                key_name: Some("key_name".to_owned())
+                key_name: Some("key_name".to_owned()),
+                memo: None,
             },
             TxIcs20MsgTransferCmd::parse_from([
                 "test",
@@ -359,7 +371,8 @@ mod tests {
                 receiver: None,
                 denom: "samoleans".to_owned(),
                 number_msgs: Some(21),
-                key_name: None
+                key_name: None,
+                memo: None,
             },
             TxIcs20MsgTransferCmd::parse_from([
                 "test",
@@ -393,7 +406,8 @@ mod tests {
                 receiver: Some("receiver_addr".to_owned()),
                 denom: "samoleans".to_owned(),
                 number_msgs: None,
-                key_name: None
+                key_name: None,
+                memo: None,
             },
             TxIcs20MsgTransferCmd::parse_from([
                 "test",
@@ -427,7 +441,8 @@ mod tests {
                 receiver: None,
                 denom: "samoleans".to_owned(),
                 number_msgs: None,
-                key_name: None
+                key_name: None,
+                memo: None,
             },
             TxIcs20MsgTransferCmd::parse_from([
                 "test",
@@ -461,7 +476,8 @@ mod tests {
                 receiver: None,
                 denom: "samoleans".to_owned(),
                 number_msgs: None,
-                key_name: None
+                key_name: None,
+                memo: None,
             },
             TxIcs20MsgTransferCmd::parse_from([
                 "test",
@@ -477,6 +493,41 @@ mod tests {
                 "42",
                 "--timeout-seconds",
                 "21"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_ft_transfer_memo() {
+        assert_eq!(
+            TxIcs20MsgTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_receiver"),
+                src_chain_id: ChainId::from_string("chain_sender"),
+                src_port_id: PortId::from_str("port_sender").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
+                amount: Amount::from(42u64),
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receiver: None,
+                denom: "samoleans".to_owned(),
+                number_msgs: None,
+                key_name: None,
+                memo: Some("test memo".to_owned()),
+            },
+            TxIcs20MsgTransferCmd::parse_from([
+                "test",
+                "--dst-chain",
+                "chain_receiver",
+                "--src-chain",
+                "chain_sender",
+                "--src-port",
+                "port_sender",
+                "--src-channel",
+                "channel_sender",
+                "--amount",
+                "42",
+                "--memo",
+                "test memo",
             ])
         )
     }

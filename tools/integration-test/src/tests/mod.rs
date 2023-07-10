@@ -48,3 +48,12 @@ pub mod forward;
 
 #[cfg(any(doc, feature = "ics31"))]
 pub mod ics31;
+
+#[cfg(any(doc, feature = "clean-workers"))]
+pub mod clean_workers;
+
+#[cfg(any(doc, feature = "fee-grant"))]
+pub mod fee_grant;
+
+#[cfg(any(doc, feature = "interchain-security"))]
+pub mod interchain_security;

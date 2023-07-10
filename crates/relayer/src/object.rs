@@ -1,6 +1,9 @@
+use std::fmt::Display;
+
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
+use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
 use ibc_relayer_types::core::{
     ics02_client::{client_state::ClientState, events::UpdateClient},
     ics03_connection::events::Attributes as ConnectionAttributes,
@@ -254,6 +257,19 @@ pub enum ObjectType {
     Packet,
     Wallet,
     CrossChainQuery,
+}
+
+impl Display for ObjectType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ObjectType::Client => write!(f, "client"),
+            ObjectType::Channel => write!(f, "channel"),
+            ObjectType::Connection => write!(f, "connection"),
+            ObjectType::Packet => write!(f, "packet"),
+            ObjectType::Wallet => write!(f, "wallet"),
+            ObjectType::CrossChainQuery => write!(f, "cross_chain_query"),
+        }
+    }
 }
 
 impl From<Client> for Object {
@@ -536,6 +552,23 @@ impl Object {
             dst_chain_id,
             query_id: p.query_id.to_string(),
             connection_id: p.connection_id.clone(),
+        }
+        .into())
+    }
+
+    /// Build the object associated with the given [`IncentivizedPacket`] event.
+    pub fn for_incentivized_packet(
+        e: &IncentivizedPacket,
+        src_chain: &impl ChainHandle,
+    ) -> Result<Self, ObjectError> {
+        let dst_chain_id = counterparty_chain_from_channel(src_chain, &e.channel_id, &e.port_id)
+            .map_err(ObjectError::supervisor)?;
+
+        Ok(Packet {
+            dst_chain_id,
+            src_chain_id: src_chain.id(),
+            src_channel_id: e.channel_id.clone(),
+            src_port_id: e.port_id.clone(),
         }
         .into())
     }

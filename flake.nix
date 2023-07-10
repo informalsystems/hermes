@@ -33,7 +33,7 @@
               gaia6
               gaia7
               gaia8
-              ica
+              gaia9
               osmosis
               wasmd
               gaia6-ordered
@@ -42,9 +42,14 @@
               ibc-go-v4-simapp
               ibc-go-v5-simapp
               ibc-go-v6-simapp
+              ibc-go-v7-simapp
               apalache
               evmos
+              juno
+              stride
               stride-no-admin
+              migaloo
+              neutron
             ;
 
             python = nixpkgs.python3.withPackages (p: [

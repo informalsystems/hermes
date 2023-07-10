@@ -1,6 +1,8 @@
 use async_stream::stream;
 use core::mem;
 use futures::stream::Stream;
+use std::time::Duration;
+use tokio_stream::StreamExt;
 
 /// ## Example
 ///
@@ -71,6 +73,73 @@ where
                     }
                 }
                 Err(e) => {
+                    if let Some(cur_state) = mem::take(&mut state) {
+                        if !cur_state.group.is_empty() {
+                            yield Ok(cur_state.group);
+                        }
+                        yield Ok(vec![cur_state.cur]);
+                    }
+
+                    yield Err(e);
+                }
+            }
+        }
+
+        if let Some(State { cur, mut group }) = state {
+            group.push(cur);
+            yield Ok(group);
+        }
+    }
+}
+
+pub fn try_group_while_timeout<A, E, S, F>(
+    input: S,
+    group_these: F,
+    timeout: Duration,
+) -> impl Stream<Item = Result<Vec<A>, E>>
+where
+    S: Stream<Item = Result<A, E>>,
+    F: Fn(&A, &A) -> bool + 'static,
+{
+    struct State<A> {
+        cur: A,
+        group: Vec<A>,
+    }
+
+    let input = input.timeout(timeout);
+
+    stream! {
+        let mut state: Option<State<A>> = None;
+
+        for await x in input {
+            match x {
+                // timeout
+                Err(_) => {
+                    if let Some(mut cur_state) = mem::take(&mut state) {
+                        cur_state.group.push(cur_state.cur);
+                        yield Ok(cur_state.group);
+                    }
+                }
+
+                Ok(Ok(x)) => {
+                    match &mut state {
+                        None => {
+                            state = Some(State { cur: x, group: vec![] });
+                        },
+                        Some(state) if group_these(&state.cur, &x) => {
+                            let prev = mem::replace(&mut state.cur, x);
+                            state.group.push(prev);
+                        },
+                        Some(state) => {
+                            let cur = mem::replace(&mut state.cur, x);
+                            state.group.push(cur);
+                            let group = mem::take(&mut state.group);
+                            yield Ok(group);
+                        }
+                    }
+                }
+
+                Ok(Err(e)) => {
                     if let Some(cur_state) = mem::take(&mut state) {
                         if !cur_state.group.is_empty() {
                             yield Ok(cur_state.group);

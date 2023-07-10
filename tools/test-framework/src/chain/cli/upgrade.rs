@@ -9,6 +9,7 @@ pub fn vote_proposal(
     command_path: &str,
     home_path: &str,
     rpc_listen_address: &str,
+    fees: &str,
 ) -> Result<(), Error> {
     simple_exec(
         chain_id,
@@ -29,6 +30,8 @@ pub fn vote_proposal(
             "test",
             "--from",
             "validator",
+            "--fees",
+            fees,
             "--yes",
         ],
     )?;

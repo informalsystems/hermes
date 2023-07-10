@@ -1,5 +1,6 @@
 use flex_error::{define_error, TraceError};
 use http;
+use itertools::Itertools;
 use reqwest;
 use serde_json;
 use std::path::PathBuf;
@@ -69,6 +70,16 @@ define_error! {
             { rpc: String }
             |e| { format_args!("Rpc node out of sync: {}", e.rpc) },
 
+        UnhealthyEndpoints
+            { endpoints: Vec<String>, retries: u8 }
+            |e| {
+                let endpoints = e.endpoints
+                    .iter()
+                    .join(", ");
+
+                format!("Error finding a healthy endpoint after {} retries. Endpoints: {endpoints}", e.retries)
+            },
+
         UriParseError
             { uri: String }
             [ TraceError<http::uri::InvalidUri> ]
@@ -84,12 +95,17 @@ define_error! {
             [ TraceError<tendermint_rpc::Error> ]
             |e| { format_args!("Error when parsing URL: {}", e.url) },
 
+        WebsocketUrlParseError
+            { url: String }
+            [ TraceError<tendermint_rpc::Error> ]
+            |e| { format_args!("Error when parsing URL: {}", e.url) },
+
         StatusError
             { url: String, status : u16}
             |e| { format_args!("Incorrect HTTP response status ({}) for URL: {}", e.status, e.url) },
 
         UnableToBuildWebsocketEndpoint
-            {rpc: String }
+            { rpc: String }
             [ TraceError<http::Error> ]
             |e| { format_args!("Unable to build WebSocket endpoint for RPC: {}", e.rpc) },
 

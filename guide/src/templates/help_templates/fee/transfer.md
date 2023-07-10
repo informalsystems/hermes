@@ -17,6 +17,9 @@ OPTIONS:
         --key-name <KEY_NAME>
             Use the given signing key name (default: `key_name` config)
 
+        --memo <MEMO>
+            Optional memo included in the transfer
+
         --number-msgs <NUMBER_MSGS>
             Number of messages to send
 

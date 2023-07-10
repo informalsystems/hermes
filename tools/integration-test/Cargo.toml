@@ -1,30 +1,29 @@
 [package]
-name       = "ibc-integration-test"
-version    = "0.22.0"
-edition.workspace = true
-license.workspace = true
-readme     = "README.md"
-keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-homepage.workspace = true
-repository.workspace = true
-authors.workspace = true
-rust-version.workspace = true
-description = """
-  Integration tests for IBC Relayer
-"""
+name         = "ibc-integration-test"
+version      = "0.24.1"
+edition      = { workspace = true }
+rust-version = { workspace = true }
+license      = { workspace = true }
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+homepage     = { workspace = true }
+repository   = { workspace = true }
+authors      = { workspace = true }
+description  = "Integration tests for Hermes"
+publish      = false
 
 [dependencies]
 ibc-relayer-types  = { path = "../../crates/relayer-types" }
 ibc-relayer        = { path = "../../crates/relayer" }
 ibc-test-framework = { path = "../test-framework" }
 
-http.workspace = true
-prost.workspace = true
-serde_json.workspace = true
-time.workspace = true
-toml.workspace = true
-tonic = { workspace = true, features = ["tls", "tls-roots"] }
-serde.workspace = true
+http        = { workspace = true }
+prost       = { workspace = true }
+serde_json  = { workspace = true }
+time        = { workspace = true }
+toml        =  { workspace = true }
+tonic       = { workspace = true, features = ["tls", "tls-roots"] }
+serde       = { workspace = true }
 
 [features]
 default = []
@@ -37,10 +36,13 @@ experimental = []
 mbt = []
 forward-packet = []
 ics31 = []
+clean-workers = []
+fee-grant = []
+interchain-security = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
 doc = true
 
 [dev-dependencies]
-tempfile.workspace = true
+tempfile = { workspace = true }

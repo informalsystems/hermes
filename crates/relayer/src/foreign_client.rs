@@ -446,7 +446,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         fields(client = %self)
     )]
     pub fn upgrade(&self, src_upgrade_height: Height) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        let mut msgs = self
+        let msgs = self
             .build_update_client_with_trusted(src_upgrade_height, None)
             .map_err(|_| {
                 ForeignClientError::client_upgrade_no_source(
@@ -459,6 +459,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     ),
                 )
             })?;
+
+        let mut msgs: Vec<Any> = msgs.into_iter().map(Msg::to_any).collect();
 
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
@@ -959,6 +961,16 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         client_state: &AnyClientState,
         header: &AnyHeader,
     ) -> Result<(), ForeignClientError> {
+        crate::time!(
+            "wait_for_header_validation_delay",
+            {
+                "src_chain": self.src_chain().id(),
+                "dst_chain": self.dst_chain().id(),
+                "header_height": header.height(),
+                "header_timestamp": header.timestamp()
+            }
+        );
+
         // Get latest height and time on destination chain
         let mut status = self.dst_chain().query_application_status().map_err(|e| {
             ForeignClientError::client_update(
@@ -1049,6 +1061,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         target_height: Height,
         trusted_height: Option<Height>,
     ) -> Result<Vec<Any>, ForeignClientError> {
+        crate::time!(
+            "wait_and_build_update_client_with_trusted",
+            {
+                "src_chain": self.src_chain().id(),
+                "dst_chain": self.dst_chain().id(),
+            }
+        );
+
         let src_application_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::client_create(
@@ -1059,12 +1079,25 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })
         };
 
-        // Wait for the source network to produce block(s) & reach `target_height`.
-        while src_application_latest_height()? < target_height {
-            thread::sleep(Duration::from_millis(100));
+        {
+            crate::time!(
+                "wait_and_build_update_client_with_trusted_sleep",
+                {
+                    "src_chain": self.src_chain().id(),
+                    "dst_chain": self.dst_chain().id(),
+                }
+            );
+            // Wait for the source network to produce block(s) & reach `target_height`.
+            while src_application_latest_height()? < target_height {
+                thread::sleep(Duration::from_millis(100));
+            }
         }
 
-        self.build_update_client_with_trusted(target_height, trusted_height)
+        let messages = self.build_update_client_with_trusted(target_height, trusted_height)?;
+
+        let encoded_messages = messages.into_iter().map(Msg::to_any).collect();
+
+        Ok(encoded_messages)
     }
 
     #[instrument(
@@ -1077,7 +1110,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         target_height: Height,
         maybe_trusted_height: Option<Height>,
-    ) -> Result<Vec<Any>, ForeignClientError> {
+    ) -> Result<Vec<MsgUpdateClient>, ForeignClientError> {
         // Get the latest client state on destination.
         let (client_state, _) = self.validated_client_state()?;
 
@@ -1151,14 +1184,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 header.height(),
             );
 
-            msgs.push(
-                MsgUpdateClient {
-                    header: header.into(),
-                    client_id: self.id.clone(),
-                    signer: signer.clone(),
-                }
-                .to_any(),
-            );
+            msgs.push(MsgUpdateClient {
+                header: header.into(),
+                client_id: self.id.clone(),
+                signer: signer.clone(),
+            });
         }
 
         debug!(
@@ -1167,14 +1197,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             header.height(),
         );
 
-        msgs.push(
-            MsgUpdateClient {
-                header: header.into(),
-                signer,
-                client_id: self.id.clone(),
-            }
-            .to_any(),
-        );
+        msgs.push(MsgUpdateClient {
+            header: header.into(),
+            signer,
+            client_id: self.id.clone(),
+        });
 
         telemetry!(
             client_updates_submitted,
@@ -1269,6 +1296,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         consensus_height: Height,
     ) -> Result<Option<UpdateClient>, ForeignClientError> {
+        crate::time!(
+            "fetch_update_client_event",
+            {
+                "src_chain": self.src_chain().id(),
+                "dst_chain": self.dst_chain().id(),
+            }
+        );
+
         let mut events_with_heights = vec![];
         for i in 0..MAX_RETRIES {
             thread::sleep(Duration::from_millis(200));
@@ -1441,6 +1476,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         mut update: Option<&UpdateClient>,
     ) -> Result<Option<MisbehaviourEvidence>, ForeignClientError> {
+        // FIXME(romac): Why do we need this, and shouldn't we wait somewhere else up the call stack?
         thread::sleep(Duration::from_millis(200));
 
         // Get the latest client state on destination.
@@ -1479,6 +1515,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         );
 
         let start_time = Instant::now();
+
         for target_height in consensus_state_heights {
             // Start with specified update event or the one for latest consensus height
             let update_event = if let Some(event) = update {
@@ -1523,10 +1560,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // Check for misbehaviour according to the specific source chain type.
             // In case of Tendermint client, this will also check the BFT time violation if
             // a header for the event height cannot be retrieved from the witness.
-            let misbehavior = match self
+            let result = self
                 .src_chain
-                .check_misbehaviour(update_event.clone(), client_state.clone())
-            {
+                .check_misbehaviour(update_event.clone(), client_state.clone());
+
+            let misbehavior = match result {
                 // Misbehavior check passed.
                 Ok(evidence_opt) => evidence_opt,
 
@@ -1560,7 +1598,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 return Ok(misbehavior);
             }
 
-            // Exit the loop if more than MAX_MISBEHAVIOUR_CHECK_TIME was spent here.
+            // Exit the loop if more than MAX_MISBEHAVIOUR_CHECK_DURATION was spent here.
             if start_time.elapsed() > MAX_MISBEHAVIOUR_CHECK_DURATION {
                 trace!(
                     "finished misbehaviour verification after {:?}",
@@ -1653,10 +1691,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     )]
     pub fn detect_misbehaviour_and_submit_evidence(
         &self,
-        update_event: Option<&UpdateClient>,
+        update_event: Option<UpdateClient>,
     ) -> MisbehaviourResults {
         // check evidence of misbehaviour for all updates or one
-        let result = match self.detect_misbehaviour(update_event) {
+        let result = match self.detect_misbehaviour(update_event.as_ref()) {
             Err(e) => Err(e),
             Ok(None) => Ok(vec![]), // no evidence found
             Ok(Some(detected)) => {
@@ -1681,26 +1719,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Even if some states may have failed to verify, e.g. if they were expired, just
         // warn the user and continue.
         match result {
-            Err(ForeignClientError(ForeignClientErrorDetail::MisbehaviourExit(s), _)) => {
-                warn!("misbehaviour checking is being disabled, reason: {}", s);
+            Ok(events) => {
+                if !events.is_empty() {
+                    info!("evidence submission result: {}", PrettySlice(&events));
 
-                MisbehaviourResults::CannotExecute
-            }
-
-            Ok(misbehaviour_detection_result) => {
-                info!(
-                    "evidence submission result: {}",
-                    PrettySlice(&misbehaviour_detection_result)
-                );
-                if !misbehaviour_detection_result.is_empty() {
-                    info!(
-                        "evidence submission result: {}",
-                        PrettySlice(&misbehaviour_detection_result)
-                    );
-
-                    MisbehaviourResults::EvidenceSubmitted(misbehaviour_detection_result)
+                    MisbehaviourResults::EvidenceSubmitted(events)
                 } else {
-                    info!("client is valid",);
+                    info!("client is valid");
 
                     MisbehaviourResults::ValidClient
                 }
@@ -1712,14 +1737,17 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
                     MisbehaviourResults::CannotExecute
                 }
+
                 ForeignClientErrorDetail::ExpiredOrFrozen(_) => {
                     error!("cannot check misbehavior on frozen or expired client",);
 
                     MisbehaviourResults::CannotExecute
                 }
 
+                // FIXME: This is fishy
                 _ if update_event.is_some() => MisbehaviourResults::CannotExecute,
 
+                // FIXME: This is fishy
                 _ => {
                     warn!("misbehaviour checking result: {}", e);
 

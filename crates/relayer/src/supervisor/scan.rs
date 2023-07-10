@@ -25,7 +25,10 @@ use crate::{
         },
     },
     client_state::IdentifiedAnyClientState,
-    config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
+    config::{
+        filter::{ChannelFilters, ChannelPolicy},
+        ChainConfig, Config,
+    },
     path::PathIdentifiers,
     registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
@@ -245,14 +248,16 @@ impl ChannelScan {
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
     ) -> Option<Vec<Sequence>> {
-        self.counterparty
+        let ids = self
+            .counterparty
             .as_ref()
-            .and_then(|c| PathIdentifiers::from_channel_end(c.clone()))
-            .map(|ids| {
-                unreceived_acknowledgements(counterparty_chain, chain, &ids)
-                    .map(|(sns, _)| sns)
-                    .unwrap_or_default()
-            })
+            .and_then(|c| PathIdentifiers::from_channel_end(c.clone()))?;
+
+        let acks = unreceived_acknowledgements(counterparty_chain, chain, &ids)
+            .map(|sns| sns.map_or(vec![], |(sns, _)| sns))
+            .unwrap_or_default();
+
+        Some(acks)
     }
 }
 
@@ -356,14 +361,18 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                     client,
                 }) => {
                     let counterparty_chain_id = client.client_state.chain_id();
-                    init_telemetry(
-                        &chain.id(),
-                        &client.client_id,
-                        &counterparty_chain_id,
-                        channel_id,
-                        port_id,
-                        self.config,
-                    );
+                    if let Some(counterparty_channel) = &counterparty_channel {
+                        init_telemetry(
+                            &chain.id(),
+                            &client.client_id,
+                            &counterparty_chain_id,
+                            channel_id,
+                            &counterparty_channel.channel_id,
+                            port_id,
+                            &counterparty_channel.port_id,
+                            self.config,
+                        );
+                    }
 
                     let client_scan = scan
                         .clients
@@ -402,14 +411,18 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
                     for connection_scan in connection_scans {
                         for channel in connection_scan.channels.values() {
-                            init_telemetry(
-                                &chain.id(),
-                                client_scan.id(),
-                                &client_scan.counterparty_chain_id(),
-                                channel.id(),
-                                channel.port(),
-                                self.config,
-                            );
+                            if let Some(counterparty_channel) = &channel.counterparty {
+                                init_telemetry(
+                                    &chain.id(),
+                                    client_scan.id(),
+                                    &client_scan.counterparty_chain_id(),
+                                    channel.id(),
+                                    &counterparty_channel.channel_id,
+                                    channel.port(),
+                                    &counterparty_channel.port_id,
+                                    self.config,
+                                );
+                            }
                         }
                     }
                 }
@@ -576,8 +589,8 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
             return None;
         }
 
-        match chain_config.packet_filter {
-            PacketFilter::Allow(ref filters) if filters.is_exact() => Some(filters),
+        match chain_config.packet_filter.channel_policy {
+            ChannelPolicy::Allow(ref filters) if filters.is_exact() => Some(filters),
             _ => None,
         }
     }
@@ -872,7 +885,9 @@ fn init_telemetry(
     client: &ClientId,
     counterparty_chain_id: &ChainId,
     channel_id: &ChannelId,
+    counterparty_channel: &ChannelId,
     port_id: &PortId,
+    counterparty_port: &PortId,
     config: &Config,
 ) {
     // Boolean flag that is toggled if any of the tx workers are enabled
@@ -896,7 +911,15 @@ fn init_telemetry(
         telemetry!(init_worker_by_type, WorkerType::Packet);
 
         if config.mode.packets.tx_confirmation {
-            telemetry!(init_per_channel, chain_id, channel_id, port_id);
+            telemetry!(
+                init_per_channel,
+                chain_id,
+                counterparty_chain_id,
+                channel_id,
+                counterparty_channel,
+                port_id,
+                counterparty_port
+            );
         }
     }
 

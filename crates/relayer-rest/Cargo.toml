@@ -1,28 +1,28 @@
 [package]
 name         = "ibc-relayer-rest"
-version      = "0.22.0"
-authors.workspace = true
-edition.workspace = true
-license.workspace = true
+version      = "0.24.1"
+authors      = { workspace = true }
+edition      = { workspace = true }
+license      = { workspace = true }
 readme       = "README.md"
 keywords     = ["ibc", "rest", "api", "cosmos", "tendermint"]
-homepage.workspace = true
-repository.workspace = true
-rust-version.workspace = true
+homepage     = { workspace = true }
+repository   = { workspace = true }
+rust-version = { workspace = true }
 description  = """
   Rust implementation of a RESTful API server for Hermes
 """
 
 [dependencies]
-ibc-relayer-types = { version = "0.22.0", path = "../relayer-types" }
-ibc-relayer       = { version = "0.22.0", path = "../relayer" }
+ibc-relayer-types = { version = "0.24.1", path = "../relayer-types" }
+ibc-relayer       = { version = "0.24.1", path = "../relayer" }
 
-crossbeam-channel.workspace = true
-rouille.workspace = true
-serde.workspace = true
-tracing.workspace = true
+crossbeam-channel = { workspace = true }
+serde             = { workspace = true }
+tracing           = { workspace = true }
+axum              = { workspace = true }
+tokio             = { workspace = true }
 
 [dev-dependencies]
-serde_json.workspace = true
-toml.workspace = true
-ureq.workspace = true
+reqwest    = { workspace = true, features = ["json"], default-features = false }
+toml       = { workspace = true }

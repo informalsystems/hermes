@@ -1,4 +1,3 @@
-use crate::prelude::*;
 use tendermint::merkle::proof::ProofOps as TendermintProof;
 
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
@@ -28,41 +27,24 @@ impl From<CommitmentRoot> for MerkleRoot {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
 }
 
 /// Convert to ics23::CommitmentProof
-/// The encoding and decoding shouldn't fail since ics23::CommitmentProof and ibc_proto::ics23::CommitmentProof should be the same
-/// Ref. <https://github.com/cosmos/ibc-proto-rs/issues/10>
 impl From<RawMerkleProof> for MerkleProof {
     fn from(proof: RawMerkleProof) -> Self {
-        let proofs: Vec<CommitmentProof> = proof
-            .proofs
-            .into_iter()
-            .map(|p| {
-                let mut encoded = Vec::new();
-                prost::Message::encode(&p, &mut encoded).unwrap();
-                prost::Message::decode(&*encoded).unwrap()
-            })
-            .collect();
-        Self { proofs }
+        Self {
+            proofs: proof.proofs,
+        }
     }
 }
 
 impl From<MerkleProof> for RawMerkleProof {
     fn from(proof: MerkleProof) -> Self {
         Self {
-            proofs: proof
-                .proofs
-                .into_iter()
-                .map(|p| {
-                    let mut encoded = Vec::new();
-                    prost::Message::encode(&p, &mut encoded).unwrap();
-                    prost::Message::decode(&*encoded).unwrap()
-                })
-                .collect(),
+            proofs: proof.proofs,
         }
     }
 }
@@ -253,7 +235,8 @@ pub fn convert_tm_to_ics_merkle_proof(tm_proof: &TendermintProof) -> Result<Merk
     let mut proofs = Vec::new();
 
     for op in &tm_proof.ops {
-        let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };
+        let mut parsed = CommitmentProof { proof: None };
+
         prost::Message::merge(&mut parsed, op.data.as_slice())
             .map_err(Error::commitment_proof_decoding_failed)?;
 

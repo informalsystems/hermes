@@ -39,17 +39,17 @@ pub fn local_transfer_token(
     Ok(())
 }
 
-pub fn transfer_with_memo(
+pub fn transfer_from_chain(
     chain_id: &str,
     command_path: &str,
     home_path: &str,
     rpc_listen_address: &str,
     sender: &str,
+    src_port: &str,
+    src_channel: &str,
     recipient: &str,
     token: &str,
-    channel: &str,
-    port: &str,
-    memo: &str,
+    timeout_height: &str,
 ) -> Result<(), Error> {
     simple_exec(
         chain_id,
@@ -60,23 +60,22 @@ pub fn transfer_with_memo(
             "tx",
             "ibc-transfer",
             "transfer",
-            port,
-            channel,
-            //channel_hop,
+            src_port,
+            src_channel,
             recipient,
             token,
             "--from",
             sender,
-            "--memo",
-            memo,
             "--chain-id",
             chain_id,
             "--home",
             home_path,
             "--keyring-backend",
             "test",
-            "--output",
-            "json",
+            "--fees",
+            "1200stake",
+            "--timeout-height",
+            timeout_height,
             "--yes",
         ],
     )?;

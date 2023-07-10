@@ -3,11 +3,15 @@ use ibc_proto::ibc::applications::fee::v1::query_client::QueryClient;
 use ibc_proto::ibc::applications::fee::v1::{
     QueryCounterpartyPayeeRequest, QueryIncentivizedPacketsForChannelRequest,
 };
+use ibc_proto::ibc::apps::fee::v1::{
+    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+};
 use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::signer::Signer;
 use tonic::Code;
 
+use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
 
 pub async fn query_counterparty_payee(
@@ -18,6 +22,8 @@ pub async fn query_counterparty_payee(
     let mut client = QueryClient::connect(grpc_address.clone())
         .await
         .map_err(Error::grpc_transport)?;
+
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = QueryCounterpartyPayeeRequest {
         channel_id: channel_id.to_string(),
@@ -36,7 +42,7 @@ pub async fn query_counterparty_payee(
             if e.code() == Code::NotFound {
                 Ok(None)
             } else {
-                Err(Error::grpc_status(e))
+                Err(Error::grpc_status(e, "query_counterparty_payee".to_owned()))
             }
         }
     }
@@ -51,6 +57,8 @@ pub async fn query_incentivized_packets(
         .await
         .map_err(Error::grpc_transport)?;
 
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
+
     let request = QueryIncentivizedPacketsForChannelRequest {
         channel_id: channel_id.to_string(),
         port_id: port_id.to_string(),
@@ -61,7 +69,7 @@ pub async fn query_incentivized_packets(
     let response = client
         .incentivized_packets_for_channel(request)
         .await
-        .map_err(Error::grpc_status)?;
+        .map_err(|e| Error::grpc_status(e, "query_incentivized_packets".to_owned()))?;
 
     let raw_packets = response.into_inner().incentivized_packets;
 
@@ -72,4 +80,23 @@ pub async fn query_incentivized_packets(
         .map_err(Error::ics29)?;
 
     Ok(packets)
+}
+
+/// Query the incentivized packet for a specific packet at a specific height.
+pub async fn query_incentivized_packet(
+    grpc_address: &Uri,
+    request: QueryIncentivizedPacketRequest,
+) -> Result<QueryIncentivizedPacketResponse, Error> {
+    let mut client = QueryClient::connect(grpc_address.clone())
+        .await
+        .map_err(Error::grpc_transport)?;
+
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
+
+    let response = client
+        .incentivized_packet(tonic::Request::new(request))
+        .await
+        .map_err(|e| Error::grpc_status(e, "query_incentivized_packet".to_owned()))?;
+
+    Ok(response.into_inner())
 }

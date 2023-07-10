@@ -1,6 +1,4 @@
-use alloc::string::ToString;
-use core::cmp::Ordering;
-use core::fmt::{Display, Error as FmtError, Formatter};
+use std::fmt::{Display, Error as FmtError, Formatter};
 
 use bytes::Buf;
 use ibc_proto::google::protobuf::Any;
@@ -50,30 +48,6 @@ impl Header {
             u64::from(self.signed_header.header.height),
         )
         .expect("malformed tendermint header domain type has an illegal height of 0")
-    }
-
-    pub fn compatible_with(&self, other_header: &Header) -> bool {
-        headers_compatible(&self.signed_header, &other_header.signed_header)
-    }
-}
-
-pub fn headers_compatible(header: &SignedHeader, other: &SignedHeader) -> bool {
-    let ibc_client_height = other.header.height;
-    let self_header_height = header.header.height;
-
-    match self_header_height.cmp(&ibc_client_height) {
-        Ordering::Equal => {
-            // 1 - fork
-            header.commit.block_id == other.commit.block_id
-        }
-        Ordering::Greater => {
-            // 2 - BFT time violation
-            header.header.time > other.header.time
-        }
-        Ordering::Less => {
-            // 3 - BFT time violation
-            header.header.time < other.header.time
-        }
     }
 }
 
@@ -153,8 +127,7 @@ impl From<Header> for Any {
     fn from(header: Header) -> Self {
         Any {
             type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-            value: Protobuf::<RawHeader>::encode_vec(&header)
-                .expect("encoding to `Any` from `TmHeader`"),
+            value: Protobuf::<RawHeader>::encode_vec(&header),
         }
     }
 }
@@ -176,7 +149,6 @@ impl From<Header> for RawHeader {
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
-    use alloc::vec;
 
     use subtle_encoding::hex;
     use tendermint::block::signed_header::SignedHeader;

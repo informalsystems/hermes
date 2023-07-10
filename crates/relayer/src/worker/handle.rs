@@ -15,11 +15,11 @@ use crate::chain::tracking::TrackingId;
 use crate::event::IbcEventWithHeight;
 use crate::util::lock::{LockExt, RwArc};
 use crate::util::task::TaskHandle;
-use crate::{event::monitor::EventBatch, object::Object};
+use crate::{event::source::EventBatch, object::Object};
 
 use super::{WorkerCmd, WorkerId};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum WorkerData {
     Client { misbehaviour: bool, refresh: bool },
@@ -114,6 +114,18 @@ impl WorkerHandle {
             }
         }
         true
+    }
+
+    /// Verify if at least one task of the WorkerHandle is stopped.
+    /// If it is the case, shutdown all remaining tasks.
+    pub fn shutdown_stopped_tasks(&self) -> bool {
+        if self.task_handles.iter().any(|t| t.is_stopped()) {
+            for task in self.task_handles.iter() {
+                task.shutdown();
+            }
+            return true;
+        }
+        false
     }
 
     /// Wait for the worker thread to finish.

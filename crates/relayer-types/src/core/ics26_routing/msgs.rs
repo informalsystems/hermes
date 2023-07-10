@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use ibc_proto::google::protobuf::Any;
 
 use crate::core::ics02_client::msgs::{create_client, update_client, upgrade_client, ClientMsg};

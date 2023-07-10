@@ -1,5 +1,5 @@
-use alloc::collections::btree_map::BTreeMap as HashMap;
-use core::time::Duration;
+use std::collections::HashMap;
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
@@ -16,7 +16,7 @@ use crate::core::ics24_host::identifier::ChainId;
 
 use crate::mock::consensus_state::MockConsensusState;
 use crate::mock::header::MockHeader;
-use crate::prelude::*;
+
 use crate::Height;
 
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
@@ -110,8 +110,7 @@ impl From<MockClientState> for Any {
     fn from(client_state: MockClientState) -> Self {
         Any {
             type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawMockClientState>::encode_vec(&client_state)
-                .expect("encoding to `Any` from `MockClientState`"),
+            value: Protobuf::<RawMockClientState>::encode_vec(&client_state),
         }
     }
 }

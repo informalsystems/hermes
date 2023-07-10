@@ -3,6 +3,9 @@ use core::convert::TryFrom;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc_proto::ibc::apps::fee::v1::{
+    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+};
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::consensus_state::ConsensusState;
@@ -72,6 +75,9 @@ pub trait ChainEndpoint: Sized {
     /// Type of the client state for this chain
     type ClientState: ClientState + Into<AnyClientState>;
 
+    /// The type of time for this chain
+    type Time;
+
     /// Type of the key pair used for signatures of messages on chain
     type SigningKeyPair: SigningKeyPairSized + Into<AnySigningKeyPair>;
 
@@ -109,8 +115,6 @@ pub trait ChainEndpoint: Sized {
 
     /// Get the signing key pair
     fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
-        crate::time!("get_key");
-
         // Get the key from key seed file
         let key_pair = self
             .keybase()
@@ -677,4 +681,9 @@ pub trait ChainEndpoint: Sized {
         &self,
         requests: Vec<CrossChainQueryRequest>,
     ) -> Result<Vec<CrossChainQueryResponse>, Error>;
+
+    fn query_incentivized_packet(
+        &self,
+        request: QueryIncentivizedPacketRequest,
+    ) -> Result<QueryIncentivizedPacketResponse, Error>;
 }

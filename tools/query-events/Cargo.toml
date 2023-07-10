@@ -1,16 +1,16 @@
 [package]
 name    = "query-events"
 version = "0.1.0"
-edition.workspace = true
+edition = { wrkspace = true }
+publish = false
 
 [dependencies]
-tendermint.workspace = true
-tendermint-rpc = { workspace = true, features = ["http-client"] }
+tendermint     = { wrkspace = true }
+tendermint-rpc = { wrkspace = true, features = ["http-client"] }
 
-clap               = { workspace = true, features = ["derive"] }
-futures.workspace = true
-itertools.workspace = true
-tokio              = { workspace = true, features = ["full"] }
-tracing.workspace = true           
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
-
+clap               = { wrkspace = true, features = ["derive"] }
+futures            = { wrkspace = true }
+itertools          = { wrkspace = true }
+tokio              = { wrkspace = true, features = ["full"] }
+tracing            = { wrkspace = true }
+tracing-subscriber = { wrkspace = true, features = ["env-filter"] }

@@ -2,6 +2,7 @@
    Helper functions for bootstrapping a single full node.
 */
 use core::time::Duration;
+use eyre::eyre;
 use std::sync::{Arc, RwLock};
 use toml;
 use tracing::info;
@@ -58,6 +59,12 @@ pub fn bootstrap_single_node(
     let initial_amount = random_u128_range(1_000_000_000_000_000_000, 2_000_000_000_000_000_000);
 
     let initial_stake = Token::new(stake_denom, initial_amount);
+    let additional_initial_stake = initial_stake
+        .clone()
+        .checked_add(1_000_000_000_000u64)
+        .ok_or(Error::generic(eyre!(
+            "error creating initial stake with additional amount"
+        )))?;
     let initial_coin = Token::new(denom.clone(), initial_amount);
 
     let chain_driver = builder.new_chain(prefix, use_random_id, chain_number)?;
@@ -71,7 +78,8 @@ pub fn bootstrap_single_node(
     let user1 = add_wallet(&chain_driver, "user1", use_random_id)?;
     let user2 = add_wallet(&chain_driver, "user2", use_random_id)?;
 
-    chain_driver.add_genesis_account(&validator.address, &[&initial_stake])?;
+    // Validator is given more tokens as they are required to vote on upgrade chain
+    chain_driver.add_genesis_account(&validator.address, &[&additional_initial_stake])?;
 
     chain_driver.add_genesis_validator(&validator.id, &initial_stake)?;
 
@@ -89,6 +97,7 @@ pub fn bootstrap_single_node(
         config::set_log_level(config, &log_level)?;
         config::set_rpc_port(config, chain_driver.rpc_port)?;
         config::set_p2p_port(config, chain_driver.p2p_port)?;
+        config::set_pprof_port(config, chain_driver.pprof_port)?;
         config::set_timeout_commit(config, Duration::from_secs(1))?;
         config::set_timeout_propose(config, Duration::from_secs(1))?;
         config::set_mode(config, "validator")?;

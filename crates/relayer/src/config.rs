@@ -7,18 +7,26 @@ pub mod proof_specs;
 pub mod types;
 
 use alloc::collections::BTreeMap;
+use byte_unit::Byte;
 use core::{
     cmp::Ordering,
     fmt::{Display, Error as FmtError, Formatter},
     str::FromStr,
     time::Duration,
 };
-use std::{fs, fs::File, io::Write, path::Path};
+use serde_derive::{Deserialize, Serialize};
+use std::{
+    fs,
+    fs::File,
+    io::Write,
+    ops::Range,
+    path::{Path, PathBuf},
+};
+use tendermint::block::Height as BlockHeight;
+use tendermint_light_client::verifier::types::TrustThreshold;
+use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
-use serde_derive::{Deserialize, Serialize};
-use tendermint_light_client_verifier::types::TrustThreshold;
-
 use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
@@ -146,6 +154,10 @@ pub mod default {
         ChainType::CosmosSdk
     }
 
+    pub fn ccv_consumer_chain() -> bool {
+        false
+    }
+
     pub fn tx_confirmation() -> bool {
         false
     }
@@ -162,6 +174,14 @@ pub mod default {
         Duration::from_secs(10)
     }
 
+    pub fn poll_interval() -> Duration {
+        Duration::from_secs(1)
+    }
+
+    pub fn batch_delay() -> Duration {
+        Duration::from_millis(500)
+    }
+
     pub fn clock_drift() -> Duration {
         Duration::from_secs(5)
     }
@@ -170,12 +190,40 @@ pub mod default {
         Duration::from_secs(30)
     }
 
+    pub fn trusted_node() -> bool {
+        false
+    }
+
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
     }
 
     pub fn auto_register_counterparty_payee() -> bool {
         false
+    }
+
+    pub fn max_grpc_decoding_size() -> Byte {
+        Byte::from_bytes(33554432)
+    }
+
+    pub fn latency_submitted() -> HistogramConfig {
+        HistogramConfig {
+            range: Range {
+                start: 500,
+                end: 20000,
+            },
+            buckets: 10,
+        }
+    }
+
+    pub fn latency_confirmed() -> HistogramConfig {
+        HistogramConfig {
+            range: Range {
+                start: 1000,
+                end: 30000,
+            },
+            buckets: 10,
+        }
     }
 }
 
@@ -217,7 +265,10 @@ impl Config {
         channel_id: &ChannelId,
     ) -> bool {
         match self.find_chain(chain_id) {
-            Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
+            Some(chain_config) => chain_config
+                .packet_filter
+                .channel_policy
+                .is_allowed(port_id, channel_id),
             None => false,
         }
     }
@@ -252,7 +303,7 @@ impl Default for ModeConfig {
             clients: Clients {
                 enabled: true,
                 refresh: true,
-                misbehaviour: false,
+                misbehaviour: true,
             },
             connections: Connections { enabled: false },
             channels: Channels { enabled: false },
@@ -355,6 +406,60 @@ pub struct TelemetryConfig {
     pub enabled: bool,
     pub host: String,
     pub port: u16,
+    #[serde(default = "HistogramBuckets::default")]
+    pub buckets: HistogramBuckets,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct HistogramBuckets {
+    #[serde(default = "default::latency_submitted")]
+    pub latency_submitted: HistogramConfig,
+    #[serde(default = "default::latency_confirmed")]
+    pub latency_confirmed: HistogramConfig,
+}
+
+impl Default for HistogramBuckets {
+    fn default() -> Self {
+        Self {
+            latency_submitted: default::latency_submitted(),
+            latency_confirmed: default::latency_confirmed(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "HistogramRangeUnchecked")]
+pub struct HistogramConfig {
+    #[serde(flatten)]
+    pub range: Range<u64>,
+    pub buckets: u64,
+}
+
+impl TryFrom<HistogramRangeUnchecked> for HistogramConfig {
+    type Error = String;
+
+    fn try_from(value: HistogramRangeUnchecked) -> Result<Self, Self::Error> {
+        if value.start > value.end {
+            return Err(format!(
+                "histogram range min `{}` must be smaller or equal than max `{}`",
+                value.start, value.end
+            ));
+        }
+        Ok(Self {
+            range: Range {
+                start: value.start,
+                end: value.end,
+            },
+            buckets: value.buckets,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct HistogramRangeUnchecked {
+    start: u64,
+    end: u64,
+    buckets: u64,
 }
 
 /// Default values for the telemetry configuration.
@@ -366,6 +471,7 @@ impl Default for TelemetryConfig {
             enabled: false,
             host: "127.0.0.1".to_string(),
             port: 3001,
+            buckets: HistogramBuckets::default(),
         }
     }
 }
@@ -399,15 +505,13 @@ impl Default for RestConfig {
     content = "proto_type",
     deny_unknown_fields
 )]
+#[derive(Default)]
 pub enum AddressType {
+    #[default]
     Cosmos,
-    Ethermint { pk_type: String },
-}
-
-impl Default for AddressType {
-    fn default() -> Self {
-        AddressType::Cosmos
-    }
+    Ethermint {
+        pk_type: String,
+    },
 }
 
 impl Display for AddressType {
@@ -419,24 +523,75 @@ impl Display for AddressType {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct GenesisRestart {
+    pub restart_height: BlockHeight,
+    pub archive_addr: Url,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(tag = "mode", rename_all = "lowercase")]
+pub enum EventSourceMode {
+    /// Push-based event source, via WebSocket
+    Push {
+        /// The WebSocket URL to connect to
+        url: WebSocketClientUrl,
+
+        /// Maximum amount of time to wait for a NewBlock event before emitting the event batch
+        #[serde(default = "default::batch_delay", with = "humantime_serde")]
+        batch_delay: Duration,
+    },
+
+    /// Pull-based event source, via RPC /block_results
+    #[serde(alias = "poll")]
+    Pull {
+        /// The polling interval
+        #[serde(default = "default::poll_interval", with = "humantime_serde")]
+        interval: Duration,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
+    /// The chain's network identifier
     pub id: ChainId,
+
+    /// The chain type
     #[serde(default = "default::chain_type")]
     pub r#type: ChainType,
-    pub rpc_addr: tendermint_rpc::Url,
-    pub websocket_addr: tendermint_rpc::Url,
-    pub grpc_addr: tendermint_rpc::Url,
+
+    /// The RPC URL to connect to
+    pub rpc_addr: Url,
+
+    /// The gRPC URL to connect to
+    pub grpc_addr: Url,
+
+    /// The type of event source and associated settings
+    pub event_source: EventSourceMode,
+
+    /// Timeout used when issuing RPC queries
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
     pub rpc_timeout: Duration,
+
+    /// Whether or not the full node Hermes connects to is trusted
+    #[serde(default = "default::trusted_node")]
+    pub trusted_node: bool,
+
     pub account_prefix: String,
     pub key_name: String,
     #[serde(default)]
     pub key_store_type: Store,
+    pub key_store_folder: Option<PathBuf>,
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
+
+    // This field is only meant to be set via the `update client` command,
+    // for when we need to ugprade a client across a genesis restart and
+    // therefore need and archive node to fetch blocks from.
+    pub genesis_restart: Option<GenesisRestart>,
 
     // This field is deprecated, use `gas_multiplier` instead
     pub gas_adjustment: Option<f64>,
@@ -447,6 +602,8 @@ pub struct ChainConfig {
     pub max_msg_num: MaxMsgNum,
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
+    #[serde(default = "default::max_grpc_decoding_size")]
+    pub max_grpc_decoding_size: Byte,
 
     /// A correction parameter that helps deal with clocks that are only approximately synchronized
     /// between the source and destination chains for a client.
@@ -465,9 +622,9 @@ pub struct ChainConfig {
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
 
-    /// CCV only
-    #[serde(default, with = "humantime_serde")]
-    pub unbonding_period: Option<Duration>,
+    /// CCV consumer chain
+    #[serde(default = "default::ccv_consumer_chain")]
+    pub ccv_consumer_chain: bool,
 
     #[serde(default)]
     pub memo_prefix: Memo,
@@ -554,6 +711,52 @@ mod tests {
         let config = load(path).expect("could not parse config");
 
         dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_fee_filter_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_fee_filter.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_decoding_size_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_decoding_size.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_telemetry() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_valid_telemetry.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_invalid_telemetry() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_invalid_telemetry.toml"
+        );
+
+        assert!(load(path).is_err());
     }
 
     #[test]

@@ -1,27 +1,28 @@
 [package]
 name         = "ibc-chain-registry"
-version      = "0.22.0"
-edition.workspace = true
-license.workspace = true
+version      = "0.24.1"
+edition      = { workspace = true }
+license      = { workspace = true }
 keywords     = ["cosmos", "ibc", "relayer", "chain", "registry"]
-repository.workspace = true
-authors.workspace = true
-rust-version.workspace = true
+repository   = { workspace = true }
+authors      = { workspace = true }
+rust-version = { workspace = true }
 description  = """
     Service to fetch data from the chain-registry
 """
 
 [dependencies]
-ibc-proto.workspace = true
-ibc-relayer-types = { version = "0.22.0", path = "../relayer-types", features = ["std"] }
+ibc-proto         = { workspace = true }
+ibc-relayer-types = { version = "0.24.1", path = "../relayer-types" }
 tendermint-rpc    = { workspace = true, features = ["http-client", "websocket-client"] }
 
-async-trait.workspace = true
-flex-error  = { workspace = true, default-features = false }
-futures     = { workspace = true, features = ["executor"] }
-http.workspace = true
-reqwest     = { workspace = true, features = ["rustls-tls", "json"], default-features = false }
-serde.workspace = true
-serde_json.workspace = true
-tokio.workspace = true
-tracing.workspace = true
+async-trait       = { workspace = true }
+flex-error        = { workspace = true, default-features = false }
+futures           = { workspace = true, features = ["executor"] }
+http              = { workspace = true }
+itertools         = { workspace = true }
+reqwest           = { workspace = true, features = ["rustls-tls", "json"], default-features = false }
+serde             = { workspace = true }
+serde_json        = { workspace = true }
+tokio             = { workspace = true }
+tracing           = { workspace = true }

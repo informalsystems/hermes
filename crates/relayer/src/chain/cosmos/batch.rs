@@ -6,6 +6,7 @@ use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height;
 use prost::Message;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use tendermint_rpc::HttpClient;
 use tracing::debug;
 
 use crate::chain::cosmos::encode::encoded_tx_metrics;
@@ -15,7 +16,7 @@ use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::cosmos::wait::wait_for_block_commits;
-use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::config::types::Memo;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::keyring::Secp256k1KeyPair;
@@ -28,9 +29,8 @@ use crate::keyring::Secp256k1KeyPair;
    priority mempool is enabled.
 */
 pub async fn send_batched_messages_and_wait_commit(
+    rpc_client: &HttpClient,
     config: &TxConfig,
-    max_msg_num: MaxMsgNum,
-    max_tx_size: MaxTxSize,
     key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
@@ -40,20 +40,12 @@ pub async fn send_batched_messages_and_wait_commit(
         return Ok(Vec::new());
     }
 
-    let mut tx_sync_results = send_messages_as_batches(
-        config,
-        max_msg_num,
-        max_tx_size,
-        key_pair,
-        account,
-        tx_memo,
-        messages,
-    )
-    .await?;
+    let mut tx_sync_results =
+        send_messages_as_batches(rpc_client, config, key_pair, account, tx_memo, messages).await?;
 
     wait_for_block_commits(
         &config.chain_id,
-        &config.rpc_client,
+        rpc_client,
         &config.rpc_address,
         &config.rpc_timeout,
         &mut tx_sync_results,
@@ -74,9 +66,8 @@ pub async fn send_batched_messages_and_wait_commit(
    are committed in the wrong order due to interference from priority mempool.
 */
 pub async fn sequential_send_batched_messages_and_wait_commit(
+    rpc_client: &HttpClient,
     config: &TxConfig,
-    max_msg_num: MaxMsgNum,
-    max_tx_size: MaxTxSize,
     key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
@@ -87,13 +78,7 @@ pub async fn sequential_send_batched_messages_and_wait_commit(
     }
 
     let tx_sync_results = sequential_send_messages_as_batches(
-        config,
-        max_msg_num,
-        max_tx_size,
-        key_pair,
-        account,
-        tx_memo,
-        messages,
+        rpc_client, config, key_pair, account, tx_memo, messages,
     )
     .await?;
 
@@ -106,9 +91,8 @@ pub async fn sequential_send_batched_messages_and_wait_commit(
 }
 
 pub async fn send_batched_messages_and_wait_check_tx(
+    rpc_client: &HttpClient,
     config: &TxConfig,
-    max_msg_num: MaxMsgNum,
-    max_tx_size: MaxTxSize,
     key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
@@ -118,21 +102,15 @@ pub async fn send_batched_messages_and_wait_check_tx(
         return Ok(Vec::new());
     }
 
-    let batches = batch_messages(
-        config,
-        max_msg_num,
-        max_tx_size,
-        key_pair,
-        account,
-        tx_memo,
-        messages,
-    )?;
+    let batches = batch_messages(config, key_pair, account, tx_memo, messages)?;
 
     let mut responses = Vec::new();
 
     for batch in batches {
-        let response =
-            send_tx_with_account_sequence_retry(config, key_pair, account, tx_memo, &batch).await?;
+        let response = send_tx_with_account_sequence_retry(
+            rpc_client, config, key_pair, account, tx_memo, &batch,
+        )
+        .await?;
 
         responses.push(response);
     }
@@ -141,9 +119,8 @@ pub async fn send_batched_messages_and_wait_check_tx(
 }
 
 async fn send_messages_as_batches(
+    rpc_client: &HttpClient,
     config: &TxConfig,
-    max_msg_num: MaxMsgNum,
-    max_tx_size: MaxTxSize,
     key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
@@ -155,15 +132,7 @@ async fn send_messages_as_batches(
 
     let message_count = messages.len();
 
-    let batches = batch_messages(
-        config,
-        max_msg_num,
-        max_tx_size,
-        key_pair,
-        account,
-        tx_memo,
-        messages,
-    )?;
+    let batches = batch_messages(config, key_pair, account, tx_memo, messages)?;
 
     debug!(
         "sending {} messages as {} batches to chain {} in parallel",
@@ -177,8 +146,10 @@ async fn send_messages_as_batches(
     for batch in batches {
         let message_count = batch.len();
 
-        let response =
-            send_tx_with_account_sequence_retry(config, key_pair, account, tx_memo, &batch).await?;
+        let response = send_tx_with_account_sequence_retry(
+            rpc_client, config, key_pair, account, tx_memo, &batch,
+        )
+        .await?;
 
         let tx_sync_result = response_to_tx_sync_result(&config.chain_id, message_count, response);
 
@@ -189,9 +160,8 @@ async fn send_messages_as_batches(
 }
 
 async fn sequential_send_messages_as_batches(
+    rpc_client: &HttpClient,
     config: &TxConfig,
-    max_msg_num: MaxMsgNum,
-    max_tx_size: MaxTxSize,
     key_pair: &Secp256k1KeyPair,
     account: &mut Account,
     tx_memo: &Memo,
@@ -203,15 +173,7 @@ async fn sequential_send_messages_as_batches(
 
     let message_count = messages.len();
 
-    let batches = batch_messages(
-        config,
-        max_msg_num,
-        max_tx_size,
-        key_pair,
-        account,
-        tx_memo,
-        messages,
-    )?;
+    let batches = batch_messages(config, key_pair, account, tx_memo, messages)?;
 
     debug!(
         "sending {} messages as {} batches to chain {} in serial",
@@ -225,8 +187,10 @@ async fn sequential_send_messages_as_batches(
     for batch in batches {
         let message_count = batch.len();
 
-        let response =
-            send_tx_with_account_sequence_retry(config, key_pair, account, tx_memo, &batch).await?;
+        let response = send_tx_with_account_sequence_retry(
+            rpc_client, config, key_pair, account, tx_memo, &batch,
+        )
+        .await?;
 
         let tx_sync_result = response_to_tx_sync_result(&config.chain_id, message_count, response);
 
@@ -234,7 +198,7 @@ async fn sequential_send_messages_as_batches(
 
         wait_for_block_commits(
             &config.chain_id,
-            &config.rpc_client,
+            rpc_client,
             &config.rpc_address,
             &config.rpc_timeout,
             &mut tx_sync_results,
@@ -276,15 +240,13 @@ fn response_to_tx_sync_result(
 
 fn batch_messages(
     config: &TxConfig,
-    max_msg_num: MaxMsgNum,
-    max_tx_size: MaxTxSize,
     key_pair: &Secp256k1KeyPair,
     account: &Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<Vec<Any>>, Error> {
-    let max_message_count = max_msg_num.to_usize();
-    let max_tx_size = max_tx_size.into();
+    let max_message_count = config.max_msg_num.to_usize();
+    let max_tx_size = config.max_tx_size.into();
 
     let mut batches = vec![];
 
@@ -343,6 +305,8 @@ fn batch_messages(
     Ok(batches)
 }
 
+// Clippy on 1.70 yields false positives
+#[allow(clippy::redundant_clone)]
 #[cfg(test)]
 mod tests {
     use super::batch_messages;
@@ -377,7 +341,13 @@ mod tests {
             "/tests/config/fixtures/relayer-seed.json"
         );
         let seed_file_content = fs::read_to_string(path).unwrap();
-        let _keyring = KeyRing::new_secp256k1(keyring::Store::Memory, "cosmos", &chain_id).unwrap();
+        let _keyring = KeyRing::new_secp256k1(
+            keyring::Store::Memory,
+            "cosmos",
+            &chain_id,
+            &chain_config.key_store_folder,
+        )
+        .unwrap();
         let hd_path = COSMOS_HD_PATH.parse().unwrap();
         let key_pair = Secp256k1KeyPair::from_seed_file(&seed_file_content, &hd_path).unwrap();
 
@@ -417,12 +387,14 @@ mod tests {
                 &max_fee,
             )
             .unwrap();
+
             let max_tx_size = MaxTxSize::new(tx_bytes.len()).unwrap();
+            let mut limited_config = config.clone();
+            limited_config.max_msg_num = MaxMsgNum::new(100).unwrap();
+            limited_config.max_tx_size = max_tx_size;
 
             let batches = batch_messages(
-                &config,
-                MaxMsgNum::new(100).unwrap(),
-                max_tx_size,
+                &limited_config,
                 &key_pair,
                 &account,
                 &memo,
@@ -455,10 +427,12 @@ mod tests {
         }];
         let memo = Memo::new("example").unwrap();
 
+        let mut limited_config = config.clone();
+        limited_config.max_msg_num = MaxMsgNum::default();
+        limited_config.max_tx_size = MaxTxSize::new(MAX_TX_SIZE).unwrap();
+
         let batches = batch_messages(
-            &config,
-            MaxMsgNum::default(),
-            MaxTxSize::new(MAX_TX_SIZE).unwrap(),
+            &limited_config,
             &key_pair,
             &account,
             &memo,
@@ -474,15 +448,9 @@ mod tests {
             sign_and_encode_tx(&config, &key_pair, &account, &memo, &batches[0], &max_fee).unwrap();
         assert_eq!(tx_bytes.len(), MAX_TX_SIZE);
 
-        let res = batch_messages(
-            &config,
-            MaxMsgNum::default(),
-            MaxTxSize::new(MAX_TX_SIZE - 1).unwrap(),
-            &key_pair,
-            &account,
-            &memo,
-            messages,
-        );
+        limited_config.max_tx_size = MaxTxSize::new(MAX_TX_SIZE - 1).unwrap();
+
+        let res = batch_messages(&limited_config, &key_pair, &account, &memo, messages);
 
         assert!(res.is_err());
     }
@@ -490,6 +458,7 @@ mod tests {
     #[test]
     fn test_batches_are_structured_appropriately_per_max_msg_num() {
         let (config, key_pair, account) = test_fixture();
+
         // Ensure that when MaxMsgNum is 1, the resulting batch
         // consists of 5 smaller batches, each with a single message
         let messages = vec![
@@ -515,10 +484,12 @@ mod tests {
             },
         ];
 
+        let mut limited_config = config;
+        limited_config.max_msg_num = MaxMsgNum::new(1).unwrap();
+        limited_config.max_tx_size = MaxTxSize::default();
+
         let batches = batch_messages(
-            &config,
-            MaxMsgNum::new(1).unwrap(),
-            MaxTxSize::default(),
+            &limited_config,
             &key_pair,
             &account,
             &Memo::new("").unwrap(),
@@ -534,10 +505,9 @@ mod tests {
 
         // Ensure that when MaxMsgNum > the number of messages, the resulting
         // batch consists of a single smaller batch with all of the messages
+        limited_config.max_msg_num = MaxMsgNum::new(100).unwrap();
         let batches = batch_messages(
-            &config,
-            MaxMsgNum::new(100).unwrap(),
-            MaxTxSize::default(),
+            &limited_config,
             &key_pair,
             &account,
             &Memo::new("").unwrap(),
@@ -580,10 +550,12 @@ mod tests {
         ];
         let memo = Memo::new("").unwrap();
 
+        let mut limited_config = config.clone();
+        limited_config.max_msg_num = MaxMsgNum::default();
+        limited_config.max_tx_size = MaxTxSize::new(MAX_TX_SIZE).unwrap();
+
         let batches = batch_messages(
-            &config,
-            MaxMsgNum::default(),
-            MaxTxSize::new(MAX_TX_SIZE).unwrap(),
+            &limited_config,
             &key_pair,
             &account,
             &memo,
@@ -605,10 +577,9 @@ mod tests {
         // Ensure that when MaxTxSize > the size of all the messages, the
         // resulting batch consists of a single smaller batch with all of
         // messages inside
+        limited_config.max_tx_size = MaxTxSize::max();
         let batches = batch_messages(
-            &config,
-            MaxMsgNum::default(),
-            MaxTxSize::max(),
+            &limited_config,
             &key_pair,
             &account,
             &Memo::new("").unwrap(),
@@ -623,11 +594,10 @@ mod tests {
     #[test]
     #[should_panic(expected = "`max_msg_num` must be greater than or equal to 1, found 0")]
     fn test_max_msg_num_of_zero_panics() {
-        let (config, key_pair, account) = test_fixture();
+        let (mut config, key_pair, account) = test_fixture();
+        config.max_msg_num = MaxMsgNum::new(0).unwrap();
         let _batches = batch_messages(
             &config,
-            MaxMsgNum::new(0).unwrap(),
-            MaxTxSize::default(),
             &key_pair,
             &account,
             &Memo::new("").unwrap(),

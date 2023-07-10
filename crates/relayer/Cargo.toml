@@ -1,13 +1,13 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.22.0"
-edition.workspace = true
-license.workspace = true
+version      = "0.24.1"
+edition      = { workspace = true }
+license      = { workspace = true }
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-repository.workspace = true
-authors.workspace = true
-rust-version.workspace = true
+repository   = { workspace = true }
+authors      = { workspace = true }
+rust-version = { workspace = true }
 description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
@@ -17,57 +17,63 @@ all-features = true
 
 [features]
 default   = ["flex-error/std", "flex-error/eyre_tracer"]
-profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc-proto.workspace = true
-ibc-telemetry     = { version = "0.22.0", path = "../telemetry", optional = true }
-ibc-relayer-types = { version = "0.22.0", path = "../relayer-types", features = ["mocks"] }
+ibc-proto         = { version = "0.32.0" }
+ibc-telemetry     = { version = "0.24.1", path = "../telemetry", optional = true }
+ibc-relayer-types = { version = "0.24.1", path = "../relayer-types", features = ["mocks"] }
 
-subtle-encoding.workspace = true
-humantime-serde.workspace = true
-serde.workspace = true
-serde_derive.workspace = true
-thiserror.workspace = true
-toml.workspace = true
-tracing.workspace = true
-tokio = { workspace = true, features = ["rt-multi-thread", "time", "sync"] }
-serde_json.workspace = true
-bytes.workspace = true
-prost.workspace = true
-tonic = { workspace = true, features = ["tls", "tls-roots"] }
-futures.workspace = true
-crossbeam-channel.workspace = true
-hex.workspace = true
-bitcoin = { workspace = true, features = ["serde"] }
-tiny-bip39.workspace = true
-hdpath.workspace = true
-sha2.workspace = true
-tiny-keccak = { workspace = true, features = ["keccak"], default-features = false }
-ripemd.workspace = true
-bech32.workspace = true
-itertools.workspace = true
-dirs-next.workspace = true
-retry = { workspace = true, default-features = false }
-async-stream.workspace = true
-http.workspace = true
-flex-error = { workspace = true, default-features = false }
-signature.workspace = true
-anyhow.workspace = true
-semver.workspace = true
-humantime.workspace = true
-regex.workspace = true
-moka.workspace = true
-uuid = { workspace = true, features = ["v4"] }
-bs58.workspace = true
-digest.workspace = true
-ed25519.workspace = true
-ed25519-dalek = { workspace = true, features = ["serde"] }
-ed25519-dalek-bip32.workspace = true
-generic-array.workspace = true
-secp256k1 = { workspace = true, features = ["rand-std"] }
-strum = { workspace = true, features = ["derive"] }
+subtle-encoding         = { workspace = true }
+humantime-serde         = { workspace = true }
+serde                   = { workspace = true }
+serde_derive            = { workspace = true }
+thiserror               = { workspace = true }
+toml                    = { workspace = true }
+tracing                 = { workspace = true }
+tokio                   = { workspace = true, features = ["rt-multi-thread", "time", "sync"] }
+serde_json              = { workspace = true }
+bytes                   = { workspace = true }
+prost                   = { workspace = true }
+tonic                   = { workspace = true, features = ["tls", "tls-roots"] }
+futures                 = { workspace = true }
+crossbeam-channel       = { workspace = true }
+hex                     = { workspace = true }
+bitcoin                 = { workspace = true, features = ["serde"] }
+tiny-bip39              = { workspace = true }
+hdpath                  = { workspace = true }
+sha2                    = { workspace = true }
+tiny-keccak             = { workspace = true, features = ["keccak"], default-features = false }
+ripemd                  = { workspace = true }
+bech32                  = { workspace = true }
+itertools               = { workspace = true }
+dirs-next               = { workspace = true }
+retry                   = { workspace = true, default-features = false }
+async-stream            = { workspace = true }
+http                    = { workspace = true }
+flex-error              = { workspace = true, default-features = false }
+signature               = { workspace = true }
+anyhow                  = { workspace = true }
+semver                  = { workspace = true }
+humantime               = { workspace = true }
+regex                   = { workspace = true }
+moka                    = { workspace = true }
+uuid                    = { workspace = true, features = ["v4"] }
+bs58                    = { workspace = true }
+digest                  = { workspace = true }
+ed25519                 = { workspace = true }
+ed25519-dalek           = { workspace = true, features = ["serde"] }
+ed25519-dalek-bip32     = { workspace = true }
+generic-array           = { workspace = true }
+secp256k1               = { workspace = true, features = ["rand-std"] }
+strum                   = { workspace = true, features = ["derive"] }
+tokio-stream            = { workspace = true }
+once_cell               = { workspace = true }
+
+[dependencies.byte-unit]
+workspace = true
+default-features = false
+features = ["serde"]
 
 [dependencies.num-bigint]
 workspace = true
@@ -90,16 +96,16 @@ workspace = true
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
-[dependencies.tendermint-light-client-verifier]
+[dependencies.tendermint-light-client-detector]
 workspace = true
 default-features = false
 
 [dev-dependencies]
-ibc-relayer-types = { version = "0.22.0", path = "../relayer-types", features = ["mocks"] }
-serial_test.workspace = true
-env_logger.workspace = true
-tracing-subscriber = { workspace = true, features = ["fmt", "env-filter", "json"] }
-test-log = { workspace = true, features = ["trace"] }
+ibc-relayer-types       = { version = "0.24.1", path = "../relayer-types", features = ["mocks"] }
+serial_test             = { workspace = true }
+env_logger              = { workspace = true }
+tracing-subscriber      = { workspace = true, features = ["fmt", "env-filter", "json"] }
+test-log                = { workspace = true, features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen.workspace = true
+tendermint-testgen      = { workspace = true }

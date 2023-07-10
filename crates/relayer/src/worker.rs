@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 use core::fmt::{Display, Error as FmtError, Formatter};
-use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tracing::error;
@@ -126,19 +126,45 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 Ok(link) => {
                     let channel_ordering = link.a_to_b.channel().ordering;
                     let should_clear_on_start =
-                        packets_config.clear_on_start || channel_ordering == Order::Ordered;
+                        packets_config.clear_on_start || channel_ordering == Ordering::Ordered;
 
                     let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
                     let link = Arc::new(Mutex::new(link));
                     let resubmit = Resubmit::from_clear_interval(packets_config.clear_interval);
 
-                    let packet_task = packet::spawn_packet_cmd_worker(
-                        cmd_rx,
-                        link.clone(),
-                        should_clear_on_start,
-                        packets_config.clear_interval,
-                        path.clone(),
-                    );
+                    let src_chain_config =
+                        config.chains.iter().find(|chain| chain.id == chains.a.id());
+
+                    let fee_filter = match src_chain_config {
+                        Some(chain_config) => chain_config
+                            .packet_filter
+                            .min_fees
+                            .iter()
+                            .find(|(channel, _)| channel.matches(&path.src_channel_id))
+                            .map(|(_, filter)| filter)
+                            .cloned(),
+                        None => {
+                            error!("configuration for chain {} not found", chains.a.id());
+                            None
+                        }
+                    };
+
+                    // Only spawn the incentivized worker if a fee filter is specified in the configuration
+                    let packet_task = match fee_filter {
+                        Some(filter) => packet::spawn_incentivized_packet_cmd_worker(
+                            cmd_rx,
+                            link.clone(),
+                            path.clone(),
+                            filter,
+                        ),
+                        None => packet::spawn_packet_cmd_worker(
+                            cmd_rx,
+                            link.clone(),
+                            should_clear_on_start,
+                            packets_config.clear_interval,
+                            path.clone(),
+                        ),
+                    };
                     task_handles.push(packet_task);
 
                     let link_task = packet::spawn_packet_worker(path.clone(), link, resubmit);

@@ -1,14 +1,14 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "1.3.0"
-edition.workspace = true
-license.workspace = true
+version    = "1.5.1"
+edition    = { workspace = true }
+license    = { workspace = true }
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-homepage.workspace = true
-repository.workspace = true
-authors.workspace = true
-rust-version.workspace = true
+homepage   = { workspace = true }
+repository = { workspace = true }
+authors    = { workspace = true }
+rust-version = { workspace = true }
 description  = """
   Hermes is an IBC Relayer written in Rust
 """
@@ -18,43 +18,43 @@ default-run = "hermes"
 name = "hermes"
 
 [features]
-default     = ["telemetry", "rest-server", "std", "eyre_tracer",]
+default     = ["telemetry", "rest-server", "std", "eyre_tracer"]
 std         = ["flex-error/std"]
 eyre_tracer = ["flex-error/eyre_tracer"]
-profiling   = ["ibc-relayer/profiling"]
 telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc-relayer-types  = { version = "0.22.0", path = "../relayer-types", features = ["std", "clock"] }
-ibc-relayer        = { version = "0.22.0", path = "../relayer" }
-ibc-telemetry      = { version = "0.22.0", path = "../telemetry", optional = true }
-ibc-relayer-rest   = { version = "0.22.0", path = "../relayer-rest", optional = true }
-ibc-chain-registry = { version = "0.22.0" , path = "../chain-registry" }
+ibc-relayer-types  = { version = "0.24.1", path = "../relayer-types" }
+ibc-relayer        = { version = "0.24.1", path = "../relayer" }
+ibc-telemetry      = { version = "0.24.1", path = "../telemetry", optional = true }
+ibc-relayer-rest   = { version = "0.24.1", path = "../relayer-rest", optional = true }
+ibc-chain-registry = { version = "0.24.1" , path = "../chain-registry" }
 
-atty.workspace = true
-clap                     = { workspace = true, features = ["cargo"] }
-clap_complete.workspace = true            
-color-eyre.workspace = true
-console.workspace = true
-crossbeam-channel.workspace = true
-dialoguer.workspace = true
-dirs-next.workspace = true
-eyre.workspace = true
+atty                     = { workspace = true }
+chrono                   = { workspace = true }
+clap                     = { version = "3.2", features = ["cargo"] }
+clap_complete            = { workspace = true }
+color-eyre               = { workspace = true }
+console                  = { workspace = true }
+crossbeam-channel        = { workspace = true }
+dialoguer                = { workspace = true }
+dirs-next                = { workspace = true }
+eyre                     = { workspace = true }
 flex-error               = { workspace = true, default-features = false, features = ["std", "eyre_tracer"] }
-futures.workspace = true
-hdpath.workspace = true
-http.workspace = true
-humantime.workspace = true
-itertools.workspace = true
-oneline-eyre.workspace = true
-regex.workspace = true
+futures                  = { workspace = true }
+hdpath                   = { workspace = true }
+http                     = { workspace = true }
+humantime                = { workspace = true }
+itertools                = { workspace = true }
+oneline-eyre             = { workspace = true }
+regex                    = { workspace = true }
 serde                    = { workspace = true, features = ["serde_derive"] }
-serde_json.workspace = true
-signal-hook.workspace = true
-subtle-encoding.workspace = true
+serde_json               = { workspace = true }
+signal-hook              = { workspace = true }
+subtle-encoding          = { workspace = true }
 tokio                    = { workspace = true, features = ["full"] }
-tracing.workspace = true
+tracing                  = { workspace = true }
 tracing-subscriber       = { workspace = true, features = ["fmt", "env-filter", "json"]}
 
 [dependencies.tendermint]
@@ -76,3 +76,4 @@ features = ["options"]
 abscissa_core = { workspace = true, features = ["testing"] }
 once_cell.workspace = true
 regex.workspace = true
+serial_test.workspace = true

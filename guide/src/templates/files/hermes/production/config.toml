@@ -3,7 +3,7 @@ log_level = 'info'
 [mode.clients]
 enabled = true
 refresh = true
-misbehaviour = false
+misbehaviour = true
 
 [mode.connections]
 enabled = false
@@ -31,7 +31,7 @@ port = 3001
 id = 'cosmoshub-4'
 type = 'CosmosSdk'
 rpc_addr = 'https://rpc.cosmoshub.strange.love/'
-websocket_addr = 'wss://rpc.cosmoshub.strange.love/websocket'
+event_source = { mode = 'push', url = 'wss://rpc.cosmoshub.strange.love/websocket', batch_delay = '500ms' }
 grpc_addr = 'https://grpc-cosmoshub-ia.notional.ventures/'
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
@@ -70,7 +70,7 @@ derivation = 'cosmos'
 id = 'osmosis-1'
 type = 'CosmosSdk'
 rpc_addr = 'https://rpc.osmosis.interbloc.org/'
-websocket_addr = 'wss://rpc.osmosis.interbloc.org/websocket'
+event_source = { mode = 'push', url = 'wss://rpc.osmosis.interbloc.org/websocket', batch_delay = '500ms' }
 grpc_addr = 'https://grpc-osmosis-ia.notional.ventures/'
 rpc_timeout = '10s'
 account_prefix = 'osmo'

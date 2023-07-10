@@ -7,7 +7,7 @@
 use tracing::info;
 
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
 
@@ -22,6 +22,7 @@ use crate::framework::binary::chain::{
 use crate::framework::binary::connection::{
     BinaryConnectionTest, ConnectionDelayOverride, RunBinaryConnectionTest,
 };
+use crate::framework::binary::ics::run_binary_interchain_security_node_test;
 use crate::framework::binary::node::{
     run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
 };
@@ -81,6 +82,28 @@ where
     )))
 }
 
+pub fn run_binary_interchain_security_channel_test<Test, Overrides>(
+    test: &Test,
+) -> Result<(), Error>
+where
+    Test: BinaryChannelTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
+        + NodeGenesisOverride
+        + RelayerConfigOverride
+        + ClientOptionsOverride
+        + SupervisorOverride
+        + ConnectionDelayOverride
+        + PortsOverride
+        + ChannelOrderOverride
+        + ChannelVersionOverride,
+{
+    run_binary_interchain_security_node_test(&RunBinaryChainTest::new(
+        &RunBinaryConnectionTest::new(&RunBinaryChannelTest::new(&RunWithSupervisor::new(test))),
+    ))
+}
+
 /**
    This trait is implemented for test cases that need to have two
    full nodes running together with the relayer setup with chain
@@ -134,9 +157,9 @@ pub trait PortsOverride {
 */
 pub trait ChannelOrderOverride {
     /**
-       Return the channel ordering as [`Order`].
+       Return the channel ordering as [`Ordering`].
     */
-    fn channel_order(&self) -> Order;
+    fn channel_order(&self) -> Ordering;
 }
 
 /** Facility for overriding the channel version */
