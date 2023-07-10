@@ -82,6 +82,8 @@ impl Runnable for AutoCmd {
             .map(|n| &n.0)
             .cloned()
             .collect::<Vec<_>>();
+
+        println!("sorted_names: {:?}", sorted_names);
         
         let sorted_names_set: HashSet<String> = HashSet::from_iter(sorted_names.iter().cloned());
 
@@ -115,7 +117,10 @@ impl Runnable for AutoCmd {
             .collect();
 
         // Determine which chains were not fetched
-        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id.id.clone()));
+        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id.name()));
+
+        println!("fetched_chains_set: {:?}", fetched_chains_set); 
+
         let missing_chains_set: HashSet<_> = sorted_names_set.difference(&fetched_chains_set).collect();
 
         let configs_and_keys = chain_configs

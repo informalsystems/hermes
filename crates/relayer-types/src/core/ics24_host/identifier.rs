@@ -18,7 +18,7 @@ use crate::core::ics24_host::error::ValidationError;
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(from = "tendermint::chain::Id", into = "tendermint::chain::Id")]
 pub struct ChainId {
-    pub id: String,
+    id: String,
     version: u64,
 }
 
@@ -62,6 +62,16 @@ impl ChainId {
     /// Extract the version from this chain identifier.
     pub fn version(&self) -> u64 {
         self.version
+    }
+
+    /// Extract the chain name from this chain identifier. The chain name
+    /// consists of the first part of the identifier, before the dash.
+    pub fn name(&self) -> String {
+        self.id
+            .split('-')
+            .take(1)
+            .collect::<Vec<_>>()
+            .join("")
     }
 
     /// Extract the version from the given chain identifier.
