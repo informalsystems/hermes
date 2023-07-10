@@ -8,8 +8,6 @@ use core::{
 };
 use futures::future::join_all;
 use num_bigint::BigInt;
-use serde_derive::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
 use std::{cmp::Ordering, thread};
 
 use tokio::runtime::Runtime as TokioRuntime;
@@ -109,6 +107,8 @@ use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
 
+use self::types::app_state::GenesisAppState;
+
 pub mod batch;
 pub mod client;
 pub mod compatibility;
@@ -153,28 +153,6 @@ pub struct CosmosSdkChain {
     account: Option<Account>,
 
     tx_monitor_cmd: Option<TxEventSourceCmd>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct GenesisAppState {
-    ibc: IbcConfig,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct IbcConfig {
-    connection_genesis: ConnectionGenesisConfig,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct ConnectionGenesisConfig {
-    params: ConnectionGenesisParams,
-}
-
-#[serde_as]
-#[derive(Debug, Deserialize, Serialize)]
-struct ConnectionGenesisParams {
-    #[serde_as(as = "DisplayFromStr")]
-    max_expected_time_per_block: u64,
 }
 
 impl CosmosSdkChain {
@@ -307,17 +285,14 @@ impl CosmosSdkChain {
             ));
         }
 
+        // Query /genesis RPC endpoint to retrieve the `max_expected_time_per_block` value
+        // to use as `max_block_time`.
+        // If it is not found, keep the configured `max_block_time`.
         match self.block_on(self.rpc_client.genesis::<GenesisAppState>()) {
             Ok(genesis_reponse) => {
                 let old_max_block_time = self.config.max_block_time;
-                self.config.max_block_time = Duration::from_nanos(
-                    genesis_reponse
-                        .app_state
-                        .ibc
-                        .connection_genesis
-                        .params
-                        .max_expected_time_per_block,
-                );
+                self.config.max_block_time =
+                    Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
                 info!(
                     "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
                     old_max_block_time.as_secs(),
