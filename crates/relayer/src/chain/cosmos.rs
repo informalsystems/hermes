@@ -13,7 +13,7 @@ use std::{cmp::Ordering, thread};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{error, instrument, trace, warn};
+use tracing::{error, info, instrument, trace, warn};
 
 use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
@@ -107,6 +107,8 @@ use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
 
+use self::types::app_state::GenesisAppState;
+
 pub mod batch;
 pub mod client;
 pub mod compatibility;
@@ -190,7 +192,7 @@ impl CosmosSdkChain {
     ///
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
-    pub fn validate_params(&self) -> Result<(), Error> {
+    pub fn validate_params(&mut self) -> Result<(), Error> {
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = self.trusting_period(unbonding_period);
 
@@ -281,6 +283,28 @@ impl CosmosSdkChain {
                 self.id().clone(),
                 gas_multiplier,
             ));
+        }
+
+        // Query /genesis RPC endpoint to retrieve the `max_expected_time_per_block` value
+        // to use as `max_block_time`.
+        // If it is not found, keep the configured `max_block_time`.
+        match self.block_on(self.rpc_client.genesis::<GenesisAppState>()) {
+            Ok(genesis_reponse) => {
+                let old_max_block_time = self.config.max_block_time;
+                self.config.max_block_time =
+                    Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
+                info!(
+                    "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
+                    old_max_block_time.as_secs(),
+                    self.config.max_block_time.as_secs()
+                );
+            }
+            Err(e) => {
+                warn!(
+                    "Will use fallback value for max_block_time: `{}s`. Error: {e}",
+                    self.config.max_block_time.as_secs()
+                );
+            }
         }
 
         Ok(())
@@ -965,7 +989,7 @@ impl ChainEndpoint for CosmosSdkChain {
     /// Emits a log warning in case anything is amiss.
     /// Exits early if any health check fails, without doing any
     /// further checks.
-    fn health_check(&self) -> Result<HealthCheck, Error> {
+    fn health_check(&mut self) -> Result<HealthCheck, Error> {
         if let Err(e) = do_health_check(self) {
             warn!("Health checkup for chain '{}' failed", self.id());
             warn!("    Reason: {}", e.detail());
