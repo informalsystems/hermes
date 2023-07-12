@@ -31,7 +31,6 @@ ibc-telemetry      = { version = "0.25.0", path = "../telemetry", optional = tru
 ibc-relayer-rest   = { version = "0.25.0", path = "../relayer-rest", optional = true }
 ibc-chain-registry = { version = "0.25.0" , path = "../chain-registry" }
 
-chrono = "0.4.24"
 clap                     = { version = "3.2", features = ["cargo"] }
 clap_complete            = "3.2"
 color-eyre               = "0.6"
@@ -55,6 +54,7 @@ subtle-encoding          = "0.5"
 tokio                    = { version = "1.0", features = ["full"] }
 tracing                  = "0.1.36"
 tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
+time                     = "0.3"
 
 [dependencies.tendermint]
 version = "0.32.0"

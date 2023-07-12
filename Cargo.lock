@@ -66,21 +66,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "android-tzdata"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e999941b234f3131b00bc13c22d06e8c5ff726d1b6318ac7eb276997bbb4fef0"
-
-[[package]]
-name = "android_system_properties"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "819e7219dbd41043ac279b19830f2efc897156490d7fd6ea916720117ee66311"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "anyhow"
 version = "1.0.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -412,21 +397,6 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
-
-[[package]]
-name = "chrono"
-version = "0.4.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec837a71355b28f6556dbd569b37b3f363091c0bd4b2e735674521b4c5fd9bc5"
-dependencies = [
- "android-tzdata",
- "iana-time-zone",
- "js-sys",
- "num-traits",
- "time 0.1.45",
- "wasm-bindgen",
- "winapi",
-]
 
 [[package]]
 name = "clap"
@@ -1434,29 +1404,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "iana-time-zone"
-version = "0.1.57"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fad5b825842d2b38bd206f3e81d6957625fd7f0a361e345c30e01a0ae2dd613"
-dependencies = [
- "android_system_properties",
- "core-foundation-sys",
- "iana-time-zone-haiku",
- "js-sys",
- "wasm-bindgen",
- "windows",
-]
-
-[[package]]
-name = "iana-time-zone-haiku"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f31827a206f56af32e590ba56d5d2d085f558508192593743f16b2306495269f"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "ibc-chain-registry"
 version = "0.25.0"
 dependencies = [
@@ -1487,7 +1434,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "time 0.3.22",
+ "time",
  "toml 0.7.6",
  "tonic",
 ]
@@ -1580,7 +1527,6 @@ name = "ibc-relayer-cli"
 version = "1.6.0"
 dependencies = [
  "abscissa_core",
- "chrono",
  "clap",
  "clap_complete",
  "color-eyre",
@@ -1611,6 +1557,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-rpc",
+ "time",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -1658,7 +1605,7 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
- "time 0.3.22",
+ "time",
  "tracing",
  "tracing-subscriber",
  "uint",
@@ -3297,24 +3244,24 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "strum"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
 dependencies = [
  "strum_macros",
 ]
 
 [[package]]
 name = "strum_macros"
-version = "0.24.3"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
+checksum = "6069ca09d878a33f883cc06aaa9718ede171841d3832450354410b718b097232"
 dependencies = [
  "heck",
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 1.0.109",
+ "syn 2.0.25",
 ]
 
 [[package]]
@@ -3425,7 +3372,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.3.22",
+ "time",
  "zeroize",
 ]
 
@@ -3463,7 +3410,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-rpc",
- "time 0.3.22",
+ "time",
  "tokio",
  "tracing",
 ]
@@ -3488,7 +3435,7 @@ dependencies = [
  "tendermint-light-client",
  "tendermint-proto",
  "tendermint-rpc",
- "time 0.3.22",
+ "time",
  "tracing",
 ]
 
@@ -3502,7 +3449,7 @@ dependencies = [
  "flex-error",
  "serde",
  "tendermint",
- "time 0.3.22",
+ "time",
 ]
 
 [[package]]
@@ -3520,7 +3467,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time 0.3.22",
+ "time",
 ]
 
 [[package]]
@@ -3551,7 +3498,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
- "time 0.3.22",
+ "time",
  "tokio",
  "tracing",
  "url",
@@ -3572,7 +3519,7 @@ dependencies = [
  "simple-error",
  "tempfile",
  "tendermint",
- "time 0.3.22",
+ "time",
 ]
 
 [[package]]
@@ -3629,17 +3576,6 @@ checksum = "3fdd6f064ccff2d6567adcb3873ca630700f00b5ad3f060c25b5dcfd9a4ce152"
 dependencies = [
  "cfg-if 1.0.0",
  "once_cell",
-]
-
-[[package]]
-name = "time"
-version = "0.1.45"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b797afad3f312d1c66a56d11d0316f916356d11bd158fbc6ca6389ff6bf805a"
-dependencies = [
- "libc",
- "wasi 0.10.0+wasi-snapshot-preview1",
- "winapi",
 ]
 
 [[package]]
@@ -4199,12 +4135,6 @@ checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
 name = "wasi"
-version = "0.10.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
-
-[[package]]
-name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
@@ -4353,15 +4283,6 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
-
-[[package]]
-name = "windows"
-version = "0.48.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e686886bc078bc1b0b600cac0147aadb815089b6e4da64016cbd754b6342700f"
-dependencies = [
- "windows-targets 0.48.1",
-]
 
 [[package]]
 name = "windows-sys"
