@@ -16,6 +16,7 @@ pub trait CanBuildUpdateClientPayload<Counterparty>:
 {
     async fn build_update_client_payload(
         &self,
+        trusted_height: &Self::Height,
         target_height: &Self::Height,
         client_state: Self::ClientState,
     ) -> Result<Self::UpdateClientPayload, Self::Error>;

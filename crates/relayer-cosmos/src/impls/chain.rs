@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
+use core::iter;
 use eyre::eyre;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
@@ -17,6 +18,7 @@ use ibc_relayer::event::{
     connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
     extract_packet_and_write_ack_from_tx,
 };
+use ibc_relayer::light_client::AnyHeader;
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
@@ -30,8 +32,10 @@ use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_runtime::tokio::logger::value::LogValue;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
+use ibc_relayer_types::clients::ics07_tendermint::header::Header as TendermintHeader;
 use ibc_relayer_types::core::ics02_client::events::CLIENT_ID_ATTRIBUTE_KEY;
 use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
+use ibc_relayer_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -221,11 +225,15 @@ where
 
     type OutgoingPacket = Packet;
 
+    type ClientState = ClientState;
+
     type CreateClientPayloadOptions = ClientSettings;
 
     type CreateClientPayload = (ClientState, ConsensusState);
 
     type CreateClientEvent = CosmosCreateClientEvent;
+
+    type UpdateClientPayload = Vec<TendermintHeader>;
 
     type ConnectionVersion = ConnectionVersion;
 
@@ -816,6 +824,68 @@ where
             })
             .await
             .map_err(BaseError::join)?
+    }
+
+    async fn build_update_client_payload(
+        &self,
+        trusted_height: &Height,
+        target_height: &Height,
+        client_state: ClientState,
+    ) -> Result<Vec<TendermintHeader>, Self::Error> {
+        let trusted_height = *trusted_height;
+        let target_height = *target_height;
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let (header, support) = chain_handle
+                    .build_header(
+                        trusted_height,
+                        target_height,
+                        AnyClientState::Tendermint(client_state),
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                let headers = iter::once(header)
+                    .chain(support.into_iter())
+                    .map(|header| match header {
+                        AnyHeader::Tendermint(header) => Ok(header),
+                        _ => Err(BaseError::generic(eyre!("expect tendermint header")).into()),
+                    })
+                    .collect::<Result<Vec<TendermintHeader>, Error>>()?;
+
+                Ok(headers)
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
+    async fn build_update_client_message(
+        &self,
+        client_id: &ClientId,
+        headers: Vec<TendermintHeader>,
+    ) -> Result<Vec<Self::Message>, Self::Error> {
+        let messages = headers
+            .into_iter()
+            .map(|header| {
+                let client_id = client_id.clone();
+                let message = CosmosIbcMessage::new(None, move |signer| {
+                    let message = MsgUpdateClient {
+                        client_id: client_id.clone(),
+                        header: header.clone().into(),
+                        signer: signer.clone(),
+                    };
+
+                    Ok(message.to_any())
+                });
+
+                message
+            })
+            .collect();
+
+        Ok(messages)
     }
 
     async fn build_connection_open_try_payload(

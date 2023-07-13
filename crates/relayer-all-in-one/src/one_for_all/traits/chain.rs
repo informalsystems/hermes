@@ -170,11 +170,15 @@ where
     */
     type OutgoingPacket: Async;
 
+    type ClientState: Async;
+
     type CreateClientPayloadOptions: Async;
 
     type CreateClientPayload: Async;
 
     type CreateClientEvent: Async;
+
+    type UpdateClientPayload: Async;
 
     type ConnectionDetails: Async;
 
@@ -338,6 +342,19 @@ where
         &self,
         counterparty_payload: Counterparty::CreateClientPayload,
     ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_update_client_payload(
+        &self,
+        trusted_height: &Self::Height,
+        target_height: &Self::Height,
+        client_state: Self::ClientState,
+    ) -> Result<Self::UpdateClientPayload, Self::Error>;
+
+    async fn build_update_client_message(
+        &self,
+        client_id: &Self::ClientId,
+        payload: Counterparty::UpdateClientPayload,
+    ) -> Result<Vec<Self::Message>, Self::Error>;
 
     async fn build_connection_open_init_payload(
         &self,
