@@ -1570,7 +1570,6 @@ name = "ibc-relayer-cli"
 version = "1.5.1"
 dependencies = [
  "abscissa_core",
- "atty",
  "chrono",
  "clap",
  "clap_complete",
