@@ -150,10 +150,10 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
         channel.flipped().build_chan_upgrade_open_and_send()?;
 
         assert_eventually_channel_upgrade_open(
-            &chains.handle_b,
             &chains.handle_a,
-            &channels.channel_id_b.as_ref(),
-            &channels.port_b.as_ref(),
+            &chains.handle_b,
+            &channels.channel_id_a.as_ref(),
+            &channels.port_a.as_ref(),
             &upgraded_attrs,
         )?;
 
