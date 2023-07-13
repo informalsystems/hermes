@@ -1,13 +1,15 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
 use eyre::eyre;
+use ibc_proto::ibc::core::channel::v1::query_client::QueryClient as ChannelQueryClient;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, Qualified, QueryChannelRequest, QueryConnectionRequest,
-    QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
+    QueryConsensusStateRequest, QueryHeight, QueryPacketCommitmentsRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::connection::ConnectionMsgType;
@@ -64,6 +66,7 @@ use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
+use tonic::Request;
 
 use crate::contexts::chain::CosmosChain;
 use crate::types::channel::{
@@ -598,6 +601,38 @@ where
             })
             .await
             .map_err(BaseError::join)?
+    }
+
+    async fn query_packet_commitments(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+    ) -> Result<Vec<Sequence>, Error> {
+        let mut client =
+            ChannelQueryClient::connect(self.tx_context.tx_context.tx_config.grpc_address.clone())
+                .await
+                .map_err(BaseError::grpc_transport)?;
+
+        let raw_request = QueryPacketCommitmentsRequest {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            pagination: None,
+        };
+
+        let request = Request::new(raw_request.into());
+
+        let response = client
+            .packet_commitments(request)
+            .await
+            .map_err(|e| BaseError::grpc_status(e, "query_packet_commitments".to_owned()))?
+            .into_inner();
+
+        let commitment_sequences: Vec<Sequence> = response
+            .commitments
+            .into_iter()
+            .map(|packet_state| packet_state.sequence.into())
+            .collect();
+        Ok(commitment_sequences)
     }
 
     /// Construct a receive packet to be sent to a destination Cosmos

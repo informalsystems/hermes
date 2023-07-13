@@ -13,6 +13,8 @@ use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::Error as TendermintRpcError;
 use tokio::task::JoinError;
+use tonic::transport::Error as TransportError;
+use tonic::Status as GrpcStatus;
 
 pub type Error = Arc<BaseError>;
 
@@ -76,5 +78,13 @@ define_error! {
         Join
             [ TraceError<JoinError> ]
             | _ | { "error joining tokio tasks" },
+
+        GrpcTransport
+            [ TraceError<TransportError> ]
+            |_| { "error in underlying transport when making gRPC call" },
+
+        GrpcStatus
+            { status: GrpcStatus, query: String }
+            |e| { format!("gRPC call `{}` failed with status: {1}", e.query, e.status) },
     }
 }

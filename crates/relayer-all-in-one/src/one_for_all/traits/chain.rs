@@ -310,6 +310,12 @@ where
         packet: &Self::IncomingPacket,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
 
+    async fn query_packet_commitments(
+        &self,
+        channel_id: &Self::ChannelId,
+        port_id: &Self::PortId,
+    ) -> Result<Vec<Self::Sequence>, Self::Error>;
+
     async fn build_receive_packet_message(
         &self,
         height: &Self::Height,
