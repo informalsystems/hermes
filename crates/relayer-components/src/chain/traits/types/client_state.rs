@@ -7,7 +7,3 @@ pub trait HasClientStateType<Counterparty>: HasIbcChainTypes<Counterparty> {
     */
     type ClientState: Async;
 }
-
-pub trait HasClientStateSettingsType<Counterparty>: HasClientStateType<Counterparty> {
-    type ClientStateSettings: Async;
-}
