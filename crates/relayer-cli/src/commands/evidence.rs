@@ -64,25 +64,26 @@ impl Runnable for EvidenceCmd {
 fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> eyre::Result<()> {
     let subscription = chain.subscribe()?;
 
-    // check previous blocks for equivocation that may have been missed
-    // let tm_latest_height = chain
-    //     .rpc_client
-    //     .status()
-    //     .await?
-    //     .sync_info
-    //     .latest_block_height;
-    //
-    // let latest_height = Height::new(chain.id().version(), tm_latest_height.value()).unwrap();
-    // let num_blocks = min(tm_latest_height.value(), 100);
-    // let mut height = latest_height;
-    //
-    // for _height in 0..num_blocks - 1 {
-    //     debug!("trying to check for evidence at height {height}");
-    //
-    //     equivocation_handling(&chain, height).await?;
-    //
-    //     height = height.decrement().unwrap();
-    // }
+    // Check previous blocks for equivocation that may have been missed
+    let tm_latest_height = rt
+        .block_on(chain.rpc_client.status())?
+        .sync_info
+        .latest_block_height;
+
+    let latest_height = Height::new(chain.id().version(), tm_latest_height.value()).unwrap();
+    let num_blocks = std::cmp::min(tm_latest_height.value(), 100);
+    let mut height = latest_height;
+
+    for _block in 0..num_blocks - 1 {
+        debug!("trying to check for evidence at height {height}");
+
+        let result = check_misbehaviour_at(rt.clone(), &chain, height);
+        if let Err(e) = result {
+            warn!("error while checking for misbehaviour at height {height}: {e}");
+        }
+
+        height = height.decrement().unwrap();
+    }
 
     // process new block events
     while let Ok(event_batch) = subscription.recv() {
