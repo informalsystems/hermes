@@ -316,6 +316,13 @@ where
         port_id: &Self::PortId,
     ) -> Result<Vec<Self::Sequence>, Self::Error>;
 
+    async fn query_unreceived_packet_sequences(
+        &self,
+        channel_id: &Self::ChannelId,
+        port_id: &Self::PortId,
+        sequences: &[Counterparty::Sequence],
+    ) -> Result<(Vec<Self::Sequence>, Self::Height), Self::Error>;
+
     async fn build_receive_packet_message(
         &self,
         height: &Self::Height,

@@ -7,6 +7,7 @@ use ibc_relayer::foreign_client::ForeignClientError;
 use ibc_relayer::spawn::SpawnError;
 use ibc_relayer::supervisor::error::Error as SupervisorError;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
 use prost::EncodeError;
 use tendermint::Hash as TxHash;
@@ -86,5 +87,13 @@ define_error! {
         GrpcStatus
             { status: GrpcStatus, query: String }
             |e| { format!("gRPC call `{}` failed with status: {1}", e.query, e.status) },
+
+        MissingHeight
+            { query: String }
+            | e | { format_args!("height from query `{}` is missing", e.query) },
+
+        Ics02
+            [ ClientError ]
+            |e| { format!("ICS 02 error: {}", e.source) },
     }
 }
