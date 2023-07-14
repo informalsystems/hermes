@@ -85,16 +85,6 @@ pub trait OfaRelay: Async {
 
     fn dst_chain(&self) -> &OfaChainWrapper<Self::DstChain>;
 
-    async fn build_src_update_client_messages(
-        &self,
-        height: &<Self::DstChain as OfaChain>::Height,
-    ) -> Result<Vec<<Self::SrcChain as OfaChain>::Message>, Self::Error>;
-
-    async fn build_dst_update_client_messages(
-        &self,
-        height: &<Self::SrcChain as OfaChain>::Height,
-    ) -> Result<Vec<<Self::DstChain as OfaChain>::Message>, Self::Error>;
-
     async fn try_acquire_packet_lock<'a>(
         &'a self,
         packet: &'a Self::Packet,

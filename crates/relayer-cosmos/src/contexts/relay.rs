@@ -4,12 +4,11 @@ use alloc::sync::Arc;
 use futures::lock::Mutex;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
-use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
 
 use crate::contexts::chain::CosmosChain;
 use crate::types::batch::CosmosBatchSender;
@@ -22,8 +21,8 @@ where
     pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
     pub src_chain: OfaChainWrapper<CosmosChain<SrcChain>>,
     pub dst_chain: OfaChainWrapper<CosmosChain<DstChain>>,
-    pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
-    pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
+    pub src_client_id: ClientId,
+    pub dst_client_id: ClientId,
     pub packet_filter: PacketFilter,
     pub packet_lock_mutex: Arc<Mutex<HashSet<(ChannelId, PortId, ChannelId, PortId, Sequence)>>>,
     pub src_chain_message_batch_sender: CosmosBatchSender,
@@ -39,8 +38,8 @@ where
         runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
         src_chain: OfaChainWrapper<CosmosChain<SrcChain>>,
         dst_chain: OfaChainWrapper<CosmosChain<DstChain>>,
-        src_to_dst_client: ForeignClient<DstChain, SrcChain>,
-        dst_to_src_client: ForeignClient<SrcChain, DstChain>,
+        src_client_id: ClientId,
+        dst_client_id: ClientId,
         packet_filter: PacketFilter,
         src_chain_message_batch_sender: CosmosBatchSender,
         dst_chain_message_batch_sender: CosmosBatchSender,
@@ -49,8 +48,8 @@ where
             runtime,
             src_chain,
             dst_chain,
-            src_to_dst_client,
-            dst_to_src_client,
+            src_client_id,
+            dst_client_id,
             packet_filter,
             src_chain_message_batch_sender,
             dst_chain_message_batch_sender,
