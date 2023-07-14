@@ -3,13 +3,14 @@ use async_trait::async_trait;
 use eyre::eyre;
 use ibc_proto::ibc::core::channel::v1::query_client::QueryClient as ChannelQueryClient;
 use ibc_relayer::chain::client::ClientSettings;
+use ibc_relayer::chain::cosmos::query::packet_query;
 use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, Qualified, QueryChannelRequest, QueryConnectionRequest,
     QueryConsensusStateRequest, QueryHeight, QueryPacketCommitmentsRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryPacketEventDataRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::connection::ConnectionMsgType;
@@ -59,13 +60,14 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
-use ibc_relayer_types::events::{IbcEvent, IbcEventType};
+use ibc_relayer_types::events::{IbcEvent, IbcEventType, WithBlockDataType};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
+use tendermint_rpc::{Client, Order};
 use tonic::Request;
 
 use crate::contexts::chain::CosmosChain;
@@ -667,6 +669,53 @@ where
         let height = raw_height.try_into().map_err(BaseError::ics02)?;
         let response_sequences = response.sequences.into_iter().map(|s| s.into()).collect();
         Ok((response_sequences, height))
+    }
+
+    async fn query_unreceived_packet_events(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_channel_id: &ChannelId,
+        counterparty_port_id: &PortId,
+        sequences: &[Sequence],
+        height: &Height,
+    ) -> Result<Vec<SendPacket>, Self::Error> {
+        let request = QueryPacketEventDataRequest {
+            event_id: WithBlockDataType::SendPacket,
+            source_channel_id: channel_id.clone(),
+            source_port_id: port_id.clone(),
+            destination_channel_id: counterparty_channel_id.clone(),
+            destination_port_id: counterparty_port_id.clone(),
+            sequences: sequences.to_vec(),
+            height: Qualified::SmallerEqual(QueryHeight::Specific(*height)),
+        };
+        let mut events = vec![];
+        for sequence in sequences.iter() {
+            let query = packet_query(&request, *sequence);
+            let response = self
+                .tx_context
+                .tx_context
+                .rpc_client
+                .tx_search(query, false, 1, 10, Order::Descending)
+                .await
+                .unwrap();
+            for tx in response.txs.iter() {
+                let mut event = tx
+                    .tx_result
+                    .events
+                    .iter()
+                    .map(|event| Arc::new(event.clone()))
+                    .collect();
+                events.append(&mut event);
+            }
+        }
+        let send_packet_events = events
+            .iter()
+            .filter_map(
+                <Self as OfaIbcChain<CosmosChain<Counterparty>>>::try_extract_send_packet_event,
+            )
+            .collect();
+        Ok(send_packet_events)
     }
 
     /// Construct a receive packet to be sent to a destination Cosmos
