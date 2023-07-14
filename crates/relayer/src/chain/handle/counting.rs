@@ -503,4 +503,9 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inc_metric("query_incentivized_packet");
         self.inner.query_incentivized_packet(request)
     }
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+        self.inc_metric("query_consumer_chains");
+        self.inner.query_consumer_chains()
+    }
 }

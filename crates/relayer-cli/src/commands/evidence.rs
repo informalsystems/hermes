@@ -1,4 +1,6 @@
 use alloc::sync::Arc;
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::spawn::spawn_chain_runtime;
 use std::collections::HashMap;
 use std::ops::Deref;
 
@@ -139,8 +141,10 @@ fn handle_light_client_attack(
     chain: &CosmosSdkChain,
     lc: LightClientAttackEvidence,
 ) -> eyre::Result<()> {
+    let config = app_config();
+
     // Build the two headers to submit as part of the `MsgSubmitMisbehaviour` message.
-    let (header1, header2) = build_evidence_headers(rt.clone(), chain, lc)?;
+    let (header1, header2) = build_evidence_headers(rt.clone(), chain, lc.clone())?;
 
     // Fetch all the counterparty clients of this chain.
     let counterparty_clients = fetch_all_counterparty_clients(chain)?;
@@ -156,28 +160,37 @@ fn handle_light_client_attack(
             header2: header2.clone(),
         };
 
+        if !chains.contains_key(chain.id()) {
+            let chain_handle =
+                spawn_chain_runtime::<BaseChainHandle>(&config, chain.id(), Arc::clone(&rt))?;
+
+            chains.insert(chain.id().clone(), chain_handle);
+        }
+
         if !chains.contains_key(&counterparty_chain_id) {
-            let chain = spawn_chain_by_id(rt.clone(), &counterparty_chain_id)?;
-            chains.insert(counterparty_chain_id.clone(), chain);
+            let chain_handle = spawn_chain_runtime::<BaseChainHandle>(
+                &config,
+                &counterparty_chain_id,
+                Arc::clone(&rt),
+            )?;
+
+            chains.insert(counterparty_chain_id.clone(), chain_handle);
         };
 
-        let counterparty_chain = chains
-            .get_mut(&counterparty_chain_id)
-            .ok_or_else(|| eyre::eyre!("failed to spawn chain {counterparty_chain_id}"))?;
+        let chain_handle = chains.get(chain.id()).unwrap();
+        let counterparty_chain_handle = chains.get(&counterparty_chain_id).unwrap();
 
-        let mut msgs = vec![];
+        let counterparty_client = ForeignClient::restore(
+            counterparty_client_id.clone(),
+            counterparty_chain_handle.clone(),
+            chain_handle.clone(),
+        );
 
-        // let counterparty_client = ForeignClient::restore(
-        //     counterparty_client_id.clone(),
-        //     counterparty_chain,
-        //     chain,
-        // );
-        //
-        // let common_height = Height::from_tm(lc.common_height.clone(), chain.id());
-        // let mut client_msgs = counterparty_client.wait_and_build_update_client(common_height)?;
-        // msgs.extend(client_msgs);
+        // Build client update for the common header
+        let common_height = Height::from_tm(lc.common_height, chain.id());
+        let mut msgs = counterparty_client.wait_and_build_update_client(common_height)?;
 
-        let signer = counterparty_chain.get_signer()?;
+        let signer = counterparty_chain_handle.get_signer()?;
 
         // If the misbehaving chain is a CCV consumer chain,
         // then try fetch the consumer chains of the counterparty chains.
@@ -185,7 +198,7 @@ fn handle_light_client_attack(
         // Otherwise, check if the misbehaving chain is a consumer of the counterparty chain,
         // which is definitely a provider.
         let counterparty_is_provider = if chain.config().ccv_consumer_chain {
-            let consumer_chains = counterparty_chain
+            let consumer_chains = counterparty_chain_handle
                 .query_consumer_chains()
                 .unwrap_or_default(); // If the query fails, use an empty list of consumers
 
@@ -195,7 +208,7 @@ fn handle_light_client_attack(
             // use the standard message for other clients?
             consumer_chains
                 .iter()
-                .any(|(chain_id, _client_id)| chain_id == chain.id())
+                .any(|(chain_id, _)| chain_id == chain.id())
         } else {
             false
         };
@@ -222,7 +235,7 @@ fn handle_light_client_attack(
         msgs.push(msg_misbehaviour);
 
         let tracked_msgs = TrackedMsgs::new_static(msgs, "submit_misbehaviour");
-        let responses = counterparty_chain.send_messages_and_wait_check_tx(tracked_msgs)?;
+        let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
 
         for response in responses {
             if response.code.is_ok() {
@@ -236,28 +249,6 @@ fn handle_light_client_attack(
     }
 
     Ok(())
-}
-
-fn spawn_chain_by_id(
-    rt: Arc<TokioRuntime>,
-    counterparty_chain_id: &ChainId,
-) -> Result<CosmosSdkChain, eyre::ErrReport> {
-    let config = app_config();
-
-    let chain_config = config
-        .find_chain(counterparty_chain_id)
-        .cloned()
-        .ok_or_else(|| eyre::eyre!("cannot find chain config for chain {counterparty_chain_id}"))?;
-
-    if chain_config.r#type != ChainType::CosmosSdk {
-        return Err(eyre::eyre!(
-            "chain {counterparty_chain_id} is not a Cosmos SDK chain"
-        ));
-    }
-
-    let chain = CosmosSdkChain::bootstrap(chain_config, rt)?;
-
-    Ok(chain)
 }
 
 /// Fetch all the counterparty clients of the given chain.
