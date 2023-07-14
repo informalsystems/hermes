@@ -356,6 +356,12 @@ where
         payload: Counterparty::UpdateClientPayload,
     ) -> Result<Vec<Self::Message>, Self::Error>;
 
+    async fn find_consensus_state_height_before(
+        &self,
+        client_id: &Self::ClientId,
+        target_height: &Counterparty::Height,
+    ) -> Result<Counterparty::Height, Self::Error>;
+
     async fn build_connection_open_init_payload(
         &self,
     ) -> Result<Self::ConnectionOpenInitPayload, Self::Error>;

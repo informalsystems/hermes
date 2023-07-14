@@ -7,8 +7,9 @@ use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    IncludeProof, Qualified, QueryChannelRequest, QueryConnectionRequest,
-    QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
+    IncludeProof, PageRequest, Qualified, QueryChannelRequest, QueryConnectionRequest,
+    QueryConsensusStateHeightsRequest, QueryConsensusStateRequest, QueryHeight,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::connection::ConnectionMsgType;
@@ -886,6 +887,49 @@ where
             .collect();
 
         Ok(messages)
+    }
+
+    async fn find_consensus_state_height_before(
+        &self,
+        client_id: &ClientId,
+        target_height: &Height,
+    ) -> Result<Height, Error> {
+        let client_id = client_id.clone();
+        let target_height = *target_height;
+
+        let chain_handle = self.handle.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let heights = {
+                    let mut heights = chain_handle
+                        .query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+                            client_id,
+                            pagination: Some(PageRequest::all()),
+                        })
+                        .map_err(BaseError::relayer)?;
+
+                    heights.sort_by_key(|&h| core::cmp::Reverse(h));
+
+                    heights
+                };
+
+                let height = heights
+                    .into_iter()
+                    .find(|height| height < &target_height)
+                    .ok_or_else(|| {
+                        BaseError::generic(eyre!(
+                            "no consensus state found that is smaller than target height {}",
+                            target_height
+                        ))
+                    })?;
+
+                Ok(height)
+            })
+            .await
+            .map_err(BaseError::join)?
     }
 
     async fn build_connection_open_try_payload(
