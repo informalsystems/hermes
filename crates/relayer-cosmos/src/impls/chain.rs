@@ -671,7 +671,7 @@ where
         Ok((response_sequences, height))
     }
 
-    async fn query_unreceived_packet_events(
+    async fn query_unreceived_packets(
         &self,
         channel_id: &ChannelId,
         port_id: &PortId,
@@ -679,7 +679,7 @@ where
         counterparty_port_id: &PortId,
         sequences: &[Sequence],
         height: &Height,
-    ) -> Result<Vec<SendPacket>, Self::Error> {
+    ) -> Result<Vec<Packet>, Self::Error> {
         let request = QueryPacketEventDataRequest {
             event_id: WithBlockDataType::SendPacket,
             source_channel_id: channel_id.clone(),
@@ -709,13 +709,14 @@ where
                 events.append(&mut event);
             }
         }
-        let send_packet_events = events
+        let send_packet_events: Vec<SendPacket> = events
             .iter()
             .filter_map(
                 <Self as OfaIbcChain<CosmosChain<Counterparty>>>::try_extract_send_packet_event,
             )
             .collect();
-        Ok(send_packet_events)
+        let send_packets: Vec<Packet> = send_packet_events.iter().map(<Self as OfaIbcChain<CosmosChain<Counterparty>>>::extract_packet_from_send_packet_event).collect();
+        Ok(send_packets)
     }
 
     /// Construct a receive packet to be sent to a destination Cosmos
