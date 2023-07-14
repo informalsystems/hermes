@@ -170,11 +170,15 @@ where
     */
     type OutgoingPacket: Async;
 
+    type ClientState: Async;
+
     type CreateClientPayloadOptions: Async;
 
     type CreateClientPayload: Async;
 
     type CreateClientEvent: Async;
+
+    type UpdateClientPayload: Async;
 
     type ConnectionDetails: Async;
 
@@ -237,6 +241,8 @@ where
     fn outgoing_packet_timeout_timestamp(packet: &Self::OutgoingPacket)
         -> &Counterparty::Timestamp;
 
+    fn client_state_latest_height(client_state: &Self::ClientState) -> &Self::Height;
+
     fn log_incoming_packet<'a>(
         event: &'a Self::IncomingPacket,
     ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
@@ -292,6 +298,11 @@ where
         port_id: &Self::PortId,
     ) -> Result<Counterparty::ChainId, Self::Error>;
 
+    async fn query_client_state(
+        &self,
+        client_id: &Self::ClientId,
+    ) -> Result<Counterparty::ClientState, Self::Error>;
+
     async fn query_consensus_state(
         &self,
         client_id: &Self::ClientId,
@@ -338,6 +349,25 @@ where
         &self,
         counterparty_payload: Counterparty::CreateClientPayload,
     ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_update_client_payload(
+        &self,
+        trusted_height: &Self::Height,
+        target_height: &Self::Height,
+        client_state: Self::ClientState,
+    ) -> Result<Self::UpdateClientPayload, Self::Error>;
+
+    async fn build_update_client_message(
+        &self,
+        client_id: &Self::ClientId,
+        payload: Counterparty::UpdateClientPayload,
+    ) -> Result<Vec<Self::Message>, Self::Error>;
+
+    async fn find_consensus_state_height_before(
+        &self,
+        client_id: &Self::ClientId,
+        target_height: &Counterparty::Height,
+    ) -> Result<Counterparty::Height, Self::Error>;
 
     async fn build_connection_open_init_payload(
         &self,

@@ -11,7 +11,6 @@ use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::config::Config;
-use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::keyring::AnySigningKeyPair;
 use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer::spawn::spawn_chain_runtime;
@@ -133,24 +132,12 @@ impl CosmosBuilder {
         src_batch_sender: CosmosBatchSender,
         dst_batch_sender: CosmosBatchSender,
     ) -> Result<CosmosRelay<BaseChainHandle, BaseChainHandle>, Error> {
-        let client_src_to_dst = ForeignClient::restore(
-            dst_client_id.clone(),
-            dst_chain.chain.handle.clone(),
-            src_chain.chain.handle.clone(),
-        );
-
-        let client_dst_to_src = ForeignClient::restore(
-            src_client_id.clone(),
-            src_chain.chain.handle.clone(),
-            dst_chain.chain.handle.clone(),
-        );
-
         let relay = CosmosRelay::new(
             self.runtime.clone(),
             src_chain,
             dst_chain,
-            client_src_to_dst,
-            client_dst_to_src,
+            src_client_id.clone(),
+            dst_client_id.clone(),
             self.packet_filter.clone(),
             src_batch_sender,
             dst_batch_sender,

@@ -24,7 +24,7 @@ where
     Target: ChainTarget<Relay>,
 {
     async fn build_update_client_messages(
-        context: &Relay,
+        relay: &Relay,
         _target: Target,
         height: &Height<Target::CounterpartyChain>,
     ) -> Result<Vec<Message<Target::TargetChain>>, Relay::Error>;

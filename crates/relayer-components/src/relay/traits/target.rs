@@ -21,14 +21,14 @@ pub trait ChainTarget<Relay: HasRelayChains>: Async + Default + Copy + private::
         e: <Self::CounterpartyChain as HasErrorType>::Error,
     ) -> Relay::Error;
 
-    fn target_chain(context: &Relay) -> &Self::TargetChain;
+    fn target_chain(relay: &Relay) -> &Self::TargetChain;
 
-    fn counterparty_chain(context: &Relay) -> &Self::CounterpartyChain;
+    fn counterparty_chain(relay: &Relay) -> &Self::CounterpartyChain;
 
-    fn target_client_id(context: &Relay) -> &ClientId<Self::TargetChain, Self::CounterpartyChain>;
+    fn target_client_id(relay: &Relay) -> &ClientId<Self::TargetChain, Self::CounterpartyChain>;
 
     fn counterparty_client_id(
-        context: &Relay,
+        relay: &Relay,
     ) -> &ClientId<Self::CounterpartyChain, Self::TargetChain>;
 }
 

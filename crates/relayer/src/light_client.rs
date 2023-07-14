@@ -81,6 +81,7 @@ pub fn decode_header(header_bytes: &[u8]) -> Result<Box<dyn Header>, Error> {
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[allow(clippy::large_enum_variant)]
+#[non_exhaustive]
 pub enum AnyHeader {
     Tendermint(TendermintHeader),
 }
