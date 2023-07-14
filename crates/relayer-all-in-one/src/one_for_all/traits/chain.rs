@@ -241,6 +241,8 @@ where
     fn outgoing_packet_timeout_timestamp(packet: &Self::OutgoingPacket)
         -> &Counterparty::Timestamp;
 
+    fn client_state_latest_height(client_state: &Self::ClientState) -> &Self::Height;
+
     fn log_incoming_packet<'a>(
         event: &'a Self::IncomingPacket,
     ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
@@ -295,6 +297,11 @@ where
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
     ) -> Result<Counterparty::ChainId, Self::Error>;
+
+    async fn query_client_state(
+        &self,
+        client_id: &Self::ClientId,
+    ) -> Result<Counterparty::ClientState, Self::Error>;
 
     async fn query_consensus_state(
         &self,

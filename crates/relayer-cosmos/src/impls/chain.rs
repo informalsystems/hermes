@@ -7,9 +7,9 @@ use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    IncludeProof, PageRequest, Qualified, QueryChannelRequest, QueryConnectionRequest,
-    QueryConsensusStateHeightsRequest, QueryConsensusStateRequest, QueryHeight,
-    QueryUnreceivedPacketsRequest,
+    IncludeProof, PageRequest, Qualified, QueryChannelRequest, QueryClientStateRequest,
+    QueryConnectionRequest, QueryConsensusStateHeightsRequest, QueryConsensusStateRequest,
+    QueryHeight, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::connection::ConnectionMsgType;
@@ -328,6 +328,10 @@ where
         &packet.timeout_timestamp
     }
 
+    fn client_state_latest_height(client_state: &Self::ClientState) -> &Self::Height {
+        &client_state.latest_height
+    }
+
     fn log_incoming_packet(packet: &Packet) -> LogValue<'_> {
         LogValue::Display(packet)
     }
@@ -491,6 +495,34 @@ where
                         .map_err(BaseError::supervisor)?;
 
                 Ok(channel_id)
+            })
+            .await
+            .map_err(BaseError::join)?
+    }
+
+    async fn query_client_state(&self, client_id: &ClientId) -> Result<ClientState, Error> {
+        let chain_handle = self.handle.clone();
+
+        let client_id = client_id.clone();
+
+        self.runtime
+            .runtime
+            .runtime
+            .spawn_blocking(move || {
+                let (client_state, _) = chain_handle
+                    .query_client_state(
+                        QueryClientStateRequest {
+                            client_id,
+                            height: QueryHeight::Latest,
+                        },
+                        IncludeProof::No,
+                    )
+                    .map_err(BaseError::relayer)?;
+
+                match client_state {
+                    AnyClientState::Tendermint(client_state) => Ok(client_state),
+                    _ => Err(BaseError::generic(eyre!("expected tendermint client state")).into()),
+                }
             })
             .await
             .map_err(BaseError::join)?
