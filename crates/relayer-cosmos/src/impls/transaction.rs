@@ -27,8 +27,8 @@ use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 
 use crate::contexts::transaction::CosmosTxContext;
+use crate::traits::message::CosmosMessage;
 use crate::types::error::{BaseError, Error};
-use crate::types::message::CosmosIbcMessage;
 
 #[async_trait]
 impl OfaTxContext for CosmosTxContext {
@@ -40,7 +40,7 @@ impl OfaTxContext for CosmosTxContext {
 
     type ChainId = ChainId;
 
-    type Message = CosmosIbcMessage;
+    type Message = Arc<dyn CosmosMessage>;
 
     type Event = Arc<AbciEvent>;
 
@@ -111,7 +111,7 @@ impl OfaTxContext for CosmosTxContext {
         key_pair: &Secp256k1KeyPair,
         account: &Account,
         fee: &Fee,
-        messages: &[CosmosIbcMessage],
+        messages: &[Arc<dyn CosmosMessage>],
     ) -> Result<SignedTx, Error> {
         let tx_config = &self.tx_config;
         let memo = Memo::default();
@@ -119,7 +119,7 @@ impl OfaTxContext for CosmosTxContext {
 
         let raw_messages = messages
             .iter()
-            .map(|message| (message.to_protobuf_fn)(&signer).map_err(BaseError::encode))
+            .map(|message| message.encode_protobuf(&signer).map_err(BaseError::encode))
             .collect::<Result<Vec<_>, _>>()?;
 
         let signed_tx = sign_tx(tx_config, key_pair, account, &memo, &raw_messages, fee)

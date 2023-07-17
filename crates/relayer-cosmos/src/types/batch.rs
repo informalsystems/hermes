@@ -3,11 +3,11 @@ use tendermint::abci::Event as AbciEvent;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot::Sender as SenderOnce;
 
+use crate::traits::message::CosmosMessage;
 use crate::types::error::Error;
-use crate::types::message::CosmosIbcMessage;
 
 pub type CosmosBatchPayload = (
-    Vec<CosmosIbcMessage>,
+    Vec<Arc<dyn CosmosMessage>>,
     SenderOnce<Result<Vec<Vec<Arc<AbciEvent>>>, Error>>,
 );
 

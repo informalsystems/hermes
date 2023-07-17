@@ -71,6 +71,7 @@ use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::contexts::chain::CosmosChain;
+use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
 use crate::types::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenInitEvent,
     CosmosChannelOpenTryEvent, CosmosChannelOpenTryPayload, CosmosInitChannelOptions,
@@ -104,7 +105,7 @@ where
 
     type Timestamp = Timestamp;
 
-    type Message = CosmosIbcMessage;
+    type Message = Arc<dyn CosmosMessage>;
 
     type Event = Arc<AbciEvent>;
 
@@ -127,6 +128,7 @@ where
     type ChainStatus = ChainStatus;
 
     type SendPacketEvent = SendPacket;
+
     type IncomingPacket = Packet;
 
     type OutgoingPacket = Packet;
@@ -201,8 +203,10 @@ where
         Ok(height.increment())
     }
 
-    fn estimate_message_size(message: &CosmosIbcMessage) -> Result<usize, Error> {
-        let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(BaseError::encode)?;
+    fn estimate_message_size(message: &Arc<dyn CosmosMessage>) -> Result<usize, Error> {
+        let raw = message
+            .encode_protobuf(&Signer::dummy())
+            .map_err(BaseError::encode)?;
 
         Ok(raw.encoded_len())
     }
@@ -238,7 +242,7 @@ where
 
     async fn send_messages(
         &self,
-        messages: Vec<CosmosIbcMessage>,
+        messages: Vec<Arc<dyn CosmosMessage>>,
     ) -> Result<Vec<Vec<Arc<AbciEvent>>>, Error> {
         let events = self.tx_context.send_messages(messages).await?;
 
@@ -276,7 +280,7 @@ where
         // as long as the counterparty uses the same base Cosmos types.
         ChainId = ChainId,
         Height = Height,
-        Message = CosmosIbcMessage,
+        Message = Arc<dyn CosmosMessage>,
         Timestamp = Timestamp,
         IncomingPacket = Packet,
         OutgoingPacket = Packet,
@@ -374,8 +378,8 @@ where
         LogValue::Display(packet)
     }
 
-    fn counterparty_message_height(message: &CosmosIbcMessage) -> Option<Height> {
-        message.source_height
+    fn counterparty_message_height(message: &Arc<dyn CosmosMessage>) -> Option<Height> {
+        message.counterparty_height()
     }
 
     fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
@@ -681,7 +685,7 @@ where
         &self,
         height: &Height,
         packet: &Packet,
-    ) -> Result<CosmosIbcMessage, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         let height = *height;
         let packet = packet.clone();
 
@@ -707,7 +711,7 @@ where
                     Ok(MsgRecvPacket::new(packet.clone(), proofs.clone(), signer.clone()).to_any())
                 });
 
-                Ok(message)
+                Ok(wrap_cosmos_message(message))
             })
             .await
             .map_err(BaseError::join)?
@@ -721,7 +725,7 @@ where
         height: &Height,
         packet: &Packet,
         ack: &Self::WriteAcknowledgementEvent,
-    ) -> Result<CosmosIbcMessage, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         let height = *height;
         let packet = packet.clone();
         let ack = ack.clone();
@@ -755,7 +759,7 @@ where
                     .to_any())
                 });
 
-                Ok(message)
+                Ok(wrap_cosmos_message(message))
             })
             .await
             .map_err(BaseError::join)?
@@ -768,7 +772,7 @@ where
         &self,
         height: &Height,
         packet: &Packet,
-    ) -> Result<CosmosIbcMessage, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         let height = *height;
         let packet = packet.clone();
 
@@ -800,7 +804,7 @@ where
                     .to_any())
                 });
 
-                Ok(message)
+                Ok(wrap_cosmos_message(message))
             })
             .await
             .map_err(BaseError::join)?
@@ -863,7 +867,7 @@ where
     async fn build_create_client_message(
         &self,
         payload: CosmosCreateClientPayload,
-    ) -> Result<CosmosIbcMessage, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         let message = CosmosIbcMessage::new(None, move |signer| {
             let message = MsgCreateClient {
                 client_state: payload.client_state.clone().into(),
@@ -874,7 +878,7 @@ where
             Ok(message.to_any())
         });
 
-        Ok(message)
+        Ok(wrap_cosmos_message(message))
     }
 
     async fn build_connection_open_init_payload(
@@ -936,7 +940,7 @@ where
         &self,
         client_id: &ClientId,
         payload: CosmosUpdateClientPayload,
-    ) -> Result<Vec<Self::Message>, Self::Error> {
+    ) -> Result<Vec<Arc<dyn CosmosMessage>>, Self::Error> {
         let messages = payload
             .headers
             .into_iter()
@@ -952,7 +956,7 @@ where
                     Ok(message.to_any())
                 });
 
-                message
+                wrap_cosmos_message(message)
             })
             .collect();
 
@@ -1148,7 +1152,7 @@ where
         counterparty_client_id: &ClientId,
         init_connection_options: &CosmosInitConnectionOptions,
         counterparty_payload: CosmosConnectionOpenInitPayload,
-    ) -> Result<CosmosIbcMessage, Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         let counterparty = ConnectionCounterparty::new(
             counterparty_client_id.clone(),
             None,
@@ -1181,7 +1185,7 @@ where
                     Ok(message.to_any())
                 });
 
-                Ok(message)
+                Ok(wrap_cosmos_message(message))
             })
             .await
             .map_err(BaseError::join)?
@@ -1193,7 +1197,7 @@ where
         counterparty_client_id: &ClientId,
         counterparty_connection_id: &ConnectionId,
         counterparty_payload: CosmosConnectionOpenTryPayload,
-    ) -> Result<CosmosIbcMessage, Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         let client_id = client_id.clone();
         let counterparty = ConnectionCounterparty::new(
             counterparty_client_id.clone(),
@@ -1223,7 +1227,7 @@ where
             Ok(message.to_any())
         });
 
-        Ok(message)
+        Ok(wrap_cosmos_message(message))
     }
 
     async fn build_connection_open_ack_message(
@@ -1231,7 +1235,7 @@ where
         connection_id: &ConnectionId,
         counterparty_connection_id: &ConnectionId,
         counterparty_payload: CosmosConnectionOpenAckPayload,
-    ) -> Result<CosmosIbcMessage, Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         let connection_id = connection_id.clone();
         let counterparty_connection_id = counterparty_connection_id.clone();
 
@@ -1252,14 +1256,14 @@ where
             Ok(message.to_any())
         });
 
-        Ok(message)
+        Ok(wrap_cosmos_message(message))
     }
 
     async fn build_connection_open_confirm_message(
         &self,
         connection_id: &ConnectionId,
         counterparty_payload: CosmosConnectionOpenConfirmPayload,
-    ) -> Result<CosmosIbcMessage, Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         let connection_id = connection_id.clone();
 
         let message = CosmosIbcMessage::new(None, move |signer| {
@@ -1274,7 +1278,7 @@ where
             Ok(message.to_any())
         });
 
-        Ok(message)
+        Ok(wrap_cosmos_message(message))
     }
 
     async fn build_channel_open_try_payload(
@@ -1282,7 +1286,7 @@ where
         height: &Height,
         port_id: &PortId,
         channel_id: &ChannelId,
-    ) -> Result<Self::ChannelOpenTryPayload, Self::Error> {
+    ) -> Result<CosmosChannelOpenTryPayload, Self::Error> {
         let height = *height;
         let port_id = port_id.clone();
         let channel_id = channel_id.clone();
@@ -1323,10 +1327,10 @@ where
 
     async fn build_channel_open_ack_payload(
         &self,
-        height: &Self::Height,
-        port_id: &Self::PortId,
-        channel_id: &Self::ChannelId,
-    ) -> Result<Self::ChannelOpenAckPayload, Self::Error> {
+        height: &Height,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> Result<CosmosChannelOpenAckPayload, Self::Error> {
         let height = *height;
         let port_id = port_id.clone();
         let channel_id = channel_id.clone();
@@ -1364,10 +1368,10 @@ where
 
     async fn build_channel_open_confirm_payload(
         &self,
-        height: &Self::Height,
-        port_id: &Self::PortId,
-        channel_id: &Self::ChannelId,
-    ) -> Result<Self::ChannelOpenConfirmPayload, Self::Error> {
+        height: &Height,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> Result<CosmosChannelOpenConfirmPayload, Self::Error> {
         let height = *height;
         let port_id = port_id.clone();
         let channel_id = channel_id.clone();
@@ -1394,7 +1398,7 @@ where
         port_id: &PortId,
         counterparty_port_id: &PortId,
         init_channel_options: &CosmosInitChannelOptions,
-    ) -> Result<CosmosIbcMessage, Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         let port_id = port_id.clone();
         let ordering = init_channel_options.ordering;
         let connection_hops = init_channel_options.connection_hops.clone();
@@ -1424,7 +1428,7 @@ where
                     Ok(message.to_any())
                 });
 
-                Ok(message)
+                Ok(wrap_cosmos_message(message))
             })
             .await
             .map_err(BaseError::join)?
@@ -1436,7 +1440,7 @@ where
         counterparty_port_id: &PortId,
         counterparty_channel_id: &ChannelId,
         counterparty_payload: CosmosChannelOpenTryPayload,
-    ) -> Result<CosmosIbcMessage, Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         let port_id = port_id.clone();
         let counterparty = ChannelCounterparty::new(
             counterparty_port_id.clone(),
@@ -1459,6 +1463,7 @@ where
                     connection_hops,
                     version.clone(),
                 );
+
                 let message = CosmosIbcMessage::new(None, move |signer| {
                     let message = MsgChannelOpenTry {
                         port_id: port_id.clone(),
@@ -1472,7 +1477,7 @@ where
                     Ok(message.to_any())
                 });
 
-                Ok(message)
+                Ok(wrap_cosmos_message(message))
             })
             .await
             .map_err(BaseError::join)?
@@ -1484,7 +1489,7 @@ where
         channel_id: &ChannelId,
         counterparty_channel_id: &ChannelId,
         counterparty_payload: CosmosChannelOpenAckPayload,
-    ) -> Result<CosmosIbcMessage, Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         let port_id = port_id.clone();
         let channel_id = channel_id.clone();
         let counterparty_channel_id = counterparty_channel_id.clone();
@@ -1508,7 +1513,7 @@ where
                     Ok(message.to_any())
                 });
 
-                Ok(message)
+                Ok(wrap_cosmos_message(message))
             })
             .await
             .map_err(BaseError::join)?
@@ -1519,7 +1524,7 @@ where
         port_id: &PortId,
         channel_id: &ChannelId,
         counterparty_payload: CosmosChannelOpenConfirmPayload,
-    ) -> Result<CosmosIbcMessage, Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         let port_id = port_id.clone();
         let channel_id = channel_id.clone();
         let proofs = counterparty_payload.proofs.clone();
@@ -1539,7 +1544,7 @@ where
                     Ok(message.to_any())
                 });
 
-                Ok(message)
+                Ok(wrap_cosmos_message(message))
             })
             .await
             .map_err(BaseError::join)?
