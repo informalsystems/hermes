@@ -170,6 +170,8 @@ pub trait OfaChainTypes: Async {
     type ReceivePacketPayload: Async;
 
     type AckPacketPayload: Async;
+
+    type TimeoutUnorderedPacketPayload: Async;
 }
 
 #[async_trait]
@@ -351,11 +353,16 @@ where
         payload: Counterparty::AckPacketPayload,
     ) -> Result<Self::Message, Self::Error>;
 
-    async fn build_timeout_unordered_packet_message(
+    async fn build_timeout_unordered_packet_payload(
         &self,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
-    ) -> Result<Counterparty::Message, Self::Error>;
+    ) -> Result<Self::TimeoutUnorderedPacketPayload, Self::Error>;
+
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        payload: Counterparty::TimeoutUnorderedPacketPayload,
+    ) -> Result<Self::Message, Self::Error>;
 
     async fn build_create_client_payload(
         &self,

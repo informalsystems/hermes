@@ -55,8 +55,10 @@ use crate::methods::consensus_state::{find_consensus_state_height_before, query_
 use crate::methods::create_client::{build_create_client_message, build_create_client_payload};
 use crate::methods::packet::{
     build_ack_packet_message, build_ack_packet_payload, build_receive_packet_message,
-    build_receive_packet_payload, build_timeout_unordered_packet_message, query_is_packet_received,
+    build_receive_packet_payload, build_timeout_unordered_packet_message,
+    build_timeout_unordered_packet_payload, query_is_packet_received,
     query_write_acknowledgement_event, CosmosAckPacketPayload, CosmosReceivePacketPayload,
+    CosmosTimeoutUnorderedPacketPayload,
 };
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
 use crate::traits::message::CosmosMessage;
@@ -163,6 +165,8 @@ where
     type ReceivePacketPayload = CosmosReceivePacketPayload;
 
     type AckPacketPayload = CosmosAckPacketPayload;
+
+    type TimeoutUnorderedPacketPayload = CosmosTimeoutUnorderedPacketPayload;
 }
 
 #[async_trait]
@@ -419,6 +423,7 @@ where
         ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload,
         ReceivePacketPayload = CosmosReceivePacketPayload,
         AckPacketPayload = CosmosAckPacketPayload,
+        TimeoutUnorderedPacketPayload = CosmosTimeoutUnorderedPacketPayload,
     >,
 {
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
@@ -567,12 +572,19 @@ where
     /// Construct a timeout packet message to be sent between Cosmos chains
     /// over an unordered channel in the event that a packet that originated
     /// from a source chain was not received.
-    async fn build_timeout_unordered_packet_message(
+    async fn build_timeout_unordered_packet_payload(
         &self,
         height: &Height,
         packet: &Packet,
+    ) -> Result<CosmosTimeoutUnorderedPacketPayload, Error> {
+        build_timeout_unordered_packet_payload(self, height, packet).await
+    }
+
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        payload: CosmosTimeoutUnorderedPacketPayload,
     ) -> Result<Arc<dyn CosmosMessage>, Error> {
-        build_timeout_unordered_packet_message(self, height, packet).await
+        build_timeout_unordered_packet_message(payload)
     }
 
     async fn build_create_client_payload(

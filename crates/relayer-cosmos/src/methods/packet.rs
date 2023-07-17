@@ -32,6 +32,12 @@ pub struct CosmosAckPacketPayload {
     pub proofs: Proofs,
 }
 
+pub struct CosmosTimeoutUnorderedPacketPayload {
+    pub height: Height,
+    pub packet: Packet,
+    pub proofs: Proofs,
+}
+
 pub async fn build_receive_packet_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     height: &Height,
@@ -141,11 +147,11 @@ pub fn build_ack_packet_message(
     Ok(wrap_cosmos_message(message))
 }
 
-pub async fn build_timeout_unordered_packet_message<Chain: ChainHandle>(
+pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     height: &Height,
     packet: &Packet,
-) -> Result<Arc<dyn CosmosMessage>, Error> {
+) -> Result<CosmosTimeoutUnorderedPacketPayload, Error> {
     let height = *height;
     let packet = packet.clone();
 
@@ -168,20 +174,30 @@ pub async fn build_timeout_unordered_packet_message<Chain: ChainHandle>(
 
             let packet = packet.clone();
 
-            let message = CosmosIbcMessage::new(Some(height), move |signer| {
-                Ok(MsgTimeout::new(
-                    packet.clone(),
-                    packet.sequence,
-                    proofs.clone(),
-                    signer.clone(),
-                )
-                .to_any())
-            });
-
-            Ok(wrap_cosmos_message(message))
+            Ok(CosmosTimeoutUnorderedPacketPayload {
+                height,
+                packet,
+                proofs,
+            })
         })
         .await
         .map_err(BaseError::join)?
+}
+
+pub fn build_timeout_unordered_packet_message(
+    payload: CosmosTimeoutUnorderedPacketPayload,
+) -> Result<Arc<dyn CosmosMessage>, Error> {
+    let message = CosmosIbcMessage::new(Some(payload.height), move |signer| {
+        Ok(MsgTimeout::new(
+            payload.packet.clone(),
+            payload.packet.sequence,
+            payload.proofs.clone(),
+            signer.clone(),
+        )
+        .to_any())
+    });
+
+    Ok(wrap_cosmos_message(message))
 }
 
 pub async fn query_is_packet_received<Chain: ChainHandle>(
