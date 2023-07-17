@@ -2,7 +2,7 @@ use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
@@ -54,11 +54,11 @@ where
         self.relay.dst_chain()
     }
 
-    fn src_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {
+    fn src_client_id(&self) -> &<Relay::SrcChain as OfaChainTypes>::ClientId {
         self.relay.src_client_id()
     }
 
-    fn dst_client_id(&self) -> &<Relay::DstChain as OfaChain>::ClientId {
+    fn dst_client_id(&self) -> &<Relay::DstChain as OfaChainTypes>::ClientId {
         self.relay.dst_client_id()
     }
 }

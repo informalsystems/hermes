@@ -18,7 +18,7 @@ use crate::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait OfaChain: Async {
+pub trait OfaChainTypes: Async {
     /**
        Corresponds to
        [`HasErrorType::Error`](ibc_relayer_components::core::traits::error::HasErrorType::Error).
@@ -115,49 +115,6 @@ pub trait OfaChain: Async {
 
     type SendPacketEvent: Async;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
-
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
-
-    fn logger(&self) -> &Self::Logger;
-
-    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry>;
-
-    fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a>;
-
-    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error>;
-
-    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
-
-    fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
-
-    fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
-
-    fn try_extract_write_acknowledgement_event(
-        event: &Self::Event,
-    ) -> Option<Self::WriteAcknowledgementEvent>;
-
-    /**
-       Corresponds to
-       [`CanSendMessages::send_messages`](ibc_relayer_components::chain::traits::message_sender::CanSendMessages::send_messages)
-    */
-    async fn send_messages(
-        &self,
-        messages: Vec<Self::Message>,
-    ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
-
-    fn chain_id(&self) -> &Self::ChainId;
-
-    async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
-
-    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>>;
-}
-
-#[async_trait]
-pub trait OfaIbcChain<Counterparty>: OfaChain
-where
-    Counterparty: OfaIbcChain<Self>,
-{
     /**
        Corresponds to
        [`HasIbcPacketTypes::IncomingPacket`](ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes::IncomingPacket)
@@ -209,7 +166,53 @@ where
     type ChannelOpenInitEvent: Async;
 
     type ChannelOpenTryEvent: Async;
+}
 
+#[async_trait]
+pub trait OfaChain: OfaChainTypes {
+    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
+
+    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+
+    fn logger(&self) -> &Self::Logger;
+
+    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry>;
+
+    fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a>;
+
+    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error>;
+
+    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
+
+    fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
+
+    fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
+
+    fn try_extract_write_acknowledgement_event(
+        event: &Self::Event,
+    ) -> Option<Self::WriteAcknowledgementEvent>;
+
+    /**
+       Corresponds to
+       [`CanSendMessages::send_messages`](ibc_relayer_components::chain::traits::message_sender::CanSendMessages::send_messages)
+    */
+    async fn send_messages(
+        &self,
+        messages: Vec<Self::Message>,
+    ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
+
+    fn chain_id(&self) -> &Self::ChainId;
+
+    async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
+
+    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>>;
+}
+
+#[async_trait]
+pub trait OfaIbcChain<Counterparty>: OfaChain
+where
+    Counterparty: OfaChainTypes,
+{
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
 
     fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId;

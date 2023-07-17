@@ -22,7 +22,7 @@ use ibc_relayer::event::{
 use ibc_relayer::light_client::AnyHeader;
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
-use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
@@ -86,7 +86,7 @@ use crate::types::message::CosmosIbcMessage;
 use crate::types::telemetry::CosmosTelemetry;
 
 #[async_trait]
-impl<Chain> OfaChain for CosmosChain<Chain>
+impl<Chain> OfaChainTypes for CosmosChain<Chain>
 where
     Chain: ChainHandle,
 {
@@ -125,7 +125,56 @@ where
     type ChainStatus = ChainStatus;
 
     type SendPacketEvent = SendPacket;
+    type IncomingPacket = Packet;
 
+    type OutgoingPacket = Packet;
+
+    type ClientState = ClientState;
+
+    type CreateClientPayloadOptions = ClientSettings;
+
+    type CreateClientPayload = (ClientState, ConsensusState);
+
+    type CreateClientEvent = CosmosCreateClientEvent;
+
+    type UpdateClientPayload = Vec<TendermintHeader>;
+
+    type ConnectionVersion = ConnectionVersion;
+
+    type ConnectionDetails = ConnectionEnd;
+
+    type ConnectionOpenInitEvent = CosmosConnectionOpenInitEvent;
+
+    type ConnectionOpenTryEvent = CosmosConnectionOpenTryEvent;
+
+    type InitConnectionOptions = CosmosInitConnectionOptions;
+
+    type ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload;
+
+    type ConnectionOpenTryPayload = CosmosConnectionOpenTryPayload;
+
+    type ConnectionOpenAckPayload = CosmosConnectionOpenAckPayload;
+
+    type ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload;
+
+    type InitChannelOptions = CosmosInitChannelOptions;
+
+    type ChannelOpenTryPayload = CosmosChannelOpenTryPayload;
+
+    type ChannelOpenAckPayload = CosmosChannelOpenAckPayload;
+
+    type ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload;
+
+    type ChannelOpenInitEvent = CosmosChannelOpenInitEvent;
+
+    type ChannelOpenTryEvent = CosmosChannelOpenTryEvent;
+}
+
+#[async_trait]
+impl<Chain> OfaChain for CosmosChain<Chain>
+where
+    Chain: ChainHandle,
+{
     fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
         &self.runtime
     }
@@ -222,50 +271,6 @@ where
     Chain: ChainHandle,
     Counterparty: ChainHandle,
 {
-    type IncomingPacket = Packet;
-
-    type OutgoingPacket = Packet;
-
-    type ClientState = ClientState;
-
-    type CreateClientPayloadOptions = ClientSettings;
-
-    type CreateClientPayload = (ClientState, ConsensusState);
-
-    type CreateClientEvent = CosmosCreateClientEvent;
-
-    type UpdateClientPayload = Vec<TendermintHeader>;
-
-    type ConnectionVersion = ConnectionVersion;
-
-    type ConnectionDetails = ConnectionEnd;
-
-    type ConnectionOpenInitEvent = CosmosConnectionOpenInitEvent;
-
-    type ConnectionOpenTryEvent = CosmosConnectionOpenTryEvent;
-
-    type InitConnectionOptions = CosmosInitConnectionOptions;
-
-    type ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload;
-
-    type ConnectionOpenTryPayload = CosmosConnectionOpenTryPayload;
-
-    type ConnectionOpenAckPayload = CosmosConnectionOpenAckPayload;
-
-    type ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload;
-
-    type InitChannelOptions = CosmosInitChannelOptions;
-
-    type ChannelOpenTryPayload = CosmosChannelOpenTryPayload;
-
-    type ChannelOpenAckPayload = CosmosChannelOpenAckPayload;
-
-    type ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload;
-
-    type ChannelOpenInitEvent = CosmosChannelOpenInitEvent;
-
-    type ChannelOpenTryEvent = CosmosChannelOpenTryEvent;
-
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
         &packet.source_channel
     }
