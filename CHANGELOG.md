@@ -22,6 +22,7 @@ in the per-chain configuration.
 
 - The `websocket_addr` and `batch_delay` settings have been removed in favour of the new `event_source` setting.
   Please consult the [`UPGRADING.md`](UPGRADING.md) document for more details.
+- Bump MSRV to 1.71 ([\#3478](https://github.com/informalsystems/hermes/issues/3478))
 
 ### BUG FIXES
 
