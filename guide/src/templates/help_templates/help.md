@@ -17,6 +17,7 @@ SUBCOMMANDS:
     clear           Clear objects, such as outstanding packets on a channel
     config          Generate a new Hermes configuration file or validate an existing one
     create          Create objects (client, connection, or channel) on chains
+    evidence        Listen to block events and handles evidence
     fee             Interact with the fee middleware
     health-check    Performs a health check of all chains in the the config
     help            Print this message or the help of the given subcommand(s)
