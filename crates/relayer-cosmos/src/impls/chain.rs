@@ -185,7 +185,7 @@ where
         &self.telemetry
     }
 
-    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error> {
+    fn increment_height(height: &Height) -> Result<Height, Error> {
         Ok(height.increment())
     }
 
@@ -206,7 +206,7 @@ where
     }
 
     fn try_extract_write_acknowledgement_event(
-        event: &Self::Event,
+        event: &Arc<AbciEvent>,
     ) -> Option<WriteAcknowledgement> {
         if let IbcEventType::WriteAck = event.kind.parse().ok()? {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event).ok()?;
@@ -239,7 +239,7 @@ where
         query_chain_status(self).await
     }
 
-    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>> {
+    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Height, Arc<AbciEvent>)>> {
         &self.subscription
     }
 }
@@ -339,7 +339,7 @@ where
         &packet.timeout_timestamp
     }
 
-    fn client_state_latest_height(client_state: &Self::ClientState) -> &Self::Height {
+    fn client_state_latest_height(client_state: &ClientState) -> &Height {
         &client_state.latest_height
     }
 
@@ -355,7 +355,7 @@ where
         message.counterparty_height()
     }
 
-    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
+    fn try_extract_send_packet_event(event: &Arc<AbciEvent>) -> Option<SendPacket> {
         let event_type = event.kind.parse().ok()?;
 
         if let IbcEventType::SendPacket = event_type {
@@ -369,19 +369,15 @@ where
         }
     }
 
-    fn extract_packet_from_send_packet_event(
-        event: &Self::SendPacketEvent,
-    ) -> Self::OutgoingPacket {
+    fn extract_packet_from_send_packet_event(event: &SendPacket) -> Packet {
         event.packet.clone()
     }
 
-    fn extract_packet_from_write_acknowledgement_event(
-        ack: &WriteAcknowledgement,
-    ) -> &Self::IncomingPacket {
+    fn extract_packet_from_write_acknowledgement_event(ack: &WriteAcknowledgement) -> &Packet {
         &ack.packet
     }
 
-    fn try_extract_create_client_event(event: Arc<AbciEvent>) -> Option<Self::CreateClientEvent> {
+    fn try_extract_create_client_event(event: Arc<AbciEvent>) -> Option<CosmosCreateClientEvent> {
         let event_type = event.kind.parse().ok()?;
 
         if let IbcEventType::CreateClient = event_type {
@@ -401,7 +397,7 @@ where
         }
     }
 
-    fn create_client_event_client_id(event: &CosmosCreateClientEvent) -> &Self::ClientId {
+    fn create_client_event_client_id(event: &CosmosCreateClientEvent) -> &ClientId {
         &event.client_id
     }
 
@@ -428,8 +424,8 @@ where
     }
 
     fn try_extract_connection_open_try_event(
-        event: Self::Event,
-    ) -> Option<Self::ConnectionOpenTryEvent> {
+        event: Arc<AbciEvent>,
+    ) -> Option<CosmosConnectionOpenTryEvent> {
         let event_type = event.kind.parse().ok()?;
 
         if let IbcEventType::OpenTryConnection = event_type {
@@ -444,14 +440,14 @@ where
     }
 
     fn connection_open_try_event_connection_id(
-        event: &Self::ConnectionOpenTryEvent,
-    ) -> &Self::ConnectionId {
+        event: &CosmosConnectionOpenTryEvent,
+    ) -> &ConnectionId {
         &event.connection_id
     }
 
     fn try_extract_channel_open_init_event(
-        event: Self::Event,
-    ) -> Option<Self::ChannelOpenInitEvent> {
+        event: Arc<AbciEvent>,
+    ) -> Option<CosmosChannelOpenInitEvent> {
         let event_type = event.kind.parse().ok()?;
 
         if let IbcEventType::OpenInitChannel = event_type {
@@ -465,11 +461,13 @@ where
         }
     }
 
-    fn channel_open_try_event_channel_id(event: &Self::ChannelOpenTryEvent) -> &Self::ChannelId {
+    fn channel_open_try_event_channel_id(event: &CosmosChannelOpenTryEvent) -> &ChannelId {
         &event.channel_id
     }
 
-    fn try_extract_channel_open_try_event(event: Self::Event) -> Option<Self::ChannelOpenTryEvent> {
+    fn try_extract_channel_open_try_event(
+        event: Arc<AbciEvent>,
+    ) -> Option<CosmosChannelOpenTryEvent> {
         let event_type = event.kind.parse().ok()?;
 
         if let IbcEventType::OpenTryChannel = event_type {
@@ -483,7 +481,7 @@ where
         }
     }
 
-    fn channel_open_init_event_channel_id(event: &Self::ChannelOpenInitEvent) -> &Self::ChannelId {
+    fn channel_open_init_event_channel_id(event: &CosmosChannelOpenInitEvent) -> &ChannelId {
         &event.channel_id
     }
 
@@ -519,7 +517,7 @@ where
     async fn query_write_acknowledgement_event(
         &self,
         packet: &Packet,
-    ) -> Result<Option<WriteAcknowledgement>, Self::Error> {
+    ) -> Result<Option<WriteAcknowledgement>, Error> {
         query_write_acknowledgement_event(self, packet).await
     }
 
@@ -529,7 +527,7 @@ where
         &self,
         height: &Height,
         packet: &Packet,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         build_receive_packet_message(self, height, packet).await
     }
 
@@ -541,7 +539,7 @@ where
         height: &Height,
         packet: &Packet,
         ack: &WriteAcknowledgement,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         build_ack_packet_message(self, height, packet, ack).await
     }
 
@@ -559,14 +557,14 @@ where
     async fn build_create_client_payload(
         &self,
         client_settings: &ClientSettings,
-    ) -> Result<CosmosCreateClientPayload, Self::Error> {
+    ) -> Result<CosmosCreateClientPayload, Error> {
         build_create_client_payload(self, client_settings).await
     }
 
     async fn build_create_client_message(
         &self,
         payload: CosmosCreateClientPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
         build_create_client_message(payload)
     }
 

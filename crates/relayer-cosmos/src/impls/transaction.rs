@@ -56,7 +56,7 @@ impl OfaTxContext for CosmosTxContext {
 
     type TxResponse = TxResponse;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
+    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
         &self.runtime
     }
 
@@ -72,11 +72,11 @@ impl OfaTxContext for CosmosTxContext {
         LogValue::Debug(nonce)
     }
 
-    fn tx_no_response_error(tx_hash: &TxHash) -> Self::Error {
+    fn tx_no_response_error(tx_hash: &TxHash) -> Error {
         BaseError::tx_no_response(*tx_hash).into()
     }
 
-    fn tx_size(signed_tx: &Self::Transaction) -> usize {
+    fn tx_size(signed_tx: &SignedTx) -> usize {
         let tx_raw = TxRaw {
             body_bytes: signed_tx.body_bytes.clone(),
             auth_info_bytes: signed_tx.auth_info_bytes.clone(),
@@ -86,15 +86,15 @@ impl OfaTxContext for CosmosTxContext {
         tx_raw.encoded_len()
     }
 
-    fn chain_id(&self) -> &Self::ChainId {
+    fn chain_id(&self) -> &ChainId {
         &self.tx_config.chain_id
     }
 
-    fn get_signer(&self) -> &Self::Signer {
+    fn get_signer(&self) -> &Secp256k1KeyPair {
         &self.key_entry
     }
 
-    fn fee_for_simulation(&self) -> &Self::Fee {
+    fn fee_for_simulation(&self) -> &Fee {
         &self.tx_config.gas_config.max_fee
     }
 
@@ -189,7 +189,7 @@ impl OfaTxContext for CosmosTxContext {
         Ok(account.into())
     }
 
-    fn mutex_for_nonce_allocation(&self, _signer: &Self::Signer) -> &Mutex<()> {
+    fn mutex_for_nonce_allocation(&self, _signer: &Secp256k1KeyPair) -> &Mutex<()> {
         &self.nonce_mutex
     }
 
