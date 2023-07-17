@@ -54,8 +54,9 @@ use crate::methods::connection::{
 use crate::methods::consensus_state::{find_consensus_state_height_before, query_consensus_state};
 use crate::methods::create_client::{build_create_client_message, build_create_client_payload};
 use crate::methods::packet::{
-    build_ack_packet_message, build_receive_packet_message, build_timeout_unordered_packet_message,
-    query_is_packet_received, query_write_acknowledgement_event,
+    build_ack_packet_message, build_receive_packet_message, build_receive_packet_payload,
+    build_timeout_unordered_packet_message, query_is_packet_received,
+    query_write_acknowledgement_event, CosmosReceivePacketPayload,
 };
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
 use crate::traits::message::CosmosMessage;
@@ -158,6 +159,8 @@ where
     type ChannelOpenInitEvent = CosmosChannelOpenInitEvent;
 
     type ChannelOpenTryEvent = CosmosChannelOpenTryEvent;
+
+    type ReceivePacketPayload = CosmosReceivePacketPayload;
 }
 
 #[async_trait]
@@ -412,6 +415,7 @@ where
         ChannelOpenTryPayload = CosmosChannelOpenTryPayload,
         ChannelOpenAckPayload = CosmosChannelOpenAckPayload,
         ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload,
+        ReceivePacketPayload = CosmosReceivePacketPayload,
     >,
 {
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
@@ -523,12 +527,19 @@ where
 
     /// Construct a receive packet to be sent to a destination Cosmos
     /// chain from a source Cosmos chain.
-    async fn build_receive_packet_message(
+    async fn build_receive_packet_payload(
         &self,
         height: &Height,
         packet: &Packet,
+    ) -> Result<CosmosReceivePacketPayload, Error> {
+        build_receive_packet_payload(self, height, packet).await
+    }
+
+    async fn build_receive_packet_message(
+        &self,
+        payload: CosmosReceivePacketPayload,
     ) -> Result<Arc<dyn CosmosMessage>, Error> {
-        build_receive_packet_message(self, height, packet).await
+        build_receive_packet_message(payload).await
     }
 
     /// Construct an acknowledgement packet to be sent from a Cosmos

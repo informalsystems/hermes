@@ -16,7 +16,7 @@ pub trait CanBuildTimeoutUnorderedPacketPayload<Counterparty>:
 where
     Counterparty: HasIbcChainTypes<Self>,
 {
-    async fn build_timeout_unordered_packet_message(
+    async fn build_timeout_unordered_packet_payload(
         &self,
         height: &Self::Height,
         packet: &Self::IncomingPacket,

@@ -18,7 +18,7 @@ pub trait CanBuildAckPacketPayload<Counterparty>:
 where
     Counterparty: HasIbcChainTypes<Self>,
 {
-    async fn build_ack_packet_message(
+    async fn build_ack_packet_payload(
         &self,
         height: &Self::Height,
         packet: &Self::IncomingPacket,

@@ -2,6 +2,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::chain::traits::types::message::HasMessageType;
 use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::chain::traits::types::packets::receive::HasReceivePacketPayload;
 use crate::core::traits::error::HasErrorType;
@@ -16,7 +17,7 @@ pub trait CanBuildReceivePacketPayload<Counterparty>:
 where
     Counterparty: HasIbcChainTypes<Self>,
 {
-    async fn build_receive_packet_message(
+    async fn build_receive_packet_payload(
         &self,
         height: &Self::Height,
         packet: &Self::OutgoingPacket,
@@ -24,14 +25,12 @@ where
 }
 
 #[async_trait]
-pub trait CanBuildReceivePacketMessage<Counterparty>:
-    HasIbcPacketTypes<Counterparty> + HasHeightType + HasErrorType
+pub trait CanBuildReceivePacketMessage<Counterparty>: HasMessageType + HasErrorType
 where
-    Counterparty: HasIbcChainTypes<Self>,
+    Counterparty: HasReceivePacketPayload<Self>,
 {
     async fn build_receive_packet_message(
         &self,
-        height: &Self::Height,
-        packet: &Self::OutgoingPacket,
-    ) -> Result<Counterparty::Message, Self::Error>;
+        payload: Counterparty::ReceivePacketPayload,
+    ) -> Result<Self::Message, Self::Error>;
 }

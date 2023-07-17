@@ -10,6 +10,7 @@ use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::proofs::Proofs;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
@@ -18,11 +19,17 @@ use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
 
-pub async fn build_receive_packet_message<Chain: ChainHandle>(
+pub struct CosmosReceivePacketPayload {
+    pub height: Height,
+    pub packet: Packet,
+    pub proofs: Proofs,
+}
+
+pub async fn build_receive_packet_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     height: &Height,
     packet: &Packet,
-) -> Result<Arc<dyn CosmosMessage>, Error> {
+) -> Result<CosmosReceivePacketPayload, Error> {
     let height = *height;
     let packet = packet.clone();
 
@@ -45,14 +52,29 @@ pub async fn build_receive_packet_message<Chain: ChainHandle>(
 
             let packet = packet.clone();
 
-            let message = CosmosIbcMessage::new(Some(height), move |signer| {
-                Ok(MsgRecvPacket::new(packet.clone(), proofs.clone(), signer.clone()).to_any())
-            });
-
-            Ok(wrap_cosmos_message(message))
+            Ok(CosmosReceivePacketPayload {
+                height,
+                packet,
+                proofs,
+            })
         })
         .await
         .map_err(BaseError::join)?
+}
+
+pub async fn build_receive_packet_message(
+    payload: CosmosReceivePacketPayload,
+) -> Result<Arc<dyn CosmosMessage>, Error> {
+    let message = CosmosIbcMessage::new(Some(payload.height), move |signer| {
+        Ok(MsgRecvPacket::new(
+            payload.packet.clone(),
+            payload.proofs.clone(),
+            signer.clone(),
+        )
+        .to_any())
+    });
+
+    Ok(wrap_cosmos_message(message))
 }
 
 pub async fn build_ack_packet_message<Chain: ChainHandle>(

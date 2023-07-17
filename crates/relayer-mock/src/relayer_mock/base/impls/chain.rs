@@ -13,7 +13,9 @@ use eyre::eyre;
 use ibc_relayer_components::chain::traits::logs::event::CanLogChainEvent;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::chain::traits::message_builders::ack_packet::CanBuildAckPacketMessage;
-use ibc_relayer_components::chain::traits::message_builders::receive_packet::CanBuildReceivePacketMessage;
+use ibc_relayer_components::chain::traits::message_builders::receive_packet::{
+    CanBuildReceivePacketMessage, CanBuildReceivePacketPayload,
+};
 use ibc_relayer_components::chain::traits::message_builders::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
 use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_components::chain::traits::queries::consensus_state::CanQueryConsensusState;
@@ -33,6 +35,7 @@ use ibc_relayer_components::chain::traits::types::message::{
     CanEstimateMessageSize, HasMessageType,
 };
 use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
+use ibc_relayer_components::chain::traits::types::packets::receive::HasReceivePacketPayload;
 use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
 use ibc_relayer_components::core::traits::error::HasErrorType;
@@ -346,9 +349,13 @@ impl CanQueryWriteAcknowledgement<MockChainContext> for MockChainContext {
     }
 }
 
+impl HasReceivePacketPayload<MockChainContext> for MockChainContext {
+    type ReceivePacketPayload = MockMessage;
+}
+
 #[async_trait]
-impl CanBuildReceivePacketMessage<MockChainContext> for MockChainContext {
-    async fn build_receive_packet_message(
+impl CanBuildReceivePacketPayload<MockChainContext> for MockChainContext {
+    async fn build_receive_packet_payload(
         &self,
         height: &MockHeight,
         packet: &PacketKey,
@@ -367,6 +374,16 @@ impl CanBuildReceivePacketMessage<MockChainContext> for MockChainContext {
             .into());
         }
         Ok(MockMessage::RecvPacket(*height, packet.clone()))
+    }
+}
+
+#[async_trait]
+impl CanBuildReceivePacketMessage<MockChainContext> for MockChainContext {
+    async fn build_receive_packet_message(
+        &self,
+        payload: MockMessage,
+    ) -> Result<MockMessage, Error> {
+        Ok(payload)
     }
 }
 
