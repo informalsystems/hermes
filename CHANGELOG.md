@@ -13,6 +13,8 @@ event_source = { mode = 'pull', interval = '1s' }`
 
 in the per-chain configuration.
 
+Check the `event_source` setting in the example [`config.toml`](config.toml) file in the Hermes repository for more details.
+
 ### Note for operators
 
 > ⚠️  Be aware that this release contains breaking changes to the Hermes configuration.
@@ -20,7 +22,7 @@ in the per-chain configuration.
 
 ### BREAKING CHANGES
 
-- The `websocket_addr` and `batch_delay` settings have been removed in favour of the new `event_source` setting.
+- The `websocket_addr` configuration option has been removed in favour of the new `event_source` setting.
   Please consult the [`UPGRADING.md`](UPGRADING.md) document for more details.
 - Bump MSRV to 1.71 ([\#3478](https://github.com/informalsystems/hermes/issues/3478))
 
