@@ -1,13 +1,17 @@
 use async_trait::async_trait;
 
-use crate::chain::traits::types::client_state::HasClientStateSettingsType;
+use crate::chain::traits::types::client_state::HasClientStateType;
+use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanBuildClientState<Counterparty>: HasClientStateSettingsType<Counterparty> {
-    async fn build_client_state(
+pub trait CanQueryClientState<Counterparty>: HasIbcChainTypes<Counterparty> + HasErrorType
+where
+    Counterparty: HasClientStateType<Self>,
+{
+    async fn query_client_state(
         &self,
-        height: &Self::Height,
-        settings: &Self::ClientStateSettings,
-    ) -> Self::ClientState;
+        client_id: &Self::ClientId,
+    ) -> Result<Counterparty::ClientState, Self::Error>;
 }

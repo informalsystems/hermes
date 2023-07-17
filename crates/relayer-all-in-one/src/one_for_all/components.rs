@@ -1,3 +1,4 @@
+use ibc_relayer_components::relay::impls::client::update::BuildUpdateClientMessages;
 use ibc_relayer_components::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use ibc_relayer_components::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use ibc_relayer_components::relay::impls::messages::skip_update_client::SkipUpdateClient;
@@ -20,15 +21,13 @@ use ibc_relayer_components_extra::telemetry::impls::status::ChainStatusTelemetry
 
 use crate::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
 use crate::one_for_all::impls::chain::queries::status::SendChainStatusQueryToOfa;
-use crate::one_for_all::impls::relay::message_builders::update_client::BuildUpdateClientMessageFromOfa;
 use crate::one_for_all::impls::relay::packet_filter::FilterPacketFromOfa;
 
 pub type ChainStatusQuerier = ChainStatusTelemetryQuerier<SendChainStatusQueryToOfa>;
 
 pub type ConsensusStateQuerier = ConsensusStateTelemetryQuerier<SendConsensusStateQueryToOfa>;
 
-pub type UpdateClientMessageBuilder =
-    SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessageFromOfa>>;
+pub type UpdateClientMessageBuilder = SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessages>>;
 
 pub type AckPacketRelayer = BaseAckPacketRelayer;
 
