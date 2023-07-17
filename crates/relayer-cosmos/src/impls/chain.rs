@@ -399,7 +399,6 @@ where
         // as long as the counterparty uses the same base Cosmos types.
         ChainId = ChainId,
         Height = Height,
-        Message = Arc<dyn CosmosMessage>,
         Timestamp = Timestamp,
         IncomingPacket = Packet,
         OutgoingPacket = Packet,
