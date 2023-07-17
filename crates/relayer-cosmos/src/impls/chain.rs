@@ -5,17 +5,13 @@ use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{
-    IncludeProof, Qualified, QueryClientStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
-};
+use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::event::{
     channel_open_init_try_from_abci_event, channel_open_try_try_from_abci_event,
     connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
     extract_packet_and_write_ack_from_tx,
 };
-use ibc_relayer::link::packet_events::query_write_ack_events;
-use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
@@ -31,20 +27,15 @@ use ibc_relayer_types::core::ics02_client::events::CLIENT_ID_ATTRIBUTE_KEY;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
-use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
-use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
-use ibc_relayer_types::events::{IbcEvent, IbcEventType};
+use ibc_relayer_types::events::IbcEventType;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
-use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
@@ -64,8 +55,12 @@ use crate::methods::connection::{
 };
 use crate::methods::consensus_state::{find_consensus_state_height_before, query_consensus_state};
 use crate::methods::create_client::{build_create_client_message, build_create_client_payload};
+use crate::methods::packet::{
+    build_ack_packet_message, build_receive_packet_message, build_timeout_unordered_packet_message,
+    query_is_packet_received, query_write_acknowledgement_event,
+};
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
-use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
+use crate::traits::message::CosmosMessage;
 use crate::types::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenInitEvent,
     CosmosChannelOpenTryEvent, CosmosChannelOpenTryPayload, CosmosInitChannelOptions,
@@ -79,7 +74,6 @@ use crate::types::connection::{
     CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
-use crate::types::message::CosmosIbcMessage;
 use crate::types::telemetry::CosmosTelemetry;
 
 #[async_trait]
@@ -215,7 +209,7 @@ where
 
     fn try_extract_write_acknowledgement_event(
         event: &Self::Event,
-    ) -> Option<Self::WriteAcknowledgementEvent> {
+    ) -> Option<WriteAcknowledgement> {
         if let IbcEventType::WriteAck = event.kind.parse().ok()? {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event).ok()?;
 
@@ -397,7 +391,7 @@ where
     }
 
     fn extract_packet_from_write_acknowledgement_event(
-        ack: &Self::WriteAcknowledgementEvent,
+        ack: &WriteAcknowledgement,
     ) -> &Self::IncomingPacket {
         &ack.packet
     }
@@ -574,77 +568,14 @@ where
         channel_id: &ChannelId,
         sequence: &Sequence,
     ) -> Result<bool, Error> {
-        let chain_handle = self.handle.clone();
-
-        let port_id = port_id.clone();
-        let channel_id = channel_id.clone();
-        let sequence = *sequence;
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let unreceived_packet = chain_handle
-                    .query_unreceived_packets(QueryUnreceivedPacketsRequest {
-                        port_id: port_id.clone(),
-                        channel_id: channel_id.clone(),
-                        packet_commitment_sequences: vec![sequence],
-                    })
-                    .map_err(BaseError::relayer)?;
-
-                let is_packet_received = unreceived_packet.is_empty();
-
-                Ok(is_packet_received)
-            })
-            .await
-            .map_err(BaseError::join)?
+        query_is_packet_received(self, port_id, channel_id, sequence).await
     }
 
     async fn query_write_acknowledgement_event(
         &self,
         packet: &Packet,
-    ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
-        let status = self.query_chain_status().await?;
-
-        let query_height = Qualified::Equal(status.height);
-
-        let path_ident = PathIdentifiers {
-            port_id: packet.destination_port.clone(),
-            channel_id: packet.destination_channel.clone(),
-            counterparty_port_id: packet.source_port.clone(),
-            counterparty_channel_id: packet.source_channel.clone(),
-        };
-
-        let chain_handle = self.handle.clone();
-
-        let packet = packet.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let ibc_events = query_write_ack_events(
-                    &chain_handle,
-                    &path_ident,
-                    &[packet.sequence],
-                    query_height,
-                )
-                .map_err(BaseError::relayer)?;
-
-                let write_ack = ibc_events.into_iter().find_map(|event_with_height| {
-                    let event = event_with_height.event;
-
-                    if let IbcEvent::WriteAcknowledgement(write_ack) = event {
-                        Some(write_ack)
-                    } else {
-                        None
-                    }
-                });
-
-                Ok(write_ack)
-            })
-            .await
-            .map_err(BaseError::join)?
+    ) -> Result<Option<WriteAcknowledgement>, Self::Error> {
+        query_write_acknowledgement_event(self, packet).await
     }
 
     /// Construct a receive packet to be sent to a destination Cosmos
@@ -654,35 +585,7 @@ where
         height: &Height,
         packet: &Packet,
     ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
-        let height = *height;
-        let packet = packet.clone();
-
-        let chain_handle = self.handle.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let proofs = chain_handle
-                    .build_packet_proofs(
-                        PacketMsgType::Recv,
-                        &packet.source_port,
-                        &packet.source_channel,
-                        packet.sequence,
-                        height,
-                    )
-                    .map_err(BaseError::relayer)?;
-
-                let packet = packet.clone();
-
-                let message = CosmosIbcMessage::new(Some(height), move |signer| {
-                    Ok(MsgRecvPacket::new(packet.clone(), proofs.clone(), signer.clone()).to_any())
-                });
-
-                Ok(wrap_cosmos_message(message))
-            })
-            .await
-            .map_err(BaseError::join)?
+        build_receive_packet_message(self, height, packet).await
     }
 
     /// Construct an acknowledgement packet to be sent from a Cosmos
@@ -692,45 +595,9 @@ where
         &self,
         height: &Height,
         packet: &Packet,
-        ack: &Self::WriteAcknowledgementEvent,
+        ack: &WriteAcknowledgement,
     ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
-        let height = *height;
-        let packet = packet.clone();
-        let ack = ack.clone();
-
-        let chain_handle = self.handle.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let proofs = chain_handle
-                    .build_packet_proofs(
-                        PacketMsgType::Ack,
-                        &packet.destination_port,
-                        &packet.destination_channel,
-                        packet.sequence,
-                        height,
-                    )
-                    .map_err(BaseError::relayer)?;
-
-                let packet = packet.clone();
-                let ack = ack.ack.clone();
-
-                let message = CosmosIbcMessage::new(Some(height), move |signer| {
-                    Ok(MsgAcknowledgement::new(
-                        packet.clone(),
-                        ack.clone().into(),
-                        proofs.clone(),
-                        signer.clone(),
-                    )
-                    .to_any())
-                });
-
-                Ok(wrap_cosmos_message(message))
-            })
-            .await
-            .map_err(BaseError::join)?
+        build_ack_packet_message(self, height, packet, ack).await
     }
 
     /// Construct a timeout packet message to be sent between Cosmos chains
@@ -740,42 +607,8 @@ where
         &self,
         height: &Height,
         packet: &Packet,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
-        let height = *height;
-        let packet = packet.clone();
-
-        let chain_handle = self.handle.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let proofs = chain_handle
-                    .build_packet_proofs(
-                        PacketMsgType::TimeoutUnordered,
-                        &packet.destination_port,
-                        &packet.destination_channel,
-                        packet.sequence,
-                        height,
-                    )
-                    .map_err(BaseError::relayer)?;
-
-                let packet = packet.clone();
-
-                let message = CosmosIbcMessage::new(Some(height), move |signer| {
-                    Ok(MsgTimeout::new(
-                        packet.clone(),
-                        packet.sequence,
-                        proofs.clone(),
-                        signer.clone(),
-                    )
-                    .to_any())
-                });
-
-                Ok(wrap_cosmos_message(message))
-            })
-            .await
-            .map_err(BaseError::join)?
+    ) -> Result<Arc<dyn CosmosMessage>, Error> {
+        build_timeout_unordered_packet_message(self, height, packet).await
     }
 
     async fn build_create_client_payload(
