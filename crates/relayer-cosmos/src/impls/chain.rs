@@ -2,14 +2,17 @@ use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::iter;
 use eyre::eyre;
+use ibc_proto::ibc::core::channel::v1::query_client::QueryClient as ChannelQueryClient;
 use ibc_relayer::chain::client::ClientSettings;
+use ibc_relayer::chain::cosmos::query::packet_query;
 use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, Qualified, QueryChannelRequest, QueryClientStateRequest,
     QueryConnectionRequest, QueryConsensusStateHeightsRequest, QueryConsensusStateRequest,
-    QueryHeight, QueryUnreceivedPacketsRequest,
+    QueryHeight, QueryPacketCommitmentsRequest, QueryPacketEventDataRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::connection::ConnectionMsgType;
@@ -709,7 +712,7 @@ where
         Ok((response_sequences, height))
     }
 
-    async fn query_unreceived_packets(
+    async fn query_unreceived_packet_events(
         &self,
         channel_id: &ChannelId,
         port_id: &PortId,
@@ -717,7 +720,7 @@ where
         counterparty_port_id: &PortId,
         sequences: &[Sequence],
         height: &Height,
-    ) -> Result<Vec<Packet>, Self::Error> {
+    ) -> Result<Vec<Arc<AbciEvent>>, Self::Error> {
         let request = QueryPacketEventDataRequest {
             event_id: WithBlockDataType::SendPacket,
             source_channel_id: channel_id.clone(),
@@ -747,14 +750,7 @@ where
                 events.append(&mut event);
             }
         }
-        let send_packet_events: Vec<SendPacket> = events
-            .iter()
-            .filter_map(
-                <Self as OfaIbcChain<CosmosChain<Counterparty>>>::try_extract_send_packet_event,
-            )
-            .collect();
-        let send_packets: Vec<Packet> = send_packet_events.iter().map(<Self as OfaIbcChain<CosmosChain<Counterparty>>>::extract_packet_from_send_packet_event).collect();
-        Ok(send_packets)
+        Ok(events)
     }
 
     /// Construct a receive packet to be sent to a destination Cosmos

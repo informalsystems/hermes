@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
-    CanQueryUnreceivedPacketSequences, CanQueryUnreceivedPackets,
+    CanQueryUnreceivedPacketEvents, CanQueryUnreceivedPacketSequences,
 };
 
 use crate::one_for_all::traits::chain::OfaIbcChain;
@@ -30,13 +30,13 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> CanQueryUnreceivedPackets<OfaChainWrapper<Counterparty>>
+impl<Chain, Counterparty> CanQueryUnreceivedPacketEvents<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
-    async fn query_unreceived_packets(
+    async fn query_unreceived_packet_events(
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
@@ -44,10 +44,10 @@ where
         counterparty_port_id: &Counterparty::PortId,
         sequences: &[Self::Sequence],
         height: &Self::Height,
-    ) -> Result<Vec<Self::OutgoingPacket>, Self::Error> {
-        let unreceived_packets = self
+    ) -> Result<Vec<Self::Event>, Self::Error> {
+        let unreceived_packet_events = self
             .chain
-            .query_unreceived_packets(
+            .query_unreceived_packet_events(
                 channel_id,
                 port_id,
                 counterparty_channel_id,
@@ -56,6 +56,6 @@ where
                 height,
             )
             .await?;
-        Ok(unreceived_packets)
+        Ok(unreceived_packet_events)
     }
 }

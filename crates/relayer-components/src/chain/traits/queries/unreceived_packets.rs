@@ -34,12 +34,12 @@ where
 }
 
 #[async_trait]
-pub trait UnreceivedPacketsQuerier<Chain, Counterparty>
+pub trait UnreceivedPacketEventsQuerier<Chain, Counterparty>
 where
     Chain: HasIbcPacketTypes<Counterparty> + HasErrorType,
     Counterparty: HasIbcChainTypes<Chain>,
 {
-    async fn query_unreceived_packets(
+    async fn query_unreceived_packet_events(
         &self,
         channel_id: &Chain::ChannelId,
         port_id: &Chain::PortId,
@@ -47,16 +47,16 @@ where
         counterparty_port_id: &Counterparty::PortId,
         sequences: &[Chain::Sequence],
         height: &Chain::Height,
-    ) -> Result<Vec<Chain::OutgoingPacket>, Chain::Error>;
+    ) -> Result<Vec<Chain::Event>, Chain::Error>;
 }
 
 #[async_trait]
-pub trait CanQueryUnreceivedPackets<Counterparty>:
+pub trait CanQueryUnreceivedPacketEvents<Counterparty>:
     HasIbcPacketTypes<Counterparty> + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {
-    async fn query_unreceived_packets(
+    async fn query_unreceived_packet_events(
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
@@ -64,5 +64,5 @@ where
         counterparty_port_id: &Counterparty::PortId,
         sequences: &[Self::Sequence],
         height: &Self::Height,
-    ) -> Result<Vec<Self::OutgoingPacket>, Self::Error>;
+    ) -> Result<Vec<Self::Event>, Self::Error>;
 }
