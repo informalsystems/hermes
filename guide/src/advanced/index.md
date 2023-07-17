@@ -1,6 +1,6 @@
 # Advanced
 
-Acquire advanced knowledges about `hermes`. In this section, we present a summary of the Hermes' features compared to other relayer implementations, and we provide general guidelines for troubleshooting. 
+Acquire advanced knowledge about `hermes`. In this section, we present a summary of the Hermes' features compared to other relayer implementations, and we provide general guidelines for troubleshooting. 
 
 ---
 

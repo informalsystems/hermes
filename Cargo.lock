@@ -1656,7 +1656,6 @@ version = "1.5.1"
 dependencies = [
  "abscissa_core",
  "async-trait",
- "atty",
  "chrono",
  "clap",
  "clap_complete",
