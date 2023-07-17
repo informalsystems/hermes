@@ -222,139 +222,6 @@ where
         }
     }
 
-    fn chain_id(&self) -> &ChainId {
-        &self.chain_id
-    }
-
-    async fn send_messages(
-        &self,
-        messages: Vec<Arc<dyn CosmosMessage>>,
-    ) -> Result<Vec<Vec<Arc<AbciEvent>>>, Error> {
-        let events = self.tx_context.send_messages(messages).await?;
-
-        Ok(events)
-    }
-
-    async fn query_chain_status(&self) -> Result<ChainStatus, Error> {
-        query_chain_status(self).await
-    }
-
-    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Height, Arc<AbciEvent>)>> {
-        &self.subscription
-    }
-}
-
-#[async_trait]
-impl<Chain, Counterparty> OfaIbcChain<Counterparty> for CosmosChain<Chain>
-where
-    Chain: ChainHandle,
-    Counterparty: OfaChainTypes<
-        // A Cosmos chain can act as an IBC chain to a counterparty,
-        // as long as the counterparty uses the same base Cosmos types.
-        ChainId = ChainId,
-        Height = Height,
-        Message = Arc<dyn CosmosMessage>,
-        Timestamp = Timestamp,
-        IncomingPacket = Packet,
-        OutgoingPacket = Packet,
-        ClientId = ClientId,
-        ConnectionId = ConnectionId,
-        ChannelId = ChannelId,
-        PortId = PortId,
-        Sequence = Sequence,
-        // TODO: Support other counterparty client types and payload types
-        // provided that we can build Cosmos messages for it.
-        ClientState = ClientState,
-        ConsensusState = ConsensusState,
-        CreateClientPayload = CosmosCreateClientPayload,
-        UpdateClientPayload = CosmosUpdateClientPayload,
-        ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload,
-        ConnectionOpenTryPayload = CosmosConnectionOpenTryPayload,
-        ConnectionOpenAckPayload = CosmosConnectionOpenAckPayload,
-        ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload,
-        ChannelOpenTryPayload = CosmosChannelOpenTryPayload,
-        ChannelOpenAckPayload = CosmosChannelOpenAckPayload,
-        ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload,
-    >,
-{
-    fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
-        &packet.source_channel
-    }
-
-    fn incoming_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
-        &packet.destination_channel
-    }
-
-    fn incoming_packet_src_port(packet: &Packet) -> &PortId {
-        &packet.source_port
-    }
-
-    fn incoming_packet_dst_port(packet: &Packet) -> &PortId {
-        &packet.destination_port
-    }
-
-    fn incoming_packet_sequence(packet: &Packet) -> &Sequence {
-        &packet.sequence
-    }
-
-    fn incoming_packet_timeout_height(packet: &Packet) -> Option<&Height> {
-        match &packet.timeout_height {
-            TimeoutHeight::Never => None,
-            TimeoutHeight::At(h) => Some(h),
-        }
-    }
-
-    fn incoming_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
-        &packet.timeout_timestamp
-    }
-
-    fn outgoing_packet_src_channel_id(packet: &Packet) -> &ChannelId {
-        &packet.source_channel
-    }
-
-    fn outgoing_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
-        &packet.destination_channel
-    }
-
-    fn outgoing_packet_src_port(packet: &Packet) -> &PortId {
-        &packet.source_port
-    }
-
-    fn outgoing_packet_dst_port(packet: &Packet) -> &PortId {
-        &packet.destination_port
-    }
-
-    fn outgoing_packet_sequence(packet: &Packet) -> &Sequence {
-        &packet.sequence
-    }
-
-    fn outgoing_packet_timeout_height(packet: &Packet) -> Option<&Height> {
-        match &packet.timeout_height {
-            TimeoutHeight::Never => None,
-            TimeoutHeight::At(h) => Some(h),
-        }
-    }
-
-    fn outgoing_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
-        &packet.timeout_timestamp
-    }
-
-    fn client_state_latest_height(client_state: &ClientState) -> &Height {
-        &client_state.latest_height
-    }
-
-    fn log_incoming_packet(packet: &Packet) -> LogValue<'_> {
-        LogValue::Display(packet)
-    }
-
-    fn log_outgoing_packet(packet: &Packet) -> LogValue<'_> {
-        LogValue::Display(packet)
-    }
-
-    fn counterparty_message_height(message: &Arc<dyn CosmosMessage>) -> Option<Height> {
-        message.counterparty_height()
-    }
-
     fn try_extract_send_packet_event(event: &Arc<AbciEvent>) -> Option<SendPacket> {
         let event_type = event.kind.parse().ok()?;
 
@@ -485,6 +352,146 @@ where
         &event.channel_id
     }
 
+    fn chain_id(&self) -> &ChainId {
+        &self.chain_id
+    }
+
+    async fn send_messages(
+        &self,
+        messages: Vec<Arc<dyn CosmosMessage>>,
+    ) -> Result<Vec<Vec<Arc<AbciEvent>>>, Error> {
+        let events = self.tx_context.send_messages(messages).await?;
+
+        Ok(events)
+    }
+
+    async fn query_chain_status(&self) -> Result<ChainStatus, Error> {
+        query_chain_status(self).await
+    }
+
+    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Height, Arc<AbciEvent>)>> {
+        &self.subscription
+    }
+
+    async fn query_write_acknowledgement_event(
+        &self,
+        packet: &Packet,
+    ) -> Result<Option<WriteAcknowledgement>, Error> {
+        query_write_acknowledgement_event(self, packet).await
+    }
+}
+
+#[async_trait]
+impl<Chain, Counterparty> OfaIbcChain<Counterparty> for CosmosChain<Chain>
+where
+    Chain: ChainHandle,
+    Counterparty: OfaChainTypes<
+        // A Cosmos chain can act as an IBC chain to a counterparty,
+        // as long as the counterparty uses the same base Cosmos types.
+        ChainId = ChainId,
+        Height = Height,
+        Message = Arc<dyn CosmosMessage>,
+        Timestamp = Timestamp,
+        IncomingPacket = Packet,
+        OutgoingPacket = Packet,
+        ClientId = ClientId,
+        ConnectionId = ConnectionId,
+        ChannelId = ChannelId,
+        PortId = PortId,
+        Sequence = Sequence,
+        // TODO: Support other counterparty client types and payload types
+        // provided that we can build Cosmos messages for it.
+        ClientState = ClientState,
+        ConsensusState = ConsensusState,
+        CreateClientPayload = CosmosCreateClientPayload,
+        UpdateClientPayload = CosmosUpdateClientPayload,
+        ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload,
+        ConnectionOpenTryPayload = CosmosConnectionOpenTryPayload,
+        ConnectionOpenAckPayload = CosmosConnectionOpenAckPayload,
+        ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload,
+        ChannelOpenTryPayload = CosmosChannelOpenTryPayload,
+        ChannelOpenAckPayload = CosmosChannelOpenAckPayload,
+        ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload,
+    >,
+{
+    fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.source_channel
+    }
+
+    fn incoming_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.destination_channel
+    }
+
+    fn incoming_packet_src_port(packet: &Packet) -> &PortId {
+        &packet.source_port
+    }
+
+    fn incoming_packet_dst_port(packet: &Packet) -> &PortId {
+        &packet.destination_port
+    }
+
+    fn incoming_packet_sequence(packet: &Packet) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn incoming_packet_timeout_height(packet: &Packet) -> Option<&Height> {
+        match &packet.timeout_height {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(h) => Some(h),
+        }
+    }
+
+    fn incoming_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
+        &packet.timeout_timestamp
+    }
+
+    fn outgoing_packet_src_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.source_channel
+    }
+
+    fn outgoing_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.destination_channel
+    }
+
+    fn outgoing_packet_src_port(packet: &Packet) -> &PortId {
+        &packet.source_port
+    }
+
+    fn outgoing_packet_dst_port(packet: &Packet) -> &PortId {
+        &packet.destination_port
+    }
+
+    fn outgoing_packet_sequence(packet: &Packet) -> &Sequence {
+        &packet.sequence
+    }
+
+    fn outgoing_packet_timeout_height(packet: &Packet) -> Option<&Height> {
+        match &packet.timeout_height {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(h) => Some(h),
+        }
+    }
+
+    fn outgoing_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
+        &packet.timeout_timestamp
+    }
+
+    fn client_state_latest_height(client_state: &ClientState) -> &Height {
+        &client_state.latest_height
+    }
+
+    fn log_incoming_packet(packet: &Packet) -> LogValue<'_> {
+        LogValue::Display(packet)
+    }
+
+    fn log_outgoing_packet(packet: &Packet) -> LogValue<'_> {
+        LogValue::Display(packet)
+    }
+
+    fn counterparty_message_height(message: &Arc<dyn CosmosMessage>) -> Option<Height> {
+        message.counterparty_height()
+    }
+
     async fn query_chain_id_from_channel_id(
         &self,
         channel_id: &ChannelId,
@@ -512,13 +519,6 @@ where
         sequence: &Sequence,
     ) -> Result<bool, Error> {
         query_is_packet_received(self, port_id, channel_id, sequence).await
-    }
-
-    async fn query_write_acknowledgement_event(
-        &self,
-        packet: &Packet,
-    ) -> Result<Option<WriteAcknowledgement>, Error> {
-        query_write_acknowledgement_event(self, packet).await
     }
 
     /// Construct a receive packet to be sent to a destination Cosmos

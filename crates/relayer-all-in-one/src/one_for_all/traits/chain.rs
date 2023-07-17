@@ -192,6 +192,45 @@ pub trait OfaChain: OfaChainTypes {
         event: &Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
 
+    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent>;
+
+    fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
+        -> Self::OutgoingPacket;
+
+    fn extract_packet_from_write_acknowledgement_event(
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket;
+
+    fn try_extract_create_client_event(event: Self::Event) -> Option<Self::CreateClientEvent>;
+
+    fn create_client_event_client_id(event: &Self::CreateClientEvent) -> &Self::ClientId;
+
+    fn try_extract_connection_open_init_event(
+        event: Self::Event,
+    ) -> Option<Self::ConnectionOpenInitEvent>;
+
+    fn connection_open_init_event_connection_id(
+        event: &Self::ConnectionOpenInitEvent,
+    ) -> &Self::ConnectionId;
+
+    fn try_extract_connection_open_try_event(
+        event: Self::Event,
+    ) -> Option<Self::ConnectionOpenTryEvent>;
+
+    fn connection_open_try_event_connection_id(
+        event: &Self::ConnectionOpenTryEvent,
+    ) -> &Self::ConnectionId;
+
+    fn try_extract_channel_open_init_event(
+        event: Self::Event,
+    ) -> Option<Self::ChannelOpenInitEvent>;
+
+    fn channel_open_init_event_channel_id(event: &Self::ChannelOpenInitEvent) -> &Self::ChannelId;
+
+    fn try_extract_channel_open_try_event(event: Self::Event) -> Option<Self::ChannelOpenTryEvent>;
+
+    fn channel_open_try_event_channel_id(event: &Self::ChannelOpenTryEvent) -> &Self::ChannelId;
+
     /**
        Corresponds to
        [`CanSendMessages::send_messages`](ibc_relayer_components::chain::traits::message_sender::CanSendMessages::send_messages)
@@ -206,6 +245,11 @@ pub trait OfaChain: OfaChainTypes {
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
 
     fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>>;
+
+    async fn query_write_acknowledgement_event(
+        &self,
+        packet: &Self::IncomingPacket,
+    ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
 }
 
 #[async_trait]
@@ -256,45 +300,6 @@ where
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 
-    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent>;
-
-    fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
-        -> Self::OutgoingPacket;
-
-    fn extract_packet_from_write_acknowledgement_event(
-        ack: &Self::WriteAcknowledgementEvent,
-    ) -> &Self::IncomingPacket;
-
-    fn try_extract_create_client_event(event: Self::Event) -> Option<Self::CreateClientEvent>;
-
-    fn create_client_event_client_id(event: &Self::CreateClientEvent) -> &Self::ClientId;
-
-    fn try_extract_connection_open_init_event(
-        event: Self::Event,
-    ) -> Option<Self::ConnectionOpenInitEvent>;
-
-    fn connection_open_init_event_connection_id(
-        event: &Self::ConnectionOpenInitEvent,
-    ) -> &Self::ConnectionId;
-
-    fn try_extract_connection_open_try_event(
-        event: Self::Event,
-    ) -> Option<Self::ConnectionOpenTryEvent>;
-
-    fn connection_open_try_event_connection_id(
-        event: &Self::ConnectionOpenTryEvent,
-    ) -> &Self::ConnectionId;
-
-    fn try_extract_channel_open_init_event(
-        event: Self::Event,
-    ) -> Option<Self::ChannelOpenInitEvent>;
-
-    fn channel_open_init_event_channel_id(event: &Self::ChannelOpenInitEvent) -> &Self::ChannelId;
-
-    fn try_extract_channel_open_try_event(event: Self::Event) -> Option<Self::ChannelOpenTryEvent>;
-
-    fn channel_open_try_event_channel_id(event: &Self::ChannelOpenTryEvent) -> &Self::ChannelId;
-
     async fn query_chain_id_from_channel_id(
         &self,
         channel_id: &Self::ChannelId,
@@ -318,11 +323,6 @@ where
         channel_id: &Self::ChannelId,
         sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
-
-    async fn query_write_acknowledgement_event(
-        &self,
-        packet: &Self::IncomingPacket,
-    ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
 
     async fn build_receive_packet_message(
         &self,
