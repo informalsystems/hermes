@@ -25,6 +25,13 @@ pub struct CosmosReceivePacketPayload {
     pub proofs: Proofs,
 }
 
+pub struct CosmosAckPacketPayload {
+    pub height: Height,
+    pub packet: Packet,
+    pub ack: Vec<u8>,
+    pub proofs: Proofs,
+}
+
 pub async fn build_receive_packet_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     height: &Height,
@@ -62,7 +69,7 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
         .map_err(BaseError::join)?
 }
 
-pub async fn build_receive_packet_message(
+pub fn build_receive_packet_message(
     payload: CosmosReceivePacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
     let message = CosmosIbcMessage::new(Some(payload.height), move |signer| {
@@ -77,12 +84,12 @@ pub async fn build_receive_packet_message(
     Ok(wrap_cosmos_message(message))
 }
 
-pub async fn build_ack_packet_message<Chain: ChainHandle>(
+pub async fn build_ack_packet_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     height: &Height,
     packet: &Packet,
     ack: &WriteAcknowledgement,
-) -> Result<Arc<dyn CosmosMessage>, Error> {
+) -> Result<CosmosAckPacketPayload, Error> {
     let height = *height;
     let packet = packet.clone();
     let ack = ack.clone();
@@ -107,20 +114,31 @@ pub async fn build_ack_packet_message<Chain: ChainHandle>(
             let packet = packet.clone();
             let ack = ack.ack.clone();
 
-            let message = CosmosIbcMessage::new(Some(height), move |signer| {
-                Ok(MsgAcknowledgement::new(
-                    packet.clone(),
-                    ack.clone().into(),
-                    proofs.clone(),
-                    signer.clone(),
-                )
-                .to_any())
-            });
-
-            Ok(wrap_cosmos_message(message))
+            Ok(CosmosAckPacketPayload {
+                height,
+                packet,
+                ack,
+                proofs,
+            })
         })
         .await
         .map_err(BaseError::join)?
+}
+
+pub fn build_ack_packet_message(
+    payload: CosmosAckPacketPayload,
+) -> Result<Arc<dyn CosmosMessage>, Error> {
+    let message = CosmosIbcMessage::new(Some(payload.height), move |signer| {
+        Ok(MsgAcknowledgement::new(
+            payload.packet.clone(),
+            payload.ack.clone().into(),
+            payload.proofs.clone(),
+            signer.clone(),
+        )
+        .to_any())
+    });
+
+    Ok(wrap_cosmos_message(message))
 }
 
 pub async fn build_timeout_unordered_packet_message<Chain: ChainHandle>(

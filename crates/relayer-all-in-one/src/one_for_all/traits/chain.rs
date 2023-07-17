@@ -168,6 +168,8 @@ pub trait OfaChainTypes: Async {
     type ChannelOpenTryEvent: Async;
 
     type ReceivePacketPayload: Async;
+
+    type AckPacketPayload: Async;
 }
 
 #[async_trait]
@@ -337,12 +339,17 @@ where
         payload: Counterparty::ReceivePacketPayload,
     ) -> Result<Self::Message, Self::Error>;
 
-    async fn build_ack_packet_message(
+    async fn build_ack_packet_payload(
         &self,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
         ack: &Self::WriteAcknowledgementEvent,
-    ) -> Result<Counterparty::Message, Self::Error>;
+    ) -> Result<Self::AckPacketPayload, Self::Error>;
+
+    async fn build_ack_packet_message(
+        &self,
+        payload: Counterparty::AckPacketPayload,
+    ) -> Result<Self::Message, Self::Error>;
 
     async fn build_timeout_unordered_packet_message(
         &self,

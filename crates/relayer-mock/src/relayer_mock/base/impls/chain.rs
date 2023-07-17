@@ -12,7 +12,9 @@ use async_trait::async_trait;
 use eyre::eyre;
 use ibc_relayer_components::chain::traits::logs::event::CanLogChainEvent;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
-use ibc_relayer_components::chain::traits::message_builders::ack_packet::CanBuildAckPacketMessage;
+use ibc_relayer_components::chain::traits::message_builders::ack_packet::{
+    CanBuildAckPacketMessage, CanBuildAckPacketPayload,
+};
 use ibc_relayer_components::chain::traits::message_builders::receive_packet::{
     CanBuildReceivePacketMessage, CanBuildReceivePacketPayload,
 };
@@ -35,6 +37,7 @@ use ibc_relayer_components::chain::traits::types::message::{
     CanEstimateMessageSize, HasMessageType,
 };
 use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
+use ibc_relayer_components::chain::traits::types::packets::ack::HasAckPacketPayload;
 use ibc_relayer_components::chain::traits::types::packets::receive::HasReceivePacketPayload;
 use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
@@ -387,9 +390,13 @@ impl CanBuildReceivePacketMessage<MockChainContext> for MockChainContext {
     }
 }
 
+impl HasAckPacketPayload<MockChainContext> for MockChainContext {
+    type AckPacketPayload = MockMessage;
+}
+
 #[async_trait]
-impl CanBuildAckPacketMessage<MockChainContext> for MockChainContext {
-    async fn build_ack_packet_message(
+impl CanBuildAckPacketPayload<MockChainContext> for MockChainContext {
+    async fn build_ack_packet_payload(
         &self,
         height: &MockHeight,
         packet: &PacketKey,
@@ -414,6 +421,12 @@ impl CanBuildAckPacketMessage<MockChainContext> for MockChainContext {
     }
 }
 
+#[async_trait]
+impl CanBuildAckPacketMessage<MockChainContext> for MockChainContext {
+    async fn build_ack_packet_message(&self, payload: MockMessage) -> Result<MockMessage, Error> {
+        Ok(payload)
+    }
+}
 #[async_trait]
 impl CanBuildTimeoutUnorderedPacketMessage<MockChainContext> for MockChainContext {
     async fn build_timeout_unordered_packet_message(
