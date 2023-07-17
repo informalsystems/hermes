@@ -32,7 +32,7 @@ use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWrit
 use ibc_relayer_components::chain::traits::types::message::{
     CanEstimateMessageSize, HasMessageType,
 };
-use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
+use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
 use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
 use ibc_relayer_components::core::traits::error::HasErrorType;
@@ -110,7 +110,9 @@ impl HasIbcPacketTypes<MockChainContext> for MockChainContext {
     type IncomingPacket = PacketKey;
 
     type OutgoingPacket = PacketKey;
+}
 
+impl HasIbcPacketFields<MockChainContext> for MockChainContext {
     fn incoming_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
         &packet.src_channel_id
     }

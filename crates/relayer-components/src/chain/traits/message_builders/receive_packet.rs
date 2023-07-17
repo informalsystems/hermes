@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::chain::traits::types::packets::receive::HasReceivePacketPayload;
@@ -8,7 +9,10 @@ use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CanBuildReceivePacketPayload<Counterparty>:
-    HasReceivePacketPayload<Counterparty> + HasIbcPacketTypes<Counterparty> + HasErrorType
+    HasReceivePacketPayload<Counterparty>
+    + HasIbcPacketTypes<Counterparty>
+    + HasHeightType
+    + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {
@@ -21,7 +25,7 @@ where
 
 #[async_trait]
 pub trait CanBuildReceivePacketMessage<Counterparty>:
-    HasIbcPacketTypes<Counterparty> + HasErrorType
+    HasIbcPacketTypes<Counterparty> + HasHeightType + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {

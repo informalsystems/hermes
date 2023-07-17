@@ -11,7 +11,7 @@ use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::{
 use ibc_relayer_components::chain::traits::types::message::{
     CanEstimateMessageSize, HasMessageType,
 };
-use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
+use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
 use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
@@ -107,7 +107,14 @@ where
     type IncomingPacket = Chain::IncomingPacket;
 
     type OutgoingPacket = Chain::OutgoingPacket;
+}
 
+impl<Chain, Counterparty> HasIbcPacketFields<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<Chain>,
+{
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId {
         Chain::incoming_packet_src_channel_id(packet)
     }
