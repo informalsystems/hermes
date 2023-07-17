@@ -15,6 +15,11 @@ in the per-chain configuration.
 
 Check the `event_source` setting in the example [`config.toml`](config.toml) file in the Hermes repository for more details.
 
+Additionally, it is now possible to skip the scanning phase during Hermes startup,
+by disabling clients, connections and channels workers, and setting `clear_on_start` to `false`.
+This significantly improve startup time when relaying on chains with hundreds or thousands of open channels, connections and clients.
+See the [Performance tuning][perf-tuning] page of the guide for more information.
+
 ### Note for operators
 
 > ⚠️  Be aware that this release contains breaking changes to the Hermes configuration.
