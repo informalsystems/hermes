@@ -21,6 +21,26 @@ use crate::types::connection::{
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
 
+pub async fn build_connection_open_init_payload<Chain: ChainHandle>(
+    chain: &CosmosChain<Chain>,
+) -> Result<CosmosConnectionOpenInitPayload, Error> {
+    let chain_handle = chain.handle.clone();
+
+    chain
+        .runtime
+        .runtime
+        .runtime
+        .spawn_blocking(move || {
+            let commitment_prefix = chain_handle
+                .query_commitment_prefix()
+                .map_err(BaseError::relayer)?;
+
+            Ok(CosmosConnectionOpenInitPayload { commitment_prefix })
+        })
+        .await
+        .map_err(BaseError::join)?
+}
+
 pub async fn build_connection_open_try_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     height: &Height,

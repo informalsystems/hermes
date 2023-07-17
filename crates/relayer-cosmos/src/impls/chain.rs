@@ -6,12 +6,9 @@ use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    IncludeProof, PageRequest, Qualified, QueryClientStateRequest,
-    QueryConsensusStateHeightsRequest, QueryConsensusStateRequest, QueryHeight,
-    QueryUnreceivedPacketsRequest,
+    IncludeProof, Qualified, QueryClientStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::client_state::AnyClientState;
-use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::{
     channel_open_init_try_from_abci_event, channel_open_try_try_from_abci_event,
     connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
@@ -31,7 +28,6 @@ use ibc_relayer_runtime::tokio::logger::value::LogValue;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics02_client::events::CLIENT_ID_ATTRIBUTE_KEY;
-use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
@@ -63,9 +59,11 @@ use crate::methods::channel::{
 use crate::methods::connection::{
     build_connection_open_ack_message, build_connection_open_ack_payload,
     build_connection_open_confirm_message, build_connection_open_confirm_payload,
-    build_connection_open_init_message, build_connection_open_try_message,
-    build_connection_open_try_payload,
+    build_connection_open_init_message, build_connection_open_init_payload,
+    build_connection_open_try_message, build_connection_open_try_payload,
 };
+use crate::methods::consensus_state::{find_consensus_state_height_before, query_consensus_state};
+use crate::methods::create_client::{build_create_client_message, build_create_client_payload};
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
 use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
 use crate::types::channel::{
@@ -567,33 +565,7 @@ where
         client_id: &ClientId,
         height: &Height,
     ) -> Result<ConsensusState, Error> {
-        let chain_handle = self.handle.clone();
-
-        let client_id = client_id.clone();
-        let height = *height;
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let (any_consensus_state, _) = chain_handle
-                    .query_consensus_state(
-                        QueryConsensusStateRequest {
-                            client_id: client_id.clone(),
-                            consensus_height: height,
-                            query_height: QueryHeight::Latest,
-                        },
-                        IncludeProof::No,
-                    )
-                    .map_err(BaseError::relayer)?;
-
-                match any_consensus_state {
-                    AnyConsensusState::Tendermint(consensus_state) => Ok(consensus_state),
-                    _ => Err(BaseError::mismatch_consensus_state().into()),
-                }
-            })
-            .await
-            .map_err(BaseError::join)?
+        query_consensus_state(self, client_id, height).await
     }
 
     async fn query_is_packet_received(
@@ -810,90 +782,14 @@ where
         &self,
         client_settings: &ClientSettings,
     ) -> Result<CosmosCreateClientPayload, Self::Error> {
-        let client_settings = client_settings.clone();
-        let chain_handle = self.handle.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let height = chain_handle
-                    .query_latest_height()
-                    .map_err(BaseError::relayer)?;
-
-                let any_client_state = chain_handle
-                    .build_client_state(height, client_settings)
-                    .map_err(BaseError::relayer)?;
-
-                let client_state = match &any_client_state {
-                    AnyClientState::Tendermint(client_state) => client_state.clone(),
-                    _ => {
-                        return Err(
-                            BaseError::generic(eyre!("expect Tendermint client state")).into()
-                        );
-                    }
-                };
-
-                let any_consensus_state = chain_handle
-                    .build_consensus_state(
-                        any_client_state.latest_height(),
-                        height,
-                        any_client_state,
-                    )
-                    .map_err(BaseError::relayer)?;
-
-                let consensus_state = match any_consensus_state {
-                    AnyConsensusState::Tendermint(consensus_state) => consensus_state,
-                    _ => {
-                        return Err(
-                            BaseError::generic(eyre!("expect Tendermint consensus state")).into(),
-                        );
-                    }
-                };
-
-                Ok(CosmosCreateClientPayload {
-                    client_state,
-                    consensus_state,
-                })
-            })
-            .await
-            .map_err(BaseError::join)?
+        build_create_client_payload(self, client_settings).await
     }
 
     async fn build_create_client_message(
         &self,
         payload: CosmosCreateClientPayload,
     ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
-        let message = CosmosIbcMessage::new(None, move |signer| {
-            let message = MsgCreateClient {
-                client_state: payload.client_state.clone().into(),
-                consensus_state: payload.consensus_state.clone().into(),
-                signer: signer.clone(),
-            };
-
-            Ok(message.to_any())
-        });
-
-        Ok(wrap_cosmos_message(message))
-    }
-
-    async fn build_connection_open_init_payload(
-        &self,
-    ) -> Result<CosmosConnectionOpenInitPayload, Error> {
-        let chain_handle = self.handle.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let commitment_prefix = chain_handle
-                    .query_commitment_prefix()
-                    .map_err(BaseError::relayer)?;
-
-                Ok(CosmosConnectionOpenInitPayload { commitment_prefix })
-            })
-            .await
-            .map_err(BaseError::join)?
+        build_create_client_message(payload)
     }
 
     async fn build_update_client_payload(
@@ -918,42 +814,13 @@ where
         client_id: &ClientId,
         target_height: &Height,
     ) -> Result<Height, Error> {
-        let client_id = client_id.clone();
-        let target_height = *target_height;
+        find_consensus_state_height_before(self, client_id, target_height).await
+    }
 
-        let chain_handle = self.handle.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let heights = {
-                    let mut heights = chain_handle
-                        .query_consensus_state_heights(QueryConsensusStateHeightsRequest {
-                            client_id,
-                            pagination: Some(PageRequest::all()),
-                        })
-                        .map_err(BaseError::relayer)?;
-
-                    heights.sort_by_key(|&h| core::cmp::Reverse(h));
-
-                    heights
-                };
-
-                let height = heights
-                    .into_iter()
-                    .find(|height| height < &target_height)
-                    .ok_or_else(|| {
-                        BaseError::generic(eyre!(
-                            "no consensus state found that is smaller than target height {}",
-                            target_height
-                        ))
-                    })?;
-
-                Ok(height)
-            })
-            .await
-            .map_err(BaseError::join)?
+    async fn build_connection_open_init_payload(
+        &self,
+    ) -> Result<CosmosConnectionOpenInitPayload, Error> {
+        build_connection_open_init_payload(self).await
     }
 
     async fn build_connection_open_try_payload(
