@@ -1,12 +1,8 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
-use eyre::eyre;
 use ibc_relayer::chain::client::ClientSettings;
-use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
-use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::event::{
     channel_open_init_try_from_abci_event, channel_open_try_try_from_abci_event,
     connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
@@ -41,12 +37,14 @@ use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::contexts::chain::CosmosChain;
+use crate::methods::chain::query_chain_status;
 use crate::methods::channel::{
     build_channel_open_ack_message, build_channel_open_ack_payload,
     build_channel_open_confirm_message, build_channel_open_confirm_payload,
     build_channel_open_init_message, build_channel_open_try_message,
-    build_channel_open_try_payload,
+    build_channel_open_try_payload, query_chain_id_from_channel_id,
 };
+use crate::methods::client_state::query_client_state;
 use crate::methods::connection::{
     build_connection_open_ack_message, build_connection_open_ack_payload,
     build_connection_open_confirm_message, build_connection_open_confirm_payload,
@@ -237,21 +235,8 @@ where
         Ok(events)
     }
 
-    async fn query_chain_status(&self) -> Result<ChainStatus, Self::Error> {
-        let chain_handle = self.handle.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let status = chain_handle
-                    .query_application_status()
-                    .map_err(BaseError::relayer)?;
-
-                Ok(status)
-            })
-            .await
-            .map_err(BaseError::join)?
+    async fn query_chain_status(&self) -> Result<ChainStatus, Error> {
+        query_chain_status(self).await
     }
 
     fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>> {
@@ -507,51 +492,11 @@ where
         channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<ChainId, Error> {
-        let chain_handle = self.handle.clone();
-
-        let port_id = port_id.clone();
-        let channel_id = channel_id.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let channel_id =
-                    counterparty_chain_from_channel(&chain_handle, &channel_id, &port_id)
-                        .map_err(BaseError::supervisor)?;
-
-                Ok(channel_id)
-            })
-            .await
-            .map_err(BaseError::join)?
+        query_chain_id_from_channel_id(self, channel_id, port_id).await
     }
 
     async fn query_client_state(&self, client_id: &ClientId) -> Result<ClientState, Error> {
-        let chain_handle = self.handle.clone();
-
-        let client_id = client_id.clone();
-
-        self.runtime
-            .runtime
-            .runtime
-            .spawn_blocking(move || {
-                let (client_state, _) = chain_handle
-                    .query_client_state(
-                        QueryClientStateRequest {
-                            client_id,
-                            height: QueryHeight::Latest,
-                        },
-                        IncludeProof::No,
-                    )
-                    .map_err(BaseError::relayer)?;
-
-                match client_state {
-                    AnyClientState::Tendermint(client_state) => Ok(client_state),
-                    _ => Err(BaseError::generic(eyre!("expected tendermint client state")).into()),
-                }
-            })
-            .await
-            .map_err(BaseError::join)?
+        query_client_state(self, client_id).await
     }
 
     async fn query_consensus_state(

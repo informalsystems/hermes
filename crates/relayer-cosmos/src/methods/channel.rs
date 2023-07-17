@@ -1,4 +1,5 @@
 use alloc::sync::Arc;
+use ibc_relayer::chain::counterparty::counterparty_chain_from_channel;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer_types::core::ics04_channel::channel::{
@@ -8,7 +9,7 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenA
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
@@ -20,6 +21,30 @@ use crate::types::channel::{
 };
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
+
+pub async fn query_chain_id_from_channel_id<Chain: ChainHandle>(
+    chain: &CosmosChain<Chain>,
+    channel_id: &ChannelId,
+    port_id: &PortId,
+) -> Result<ChainId, Error> {
+    let chain_handle = chain.handle.clone();
+
+    let port_id = port_id.clone();
+    let channel_id = channel_id.clone();
+
+    chain
+        .runtime
+        .runtime
+        .runtime
+        .spawn_blocking(move || {
+            let channel_id = counterparty_chain_from_channel(&chain_handle, &channel_id, &port_id)
+                .map_err(BaseError::supervisor)?;
+
+            Ok(channel_id)
+        })
+        .await
+        .map_err(BaseError::join)?
+}
 
 pub async fn build_channel_open_try_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
