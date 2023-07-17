@@ -75,7 +75,9 @@ use crate::types::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenInitEvent,
     CosmosChannelOpenTryEvent, CosmosChannelOpenTryPayload, CosmosInitChannelOptions,
 };
-use crate::types::client::CosmosCreateClientEvent;
+use crate::types::client::{
+    CosmosCreateClientEvent, CosmosCreateClientPayload, CosmosUpdateClientPayload,
+};
 use crate::types::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
     CosmosConnectionOpenInitEvent, CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryEvent,
@@ -133,11 +135,11 @@ where
 
     type CreateClientPayloadOptions = ClientSettings;
 
-    type CreateClientPayload = (ClientState, ConsensusState);
+    type CreateClientPayload = CosmosCreateClientPayload;
 
     type CreateClientEvent = CosmosCreateClientEvent;
 
-    type UpdateClientPayload = Vec<TendermintHeader>;
+    type UpdateClientPayload = CosmosUpdateClientPayload;
 
     type ConnectionVersion = ConnectionVersion;
 
@@ -266,10 +268,37 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> OfaIbcChain<CosmosChain<Counterparty>> for CosmosChain<Chain>
+impl<Chain, Counterparty> OfaIbcChain<Counterparty> for CosmosChain<Chain>
 where
     Chain: ChainHandle,
-    Counterparty: ChainHandle,
+    Counterparty: OfaChainTypes<
+        // A Cosmos chain can act as an IBC chain to a counterparty,
+        // as long as the counterparty uses the same base Cosmos types.
+        ChainId = ChainId,
+        Height = Height,
+        Message = CosmosIbcMessage,
+        Timestamp = Timestamp,
+        IncomingPacket = Packet,
+        OutgoingPacket = Packet,
+        ClientId = ClientId,
+        ConnectionId = ConnectionId,
+        ChannelId = ChannelId,
+        PortId = PortId,
+        Sequence = Sequence,
+        // TODO: Support other counterparty client types and payload types
+        // provided that we can build Cosmos messages for it.
+        ClientState = ClientState,
+        ConsensusState = ConsensusState,
+        CreateClientPayload = CosmosCreateClientPayload,
+        UpdateClientPayload = CosmosUpdateClientPayload,
+        ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload,
+        ConnectionOpenTryPayload = CosmosConnectionOpenTryPayload,
+        ConnectionOpenAckPayload = CosmosConnectionOpenAckPayload,
+        ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload,
+        ChannelOpenTryPayload = CosmosChannelOpenTryPayload,
+        ChannelOpenAckPayload = CosmosChannelOpenAckPayload,
+        ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload,
+    >,
 {
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
         &packet.source_channel
@@ -780,7 +809,7 @@ where
     async fn build_create_client_payload(
         &self,
         client_settings: &ClientSettings,
-    ) -> Result<(ClientState, ConsensusState), Self::Error> {
+    ) -> Result<CosmosCreateClientPayload, Self::Error> {
         let client_settings = client_settings.clone();
         let chain_handle = self.handle.clone();
 
@@ -822,7 +851,10 @@ where
                     }
                 };
 
-                Ok((client_state, consensus_state))
+                Ok(CosmosCreateClientPayload {
+                    client_state,
+                    consensus_state,
+                })
             })
             .await
             .map_err(BaseError::join)?
@@ -830,12 +862,12 @@ where
 
     async fn build_create_client_message(
         &self,
-        (client_state, consensus_state): (ClientState, ConsensusState),
+        payload: CosmosCreateClientPayload,
     ) -> Result<CosmosIbcMessage, Self::Error> {
         let message = CosmosIbcMessage::new(None, move |signer| {
             let message = MsgCreateClient {
-                client_state: client_state.clone().into(),
-                consensus_state: consensus_state.clone().into(),
+                client_state: payload.client_state.clone().into(),
+                consensus_state: payload.consensus_state.clone().into(),
                 signer: signer.clone(),
             };
 
@@ -869,7 +901,7 @@ where
         trusted_height: &Height,
         target_height: &Height,
         client_state: ClientState,
-    ) -> Result<Vec<TendermintHeader>, Self::Error> {
+    ) -> Result<CosmosUpdateClientPayload, Self::Error> {
         let trusted_height = *trusted_height;
         let target_height = *target_height;
         let chain_handle = self.handle.clone();
@@ -894,7 +926,7 @@ where
                     })
                     .collect::<Result<Vec<TendermintHeader>, Error>>()?;
 
-                Ok(headers)
+                Ok(CosmosUpdateClientPayload { headers })
             })
             .await
             .map_err(BaseError::join)?
@@ -903,9 +935,10 @@ where
     async fn build_update_client_message(
         &self,
         client_id: &ClientId,
-        headers: Vec<TendermintHeader>,
+        payload: CosmosUpdateClientPayload,
     ) -> Result<Vec<Self::Message>, Self::Error> {
-        let messages = headers
+        let messages = payload
+            .headers
             .into_iter()
             .map(|header| {
                 let client_id = client_id.clone();
