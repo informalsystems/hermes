@@ -12,10 +12,10 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 use tendermint::abci::Event as AbciEvent;
 
+use crate::traits::message::CosmosMessage;
 use crate::types::channel::CosmosInitChannelOptions;
 use crate::types::connection::CosmosInitConnectionOptions;
 use crate::types::error::Error;
-use crate::types::message::CosmosIbcMessage;
 
 pub trait AfoCosmosChain<Counterparty>:
     AfoChain<
@@ -24,7 +24,7 @@ pub trait AfoCosmosChain<Counterparty>:
     Error = Error,
     Height = Height,
     Timestamp = Timestamp,
-    Message = CosmosIbcMessage,
+    Message = Arc<dyn CosmosMessage>,
     Event = Arc<AbciEvent>,
     ClientId = ClientId,
     ConnectionId = ConnectionId,
@@ -52,7 +52,7 @@ where
         Error = Error,
         Height = Height,
         Timestamp = Timestamp,
-        Message = CosmosIbcMessage,
+        Message = Arc<dyn CosmosMessage>,
         Event = Arc<AbciEvent>,
         ClientId = ClientId,
         ConnectionId = ConnectionId,

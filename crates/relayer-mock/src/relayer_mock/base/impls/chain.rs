@@ -12,9 +12,15 @@ use async_trait::async_trait;
 use eyre::eyre;
 use ibc_relayer_components::chain::traits::logs::event::CanLogChainEvent;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
-use ibc_relayer_components::chain::traits::message_builders::ack_packet::CanBuildAckPacketMessage;
-use ibc_relayer_components::chain::traits::message_builders::receive_packet::CanBuildReceivePacketMessage;
-use ibc_relayer_components::chain::traits::message_builders::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
+use ibc_relayer_components::chain::traits::message_builders::ack_packet::{
+    CanBuildAckPacketMessage, CanBuildAckPacketPayload,
+};
+use ibc_relayer_components::chain::traits::message_builders::receive_packet::{
+    CanBuildReceivePacketMessage, CanBuildReceivePacketPayload,
+};
+use ibc_relayer_components::chain::traits::message_builders::timeout_unordered_packet::{
+    CanBuildTimeoutUnorderedPacketMessage, CanBuildTimeoutUnorderedPacketPayload,
+};
 use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_components::chain::traits::queries::consensus_state::CanQueryConsensusState;
 use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
@@ -32,7 +38,10 @@ use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWrit
 use ibc_relayer_components::chain::traits::types::message::{
     CanEstimateMessageSize, HasMessageType,
 };
-use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
+use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
+use ibc_relayer_components::chain::traits::types::packets::ack::HasAckPacketPayload;
+use ibc_relayer_components::chain::traits::types::packets::receive::HasReceivePacketPayload;
+use ibc_relayer_components::chain::traits::types::packets::timeout::HasTimeoutUnorderedPacketPayload;
 use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
 use ibc_relayer_components::core::traits::error::HasErrorType;
@@ -110,7 +119,9 @@ impl HasIbcPacketTypes<MockChainContext> for MockChainContext {
     type IncomingPacket = PacketKey;
 
     type OutgoingPacket = PacketKey;
+}
 
+impl HasIbcPacketFields<MockChainContext> for MockChainContext {
     fn incoming_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
         &packet.src_channel_id
     }
@@ -344,9 +355,13 @@ impl CanQueryWriteAcknowledgement<MockChainContext> for MockChainContext {
     }
 }
 
+impl HasReceivePacketPayload<MockChainContext> for MockChainContext {
+    type ReceivePacketPayload = MockMessage;
+}
+
 #[async_trait]
-impl CanBuildReceivePacketMessage<MockChainContext> for MockChainContext {
-    async fn build_receive_packet_message(
+impl CanBuildReceivePacketPayload<MockChainContext> for MockChainContext {
+    async fn build_receive_packet_payload(
         &self,
         height: &MockHeight,
         packet: &PacketKey,
@@ -369,8 +384,22 @@ impl CanBuildReceivePacketMessage<MockChainContext> for MockChainContext {
 }
 
 #[async_trait]
-impl CanBuildAckPacketMessage<MockChainContext> for MockChainContext {
-    async fn build_ack_packet_message(
+impl CanBuildReceivePacketMessage<MockChainContext> for MockChainContext {
+    async fn build_receive_packet_message(
+        &self,
+        payload: MockMessage,
+    ) -> Result<MockMessage, Error> {
+        Ok(payload)
+    }
+}
+
+impl HasAckPacketPayload<MockChainContext> for MockChainContext {
+    type AckPacketPayload = MockMessage;
+}
+
+#[async_trait]
+impl CanBuildAckPacketPayload<MockChainContext> for MockChainContext {
+    async fn build_ack_packet_payload(
         &self,
         height: &MockHeight,
         packet: &PacketKey,
@@ -396,8 +425,19 @@ impl CanBuildAckPacketMessage<MockChainContext> for MockChainContext {
 }
 
 #[async_trait]
-impl CanBuildTimeoutUnorderedPacketMessage<MockChainContext> for MockChainContext {
-    async fn build_timeout_unordered_packet_message(
+impl CanBuildAckPacketMessage<MockChainContext> for MockChainContext {
+    async fn build_ack_packet_message(&self, payload: MockMessage) -> Result<MockMessage, Error> {
+        Ok(payload)
+    }
+}
+
+impl HasTimeoutUnorderedPacketPayload<MockChainContext> for MockChainContext {
+    type TimeoutUnorderedPacketPayload = MockMessage;
+}
+
+#[async_trait]
+impl CanBuildTimeoutUnorderedPacketPayload<MockChainContext> for MockChainContext {
+    async fn build_timeout_unordered_packet_payload(
         &self,
         height: &MockHeight,
         packet: &PacketKey,
@@ -414,5 +454,15 @@ impl CanBuildTimeoutUnorderedPacketMessage<MockChainContext> for MockChainContex
         }
 
         Ok(MockMessage::TimeoutPacket(*height, packet.clone()))
+    }
+}
+
+#[async_trait]
+impl CanBuildTimeoutUnorderedPacketMessage<MockChainContext> for MockChainContext {
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        payload: MockMessage,
+    ) -> Result<MockMessage, Error> {
+        Ok(payload)
     }
 }

@@ -25,7 +25,7 @@ use ibc_relayer_components::relay::traits::channel::open_try::{
     CanRelayChannelOpenTry, ChannelOpenTryRelayer,
 };
 
-use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::{traits::relay::OfaRelay, types::relay::OfaRelayWrapper};
 use crate::std_prelude::*;
 
@@ -44,7 +44,7 @@ where
 {
     fn missing_channel_try_event_error(
         &self,
-        src_channel_id: &<Relay::SrcChain as OfaChain>::ChannelId,
+        src_channel_id: &<Relay::SrcChain as OfaChainTypes>::ChannelId,
     ) -> Relay::Error {
         self.relay.missing_channel_try_event_error(src_channel_id)
     }
@@ -57,10 +57,10 @@ where
 {
     async fn init_channel(
         &self,
-        src_port_id: &<Relay::SrcChain as OfaChain>::PortId,
-        dst_port_id: &<Relay::DstChain as OfaChain>::PortId,
-        init_channel_options: &<Relay::SrcChain as OfaIbcChain<Relay::DstChain>>::InitChannelOptions,
-    ) -> Result<<Relay::SrcChain as OfaChain>::ChannelId, Self::Error> {
+        src_port_id: &<Relay::SrcChain as OfaChainTypes>::PortId,
+        dst_port_id: &<Relay::DstChain as OfaChainTypes>::PortId,
+        init_channel_options: &<Relay::SrcChain as OfaChainTypes>::InitChannelOptions,
+    ) -> Result<<Relay::SrcChain as OfaChainTypes>::ChannelId, Self::Error> {
         InitializeChannel::init_channel(self, src_port_id, dst_port_id, init_channel_options).await
     }
 }
@@ -72,10 +72,10 @@ where
 {
     async fn relay_channel_open_try(
         &self,
-        dst_port_id: &<Relay::DstChain as OfaChain>::PortId,
-        src_port_id: &<Relay::SrcChain as OfaChain>::PortId,
-        src_channel_id: &<Relay::SrcChain as OfaChain>::ChannelId,
-    ) -> Result<<Relay::DstChain as OfaChain>::ChannelId, Self::Error> {
+        dst_port_id: &<Relay::DstChain as OfaChainTypes>::PortId,
+        src_port_id: &<Relay::SrcChain as OfaChainTypes>::PortId,
+        src_channel_id: &<Relay::SrcChain as OfaChainTypes>::ChannelId,
+    ) -> Result<<Relay::DstChain as OfaChainTypes>::ChannelId, Self::Error> {
         RelayChannelOpenTry::relay_channel_open_try(self, dst_port_id, src_port_id, src_channel_id)
             .await
     }
@@ -88,10 +88,10 @@ where
 {
     async fn relay_channel_open_ack(
         &self,
-        src_port_id: &<Relay::SrcChain as OfaChain>::PortId,
-        src_channel_id: &<Relay::SrcChain as OfaChain>::ChannelId,
-        dst_port_id: &<Relay::DstChain as OfaChain>::PortId,
-        dst_channel_id: &<Relay::DstChain as OfaChain>::ChannelId,
+        src_port_id: &<Relay::SrcChain as OfaChainTypes>::PortId,
+        src_channel_id: &<Relay::SrcChain as OfaChainTypes>::ChannelId,
+        dst_port_id: &<Relay::DstChain as OfaChainTypes>::PortId,
+        dst_channel_id: &<Relay::DstChain as OfaChainTypes>::ChannelId,
     ) -> Result<(), Self::Error> {
         RelayChannelOpenAck::relay_channel_open_ack(
             self,
@@ -111,10 +111,10 @@ where
 {
     async fn relay_channel_open_confirm(
         &self,
-        dst_port_id: &<Relay::DstChain as OfaChain>::PortId,
-        dst_channel_id: &<Relay::DstChain as OfaChain>::ChannelId,
-        src_port_id: &<Relay::SrcChain as OfaChain>::PortId,
-        src_channel_id: &<Relay::SrcChain as OfaChain>::ChannelId,
+        dst_port_id: &<Relay::DstChain as OfaChainTypes>::PortId,
+        dst_channel_id: &<Relay::DstChain as OfaChainTypes>::ChannelId,
+        src_port_id: &<Relay::SrcChain as OfaChainTypes>::PortId,
+        src_channel_id: &<Relay::SrcChain as OfaChainTypes>::ChannelId,
     ) -> Result<(), Self::Error> {
         RelayChannelOpenConfirm::relay_channel_open_confirm(
             self,
@@ -134,10 +134,10 @@ where
 {
     async fn relay_channel_open_handshake(
         &self,
-        src_channel_id: &<Relay::SrcChain as OfaChain>::ChannelId,
-        src_port_id: &<Relay::SrcChain as OfaChain>::PortId,
-        dst_port_id: &<Relay::DstChain as OfaChain>::PortId,
-    ) -> Result<<Relay::DstChain as OfaChain>::ChannelId, Self::Error> {
+        src_channel_id: &<Relay::SrcChain as OfaChainTypes>::ChannelId,
+        src_port_id: &<Relay::SrcChain as OfaChainTypes>::PortId,
+        dst_port_id: &<Relay::DstChain as OfaChainTypes>::PortId,
+    ) -> Result<<Relay::DstChain as OfaChainTypes>::ChannelId, Self::Error> {
         RelayChannelOpenHandshake::relay_channel_open_handshake(
             self,
             src_channel_id,

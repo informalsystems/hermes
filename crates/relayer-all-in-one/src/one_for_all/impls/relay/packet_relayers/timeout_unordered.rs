@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::one_for_all::components;
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
@@ -17,7 +17,7 @@ where
 {
     async fn relay_timeout_unordered_packet(
         &self,
-        destination_height: &<Relay::DstChain as OfaChain>::Height,
+        destination_height: &<Relay::DstChain as OfaChainTypes>::Height,
         packet: &Self::Packet,
     ) -> Result<(), Self::Error> {
         components::TimeoutUnorderedPacketRelayer::relay_timeout_unordered_packet(

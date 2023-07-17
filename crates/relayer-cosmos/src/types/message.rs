@@ -3,6 +3,8 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height;
 use prost::EncodeError;
 
+use crate::traits::message::CosmosMessage;
+
 pub struct CosmosIbcMessage {
     pub source_height: Option<Height>,
 
@@ -18,5 +20,19 @@ impl CosmosIbcMessage {
             source_height,
             to_protobuf_fn: Box::new(to_protobuf_fn),
         }
+    }
+}
+
+impl CosmosMessage for CosmosIbcMessage {
+    fn counterparty_height(&self) -> Option<Height> {
+        self.source_height
+    }
+
+    fn trusted_height(&self) -> Option<Height> {
+        None
+    }
+
+    fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError> {
+        (self.to_protobuf_fn)(signer)
     }
 }

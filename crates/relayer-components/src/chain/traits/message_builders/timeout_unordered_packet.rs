@@ -1,19 +1,37 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
+use crate::chain::traits::types::message::HasMessageType;
 use crate::chain::traits::types::packet::HasIbcPacketTypes;
+use crate::chain::traits::types::packets::timeout::HasTimeoutUnorderedPacketPayload;
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanBuildTimeoutUnorderedPacketMessage<Counterparty>:
-    HasIbcPacketTypes<Counterparty> + HasErrorType
+pub trait CanBuildTimeoutUnorderedPacketPayload<Counterparty>:
+    HasTimeoutUnorderedPacketPayload<Counterparty>
+    + HasIbcPacketTypes<Counterparty>
+    + HasHeightType
+    + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {
-    async fn build_timeout_unordered_packet_message(
+    async fn build_timeout_unordered_packet_payload(
         &self,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
-    ) -> Result<Counterparty::Message, Self::Error>;
+    ) -> Result<Self::TimeoutUnorderedPacketPayload, Self::Error>;
+}
+
+#[async_trait]
+pub trait CanBuildTimeoutUnorderedPacketMessage<Counterparty>:
+    HasMessageType + HasErrorType
+where
+    Counterparty: HasTimeoutUnorderedPacketPayload<Self>,
+{
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        payload: Counterparty::TimeoutUnorderedPacketPayload,
+    ) -> Result<Self::Message, Self::Error>;
 }

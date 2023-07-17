@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 
-use crate::chain::traits::message_builders::receive_packet::CanBuildReceivePacketMessage;
+use crate::chain::traits::message_builders::receive_packet::{
+    CanBuildReceivePacketMessage, CanBuildReceivePacketPayload,
+};
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::types::aliases::Height;
 use crate::relay::traits::chains::HasRelayChains;
@@ -15,7 +17,8 @@ pub struct BaseReceivePacketRelayer;
 #[async_trait]
 impl<Relay, AckEvent> ReceivePacketRelayer<Relay> for BaseReceivePacketRelayer
 where
-    Relay::SrcChain: CanBuildReceivePacketMessage<Relay::DstChain>,
+    Relay::SrcChain: CanBuildReceivePacketPayload<Relay::DstChain>,
+    Relay::DstChain: CanBuildReceivePacketMessage<Relay::SrcChain>,
     Relay: CanSendSingleIbcMessage<DestinationTarget>,
     Relay: HasRelayChains,
     Relay::DstChain:
@@ -26,11 +29,17 @@ where
         source_height: &Height<Relay::SrcChain>,
         packet: &Packet<Relay>,
     ) -> Result<Option<AckEvent>, Relay::Error> {
-        let message = relay
+        let payload = relay
             .src_chain()
-            .build_receive_packet_message(source_height, packet)
+            .build_receive_packet_payload(source_height, packet)
             .await
             .map_err(Relay::src_chain_error)?;
+
+        let message = relay
+            .dst_chain()
+            .build_receive_packet_message(payload)
+            .await
+            .map_err(Relay::dst_chain_error)?;
 
         let events = relay.send_message(DestinationTarget, message).await?;
 

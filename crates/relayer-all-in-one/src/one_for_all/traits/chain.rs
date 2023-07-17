@@ -18,7 +18,7 @@ use crate::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait OfaChain: Async {
+pub trait OfaChainTypes: Async {
     /**
        Corresponds to
        [`HasErrorType::Error`](ibc_relayer_components::core::traits::error::HasErrorType::Error).
@@ -115,49 +115,6 @@ pub trait OfaChain: Async {
 
     type SendPacketEvent: Async;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
-
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
-
-    fn logger(&self) -> &Self::Logger;
-
-    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry>;
-
-    fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a>;
-
-    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error>;
-
-    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
-
-    fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
-
-    fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
-
-    fn try_extract_write_acknowledgement_event(
-        event: &Self::Event,
-    ) -> Option<Self::WriteAcknowledgementEvent>;
-
-    /**
-       Corresponds to
-       [`CanSendMessages::send_messages`](ibc_relayer_components::chain::traits::message_sender::CanSendMessages::send_messages)
-    */
-    async fn send_messages(
-        &self,
-        messages: Vec<Self::Message>,
-    ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
-
-    fn chain_id(&self) -> &Self::ChainId;
-
-    async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
-
-    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>>;
-}
-
-#[async_trait]
-pub trait OfaIbcChain<Counterparty>: OfaChain
-where
-    Counterparty: OfaIbcChain<Self>,
-{
     /**
        Corresponds to
        [`HasIbcPacketTypes::IncomingPacket`](ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes::IncomingPacket)
@@ -210,6 +167,102 @@ where
 
     type ChannelOpenTryEvent: Async;
 
+    type ReceivePacketPayload: Async;
+
+    type AckPacketPayload: Async;
+
+    type TimeoutUnorderedPacketPayload: Async;
+}
+
+#[async_trait]
+pub trait OfaChain: OfaChainTypes {
+    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
+
+    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+
+    fn logger(&self) -> &Self::Logger;
+
+    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry>;
+
+    fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a>;
+
+    fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error>;
+
+    fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
+
+    fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
+
+    fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
+
+    fn try_extract_write_acknowledgement_event(
+        event: &Self::Event,
+    ) -> Option<Self::WriteAcknowledgementEvent>;
+
+    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent>;
+
+    fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
+        -> Self::OutgoingPacket;
+
+    fn extract_packet_from_write_acknowledgement_event(
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> &Self::IncomingPacket;
+
+    fn try_extract_create_client_event(event: Self::Event) -> Option<Self::CreateClientEvent>;
+
+    fn create_client_event_client_id(event: &Self::CreateClientEvent) -> &Self::ClientId;
+
+    fn try_extract_connection_open_init_event(
+        event: Self::Event,
+    ) -> Option<Self::ConnectionOpenInitEvent>;
+
+    fn connection_open_init_event_connection_id(
+        event: &Self::ConnectionOpenInitEvent,
+    ) -> &Self::ConnectionId;
+
+    fn try_extract_connection_open_try_event(
+        event: Self::Event,
+    ) -> Option<Self::ConnectionOpenTryEvent>;
+
+    fn connection_open_try_event_connection_id(
+        event: &Self::ConnectionOpenTryEvent,
+    ) -> &Self::ConnectionId;
+
+    fn try_extract_channel_open_init_event(
+        event: Self::Event,
+    ) -> Option<Self::ChannelOpenInitEvent>;
+
+    fn channel_open_init_event_channel_id(event: &Self::ChannelOpenInitEvent) -> &Self::ChannelId;
+
+    fn try_extract_channel_open_try_event(event: Self::Event) -> Option<Self::ChannelOpenTryEvent>;
+
+    fn channel_open_try_event_channel_id(event: &Self::ChannelOpenTryEvent) -> &Self::ChannelId;
+
+    /**
+       Corresponds to
+       [`CanSendMessages::send_messages`](ibc_relayer_components::chain::traits::message_sender::CanSendMessages::send_messages)
+    */
+    async fn send_messages(
+        &self,
+        messages: Vec<Self::Message>,
+    ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
+
+    fn chain_id(&self) -> &Self::ChainId;
+
+    async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
+
+    fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Self::Height, Self::Event)>>;
+
+    async fn query_write_acknowledgement_event(
+        &self,
+        packet: &Self::IncomingPacket,
+    ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
+}
+
+#[async_trait]
+pub trait OfaIbcChain<Counterparty>: OfaChain
+where
+    Counterparty: OfaChainTypes,
+{
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
 
     fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId;
@@ -253,45 +306,6 @@ where
 
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 
-    fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent>;
-
-    fn extract_packet_from_send_packet_event(event: &Self::SendPacketEvent)
-        -> Self::OutgoingPacket;
-
-    fn extract_packet_from_write_acknowledgement_event(
-        ack: &Self::WriteAcknowledgementEvent,
-    ) -> &Self::IncomingPacket;
-
-    fn try_extract_create_client_event(event: Self::Event) -> Option<Self::CreateClientEvent>;
-
-    fn create_client_event_client_id(event: &Self::CreateClientEvent) -> &Self::ClientId;
-
-    fn try_extract_connection_open_init_event(
-        event: Self::Event,
-    ) -> Option<Self::ConnectionOpenInitEvent>;
-
-    fn connection_open_init_event_connection_id(
-        event: &Self::ConnectionOpenInitEvent,
-    ) -> &Self::ConnectionId;
-
-    fn try_extract_connection_open_try_event(
-        event: Self::Event,
-    ) -> Option<Self::ConnectionOpenTryEvent>;
-
-    fn connection_open_try_event_connection_id(
-        event: &Self::ConnectionOpenTryEvent,
-    ) -> &Self::ConnectionId;
-
-    fn try_extract_channel_open_init_event(
-        event: Self::Event,
-    ) -> Option<Self::ChannelOpenInitEvent>;
-
-    fn channel_open_init_event_channel_id(event: &Self::ChannelOpenInitEvent) -> &Self::ChannelId;
-
-    fn try_extract_channel_open_try_event(event: Self::Event) -> Option<Self::ChannelOpenTryEvent>;
-
-    fn channel_open_try_event_channel_id(event: &Self::ChannelOpenTryEvent) -> &Self::ChannelId;
-
     async fn query_chain_id_from_channel_id(
         &self,
         channel_id: &Self::ChannelId,
@@ -316,29 +330,39 @@ where
         sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
 
-    async fn query_write_acknowledgement_event(
-        &self,
-        packet: &Self::IncomingPacket,
-    ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
-
-    async fn build_receive_packet_message(
+    async fn build_receive_packet_payload(
         &self,
         height: &Self::Height,
         packet: &Self::OutgoingPacket,
-    ) -> Result<Counterparty::Message, Self::Error>;
+    ) -> Result<Self::ReceivePacketPayload, Self::Error>;
 
-    async fn build_ack_packet_message(
+    async fn build_receive_packet_message(
+        &self,
+        payload: Counterparty::ReceivePacketPayload,
+    ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_ack_packet_payload(
         &self,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
         ack: &Self::WriteAcknowledgementEvent,
-    ) -> Result<Counterparty::Message, Self::Error>;
+    ) -> Result<Self::AckPacketPayload, Self::Error>;
 
-    async fn build_timeout_unordered_packet_message(
+    async fn build_ack_packet_message(
+        &self,
+        payload: Counterparty::AckPacketPayload,
+    ) -> Result<Self::Message, Self::Error>;
+
+    async fn build_timeout_unordered_packet_payload(
         &self,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
-    ) -> Result<Counterparty::Message, Self::Error>;
+    ) -> Result<Self::TimeoutUnorderedPacketPayload, Self::Error>;
+
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        payload: Counterparty::TimeoutUnorderedPacketPayload,
+    ) -> Result<Self::Message, Self::Error>;
 
     async fn build_create_client_payload(
         &self,

@@ -35,10 +35,7 @@ use crate::core::traits::sync::Async;
     and when a chain receives [`IncomingPacket`](Self::IncomingPacket) that is
     coming from a counterparty chain.
 */
-pub trait HasIbcPacketTypes<Counterparty>: HasIbcChainTypes<Counterparty>
-where
-    Counterparty: HasIbcChainTypes<Self>,
-{
+pub trait HasIbcPacketTypes<Counterparty>: Async {
     /**
        A packet sent from counterparty to self.
 
@@ -54,7 +51,13 @@ where
        - Packet destination: `Counterparty`
     */
     type OutgoingPacket: Async;
+}
 
+pub trait HasIbcPacketFields<Counterparty>:
+    HasIbcPacketTypes<Counterparty> + HasIbcChainTypes<Counterparty>
+where
+    Counterparty: HasIbcChainTypes<Self>,
+{
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId;
 
     fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId;

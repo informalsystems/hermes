@@ -1,4 +1,4 @@
-use crate::chain::traits::types::packet::HasIbcPacketTypes;
+use crate::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
 use crate::chain::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
@@ -6,7 +6,7 @@ use crate::relay::traits::chains::HasRelayChains;
 pub trait HasRelayPacket: HasRelayChains<SrcChain = Self::SrcChainWithPacket> {
     type Packet: Async;
 
-    type SrcChainWithPacket: HasIbcPacketTypes<Self::DstChain, OutgoingPacket = Self::Packet>;
+    type SrcChainWithPacket: HasIbcPacketFields<Self::DstChain, OutgoingPacket = Self::Packet>;
 }
 
 impl<Relay> HasRelayPacket for Relay

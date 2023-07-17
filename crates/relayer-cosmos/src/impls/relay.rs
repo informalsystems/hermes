@@ -169,7 +169,7 @@ where
         BaseError::generic(eyre!("missing_channel_try_event_error: {}", src_channel_id)).into()
     }
 
-    async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {
+    async fn should_relay_packet(&self, packet: &Packet) -> Result<bool, Error> {
         Ok(self
             .packet_filter
             .channel_policy
