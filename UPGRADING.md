@@ -15,8 +15,8 @@
   event_source = { mode = 'push', url = '$WS_URL', batch_delay = '200ms' }
   ```
 
-  The `batch_delay` option can be used to determine how long should the WebSocket
-  event source should wait to emit an event batch after having received the first
+  The `batch_delay` option can be used to determine how long the WebSocket
+  event source should wait before emitting an event batch after having received the first
   event for the current height. If the setting is too high, the event source will
   have to wait for the next `NewBlock` event until it can emit the batch.
   If the setting is too low, the event batch might be emitted before all events
