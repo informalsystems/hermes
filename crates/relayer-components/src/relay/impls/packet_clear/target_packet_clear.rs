@@ -1,7 +1,9 @@
 use async_trait::async_trait;
 
 use crate::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
-use crate::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketEvents;
+use crate::chain::traits::queries::unreceived_packets::{
+    CanQueryUnreceivedPacketEvents, CanQueryUnreceivedPacketSequences,
+};
 use crate::chain::types::aliases::{ChannelId, Height, PortId};
 use crate::relay::impls::packet_filters::chain::MatchPacketDestinationChain;
 use crate::relay::traits::event_relayer::CanRelayEvent;
@@ -18,8 +20,9 @@ impl<Relay, Target> PacketClearerWithTarget<Relay, Target> for PacketClearRelaye
 where
     Relay: HasRelayPacket + CanRelayEvent<Target>,
     Target: ChainTarget<Relay>,
-    Target::TargetChain: CanQueryPacketCommitments<Target::CounterpartyChain>
+    Target::TargetChain: CanQueryUnreceivedPacketSequences<Target::CounterpartyChain>
         + CanQueryUnreceivedPacketEvents<Target::CounterpartyChain>,
+    Target::CounterpartyChain: CanQueryPacketCommitments<Target::TargetChain>,
     MatchPacketDestinationChain: PacketFilter<Relay>,
 {
     async fn clear_packets_with_target(
@@ -31,9 +34,15 @@ where
         height: &Height<Target::TargetChain>,
     ) -> Result<(), Relay::Error> {
         let chain = Target::target_chain(relay);
+        let counterparty_chain = Target::counterparty_chain(relay);
 
-        let sequences = chain
-            .query_packet_commitments(channel_id, port_id)
+        let commitment_sequences = counterparty_chain
+            .query_packet_commitments(counterparty_channel_id, counterparty_port_id)
+            .await
+            .map_err(Target::counterparty_chain_error)?;
+
+        let (unreceived_sequences, unreceived_height) = chain
+            .query_unreceived_packet_sequences(channel_id, port_id, &commitment_sequences)
             .await
             .map_err(Target::target_chain_error)?;
 
@@ -43,8 +52,8 @@ where
                 port_id,
                 counterparty_channel_id,
                 counterparty_port_id,
-                &sequences,
-                height,
+                &unreceived_sequences,
+                &unreceived_height,
             )
             .await
             .map_err(Target::target_chain_error)?;
