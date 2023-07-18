@@ -1,4 +1,4 @@
-use crate::chain::traits::types::packet::HasIbcPacketTypes;
+use crate::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
 use crate::chain::types::aliases::ClientId;
 use crate::core::traits::error::HasErrorType;
 
@@ -35,13 +35,13 @@ pub trait HasRelayChains: HasErrorType {
         A source chain context that has the IBC chain types that are correspond
         to the destination chain.
     */
-    type SrcChain: HasIbcPacketTypes<Self::DstChain> + HasErrorType;
+    type SrcChain: HasIbcPacketFields<Self::DstChain> + HasErrorType;
 
     /**
         A destination chain context that has the IBC chain types that are correspond
         to the source chain.
     */
-    type DstChain: HasIbcPacketTypes<
+    type DstChain: HasIbcPacketFields<
             Self::SrcChain,
             IncomingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::OutgoingPacket,
             OutgoingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::IncomingPacket,

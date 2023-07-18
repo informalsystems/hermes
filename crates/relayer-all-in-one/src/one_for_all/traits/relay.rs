@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 
-use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::traits::runtime::OfaRuntime;
 use crate::one_for_all::types::batch::aliases::MessageBatchSender;
 use crate::one_for_all::types::chain::OfaChainWrapper;
@@ -34,16 +34,16 @@ pub trait OfaRelay: Async {
         Self::SrcChain,
         Logger = Self::Logger,
         IncomingPacket = Self::Packet,
-        OutgoingPacket = <Self::SrcChain as OfaIbcChain<Self::DstChain>>::IncomingPacket,
+        OutgoingPacket = <Self::SrcChain as OfaChainTypes>::IncomingPacket,
     >;
 
     type PacketLock<'a>: Send;
 
     fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
 
-    fn src_chain_error(e: <Self::SrcChain as OfaChain>::Error) -> Self::Error;
+    fn src_chain_error(e: <Self::SrcChain as OfaChainTypes>::Error) -> Self::Error;
 
-    fn dst_chain_error(e: <Self::DstChain as OfaChain>::Error) -> Self::Error;
+    fn dst_chain_error(e: <Self::DstChain as OfaChainTypes>::Error) -> Self::Error;
 
     fn is_retryable_error(e: &Self::Error) -> bool;
 
@@ -63,23 +63,23 @@ pub trait OfaRelay: Async {
 
     fn missing_connection_try_event_error(
         &self,
-        src_connection_id: &<Self::SrcChain as OfaChain>::ConnectionId,
+        src_connection_id: &<Self::SrcChain as OfaChainTypes>::ConnectionId,
     ) -> Self::Error;
 
     fn missing_channel_init_event_error(&self) -> Self::Error;
 
     fn missing_channel_try_event_error(
         &self,
-        src_channel_id: &<Self::SrcChain as OfaChain>::ChannelId,
+        src_channel_id: &<Self::SrcChain as OfaChainTypes>::ChannelId,
     ) -> Self::Error;
 
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
     fn logger(&self) -> &Self::Logger;
 
-    fn src_client_id(&self) -> &<Self::SrcChain as OfaChain>::ClientId;
+    fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId;
 
-    fn dst_client_id(&self) -> &<Self::DstChain as OfaChain>::ClientId;
+    fn dst_client_id(&self) -> &<Self::DstChain as OfaChainTypes>::ClientId;
 
     fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain>;
 

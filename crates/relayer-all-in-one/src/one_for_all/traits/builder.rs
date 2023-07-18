@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
 
 use crate::one_for_all::traits::birelay::OfaBiRelay;
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::traits::runtime::OfaRuntime;
 use crate::one_for_all::types::batch::aliases::MessageBatchSender;
@@ -80,13 +80,13 @@ pub type RelayError<Builder> = <RelayAToB<Builder> as OfaRelay>::Error;
 
 pub type ChainB<Builder> = <RelayAToB<Builder> as OfaRelay>::DstChain;
 
-pub type ChainIdA<Builder> = <ChainA<Builder> as OfaChain>::ChainId;
+pub type ChainIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ChainId;
 
-pub type ChainIdB<Builder> = <ChainB<Builder> as OfaChain>::ChainId;
+pub type ChainIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ChainId;
 
-pub type ClientIdA<Builder> = <ChainA<Builder> as OfaChain>::ClientId;
+pub type ClientIdA<Builder> = <ChainA<Builder> as OfaChainTypes>::ClientId;
 
-pub type ClientIdB<Builder> = <ChainB<Builder> as OfaChain>::ClientId;
+pub type ClientIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ClientId;
 
 pub type Runtime<Builder> = <Builder as OfaBuilder>::Runtime;
 

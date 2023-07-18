@@ -4,7 +4,7 @@ use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::{
 };
 
 use crate::one_for_all::components;
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
@@ -17,9 +17,9 @@ where
 {
     async fn relay_receive_packet(
         &self,
-        source_height: &<Relay::SrcChain as OfaChain>::Height,
+        source_height: &<Relay::SrcChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
-    ) -> Result<Option<<Relay::DstChain as OfaChain>::WriteAcknowledgementEvent>, Relay::Error>
+    ) -> Result<Option<<Relay::DstChain as OfaChainTypes>::WriteAcknowledgementEvent>, Relay::Error>
     {
         components::ReceivePacketRelayer::relay_receive_packet(self, source_height, packet).await
     }

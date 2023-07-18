@@ -8,7 +8,7 @@ keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
 repository = "https://github.com/informalsystems/hermes"
 authors    = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.68"
+rust-version = "1.70"
 description  = """
   Hermes is an IBC Relayer written in Rust
 """
@@ -37,8 +37,7 @@ ibc-relayer-components = { version = "0.1.0", path = "../relayer-components" }
 ibc-relayer-runtime   = { version = "0.1.0" , path = "../relayer-runtime", optional = true }
 
 async-trait              = "0.1.56"
-atty                     = "0.2.14"
-chrono = "0.4.24"
+chrono                   = "0.4.24"
 clap                     = { version = "3.2", features = ["cargo"] }
 clap_complete            = "3.2"
 color-eyre               = "0.6"

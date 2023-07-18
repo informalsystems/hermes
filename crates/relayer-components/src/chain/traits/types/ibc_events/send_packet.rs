@@ -2,6 +2,7 @@
    Trait definitions for [`HasSendPacketEvent`].
 */
 
+use crate::chain::traits::types::event::HasEventType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::core::traits::sync::Async;
@@ -11,7 +12,7 @@ use crate::core::traits::sync::Async;
    [`Event`](crate::chain::traits::types::event::HasEventType::Event)
    type contains a [`SendPacketEvent`](Self::SendPacketEvent) variant.
 */
-pub trait HasSendPacketEvent<Counterparty>: HasIbcPacketTypes<Counterparty>
+pub trait HasSendPacketEvent<Counterparty>: HasIbcPacketTypes<Counterparty> + HasEventType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {

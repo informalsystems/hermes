@@ -1,14 +1,13 @@
 use async_trait::async_trait;
 
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CommitmentsPacketQuerier<Chain, Counterparty>
 where
-    Chain: HasIbcPacketTypes<Counterparty> + HasErrorType,
+    Chain: HasIbcChainTypes<Counterparty> + HasErrorType,
     Counterparty: HasIbcChainTypes<Chain>,
 {
     async fn query_packet_commitments(
@@ -20,7 +19,7 @@ where
 
 #[async_trait]
 pub trait CanQueryPacketCommitments<Counterparty>:
-    HasIbcPacketTypes<Counterparty> + HasErrorType
+    HasIbcChainTypes<Counterparty> + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {

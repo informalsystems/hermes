@@ -1,14 +1,13 @@
 use async_trait::async_trait;
 
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait UnreceivedPacketSequencesQuerier<Chain, Counterparty>
 where
-    Chain: HasIbcPacketTypes<Counterparty> + HasErrorType,
+    Chain: HasIbcChainTypes<Counterparty> + HasErrorType,
     Counterparty: HasIbcChainTypes<Chain>,
 {
     async fn query_unreceived_packet_sequences(
@@ -21,7 +20,7 @@ where
 
 #[async_trait]
 pub trait CanQueryUnreceivedPacketSequences<Counterparty>:
-    HasIbcPacketTypes<Counterparty> + HasErrorType
+    HasIbcChainTypes<Counterparty> + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {
@@ -36,7 +35,7 @@ where
 #[async_trait]
 pub trait UnreceivedPacketEventsQuerier<Chain, Counterparty>
 where
-    Chain: HasIbcPacketTypes<Counterparty> + HasErrorType,
+    Chain: HasIbcChainTypes<Counterparty> + HasErrorType,
     Counterparty: HasIbcChainTypes<Chain>,
 {
     async fn query_unreceived_packet_events(
@@ -52,7 +51,7 @@ where
 
 #[async_trait]
 pub trait CanQueryUnreceivedPacketEvents<Counterparty>:
-    HasIbcPacketTypes<Counterparty> + HasErrorType
+    HasIbcChainTypes<Counterparty> + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {
