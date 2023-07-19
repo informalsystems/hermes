@@ -21,10 +21,10 @@ where
     fn spawn_packet_clear_worker(
         self,
         target: Target,
-        channel_id: ChannelId<Self::DstChain, Self::SrcChain>,
-        port_id: PortId<Self::DstChain, Self::SrcChain>,
-        counterparty_channel_id: ChannelId<Self::SrcChain, Self::DstChain>,
-        counterparty_port_id: PortId<Self::SrcChain, Self::DstChain>,
+        dst_channel_id: ChannelId<Self::DstChain, Self::SrcChain>,
+        dst_port_id: PortId<Self::DstChain, Self::SrcChain>,
+        src_channel_id: ChannelId<Self::SrcChain, Self::DstChain>,
+        src_counterparty_port_id: PortId<Self::SrcChain, Self::DstChain>,
     ) -> Box<dyn TaskHandle>;
 }
 
@@ -38,21 +38,16 @@ where
     fn spawn_packet_clear_worker(
         self,
         _target: Target,
-        channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
-        port_id: PortId<Relay::DstChain, Relay::SrcChain>,
-        counterparty_channel_id: ChannelId<Relay::SrcChain, Relay::DstChain>,
-        counterparty_port_id: PortId<Relay::SrcChain, Relay::DstChain>,
+        dst_channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
+        dst_port_id: PortId<Relay::DstChain, Relay::SrcChain>,
+        src_channel_id: ChannelId<Relay::SrcChain, Relay::DstChain>,
+        src_port_id: PortId<Relay::SrcChain, Relay::DstChain>,
     ) -> Box<dyn TaskHandle> {
         let spawner = Target::target_chain(&self).runtime().spawner();
 
         spawner.spawn(async move {
-            self.run_loop(
-                &channel_id,
-                &port_id,
-                &counterparty_channel_id,
-                &counterparty_port_id,
-            )
-            .await;
+            self.run_loop(&dst_channel_id, &dst_port_id, &src_channel_id, &src_port_id)
+                .await;
         })
     }
 }
@@ -65,10 +60,10 @@ where
 {
     async fn run_loop(
         &self,
-        channel_id: &ChannelId<Self::DstChain, Self::SrcChain>,
-        port_id: &PortId<Self::DstChain, Self::SrcChain>,
-        counterparty_channel_id: &ChannelId<Self::SrcChain, Self::DstChain>,
-        counterparty_port_id: &PortId<Self::SrcChain, Self::DstChain>,
+        dst_channel_id: &ChannelId<Self::DstChain, Self::SrcChain>,
+        dst_port_id: &PortId<Self::DstChain, Self::SrcChain>,
+        src_channel_id: &ChannelId<Self::SrcChain, Self::DstChain>,
+        src_port_id: &PortId<Self::SrcChain, Self::DstChain>,
     );
 }
 
@@ -82,21 +77,16 @@ where
 {
     async fn run_loop(
         &self,
-        channel_id: &ChannelId<Relay::DstChain, Relay::SrcChain>,
-        port_id: &PortId<Relay::DstChain, Relay::SrcChain>,
-        counterparty_channel_id: &ChannelId<Relay::SrcChain, Relay::DstChain>,
-        counterparty_port_id: &PortId<Relay::SrcChain, Relay::DstChain>,
+        dst_channel_id: &ChannelId<Relay::DstChain, Relay::SrcChain>,
+        dst_port_id: &PortId<Relay::DstChain, Relay::SrcChain>,
+        src_channel_id: &ChannelId<Relay::SrcChain, Relay::DstChain>,
+        src_port_id: &PortId<Relay::SrcChain, Relay::DstChain>,
     ) {
         let runtime = Target::target_chain(self).runtime();
 
         loop {
             let _ = self
-                .clear_packets(
-                    channel_id,
-                    port_id,
-                    counterparty_channel_id,
-                    counterparty_port_id,
-                )
+                .clear_receive_packets(dst_channel_id, dst_port_id, src_channel_id, src_port_id)
                 .await;
             runtime.sleep(Duration::from_secs(5)).await;
         }

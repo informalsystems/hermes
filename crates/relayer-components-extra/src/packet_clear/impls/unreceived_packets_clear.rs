@@ -20,36 +20,32 @@ where
     Relay::SrcChain: CanQueryUnreceivedPacketSequences<Relay::DstChain>
         + CanQueryUnreceivedPackets<Relay::DstChain>,
 {
-    async fn clear_packets(
+    async fn clear_receive_packets(
         relay: &Relay,
-        channel_id: &ChannelId<Relay::DstChain, Relay::SrcChain>,
-        port_id: &PortId<Relay::DstChain, Relay::SrcChain>,
-        counterparty_channel_id: &ChannelId<Relay::SrcChain, Relay::DstChain>,
-        counterparty_port_id: &PortId<Relay::SrcChain, Relay::DstChain>,
+        dst_channel_id: &ChannelId<Relay::DstChain, Relay::SrcChain>,
+        dst_port_id: &PortId<Relay::DstChain, Relay::SrcChain>,
+        src_channel_id: &ChannelId<Relay::SrcChain, Relay::DstChain>,
+        src_port_id: &PortId<Relay::SrcChain, Relay::DstChain>,
     ) -> Result<(), Relay::Error> {
-        let chain = relay.dst_chain();
-        let counterparty_chain = relay.src_chain();
+        let dst_chain = relay.dst_chain();
+        let src_chain = relay.src_chain();
 
-        let commitment_sequences = chain
-            .query_packet_commitments(channel_id, port_id)
+        let commitment_sequences = dst_chain
+            .query_packet_commitments(dst_channel_id, dst_port_id)
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        let (unreceived_sequences, unreceived_height) = counterparty_chain
-            .query_unreceived_packet_sequences(
-                counterparty_channel_id,
-                counterparty_port_id,
-                &commitment_sequences,
-            )
+        let (unreceived_sequences, unreceived_height) = src_chain
+            .query_unreceived_packet_sequences(src_channel_id, src_port_id, &commitment_sequences)
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let unreceived_packets = counterparty_chain
+        let unreceived_packets = src_chain
             .query_unreceived_packets(
-                counterparty_channel_id,
-                counterparty_port_id,
-                channel_id,
-                port_id,
+                src_channel_id,
+                src_port_id,
+                dst_channel_id,
+                dst_port_id,
                 &unreceived_sequences,
                 &unreceived_height,
             )
