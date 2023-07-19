@@ -9,7 +9,6 @@ use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 
 use crate::packet_clear::traits::packet_clear::CanClearPackets;
-use crate::packet_clear::types::config::PacketClearConfig;
 use crate::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
 use crate::std_prelude::*;
 
@@ -22,7 +21,6 @@ where
     fn spawn_packet_clear_worker(
         self,
         target: Target,
-        config: PacketClearConfig,
         channel_id: ChannelId<Self::DstChain, Self::SrcChain>,
         port_id: PortId<Self::DstChain, Self::SrcChain>,
         counterparty_channel_id: ChannelId<Self::SrcChain, Self::DstChain>,
@@ -40,7 +38,6 @@ where
     fn spawn_packet_clear_worker(
         self,
         _target: Target,
-        config: PacketClearConfig,
         channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
         port_id: PortId<Relay::DstChain, Relay::SrcChain>,
         counterparty_channel_id: ChannelId<Relay::SrcChain, Relay::DstChain>,
@@ -50,7 +47,6 @@ where
 
         spawner.spawn(async move {
             self.run_loop(
-                &config,
                 &channel_id,
                 &port_id,
                 &counterparty_channel_id,
@@ -69,7 +65,6 @@ where
 {
     async fn run_loop(
         &self,
-        config: &PacketClearConfig,
         channel_id: &ChannelId<Self::DstChain, Self::SrcChain>,
         port_id: &PortId<Self::DstChain, Self::SrcChain>,
         counterparty_channel_id: &ChannelId<Self::SrcChain, Self::DstChain>,
@@ -87,7 +82,6 @@ where
 {
     async fn run_loop(
         &self,
-        _config: &PacketClearConfig,
         channel_id: &ChannelId<Relay::DstChain, Relay::SrcChain>,
         port_id: &PortId<Relay::DstChain, Relay::SrcChain>,
         counterparty_channel_id: &ChannelId<Relay::SrcChain, Relay::DstChain>,
