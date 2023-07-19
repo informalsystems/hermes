@@ -1,6 +1,30 @@
 # Upgrading Hermes to a newer version
 
-## v.1.5.0
+## v1.6.0
+
+> These instructions assume that you are running Hermes v1.5.0 or newer.
+> If you are running an older version, please refer to the upgrading instructions
+> for the older release candidates in reverse chronological order to update to
+> v1.5.0 first and then follow these instructions.
+
+- The `websocket_addr` configuration option has been removed in favour of the new `event_source` setting.
+
+  In every chain configuration section, replace the `websocket_addr = 'WS_URL'` setting with:
+
+  ```toml
+  event_source = { mode = 'push', url = '$WS_URL', batch_delay = '200ms' }
+  ```
+
+  The `batch_delay` option can be used to determine how long the WebSocket
+  event source should wait before emitting an event batch after having received the first
+  event for the current height. If the setting is too high, the event source will
+  have to wait for the next `NewBlock` event until it can emit the batch.
+  If the setting is too low, the event batch might be emitted before all events
+  for the latest height have been received, causing more delays until all events
+  are processed. 500ms is a conservative but fairly safe default. Try lowering
+  if you believe Hermes is not relaying packets fast enough for you.
+
+## v1.5.0
 
 > These instructions assume that you are running Hermes v1.0.0 or newer.
 > If you are running an older version, please refer to the upgrading instructions

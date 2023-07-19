@@ -31,7 +31,6 @@ impl Runnable for StartCmd {
         let app = app_reader();
 
         if app.debug_enabled(DebugSection::ProfilingJson) {
-            use chrono::prelude::*;
             use std::env;
             use std::path::Path;
 
@@ -39,7 +38,7 @@ impl Runnable for StartCmd {
 
             let profile_dir = env::var("PROFILING_DIR").unwrap_or_else(|_| ".".to_string());
 
-            let now = Utc::now();
+            let now = time::OffsetDateTime::now_utc();
             let path_str = format!(
                 "{}/hermes-{:04}-{:02}-{:02}-{:02}{:02}{:02}-prof.json",
                 profile_dir,
