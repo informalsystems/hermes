@@ -248,30 +248,30 @@ impl ChannelEnd {
 
     /// Helper function to compare the state of this end with another state.
     pub fn state_matches(&self, other: &State) -> bool {
-        self.state.eq(other)
+        self.state() == other
     }
 
     /// Helper function to compare the flush status of this end with another flush status.
     pub fn flush_status_matches(&self, other: &FlushStatus) -> bool {
-        self.flush_status.eq(other)
+        self.flush_status() == other
     }
 
     /// Helper function to compare the order of this end with another order.
     pub fn order_matches(&self, other: &Ordering) -> bool {
-        self.ordering.eq(other)
+        self.ordering() == other
     }
 
     #[allow(clippy::ptr_arg)]
     pub fn connection_hops_matches(&self, other: &Vec<ConnectionId>) -> bool {
-        self.connection_hops.eq(other)
+        self.connection_hops() == other
     }
 
     pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
-        self.counterparty().eq(other)
+        self.counterparty() == other
     }
 
     pub fn version_matches(&self, other: &Version) -> bool {
-        self.version().eq(other)
+        self.version() == other
     }
 }
 
