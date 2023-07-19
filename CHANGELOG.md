@@ -2,6 +2,8 @@
 
 ## v1.6.0
 
+*July 19th, 2023*
+
 This release of Hermes notably features a new pull-based event source which fetches events from the chain periodically using
 the `/block_results` RPC endpoint instead of getting them over WebSocket.
     
