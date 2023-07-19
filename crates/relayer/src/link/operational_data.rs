@@ -158,7 +158,7 @@ impl OperationalData {
         relay_path: &RelayPath<ChainA, ChainB>,
     ) -> Result<TrackedMsgs, LinkError> {
         // For zero delay we prepend the client update msgs.
-        let client_update_msg = if !self.conn_delay_needed() {
+        let client_update_msgs = if !self.conn_delay_needed() {
             let update_height = self.proofs_height.increment();
 
             debug!(
@@ -166,18 +166,16 @@ impl OperationalData {
                 self.target, update_height
             );
 
-            // Fetch the client update message. Vector may be empty if the client already has the header
-            // for the requested height.
-            let mut client_update_opt = match self.target {
+            // Fetch the client update messages.
+            // Vector may be empty if the client already has the header for the requested height.
+            match self.target {
                 OperationalDataTarget::Source => {
                     relay_path.build_update_client_on_src(update_height)?
                 }
                 OperationalDataTarget::Destination => {
                     relay_path.build_update_client_on_dst(update_height)?
                 }
-            };
-
-            client_update_opt.pop()
+            }
         } else {
             let (client_state, _) = match self.target {
                 OperationalDataTarget::Source => relay_path
@@ -205,12 +203,12 @@ impl OperationalData {
 
             if client_state.is_frozen() {
                 return Ok(TrackedMsgs::new(vec![], self.tracking_id));
-            } else {
-                None
             }
+
+            vec![]
         };
 
-        let msgs = client_update_msg
+        let msgs = client_update_msgs
             .into_iter()
             .chain(self.batch.iter().map(|gm| gm.msg.clone()))
             .collect();
