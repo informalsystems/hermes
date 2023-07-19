@@ -17,7 +17,7 @@ The available sub-commands are the following:
 ### Automatically generate configuration files for specified chains 
 Use `config auto` to automatically generate a configuration file from the [chain-registry](https://github.com/cosmos/chain-registry).
 
-> __WARNING__: Currently, gas parameters are set to default value and require to be set manually.
+> __WARNING__: Currently, `default_gas` and `max_gas` parameters are set to default values; these should be manually reset. The `gas_price` parameter is set as the average gas price listed for the chain in the chain registry.
 
 ```
 {{#include ../../templates/help_templates/config/auto.md}}

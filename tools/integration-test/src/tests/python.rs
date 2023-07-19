@@ -7,7 +7,7 @@ struct PythonTest;
 
 impl TestOverrides for PythonTest {
     fn modify_relayer_config(&self, config: &mut Config) {
-        for mut chain in config.chains.iter_mut() {
+        for chain in config.chains.iter_mut() {
             // Modify the key store type to `Store::Test` so that the wallet
             // keys are stored to ~/.hermes/keys so that we can use them
             // with external relayer commands.

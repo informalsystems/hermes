@@ -1,5 +1,100 @@
 # CHANGELOG
 
+## v1.6.0
+
+*July 19th, 2023*
+
+This release of Hermes notably features a new pull-based event source which fetches events from the chain periodically using
+the `/block_results` RPC endpoint instead of getting them over WebSocket.
+    
+To use the new pull-based event source, set 
+
+```toml
+event_source = { mode = 'pull', interval = '1s' }`
+```
+
+in the per-chain configuration.
+
+Check the `event_source` setting in the example [`config.toml`](config.toml) file in the Hermes repository for more details.
+
+Additionally, it is now possible to skip the scanning phase during Hermes startup,
+by disabling clients, connections and channels workers, and setting `clear_on_start` to `false`.
+This significantly improve startup time when relaying on chains with hundreds or thousands of open channels, connections and clients.
+See the [Performance tuning][perf-tuning] page of the guide for more information.
+
+### Note for operators
+
+> ⚠️  Be aware that this release contains breaking changes to the Hermes configuration.
+> ⚠️  Please consult the [`UPGRADING.md`](UPGRADING.md) document for more details.
+
+### BREAKING CHANGES
+
+- The `websocket_addr` configuration option has been removed in favour of the new `event_source` setting.
+  Please consult the [`UPGRADING.md`](UPGRADING.md) document for more details.
+- Bump MSRV to 1.71 ([\#3478](https://github.com/informalsystems/hermes/issues/3478))
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Install CA certificates in Docker image for Hermes to be able to connect to TLS endpoints
+    ([\#3423](https://github.com/informalsystems/hermes/issues/3423))
+- [Relayer Library](relayer)
+  - Fix a bug where Hermes would discard the client updates
+    corresponding to the supporting headers returned by the light
+    client when assembling messages to relay from the operational data
+    ([\#3465](https://github.com/informalsystems/hermes/issues/3465))
+
+### FEATURES
+
+- [Relayer Library](relayer)
+  - Add a pull-based event source which fetches events from the chain periodically using
+    the `/block_results` RPC endpoint instead of getting them over WebSocket.
+    
+    To use the pull-based event source, set `event_source = { mode = 'pull', interval = '1s' }` in the per-chain configuration.
+    
+    > **Warning**
+    > Only use this if you think Hermes is not getting all the events it should,
+    > eg. when relaying for a CosmWasm-enabled blockchain which emits IBC events
+    > in a smart contract where the events lack the `message` attribute key.
+    > See [\#3190](https://github.com/informalsystems/hermes/issues/3190) and [\#2809](https://github.com/informalsystems/hermes/issues/2809) for more background information.
+    > ([\#2850](https://github.com/informalsystems/hermes/issues/2850))
+- [Integration Test Framework](tools/test-framework)
+  - Add integration tests for the Fee Grant module.
+    ([#3416](https://github.com/informalsystems/hermes/issues/3416))
+  - Add a new trait `InterchainSecurityChainTest` and two functions
+    `run_binary_interchain_security_node_test` and `run_binary_interchain_security_channel_test`
+    which can be used to bootstrap a Provider and Consumer chain for integration tests.
+    Add a CI job to run tests with Gaia as a provider chain and Neutron as a Consumer chain.
+    ([\#3450](https://github.com/informalsystems/hermes/issues/3450))
+    ([\#3387](https://github.com/informalsystems/hermes/issues/3387))
+
+### IMPROVEMENTS
+
+- [Relayer CLI](relayer-cli)
+  - By disabling clients, connections and channels workers, and setting
+    `clear_on_start` to `false`, Hermes will now skip the scanning phase
+    during startup, significantly improve startup time when relaying on chains
+    with hundreds or thousands of open channels, connections and/or clients.
+    See the [Performance tuning][perf-tuning] page of the guide for more information.
+    ([\#3403](https://github.com/informalsystems/hermes/issues/3403))
+- [Relayer Library](relayer)
+  - Hermes will now automatically shutdown inactive workers to reduce the consumption of host system resources
+    ([#3385](https://github.com/informalsystems/hermes/issues/3385))
+  - Query the /genesis RPC endpoint to retrieve the value of `max_expected_time_per_block` and use it for `max_block_time`.
+    ([\#3211](https://github.com/informalsystems/hermes/issues/3211))
+- [Telemetry & Metrics](telemetry)
+  - Add two new configurations for the telemetry `buckets`:
+  - `latency_submitted` used to specify the range and number of buckets for the `tx_latency_submitted` metric.
+  - `latency_confirmed` used to specify the range and number of buckets for the `tx_latency_confirmed` metric.
+    ([#3366](https://github.com/informalsystems/hermes/issues/3366))
+- [Integration Test Framework](tools/test-framework)
+  - Update ICA tests to use ibc-go's `simd` instead of `interchain-accounts-demo`.
+    ([#3353](https://github.com/informalsystems/hermes/issues/3353))
+  - Update `simd` version used in integration tests from `v7.0.0` to `v7.1.0`
+    ([\#3434](https://github.com/informalsystems/hermes/issues/3434))
+
+[perf-tuning]: https://hermes.informal.systems/documentation/configuration/performance.html#3-slow-start
+
 ## v1.5.1
  
 *June 5th, 2023*

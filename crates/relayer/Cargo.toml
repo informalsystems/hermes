@@ -1,13 +1,13 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.24.1"
+version      = "0.25.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.65"
+rust-version = "1.70"
 description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
@@ -21,8 +21,8 @@ telemetry = ["ibc-telemetry"]
 
 [dependencies]
 ibc-proto         = { version = "0.32.0" }
-ibc-telemetry     = { version = "0.24.1", path = "../telemetry", optional = true }
-ibc-relayer-types = { version = "0.24.1", path = "../relayer-types", features = ["mocks"] }
+ibc-telemetry     = { version = "0.25.0", path = "../telemetry", optional = true }
+ibc-relayer-types = { version = "0.25.0", path = "../relayer-types", features = ["mocks"] }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
@@ -58,7 +58,7 @@ semver = "1.0"
 humantime = "2.1.0"
 regex = "1.8.1"
 moka = "0.11.2"
-uuid = { version = "1.3.3", features = ["v4"] }
+uuid = { version = "1.4.0", features = ["v4"] }
 bs58 = "0.5.0"
 digest = "0.10.6"
 ed25519 = "1.5.2"
@@ -66,7 +66,7 @@ ed25519-dalek = { version = "1.0.1", features = ["serde"] }
 ed25519-dalek-bip32 = "0.2.0"
 generic-array = "0.14.7"
 secp256k1 = { version = "0.27.0", features = ["rand-std"] }
-strum = { version = "0.24.1", features = ["derive"] }
+strum = { version = "0.25", features = ["derive"] }
 tokio-stream = "0.1.14"
 once_cell = "1.17.1"
 
@@ -101,7 +101,7 @@ version = "0.32.0"
 default-features = false
 
 [dev-dependencies]
-ibc-relayer-types = { version = "0.24.1", path = "../relayer-types", features = ["mocks"] }
+ibc-relayer-types = { version = "0.25.0", path = "../relayer-types", features = ["mocks"] }
 serial_test = "2.0.0"
 env_logger = "0.10.0"
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
