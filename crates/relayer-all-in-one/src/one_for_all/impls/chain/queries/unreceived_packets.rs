@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
 use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
-    CanQueryUnreceivedPacketEvents, CanQueryUnreceivedPacketSequences,
+    CanQueryUnreceivedPacketSequences, CanQueryUnreceivedPackets,
 };
 
-use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
@@ -19,7 +19,7 @@ where
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
-        sequences: &[Counterparty::Sequence],
+        sequences: &[Self::Sequence],
     ) -> Result<(Vec<Self::Sequence>, Self::Height), Self::Error> {
         let unreceived_packet_sequences = self
             .chain
@@ -30,13 +30,13 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> CanQueryUnreceivedPacketEvents<OfaChainWrapper<Counterparty>>
+impl<Chain, Counterparty> CanQueryUnreceivedPackets<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
+    Chain: OfaIbcChain<Counterparty> + OfaChainTypes,
     Counterparty: OfaIbcChain<Chain>,
 {
-    async fn query_unreceived_packet_events(
+    async fn query_unreceived_packets(
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
@@ -44,10 +44,10 @@ where
         counterparty_port_id: &Counterparty::PortId,
         sequences: &[Self::Sequence],
         height: &Self::Height,
-    ) -> Result<Vec<Self::Event>, Self::Error> {
-        let unreceived_packet_events = self
+    ) -> Result<Vec<Self::OutgoingPacket>, Self::Error> {
+        let unreceived_packet = self
             .chain
-            .query_unreceived_packet_events(
+            .query_unreceived_packets(
                 channel_id,
                 port_id,
                 counterparty_channel_id,
@@ -56,6 +56,6 @@ where
                 height,
             )
             .await?;
-        Ok(unreceived_packet_events)
+        Ok(unreceived_packet)
     }
 }

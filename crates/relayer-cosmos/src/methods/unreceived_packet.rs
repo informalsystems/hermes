@@ -6,11 +6,12 @@ use ibc_relayer::chain::requests::{
     Qualified, QueryHeight, QueryPacketCommitmentsRequest, QueryPacketEventDataRequest,
     QueryUnreceivedPacketsRequest,
 };
+use ibc_relayer_all_in_one::one_for_all::traits::chain::OfaChain;
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::events::WithBlockDataType;
 use ibc_relayer_types::Height;
-use tendermint::abci::Event as AbciEvent;
 use tendermint_rpc::{Client, Order};
 use tonic::Request;
 
@@ -91,7 +92,7 @@ pub async fn query_unreceived_packet_events<Chain: ChainHandle>(
     counterparty_port_id: &PortId,
     sequences: &[Sequence],
     height: &Height,
-) -> Result<Vec<Arc<AbciEvent>>, Error> {
+) -> Result<Vec<Packet>, Error> {
     let request = QueryPacketEventDataRequest {
         event_id: WithBlockDataType::SendPacket,
         source_channel_id: channel_id.clone(),
@@ -121,5 +122,14 @@ pub async fn query_unreceived_packet_events<Chain: ChainHandle>(
             events.append(&mut event);
         }
     }
-    Ok(events)
+
+    let send_packets = events
+        .iter()
+        .filter_map(<CosmosChain<Chain> as OfaChain>::try_extract_send_packet_event)
+        .map(|event| {
+            <CosmosChain<Chain> as OfaChain>::extract_packet_from_send_packet_event(&event)
+        })
+        .collect();
+
+    Ok(send_packets)
 }

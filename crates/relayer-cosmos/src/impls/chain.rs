@@ -552,7 +552,7 @@ where
         query_unreceived_packet_sequences(self, channel_id, port_id, sequences).await
     }
 
-    async fn query_unreceived_packet_events(
+    async fn query_unreceived_packets(
         &self,
         channel_id: &ChannelId,
         port_id: &PortId,
@@ -560,7 +560,7 @@ where
         counterparty_port_id: &PortId,
         sequences: &[Sequence],
         height: &Height,
-    ) -> Result<Vec<Arc<AbciEvent>>, Self::Error> {
+    ) -> Result<Vec<Packet>, Self::Error> {
         query_unreceived_packet_events(
             self,
             channel_id,

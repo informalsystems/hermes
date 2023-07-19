@@ -14,7 +14,7 @@ where
         chain: &Chain,
         port_id: &Chain::PortId,
         channel_id: &Chain::ChannelId,
-    ) -> Result<Chain::Sequence, Chain::Error>;
+    ) -> Result<Counterparty::Sequence, Chain::Error>;
 }
 
 #[async_trait]
@@ -27,5 +27,5 @@ where
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
-    ) -> Result<Vec<Self::Sequence>, Self::Error>;
+    ) -> Result<Vec<Counterparty::Sequence>, Self::Error>;
 }
