@@ -13,17 +13,17 @@ use crate::Height;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeAck";
 
-/// Message definition for the second step of the channel upgrade
-/// handshake (the `ChanUpgradeTry` datagram).
+/// Message definition for the third step of the channel upgrade
+/// handshake (the `ChanUpgradeAck` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelUpgradeAck {
-    /// The port identifier of the counterparty chain (the upgrade handshake originator).
     pub port_id: PortId,
-    /// The channel identifier of the counterparty chain (the upgrade handshake originator).
     pub channel_id: ChannelId,
     pub counterparty_flush_status: FlushStatus,
     pub counterparty_upgrade: Upgrade,
+    /// The proof of the counterparty channel
     pub proof_channel: CommitmentProofBytes,
+    /// The proof of the counterparty upgrade
     pub proof_upgrade: CommitmentProofBytes,
     /// The height at which the proofs were queried.
     pub proof_height: Height,

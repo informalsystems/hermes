@@ -321,8 +321,6 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
     )
 }
 
-/// The field modified by the channel upgrade is only updated when the channel returns
-/// in the OPEN State
 pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainHandle>(
     handle_a: &ChainA,
     handle_b: &ChainB,
@@ -350,8 +348,6 @@ pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainH
     )
 }
 
-/// The field modified by the channel upgrade is only updated when the channel returns
-/// in the OPEN State
 pub fn assert_eventually_channel_upgrade_open<ChainA: ChainHandle, ChainB: ChainHandle>(
     handle_a: &ChainA,
     handle_b: &ChainB,
@@ -379,6 +375,8 @@ pub fn assert_eventually_channel_upgrade_open<ChainA: ChainHandle, ChainB: Chain
     )
 }
 
+/// Note that the field modified by the channel upgrade are only updated when
+/// the channel returns in the OPEN State
 fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     a_side_state: ChannelState,
     b_side_state: ChannelState,
