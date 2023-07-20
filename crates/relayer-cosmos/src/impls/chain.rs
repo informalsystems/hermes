@@ -60,9 +60,7 @@ use crate::methods::packet::{
     query_write_acknowledgement_event, CosmosAckPacketPayload, CosmosReceivePacketPayload,
     CosmosTimeoutUnorderedPacketPayload,
 };
-use crate::methods::unreceived_packet::{
-    query_packet_commitments, query_unreceived_packet_events, query_unreceived_packet_sequences,
-};
+use crate::methods::unreceived_packet::{query_packet_commitments, query_unreceived_packets};
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
 use crate::traits::message::CosmosMessage;
 use crate::types::channel::{
@@ -543,15 +541,6 @@ where
         query_packet_commitments(self, channel_id, port_id).await
     }
 
-    async fn query_unreceived_packet_sequences(
-        &self,
-        channel_id: &ChannelId,
-        port_id: &PortId,
-        sequences: &[Sequence],
-    ) -> Result<(Vec<Sequence>, Height), Error> {
-        query_unreceived_packet_sequences(self, channel_id, port_id, sequences).await
-    }
-
     async fn query_unreceived_packets(
         &self,
         channel_id: &ChannelId,
@@ -559,16 +548,14 @@ where
         counterparty_channel_id: &ChannelId,
         counterparty_port_id: &PortId,
         sequences: &[Sequence],
-        height: &Height,
     ) -> Result<Vec<Packet>, Self::Error> {
-        query_unreceived_packet_events(
+        query_unreceived_packets(
             self,
             channel_id,
             port_id,
             counterparty_channel_id,
             counterparty_port_id,
             sequences,
-            height,
         )
         .await
     }

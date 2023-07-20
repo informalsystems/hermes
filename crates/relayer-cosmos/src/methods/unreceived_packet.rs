@@ -51,7 +51,7 @@ pub async fn query_packet_commitments<Chain: ChainHandle>(
     Ok(commitment_sequences)
 }
 
-pub async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
+async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     channel_id: &ChannelId,
     port_id: &PortId,
@@ -84,23 +84,24 @@ pub async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
     Ok((response_sequences, height))
 }
 
-pub async fn query_unreceived_packet_events<Chain: ChainHandle>(
+pub async fn query_unreceived_packets<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     channel_id: &ChannelId,
     port_id: &PortId,
     counterparty_channel_id: &ChannelId,
     counterparty_port_id: &PortId,
     sequences: &[Sequence],
-    height: &Height,
 ) -> Result<Vec<Packet>, Error> {
+    let (unreceived_sequences, height) =
+        query_unreceived_packet_sequences(chain, channel_id, port_id, sequences).await?;
     let request = QueryPacketEventDataRequest {
         event_id: WithBlockDataType::SendPacket,
         source_channel_id: channel_id.clone(),
         source_port_id: port_id.clone(),
         destination_channel_id: counterparty_channel_id.clone(),
         destination_port_id: counterparty_port_id.clone(),
-        sequences: sequences.to_vec(),
-        height: Qualified::SmallerEqual(QueryHeight::Specific(*height)),
+        sequences: unreceived_sequences.to_vec(),
+        height: Qualified::SmallerEqual(QueryHeight::Specific(height)),
     };
     let mut events = vec![];
     for sequence in sequences.iter() {

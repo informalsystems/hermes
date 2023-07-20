@@ -1,8 +1,7 @@
 use async_trait::async_trait;
+use futures_util::{stream, StreamExt};
 use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
-use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
-    CanQueryUnreceivedPacketSequences, CanQueryUnreceivedPackets,
-};
+use ibc_relayer_components::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPackets;
 use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
 use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
 use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
@@ -17,8 +16,7 @@ impl<Relay> PacketClearer<Relay> for PacketClearRelayer
 where
     Relay: HasRelayPacket + CanRelayPacket,
     Relay::DstChain: CanQueryPacketCommitments<Relay::SrcChain>,
-    Relay::SrcChain: CanQueryUnreceivedPacketSequences<Relay::DstChain>
-        + CanQueryUnreceivedPackets<Relay::DstChain>,
+    Relay::SrcChain: CanQueryUnreceivedPackets<Relay::DstChain>,
 {
     async fn clear_receive_packets(
         relay: &Relay,
@@ -35,26 +33,25 @@ where
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        let (unreceived_sequences, unreceived_height) = src_chain
-            .query_unreceived_packet_sequences(src_channel_id, src_port_id, &commitment_sequences)
-            .await
-            .map_err(Relay::src_chain_error)?;
-
         let unreceived_packets = src_chain
             .query_unreceived_packets(
                 src_channel_id,
                 src_port_id,
                 dst_channel_id,
                 dst_port_id,
-                &unreceived_sequences,
-                &unreceived_height,
+                &commitment_sequences,
             )
             .await
             .map_err(Relay::src_chain_error)?;
 
-        for packet in unreceived_packets.iter() {
-            relay.relay_packet(packet).await?;
-        }
+        stream::iter(unreceived_packets)
+            .for_each_concurrent(None, |t| async move {
+                // Ignore any relaying errors, as the relayer still needs to proceed
+                // relaying the next event regardless.
+                let _ = relay.relay_packet(&t).await;
+            })
+            .await;
+
         Ok(())
     }
 }

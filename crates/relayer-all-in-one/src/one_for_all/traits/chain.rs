@@ -336,13 +336,6 @@ where
         port_id: &Self::PortId,
     ) -> Result<Vec<Counterparty::Sequence>, Self::Error>;
 
-    async fn query_unreceived_packet_sequences(
-        &self,
-        channel_id: &Self::ChannelId,
-        port_id: &Self::PortId,
-        sequences: &[Self::Sequence],
-    ) -> Result<(Vec<Self::Sequence>, Self::Height), Self::Error>;
-
     async fn query_unreceived_packets(
         &self,
         channel_id: &Self::ChannelId,
@@ -350,7 +343,6 @@ where
         counterparty_channel_id: &Counterparty::ChannelId,
         counterparty_port_id: &Counterparty::PortId,
         sequences: &[Self::Sequence],
-        height: &Self::Height,
     ) -> Result<Vec<Self::OutgoingPacket>, Self::Error>;
 
     async fn build_receive_packet_payload(
