@@ -8,7 +8,7 @@ use ibc_relayer_components::relay::traits::target::ChainTarget;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 
-use crate::packet_clear::traits::packet_clear::CanClearPackets;
+use crate::packet_clear::traits::packet_clear::CanClearReceivePackets;
 use crate::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
 use crate::std_prelude::*;
 
@@ -70,7 +70,7 @@ where
 #[async_trait]
 impl<Relay, Target, Runtime> CanRunLoop<Target> for Relay
 where
-    Relay: CanLogRelayTarget<Target> + CanClearPackets,
+    Relay: CanLogRelayTarget<Target> + CanClearReceivePackets,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: CanSleep,

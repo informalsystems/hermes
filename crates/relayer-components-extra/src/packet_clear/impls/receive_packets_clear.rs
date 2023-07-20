@@ -6,17 +6,17 @@ use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
 use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
 use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
 
-use crate::packet_clear::traits::packet_clear::PacketClearer;
+use crate::packet_clear::traits::packet_clear::ReceivePacketClearer;
 use crate::std_prelude::*;
 
-pub struct PacketClearRelayer;
+pub struct ReceivePacketClearRelayer;
 
 #[async_trait]
-impl<Relay> PacketClearer<Relay> for PacketClearRelayer
+impl<Relay> ReceivePacketClearer<Relay> for ReceivePacketClearRelayer
 where
     Relay: HasRelayPacket + CanRelayPacket,
-    Relay::DstChain: CanQueryPacketCommitments<Relay::SrcChain>,
-    Relay::SrcChain: CanQueryUnreceivedPackets<Relay::DstChain>,
+    Relay::SrcChain:
+        CanQueryUnreceivedPackets<Relay::DstChain> + CanQueryPacketCommitments<Relay::DstChain>,
 {
     async fn clear_receive_packets(
         relay: &Relay,
@@ -25,13 +25,12 @@ where
         src_channel_id: &ChannelId<Relay::SrcChain, Relay::DstChain>,
         src_port_id: &PortId<Relay::SrcChain, Relay::DstChain>,
     ) -> Result<(), Relay::Error> {
-        let dst_chain = relay.dst_chain();
         let src_chain = relay.src_chain();
 
-        let commitment_sequences = dst_chain
-            .query_packet_commitments(dst_channel_id, dst_port_id)
+        let commitment_sequences = src_chain
+            .query_packet_commitments(src_channel_id, src_port_id)
             .await
-            .map_err(Relay::dst_chain_error)?;
+            .map_err(Relay::src_chain_error)?;
 
         let unreceived_packets = src_chain
             .query_unreceived_packets(

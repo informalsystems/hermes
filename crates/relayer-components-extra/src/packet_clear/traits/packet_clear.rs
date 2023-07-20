@@ -6,7 +6,7 @@ use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait CanClearPackets: HasRelayPacket {
+pub trait CanClearReceivePackets: HasRelayPacket {
     async fn clear_receive_packets(
         &self,
         dst_channel_id: &ChannelId<Self::DstChain, Self::SrcChain>,
@@ -17,7 +17,7 @@ pub trait CanClearPackets: HasRelayPacket {
 }
 
 #[async_trait]
-pub trait PacketClearer<Relay>: Async
+pub trait ReceivePacketClearer<Relay>: Async
 where
     Relay: HasRelayPacket,
 {

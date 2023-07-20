@@ -33,6 +33,6 @@ where
         port_id: &Self::PortId,
         counterparty_channel_id: &Counterparty::ChannelId,
         counterparty_port_id: &Counterparty::PortId,
-        sequences: &[Self::Sequence],
+        sequences: &[Counterparty::Sequence],
     ) -> Result<Vec<Self::OutgoingPacket>, Self::Error>;
 }

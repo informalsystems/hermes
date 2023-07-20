@@ -1552,6 +1552,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-all-in-one",
  "ibc-relayer-components",
+ "ibc-relayer-components-extra",
  "ibc-relayer-cosmos",
  "ibc-relayer-runtime",
  "ibc-relayer-types",
