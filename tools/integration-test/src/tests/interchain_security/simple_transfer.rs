@@ -1,5 +1,5 @@
 //! The following tests are for the Interchain Security.
-//! These tests require the first chain to be a Producer chain and
+//! These tests require the first chain to be a Provider chain and
 //! the second chain a Consumer chain.
 use ibc_test_framework::chain::config::set_voting_period;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;

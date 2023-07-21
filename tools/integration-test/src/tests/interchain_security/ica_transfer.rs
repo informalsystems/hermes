@@ -1,5 +1,5 @@
 //! The following tests are for the Interchain Security.
-//! These tests require the first chain to be a Producer chain and
+//! These tests require the first chain to be a Provider chain and
 //! the second chain a Consumer chain.
 use std::str::FromStr;
 
