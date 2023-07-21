@@ -415,6 +415,9 @@ jobs:
           - package: neutron
             command: neutrond
             account_prefix: neutron
+          - package: stride-consumer
+            command: strided
+            account_prefix: stride
     steps:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v22
