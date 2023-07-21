@@ -145,13 +145,15 @@ impl BinaryChannelTest for InterchainSecurityIcaTransferTest {
 
         // Send funds from the ICA account to the `user2` account on the host chain on behalf
         // of the `user1` account on the controller chain.
-        interchain_send_tx(
+        let ica_events = interchain_send_tx(
             chains.handle_b(),
             &signer,
             &channel.connection.connection_id_b.0,
             interchain_account_packet_data,
             Timestamp::from_nanoseconds(120000000000).unwrap(),
         )?;
+
+        info!("ICA events from `CosmosTx`: {ica_events:#?}");
 
         // Check that the ICA account's balance has been debited the sent amount.
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
