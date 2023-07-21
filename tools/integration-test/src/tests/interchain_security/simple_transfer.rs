@@ -8,12 +8,12 @@ use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
 fn test_ics_transfer() -> Result<(), Error> {
-    run_binary_interchain_security_channel_test(&InterchainSecurityTest)
+    run_binary_interchain_security_channel_test(&InterchainSecurityTransferTest)
 }
 
-struct InterchainSecurityTest;
+struct InterchainSecurityTransferTest;
 
-impl TestOverrides for InterchainSecurityTest {
+impl TestOverrides for InterchainSecurityTransferTest {
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
         // Consumer chain doesn't have a gov key.
         if genesis
@@ -40,7 +40,7 @@ impl TestOverrides for InterchainSecurityTest {
     }
 }
 
-impl BinaryChannelTest for InterchainSecurityTest {
+impl BinaryChannelTest for InterchainSecurityTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
