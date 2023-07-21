@@ -1,7 +1,9 @@
 use async_trait::async_trait;
 use futures_util::{stream, StreamExt};
 use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
-use ibc_relayer_components::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPackets;
+use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
+    CanQueryUnreceivedPacketSequences, CanQueryUnreceivedPackets,
+};
 use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
 use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
 use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
@@ -15,16 +17,18 @@ pub struct ReceivePacketClearRelayer;
 impl<Relay> ReceivePacketClearer<Relay> for ReceivePacketClearRelayer
 where
     Relay: HasRelayPacket + CanRelayPacket,
+    Relay::DstChain: CanQueryUnreceivedPacketSequences<Relay::SrcChain>,
     Relay::SrcChain:
-        CanQueryUnreceivedPackets<Relay::DstChain> + CanQueryPacketCommitments<Relay::DstChain>,
+        CanQueryPacketCommitments<Relay::DstChain> + CanQueryUnreceivedPackets<Relay::DstChain>,
 {
     async fn clear_receive_packets(
         relay: &Relay,
-        dst_channel_id: &ChannelId<Relay::DstChain, Relay::SrcChain>,
-        dst_port_id: &PortId<Relay::DstChain, Relay::SrcChain>,
         src_channel_id: &ChannelId<Relay::SrcChain, Relay::DstChain>,
         src_port_id: &PortId<Relay::SrcChain, Relay::DstChain>,
+        dst_channel_id: &ChannelId<Relay::DstChain, Relay::SrcChain>,
+        dst_port_id: &PortId<Relay::DstChain, Relay::SrcChain>,
     ) -> Result<(), Relay::Error> {
+        let dst_chain = relay.dst_chain();
         let src_chain = relay.src_chain();
 
         let commitment_sequences = src_chain
@@ -32,13 +36,19 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
+        let (unreceived_sequences, height) = dst_chain
+            .query_unreceived_packet_sequences(dst_channel_id, dst_port_id, &commitment_sequences)
+            .await
+            .map_err(Relay::dst_chain_error)?;
+
         let unreceived_packets = src_chain
             .query_unreceived_packets(
                 src_channel_id,
                 src_port_id,
                 dst_channel_id,
                 dst_port_id,
-                &commitment_sequences,
+                &unreceived_sequences,
+                &height,
             )
             .await
             .map_err(Relay::src_chain_error)?;

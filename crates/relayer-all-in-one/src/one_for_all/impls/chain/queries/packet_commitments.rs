@@ -17,7 +17,7 @@ where
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
-    ) -> Result<Vec<Counterparty::Sequence>, Self::Error> {
+    ) -> Result<Vec<Self::Sequence>, Self::Error> {
         let sequences = self
             .chain
             .query_packet_commitments(channel_id, port_id)

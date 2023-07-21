@@ -23,7 +23,8 @@ impl<BiRelay, RelayAToB, RelayBToA> AfoBiRelay for BiRelay
 where
     RelayAToB: AfoRelay,
     RelayBToA: AfoRelay<AfoSrcChain = RelayAToB::AfoDstChain, AfoDstChain = RelayAToB::AfoSrcChain>,
-    BiRelay: HasAfoRuntime
+    BiRelay: Clone
+        + HasAfoRuntime
         + HasLoggerWithBaseLevels
         + CanAutoRelay
         + HasTwoWayRelay<RelayAToB = RelayAToB, RelayBToA = RelayBToA>,

@@ -17,14 +17,6 @@ where
 {
     async fn clear_receive_packets(
         &self,
-        dst_channel_id: &ChannelId<
-            <OfaRelayWrapper<Relay> as HasRelayChains>::DstChain,
-            <OfaRelayWrapper<Relay> as HasRelayChains>::SrcChain,
-        >,
-        dst_port_id: &PortId<
-            <OfaRelayWrapper<Relay> as HasRelayChains>::DstChain,
-            <OfaRelayWrapper<Relay> as HasRelayChains>::SrcChain,
-        >,
         src_channel_id: &ChannelId<
             <OfaRelayWrapper<Relay> as HasRelayChains>::SrcChain,
             <OfaRelayWrapper<Relay> as HasRelayChains>::DstChain,
@@ -33,13 +25,21 @@ where
             <OfaRelayWrapper<Relay> as HasRelayChains>::SrcChain,
             <OfaRelayWrapper<Relay> as HasRelayChains>::DstChain,
         >,
+        dst_channel_id: &ChannelId<
+            <OfaRelayWrapper<Relay> as HasRelayChains>::DstChain,
+            <OfaRelayWrapper<Relay> as HasRelayChains>::SrcChain,
+        >,
+        dst_port_id: &PortId<
+            <OfaRelayWrapper<Relay> as HasRelayChains>::DstChain,
+            <OfaRelayWrapper<Relay> as HasRelayChains>::SrcChain,
+        >,
     ) -> Result<(), Relay::Error> {
         ReceivePacketClearRelayer::clear_receive_packets(
             self,
-            dst_channel_id,
-            dst_port_id,
             src_channel_id,
             src_port_id,
+            dst_channel_id,
+            dst_port_id,
         )
         .await
     }

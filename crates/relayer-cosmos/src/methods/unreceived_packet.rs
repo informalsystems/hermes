@@ -51,7 +51,7 @@ pub async fn query_packet_commitments<Chain: ChainHandle>(
     Ok(commitment_sequences)
 }
 
-async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
+pub async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     channel_id: &ChannelId,
     port_id: &PortId,
@@ -73,7 +73,7 @@ async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
     let response = client
         .unreceived_packets(request)
         .await
-        .map_err(|e| BaseError::grpc_status(e, "query_packet_commitments".to_owned()))?
+        .map_err(|e| BaseError::grpc_status(e, "unreceived_packets".to_owned()))?
         .into_inner();
 
     let raw_height = response
@@ -91,17 +91,18 @@ pub async fn query_unreceived_packets<Chain: ChainHandle>(
     counterparty_channel_id: &ChannelId,
     counterparty_port_id: &PortId,
     sequences: &[Sequence],
+    height: &Height,
 ) -> Result<Vec<Packet>, Error> {
-    let (unreceived_sequences, height) =
-        query_unreceived_packet_sequences(chain, channel_id, port_id, sequences).await?;
+    // The unreceived packet are queried from the source chain, so the destination
+    // channel id and port id are the counterparty channel id and counterparty port id.
     let request = QueryPacketEventDataRequest {
         event_id: WithBlockDataType::SendPacket,
         source_channel_id: channel_id.clone(),
         source_port_id: port_id.clone(),
         destination_channel_id: counterparty_channel_id.clone(),
         destination_port_id: counterparty_port_id.clone(),
-        sequences: unreceived_sequences.to_vec(),
-        height: Qualified::SmallerEqual(QueryHeight::Specific(height)),
+        sequences: sequences.to_vec(),
+        height: Qualified::SmallerEqual(QueryHeight::Specific(*height)),
     };
     let mut events = vec![];
     for sequence in sequences.iter() {

@@ -1,6 +1,13 @@
 use ibc_relayer::config::PacketFilter;
+use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
+use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
+    CanQueryUnreceivedPacketSequences, CanQueryUnreceivedPackets,
+};
+use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 use ibc_relayer_components_extra::packet_clear::traits::packet_clear::CanClearReceivePackets;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::Height;
 use ibc_test_framework::framework::next::chain::{HasTwoChains, HasTwoChannels};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
@@ -30,8 +37,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
         let channel = context.channel().clone();
         let pf: PacketFilter = PacketFilter::default();
 
-        let relay_context = build_cosmos_relay_context(&relayer.config, chains, pf.clone())?;
-        let relay_context2 = build_cosmos_relay_context(&relayer.config, chains, pf)?;
+        let relay_context = build_cosmos_relay_context(&relayer.config, chains, pf)?;
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
@@ -69,57 +75,152 @@ impl BinaryChannelTest for IbcClearPacketTest {
             &denom_a,
         )?;
 
-        runtime.spawn(async move {
-            let _ = relay_context
-                .relay_b_to_a()
-                .clear_receive_packets(
-                    channel.channel_id_b.value(),
-                    channel.port_b.value(),
+        runtime.block_on(async {
+            info!("Assert query packet commitments works as expected");
+
+            let src_commitments: Vec<Sequence> =
+                CanQueryPacketCommitments::query_packet_commitments(
+                    relay_context.relay_a_to_b().src_chain(),
                     channel.channel_id_a.value(),
                     channel.port_a.value(),
                 )
-                .await;
-        });
+                .await
+                .unwrap();
 
-        sleep(Duration::from_secs(10));
+            assert_eq!(src_commitments, vec!(Sequence::from(1)));
 
-        info!("Clear packets from B to A should not clear the pending packet from A to B");
+            let dst_commitments: Vec<Sequence> =
+                CanQueryPacketCommitments::query_packet_commitments(
+                    relay_context.relay_a_to_b().dst_chain(),
+                    channel.channel_id_b.value(),
+                    channel.port_b.value(),
+                )
+                .await
+                .unwrap();
 
-        chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &wallet_a.address(),
-            &(balance_a.clone() - a_to_b_amount).as_ref(),
-        )?;
+            assert_eq!(dst_commitments, vec!());
 
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.address(),
-            &denom_b.with_amount(0u64).as_ref(),
-        )?;
+            info!("Assert query unreceived packet sequences works as expected");
 
-        runtime.spawn(async move {
-            let _ = relay_context2
-                .relay_a_to_b()
+            let (unreceived_packet_sequences, height): (Vec<Sequence>, Height) =
+                CanQueryUnreceivedPacketSequences::query_unreceived_packet_sequences(
+                    relay_context.relay_a_to_b().src_chain(),
+                    channel.channel_id_a.value(),
+                    channel.port_a.value(),
+                    &src_commitments,
+                )
+                .await
+                .unwrap();
+
+            assert_eq!(unreceived_packet_sequences, vec!(Sequence::from(1)));
+
+            let (unreceived_packet_sequences, _): (Vec<Sequence>, Height) =
+                CanQueryUnreceivedPacketSequences::query_unreceived_packet_sequences(
+                    relay_context.relay_a_to_b().dst_chain(),
+                    channel.channel_id_b.value(),
+                    channel.port_b.value(),
+                    &src_commitments,
+                )
+                .await
+                .unwrap();
+
+            assert_eq!(unreceived_packet_sequences, vec!(Sequence::from(1)));
+
+            info!("Assert query unreceived packets works as expected");
+
+            let unreceived_packets = CanQueryUnreceivedPackets::query_unreceived_packets(
+                relay_context.relay_a_to_b().src_chain(),
+                channel.channel_id_a.value(),
+                channel.port_a.value(),
+                channel.channel_id_b.value(),
+                channel.port_b.value(),
+                &unreceived_packet_sequences,
+                &height,
+            )
+            .await
+            .unwrap();
+
+            assert_eq!(unreceived_packets.len(), 1);
+
+            let unreceived_packets = CanQueryUnreceivedPackets::query_unreceived_packets(
+                relay_context.relay_a_to_b().dst_chain(),
+                channel.channel_id_b.value(),
+                channel.port_b.value(),
+                channel.channel_id_a.value(),
+                channel.port_a.value(),
+                &unreceived_packet_sequences,
+                &height,
+            )
+            .await
+            .unwrap();
+
+            assert_eq!(unreceived_packets.len(), 0);
+
+            let _ = relay_context
+                .relay_b_to_a()
                 .clear_receive_packets(
-                    cloned_channel.channel_id_b.value(),
-                    cloned_channel.port_b.value(),
-                    cloned_channel.channel_id_a.value(),
-                    cloned_channel.port_a.value(),
+                    channel.channel_id_a.value(),
+                    channel.port_a.value(),
+                    channel.channel_id_b.value(),
+                    channel.port_b.value(),
                 )
                 .await;
+
+            info!("Clear packets from B to A should not clear the pending packet from A to B");
+
+            let amount = chains
+                .node_a
+                .chain_driver()
+                .query_balance(&wallet_a.address(), &balance_a.denom())
+                .unwrap();
+
+            assert_eq!(
+                amount.value().amount,
+                (balance_a.clone() - a_to_b_amount).amount()
+            );
+
+            let amount = chains
+                .node_b
+                .chain_driver()
+                .query_balance(&wallet_b.address(), &denom_b.as_ref())
+                .unwrap();
+
+            assert_eq!(amount.value().amount, denom_b.with_amount(0u64).amount());
+
+            let _ = relay_context
+                .relay_a_to_b()
+                .clear_receive_packets(
+                    cloned_channel.channel_id_a.value(),
+                    cloned_channel.port_a.value(),
+                    cloned_channel.channel_id_b.value(),
+                    cloned_channel.port_b.value(),
+                )
+                .await;
+
+            info!("Clear packet from A to B should clear the pending packet");
+
+            let amount = chains
+                .node_a
+                .chain_driver()
+                .query_balance(&wallet_a.address(), &balance_a.denom())
+                .unwrap();
+
+            assert_eq!(
+                amount.value().amount,
+                (balance_a.clone() - a_to_b_amount).amount()
+            );
+
+            let amount = chains
+                .node_b
+                .chain_driver()
+                .query_balance(&wallet_b.address(), &denom_b.as_ref())
+                .unwrap();
+
+            assert_eq!(
+                amount.value().amount,
+                denom_b.with_amount(a_to_b_amount).amount()
+            );
         });
-
-        info!("Clear packet from A to B should clear the pending packet");
-
-        chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &wallet_a.address(),
-            &(balance_a - a_to_b_amount).as_ref(),
-        )?;
-
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.address(),
-            &denom_b.with_amount(a_to_b_amount).as_ref(),
-        )?;
-
-        sleep(Duration::from_secs(2));
 
         Ok(())
     }
