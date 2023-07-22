@@ -6,7 +6,7 @@ use crate::error::{handle_generic_error, Error};
 
 /// Register a new interchain account controlled by the given account
 /// over the given connection.
-pub fn register_interchain_account(
+pub fn register_interchain_account_cli(
     chain_id: &str,
     command_path: &str,
     home_path: &str,
