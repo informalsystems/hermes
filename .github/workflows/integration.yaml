@@ -483,7 +483,7 @@ jobs:
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#gaia9 .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features interchain-security,ica --no-fail-fast -- \
+            test -p ibc-integration-test --features interchain-security,ica,ics31 --no-fail-fast -- \
             --nocapture --test-threads=1 interchain_security::
 
   model-based-test:
