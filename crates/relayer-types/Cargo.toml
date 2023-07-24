@@ -51,7 +51,7 @@ features = ["clock"]
 version = "0.32.0"
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.32.0"
+version = "0.33.0"
 features = ["rust-crypto"]
 
 [dependencies.tendermint-testgen]
