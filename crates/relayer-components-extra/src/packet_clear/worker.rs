@@ -12,6 +12,8 @@ use crate::packet_clear::traits::packet_clear::CanClearReceivePackets;
 use crate::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
 use crate::std_prelude::*;
 
+use super::traits::clear_interval::HasClearInterval;
+
 #[async_trait]
 pub trait CanSpawnPacketClearWorker<Target>: HasRelayChains
 where
@@ -70,7 +72,7 @@ where
 #[async_trait]
 impl<Relay, Target, Runtime> CanRunLoop<Target> for Relay
 where
-    Relay: CanLogRelayTarget<Target> + CanClearReceivePackets,
+    Relay: CanLogRelayTarget<Target> + CanClearReceivePackets + HasClearInterval,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: CanSleep,
@@ -83,12 +85,13 @@ where
         dst_port_id: &PortId<Relay::DstChain, Relay::SrcChain>,
     ) {
         let runtime = Target::target_chain(self).runtime();
+        let clear_interval = self.clear_interval().into();
 
         loop {
             let _ = self
                 .clear_receive_packets(src_channel_id, src_port_id, dst_channel_id, dst_port_id)
                 .await;
-            runtime.sleep(Duration::from_secs(5)).await;
+            runtime.sleep(Duration::from_secs(clear_interval)).await;
         }
     }
 }
