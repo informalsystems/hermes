@@ -321,6 +321,62 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
     )
 }
 
+pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    upgrade_attrs: &ChannelUpgradableAttributes,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel upgrade ack step should be done",
+        20,
+        Duration::from_secs(1),
+        || {
+            assert_channel_upgrade_state(
+                ChannelState::AckUpgrade,
+                ChannelState::TryUpgrade,
+                FlushStatus::Flushcomplete,
+                FlushStatus::Flushcomplete,
+                handle_a,
+                handle_b,
+                channel_id_a,
+                port_id_a,
+                upgrade_attrs,
+            )
+        },
+    )
+}
+
+pub fn assert_eventually_channel_upgrade_open<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    upgrade_attrs: &ChannelUpgradableAttributes,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel upgrade open step should be done",
+        20,
+        Duration::from_secs(1),
+        || {
+            assert_channel_upgrade_state(
+                ChannelState::Open,
+                ChannelState::Open,
+                FlushStatus::NotinflushUnspecified,
+                FlushStatus::NotinflushUnspecified,
+                handle_a,
+                handle_b,
+                channel_id_a,
+                port_id_a,
+                upgrade_attrs,
+            )
+        },
+    )
+}
+
+/// Note that the field modified by the channel upgrade are only updated when
+/// the channel returns in the OPEN State
 fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     a_side_state: ChannelState,
     b_side_state: ChannelState,

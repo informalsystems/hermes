@@ -248,30 +248,30 @@ impl ChannelEnd {
 
     /// Helper function to compare the state of this end with another state.
     pub fn state_matches(&self, other: &State) -> bool {
-        self.state.eq(other)
+        self.state() == other
     }
 
     /// Helper function to compare the flush status of this end with another flush status.
     pub fn flush_status_matches(&self, other: &FlushStatus) -> bool {
-        self.flush_status.eq(other)
+        self.flush_status() == other
     }
 
     /// Helper function to compare the order of this end with another order.
     pub fn order_matches(&self, other: &Ordering) -> bool {
-        self.ordering.eq(other)
+        self.ordering() == other
     }
 
     #[allow(clippy::ptr_arg)]
     pub fn connection_hops_matches(&self, other: &Vec<ConnectionId>) -> bool {
-        self.connection_hops.eq(other)
+        self.connection_hops() == other
     }
 
     pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
-        self.counterparty().eq(other)
+        self.counterparty() == other
     }
 
     pub fn version_matches(&self, other: &Version) -> bool {
-        self.version().eq(other)
+        self.version() == other
     }
 }
 
@@ -424,7 +424,13 @@ pub enum State {
     /// A channel has acknowledged the upgrade handshake step on the counterparty chain.
     /// The counterparty chain that accepts the upgrade should set the channel state from
     /// OPEN to TRYUPGRADE.
+    /// The counterparty chain blocks new packets until the channel upgrade is done or cancelled.
     TryUpgrade = 6,
+    /// A channel has confirmed the upgrade handshake step on the counterparty chain.
+    /// The chain that confirmed the upgrade should set the channel state from
+    /// INITUPGRADE to ACKUPGRADE.
+    /// The chain blocks new packets until the channel upgrade is done or cancelled.
+    AckUpgrade = 7,
 }
 
 impl State {
@@ -438,6 +444,7 @@ impl State {
             Self::Closed => "CLOSED",
             Self::InitUpgrade => "INITUPGRADE",
             Self::TryUpgrade => "TRYUPGRADE",
+            Self::AckUpgrade => "ACKUPGRADE",
         }
     }
 
@@ -451,6 +458,7 @@ impl State {
             4 => Ok(Self::Closed),
             5 => Ok(Self::InitUpgrade),
             6 => Ok(Self::TryUpgrade),
+            7 => Ok(Self::AckUpgrade),
             _ => Err(Error::unknown_state(s)),
         }
     }
@@ -486,6 +494,10 @@ impl State {
 
             InitUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open),
             TryUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open | InitUpgrade),
+            AckUpgrade => !matches!(
+                other,
+                Uninitialized | Init | TryOpen | Open | InitUpgrade | TryUpgrade
+            ),
 
             Closed => false,
         }
