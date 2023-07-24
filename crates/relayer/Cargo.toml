@@ -97,7 +97,7 @@ default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-detector]
-version = "0.32.0"
+version = "0.33.0"
 default-features = false
 
 [dev-dependencies]
