@@ -101,7 +101,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
         .map_err(|e| eyre!("error creating height for timeout height: {e}"))?;
         let timeout = UpgradeTimeout::Height(timeout_height);
 
-        info!("Set channel in (INITUPGRADE, OPEN) state...");
+        info!("Will run ChanUpgradeInit step...");
 
         channel.flipped().build_chan_upgrade_init_and_send(
             Some(new_version),
@@ -120,9 +120,11 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &old_attrs,
         )?;
 
-        info!("Set channel in (INITUPGRADE, TRYUPGRADE) state...");
+        info!("Will run ChanUpgradeTry step...");
 
         channel.build_chan_upgrade_try_and_send(timeout)?;
+
+        info!("Check that the step ChanUpgradeTry was correctly executed...");
 
         assert_eventually_channel_upgrade_try(
             &chains.handle_b,
@@ -132,9 +134,11 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &old_attrs.flipped(),
         )?;
 
-        info!("Set channel in (OPEN, TRYUPGRADE) state...");
+        info!("Will run ChanUpgradeAck step...");
 
         channel.flipped().build_chan_upgrade_ack_and_send()?;
+
+        info!("Check that the step ChanUpgradeAck was correctly executed...");
 
         assert_eventually_channel_upgrade_ack(
             &chains.handle_a,
@@ -144,10 +148,15 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &old_attrs,
         )?;
 
-        info!("Set channel in (ACKUPGRADE, OPEN) state...");
+        info!("Will run first ChanUpgradeOpen step...");
 
         channel.build_chan_upgrade_open_and_send()?;
+
+        info!("Will run second ChanUpgradeOpen step...");
+
         channel.flipped().build_chan_upgrade_open_and_send()?;
+
+        info!("Check that the ChanUpgradeOpen steps were correctly executed...");
 
         assert_eventually_channel_upgrade_open(
             &chains.handle_a,

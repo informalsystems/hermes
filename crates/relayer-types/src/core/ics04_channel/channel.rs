@@ -424,8 +424,12 @@ pub enum State {
     /// A channel has acknowledged the upgrade handshake step on the counterparty chain.
     /// The counterparty chain that accepts the upgrade should set the channel state from
     /// OPEN to TRYUPGRADE.
+    /// The counterparty chain blocks new packets until the channel upgrade is done or cancelled.
     TryUpgrade = 6,
-
+    /// A channel has confirmed the upgrade handshake step on the counterparty chain.
+    /// The chain that confirmed the upgrade should set the channel state from
+    /// INITUPGRADE to ACKUPGRADE.
+    /// The chain blocks new packets until the channel upgrade is done or cancelled.
     AckUpgrade = 7,
 }
 

@@ -59,7 +59,7 @@ impl PartialEq for Version {
         if self.0 != other.0 {
             // If the Version strings don't match, check that this isn't due to the json
             // fields being in a different order
-            let parsed_version = match serde_json::from_str::<json::Value>(&self.to_string()) {
+            let parsed_version = match serde_json::from_str::<json::Value>(&self.0) {
                 Ok(value) => value,
                 Err(_) => return false,
             };
