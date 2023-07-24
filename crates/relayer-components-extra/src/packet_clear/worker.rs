@@ -1,10 +1,8 @@
 use core::time::Duration;
 use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
-use ibc_relayer_components::relay::traits::logs::logger::CanLogRelayTarget;
 
 use async_trait::async_trait;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
-use ibc_relayer_components::relay::traits::target::ChainTarget;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 
@@ -15,14 +13,9 @@ use crate::std_prelude::*;
 use super::traits::clear_interval::HasClearInterval;
 
 #[async_trait]
-pub trait CanSpawnPacketClearWorker<Target>: HasRelayChains
-where
-    Target: ChainTarget<Self>,
-    Target::TargetChain: HasRuntime,
-{
+pub trait CanSpawnPacketClearWorker: HasRelayChains {
     fn spawn_packet_clear_worker(
         self,
-        target: Target,
         src_channel_id: ChannelId<Self::SrcChain, Self::DstChain>,
         src_counterparty_port_id: PortId<Self::SrcChain, Self::DstChain>,
         dst_channel_id: ChannelId<Self::DstChain, Self::SrcChain>,
@@ -30,22 +23,19 @@ where
     ) -> Box<dyn TaskHandle>;
 }
 
-impl<Relay, Target, Runtime> CanSpawnPacketClearWorker<Target> for Relay
+impl<Relay> CanSpawnPacketClearWorker for Relay
 where
-    Relay: CanRunLoop<Target>,
-    Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime<Runtime = Runtime>,
-    Runtime: HasSpawner,
+    Relay: CanRunLoop + HasRuntime,
+    Relay::Runtime: HasSpawner,
 {
     fn spawn_packet_clear_worker(
         self,
-        _target: Target,
         src_channel_id: ChannelId<Relay::SrcChain, Relay::DstChain>,
         src_port_id: PortId<Relay::SrcChain, Relay::DstChain>,
         dst_channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
         dst_port_id: PortId<Relay::DstChain, Relay::SrcChain>,
     ) -> Box<dyn TaskHandle> {
-        let spawner = Target::target_chain(&self).runtime().spawner();
+        let spawner = self.runtime().spawner();
 
         spawner.spawn(async move {
             self.run_loop(&src_channel_id, &src_port_id, &dst_channel_id, &dst_port_id)
@@ -55,11 +45,7 @@ where
 }
 
 #[async_trait]
-trait CanRunLoop<Target>: HasRelayChains
-where
-    Target: ChainTarget<Self>,
-    Target::TargetChain: HasRuntime,
-{
+trait CanRunLoop: HasRelayChains {
     async fn run_loop(
         &self,
         src_channel_id: &ChannelId<Self::SrcChain, Self::DstChain>,
@@ -70,12 +56,10 @@ where
 }
 
 #[async_trait]
-impl<Relay, Target, Runtime> CanRunLoop<Target> for Relay
+impl<Relay> CanRunLoop for Relay
 where
-    Relay: CanLogRelayTarget<Target> + CanClearReceivePackets + HasClearInterval,
-    Target: ChainTarget<Relay>,
-    Target::TargetChain: HasRuntime<Runtime = Runtime>,
-    Runtime: CanSleep,
+    Relay: HasRuntime + CanClearReceivePackets + HasClearInterval,
+    Relay::Runtime: CanSleep,
 {
     async fn run_loop(
         &self,
@@ -84,7 +68,7 @@ where
         dst_channel_id: &ChannelId<Relay::DstChain, Relay::SrcChain>,
         dst_port_id: &PortId<Relay::DstChain, Relay::SrcChain>,
     ) {
-        let runtime = Target::target_chain(self).runtime();
+        let runtime = self.runtime();
         let clear_interval = self.clear_interval().into();
 
         loop {
