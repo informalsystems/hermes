@@ -1,6 +1,7 @@
 use core::time::Duration;
 
 use ibc_relayer::client_state::AnyClientState;
+use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 use ibc_relayer_types::core::ics03_connection::version::Version;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
@@ -19,7 +20,7 @@ pub struct CosmosConnectionOpenInitPayload {
 pub struct CosmosConnectionOpenTryPayload {
     pub commitment_prefix: CommitmentPrefix,
     pub proofs: Proofs,
-    pub client_state: Option<AnyClientState>, // TODO: remove Option
+    pub client_state: ClientState,
     pub versions: Vec<Version>,
     pub delay_period: Duration,
 }

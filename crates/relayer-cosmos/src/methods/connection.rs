@@ -1,12 +1,11 @@
 use alloc::sync::Arc;
+use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
+use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::connection::ConnectionMsgType;
-use ibc_relayer_types::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use ibc_relayer_types::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
 use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
@@ -21,6 +20,7 @@ use crate::types::connection::{
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
 use crate::types::messages::connection_open_init::CosmosConnectionOpenInitMessage;
+use crate::types::messages::connection_open_try::CosmosConnectionOpenTryMessage;
 
 pub async fn build_connection_open_init_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
@@ -65,7 +65,7 @@ pub async fn build_connection_open_try_payload<Chain: ChainHandle>(
             let versions = connection.versions().to_vec();
             let delay_period = connection.delay_period();
 
-            let (client_state, proofs) = chain_handle
+            let (m_client_state, proofs) = chain_handle
                 .build_connection_proofs_and_client_state(
                     ConnectionMsgType::OpenTry,
                     &connection_id,
@@ -73,6 +73,14 @@ pub async fn build_connection_open_try_payload<Chain: ChainHandle>(
                     height,
                 )
                 .map_err(BaseError::relayer)?;
+
+            let any_client_state = m_client_state
+                .ok_or_else(|| BaseError::generic(eyre!("expect some client state")))?;
+
+            let client_state = match any_client_state {
+                AnyClientState::Tendermint(client_state) => client_state,
+                _ => return Err(BaseError::generic(eyre!("expect tendermint client state")).into()),
+            };
 
             let payload = CosmosConnectionOpenTryPayload {
                 commitment_prefix,
@@ -203,35 +211,18 @@ pub fn build_connection_open_try_message(
     counterparty_connection_id: &ConnectionId,
     counterparty_payload: CosmosConnectionOpenTryPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
-    let client_id = client_id.clone();
-    let counterparty = ConnectionCounterparty::new(
-        counterparty_client_id.clone(),
-        Some(counterparty_connection_id.clone()),
-        counterparty_payload.commitment_prefix.clone(),
-    );
+    let message = CosmosConnectionOpenTryMessage {
+        client_id: client_id.clone(),
+        counterparty_client_id: counterparty_client_id.clone(),
+        counterparty_connection_id: counterparty_connection_id.clone(),
+        counterparty_commitment_prefix: counterparty_payload.commitment_prefix.clone(),
+        counterparty_versions: counterparty_payload.versions,
+        delay_period: counterparty_payload.delay_period,
+        client_state: counterparty_payload.client_state.into(),
+        proofs: counterparty_payload.proofs,
+    };
 
-    let message = CosmosIbcMessage::new(None, move |signer| {
-        let client_state = counterparty_payload.client_state.clone().map(Into::into);
-        let counterparty_versions: Vec<ConnectionVersion> = counterparty_payload.versions.clone();
-        let proofs = counterparty_payload.proofs.clone();
-        let delay_period = counterparty_payload.delay_period;
-        let counterparty = counterparty.clone();
-
-        let message = MsgConnectionOpenTry {
-            client_id: client_id.clone(),
-            client_state,
-            counterparty,
-            counterparty_versions,
-            delay_period,
-            proofs,
-            signer: signer.clone(),
-            previous_connection_id: None, // deprecated
-        };
-
-        Ok(message.to_any())
-    });
-
-    Ok(wrap_cosmos_message(message))
+    Ok(message.as_cosmos_message())
 }
 
 pub fn build_connection_open_ack_message(
