@@ -5,7 +5,6 @@ use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer_types::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use ibc_relayer_types::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
 use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
@@ -14,13 +13,14 @@ use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
-use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
+use crate::traits::message::{wrap_cosmos_message, AsCosmosMessage, CosmosMessage};
 use crate::types::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
     CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
+use crate::types::messages::connection_open_init::CosmosConnectionOpenInitMessage;
 
 pub async fn build_connection_open_init_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
@@ -171,13 +171,9 @@ pub async fn build_connection_open_init_message<Chain: ChainHandle>(
     init_connection_options: &CosmosInitConnectionOptions,
     counterparty_payload: CosmosConnectionOpenInitPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
-    let counterparty = ConnectionCounterparty::new(
-        counterparty_client_id.clone(),
-        None,
-        counterparty_payload.commitment_prefix,
-    );
-
     let client_id = client_id.clone();
+    let counterparty_client_id = counterparty_client_id.clone();
+    let counterparty_commitment_prefix = counterparty_payload.commitment_prefix;
     let delay_period = init_connection_options.delay_period;
 
     chain
@@ -188,19 +184,15 @@ pub async fn build_connection_open_init_message<Chain: ChainHandle>(
 
             let version = versions.into_iter().next().unwrap_or_default();
 
-            let message = CosmosIbcMessage::new(None, move |signer| {
-                let message = MsgConnectionOpenInit {
-                    client_id: client_id.clone(),
-                    counterparty: counterparty.clone(),
-                    version: Some(version.clone()),
-                    delay_period,
-                    signer: signer.clone(),
-                };
+            let message = CosmosConnectionOpenInitMessage {
+                client_id,
+                counterparty_client_id,
+                counterparty_commitment_prefix,
+                version,
+                delay_period,
+            };
 
-                Ok(message.to_any())
-            });
-
-            Ok(wrap_cosmos_message(message))
+            Ok(message.as_cosmos_message())
         })
         .await
 }
