@@ -15,11 +15,12 @@ pub struct CosmosTimeoutPacketMessage {
     pub packet: Packet,
     pub next_sequence_recv: Sequence,
     pub proofs: Proofs,
+    pub height: Height,
 }
 
 impl CosmosMessage for CosmosTimeoutPacketMessage {
     fn counterparty_height(&self) -> Option<Height> {
-        Some(self.proofs.height())
+        Some(self.height)
     }
 
     fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError> {

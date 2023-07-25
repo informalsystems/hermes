@@ -21,6 +21,7 @@ use crate::types::messages::timeout_packet::CosmosTimeoutPacketMessage;
 pub struct CosmosReceivePacketPayload {
     pub packet: Packet,
     pub proofs: Proofs,
+    pub height: Height,
 }
 
 pub struct CosmosAckPacketPayload {
@@ -58,7 +59,11 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
 
             let packet = packet.clone();
 
-            Ok(CosmosReceivePacketPayload { packet, proofs })
+            Ok(CosmosReceivePacketPayload {
+                packet,
+                proofs,
+                height,
+            })
         })
         .await
 }
@@ -69,6 +74,7 @@ pub fn build_receive_packet_message(
     let message = CosmosReceivePacketMessage {
         packet: payload.packet,
         proofs: payload.proofs,
+        height: payload.height,
     };
 
     Ok(message.as_cosmos_message())
@@ -116,6 +122,7 @@ pub fn build_ack_packet_message(
         packet: payload.packet,
         acknowledgement: payload.ack,
         proofs: payload.proofs,
+        height: payload.height,
     };
 
     Ok(message.as_cosmos_message())
@@ -159,6 +166,7 @@ pub fn build_timeout_unordered_packet_message(
         next_sequence_recv: payload.packet.sequence,
         packet: payload.packet,
         proofs: payload.proofs,
+        height: payload.height,
     };
 
     Ok(message.as_cosmos_message())

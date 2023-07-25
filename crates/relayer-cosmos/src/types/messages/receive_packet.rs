@@ -14,11 +14,12 @@ const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 pub struct CosmosReceivePacketMessage {
     pub packet: Packet,
     pub proofs: Proofs,
+    pub height: Height,
 }
 
 impl CosmosMessage for CosmosReceivePacketMessage {
     fn counterparty_height(&self) -> Option<Height> {
-        Some(self.proofs.height())
+        Some(self.height)
     }
 
     fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError> {

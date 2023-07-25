@@ -15,11 +15,12 @@ pub struct CosmosAckPacketMessage {
     pub packet: Packet,
     pub acknowledgement: Vec<u8>,
     pub proofs: Proofs,
+    pub height: Height,
 }
 
 impl CosmosMessage for CosmosAckPacketMessage {
     fn counterparty_height(&self) -> Option<Height> {
-        Some(self.proofs.height())
+        Some(self.height)
     }
 
     fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError> {
