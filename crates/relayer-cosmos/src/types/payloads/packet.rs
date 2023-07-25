@@ -10,10 +10,10 @@ pub struct CosmosReceivePacketPayload {
 }
 
 pub struct CosmosAckPacketPayload {
-    pub height: Height,
     pub packet: Packet,
     pub ack: Vec<u8>,
-    pub proofs: Proofs,
+    pub update_height: Height,
+    pub proof_acked: CommitmentProofBytes,
 }
 
 pub struct CosmosTimeoutUnorderedPacketPayload {

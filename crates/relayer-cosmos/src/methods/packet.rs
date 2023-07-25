@@ -89,10 +89,10 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
             let ack = ack.ack.clone();
 
             Ok(CosmosAckPacketPayload {
-                height,
                 packet,
                 ack,
-                proofs,
+                update_height: proofs.height(),
+                proof_acked: proofs.object_proof().clone(),
             })
         })
         .await
@@ -104,8 +104,8 @@ pub fn build_ack_packet_message(
     let message = CosmosAckPacketMessage {
         packet: payload.packet,
         acknowledgement: payload.ack,
-        proofs: payload.proofs,
-        height: payload.height,
+        update_height: payload.update_height,
+        proof_acked: payload.proof_acked,
     };
 
     Ok(message.as_cosmos_message())
