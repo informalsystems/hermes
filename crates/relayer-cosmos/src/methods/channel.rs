@@ -10,13 +10,13 @@ use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
-use crate::traits::message::{AsCosmosMessage, CosmosMessage};
+use crate::traits::message::{CosmosMessage, ToCosmosMessage};
 use crate::types::channel::CosmosInitChannelOptions;
 use crate::types::error::{BaseError, Error};
-use crate::types::messages::channel_open_ack::CosmosChannelOpenAckMessage;
-use crate::types::messages::channel_open_confirm::CosmosChannelOpenConfirmMessage;
-use crate::types::messages::channel_open_init::CosmosChannelOpenInitMessage;
-use crate::types::messages::channel_open_try::CosmosChannelOpenTryMessage;
+use crate::types::messages::channel::open_ack::CosmosChannelOpenAckMessage;
+use crate::types::messages::channel::open_confirm::CosmosChannelOpenConfirmMessage;
+use crate::types::messages::channel::open_init::CosmosChannelOpenInitMessage;
+use crate::types::messages::channel::open_try::CosmosChannelOpenTryMessage;
 use crate::types::payloads::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenTryPayload,
 };

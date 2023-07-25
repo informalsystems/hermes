@@ -16,11 +16,11 @@ pub trait CosmosMessage: Send + Sync + 'static {
     fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError>;
 }
 
-pub trait AsCosmosMessage {
+pub trait ToCosmosMessage {
     fn to_cosmos_message(self) -> Arc<dyn CosmosMessage>;
 }
 
-impl<Message> AsCosmosMessage for Message
+impl<Message> ToCosmosMessage for Message
 where
     Message: CosmosMessage,
 {

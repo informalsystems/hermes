@@ -7,10 +7,10 @@ use ibc_relayer::consensus_state::AnyConsensusState;
 
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
-use crate::traits::message::{AsCosmosMessage, CosmosMessage};
+use crate::traits::message::{CosmosMessage, ToCosmosMessage};
 use crate::types::client::CosmosCreateClientPayload;
 use crate::types::error::{BaseError, Error};
-use crate::types::messages::create_client::CosmosCreateClientMessage;
+use crate::types::messages::client::create::CosmosCreateClientMessage;
 
 pub async fn build_create_client_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,

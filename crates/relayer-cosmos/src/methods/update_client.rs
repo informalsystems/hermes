@@ -11,10 +11,10 @@ use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
-use crate::traits::message::{AsCosmosMessage, CosmosMessage};
+use crate::traits::message::{CosmosMessage, ToCosmosMessage};
 use crate::types::client::CosmosUpdateClientPayload;
 use crate::types::error::{BaseError, Error};
-use crate::types::messages::update_client::CosmosUpdateClientMessage;
+use crate::types::messages::client::update::CosmosUpdateClientMessage;
 
 pub async fn build_update_client_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,

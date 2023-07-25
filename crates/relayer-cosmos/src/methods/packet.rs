@@ -11,11 +11,11 @@ use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
-use crate::traits::message::{AsCosmosMessage, CosmosMessage};
+use crate::traits::message::{CosmosMessage, ToCosmosMessage};
 use crate::types::error::{BaseError, Error};
-use crate::types::messages::ack_packet::CosmosAckPacketMessage;
-use crate::types::messages::receive_packet::CosmosReceivePacketMessage;
-use crate::types::messages::timeout_packet::CosmosTimeoutPacketMessage;
+use crate::types::messages::packet::ack::CosmosAckPacketMessage;
+use crate::types::messages::packet::receive::CosmosReceivePacketMessage;
+use crate::types::messages::packet::timeout::CosmosTimeoutPacketMessage;
 use crate::types::payloads::packet::{
     CosmosAckPacketPayload, CosmosReceivePacketPayload, CosmosTimeoutUnorderedPacketPayload,
 };

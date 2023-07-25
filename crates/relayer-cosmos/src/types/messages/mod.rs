@@ -1,13 +1,4 @@
-pub mod ack_packet;
-pub mod channel_open_ack;
-pub mod channel_open_confirm;
-pub mod channel_open_init;
-pub mod channel_open_try;
-pub mod connection_open_ack;
-pub mod connection_open_confirm;
-pub mod connection_open_init;
-pub mod connection_open_try;
-pub mod create_client;
-pub mod receive_packet;
-pub mod timeout_packet;
-pub mod update_client;
+pub mod channel;
+pub mod client;
+pub mod connection;
+pub mod packet;
