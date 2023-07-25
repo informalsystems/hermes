@@ -4,9 +4,7 @@ use core::iter::Iterator;
 use crate::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
-use crate::chain::traits::message_sender::CanSendMessages;
 use crate::chain::traits::queries::status::CanQueryChainHeight;
-use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::connection::HasConnectionOpenTryEvent;
 use crate::chain::traits::wait::CanWaitChainReachHeight;
@@ -14,7 +12,6 @@ use crate::relay::impls::update_client::CanSendUpdateClientMessage;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::connection::open_try::ConnectionOpenTryRelayer;
 use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
-use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
@@ -43,13 +40,10 @@ impl<Relay, SrcChain, DstChain> ConnectionOpenTryRelayer<Relay> for RelayConnect
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + CanSendUpdateClientMessage<SourceTarget>
-        + CanBuildUpdateClientMessage<DestinationTarget>
         + CanSendSingleIbcMessage<DestinationTarget>
         + InjectMissingConnectionTryEventError,
-    SrcChain:
-        CanQueryChainHeight + CanIncrementHeight + CanBuildConnectionHandshakePayloads<DstChain>,
-    DstChain: CanSendMessages
-        + CanQueryChainHeight
+    SrcChain: CanQueryChainHeight + CanBuildConnectionHandshakePayloads<DstChain>,
+    DstChain: CanQueryChainHeight
         + CanWaitChainReachHeight
         + CanBuildConnectionHandshakeMessages<SrcChain>
         + HasConnectionOpenTryEvent<SrcChain>,

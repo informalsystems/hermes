@@ -164,7 +164,7 @@ pub async fn build_connection_open_ack_payload<Chain: ChainHandle>(
             let payload = CosmosConnectionOpenAckPayload {
                 client_state,
                 version,
-                proof_height: proofs.height(),
+                update_height: proofs.height(),
                 proof_try: proofs.object_proof().clone(),
                 proof_client,
                 proof_consensus,
@@ -278,7 +278,7 @@ pub fn build_connection_open_ack_message(
         counterparty_connection_id: counterparty_connection_id.clone(),
         version: counterparty_payload.version,
         client_state: counterparty_payload.client_state.into(),
-        proof_height: counterparty_payload.proof_height,
+        update_height: counterparty_payload.update_height,
         proof_try: counterparty_payload.proof_try,
         proof_client: counterparty_payload.proof_client,
         proof_consensus: counterparty_payload.proof_consensus,

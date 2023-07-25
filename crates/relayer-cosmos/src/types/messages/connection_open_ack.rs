@@ -18,19 +18,23 @@ pub struct CosmosConnectionOpenAckMessage {
     pub counterparty_connection_id: ConnectionId,
     pub version: Version,
     pub client_state: Any,
-    pub proof_height: Height,
+    pub update_height: Height,
     pub proof_try: CommitmentProofBytes,
     pub proof_client: CommitmentProofBytes,
     pub proof_consensus: ConsensusProof,
 }
 
 impl CosmosMessage for CosmosConnectionOpenAckMessage {
+    fn counterparty_message_height_for_update_client(&self) -> Option<Height> {
+        Some(self.update_height)
+    }
+
     fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError> {
         let proto_message = ProtoMsgConnectionOpenAck {
             connection_id: self.connection_id.as_str().to_string(),
             counterparty_connection_id: self.counterparty_connection_id.as_str().to_string(),
             client_state: Some(self.client_state.clone()),
-            proof_height: Some(self.proof_height.into()),
+            proof_height: Some(self.update_height.into()),
             proof_try: self.proof_try.clone().into(),
             proof_client: self.proof_client.clone().into(),
             proof_consensus: self.proof_consensus.proof().clone().into(),

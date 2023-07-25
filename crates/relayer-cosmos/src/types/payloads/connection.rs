@@ -26,7 +26,7 @@ pub struct CosmosConnectionOpenTryPayload {
 pub struct CosmosConnectionOpenAckPayload {
     pub client_state: ClientState,
     pub version: Version,
-    pub proof_height: Height,
+    pub update_height: Height,
     pub proof_try: CommitmentProofBytes,
     pub proof_client: CommitmentProofBytes,
     pub proof_consensus: ConsensusProof,
