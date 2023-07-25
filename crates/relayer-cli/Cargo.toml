@@ -57,7 +57,7 @@ regex                    = "1.8.1"
 opentelemetry            = { version = "0.17.0", features = ["metrics"] }
 serde                    = { version = "1.0", features = ["serde_derive"] }
 serde_json               = "1"
-signal-hook              = "0.3.15"
+signal-hook              = "0.3.17"
 subtle-encoding          = "0.5"
 tokio                    = { version = "1.0", features = ["full"] }
 tracing                  = "0.1.36"
