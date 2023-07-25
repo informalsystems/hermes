@@ -15,13 +15,14 @@ use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
-use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
+use crate::traits::message::{wrap_cosmos_message, AsCosmosMessage, CosmosMessage};
 use crate::types::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenTryPayload,
     CosmosInitChannelOptions,
 };
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
+use crate::types::messages::channel_open_init::CosmosChannelOpenInitMessage;
 
 pub async fn query_chain_id_from_channel_id<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
@@ -161,17 +162,9 @@ pub fn build_channel_open_init_message(
         channel_version,
     );
 
-    let message = CosmosIbcMessage::new(None, move |signer| {
-        let message = MsgChannelOpenInit {
-            port_id: port_id.clone(),
-            channel: channel.clone(),
-            signer: signer.clone(),
-        };
+    let message = CosmosChannelOpenInitMessage { port_id, channel };
 
-        Ok(message.to_any())
-    });
-
-    Ok(wrap_cosmos_message(message))
+    Ok(message.to_cosmos_message())
 }
 
 pub fn build_channel_open_try_message(
