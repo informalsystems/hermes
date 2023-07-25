@@ -4,7 +4,6 @@ use ibc_relayer::chain::requests::{Qualified, QueryUnreceivedPacketsRequest};
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
-use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
@@ -18,6 +17,7 @@ use crate::methods::runtime::HasBlockingChainHandle;
 use crate::traits::message::{wrap_cosmos_message, AsCosmosMessage, CosmosMessage};
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
+use crate::types::messages::ack_packet::CosmosAckPacketMessage;
 use crate::types::messages::receive_packet::CosmosReceivePacketMessage;
 
 pub struct CosmosReceivePacketPayload {
@@ -114,17 +114,13 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
 pub fn build_ack_packet_message(
     payload: CosmosAckPacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
-    let message = CosmosIbcMessage::new(Some(payload.height), move |signer| {
-        Ok(MsgAcknowledgement::new(
-            payload.packet.clone(),
-            payload.ack.clone().into(),
-            payload.proofs.clone(),
-            signer.clone(),
-        )
-        .to_any())
-    });
+    let message = CosmosAckPacketMessage {
+        packet: payload.packet,
+        acknowledgement: payload.ack,
+        proofs: payload.proofs,
+    };
 
-    Ok(wrap_cosmos_message(message))
+    Ok(message.as_cosmos_message())
 }
 
 pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
