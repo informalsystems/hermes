@@ -1,4 +1,5 @@
 pub mod ack_packet;
+pub mod channel_open_ack;
 pub mod channel_open_init;
 pub mod channel_open_try;
 pub mod connection_open_ack;

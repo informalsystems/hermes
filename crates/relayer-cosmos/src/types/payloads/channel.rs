@@ -14,8 +14,9 @@ pub struct CosmosChannelOpenTryPayload {
 }
 
 pub struct CosmosChannelOpenAckPayload {
-    pub proofs: Proofs,
     pub version: Version,
+    pub update_height: Height,
+    pub proof_try: CommitmentProofBytes,
 }
 
 pub struct CosmosChannelOpenConfirmPayload {

@@ -3,12 +3,10 @@ use async_trait::async_trait;
 use crate::chain::traits::message_builders::channel::{
     CanBuildChannelHandshakeMessages, CanBuildChannelHandshakePayloads,
 };
-use crate::chain::traits::message_sender::CanSendMessages;
 use crate::chain::traits::queries::status::CanQueryChainHeight;
-use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::channel::open_ack::ChannelOpenAckRelayer;
-use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
+use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
 use crate::relay::traits::target::SourceTarget;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
@@ -32,9 +30,9 @@ pub struct RelayChannelOpenAck;
 impl<Relay, SrcChain, DstChain> ChannelOpenAckRelayer<Relay> for RelayChannelOpenAck
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
-        + CanBuildUpdateClientMessage<SourceTarget>,
-    SrcChain: CanSendMessages + CanBuildChannelHandshakeMessages<DstChain>,
-    DstChain: CanQueryChainHeight + CanIncrementHeight + CanBuildChannelHandshakePayloads<SrcChain>,
+        + CanSendSingleIbcMessage<SourceTarget>,
+    SrcChain: CanBuildChannelHandshakeMessages<DstChain>,
+    DstChain: CanQueryChainHeight + CanBuildChannelHandshakePayloads<SrcChain>,
 {
     async fn relay_channel_open_ack(
         relay: &Relay,
@@ -56,13 +54,6 @@ where
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        let dst_update_height =
-            DstChain::increment_height(&dst_proof_height).map_err(Relay::dst_chain_error)?;
-
-        let src_update_client_messages = relay
-            .build_update_client_messages(SourceTarget, &dst_update_height)
-            .await?;
-
         let open_ack_message = src_chain
             .build_channel_open_ack_message(
                 src_port_id,
@@ -73,16 +64,7 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let src_messages = {
-            let mut messages = src_update_client_messages;
-            messages.push(open_ack_message);
-            messages
-        };
-
-        src_chain
-            .send_messages(src_messages)
-            .await
-            .map_err(Relay::src_chain_error)?;
+        relay.send_message(SourceTarget, open_ack_message).await?;
 
         Ok(())
     }
