@@ -6,9 +6,11 @@ use ibc_proto::ibc::core::connection::v1::Counterparty;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as ProtoMsgConnectionOpenTry;
 use ibc_relayer_types::core::ics03_connection::version::Version;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc_relayer_types::proofs::Proofs;
+use ibc_relayer_types::proofs::ConsensusProof;
 use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::Height;
 use prost::EncodeError;
 
 use crate::methods::encode::encode_message;
@@ -24,7 +26,10 @@ pub struct CosmosConnectionOpenTryMessage {
     pub counterparty_versions: Vec<Version>,
     pub client_state: Any,
     pub delay_period: Duration,
-    pub proofs: Proofs,
+    pub proof_height: Height,
+    pub proof_init: CommitmentProofBytes,
+    pub proof_client: CommitmentProofBytes,
+    pub proof_consensus: ConsensusProof,
 }
 
 impl CosmosMessage for CosmosConnectionOpenTryMessage {
@@ -48,24 +53,11 @@ impl CosmosMessage for CosmosConnectionOpenTryMessage {
                 .collect(),
             client_state: Some(self.client_state.clone()),
             delay_period: self.delay_period.as_nanos() as u64,
-            proof_height: Some(self.proofs.height().into()),
-            proof_init: self.proofs.object_proof().clone().into(),
-            proof_client: self
-                .proofs
-                .client_proof()
-                .clone()
-                .map(Into::into)
-                .unwrap_or_default(),
-            proof_consensus: self
-                .proofs
-                .consensus_proof()
-                .map(|p| p.proof().clone().into())
-                .unwrap_or_default(),
-            consensus_height: self
-                .proofs
-                .consensus_proof()
-                .map(|p| Some(p.height().into()))
-                .unwrap_or_default(),
+            proof_height: Some(self.proof_height.into()),
+            proof_init: self.proof_init.clone().into(),
+            proof_client: self.proof_client.clone().into(),
+            proof_consensus: self.proof_consensus.proof().clone().into(),
+            consensus_height: Some(self.proof_consensus.height().into()),
             signer: signer.to_string(),
             previous_connection_id: "".to_string(),
         };
