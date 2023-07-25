@@ -3,14 +3,12 @@ use async_trait::async_trait;
 use crate::chain::traits::message_builders::channel::{
     CanBuildChannelHandshakeMessages, CanBuildChannelHandshakePayloads,
 };
-use crate::chain::traits::message_sender::CanSendMessages;
 use crate::chain::traits::queries::status::CanQueryChainHeight;
-use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::channel::HasChannelOpenTryEvent;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::channel::open_try::ChannelOpenTryRelayer;
-use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
+use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
 use crate::relay::traits::target::DestinationTarget;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
@@ -41,12 +39,10 @@ pub struct RelayChannelOpenTry;
 impl<Relay, SrcChain, DstChain> ChannelOpenTryRelayer<Relay> for RelayChannelOpenTry
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
-        + CanBuildUpdateClientMessage<DestinationTarget>
+        + CanSendSingleIbcMessage<DestinationTarget>
         + InjectMissingChannelTryEventError,
-    SrcChain: CanQueryChainHeight + CanIncrementHeight + CanBuildChannelHandshakePayloads<DstChain>,
-    DstChain: CanSendMessages
-        + CanBuildChannelHandshakeMessages<SrcChain>
-        + HasChannelOpenTryEvent<SrcChain>,
+    SrcChain: CanQueryChainHeight + CanBuildChannelHandshakePayloads<DstChain>,
+    DstChain: CanBuildChannelHandshakeMessages<SrcChain> + HasChannelOpenTryEvent<SrcChain>,
     DstChain::ChannelId: Clone,
 {
     async fn relay_channel_open_try(
@@ -68,32 +64,16 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let src_update_height =
-            SrcChain::increment_height(&src_proof_height).map_err(Relay::src_chain_error)?;
-
-        let dst_update_client_messages = relay
-            .build_update_client_messages(DestinationTarget, &src_update_height)
-            .await?;
-
         let open_try_message = dst_chain
             .build_channel_open_try_message(dst_port, src_port_id, src_channel_id, open_try_payload)
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        let dst_messages = {
-            let mut messages = dst_update_client_messages;
-            messages.push(open_try_message);
-            messages
-        };
-
-        let mut events = dst_chain
-            .send_messages(dst_messages)
-            .await
-            .map_err(Relay::dst_chain_error)?;
+        let events = relay
+            .send_message(DestinationTarget, open_try_message)
+            .await?;
 
         let open_try_event = events
-            .pop()
-            .ok_or_else(|| relay.missing_channel_try_event_error(src_channel_id))?
             .into_iter()
             .find_map(|event| DstChain::try_extract_channel_open_try_event(event))
             .ok_or_else(|| relay.missing_channel_try_event_error(src_channel_id))?;

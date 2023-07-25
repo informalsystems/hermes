@@ -62,8 +62,7 @@ use crate::methods::packet::{
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
 use crate::traits::message::CosmosMessage;
 use crate::types::channel::{
-    CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenInitEvent,
-    CosmosChannelOpenTryEvent, CosmosChannelOpenTryPayload, CosmosInitChannelOptions,
+    CosmosChannelOpenInitEvent, CosmosChannelOpenTryEvent, CosmosInitChannelOptions,
 };
 use crate::types::client::{
     CosmosCreateClientEvent, CosmosCreateClientPayload, CosmosUpdateClientPayload,
@@ -72,6 +71,9 @@ use crate::types::connection::{
     CosmosConnectionOpenInitEvent, CosmosConnectionOpenTryEvent, CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
+use crate::types::payloads::channel::{
+    CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenTryPayload,
+};
 use crate::types::payloads::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
     CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload,
