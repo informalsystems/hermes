@@ -26,13 +26,17 @@ pub struct CosmosConnectionOpenTryMessage {
     pub counterparty_versions: Vec<Version>,
     pub client_state: Any,
     pub delay_period: Duration,
-    pub proof_height: Height,
+    pub update_height: Height,
     pub proof_init: CommitmentProofBytes,
     pub proof_client: CommitmentProofBytes,
     pub proof_consensus: ConsensusProof,
 }
 
 impl CosmosMessage for CosmosConnectionOpenTryMessage {
+    fn counterparty_message_height_for_update_client(&self) -> Option<Height> {
+        Some(self.update_height)
+    }
+
     fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError> {
         let counterparty = Counterparty {
             client_id: self.counterparty_client_id.as_str().to_string(),
@@ -53,7 +57,7 @@ impl CosmosMessage for CosmosConnectionOpenTryMessage {
                 .collect(),
             client_state: Some(self.client_state.clone()),
             delay_period: self.delay_period.as_nanos() as u64,
-            proof_height: Some(self.proof_height.into()),
+            proof_height: Some(self.update_height.into()),
             proof_init: self.proof_init.clone().into(),
             proof_client: self.proof_client.clone().into(),
             proof_consensus: self.proof_consensus.proof().clone().into(),

@@ -17,7 +17,7 @@ pub struct CosmosConnectionOpenTryPayload {
     pub client_state: ClientState,
     pub versions: Vec<Version>,
     pub delay_period: Duration,
-    pub proof_height: Height,
+    pub update_height: Height,
     pub proof_init: CommitmentProofBytes,
     pub proof_client: CommitmentProofBytes,
     pub proof_consensus: ConsensusProof,

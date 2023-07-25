@@ -13,6 +13,7 @@ use crate::chain::traits::wait::CanWaitChainReachHeight;
 use crate::relay::impls::update_client::CanSendUpdateClientMessage;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::connection::open_try::ConnectionOpenTryRelayer;
+use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
 use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
@@ -43,6 +44,7 @@ where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + CanSendUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>
+        + CanSendSingleIbcMessage<DestinationTarget>
         + InjectMissingConnectionTryEventError,
     SrcChain:
         CanQueryChainHeight + CanIncrementHeight + CanBuildConnectionHandshakePayloads<DstChain>,
@@ -63,14 +65,18 @@ where
         let src_client_id = relay.src_client_id();
         let dst_client_id = relay.dst_client_id();
 
-        let dst_height = dst_chain
-            .query_chain_height()
-            .await
-            .map_err(Relay::dst_chain_error)?;
+        {
+            // TODO: is this really needed?
 
-        relay
-            .send_update_client_messages(SourceTarget, &dst_height)
-            .await?;
+            let dst_height = dst_chain
+                .query_chain_height()
+                .await
+                .map_err(Relay::dst_chain_error)?;
+
+            relay
+                .send_update_client_messages(SourceTarget, &dst_height)
+                .await?;
+        }
 
         let src_proof_height = src_chain
             .query_chain_height()
@@ -82,13 +88,6 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let src_update_height =
-            SrcChain::increment_height(&src_proof_height).map_err(Relay::src_chain_error)?;
-
-        let dst_update_client_messages = relay
-            .build_update_client_messages(DestinationTarget, &src_update_height)
-            .await?;
-
         let open_try_message = dst_chain
             .build_connection_open_try_message(
                 dst_client_id,
@@ -99,26 +98,11 @@ where
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        let dst_messages = {
-            let mut messages = dst_update_client_messages;
-            messages.push(open_try_message);
-            messages
-        };
-
-        // TODO: investigate whether there is a need to wait, and whether we need to wait at height + 1
-        dst_chain
-            .wait_chain_reach_height(&dst_height)
-            .await
-            .map_err(Relay::dst_chain_error)?;
-
-        let mut events = dst_chain
-            .send_messages(dst_messages)
-            .await
-            .map_err(Relay::dst_chain_error)?;
+        let events = relay
+            .send_message(DestinationTarget, open_try_message)
+            .await?;
 
         let open_try_event = events
-            .pop()
-            .ok_or_else(|| relay.missing_connection_try_event_error(src_connection_id))?
             .into_iter()
             .find_map(|event| DstChain::try_extract_connection_open_try_event(event))
             .ok_or_else(|| relay.missing_connection_try_event_error(src_connection_id))?;
