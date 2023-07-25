@@ -64,5 +64,5 @@ pub fn build_create_client_message(
         consensus_state: payload.consensus_state.into(),
     };
 
-    Ok(message.as_cosmos_message())
+    Ok(message.to_cosmos_message())
 }

@@ -237,7 +237,7 @@ pub async fn build_connection_open_init_message<Chain: ChainHandle>(
                 delay_period,
             };
 
-            Ok(message.as_cosmos_message())
+            Ok(message.to_cosmos_message())
         })
         .await
 }
@@ -262,7 +262,7 @@ pub fn build_connection_open_try_message(
         proof_consensus: counterparty_payload.proof_consensus,
     };
 
-    Ok(message.as_cosmos_message())
+    Ok(message.to_cosmos_message())
 }
 
 pub fn build_connection_open_ack_message(
@@ -284,7 +284,7 @@ pub fn build_connection_open_ack_message(
         proof_consensus: counterparty_payload.proof_consensus,
     };
 
-    Ok(message.as_cosmos_message())
+    Ok(message.to_cosmos_message())
 }
 
 pub fn build_connection_open_confirm_message(
@@ -297,5 +297,5 @@ pub fn build_connection_open_confirm_message(
         proof_ack: counterparty_payload.proof_ack,
     };
 
-    Ok(message.as_cosmos_message())
+    Ok(message.to_cosmos_message())
 }

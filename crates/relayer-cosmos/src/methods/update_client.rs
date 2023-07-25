@@ -61,7 +61,7 @@ pub fn build_update_client_message(
                 header: header.into(),
             };
 
-            message.as_cosmos_message()
+            message.to_cosmos_message()
         })
         .collect();
 

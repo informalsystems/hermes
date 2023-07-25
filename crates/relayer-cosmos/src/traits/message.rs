@@ -17,14 +17,14 @@ pub trait CosmosMessage: Send + Sync + 'static {
 }
 
 pub trait AsCosmosMessage {
-    fn as_cosmos_message(self) -> Arc<dyn CosmosMessage>;
+    fn to_cosmos_message(self) -> Arc<dyn CosmosMessage>;
 }
 
 impl<Message> AsCosmosMessage for Message
 where
     Message: CosmosMessage,
 {
-    fn as_cosmos_message(self) -> Arc<dyn CosmosMessage> {
+    fn to_cosmos_message(self) -> Arc<dyn CosmosMessage> {
         Arc::new(self)
     }
 }

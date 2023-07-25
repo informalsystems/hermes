@@ -60,7 +60,7 @@ pub fn build_receive_packet_message(
         proof_commitment: payload.proof_commitment,
     };
 
-    Ok(message.as_cosmos_message())
+    Ok(message.to_cosmos_message())
 }
 
 pub async fn build_ack_packet_payload<Chain: ChainHandle>(
@@ -108,7 +108,7 @@ pub fn build_ack_packet_message(
         proof_acked: payload.proof_acked,
     };
 
-    Ok(message.as_cosmos_message())
+    Ok(message.to_cosmos_message())
 }
 
 pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
@@ -152,7 +152,7 @@ pub fn build_timeout_unordered_packet_message(
         proof_unreceived: payload.proof_unreceived,
     };
 
-    Ok(message.as_cosmos_message())
+    Ok(message.to_cosmos_message())
 }
 
 pub async fn query_is_packet_received<Chain: ChainHandle>(
