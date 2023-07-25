@@ -5,18 +5,16 @@ use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeigh
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty as ChannelCounterparty, State,
 };
-use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
-use crate::traits::message::{wrap_cosmos_message, AsCosmosMessage, CosmosMessage};
+use crate::traits::message::{AsCosmosMessage, CosmosMessage};
 use crate::types::channel::CosmosInitChannelOptions;
 use crate::types::error::{BaseError, Error};
-use crate::types::message::CosmosIbcMessage;
 use crate::types::messages::channel_open_ack::CosmosChannelOpenAckMessage;
+use crate::types::messages::channel_open_confirm::CosmosChannelOpenConfirmMessage;
 use crate::types::messages::channel_open_init::CosmosChannelOpenInitMessage;
 use crate::types::messages::channel_open_try::CosmosChannelOpenTryMessage;
 use crate::types::payloads::channel::{
@@ -135,7 +133,10 @@ pub async fn build_channel_open_confirm_payload<Chain: ChainHandle>(
                 .build_channel_proofs(&port_id, &channel_id, height)
                 .map_err(BaseError::relayer)?;
 
-            let payload = CosmosChannelOpenConfirmPayload { proofs };
+            let payload = CosmosChannelOpenConfirmPayload {
+                update_height: proofs.height(),
+                proof_ack: proofs.object_proof().clone(),
+            };
 
             Ok(payload)
         })
@@ -224,20 +225,12 @@ pub fn build_channel_open_confirm_message(
     channel_id: &ChannelId,
     counterparty_payload: CosmosChannelOpenConfirmPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
-    let port_id = port_id.clone();
-    let channel_id = channel_id.clone();
-    let proofs = counterparty_payload.proofs.clone();
+    let message = CosmosChannelOpenConfirmMessage {
+        port_id: port_id.clone(),
+        channel_id: channel_id.clone(),
+        update_height: counterparty_payload.update_height,
+        proof_ack: counterparty_payload.proof_ack,
+    };
 
-    let message = CosmosIbcMessage::new(None, move |signer| {
-        let message = MsgChannelOpenConfirm {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            proofs: proofs.clone(),
-            signer: signer.clone(),
-        };
-
-        Ok(message.to_any())
-    });
-
-    Ok(wrap_cosmos_message(message))
+    Ok(message.to_cosmos_message())
 }
