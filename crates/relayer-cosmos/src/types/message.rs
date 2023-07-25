@@ -24,7 +24,7 @@ impl CosmosIbcMessage {
 }
 
 impl CosmosMessage for CosmosIbcMessage {
-    fn counterparty_height(&self) -> Option<Height> {
+    fn counterparty_message_height_for_update_client(&self) -> Option<Height> {
         self.source_height
     }
 

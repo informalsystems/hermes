@@ -18,8 +18,8 @@ pub struct CosmosReceivePacketMessage {
 }
 
 impl CosmosMessage for CosmosReceivePacketMessage {
-    fn counterparty_height(&self) -> Option<Height> {
-        Some(self.height)
+    fn counterparty_message_height_for_update_client(&self) -> Option<Height> {
+        Some(self.proofs.height())
     }
 
     fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError> {

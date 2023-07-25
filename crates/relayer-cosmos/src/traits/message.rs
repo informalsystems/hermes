@@ -5,7 +5,7 @@ use ibc_relayer_types::Height;
 use prost::EncodeError;
 
 pub trait CosmosMessage: Send + Sync + 'static {
-    fn counterparty_height(&self) -> Option<Height> {
+    fn counterparty_message_height_for_update_client(&self) -> Option<Height> {
         None
     }
 

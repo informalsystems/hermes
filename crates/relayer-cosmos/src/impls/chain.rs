@@ -501,8 +501,10 @@ where
         LogValue::Display(packet)
     }
 
-    fn counterparty_message_height(message: &Arc<dyn CosmosMessage>) -> Option<Height> {
-        message.counterparty_height()
+    fn counterparty_message_height_for_update_client(
+        message: &Arc<dyn CosmosMessage>,
+    ) -> Option<Height> {
+        message.counterparty_message_height_for_update_client()
     }
 
     async fn query_chain_id_from_channel_id(

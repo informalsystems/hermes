@@ -290,7 +290,7 @@ impl CanLogChainPacket<MockChainContext> for MockChainContext {
 }
 
 impl HasCounterpartyMessageHeight<MockChainContext> for MockChainContext {
-    fn counterparty_message_height(message: &MockMessage) -> Option<MockHeight> {
+    fn counterparty_message_height_for_update_client(message: &MockMessage) -> Option<MockHeight> {
         match message {
             MockMessage::RecvPacket(h, _) => Some(*h),
             MockMessage::AckPacket(h, _) => Some(*h),

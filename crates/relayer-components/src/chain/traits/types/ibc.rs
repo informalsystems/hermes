@@ -86,9 +86,8 @@ where
     Counterparty: HasHeightType,
 {
     /**
-       Get the height of the counterparty chain that an IBC message is based
-       on when it is constructed to be sent to the self chain. If the message
-       is not IBC-related, this would return `None`.
+       Get the height of the counterparty chain which the UpdateClient message
+       should be built. If the message is not IBC-related, this would return `None`.
 
        This is used by the
        [`SendIbcMessagesWithUpdateClient`](crate::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
@@ -105,6 +104,11 @@ where
        chain. With this method, we are thus getting the
        [`Counterparty::Height`](crate::chain::traits::types::height::HasHeightType::Height)
        and _not_ `Self::Height`.
+
+       Note that the message height for UpdateClient is usually an increment
+       of the height which the proofs are built.
     */
-    fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
+    fn counterparty_message_height_for_update_client(
+        message: &Self::Message,
+    ) -> Option<Counterparty::Height>;
 }
