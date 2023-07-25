@@ -70,11 +70,13 @@ use crate::types::client::{
     CosmosCreateClientEvent, CosmosCreateClientPayload, CosmosUpdateClientPayload,
 };
 use crate::types::connection::{
-    CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
-    CosmosConnectionOpenInitEvent, CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryEvent,
-    CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
+    CosmosConnectionOpenInitEvent, CosmosConnectionOpenTryEvent, CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
+use crate::types::payloads::connection::{
+    CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
+    CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload,
+};
 use crate::types::telemetry::CosmosTelemetry;
 
 #[async_trait]

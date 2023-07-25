@@ -5,4 +5,5 @@ pub mod connection;
 pub mod error;
 pub mod message;
 pub mod messages;
+pub mod payloads;
 pub mod telemetry;

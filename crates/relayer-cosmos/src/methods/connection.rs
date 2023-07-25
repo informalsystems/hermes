@@ -10,15 +10,16 @@ use ibc_relayer_types::Height;
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
 use crate::traits::message::{AsCosmosMessage, CosmosMessage};
-use crate::types::connection::{
-    CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
-    CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
-};
+use crate::types::connection::CosmosInitConnectionOptions;
 use crate::types::error::{BaseError, Error};
 use crate::types::messages::connection_open_ack::CosmosConnectionOpenAckMessage;
 use crate::types::messages::connection_open_confirm::CosmosConnectionOpenConfirmMessage;
 use crate::types::messages::connection_open_init::CosmosConnectionOpenInitMessage;
 use crate::types::messages::connection_open_try::CosmosConnectionOpenTryMessage;
+use crate::types::payloads::connection::{
+    CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
+    CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload,
+};
 
 pub async fn build_connection_open_init_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
@@ -171,7 +172,13 @@ pub async fn build_connection_open_confirm_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let payload = CosmosConnectionOpenConfirmPayload { proofs };
+            let proof_height = proofs.height();
+            let proof_ack = proofs.object_proof().clone();
+
+            let payload = CosmosConnectionOpenConfirmPayload {
+                proof_height,
+                proof_ack,
+            };
 
             Ok(payload)
         })
@@ -256,7 +263,8 @@ pub fn build_connection_open_confirm_message(
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
     let message = CosmosConnectionOpenConfirmMessage {
         connection_id: connection_id.clone(),
-        proofs: counterparty_payload.proofs,
+        proof_height: counterparty_payload.proof_height,
+        proof_ack: counterparty_payload.proof_ack,
     };
 
     Ok(message.as_cosmos_message())
