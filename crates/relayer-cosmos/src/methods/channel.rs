@@ -14,6 +14,7 @@ use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
+use crate::methods::runtime::HasBlockingChainHandle;
 use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
 use crate::types::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenTryPayload,
@@ -27,23 +28,17 @@ pub async fn query_chain_id_from_channel_id<Chain: ChainHandle>(
     channel_id: &ChannelId,
     port_id: &PortId,
 ) -> Result<ChainId, Error> {
-    let chain_handle = chain.handle.clone();
-
     let port_id = port_id.clone();
     let channel_id = channel_id.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let channel_id = counterparty_chain_from_channel(&chain_handle, &channel_id, &port_id)
                 .map_err(BaseError::supervisor)?;
 
             Ok(channel_id)
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub async fn build_channel_open_try_payload<Chain: ChainHandle>(
@@ -55,13 +50,9 @@ pub async fn build_channel_open_try_payload<Chain: ChainHandle>(
     let height = *height;
     let port_id = port_id.clone();
     let channel_id = channel_id.clone();
-    let chain_handle = chain.handle.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let (channel_end, _) = chain_handle
                 .query_channel(
                     QueryChannelRequest {
@@ -88,7 +79,6 @@ pub async fn build_channel_open_try_payload<Chain: ChainHandle>(
             Ok(payload)
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub async fn build_channel_open_ack_payload<Chain: ChainHandle>(
@@ -100,13 +90,9 @@ pub async fn build_channel_open_ack_payload<Chain: ChainHandle>(
     let height = *height;
     let port_id = port_id.clone();
     let channel_id = channel_id.clone();
-    let chain_handle = chain.handle.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let (channel_end, _) = chain_handle
                 .query_channel(
                     QueryChannelRequest {
@@ -130,7 +116,6 @@ pub async fn build_channel_open_ack_payload<Chain: ChainHandle>(
             Ok(payload)
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub async fn build_channel_open_confirm_payload<Chain: ChainHandle>(
@@ -142,13 +127,9 @@ pub async fn build_channel_open_confirm_payload<Chain: ChainHandle>(
     let height = *height;
     let port_id = port_id.clone();
     let channel_id = channel_id.clone();
-    let chain_handle = chain.handle.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let proofs = chain_handle
                 .build_channel_proofs(&port_id, &channel_id, height)
                 .map_err(BaseError::relayer)?;
@@ -158,7 +139,6 @@ pub async fn build_channel_open_confirm_payload<Chain: ChainHandle>(
             Ok(payload)
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub fn build_channel_open_init_message(

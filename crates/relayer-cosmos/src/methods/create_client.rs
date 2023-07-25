@@ -8,6 +8,7 @@ use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc_relayer_types::tx_msg::Msg;
 
 use crate::contexts::chain::CosmosChain;
+use crate::methods::runtime::HasBlockingChainHandle;
 use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
 use crate::types::client::CosmosCreateClientPayload;
 use crate::types::error::{BaseError, Error};
@@ -18,13 +19,9 @@ pub async fn build_create_client_payload<Chain: ChainHandle>(
     client_settings: &ClientSettings,
 ) -> Result<CosmosCreateClientPayload, Error> {
     let client_settings = client_settings.clone();
-    let chain_handle = chain.handle.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let height = chain_handle
                 .query_latest_height()
                 .map_err(BaseError::relayer)?;
@@ -59,7 +56,6 @@ pub async fn build_create_client_payload<Chain: ChainHandle>(
             })
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub fn build_create_client_message(

@@ -12,6 +12,7 @@ use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
+use crate::methods::runtime::HasBlockingChainHandle;
 use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
 use crate::types::client::CosmosUpdateClientPayload;
 use crate::types::error::{BaseError, Error};
@@ -25,13 +26,9 @@ pub async fn build_update_client_payload<Chain: ChainHandle>(
 ) -> Result<CosmosUpdateClientPayload, Error> {
     let trusted_height = *trusted_height;
     let target_height = *target_height;
-    let chain_handle = chain.handle.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let (header, support) = chain_handle
                 .build_header(
                     trusted_height,
@@ -51,7 +48,6 @@ pub async fn build_update_client_payload<Chain: ChainHandle>(
             Ok(CosmosUpdateClientPayload { headers })
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub fn build_update_client_message(

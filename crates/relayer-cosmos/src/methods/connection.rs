@@ -13,6 +13,7 @@ use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
+use crate::methods::runtime::HasBlockingChainHandle;
 use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
 use crate::types::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
@@ -24,13 +25,8 @@ use crate::types::message::CosmosIbcMessage;
 pub async fn build_connection_open_init_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
 ) -> Result<CosmosConnectionOpenInitPayload, Error> {
-    let chain_handle = chain.handle.clone();
-
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let commitment_prefix = chain_handle
                 .query_commitment_prefix()
                 .map_err(BaseError::relayer)?;
@@ -38,7 +34,6 @@ pub async fn build_connection_open_init_payload<Chain: ChainHandle>(
             Ok(CosmosConnectionOpenInitPayload { commitment_prefix })
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub async fn build_connection_open_try_payload<Chain: ChainHandle>(
@@ -50,13 +45,9 @@ pub async fn build_connection_open_try_payload<Chain: ChainHandle>(
     let height = *height;
     let client_id = client_id.clone();
     let connection_id = connection_id.clone();
-    let chain_handle = chain.handle.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let commitment_prefix = chain_handle
                 .query_commitment_prefix()
                 .map_err(BaseError::relayer)?;
@@ -94,7 +85,6 @@ pub async fn build_connection_open_try_payload<Chain: ChainHandle>(
             Ok(payload)
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub async fn build_connection_open_ack_payload<Chain: ChainHandle>(
@@ -106,13 +96,9 @@ pub async fn build_connection_open_ack_payload<Chain: ChainHandle>(
     let height = *height;
     let client_id = client_id.clone();
     let connection_id = connection_id.clone();
-    let chain_handle = chain.handle.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let (connection, _) = chain_handle
                 .query_connection(
                     QueryConnectionRequest {
@@ -148,7 +134,6 @@ pub async fn build_connection_open_ack_payload<Chain: ChainHandle>(
             Ok(payload)
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub async fn build_connection_open_confirm_payload<Chain: ChainHandle>(
@@ -160,13 +145,9 @@ pub async fn build_connection_open_confirm_payload<Chain: ChainHandle>(
     let height = *height;
     let client_id = client_id.clone();
     let connection_id = connection_id.clone();
-    let chain_handle = chain.handle.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let (_, proofs) = chain_handle
                 .build_connection_proofs_and_client_state(
                     ConnectionMsgType::OpenConfirm,
@@ -181,7 +162,6 @@ pub async fn build_connection_open_confirm_payload<Chain: ChainHandle>(
             Ok(payload)
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub async fn build_connection_open_init_message<Chain: ChainHandle>(
@@ -199,13 +179,9 @@ pub async fn build_connection_open_init_message<Chain: ChainHandle>(
 
     let client_id = client_id.clone();
     let delay_period = init_connection_options.delay_period;
-    let chain_handle = chain.handle.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let versions = chain_handle
                 .query_compatible_versions()
                 .map_err(BaseError::relayer)?;
@@ -227,7 +203,6 @@ pub async fn build_connection_open_init_message<Chain: ChainHandle>(
             Ok(wrap_cosmos_message(message))
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub fn build_connection_open_try_message(
