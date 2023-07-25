@@ -7,7 +7,6 @@ use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::proofs::Proofs;
 use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
@@ -17,25 +16,9 @@ use crate::types::error::{BaseError, Error};
 use crate::types::messages::ack_packet::CosmosAckPacketMessage;
 use crate::types::messages::receive_packet::CosmosReceivePacketMessage;
 use crate::types::messages::timeout_packet::CosmosTimeoutPacketMessage;
-
-pub struct CosmosReceivePacketPayload {
-    pub packet: Packet,
-    pub proofs: Proofs,
-    pub height: Height,
-}
-
-pub struct CosmosAckPacketPayload {
-    pub height: Height,
-    pub packet: Packet,
-    pub ack: Vec<u8>,
-    pub proofs: Proofs,
-}
-
-pub struct CosmosTimeoutUnorderedPacketPayload {
-    pub height: Height,
-    pub packet: Packet,
-    pub proofs: Proofs,
-}
+use crate::types::payloads::packet::{
+    CosmosAckPacketPayload, CosmosReceivePacketPayload, CosmosTimeoutUnorderedPacketPayload,
+};
 
 pub async fn build_receive_packet_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
@@ -61,8 +44,8 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
 
             Ok(CosmosReceivePacketPayload {
                 packet,
-                proofs,
-                height,
+                update_height: proofs.height(),
+                proof_commitment: proofs.object_proof().clone(),
             })
         })
         .await
@@ -73,8 +56,8 @@ pub fn build_receive_packet_message(
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
     let message = CosmosReceivePacketMessage {
         packet: payload.packet,
-        proofs: payload.proofs,
-        height: payload.height,
+        update_height: payload.update_height,
+        proof_commitment: payload.proof_commitment,
     };
 
     Ok(message.as_cosmos_message())
