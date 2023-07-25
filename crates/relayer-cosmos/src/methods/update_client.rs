@@ -6,9 +6,7 @@ use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::light_client::AnyHeader;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TendermintHeader;
-use ibc_relayer_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
-use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
@@ -16,7 +14,7 @@ use crate::methods::runtime::HasBlockingChainHandle;
 use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
 use crate::types::client::CosmosUpdateClientPayload;
 use crate::types::error::{BaseError, Error};
-use crate::types::message::CosmosIbcMessage;
+use crate::types::messages::client::CosmosUpdateClientMessage;
 
 pub async fn build_update_client_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
@@ -58,16 +56,10 @@ pub fn build_update_client_message(
         .headers
         .into_iter()
         .map(|header| {
-            let client_id = client_id.clone();
-            let message = CosmosIbcMessage::new(None, move |signer| {
-                let message = MsgUpdateClient {
-                    client_id: client_id.clone(),
-                    header: header.clone().into(),
-                    signer: signer.clone(),
-                };
-
-                Ok(message.to_any())
-            });
+            let message = CosmosUpdateClientMessage {
+                client_id: client_id.clone(),
+                header: header.into(),
+            };
 
             wrap_cosmos_message(message)
         })
