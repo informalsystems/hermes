@@ -5,7 +5,7 @@ use ibc_relayer_types::core::ics03_connection::version::Version;
 use ibc_relayer_types::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes,
 };
-use ibc_relayer_types::proofs::{ConsensusProof, Proofs};
+use ibc_relayer_types::proofs::ConsensusProof;
 use ibc_relayer_types::Height;
 
 pub struct CosmosConnectionOpenInitPayload {
@@ -25,8 +25,11 @@ pub struct CosmosConnectionOpenTryPayload {
 
 pub struct CosmosConnectionOpenAckPayload {
     pub client_state: ClientState,
-    pub proofs: Proofs,
     pub version: Version,
+    pub proof_height: Height,
+    pub proof_try: CommitmentProofBytes,
+    pub proof_client: CommitmentProofBytes,
+    pub proof_consensus: ConsensusProof,
 }
 
 pub struct CosmosConnectionOpenConfirmPayload {

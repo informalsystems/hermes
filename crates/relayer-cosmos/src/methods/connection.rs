@@ -95,7 +95,7 @@ pub async fn build_connection_open_try_payload<Chain: ChainHandle>(
                 client_state,
                 versions,
                 delay_period,
-                proof_height: height,
+                proof_height: proofs.height(),
                 proof_init: proofs.object_proof().clone(),
                 proof_client,
                 proof_consensus,
@@ -152,10 +152,22 @@ pub async fn build_connection_open_ack_payload<Chain: ChainHandle>(
                 _ => return Err(BaseError::generic(eyre!("expect tendermint client state")).into()),
             };
 
+            let proof_client = proofs
+                .client_proof()
+                .clone()
+                .ok_or_else(|| BaseError::generic(eyre!("expect non empty client proof")))?;
+
+            let proof_consensus = proofs
+                .consensus_proof()
+                .ok_or_else(|| BaseError::generic(eyre!("expect non empty consensus proof")))?;
+
             let payload = CosmosConnectionOpenAckPayload {
-                proofs,
                 client_state,
                 version,
+                proof_height: proofs.height(),
+                proof_try: proofs.object_proof().clone(),
+                proof_client,
+                proof_consensus,
             };
 
             Ok(payload)
@@ -266,7 +278,10 @@ pub fn build_connection_open_ack_message(
         counterparty_connection_id: counterparty_connection_id.clone(),
         version: counterparty_payload.version,
         client_state: counterparty_payload.client_state.into(),
-        proofs: counterparty_payload.proofs,
+        proof_height: counterparty_payload.proof_height,
+        proof_try: counterparty_payload.proof_try,
+        proof_client: counterparty_payload.proof_client,
+        proof_consensus: counterparty_payload.proof_consensus,
     };
 
     Ok(message.as_cosmos_message())
