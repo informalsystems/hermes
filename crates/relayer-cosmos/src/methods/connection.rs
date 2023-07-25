@@ -4,21 +4,19 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::connection::ConnectionMsgType;
-use ibc_relayer_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
-use crate::traits::message::{wrap_cosmos_message, AsCosmosMessage, CosmosMessage};
+use crate::traits::message::{AsCosmosMessage, CosmosMessage};
 use crate::types::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
     CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
-use crate::types::message::CosmosIbcMessage;
 use crate::types::messages::connection_open_ack::CosmosConnectionOpenAckMessage;
+use crate::types::messages::connection_open_confirm::CosmosConnectionOpenConfirmMessage;
 use crate::types::messages::connection_open_init::CosmosConnectionOpenInitMessage;
 use crate::types::messages::connection_open_try::CosmosConnectionOpenTryMessage;
 
@@ -256,19 +254,10 @@ pub fn build_connection_open_confirm_message(
     connection_id: &ConnectionId,
     counterparty_payload: CosmosConnectionOpenConfirmPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
-    let connection_id = connection_id.clone();
+    let message = CosmosConnectionOpenConfirmMessage {
+        connection_id: connection_id.clone(),
+        proofs: counterparty_payload.proofs,
+    };
 
-    let message = CosmosIbcMessage::new(None, move |signer| {
-        let proofs: ibc_relayer_types::proofs::Proofs = counterparty_payload.proofs.clone();
-
-        let message = MsgConnectionOpenConfirm {
-            connection_id: connection_id.clone(),
-            proofs,
-            signer: signer.clone(),
-        };
-
-        Ok(message.to_any())
-    });
-
-    Ok(wrap_cosmos_message(message))
+    Ok(message.as_cosmos_message())
 }

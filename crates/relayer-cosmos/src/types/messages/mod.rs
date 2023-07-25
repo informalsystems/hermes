@@ -1,5 +1,6 @@
 pub mod ack_packet;
 pub mod connection_open_ack;
+pub mod connection_open_confirm;
 pub mod connection_open_init;
 pub mod connection_open_try;
 pub mod create_client;
