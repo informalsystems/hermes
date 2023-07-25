@@ -4,7 +4,6 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::connection::ConnectionMsgType;
-use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc_relayer_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc_relayer_types::tx_msg::Msg;
@@ -19,6 +18,7 @@ use crate::types::connection::{
 };
 use crate::types::error::{BaseError, Error};
 use crate::types::message::CosmosIbcMessage;
+use crate::types::messages::connection_open_ack::CosmosConnectionOpenAckMessage;
 use crate::types::messages::connection_open_init::CosmosConnectionOpenInitMessage;
 use crate::types::messages::connection_open_try::CosmosConnectionOpenTryMessage;
 
@@ -124,7 +124,7 @@ pub async fn build_connection_open_ack_payload<Chain: ChainHandle>(
                 .cloned()
                 .unwrap_or_default();
 
-            let (client_state, proofs) = chain_handle
+            let (m_client_state, proofs) = chain_handle
                 .build_connection_proofs_and_client_state(
                     ConnectionMsgType::OpenAck,
                     &connection_id,
@@ -132,6 +132,14 @@ pub async fn build_connection_open_ack_payload<Chain: ChainHandle>(
                     height,
                 )
                 .map_err(BaseError::relayer)?;
+
+            let any_client_state = m_client_state
+                .ok_or_else(|| BaseError::generic(eyre!("expect some client state")))?;
+
+            let client_state = match any_client_state {
+                AnyClientState::Tendermint(client_state) => client_state,
+                _ => return Err(BaseError::generic(eyre!("expect tendermint client state")).into()),
+            };
 
             let payload = CosmosConnectionOpenAckPayload {
                 proofs,
@@ -233,24 +241,15 @@ pub fn build_connection_open_ack_message(
     let connection_id = connection_id.clone();
     let counterparty_connection_id = counterparty_connection_id.clone();
 
-    let message = CosmosIbcMessage::new(None, move |signer| {
-        let version = counterparty_payload.version.clone();
-        let client_state = counterparty_payload.client_state.clone().map(Into::into);
-        let proofs = counterparty_payload.proofs.clone();
+    let message = CosmosConnectionOpenAckMessage {
+        connection_id: connection_id.clone(),
+        counterparty_connection_id: counterparty_connection_id.clone(),
+        version: counterparty_payload.version,
+        client_state: counterparty_payload.client_state.into(),
+        proofs: counterparty_payload.proofs,
+    };
 
-        let message = MsgConnectionOpenAck {
-            connection_id: connection_id.clone(),
-            counterparty_connection_id: counterparty_connection_id.clone(),
-            version,
-            client_state,
-            proofs,
-            signer: signer.clone(),
-        };
-
-        Ok(message.to_any())
-    });
-
-    Ok(wrap_cosmos_message(message))
+    Ok(message.as_cosmos_message())
 }
 
 pub fn build_connection_open_confirm_message(
