@@ -134,9 +134,9 @@ pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
             let packet = packet.clone();
 
             Ok(CosmosTimeoutUnorderedPacketPayload {
-                height,
                 packet,
-                proofs,
+                update_height: proofs.height(),
+                proof_unreceived: proofs.object_proof().clone(),
             })
         })
         .await
@@ -148,8 +148,8 @@ pub fn build_timeout_unordered_packet_message(
     let message = CosmosTimeoutPacketMessage {
         next_sequence_recv: payload.packet.sequence,
         packet: payload.packet,
-        proofs: payload.proofs,
-        height: payload.height,
+        update_height: payload.update_height,
+        proof_unreceived: payload.proof_unreceived,
     };
 
     Ok(message.as_cosmos_message())
