@@ -33,6 +33,6 @@ pub struct CosmosConnectionOpenAckPayload {
 }
 
 pub struct CosmosConnectionOpenConfirmPayload {
-    pub proof_height: Height,
+    pub update_height: Height,
     pub proof_ack: CommitmentProofBytes,
 }

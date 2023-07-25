@@ -13,15 +13,19 @@ const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenConfirm";
 
 pub struct CosmosConnectionOpenConfirmMessage {
     pub connection_id: ConnectionId,
-    pub proof_height: Height,
+    pub update_height: Height,
     pub proof_ack: CommitmentProofBytes,
 }
 
 impl CosmosMessage for CosmosConnectionOpenConfirmMessage {
+    fn counterparty_message_height_for_update_client(&self) -> Option<Height> {
+        Some(self.update_height)
+    }
+
     fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError> {
         let proto_message = ProtoMsgConnectionOpenConfirm {
             connection_id: self.connection_id.as_str().to_string(),
-            proof_height: Some(self.proof_height.into()),
+            proof_height: Some(self.update_height.into()),
             proof_ack: self.proof_ack.clone().into(),
             signer: signer.to_string(),
         };

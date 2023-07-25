@@ -4,8 +4,6 @@ use crate::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
 use crate::chain::traits::queries::status::CanQueryChainHeight;
-use crate::chain::traits::types::height::CanIncrementHeight;
-use crate::chain::traits::wait::CanWaitChainReachHeight;
 use crate::relay::impls::update_client::CanSendUpdateClientMessage;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::connection::open_ack::ConnectionOpenAckRelayer;
@@ -32,11 +30,8 @@ where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + CanSendUpdateClientMessage<DestinationTarget>
         + CanSendSingleIbcMessage<SourceTarget>,
-    SrcChain: CanQueryChainHeight
-        + CanWaitChainReachHeight
-        + CanBuildConnectionHandshakeMessages<DstChain>,
-    DstChain:
-        CanQueryChainHeight + CanIncrementHeight + CanBuildConnectionHandshakePayloads<SrcChain>,
+    SrcChain: CanBuildConnectionHandshakeMessages<DstChain>,
+    DstChain: CanQueryChainHeight + CanBuildConnectionHandshakePayloads<SrcChain>,
     DstChain::ConnectionId: Clone,
 {
     async fn relay_connection_open_ack(
@@ -48,15 +43,6 @@ where
         let dst_chain = relay.dst_chain();
 
         let dst_client_id = relay.dst_client_id();
-
-        let src_height = src_chain
-            .query_chain_height()
-            .await
-            .map_err(Relay::src_chain_error)?;
-
-        relay
-            .send_update_client_messages(DestinationTarget, &src_height)
-            .await?;
 
         let dst_proof_height = dst_chain
             .query_chain_height()

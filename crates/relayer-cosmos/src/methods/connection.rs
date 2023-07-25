@@ -196,11 +196,11 @@ pub async fn build_connection_open_confirm_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let proof_height = proofs.height();
+            let update_height = proofs.height();
             let proof_ack = proofs.object_proof().clone();
 
             let payload = CosmosConnectionOpenConfirmPayload {
-                proof_height,
+                update_height,
                 proof_ack,
             };
 
@@ -293,7 +293,7 @@ pub fn build_connection_open_confirm_message(
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
     let message = CosmosConnectionOpenConfirmMessage {
         connection_id: connection_id.clone(),
-        proof_height: counterparty_payload.proof_height,
+        update_height: counterparty_payload.update_height,
         proof_ack: counterparty_payload.proof_ack,
     };
 

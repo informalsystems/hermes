@@ -7,7 +7,6 @@ use crate::chain::traits::message_builders::connection::{
 use crate::chain::traits::queries::status::CanQueryChainHeight;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::connection::HasConnectionOpenTryEvent;
-use crate::chain::traits::wait::CanWaitChainReachHeight;
 use crate::relay::impls::update_client::CanSendUpdateClientMessage;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::connection::open_try::ConnectionOpenTryRelayer;
@@ -43,10 +42,7 @@ where
         + CanSendSingleIbcMessage<DestinationTarget>
         + InjectMissingConnectionTryEventError,
     SrcChain: CanQueryChainHeight + CanBuildConnectionHandshakePayloads<DstChain>,
-    DstChain: CanQueryChainHeight
-        + CanWaitChainReachHeight
-        + CanBuildConnectionHandshakeMessages<SrcChain>
-        + HasConnectionOpenTryEvent<SrcChain>,
+    DstChain: CanBuildConnectionHandshakeMessages<SrcChain> + HasConnectionOpenTryEvent<SrcChain>,
     DstChain::ConnectionId: Clone,
 {
     async fn relay_connection_open_try(
@@ -58,19 +54,6 @@ where
 
         let src_client_id = relay.src_client_id();
         let dst_client_id = relay.dst_client_id();
-
-        {
-            // TODO: is this really needed?
-
-            let dst_height = dst_chain
-                .query_chain_height()
-                .await
-                .map_err(Relay::dst_chain_error)?;
-
-            relay
-                .send_update_client_messages(SourceTarget, &dst_height)
-                .await?;
-        }
 
         let src_proof_height = src_chain
             .query_chain_height()
