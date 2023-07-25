@@ -10,24 +10,21 @@ use ibc_relayer::config::{
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer_types::applications::ics27_ica::msgs::send_tx::MsgSendTx;
 use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
-use ibc_relayer_types::core::ics04_channel::version::Version;
-use ibc_relayer_types::signer::Signer;
-use ibc_relayer_types::{
-    applications::{
-        ics27_ica::{cosmos_tx::CosmosTx, msgs::register::MsgRegisterInterchainAccount},
-        transfer::{msgs::send::MsgSend, Amount, Coin},
-    },
-    bigint::U256,
-    core::ics04_channel::channel::State,
-    events::IbcEvent,
-    timestamp::Timestamp,
-    tx_msg::Msg,
+use ibc_relayer_types::applications::{
+    ics27_ica::cosmos_tx::CosmosTx,
+    transfer::{msgs::send::MsgSend, Amount, Coin},
 };
+use ibc_relayer_types::bigint::U256;
+use ibc_relayer_types::core::ics04_channel::channel::State;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::tx_msg::Msg;
 
-use ibc_test_framework::{
-    ibc::denom::Denom,
-    prelude::*,
-    relayer::channel::{assert_eventually_channel_established, query_channel_end},
+use ibc_test_framework::chain::ext::ica::register_interchain_account;
+use ibc_test_framework::ibc::denom::Denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::channel::{
+    assert_eventually_channel_established, query_channel_end,
 };
 
 #[test]
@@ -97,7 +94,8 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
     ) -> Result<(), Error> {
         // Register an interchain account on behalf of
         // controller wallet `user1` where the counterparty chain is the interchain accounts host.
-        let (wallet, channel_id, port_id) = register_interchain_account(&chains, &connection)?;
+        let (wallet, channel_id, port_id) =
+            register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
 
         // Check that the corresponding ICA channel is eventually established.
         let _counterparty_channel_id = assert_eventually_channel_established(
@@ -230,7 +228,8 @@ impl BinaryConnectionTest for IcaFilterTestDeny {
     ) -> Result<(), Error> {
         // Register an interchain account on behalf of controller wallet `user1`
         // where the counterparty chain is the interchain accounts host.
-        let (_, channel_id, port_id) = register_interchain_account(&chains, &connection)?;
+        let (_, channel_id, port_id) =
+            register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
 
         // Wait a bit, the relayer will refuse to complete the channel handshake
         // because the port is explicitly disallowed by the filter.
@@ -246,50 +245,4 @@ impl BinaryConnectionTest for IcaFilterTestDeny {
             &State::Init,
         )
     }
-}
-
-#[allow(clippy::type_complexity)]
-fn register_interchain_account<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chains: &ConnectedChains<ChainA, ChainB>,
-    connection: &ConnectedConnection<ChainA, ChainB>,
-) -> Result<
-    (
-        MonoTagged<ChainA, Wallet>,
-        TaggedChannelId<ChainA, ChainB>,
-        TaggedPortId<ChainA, ChainB>,
-    ),
-    Error,
-> {
-    let wallet = chains.node_a.wallets().relayer().cloned();
-
-    let owner = chains.handle_a().get_signer()?;
-
-    let version_str = format!("{{\"version\":\"ics27-1\",\"encoding\":\"proto3\",\"tx_type\":\"sdk_multi_msg\",\"controller_connection_id\":\"{}\",\"host_connection_id\":\"{}\"}}", connection.connection_id_a.0, connection.connection_id_b.0);
-    let msg = MsgRegisterInterchainAccount {
-        owner,
-        connection_id: connection.connection_id_a.0.clone(),
-        version: Version::new(version_str),
-    };
-
-    let msg_any = msg.to_any();
-
-    let tm = TrackedMsgs::new_static(vec![msg_any], "RegisterInterchainAccount");
-
-    let events = chains
-        .handle_a()
-        .send_messages_and_wait_commit(tm)
-        .map_err(Error::relayer)?;
-
-    for event in events.iter() {
-        if let IbcEvent::OpenInitChannel(open_init) = &event.event {
-            let channel_id = open_init.channel_id.clone().ok_or(()).map_err(|_| Error::generic(eyre!("channel_id is empty in the event response after sending  MsgRegisterInterchainAccount")))?;
-            return Ok((
-                wallet,
-                TaggedChannelId::new(channel_id),
-                TaggedPortId::new(open_init.port_id.clone()),
-            ));
-        }
-    }
-
-    Err(Error::generic(eyre!("could not retrieve an OpenInitChannel event resonse after sending MsgRegisterInterchainAccount")))
 }
