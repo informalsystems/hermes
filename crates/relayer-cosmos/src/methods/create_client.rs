@@ -4,15 +4,13 @@ use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::consensus_state::AnyConsensusState;
-use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
-use ibc_relayer_types::tx_msg::Msg;
 
 use crate::contexts::chain::CosmosChain;
 use crate::methods::runtime::HasBlockingChainHandle;
-use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
+use crate::traits::message::{AsCosmosMessage, CosmosMessage};
 use crate::types::client::CosmosCreateClientPayload;
 use crate::types::error::{BaseError, Error};
-use crate::types::message::CosmosIbcMessage;
+use crate::types::messages::create_client::CosmosCreateClientMessage;
 
 pub async fn build_create_client_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
@@ -61,15 +59,10 @@ pub async fn build_create_client_payload<Chain: ChainHandle>(
 pub fn build_create_client_message(
     payload: CosmosCreateClientPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
-    let message = CosmosIbcMessage::new(None, move |signer| {
-        let message = MsgCreateClient {
-            client_state: payload.client_state.clone().into(),
-            consensus_state: payload.consensus_state.clone().into(),
-            signer: signer.clone(),
-        };
+    let message = CosmosCreateClientMessage {
+        client_state: payload.client_state.into(),
+        consensus_state: payload.consensus_state.into(),
+    };
 
-        Ok(message.to_any())
-    });
-
-    Ok(wrap_cosmos_message(message))
+    Ok(message.as_cosmos_message())
 }
