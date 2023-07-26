@@ -4,7 +4,6 @@ use ibc_relayer::link::RelayPath;
 
 use ibc_relayer_types::events::IbcEvent;
 use ibc_test_framework::chain::config::set_voting_period;
-use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
 
 #[test]
@@ -16,6 +15,7 @@ fn test_redundant_recv() -> Result<(), Error> {
 #[test]
 #[cfg(feature = "interchain-security")]
 fn test_redundant_recv_ics() -> Result<(), Error> {
+    use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
     run_binary_interchain_security_channel_test(&RedundantRecv { ics: true })
 }
 
@@ -28,6 +28,7 @@ fn test_redundant_acks() -> Result<(), Error> {
 #[test]
 #[cfg(feature = "interchain-security")]
 fn test_redundant_acks_ics() -> Result<(), Error> {
+    use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
     run_binary_interchain_security_channel_test(&RedundantAcksTest { ics: true })
 }
 
