@@ -9,21 +9,21 @@ use ibc_test_framework::prelude::*;
 
 #[test]
 #[cfg(not(feature = "interchain-security"))]
-fn test_redundant() -> Result<(), Error> {
-    run_binary_channel_test(&RedundantTest { ics: false })
+fn test_redundant_acks() -> Result<(), Error> {
+    run_binary_channel_test(&RedundantAcksTest { ics: false })
 }
 
 #[test]
 #[cfg(feature = "interchain-security")]
-fn test_redundant_ics() -> Result<(), Error> {
-    run_binary_interchain_security_channel_test(&RedundantTest { ics: true })
+fn test_redundant_acks_ics() -> Result<(), Error> {
+    run_binary_interchain_security_channel_test(&RedundantAcksTest { ics: true })
 }
 
-struct RedundantTest {
+struct RedundantAcksTest {
     ics: bool,
 }
 
-impl TestOverrides for RedundantTest {
+impl TestOverrides for RedundantAcksTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode = ModeConfig {
             clients: config::Clients {
@@ -70,7 +70,7 @@ impl TestOverrides for RedundantTest {
     }
 }
 
-impl BinaryChannelTest for RedundantTest {
+impl BinaryChannelTest for RedundantAcksTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
