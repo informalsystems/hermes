@@ -131,7 +131,14 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                 trace!("packet worker has not processed an event batch after {idle_worker_timer} blocks, incrementing idle timer");
             }
 
-            if idle_worker_timer > packet_cmd_worker_idle_timeout {
+            // TODO Disable the idle timeout for Namada
+            // Due to incompatibility with Namada tendermint-rs,
+            // the packet worker cannot be spawned again.
+            // If using the same tendermint-rs, we can revert.
+            use crate::chain::ChainType;
+            let relay_path = &link.lock().unwrap().a_to_b;
+            let has_namada = relay_path.src_chain().config().unwrap().r#type == ChainType::Namada;
+            if !has_namada && idle_worker_timer > packet_cmd_worker_idle_timeout {
                 warn!("packet worker has been idle for more than {packet_cmd_worker_idle_timeout} blocks, aborting");
 
                 return Ok(Next::Abort);

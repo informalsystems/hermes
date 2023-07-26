@@ -41,7 +41,7 @@ enabled = false
 [mode.packets]
 enabled = true
 clear_interval = 10
-clear_on_start = true
+clear_on_start = false
 tx_confirmation = true
 
 [telemetry]
