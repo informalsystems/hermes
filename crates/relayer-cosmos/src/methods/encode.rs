@@ -1,7 +1,7 @@
 use ibc_proto::google::protobuf::Any;
 use prost::{EncodeError, Message as ProstMessage};
 
-pub fn encode_message<Message>(message: &Message) -> Result<Vec<u8>, EncodeError>
+pub fn encode_protobuf<Message>(message: &Message) -> Result<Vec<u8>, EncodeError>
 where
     Message: ProstMessage,
 {
@@ -14,7 +14,7 @@ pub fn encode_to_any<Message>(type_url: &str, message: &Message) -> Result<Any, 
 where
     Message: ProstMessage,
 {
-    let encoded_message = encode_message(message)?;
+    let encoded_message = encode_protobuf(message)?;
 
     let any_message = Any {
         type_url: type_url.to_string(),

@@ -37,6 +37,7 @@ itertools = "0.10.3"
 futures = "0.3"
 tracing = "0.1.36"
 secp256k1 = "0.27.0"
+sha2 = "0.10.7"
 
 [dependencies.tendermint]
 version = "=0.32.0"

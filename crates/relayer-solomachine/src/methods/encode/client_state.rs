@@ -7,7 +7,7 @@ use prost::{EncodeError, Message};
 use crate::methods::encode::consensus_state::{to_proto_consensus_state, ProtoConsensusState};
 use crate::types::client_state::SolomachineClientState;
 
-pub const TYPE_URL: &str = "/ibc.lightclients.solomachine.v3.ClientState";
+const TYPE_URL: &str = "/ibc.lightclients.solomachine.v3.ClientState";
 
 #[derive(Message)]
 pub struct ProtoClientState {

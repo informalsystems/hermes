@@ -7,7 +7,7 @@ use prost::{EncodeError, Message};
 use crate::methods::encode::public_key::encode_public_key;
 use crate::types::consensus_state::SolomachineConsensusState;
 
-pub const TYPE_URL: &str = "/ibc.lightclients.solomachine.v3.ConsensusState";
+const TYPE_URL: &str = "/ibc.lightclients.solomachine.v3.ConsensusState";
 
 #[derive(Message)]
 pub struct ProtoConsensusState {
