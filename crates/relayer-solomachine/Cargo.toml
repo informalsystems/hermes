@@ -19,6 +19,7 @@ default   = ["flex-error/std", "flex-error/eyre_tracer"]
 ibc-proto         = { version = "0.32.0" }
 ibc-relayer       = { version = "0.25.0", path = "../relayer" }
 ibc-relayer-types = { version = "0.25.0", path = "../relayer-types" }
+ibc-relayer-cosmos = { version = "0.25.0", path = "../relayer-cosmos" }
 ibc-telemetry     = { version = "0.25.0", path = "../telemetry" }
 ibc-relayer-runtime = { version = "0.1.0", path = "../relayer-runtime" }
 ibc-relayer-all-in-one = { version = "0.1.0", path = "../relayer-all-in-one" }
@@ -35,6 +36,7 @@ tokio = "1.24"
 itertools = "0.10.3"
 futures = "0.3"
 tracing = "0.1.36"
+secp256k1 = "0.27.0"
 
 [dependencies.tendermint]
 version = "=0.32.0"
