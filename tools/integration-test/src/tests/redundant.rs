@@ -3,17 +3,24 @@ use ibc_relayer::config::{self, Config, ModeConfig};
 use ibc_relayer::link::RelayPath;
 
 use ibc_relayer_types::events::IbcEvent;
+use ibc_test_framework::chain::config::set_voting_period;
+use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
 
 #[test]
+#[cfg(not(feature = "interchain-security"))]
 fn test_redundant() -> Result<(), Error> {
-    run_binary_channel_test(&RedundantTest {
-        tx_confirmation: true,
-    })
+    run_binary_channel_test(&RedundantTest { ics: false })
+}
+
+#[test]
+#[cfg(feature = "interchain-security")]
+fn test_redundant_ics() -> Result<(), Error> {
+    run_binary_interchain_security_channel_test(&RedundantTest { ics: true })
 }
 
 struct RedundantTest {
-    tx_confirmation: bool,
+    ics: bool,
 }
 
 impl TestOverrides for RedundantTest {
@@ -32,6 +39,30 @@ impl TestOverrides for RedundantTest {
                 ..Default::default()
             },
         };
+
+        if self.ics {
+            for chain_config in config.chains.iter_mut() {
+                if chain_config.id == ChainId::from_string("ibcconsumer") {
+                    chain_config.ccv_consumer_chain = true;
+                    chain_config.trusting_period = Some(Duration::from_secs(99));
+                }
+            }
+        }
+    }
+
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
+        if self.ics {
+            // Consumer chain doesn't have a gov key.
+            if genesis
+                .get_mut("app_state")
+                .and_then(|app_state| app_state.get("gov"))
+                .is_some()
+            {
+                set_voting_period(genesis, "10s")?;
+            }
+        }
+
+        Ok(())
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -55,13 +86,8 @@ impl BinaryChannelTest for RedundantTest {
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
-        let _balance_a = chains
-            .node_a
-            .chain_driver()
-            .query_balance(&wallet_a.address(), &denom_a)?;
-
-        let amount1 = denom_a.with_amount(1_u128);
-        let amount2 = denom_b.with_amount(2_u128);
+        let amount1 = denom_b.with_amount(1_u128);
+        let amount2 = denom_a.with_amount(2_u128);
 
         let relay_path_b_to_a = RelayPath::new(channel.clone().flip().channel, false).unwrap();
         let relay_path_a_to_b = RelayPath::new(channel.channel, false).unwrap();
@@ -74,61 +100,61 @@ impl BinaryChannelTest for RedundantTest {
         let rpc_client_b = chain_driver_b.rpc_client().unwrap();
         let tx_config_b = chain_driver_b.tx_config();
 
-        info!("[1] Initiating token transfer from A to B");
+        info!("[1] Initiating token transfer from B to A");
 
-        let (height1, packet1) = chain_driver_a.ibc_transfer_token_with_height(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            &wallet_a.as_ref(),
-            &wallet_b.address(),
+        let (height1, packet1) = chain_driver_b.ibc_transfer_token_with_height(
+            &channel.port_b.as_ref(),
+            &channel.channel_id_b.as_ref(),
+            &wallet_b.as_ref(),
+            &wallet_a.address(),
             &amount1.as_ref(),
         )?;
 
-        info!("[1] Building client update on B");
+        info!("[1] Building client update on A");
 
-        let latest_height1 = chains.handle_a.query_application_status().unwrap().height;
+        let latest_height1 = chains.handle_b.query_application_status().unwrap().height;
         let update_height1 = latest_height1.increment();
         let mut msgs1 = chains
             .foreign_clients
-            .client_a_to_b
+            .client_b_to_a
             .wait_and_build_update_client(update_height1)
             .unwrap();
 
-        info!("[1] Building Recv packet for B");
+        info!("[1] Building Recv packet for A");
 
-        let recv_msg1 = relay_path_a_to_b
+        let recv_msg1 = relay_path_b_to_a
             .build_recv_packet(&packet1, height1)
             .unwrap()
             .unwrap();
 
         msgs1.push(recv_msg1.clone());
 
-        info!("[1] Sending Recv from A to B");
+        info!("[1] Sending Recv from B to A");
 
-        let events1 = chain_driver_b
+        let events1 = chain_driver_a
             .value()
             .runtime
             .block_on(simple_send_tx(
-                rpc_client_b.value(),
-                tx_config_b.value(),
-                &relayer_b.as_ref().value().key,
+                rpc_client_a.value(),
+                tx_config_a.value(),
+                &relayer_a.as_ref().value().key,
                 msgs1,
             ))
             .unwrap();
 
         dbg!(&events1);
 
-        info!("[2] Building client update on A");
+        info!("[2] Building client update on B");
 
-        let latest_height2 = chains.handle_b.query_application_status().unwrap().height;
+        let latest_height2 = chains.handle_a.query_application_status().unwrap().height;
         let update_height2 = latest_height2.increment();
         let mut msgs2 = chains
             .foreign_clients
-            .client_b_to_a
+            .client_a_to_b
             .wait_and_build_update_client(update_height2)
             .unwrap();
 
-        info!("[2] Building Ack packet for A");
+        info!("[2] Building Ack packet for B");
 
         let (height2, ack_event2) = events1
             .into_iter()
@@ -140,51 +166,51 @@ impl BinaryChannelTest for RedundantTest {
 
         dbg!(height2, &ack_event2);
 
-        let write_ack_msg2 = relay_path_b_to_a
+        let write_ack_msg2 = relay_path_a_to_b
             .build_ack_from_recv_event(&ack_event2, height2)
             .unwrap()
             .unwrap();
 
         msgs2.push(write_ack_msg2.clone());
 
-        info!("[2] Sending Ack from B to A");
+        info!("[2] Sending Ack from A to B");
 
-        let events2 = chain_driver_a
+        let events2 = chain_driver_b
             .value()
             .runtime
             .block_on(simple_send_tx(
-                rpc_client_a.value(),
-                tx_config_a.value(),
-                &relayer_a.as_ref().value().key,
+                rpc_client_b.value(),
+                tx_config_b.value(),
+                &relayer_b.as_ref().value().key,
                 msgs2,
             ))
             .unwrap();
 
         dbg!(&events2);
 
-        info!("[3] Initiating token transfer from B to A");
+        info!("[3] Initiating token transfer from A to B");
 
-        let (height3, packet3) = chain_driver_b.ibc_transfer_token_with_height(
-            &channel.port_b.as_ref(),
-            &channel.channel_id_b.as_ref(),
-            &wallet_b.as_ref(),
-            &wallet_a.address(),
+        let (height3, packet3) = chain_driver_a.ibc_transfer_token_with_height(
+            &channel.port_a.as_ref(),
+            &channel.channel_id_a.as_ref(),
+            &wallet_a.as_ref(),
+            &wallet_b.address(),
             &amount2.as_ref(),
         )?;
 
-        info!("[3] Building client update for B on A");
+        info!("[3] Building client update for A on B");
 
-        let latest_height3 = chains.handle_b.query_application_status().unwrap().height;
+        let latest_height3 = chains.handle_a.query_application_status().unwrap().height;
         let update_height3 = latest_height3.increment();
         let mut msgs3 = chains
             .foreign_clients
-            .client_b_to_a
+            .client_a_to_b
             .wait_and_build_update_client(update_height3)
             .unwrap();
 
-        info!("[3] Building Recv packet for A");
+        info!("[3] Building Recv packet for B");
 
-        let recv_msg3 = relay_path_b_to_a
+        let recv_msg3 = relay_path_a_to_b
             .build_recv_packet(&packet3, height3)
             .unwrap()
             .unwrap();
@@ -192,15 +218,15 @@ impl BinaryChannelTest for RedundantTest {
         msgs3.push(write_ack_msg2.clone());
         msgs3.push(recv_msg3.clone());
 
-        info!("[3] Sending redundant Ack and non-redundant Recv packet from B to A");
+        info!("[3] Sending redundant Ack and non-redundant Recv packet from A to B");
 
-        let events3 = chain_driver_a
+        let events3 = chain_driver_b
             .value()
             .runtime
             .block_on(simple_send_tx(
-                rpc_client_a.value(),
-                tx_config_a.value(),
-                &relayer_a.as_ref().value().key,
+                rpc_client_b.value(),
+                tx_config_b.value(),
+                &relayer_b.as_ref().value().key,
                 msgs3,
             ))
             .unwrap();
