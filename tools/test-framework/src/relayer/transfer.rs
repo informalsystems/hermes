@@ -8,6 +8,7 @@ use core::time::Duration;
 use eyre::eyre;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::Height;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::batched_send_tx;
@@ -115,6 +116,46 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
         .into_iter()
         .find_map(|event| match event.event {
             IbcEvent::SendPacket(ev) => Some(ev.packet),
+            _ => None,
+        })
+        .ok_or_else(|| eyre!("failed to find send packet event"))?;
+
+    Ok(packet)
+}
+
+pub async fn ibc_token_transfer_with_height<SrcChain, DstChain>(
+    rpc_client: MonoTagged<SrcChain, &HttpClient>,
+    tx_config: &MonoTagged<SrcChain, &TxConfig>,
+    port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
+    channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
+    sender: &MonoTagged<SrcChain, &Wallet>,
+    recipient: &MonoTagged<DstChain, &WalletAddress>,
+    token: &TaggedTokenRef<'_, SrcChain>,
+    memo: Option<String>,
+    timeout: Option<Duration>,
+) -> Result<(Height, Packet), Error> {
+    let message = build_transfer_message(
+        port_id,
+        channel_id,
+        sender,
+        recipient,
+        token,
+        timeout.unwrap_or(Duration::from_secs(60)),
+        memo.clone(),
+    )?;
+
+    let events = simple_send_tx(
+        rpc_client.into_value(),
+        tx_config.value(),
+        &sender.value().key,
+        vec![message],
+    )
+    .await?;
+
+    let packet = events
+        .into_iter()
+        .find_map(|event| match event.event {
+            IbcEvent::SendPacket(ev) => Some((event.height, ev.packet)),
             _ => None,
         })
         .ok_or_else(|| eyre!("failed to find send packet event"))?;

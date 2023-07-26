@@ -20,6 +20,7 @@ pub mod handshake_on_start;
 pub mod memo;
 pub mod python;
 pub mod query_packet;
+pub mod redundant;
 pub mod supervisor;
 pub mod tendermint;
 pub mod ternary_transfer;

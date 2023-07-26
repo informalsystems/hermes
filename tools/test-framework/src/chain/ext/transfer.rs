@@ -9,7 +9,9 @@ use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
-use crate::relayer::transfer::{batched_ibc_token_transfer, ibc_token_transfer};
+use crate::relayer::transfer::{
+    batched_ibc_token_transfer, ibc_token_transfer, ibc_token_transfer_with_height,
+};
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -43,6 +45,15 @@ pub trait ChainTransferMethodsExt<Chain> {
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
     ) -> Result<Packet, Error>;
+
+    fn ibc_transfer_token_with_height<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        token: &TaggedTokenRef<Chain>,
+    ) -> Result<(Height, Packet), Error>;
 
     fn ibc_transfer_token_with_memo_and_timeout<Counterparty>(
         &self,
@@ -105,6 +116,30 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             None,
             None,
         ))
+    }
+
+    fn ibc_transfer_token_with_height<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        token: &TaggedTokenRef<Chain>,
+    ) -> Result<(Height, Packet), Error> {
+        let rpc_client = self.rpc_client()?;
+        self.value()
+            .runtime
+            .block_on(ibc_token_transfer_with_height(
+                rpc_client.as_ref(),
+                &self.tx_config(),
+                port_id,
+                channel_id,
+                sender,
+                recipient,
+                token,
+                None,
+                None,
+            ))
     }
 
     fn ibc_transfer_token_with_memo_and_timeout<Counterparty>(

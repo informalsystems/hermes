@@ -1198,7 +1198,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(())
     }
 
-    fn build_recv_packet(&self, packet: &Packet, height: Height) -> Result<Option<Any>, LinkError> {
+    pub fn build_recv_packet(
+        &self,
+        packet: &Packet,
+        height: Height,
+    ) -> Result<Option<Any>, LinkError> {
         let proofs = self
             .src_chain()
             .build_packet_proofs(
