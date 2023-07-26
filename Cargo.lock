@@ -1569,7 +1569,7 @@ dependencies = [
  "time 0.3.23",
  "tokio",
  "toml 0.7.6",
- "tonic 0.9.2",
+ "tonic",
 ]
 
 [[package]]
@@ -1586,7 +1586,7 @@ dependencies = [
  "serde",
  "subtle-encoding",
  "tendermint-proto",
- "tonic 0.9.2",
+ "tonic",
 ]
 
 [[package]]
@@ -1649,7 +1649,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "toml 0.7.6",
- "tonic 0.9.2",
+ "tonic",
  "tracing",
  "tracing-subscriber",
  "uuid 1.4.1",
@@ -1741,7 +1741,6 @@ dependencies = [
  "eyre",
  "flex-error",
  "futures",
- "http",
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-all-in-one",
@@ -1757,12 +1756,8 @@ dependencies = [
  "serde",
  "serde_derive",
  "tendermint",
- "tendermint-light-client",
- "tendermint-light-client-verifier",
- "tendermint-proto",
  "tendermint-rpc",
  "tokio",
- "tonic 0.8.3",
  "tracing",
 ]
 
@@ -1806,6 +1801,32 @@ dependencies = [
  "ibc-relayer-components-extra",
  "tokio",
  "tokio-stream",
+ "tracing",
+]
+
+[[package]]
+name = "ibc-relayer-solomachine"
+version = "0.25.0"
+dependencies = [
+ "async-trait",
+ "eyre",
+ "flex-error",
+ "futures",
+ "ibc-proto",
+ "ibc-relayer",
+ "ibc-relayer-all-in-one",
+ "ibc-relayer-components",
+ "ibc-relayer-components-extra",
+ "ibc-relayer-runtime",
+ "ibc-relayer-types",
+ "ibc-telemetry",
+ "itertools",
+ "prost",
+ "serde",
+ "serde_derive",
+ "tendermint",
+ "tendermint-rpc",
+ "tokio",
  "tracing",
 ]
 
@@ -1893,7 +1914,7 @@ dependencies = [
  "tendermint-rpc",
  "tokio",
  "toml 0.7.6",
- "tonic 0.9.2",
+ "tonic",
  "tracing",
  "tracing-subscriber",
 ]
@@ -4104,41 +4125,6 @@ dependencies = [
 
 [[package]]
 name = "tonic"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f219fad3b929bef19b1f86fbc0358d35daed8f2cac972037ac0dc10bbb8d5fb"
-dependencies = [
- "async-stream",
- "async-trait",
- "axum",
- "base64 0.13.1",
- "bytes",
- "futures-core",
- "futures-util",
- "h2",
- "http",
- "http-body",
- "hyper",
- "hyper-timeout",
- "percent-encoding",
- "pin-project",
- "prost",
- "prost-derive",
- "rustls-native-certs 0.6.3",
- "rustls-pemfile",
- "tokio",
- "tokio-rustls 0.23.4",
- "tokio-stream",
- "tokio-util",
- "tower",
- "tower-layer",
- "tower-service",
- "tracing",
- "tracing-futures",
-]
-
-[[package]]
-name = "tonic"
 version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3082666a3a6433f7f511c7192923fa1fe07c69332d3c6a2e6bb040b569199d5a"
@@ -4243,16 +4229,6 @@ checksum = "d686ec1c0f384b1277f097b2f279a2ecc11afe8c133c1aabf036a27cb4cd206e"
 dependencies = [
  "tracing",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "tracing-futures"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
-dependencies = [
- "pin-project",
- "tracing",
 ]
 
 [[package]]
