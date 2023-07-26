@@ -186,6 +186,14 @@ pub trait OfaChain: OfaChainTypes {
 
     fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a>;
 
+    fn log_incoming_packet<'a>(
+        event: &'a Self::IncomingPacket,
+    ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
+
+    fn log_outgoing_packet<'a>(
+        event: &'a Self::OutgoingPacket,
+    ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
+
     fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error>;
 
     fn estimate_message_size(message: &Self::Message) -> Result<usize, Self::Error>;
@@ -214,6 +222,8 @@ pub trait OfaChain: OfaChainTypes {
     fn try_extract_connection_open_init_event(
         event: Self::Event,
     ) -> Option<Self::ConnectionOpenInitEvent>;
+
+    fn client_state_latest_height(client_state: &Self::ClientState) -> &Self::Height;
 
     fn connection_open_init_event_connection_id(
         event: &Self::ConnectionOpenInitEvent,
@@ -256,6 +266,83 @@ pub trait OfaChain: OfaChainTypes {
         &self,
         packet: &Self::IncomingPacket,
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error>;
+
+    async fn build_create_client_payload(
+        &self,
+        create_client_options: &Self::CreateClientPayloadOptions,
+    ) -> Result<Self::CreateClientPayload, Self::Error>;
+
+    async fn build_update_client_payload(
+        &self,
+        trusted_height: &Self::Height,
+        target_height: &Self::Height,
+        client_state: Self::ClientState,
+    ) -> Result<Self::UpdateClientPayload, Self::Error>;
+
+    async fn build_connection_open_init_payload(
+        &self,
+    ) -> Result<Self::ConnectionOpenInitPayload, Self::Error>;
+
+    async fn build_connection_open_try_payload(
+        &self,
+        height: &Self::Height,
+        client_id: &Self::ClientId,
+        connection_id: &Self::ConnectionId,
+    ) -> Result<Self::ConnectionOpenTryPayload, Self::Error>;
+
+    async fn build_connection_open_ack_payload(
+        &self,
+        height: &Self::Height,
+        client_id: &Self::ClientId,
+        connection_id: &Self::ConnectionId,
+    ) -> Result<Self::ConnectionOpenAckPayload, Self::Error>;
+
+    async fn build_connection_open_confirm_payload(
+        &self,
+        height: &Self::Height,
+        client_id: &Self::ClientId,
+        connection_id: &Self::ConnectionId,
+    ) -> Result<Self::ConnectionOpenConfirmPayload, Self::Error>;
+
+    async fn build_channel_open_try_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenTryPayload, Self::Error>;
+
+    async fn build_channel_open_ack_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenAckPayload, Self::Error>;
+
+    async fn build_channel_open_confirm_payload(
+        &self,
+        height: &Self::Height,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+    ) -> Result<Self::ChannelOpenConfirmPayload, Self::Error>;
+
+    async fn build_receive_packet_payload(
+        &self,
+        height: &Self::Height,
+        packet: &Self::OutgoingPacket,
+    ) -> Result<Self::ReceivePacketPayload, Self::Error>;
+
+    async fn build_ack_packet_payload(
+        &self,
+        height: &Self::Height,
+        packet: &Self::IncomingPacket,
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> Result<Self::AckPacketPayload, Self::Error>;
+
+    async fn build_timeout_unordered_packet_payload(
+        &self,
+        height: &Self::Height,
+        packet: &Self::IncomingPacket,
+    ) -> Result<Self::TimeoutUnorderedPacketPayload, Self::Error>;
 }
 
 #[async_trait]
@@ -294,16 +381,6 @@ where
     fn outgoing_packet_timeout_timestamp(packet: &Self::OutgoingPacket)
         -> &Counterparty::Timestamp;
 
-    fn client_state_latest_height(client_state: &Self::ClientState) -> &Self::Height;
-
-    fn log_incoming_packet<'a>(
-        event: &'a Self::IncomingPacket,
-    ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
-
-    fn log_outgoing_packet<'a>(
-        event: &'a Self::OutgoingPacket,
-    ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
-
     fn counterparty_message_height_for_update_client(
         message: &Self::Message,
     ) -> Option<Counterparty::Height>;
@@ -332,56 +409,25 @@ where
         sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
 
-    async fn build_receive_packet_payload(
-        &self,
-        height: &Self::Height,
-        packet: &Self::OutgoingPacket,
-    ) -> Result<Self::ReceivePacketPayload, Self::Error>;
-
     async fn build_receive_packet_message(
         &self,
         payload: Counterparty::ReceivePacketPayload,
     ) -> Result<Self::Message, Self::Error>;
-
-    async fn build_ack_packet_payload(
-        &self,
-        height: &Self::Height,
-        packet: &Self::IncomingPacket,
-        ack: &Self::WriteAcknowledgementEvent,
-    ) -> Result<Self::AckPacketPayload, Self::Error>;
 
     async fn build_ack_packet_message(
         &self,
         payload: Counterparty::AckPacketPayload,
     ) -> Result<Self::Message, Self::Error>;
 
-    async fn build_timeout_unordered_packet_payload(
-        &self,
-        height: &Self::Height,
-        packet: &Self::IncomingPacket,
-    ) -> Result<Self::TimeoutUnorderedPacketPayload, Self::Error>;
-
     async fn build_timeout_unordered_packet_message(
         &self,
         payload: Counterparty::TimeoutUnorderedPacketPayload,
     ) -> Result<Self::Message, Self::Error>;
 
-    async fn build_create_client_payload(
-        &self,
-        create_client_options: &Self::CreateClientPayloadOptions,
-    ) -> Result<Self::CreateClientPayload, Self::Error>;
-
     async fn build_create_client_message(
         &self,
         counterparty_payload: Counterparty::CreateClientPayload,
     ) -> Result<Self::Message, Self::Error>;
-
-    async fn build_update_client_payload(
-        &self,
-        trusted_height: &Self::Height,
-        target_height: &Self::Height,
-        client_state: Self::ClientState,
-    ) -> Result<Self::UpdateClientPayload, Self::Error>;
 
     async fn build_update_client_message(
         &self,
@@ -394,31 +440,6 @@ where
         client_id: &Self::ClientId,
         target_height: &Counterparty::Height,
     ) -> Result<Counterparty::Height, Self::Error>;
-
-    async fn build_connection_open_init_payload(
-        &self,
-    ) -> Result<Self::ConnectionOpenInitPayload, Self::Error>;
-
-    async fn build_connection_open_try_payload(
-        &self,
-        height: &Self::Height,
-        client_id: &Self::ClientId,
-        connection_id: &Self::ConnectionId,
-    ) -> Result<Self::ConnectionOpenTryPayload, Self::Error>;
-
-    async fn build_connection_open_ack_payload(
-        &self,
-        height: &Self::Height,
-        client_id: &Self::ClientId,
-        connection_id: &Self::ConnectionId,
-    ) -> Result<Self::ConnectionOpenAckPayload, Self::Error>;
-
-    async fn build_connection_open_confirm_payload(
-        &self,
-        height: &Self::Height,
-        client_id: &Self::ClientId,
-        connection_id: &Self::ConnectionId,
-    ) -> Result<Self::ConnectionOpenConfirmPayload, Self::Error>;
 
     async fn build_connection_open_init_message(
         &self,
@@ -448,27 +469,6 @@ where
         connection_id: &Self::ConnectionId,
         counterparty_payload: Counterparty::ConnectionOpenConfirmPayload,
     ) -> Result<Self::Message, Self::Error>;
-
-    async fn build_channel_open_try_payload(
-        &self,
-        height: &Self::Height,
-        port_id: &Self::PortId,
-        channel_id: &Self::ChannelId,
-    ) -> Result<Self::ChannelOpenTryPayload, Self::Error>;
-
-    async fn build_channel_open_ack_payload(
-        &self,
-        height: &Self::Height,
-        port_id: &Self::PortId,
-        channel_id: &Self::ChannelId,
-    ) -> Result<Self::ChannelOpenAckPayload, Self::Error>;
-
-    async fn build_channel_open_confirm_payload(
-        &self,
-        height: &Self::Height,
-        port_id: &Self::PortId,
-        channel_id: &Self::ChannelId,
-    ) -> Result<Self::ChannelOpenConfirmPayload, Self::Error>;
 
     async fn build_channel_open_init_message(
         &self,

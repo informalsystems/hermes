@@ -9,6 +9,7 @@ use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_cosmos::contexts::chain::CosmosChain;
+use ibc_relayer_cosmos::traits::message::CosmosMessage;
 use ibc_relayer_cosmos::types::payloads::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenTryPayload,
 };
@@ -26,6 +27,7 @@ use ibc_relayer_cosmos::types::telemetry::CosmosTelemetry;
 use ibc_relayer_cosmos::types::tendermint::{TendermintClientState, TendermintConsensusState};
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -171,6 +173,14 @@ where
         todo!()
     }
 
+    fn log_incoming_packet<'a>(event: &'a Packet) -> <Self::Logger as BaseLogger>::LogValue<'a> {
+        todo!()
+    }
+
+    fn log_outgoing_packet<'a>(event: &'a Packet) -> <Self::Logger as BaseLogger>::LogValue<'a> {
+        todo!()
+    }
+
     fn increment_height(height: &Height) -> Result<Height, Chain::Error> {
         todo!()
     }
@@ -212,6 +222,10 @@ where
     }
 
     fn create_client_event_client_id(event: &Self::CreateClientEvent) -> &ClientId {
+        todo!()
+    }
+
+    fn client_state_latest_height(client_state: &SolomachineClientState) -> &Height {
         todo!()
     }
 
@@ -282,6 +296,107 @@ where
     ) -> Result<Option<Self::WriteAcknowledgementEvent>, Chain::Error> {
         todo!()
     }
+
+    async fn build_receive_packet_payload(
+        &self,
+        height: &Height,
+        packet: &Packet,
+    ) -> Result<SolomachineReceivePacketPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_ack_packet_payload(
+        &self,
+        height: &Height,
+        packet: &Packet,
+        ack: &Self::WriteAcknowledgementEvent,
+    ) -> Result<SolomachineAckPacketPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_timeout_unordered_packet_payload(
+        &self,
+        height: &Height,
+        packet: &Packet,
+    ) -> Result<SolomachineTimeoutUnorderedPacketPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_create_client_payload(
+        &self,
+        create_client_options: &Self::CreateClientPayloadOptions,
+    ) -> Result<SolomachineCreateClientPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_update_client_payload(
+        &self,
+        trusted_height: &Height,
+        target_height: &Height,
+        client_state: SolomachineClientState,
+    ) -> Result<SolomachineUpdateClientPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_connection_open_init_payload(
+        &self,
+    ) -> Result<SolomachineConnectionOpenInitPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_connection_open_try_payload(
+        &self,
+        height: &Height,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<SolomachineConnectionOpenTryPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_connection_open_ack_payload(
+        &self,
+        height: &Height,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<SolomachineConnectionOpenAckPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_connection_open_confirm_payload(
+        &self,
+        height: &Height,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<SolomachineConnectionOpenConfirmPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_channel_open_try_payload(
+        &self,
+        height: &Height,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> Result<SolomachineChannelOpenTryPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_channel_open_ack_payload(
+        &self,
+        height: &Height,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> Result<SolomachineChannelOpenAckPayload, Chain::Error> {
+        todo!()
+    }
+
+    async fn build_channel_open_confirm_payload(
+        &self,
+        height: &Height,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> Result<SolomachineChannelOpenConfirmPayload, Chain::Error> {
+        todo!()
+    }
 }
 
 #[allow(unused_variables)]
@@ -347,18 +462,6 @@ where
         todo!()
     }
 
-    fn client_state_latest_height(client_state: &SolomachineClientState) -> &Height {
-        todo!()
-    }
-
-    fn log_incoming_packet<'a>(event: &'a Packet) -> <Self::Logger as BaseLogger>::LogValue<'a> {
-        todo!()
-    }
-
-    fn log_outgoing_packet<'a>(event: &'a Packet) -> <Self::Logger as BaseLogger>::LogValue<'a> {
-        todo!()
-    }
-
     fn counterparty_message_height_for_update_client(
         message: &SolomachineMessage,
     ) -> Option<Height> {
@@ -397,27 +500,10 @@ where
         todo!()
     }
 
-    async fn build_receive_packet_payload(
-        &self,
-        height: &Height,
-        packet: &Packet,
-    ) -> Result<Self::ReceivePacketPayload, Chain::Error> {
-        todo!()
-    }
-
     async fn build_receive_packet_message(
         &self,
         payload: CosmosReceivePacketPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
-    }
-
-    async fn build_ack_packet_payload(
-        &self,
-        height: &Height,
-        packet: &Packet,
-        ack: &Self::WriteAcknowledgementEvent,
-    ) -> Result<Self::AckPacketPayload, Chain::Error> {
         todo!()
     }
 
@@ -428,14 +514,6 @@ where
         todo!()
     }
 
-    async fn build_timeout_unordered_packet_payload(
-        &self,
-        height: &Height,
-        packet: &Packet,
-    ) -> Result<Self::TimeoutUnorderedPacketPayload, Chain::Error> {
-        todo!()
-    }
-
     async fn build_timeout_unordered_packet_message(
         &self,
         payload: CosmosTimeoutUnorderedPacketPayload,
@@ -443,26 +521,10 @@ where
         todo!()
     }
 
-    async fn build_create_client_payload(
-        &self,
-        create_client_options: &Self::CreateClientPayloadOptions,
-    ) -> Result<Self::CreateClientPayload, Chain::Error> {
-        todo!()
-    }
-
     async fn build_create_client_message(
         &self,
         counterparty_payload: CosmosCreateClientPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
-    }
-
-    async fn build_update_client_payload(
-        &self,
-        trusted_height: &Height,
-        target_height: &Height,
-        client_state: SolomachineClientState,
-    ) -> Result<Self::UpdateClientPayload, Chain::Error> {
         todo!()
     }
 
@@ -479,39 +541,6 @@ where
         client_id: &ClientId,
         target_height: &Height,
     ) -> Result<Height, Chain::Error> {
-        todo!()
-    }
-
-    async fn build_connection_open_init_payload(
-        &self,
-    ) -> Result<Self::ConnectionOpenInitPayload, Chain::Error> {
-        todo!()
-    }
-
-    async fn build_connection_open_try_payload(
-        &self,
-        height: &Height,
-        client_id: &ClientId,
-        connection_id: &ConnectionId,
-    ) -> Result<Self::ConnectionOpenTryPayload, Chain::Error> {
-        todo!()
-    }
-
-    async fn build_connection_open_ack_payload(
-        &self,
-        height: &Height,
-        client_id: &ClientId,
-        connection_id: &ConnectionId,
-    ) -> Result<Self::ConnectionOpenAckPayload, Chain::Error> {
-        todo!()
-    }
-
-    async fn build_connection_open_confirm_payload(
-        &self,
-        height: &Height,
-        client_id: &ClientId,
-        connection_id: &ConnectionId,
-    ) -> Result<Self::ConnectionOpenConfirmPayload, Chain::Error> {
         todo!()
     }
 
@@ -549,33 +578,6 @@ where
         connection_id: &ConnectionId,
         counterparty_payload: CosmosConnectionOpenConfirmPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
-    }
-
-    async fn build_channel_open_try_payload(
-        &self,
-        height: &Height,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-    ) -> Result<Self::ChannelOpenTryPayload, Chain::Error> {
-        todo!()
-    }
-
-    async fn build_channel_open_ack_payload(
-        &self,
-        height: &Height,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-    ) -> Result<Self::ChannelOpenAckPayload, Chain::Error> {
-        todo!()
-    }
-
-    async fn build_channel_open_confirm_payload(
-        &self,
-        height: &Height,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-    ) -> Result<Self::ChannelOpenConfirmPayload, Chain::Error> {
         todo!()
     }
 
@@ -626,75 +628,71 @@ where
     Chain: ChainHandle,
 {
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
-        todo!()
+        &packet.source_channel
     }
 
     fn incoming_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
-        todo!()
+        &packet.destination_channel
     }
 
     fn incoming_packet_src_port(packet: &Packet) -> &PortId {
-        todo!()
+        &packet.source_port
     }
 
     fn incoming_packet_dst_port(packet: &Packet) -> &PortId {
-        todo!()
+        &packet.destination_port
     }
 
     fn incoming_packet_sequence(packet: &Packet) -> &Sequence {
-        todo!()
+        &packet.sequence
     }
 
     fn incoming_packet_timeout_height(packet: &Packet) -> Option<&Height> {
-        todo!()
+        match &packet.timeout_height {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(h) => Some(h),
+        }
     }
 
     fn incoming_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
-        todo!()
+        &packet.timeout_timestamp
     }
 
     fn outgoing_packet_src_channel_id(packet: &Packet) -> &ChannelId {
-        todo!()
+        &packet.source_channel
     }
 
     fn outgoing_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
-        todo!()
+        &packet.destination_channel
     }
 
     fn outgoing_packet_src_port(packet: &Packet) -> &PortId {
-        todo!()
+        &packet.source_port
     }
 
     fn outgoing_packet_dst_port(packet: &Packet) -> &PortId {
-        todo!()
+        &packet.destination_port
     }
 
     fn outgoing_packet_sequence(packet: &Packet) -> &Sequence {
-        todo!()
+        &packet.sequence
     }
 
     fn outgoing_packet_timeout_height(packet: &Packet) -> Option<&Height> {
-        todo!()
+        match &packet.timeout_height {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(h) => Some(h),
+        }
     }
 
     fn outgoing_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
-        todo!()
+        &packet.timeout_timestamp
     }
 
-    fn client_state_latest_height(client_state: &TendermintClientState) -> &Height {
-        todo!()
-    }
-
-    fn log_incoming_packet<'a>(event: &'a Packet) -> <Self::Logger as BaseLogger>::LogValue<'a> {
-        todo!()
-    }
-
-    fn log_outgoing_packet<'a>(event: &'a Packet) -> <Self::Logger as BaseLogger>::LogValue<'a> {
-        todo!()
-    }
-
-    fn counterparty_message_height_for_update_client(message: &Self::Message) -> Option<Height> {
-        todo!()
+    fn counterparty_message_height_for_update_client(
+        message: &Arc<dyn CosmosMessage>,
+    ) -> Option<Height> {
+        message.counterparty_message_height_for_update_client()
     }
 
     async fn query_chain_id_from_channel_id(
@@ -729,72 +727,31 @@ where
         todo!()
     }
 
-    async fn build_receive_packet_payload(
-        &self,
-        height: &Height,
-        packet: &Packet,
-    ) -> Result<CosmosReceivePacketPayload, Self::Error> {
-        todo!()
-    }
-
     async fn build_receive_packet_message(
         &self,
         payload: SolomachineReceivePacketPayload,
-    ) -> Result<Self::Message, Self::Error> {
-        todo!()
-    }
-
-    async fn build_ack_packet_payload(
-        &self,
-        height: &Height,
-        packet: &Packet,
-        ack: &Self::WriteAcknowledgementEvent,
-    ) -> Result<CosmosAckPacketPayload, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
     async fn build_ack_packet_message(
         &self,
         payload: SolomachineAckPacketPayload,
-    ) -> Result<Self::Message, Self::Error> {
-        todo!()
-    }
-
-    async fn build_timeout_unordered_packet_payload(
-        &self,
-        height: &Height,
-        packet: &Packet,
-    ) -> Result<CosmosTimeoutUnorderedPacketPayload, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
     async fn build_timeout_unordered_packet_message(
         &self,
         payload: SolomachineTimeoutUnorderedPacketPayload,
-    ) -> Result<Self::Message, Self::Error> {
-        todo!()
-    }
-
-    async fn build_create_client_payload(
-        &self,
-        create_client_options: &Self::CreateClientPayloadOptions,
-    ) -> Result<CosmosCreateClientPayload, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
     async fn build_create_client_message(
         &self,
         counterparty_payload: SolomachineCreateClientPayload,
-    ) -> Result<Self::Message, Self::Error> {
-        todo!()
-    }
-
-    async fn build_update_client_payload(
-        &self,
-        trusted_height: &Height,
-        target_height: &Height,
-        client_state: TendermintClientState,
-    ) -> Result<CosmosUpdateClientPayload, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
@@ -802,7 +759,7 @@ where
         &self,
         client_id: &ClientId,
         payload: SolomachineUpdateClientPayload,
-    ) -> Result<Vec<Self::Message>, Self::Error> {
+    ) -> Result<Vec<Arc<dyn CosmosMessage>>, Self::Error> {
         todo!()
     }
 
@@ -814,46 +771,13 @@ where
         todo!()
     }
 
-    async fn build_connection_open_init_payload(
-        &self,
-    ) -> Result<CosmosConnectionOpenInitPayload, Self::Error> {
-        todo!()
-    }
-
-    async fn build_connection_open_try_payload(
-        &self,
-        height: &Height,
-        client_id: &ClientId,
-        connection_id: &ConnectionId,
-    ) -> Result<CosmosConnectionOpenTryPayload, Self::Error> {
-        todo!()
-    }
-
-    async fn build_connection_open_ack_payload(
-        &self,
-        height: &Height,
-        client_id: &ClientId,
-        connection_id: &ConnectionId,
-    ) -> Result<CosmosConnectionOpenAckPayload, Self::Error> {
-        todo!()
-    }
-
-    async fn build_connection_open_confirm_payload(
-        &self,
-        height: &Height,
-        client_id: &ClientId,
-        connection_id: &ConnectionId,
-    ) -> Result<CosmosConnectionOpenConfirmPayload, Self::Error> {
-        todo!()
-    }
-
     async fn build_connection_open_init_message(
         &self,
         client_id: &ClientId,
         counterparty_client_id: &ClientId,
         init_connection_options: &Self::InitConnectionOptions,
         counterparty_payload: SolomachineConnectionOpenInitPayload,
-    ) -> Result<Self::Message, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
@@ -863,7 +787,7 @@ where
         counterparty_client_id: &ClientId,
         counterparty_connection_id: &ConnectionId,
         counterparty_payload: SolomachineConnectionOpenTryPayload,
-    ) -> Result<Self::Message, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
@@ -872,7 +796,7 @@ where
         connection_id: &ConnectionId,
         counterparty_connection_id: &ConnectionId,
         counterparty_payload: SolomachineConnectionOpenAckPayload,
-    ) -> Result<Self::Message, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
@@ -880,34 +804,7 @@ where
         &self,
         connection_id: &ConnectionId,
         counterparty_payload: SolomachineConnectionOpenConfirmPayload,
-    ) -> Result<Self::Message, Self::Error> {
-        todo!()
-    }
-
-    async fn build_channel_open_try_payload(
-        &self,
-        height: &Height,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-    ) -> Result<Self::ChannelOpenTryPayload, Self::Error> {
-        todo!()
-    }
-
-    async fn build_channel_open_ack_payload(
-        &self,
-        height: &Height,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-    ) -> Result<CosmosChannelOpenAckPayload, Self::Error> {
-        todo!()
-    }
-
-    async fn build_channel_open_confirm_payload(
-        &self,
-        height: &Height,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-    ) -> Result<CosmosChannelOpenConfirmPayload, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
@@ -916,7 +813,7 @@ where
         port_id: &PortId,
         counterparty_port_id: &PortId,
         init_channel_options: &Self::InitChannelOptions,
-    ) -> Result<Self::Message, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
@@ -926,7 +823,7 @@ where
         counterparty_port_id: &PortId,
         counterparty_channel_id: &ChannelId,
         counterparty_payload: SolomachineChannelOpenTryPayload,
-    ) -> Result<Self::Message, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
@@ -936,7 +833,7 @@ where
         channel_id: &ChannelId,
         counterparty_channel_id: &ChannelId,
         counterparty_payload: SolomachineChannelOpenAckPayload,
-    ) -> Result<Self::Message, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 
@@ -945,7 +842,7 @@ where
         port_id: &PortId,
         channel_id: &ChannelId,
         counterparty_payload: SolomachineChannelOpenConfirmPayload,
-    ) -> Result<Self::Message, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
         todo!()
     }
 }
