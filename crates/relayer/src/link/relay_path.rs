@@ -1221,7 +1221,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(Some(msg.to_any()))
     }
 
-    fn build_ack_from_recv_event(
+    pub fn build_ack_from_recv_event(
         &self,
         event: &WriteAcknowledgement,
         height: Height,
