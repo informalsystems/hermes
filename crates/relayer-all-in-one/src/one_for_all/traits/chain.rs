@@ -37,18 +37,6 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasChainTypes::Height`](ibc_relayer_components::chain::traits::types::height::HasHeightType::Height).
-    */
-    type Height: Clone + Ord + Display + Async;
-
-    /**
-       Corresponds to
-       [`HasChainTypes::Timestamp`](ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType::Timestamp).
-    */
-    type Timestamp: Ord + Display + Async;
-
-    /**
-       Corresponds to
        [`HasMessageType::Message`](ibc_relayer_components::chain::traits::types::message::HasMessageType::Message).
     */
     type Message: Async;
@@ -58,6 +46,26 @@ pub trait OfaChainTypes: Async {
        [`HasEventType::Event`](ibc_relayer_components::chain::traits::types::event::HasEventType::Event).
     */
     type Event: Async;
+
+    type ClientState: Async;
+
+    /**
+       Corresponds to
+       [`HasConsensusStateType::ConsensusState`](ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType::ConsensusState).
+    */
+    type ConsensusState: Async;
+
+    /**
+       Corresponds to
+       [`HasChainTypes::Height`](ibc_relayer_components::chain::traits::types::height::HasHeightType::Height).
+    */
+    type Height: Clone + Ord + Display + Async;
+
+    /**
+       Corresponds to
+       [`HasChainTypes::Timestamp`](ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType::Timestamp).
+    */
+    type Timestamp: Ord + Display + Async;
 
     /**
        Corresponds to
@@ -103,20 +111,6 @@ pub trait OfaChainTypes: Async {
 
     /**
        Corresponds to
-       [`HasConsensusStateType::ConsensusState`](ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType::ConsensusState).
-    */
-    type ConsensusState: Async;
-
-    /**
-       Corresponds to
-       [`HasWriteAcknowledgementEvent::WriteAcknowledgementEvent`](ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent).
-    */
-    type WriteAcknowledgementEvent: Async;
-
-    type SendPacketEvent: Async;
-
-    /**
-       Corresponds to
        [`HasIbcPacketTypes::IncomingPacket`](ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes::IncomingPacket)
     */
     type IncomingPacket: Async;
@@ -127,21 +121,19 @@ pub trait OfaChainTypes: Async {
     */
     type OutgoingPacket: Async;
 
-    type ClientState: Async;
-
-    type CreateClientPayloadOptions: Async;
-
-    type CreateClientPayload: Async;
-
-    type CreateClientEvent: Async;
-
-    type UpdateClientPayload: Async;
-
     type ConnectionDetails: Async;
 
     type ConnectionVersion: Eq + Default + Async;
 
+    type CreateClientPayloadOptions: Async;
+
     type InitConnectionOptions: Async;
+
+    type InitChannelOptions: Async;
+
+    type CreateClientPayload: Async;
+
+    type UpdateClientPayload: Async;
 
     type ConnectionOpenInitPayload: Async;
 
@@ -151,27 +143,35 @@ pub trait OfaChainTypes: Async {
 
     type ConnectionOpenConfirmPayload: Async;
 
-    type ConnectionOpenInitEvent: Async;
-
-    type ConnectionOpenTryEvent: Async;
-
-    type InitChannelOptions: Async;
-
     type ChannelOpenTryPayload: Async;
 
     type ChannelOpenAckPayload: Async;
 
     type ChannelOpenConfirmPayload: Async;
 
-    type ChannelOpenInitEvent: Async;
-
-    type ChannelOpenTryEvent: Async;
-
     type ReceivePacketPayload: Async;
 
     type AckPacketPayload: Async;
 
     type TimeoutUnorderedPacketPayload: Async;
+
+    type CreateClientEvent: Async;
+
+    type ConnectionOpenInitEvent: Async;
+
+    type ConnectionOpenTryEvent: Async;
+
+    type ChannelOpenInitEvent: Async;
+
+    type ChannelOpenTryEvent: Async;
+
+    type SendPacketEvent: Async;
+
+    /**
+       Corresponds to
+       [`HasWriteAcknowledgementEvent::WriteAcknowledgementEvent`](ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent::WriteAcknowledgementEvent).
+    */
+    type WriteAcknowledgementEvent: Async;
 }
 
 #[async_trait]

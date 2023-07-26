@@ -23,3 +23,17 @@ where
 
     Ok(any_message)
 }
+
+pub fn encode_any_to_bytes<Message>(
+    type_url: &str,
+    message: &Message,
+) -> Result<Vec<u8>, EncodeError>
+where
+    Message: ProstMessage,
+{
+    let any = encode_to_any(type_url, message)?;
+
+    let bytes = encode_protobuf(&any)?;
+
+    Ok(bytes)
+}

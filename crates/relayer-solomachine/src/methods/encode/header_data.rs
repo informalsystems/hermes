@@ -7,8 +7,7 @@ use secp256k1::ecdsa::Signature;
 use secp256k1::SecretKey;
 
 use crate::methods::encode::public_key::encode_public_key;
-use crate::methods::encode::sign::sign_sha256;
-use crate::methods::encode::sign_data::encode_sign_data;
+use crate::methods::encode::sign_data::sign_with_data;
 use crate::types::header::{SolomachineHeaderData, SolomachineSignHeaderData};
 use crate::types::sign_data::SolomachineSignData;
 
@@ -49,11 +48,5 @@ pub fn sign_header_data(
         data: header_bytes,
     };
 
-    let proto_sign_data = encode_sign_data(&sign_data)?;
-
-    let sign_bytes = encode_protobuf(&proto_sign_data)?;
-
-    let signature = sign_sha256(secret_key, &sign_bytes);
-
-    Ok(signature)
+    sign_with_data(secret_key, &sign_data)
 }

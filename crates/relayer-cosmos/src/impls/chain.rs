@@ -17,8 +17,6 @@ use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_runtime::tokio::logger::value::LogValue;
-use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
-use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics02_client::events::CLIENT_ID_ATTRIBUTE_KEY;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
@@ -61,19 +59,18 @@ use crate::methods::packet::{
 };
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
 use crate::traits::message::CosmosMessage;
-use crate::types::channel::{
-    CosmosChannelOpenInitEvent, CosmosChannelOpenTryEvent, CosmosInitChannelOptions,
-};
-use crate::types::client::{
-    CosmosCreateClientEvent, CosmosCreateClientPayload, CosmosUpdateClientPayload,
-};
-use crate::types::connection::{
-    CosmosConnectionOpenInitEvent, CosmosConnectionOpenTryEvent, CosmosInitConnectionOptions,
-};
+use crate::types::channel::CosmosInitChannelOptions;
+use crate::types::connection::CosmosInitConnectionOptions;
 use crate::types::error::{BaseError, Error};
+use crate::types::events::channel::{CosmosChannelOpenInitEvent, CosmosChannelOpenTryEvent};
+use crate::types::events::client::CosmosCreateClientEvent;
+use crate::types::events::connection::{
+    CosmosConnectionOpenInitEvent, CosmosConnectionOpenTryEvent,
+};
 use crate::types::payloads::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenTryPayload,
 };
+use crate::types::payloads::client::{CosmosCreateClientPayload, CosmosUpdateClientPayload};
 use crate::types::payloads::connection::{
     CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
     CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload,
@@ -82,6 +79,7 @@ use crate::types::payloads::packet::{
     CosmosAckPacketPayload, CosmosReceivePacketPayload, CosmosTimeoutUnorderedPacketPayload,
 };
 use crate::types::telemetry::CosmosTelemetry;
+use crate::types::tendermint::{TendermintClientState, TendermintConsensusState};
 
 #[async_trait]
 impl<Chain> OfaChainTypes for CosmosChain<Chain>
@@ -96,13 +94,17 @@ where
 
     type Telemetry = CosmosTelemetry;
 
-    type Height = Height;
-
-    type Timestamp = Timestamp;
-
     type Message = Arc<dyn CosmosMessage>;
 
     type Event = Arc<AbciEvent>;
+
+    type ClientState = TendermintClientState;
+
+    type ConsensusState = TendermintConsensusState;
+
+    type Height = Height;
+
+    type Timestamp = Timestamp;
 
     type ChainId = ChainId;
 
@@ -116,37 +118,27 @@ where
 
     type Sequence = Sequence;
 
-    type WriteAcknowledgementEvent = WriteAcknowledgement;
-
-    type ConsensusState = ConsensusState;
-
     type ChainStatus = ChainStatus;
-
-    type SendPacketEvent = SendPacket;
 
     type IncomingPacket = Packet;
 
     type OutgoingPacket = Packet;
 
-    type ClientState = ClientState;
+    type ConnectionVersion = ConnectionVersion;
+
+    type ConnectionDetails = ConnectionEnd;
 
     type CreateClientPayloadOptions = ClientSettings;
+
+    type InitConnectionOptions = CosmosInitConnectionOptions;
+
+    type InitChannelOptions = CosmosInitChannelOptions;
 
     type CreateClientPayload = CosmosCreateClientPayload;
 
     type CreateClientEvent = CosmosCreateClientEvent;
 
     type UpdateClientPayload = CosmosUpdateClientPayload;
-
-    type ConnectionVersion = ConnectionVersion;
-
-    type ConnectionDetails = ConnectionEnd;
-
-    type ConnectionOpenInitEvent = CosmosConnectionOpenInitEvent;
-
-    type ConnectionOpenTryEvent = CosmosConnectionOpenTryEvent;
-
-    type InitConnectionOptions = CosmosInitConnectionOptions;
 
     type ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload;
 
@@ -156,23 +148,29 @@ where
 
     type ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload;
 
-    type InitChannelOptions = CosmosInitChannelOptions;
-
     type ChannelOpenTryPayload = CosmosChannelOpenTryPayload;
 
     type ChannelOpenAckPayload = CosmosChannelOpenAckPayload;
 
     type ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload;
 
-    type ChannelOpenInitEvent = CosmosChannelOpenInitEvent;
-
-    type ChannelOpenTryEvent = CosmosChannelOpenTryEvent;
-
     type ReceivePacketPayload = CosmosReceivePacketPayload;
 
     type AckPacketPayload = CosmosAckPacketPayload;
 
     type TimeoutUnorderedPacketPayload = CosmosTimeoutUnorderedPacketPayload;
+
+    type SendPacketEvent = SendPacket;
+
+    type WriteAcknowledgementEvent = WriteAcknowledgement;
+
+    type ConnectionOpenInitEvent = CosmosConnectionOpenInitEvent;
+
+    type ConnectionOpenTryEvent = CosmosConnectionOpenTryEvent;
+
+    type ChannelOpenInitEvent = CosmosChannelOpenInitEvent;
+
+    type ChannelOpenTryEvent = CosmosChannelOpenTryEvent;
 }
 
 #[async_trait]
@@ -397,39 +395,10 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> OfaIbcChain<Counterparty> for CosmosChain<Chain>
+impl<Chain, Counterparty> OfaIbcChain<CosmosChain<Counterparty>> for CosmosChain<Chain>
 where
     Chain: ChainHandle,
-    Counterparty: OfaChainTypes<
-        // A Cosmos chain can act as an IBC chain to a counterparty,
-        // as long as the counterparty uses the same base Cosmos types.
-        ChainId = ChainId,
-        Height = Height,
-        Timestamp = Timestamp,
-        IncomingPacket = Packet,
-        OutgoingPacket = Packet,
-        ClientId = ClientId,
-        ConnectionId = ConnectionId,
-        ChannelId = ChannelId,
-        PortId = PortId,
-        Sequence = Sequence,
-        // TODO: Support other counterparty client types and payload types
-        // provided that we can build Cosmos messages for it.
-        ClientState = ClientState,
-        ConsensusState = ConsensusState,
-        CreateClientPayload = CosmosCreateClientPayload,
-        UpdateClientPayload = CosmosUpdateClientPayload,
-        ConnectionOpenInitPayload = CosmosConnectionOpenInitPayload,
-        ConnectionOpenTryPayload = CosmosConnectionOpenTryPayload,
-        ConnectionOpenAckPayload = CosmosConnectionOpenAckPayload,
-        ConnectionOpenConfirmPayload = CosmosConnectionOpenConfirmPayload,
-        ChannelOpenTryPayload = CosmosChannelOpenTryPayload,
-        ChannelOpenAckPayload = CosmosChannelOpenAckPayload,
-        ChannelOpenConfirmPayload = CosmosChannelOpenConfirmPayload,
-        ReceivePacketPayload = CosmosReceivePacketPayload,
-        AckPacketPayload = CosmosAckPacketPayload,
-        TimeoutUnorderedPacketPayload = CosmosTimeoutUnorderedPacketPayload,
-    >,
+    Counterparty: ChainHandle,
 {
     fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
         &packet.source_channel
@@ -493,7 +462,7 @@ where
         &packet.timeout_timestamp
     }
 
-    fn client_state_latest_height(client_state: &ClientState) -> &Height {
+    fn client_state_latest_height(client_state: &TendermintClientState) -> &Height {
         &client_state.latest_height
     }
 
@@ -519,7 +488,10 @@ where
         query_chain_id_from_channel_id(self, channel_id, port_id).await
     }
 
-    async fn query_client_state(&self, client_id: &ClientId) -> Result<ClientState, Error> {
+    async fn query_client_state(
+        &self,
+        client_id: &ClientId,
+    ) -> Result<TendermintClientState, Error> {
         query_client_state(self, client_id).await
     }
 
@@ -527,7 +499,7 @@ where
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> Result<ConsensusState, Error> {
+    ) -> Result<TendermintConsensusState, Error> {
         query_consensus_state(self, client_id, height).await
     }
 
@@ -612,7 +584,7 @@ where
         &self,
         trusted_height: &Height,
         target_height: &Height,
-        client_state: ClientState,
+        client_state: TendermintClientState,
     ) -> Result<CosmosUpdateClientPayload, Error> {
         build_update_client_payload(self, trusted_height, target_height, client_state).await
     }
