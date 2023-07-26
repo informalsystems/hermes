@@ -4,39 +4,21 @@ use ibc_relayer::chain::requests::{Qualified, QueryUnreceivedPacketsRequest};
 use ibc_relayer::link::packet_events::query_write_ack_events;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
-use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::proofs::Proofs;
-use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
-use crate::traits::message::{wrap_cosmos_message, CosmosMessage};
+use crate::methods::runtime::HasBlockingChainHandle;
+use crate::traits::message::{CosmosMessage, ToCosmosMessage};
 use crate::types::error::{BaseError, Error};
-use crate::types::message::CosmosIbcMessage;
-
-pub struct CosmosReceivePacketPayload {
-    pub height: Height,
-    pub packet: Packet,
-    pub proofs: Proofs,
-}
-
-pub struct CosmosAckPacketPayload {
-    pub height: Height,
-    pub packet: Packet,
-    pub ack: Vec<u8>,
-    pub proofs: Proofs,
-}
-
-pub struct CosmosTimeoutUnorderedPacketPayload {
-    pub height: Height,
-    pub packet: Packet,
-    pub proofs: Proofs,
-}
+use crate::types::messages::packet::ack::CosmosAckPacketMessage;
+use crate::types::messages::packet::receive::CosmosReceivePacketMessage;
+use crate::types::messages::packet::timeout::CosmosTimeoutPacketMessage;
+use crate::types::payloads::packet::{
+    CosmosAckPacketPayload, CosmosReceivePacketPayload, CosmosTimeoutUnorderedPacketPayload,
+};
 
 pub async fn build_receive_packet_payload<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
@@ -46,13 +28,8 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
     let height = *height;
     let packet = packet.clone();
 
-    let chain_handle = chain.handle.clone();
-
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let proofs = chain_handle
                 .build_packet_proofs(
                     PacketMsgType::Recv,
@@ -66,28 +43,24 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
             let packet = packet.clone();
 
             Ok(CosmosReceivePacketPayload {
-                height,
                 packet,
-                proofs,
+                update_height: proofs.height(),
+                proof_commitment: proofs.object_proof().clone(),
             })
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub fn build_receive_packet_message(
     payload: CosmosReceivePacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
-    let message = CosmosIbcMessage::new(Some(payload.height), move |signer| {
-        Ok(MsgRecvPacket::new(
-            payload.packet.clone(),
-            payload.proofs.clone(),
-            signer.clone(),
-        )
-        .to_any())
-    });
+    let message = CosmosReceivePacketMessage {
+        packet: payload.packet,
+        update_height: payload.update_height,
+        proof_commitment: payload.proof_commitment,
+    };
 
-    Ok(wrap_cosmos_message(message))
+    Ok(message.to_cosmos_message())
 }
 
 pub async fn build_ack_packet_payload<Chain: ChainHandle>(
@@ -100,13 +73,8 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
     let packet = packet.clone();
     let ack = ack.clone();
 
-    let chain_handle = chain.handle.clone();
-
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let proofs = chain_handle
                 .build_packet_proofs(
                     PacketMsgType::Ack,
@@ -121,30 +89,26 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
             let ack = ack.ack.clone();
 
             Ok(CosmosAckPacketPayload {
-                height,
                 packet,
                 ack,
-                proofs,
+                update_height: proofs.height(),
+                proof_acked: proofs.object_proof().clone(),
             })
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub fn build_ack_packet_message(
     payload: CosmosAckPacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
-    let message = CosmosIbcMessage::new(Some(payload.height), move |signer| {
-        Ok(MsgAcknowledgement::new(
-            payload.packet.clone(),
-            payload.ack.clone().into(),
-            payload.proofs.clone(),
-            signer.clone(),
-        )
-        .to_any())
-    });
+    let message = CosmosAckPacketMessage {
+        packet: payload.packet,
+        acknowledgement: payload.ack,
+        update_height: payload.update_height,
+        proof_acked: payload.proof_acked,
+    };
 
-    Ok(wrap_cosmos_message(message))
+    Ok(message.to_cosmos_message())
 }
 
 pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
@@ -155,13 +119,8 @@ pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
     let height = *height;
     let packet = packet.clone();
 
-    let chain_handle = chain.handle.clone();
-
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let proofs = chain_handle
                 .build_packet_proofs(
                     PacketMsgType::TimeoutUnordered,
@@ -175,29 +134,25 @@ pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
             let packet = packet.clone();
 
             Ok(CosmosTimeoutUnorderedPacketPayload {
-                height,
                 packet,
-                proofs,
+                update_height: proofs.height(),
+                proof_unreceived: proofs.object_proof().clone(),
             })
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub fn build_timeout_unordered_packet_message(
     payload: CosmosTimeoutUnorderedPacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
-    let message = CosmosIbcMessage::new(Some(payload.height), move |signer| {
-        Ok(MsgTimeout::new(
-            payload.packet.clone(),
-            payload.packet.sequence,
-            payload.proofs.clone(),
-            signer.clone(),
-        )
-        .to_any())
-    });
+    let message = CosmosTimeoutPacketMessage {
+        next_sequence_recv: payload.packet.sequence,
+        packet: payload.packet,
+        update_height: payload.update_height,
+        proof_unreceived: payload.proof_unreceived,
+    };
 
-    Ok(wrap_cosmos_message(message))
+    Ok(message.to_cosmos_message())
 }
 
 pub async fn query_is_packet_received<Chain: ChainHandle>(
@@ -206,17 +161,12 @@ pub async fn query_is_packet_received<Chain: ChainHandle>(
     channel_id: &ChannelId,
     sequence: &Sequence,
 ) -> Result<bool, Error> {
-    let chain_handle = chain.handle.clone();
-
     let port_id = port_id.clone();
     let channel_id = channel_id.clone();
     let sequence = *sequence;
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let unreceived_packet = chain_handle
                 .query_unreceived_packets(QueryUnreceivedPacketsRequest {
                     port_id: port_id.clone(),
@@ -230,22 +180,16 @@ pub async fn query_is_packet_received<Chain: ChainHandle>(
             Ok(is_packet_received)
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub async fn query_write_acknowledgement_event<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     packet: &Packet,
 ) -> Result<Option<WriteAcknowledgement>, Error> {
-    let chain_handle = chain.handle.clone();
-
     let packet = packet.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let status = chain_handle
                 .query_application_status()
                 .map_err(BaseError::relayer)?;
@@ -280,5 +224,4 @@ pub async fn query_write_acknowledgement_event<Chain: ChainHandle>(
             Ok(write_ack)
         })
         .await
-        .map_err(BaseError::join)?
 }

@@ -13,7 +13,7 @@ use crate::runtime::traits::runtime::HasRuntime;
 use crate::std_prelude::*;
 
 /**
-   Wait for the chain to reach a height that is greater than the required height,
+   Wait for the chain to reach a height that is greater than or equal the required height,
    so that the update client proof can be built.
 */
 pub struct WaitUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);
@@ -43,6 +43,10 @@ where
             },
         );
 
+        // We wait for the chain to reach the target height, which may have not been reached
+        // when IBC messages are built. This is because proofs build at a latest height would
+        // require the chain to progress at least one more height before the update client
+        // message can be built.
         let current_height = counterparty_chain
             .wait_chain_reach_height(height)
             .await
