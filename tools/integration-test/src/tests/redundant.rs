@@ -77,33 +77,7 @@ impl BinaryChannelTest for RedundantTest {
             &amount1.as_ref(),
         )?;
 
-        dbg!(height1, &packet1);
-
-        info!("[1] Building Recv packet");
-
-        let recv_msg1 = relay_path_a_to_b
-            .build_recv_packet(&packet1, height1)
-            .unwrap()
-            .unwrap();
-
-        info!("[2] Initiating token transfer from A to B");
-
-        let (height2, packet2) = chain_driver_a.ibc_transfer_token_with_height(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            &wallet_a.as_ref(),
-            &wallet_b.address(),
-            &amount2.as_ref(),
-        )?;
-
-        dbg!(height2, &packet2);
-
-        info!("[2] Building Recv packet");
-
-        let recv_msg2 = relay_path_a_to_b
-            .build_recv_packet(&packet2, height2)
-            .unwrap()
-            .unwrap();
+        info!("[1] Building client update");
 
         let latest_height1 = chains.handle_a.query_application_status().unwrap().height;
         let update_height1 = latest_height1.increment();
@@ -111,6 +85,13 @@ impl BinaryChannelTest for RedundantTest {
             .foreign_clients
             .client_a_to_b
             .wait_and_build_update_client(update_height1)
+            .unwrap();
+
+        info!("[1] Building Recv packet");
+
+        let recv_msg1 = relay_path_a_to_b
+            .build_recv_packet(&packet1, height1)
+            .unwrap()
             .unwrap();
 
         msgs1.push(recv_msg1.clone());
@@ -130,6 +111,18 @@ impl BinaryChannelTest for RedundantTest {
 
         dbg!(events1);
 
+        info!("[2] Initiating token transfer from A to B");
+
+        let (height2, packet2) = chain_driver_a.ibc_transfer_token_with_height(
+            &channel.port_a.as_ref(),
+            &channel.channel_id_a.as_ref(),
+            &wallet_a.as_ref(),
+            &wallet_b.address(),
+            &amount2.as_ref(),
+        )?;
+
+        info!("[2] Building client update");
+
         let latest_height2 = chains.handle_a.query_application_status().unwrap().height;
         let update_height2 = latest_height2.increment();
         let mut msgs2 = chains
@@ -138,10 +131,17 @@ impl BinaryChannelTest for RedundantTest {
             .wait_and_build_update_client(update_height2)
             .unwrap();
 
+        info!("[2] Building Recv packet");
+
+        let recv_msg2 = relay_path_a_to_b
+            .build_recv_packet(&packet2, height2)
+            .unwrap()
+            .unwrap();
+
         msgs2.push(recv_msg1.clone());
         msgs2.push(recv_msg2.clone());
 
-        info!("[2] Sending packets from A to B");
+        info!("[2] Sending redundant packet from A to B");
 
         let events2 = chain_driver_b
             .value()
