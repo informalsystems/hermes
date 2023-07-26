@@ -1,7 +1,6 @@
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::config::{self, Config, ModeConfig};
 use ibc_relayer::link::RelayPath;
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorOptions};
 
 use ibc_test_framework::prelude::*;
 
@@ -49,7 +48,6 @@ impl BinaryChannelTest for RedundantTest {
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
 
-        let relayer_a = chains.node_a.wallets().relayer().cloned();
         let relayer_b = chains.node_b.wallets().relayer().cloned();
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -62,13 +60,9 @@ impl BinaryChannelTest for RedundantTest {
         let amount1 = denom_a.with_amount(1_u128);
         let amount2 = denom_a.with_amount(2_u128);
 
-        let relay_path_b_to_a = RelayPath::new(channel.clone().flip().channel, false).unwrap();
         let relay_path_a_to_b = RelayPath::new(channel.channel, false).unwrap();
 
         let chain_driver_a = chains.node_a.chain_driver();
-        let rpc_client_a = chain_driver_a.rpc_client().unwrap();
-        let tx_config_a = chain_driver_a.tx_config();
-
         let chain_driver_b = chains.node_b.chain_driver();
         let rpc_client_b = chain_driver_b.rpc_client().unwrap();
         let tx_config_b = chain_driver_b.tx_config();
@@ -111,10 +105,12 @@ impl BinaryChannelTest for RedundantTest {
             .unwrap()
             .unwrap();
 
+        let latest_height1 = chains.handle_a.query_application_status().unwrap().height;
+        let update_height1 = latest_height1.increment();
         let mut msgs1 = chains
             .foreign_clients
             .client_a_to_b
-            .wait_and_build_update_client(height1)
+            .wait_and_build_update_client(update_height1)
             .unwrap();
 
         msgs1.push(recv_msg1.clone());
@@ -134,10 +130,12 @@ impl BinaryChannelTest for RedundantTest {
 
         dbg!(events1);
 
+        let latest_height2 = chains.handle_a.query_application_status().unwrap().height;
+        let update_height2 = latest_height2.increment();
         let mut msgs2 = chains
             .foreign_clients
             .client_a_to_b
-            .wait_and_build_update_client(height2)
+            .wait_and_build_update_client(update_height2)
             .unwrap();
 
         msgs2.push(recv_msg1.clone());

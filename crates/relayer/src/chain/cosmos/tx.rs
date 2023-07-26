@@ -86,7 +86,6 @@ pub async fn simple_send_tx(
     let account = query_account(&config.grpc_address, &key_account)
         .await?
         .into();
-    dbg!(&account);
 
     let response = estimate_fee_and_send_tx(
         rpc_client,
