@@ -8,12 +8,14 @@ use ibc_test_framework::prelude::*;
 
 #[test]
 #[cfg(not(feature = "interchain-security"))]
+#[tracing::instrument]
 fn test_redundant_recv() -> Result<(), Error> {
     run_binary_channel_test(&RedundantRecv { ics: false })
 }
 
 #[test]
 #[cfg(feature = "interchain-security")]
+#[tracing::instrument]
 fn test_redundant_recv_ics() -> Result<(), Error> {
     use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
     run_binary_interchain_security_channel_test(&RedundantRecv { ics: true })
@@ -21,12 +23,14 @@ fn test_redundant_recv_ics() -> Result<(), Error> {
 
 #[test]
 #[cfg(not(feature = "interchain-security"))]
+#[tracing::instrument]
 fn test_redundant_acks() -> Result<(), Error> {
     run_binary_channel_test(&RedundantAcksTest { ics: false })
 }
 
 #[test]
 #[cfg(feature = "interchain-security")]
+#[tracing::instrument]
 fn test_redundant_acks_ics() -> Result<(), Error> {
     use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
     run_binary_interchain_security_channel_test(&RedundantAcksTest { ics: true })
@@ -136,7 +140,7 @@ impl BinaryChannelTest for RedundantRecv {
 
         msgs1.push(recv_msg1.clone());
 
-        info!("[1] Sending packet from B to A");
+        info!("[1] Sending Recv from B to A");
 
         let events1 = chain_driver_a
             .value()
@@ -149,7 +153,7 @@ impl BinaryChannelTest for RedundantRecv {
             ))
             .unwrap();
 
-        dbg!(events1);
+        info!("[1] Events emitted in response to Recv: {events1:#?}");
 
         info!("[2] Initiating token transfer from B to A");
 
@@ -181,7 +185,7 @@ impl BinaryChannelTest for RedundantRecv {
         msgs2.push(recv_msg1.clone());
         msgs2.push(recv_msg2.clone());
 
-        info!("[2] Sending redundant packet from B to A");
+        info!("[2] Sending redundant and non-redundant Recv from B to A");
 
         let events2 = chain_driver_a
             .value()
@@ -194,7 +198,7 @@ impl BinaryChannelTest for RedundantRecv {
             ))
             .unwrap();
 
-        dbg!(events2);
+        info!("[2] Events emitted in response to redundant and non-redundant Recv: {events2:#?}");
 
         Ok(())
     }
@@ -323,7 +327,7 @@ impl BinaryChannelTest for RedundantAcksTest {
             ))
             .unwrap();
 
-        dbg!(&events1);
+        debug!("[1] Event emitted in response to Recv: {events1:#?}");
 
         info!("[2] Building client update on B");
 
@@ -345,8 +349,6 @@ impl BinaryChannelTest for RedundantAcksTest {
             })
             .unwrap();
 
-        dbg!(height2, &ack_event2);
-
         let write_ack_msg2 = relay_path_a_to_b
             .build_ack_from_recv_event(&ack_event2, height2)
             .unwrap()
@@ -367,7 +369,7 @@ impl BinaryChannelTest for RedundantAcksTest {
             ))
             .unwrap();
 
-        dbg!(&events2);
+        info!("[2] Events emitted in response to Ack: {events2:#?}");
 
         info!("[3] Initiating token transfer from A to B");
 
@@ -412,7 +414,9 @@ impl BinaryChannelTest for RedundantAcksTest {
             ))
             .unwrap();
 
-        dbg!(events3);
+        info!(
+            "[3] Events emitted in resonse to redundant Ack and non-redundant Recv: {events3:#?}"
+        );
 
         Ok(())
     }

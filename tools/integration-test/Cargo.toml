@@ -24,6 +24,7 @@ time = "0.3"
 toml = "0.7"
 tonic = { version = "0.9", features = ["tls", "tls-roots"] }
 serde = "1.0.166"
+tracing = "0.1"
 
 [features]
 default = []

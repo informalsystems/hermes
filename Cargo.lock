@@ -1437,6 +1437,7 @@ dependencies = [
  "time",
  "toml 0.7.6",
  "tonic",
+ "tracing",
 ]
 
 [[package]]
