@@ -4,7 +4,7 @@ use ibc_relayer_components::chain::traits::message_builders::receive_packet::{
 };
 use ibc_relayer_components::chain::traits::types::packets::receive::HasReceivePacketPayload;
 
-use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
@@ -12,8 +12,8 @@ use crate::std_prelude::*;
 impl<Chain, Counterparty> HasReceivePacketPayload<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type ReceivePacketPayload = Chain::ReceivePacketPayload;
 }
@@ -23,7 +23,7 @@ impl<Chain, Counterparty> CanBuildReceivePacketPayload<OfaChainWrapper<Counterpa
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_receive_packet_payload(
         &self,
@@ -41,7 +41,7 @@ impl<Chain, Counterparty> CanBuildReceivePacketMessage<OfaChainWrapper<Counterpa
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_receive_packet_message(
         &self,

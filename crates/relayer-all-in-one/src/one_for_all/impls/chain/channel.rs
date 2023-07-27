@@ -10,15 +10,15 @@ use ibc_relayer_components::chain::traits::types::ibc_events::channel::{
     HasChannelOpenInitEvent, HasChannelOpenTryEvent,
 };
 
-use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 impl<Chain, Counterparty> HasChannelHandshakePayloads<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type ChannelOpenTryPayload = Chain::ChannelOpenTryPayload;
 
@@ -30,8 +30,8 @@ where
 impl<Chain, Counterparty> HasInitChannelOptionsType<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type InitChannelOptions = Chain::InitChannelOptions;
 }
@@ -40,7 +40,7 @@ impl<Chain, Counterparty> HasChannelOpenInitEvent<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     type ChannelOpenInitEvent = Chain::ChannelOpenInitEvent;
 
@@ -61,7 +61,7 @@ impl<Chain, Counterparty> HasChannelOpenTryEvent<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     type ChannelOpenTryEvent = Chain::ChannelOpenTryEvent;
 
@@ -81,7 +81,7 @@ impl<Chain, Counterparty> CanBuildChannelHandshakePayloads<OfaChainWrapper<Count
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_channel_open_try_payload(
         &self,
@@ -122,7 +122,7 @@ impl<Chain, Counterparty> CanBuildChannelHandshakeMessages<OfaChainWrapper<Count
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_channel_open_init_message(
         &self,

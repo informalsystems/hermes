@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::client::client_state::CanQueryClientState;
 use crate::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
@@ -30,7 +31,7 @@ where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + CanSendUpdateClientMessage<DestinationTarget>
         + CanSendSingleIbcMessage<SourceTarget>,
-    SrcChain: CanBuildConnectionHandshakeMessages<DstChain>,
+    SrcChain: CanBuildConnectionHandshakeMessages<DstChain> + CanQueryClientState<DstChain>,
     DstChain: CanQueryChainHeight + CanBuildConnectionHandshakePayloads<SrcChain>,
     DstChain::ConnectionId: Clone,
 {
@@ -49,8 +50,18 @@ where
             .await
             .map_err(Relay::dst_chain_error)?;
 
+        let dst_client_state = src_chain
+            .query_client_state(relay.src_client_id())
+            .await
+            .map_err(Relay::src_chain_error)?;
+
         let open_ack_payload = dst_chain
-            .build_connection_open_ack_payload(&dst_proof_height, dst_client_id, dst_connection_id)
+            .build_connection_open_ack_payload(
+                &dst_client_state,
+                &dst_proof_height,
+                dst_client_id,
+                dst_connection_id,
+            )
             .await
             .map_err(Relay::dst_chain_error)?;
 

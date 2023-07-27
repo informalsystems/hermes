@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::types::client_state::HasClientStateType;
 use crate::chain::traits::types::connection::{
     HasConnectionHandshakePayloads, HasInitConnectionOptionsType,
 };
@@ -8,7 +9,7 @@ use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CanBuildConnectionHandshakePayloads<Counterparty>:
-    HasConnectionHandshakePayloads<Counterparty> + HasErrorType
+    HasConnectionHandshakePayloads<Counterparty> + HasClientStateType<Counterparty> + HasErrorType
 {
     async fn build_connection_open_init_payload(
         &self,
@@ -16,6 +17,7 @@ pub trait CanBuildConnectionHandshakePayloads<Counterparty>:
 
     async fn build_connection_open_try_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
@@ -23,6 +25,7 @@ pub trait CanBuildConnectionHandshakePayloads<Counterparty>:
 
     async fn build_connection_open_ack_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
@@ -30,6 +33,7 @@ pub trait CanBuildConnectionHandshakePayloads<Counterparty>:
 
     async fn build_connection_open_confirm_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,

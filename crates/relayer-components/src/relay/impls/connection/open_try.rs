@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use core::iter::Iterator;
 
+use crate::chain::traits::client::client_state::CanQueryClientState;
 use crate::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
@@ -42,7 +43,9 @@ where
         + CanSendSingleIbcMessage<DestinationTarget>
         + InjectMissingConnectionTryEventError,
     SrcChain: CanQueryChainHeight + CanBuildConnectionHandshakePayloads<DstChain>,
-    DstChain: CanBuildConnectionHandshakeMessages<SrcChain> + HasConnectionOpenTryEvent<SrcChain>,
+    DstChain: CanQueryClientState<SrcChain>
+        + CanBuildConnectionHandshakeMessages<SrcChain>
+        + HasConnectionOpenTryEvent<SrcChain>,
     DstChain::ConnectionId: Clone,
 {
     async fn relay_connection_open_try(
@@ -60,8 +63,18 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
+        let src_client_state = dst_chain
+            .query_client_state(relay.dst_client_id())
+            .await
+            .map_err(Relay::dst_chain_error)?;
+
         let open_try_payload = src_chain
-            .build_connection_open_try_payload(&src_proof_height, src_client_id, src_connection_id)
+            .build_connection_open_try_payload(
+                &src_client_state,
+                &src_proof_height,
+                src_client_id,
+                src_connection_id,
+            )
             .await
             .map_err(Relay::src_chain_error)?;
 

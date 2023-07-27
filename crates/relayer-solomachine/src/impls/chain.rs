@@ -407,6 +407,7 @@ where
 
     async fn build_connection_open_try_payload(
         &self,
+        client_state: &SolomachineClientState,
         height: &Height,
         client_id: &ClientId,
         connection_id: &ConnectionId,
@@ -416,6 +417,7 @@ where
 
     async fn build_connection_open_ack_payload(
         &self,
+        client_state: &SolomachineClientState,
         height: &Height,
         client_id: &ClientId,
         connection_id: &ConnectionId,
@@ -425,6 +427,7 @@ where
 
     async fn build_connection_open_confirm_payload(
         &self,
+        client_state: &SolomachineClientState,
         height: &Height,
         client_id: &ClientId,
         connection_id: &ConnectionId,

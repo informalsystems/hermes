@@ -10,15 +10,15 @@ use ibc_relayer_components::chain::traits::types::ibc_events::connection::{
     HasConnectionOpenInitEvent, HasConnectionOpenTryEvent,
 };
 
-use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 impl<Chain, Counterparty> HasConnectionHandshakePayloads<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type ConnectionOpenInitPayload = Chain::ConnectionOpenInitPayload;
 
@@ -32,8 +32,8 @@ where
 impl<Chain, Counterparty> HasInitConnectionOptionsType<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type InitConnectionOptions = Chain::InitConnectionOptions;
 }
@@ -41,8 +41,8 @@ where
 impl<Chain, Counterparty> HasConnectionVersionType<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type ConnectionVersion = Chain::ConnectionVersion;
 }
@@ -50,8 +50,8 @@ where
 impl<Chain, Counterparty> HasConnectionDetailsType<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type ConnectionDetails = Chain::ConnectionDetails;
 }
@@ -60,7 +60,7 @@ impl<Chain, Counterparty> HasConnectionOpenInitEvent<OfaChainWrapper<Counterpart
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     type ConnectionOpenInitEvent = Chain::ConnectionOpenInitEvent;
 
@@ -81,7 +81,7 @@ impl<Chain, Counterparty> HasConnectionOpenTryEvent<OfaChainWrapper<Counterparty
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     type ConnectionOpenTryEvent = Chain::ConnectionOpenTryEvent;
 
@@ -103,7 +103,7 @@ impl<Chain, Counterparty> CanBuildConnectionHandshakePayloads<OfaChainWrapper<Co
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_connection_open_init_payload(
         &self,
@@ -113,34 +113,37 @@ where
 
     async fn build_connection_open_try_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
     ) -> Result<Self::ConnectionOpenTryPayload, Self::Error> {
         self.chain
-            .build_connection_open_try_payload(height, client_id, connection_id)
+            .build_connection_open_try_payload(client_state, height, client_id, connection_id)
             .await
     }
 
     async fn build_connection_open_ack_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
     ) -> Result<Self::ConnectionOpenAckPayload, Self::Error> {
         self.chain
-            .build_connection_open_ack_payload(height, client_id, connection_id)
+            .build_connection_open_ack_payload(client_state, height, client_id, connection_id)
             .await
     }
 
     async fn build_connection_open_confirm_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
     ) -> Result<Self::ConnectionOpenConfirmPayload, Self::Error> {
         self.chain
-            .build_connection_open_confirm_payload(height, client_id, connection_id)
+            .build_connection_open_confirm_payload(client_state, height, client_id, connection_id)
             .await
     }
 }
@@ -150,7 +153,7 @@ impl<Chain, Counterparty> CanBuildConnectionHandshakeMessages<OfaChainWrapper<Co
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_connection_open_init_message(
         &self,

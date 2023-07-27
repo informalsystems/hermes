@@ -285,6 +285,7 @@ pub trait OfaChain: OfaChainTypes {
 
     async fn build_connection_open_try_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
@@ -292,6 +293,7 @@ pub trait OfaChain: OfaChainTypes {
 
     async fn build_connection_open_ack_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
@@ -299,6 +301,7 @@ pub trait OfaChain: OfaChainTypes {
 
     async fn build_connection_open_confirm_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         client_id: &Self::ClientId,
         connection_id: &Self::ConnectionId,
