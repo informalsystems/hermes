@@ -377,6 +377,7 @@ impl HasReceivePacketPayload<MockChainContext> for MockChainContext {
 impl CanBuildReceivePacketPayload<MockChainContext> for MockChainContext {
     async fn build_receive_packet_payload(
         &self,
+        _client_state: &Self::ClientState,
         height: &MockHeight,
         packet: &PacketKey,
     ) -> Result<MockMessage, Error> {

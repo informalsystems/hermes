@@ -334,6 +334,7 @@ pub trait OfaChain: OfaChainTypes {
 
     async fn build_receive_packet_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         packet: &Self::OutgoingPacket,
     ) -> Result<Self::ReceivePacketPayload, Self::Error>;

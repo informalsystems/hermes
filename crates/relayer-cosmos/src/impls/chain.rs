@@ -492,6 +492,7 @@ where
     /// chain from a source Cosmos chain.
     async fn build_receive_packet_payload(
         &self,
+        _client_state: &TendermintClientState,
         height: &Height,
         packet: &Packet,
     ) -> Result<CosmosReceivePacketPayload, Error> {

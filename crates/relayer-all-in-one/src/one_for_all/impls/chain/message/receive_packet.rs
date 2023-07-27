@@ -27,11 +27,12 @@ where
 {
     async fn build_receive_packet_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         packet: &Self::OutgoingPacket,
     ) -> Result<Self::ReceivePacketPayload, Self::Error> {
         self.chain
-            .build_receive_packet_payload(height, packet)
+            .build_receive_packet_payload(client_state, height, packet)
             .await
     }
 }

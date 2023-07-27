@@ -307,6 +307,7 @@ where
 
     async fn build_receive_packet_payload(
         &self,
+        client_state: &SolomachineClientState,
         height: &Height,
         packet: &Packet,
     ) -> Result<SolomachineReceivePacketPayload, Chain::Error> {
