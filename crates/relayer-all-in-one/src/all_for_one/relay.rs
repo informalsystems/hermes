@@ -30,7 +30,7 @@ pub trait AfoRelay:
     + HasAfoRuntime
     + HasLoggerWithBaseLevels
     + HasRelayChains<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
-    + HasRelayPacket<SrcChainWithPacket = Self::AfoSrcChain>
+    + HasRelayPacket<SrcChainWithPacket = Self::AfoSrcChain, DstChainWithPacket = Self::AfoDstChain>
     + CanBuildUpdateClientMessage<SourceTarget>
     + CanBuildUpdateClientMessage<DestinationTarget>
     + CanSendIbcMessages<SourceTarget>
@@ -70,7 +70,7 @@ where
         + HasAfoRuntime
         + HasLoggerWithBaseLevels
         + HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
-        + HasRelayPacket<SrcChainWithPacket = SrcChain>
+        + HasRelayPacket<SrcChainWithPacket = SrcChain, DstChainWithPacket = DstChain>
         + CanBuildUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>
         + CanSendIbcMessages<SourceTarget>

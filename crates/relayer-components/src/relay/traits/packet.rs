@@ -3,10 +3,14 @@ use crate::chain::types::aliases::{ChannelId, Height, PortId, Sequence, Timestam
 use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
 
-pub trait HasRelayPacket: HasRelayChains<SrcChain = Self::SrcChainWithPacket> {
+pub trait HasRelayPacket:
+    HasRelayChains<SrcChain = Self::SrcChainWithPacket, DstChain = Self::DstChainWithPacket>
+{
     type Packet: Async;
 
     type SrcChainWithPacket: HasIbcPacketFields<Self::DstChain, OutgoingPacket = Self::Packet>;
+
+    type DstChainWithPacket: HasIbcPacketFields<Self::SrcChain, IncomingPacket = Self::Packet>;
 }
 
 impl<Relay> HasRelayPacket for Relay
@@ -16,6 +20,8 @@ where
     type Packet = <Relay::SrcChain as HasIbcPacketTypes<Relay::DstChain>>::OutgoingPacket;
 
     type SrcChainWithPacket = Relay::SrcChain;
+
+    type DstChainWithPacket = Relay::DstChain;
 }
 
 pub trait HasRelayPacketFields: HasRelayPacket {

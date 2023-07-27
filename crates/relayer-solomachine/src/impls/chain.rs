@@ -315,6 +315,7 @@ where
 
     async fn build_ack_packet_payload(
         &self,
+        client_state: &SolomachineClientState,
         height: &Height,
         packet: &Packet,
         ack: &Self::WriteAcknowledgementEvent,

@@ -27,12 +27,13 @@ where
 {
     async fn build_ack_packet_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
         ack: &Self::WriteAcknowledgementEvent,
     ) -> Result<Self::AckPacketPayload, Self::Error> {
         self.chain
-            .build_ack_packet_payload(height, packet, ack)
+            .build_ack_packet_payload(client_state, height, packet, ack)
             .await
     }
 }
