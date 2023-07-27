@@ -1,10 +1,11 @@
 use async_trait::async_trait;
-use core::fmt::Debug;
+use core::fmt::{Debug, Display};
 use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaRuntime;
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 use prost::EncodeError;
 use secp256k1::{PublicKey, SecretKey};
 
@@ -15,6 +16,8 @@ pub trait SolomachineChain: Async {
     type Runtime: OfaRuntime;
 
     type Logger: HasBaseLogLevels;
+
+    type Diversifier: Display + Async;
 
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
@@ -31,10 +34,16 @@ pub trait SolomachineChain: Async {
     // of the process, such as in HSM.
     fn secret_key(&self) -> &SecretKey;
 
+    fn current_time(&self) -> u64;
+
+    async fn new_client(&self) -> Result<ClientId, Self::Error>;
+
+    async fn new_diversifier(&self) -> String;
+
     /// Generate a new diversifier string to be used for the next UpdateClient.
     /// We use a different diversifier for each IBC message, in order to
     /// avoid misbehavior being triggered in case if the solomachine double signs.
-    async fn generate_diversifier(&self, current_diversifier: &str) -> Result<String, Self::Error>;
+    async fn next_diversifier(&self, diversifier: &str) -> String;
 
     async fn handle_receive_packet(&self, packet: &Packet) -> Result<Vec<u8>, Self::Error>;
 }

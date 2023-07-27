@@ -9,7 +9,10 @@ use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_cosmos::contexts::chain::CosmosChain;
-use ibc_relayer_cosmos::traits::message::CosmosMessage;
+use ibc_relayer_cosmos::traits::message::{CosmosMessage, ToCosmosMessage};
+use ibc_relayer_cosmos::types::error::{BaseError as CosmosBaseError, Error as CosmosError};
+use ibc_relayer_cosmos::types::messages::client::create::CosmosCreateClientMessage;
+use ibc_relayer_cosmos::types::messages::client::update::CosmosUpdateClientMessage;
 use ibc_relayer_cosmos::types::payloads::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenTryPayload,
 };
@@ -34,11 +37,16 @@ use ibc_relayer_types::core::ics24_host::identifier::{
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 
+use crate::methods::encode::client_state::encode_client_state;
+use crate::methods::encode::consensus_state::encode_consensus_state;
+use crate::methods::encode::header::encode_header;
+use crate::methods::encode::header_data::sign_header_data;
 use crate::traits::solomachine::SolomachineChain;
 use crate::types::chain::SolomachineChainWrapper;
 use crate::types::client_state::SolomachineClientState;
 use crate::types::consensus_state::SolomachineConsensusState;
 use crate::types::event::SolomachineEvent;
+use crate::types::header::{SolomachineHeader, SolomachineHeaderData, SolomachineSignHeaderData};
 use crate::types::message::SolomachineMessage;
 use crate::types::payloads::channel::{
     SolomachineChannelOpenAckPayload, SolomachineChannelOpenConfirmPayload,
@@ -324,9 +332,27 @@ where
 
     async fn build_create_client_payload(
         &self,
-        create_client_options: &Self::CreateClientPayloadOptions,
+        create_client_options: &(),
     ) -> Result<SolomachineCreateClientPayload, Chain::Error> {
-        todo!()
+        let public_key = self.chain.public_key().clone();
+        let diversifier = self.chain.new_diversifier().await;
+        let timestamp = self.chain.current_time();
+
+        let consensus_state = SolomachineConsensusState {
+            public_key,
+            diversifier,
+            timestamp,
+        };
+
+        let client_state = SolomachineClientState {
+            sequence: 0,
+            is_frozen: false,
+            consensus_state: consensus_state,
+        };
+
+        let payload = SolomachineCreateClientPayload { client_state };
+
+        Ok(payload)
     }
 
     async fn build_update_client_payload(
@@ -335,7 +361,42 @@ where
         target_height: &Height,
         client_state: SolomachineClientState,
     ) -> Result<SolomachineUpdateClientPayload, Chain::Error> {
-        todo!()
+        // TODO: check that the public key is that same in the consensus state.
+        // We currently only support updating the diversifier but not the public key.
+
+        let public_key = self.chain.public_key();
+        let current_diversifier = &client_state.consensus_state.diversifier;
+
+        let next_diversifier = self.chain.next_diversifier(current_diversifier).await;
+
+        // TODO: check that current time is greater than or equal to the consensus state time.
+        let timestamp = self.chain.current_time();
+
+        let header_data = SolomachineHeaderData {
+            new_public_key: public_key.clone(),
+            new_diversifier: next_diversifier,
+        };
+
+        let sign_data = SolomachineSignHeaderData {
+            header_data,
+            sequence: client_state.sequence,
+            timestamp: timestamp,
+            diversifier: current_diversifier.clone(),
+        };
+
+        let secret_key = self.chain.secret_key();
+
+        let signature = sign_header_data(secret_key, &sign_data).map_err(Chain::encode_error)?;
+
+        let header = SolomachineHeader {
+            timestamp,
+            signature,
+            header_data: sign_data.header_data,
+        };
+
+        let payload = SolomachineUpdateClientPayload { header };
+
+        Ok(payload)
     }
 
     async fn build_connection_open_init_payload(
@@ -465,7 +526,9 @@ where
     fn counterparty_message_height_for_update_client(
         message: &SolomachineMessage,
     ) -> Option<Height> {
-        todo!()
+        // No need to update client as we are trusting the Cosmos full node,
+        // and rely directly on the full node for detecting misbehavior.
+        None
     }
 
     async fn query_chain_id_from_channel_id(
@@ -516,7 +579,7 @@ where
 
     async fn build_timeout_unordered_packet_message(
         &self,
-        payload: CosmosTimeoutUnorderedPacketPayload,
+        counterparty_payload: CosmosTimeoutUnorderedPacketPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
         todo!()
     }
@@ -525,15 +588,19 @@ where
         &self,
         counterparty_payload: CosmosCreateClientPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
+        let message = SolomachineMessage::CosmosCreateClient(counterparty_payload);
+
+        Ok(message)
     }
 
     async fn build_update_client_message(
         &self,
         client_id: &ClientId,
-        payload: CosmosUpdateClientPayload,
+        counterparty_payload: CosmosUpdateClientPayload,
     ) -> Result<Vec<SolomachineMessage>, Chain::Error> {
-        todo!()
+        let message = SolomachineMessage::CosmosUpdateClient(counterparty_payload);
+
+        Ok(vec![message])
     }
 
     async fn find_consensus_state_height_before(
@@ -699,14 +766,14 @@ where
         &self,
         channel_id: &ChannelId,
         port_id: &PortId,
-    ) -> Result<ChainId, Self::Error> {
+    ) -> Result<ChainId, CosmosError> {
         todo!()
     }
 
     async fn query_client_state(
         &self,
         client_id: &ClientId,
-    ) -> Result<SolomachineClientState, Self::Error> {
+    ) -> Result<SolomachineClientState, CosmosError> {
         todo!()
     }
 
@@ -714,7 +781,7 @@ where
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> Result<SolomachineConsensusState, Self::Error> {
+    ) -> Result<SolomachineConsensusState, CosmosError> {
         todo!()
     }
 
@@ -723,51 +790,70 @@ where
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: &Sequence,
-    ) -> Result<bool, Self::Error> {
+    ) -> Result<bool, CosmosError> {
         todo!()
     }
 
     async fn build_receive_packet_message(
         &self,
         payload: SolomachineReceivePacketPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
     async fn build_ack_packet_message(
         &self,
         payload: SolomachineAckPacketPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
     async fn build_timeout_unordered_packet_message(
         &self,
         payload: SolomachineTimeoutUnorderedPacketPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
     async fn build_create_client_message(
         &self,
         counterparty_payload: SolomachineCreateClientPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
-        todo!()
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
+        let client_state = encode_client_state(&counterparty_payload.client_state)
+            .map_err(CosmosBaseError::encode)?;
+
+        let consensus_state =
+            encode_consensus_state(&counterparty_payload.client_state.consensus_state)
+                .map_err(CosmosBaseError::encode)?;
+
+        let message = CosmosCreateClientMessage {
+            client_state,
+            consensus_state,
+        };
+
+        Ok(message.to_cosmos_message())
     }
 
     async fn build_update_client_message(
         &self,
         client_id: &ClientId,
         payload: SolomachineUpdateClientPayload,
-    ) -> Result<Vec<Arc<dyn CosmosMessage>>, Self::Error> {
-        todo!()
+    ) -> Result<Vec<Arc<dyn CosmosMessage>>, CosmosError> {
+        let header = encode_header(&payload.header).map_err(CosmosBaseError::encode)?;
+
+        let message = CosmosUpdateClientMessage {
+            client_id: client_id.clone(),
+            header,
+        };
+
+        Ok(vec![message.to_cosmos_message()])
     }
 
     async fn find_consensus_state_height_before(
         &self,
         client_id: &ClientId,
         target_height: &Height,
-    ) -> Result<Height, Self::Error> {
+    ) -> Result<Height, CosmosError> {
         todo!()
     }
 
@@ -777,7 +863,7 @@ where
         counterparty_client_id: &ClientId,
         init_connection_options: &Self::InitConnectionOptions,
         counterparty_payload: SolomachineConnectionOpenInitPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
@@ -787,7 +873,7 @@ where
         counterparty_client_id: &ClientId,
         counterparty_connection_id: &ConnectionId,
         counterparty_payload: SolomachineConnectionOpenTryPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
@@ -796,7 +882,7 @@ where
         connection_id: &ConnectionId,
         counterparty_connection_id: &ConnectionId,
         counterparty_payload: SolomachineConnectionOpenAckPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
@@ -804,7 +890,7 @@ where
         &self,
         connection_id: &ConnectionId,
         counterparty_payload: SolomachineConnectionOpenConfirmPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
@@ -813,7 +899,7 @@ where
         port_id: &PortId,
         counterparty_port_id: &PortId,
         init_channel_options: &Self::InitChannelOptions,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
@@ -823,7 +909,7 @@ where
         counterparty_port_id: &PortId,
         counterparty_channel_id: &ChannelId,
         counterparty_payload: SolomachineChannelOpenTryPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
@@ -833,7 +919,7 @@ where
         channel_id: &ChannelId,
         counterparty_channel_id: &ChannelId,
         counterparty_payload: SolomachineChannelOpenAckPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 
@@ -842,7 +928,7 @@ where
         port_id: &PortId,
         channel_id: &ChannelId,
         counterparty_payload: SolomachineChannelOpenConfirmPayload,
-    ) -> Result<Arc<dyn CosmosMessage>, Self::Error> {
+    ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()
     }
 }
