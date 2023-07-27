@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::client::client_state::CanQueryClientState;
 use crate::chain::traits::message_builders::timeout_unordered_packet::{
     CanBuildTimeoutUnorderedPacketMessage, CanBuildTimeoutUnorderedPacketPayload,
 };
@@ -21,17 +22,24 @@ impl<Relay> TimeoutUnorderedPacketRelayer<Relay> for BaseTimeoutUnorderedPacketR
 where
     Relay: HasRelayChains,
     Relay: CanSendSingleIbcMessage<SourceTarget>,
+    Relay::SrcChain: CanQueryClientState<Relay::DstChain>
+        + CanBuildTimeoutUnorderedPacketMessage<Relay::DstChain>,
     Relay::DstChain: CanBuildTimeoutUnorderedPacketPayload<Relay::SrcChain>,
-    Relay::SrcChain: CanBuildTimeoutUnorderedPacketMessage<Relay::DstChain>,
 {
     async fn relay_timeout_unordered_packet(
         relay: &Relay,
         destination_height: &Height<Relay::DstChain>,
         packet: &Packet<Relay>,
     ) -> Result<(), Relay::Error> {
+        let dst_client_state = relay
+            .src_chain()
+            .query_client_state(relay.src_client_id())
+            .await
+            .map_err(Relay::src_chain_error)?;
+
         let payload = relay
             .dst_chain()
-            .build_timeout_unordered_packet_payload(destination_height, packet)
+            .build_timeout_unordered_packet_payload(&dst_client_state, destination_height, packet)
             .await
             .map_err(Relay::dst_chain_error)?;
 

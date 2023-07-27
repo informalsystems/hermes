@@ -455,6 +455,7 @@ impl HasTimeoutUnorderedPacketPayload<MockChainContext> for MockChainContext {
 impl CanBuildTimeoutUnorderedPacketPayload<MockChainContext> for MockChainContext {
     async fn build_timeout_unordered_packet_payload(
         &self,
+        _client_state: &Self::ClientState,
         height: &MockHeight,
         packet: &PacketKey,
     ) -> Result<MockMessage, Error> {

@@ -517,6 +517,7 @@ where
     /// from a source chain was not received.
     async fn build_timeout_unordered_packet_payload(
         &self,
+        _client_state: &TendermintClientState,
         height: &Height,
         packet: &Packet,
     ) -> Result<CosmosTimeoutUnorderedPacketPayload, Error> {

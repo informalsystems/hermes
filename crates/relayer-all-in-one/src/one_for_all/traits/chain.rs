@@ -349,6 +349,7 @@ pub trait OfaChain: OfaChainTypes {
 
     async fn build_timeout_unordered_packet_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
     ) -> Result<Self::TimeoutUnorderedPacketPayload, Self::Error>;

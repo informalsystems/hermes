@@ -26,11 +26,12 @@ where
 {
     async fn build_timeout_unordered_packet_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
     ) -> Result<Self::TimeoutUnorderedPacketPayload, Self::Error> {
         self.chain
-            .build_timeout_unordered_packet_payload(height, packet)
+            .build_timeout_unordered_packet_payload(client_state, height, packet)
             .await
     }
 }

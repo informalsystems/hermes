@@ -326,6 +326,7 @@ where
 
     async fn build_timeout_unordered_packet_payload(
         &self,
+        client_state: &SolomachineClientState,
         height: &Height,
         packet: &Packet,
     ) -> Result<SolomachineTimeoutUnorderedPacketPayload, Chain::Error> {
