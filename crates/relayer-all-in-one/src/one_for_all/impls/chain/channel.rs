@@ -85,34 +85,37 @@ where
 {
     async fn build_channel_open_try_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
     ) -> Result<Self::ChannelOpenTryPayload, Self::Error> {
         self.chain
-            .build_channel_open_try_payload(height, port_id, channel_id)
+            .build_channel_open_try_payload(client_state, height, port_id, channel_id)
             .await
     }
 
     async fn build_channel_open_ack_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
     ) -> Result<Self::ChannelOpenAckPayload, Self::Error> {
         self.chain
-            .build_channel_open_ack_payload(height, port_id, channel_id)
+            .build_channel_open_ack_payload(client_state, height, port_id, channel_id)
             .await
     }
 
     async fn build_channel_open_confirm_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
     ) -> Result<Self::ChannelOpenConfirmPayload, Self::Error> {
         self.chain
-            .build_channel_open_confirm_payload(height, port_id, channel_id)
+            .build_channel_open_confirm_payload(client_state, height, port_id, channel_id)
             .await
     }
 }

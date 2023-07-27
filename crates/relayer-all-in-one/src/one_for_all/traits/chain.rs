@@ -281,6 +281,7 @@ pub trait OfaChain: OfaChainTypes {
 
     async fn build_connection_open_init_payload(
         &self,
+        client_state: &Self::ClientState,
     ) -> Result<Self::ConnectionOpenInitPayload, Self::Error>;
 
     async fn build_connection_open_try_payload(
@@ -309,6 +310,7 @@ pub trait OfaChain: OfaChainTypes {
 
     async fn build_channel_open_try_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
@@ -316,6 +318,7 @@ pub trait OfaChain: OfaChainTypes {
 
     async fn build_channel_open_ack_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
@@ -323,6 +326,7 @@ pub trait OfaChain: OfaChainTypes {
 
     async fn build_channel_open_confirm_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,

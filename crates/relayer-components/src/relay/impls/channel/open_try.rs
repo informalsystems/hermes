@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::client::client_state::CanQueryClientState;
 use crate::chain::traits::message_builders::channel::{
     CanBuildChannelHandshakeMessages, CanBuildChannelHandshakePayloads,
 };
@@ -42,7 +43,9 @@ where
         + CanSendSingleIbcMessage<DestinationTarget>
         + InjectMissingChannelTryEventError,
     SrcChain: CanQueryChainHeight + CanBuildChannelHandshakePayloads<DstChain>,
-    DstChain: CanBuildChannelHandshakeMessages<SrcChain> + HasChannelOpenTryEvent<SrcChain>,
+    DstChain: CanQueryClientState<SrcChain>
+        + CanBuildChannelHandshakeMessages<SrcChain>
+        + HasChannelOpenTryEvent<SrcChain>,
     DstChain::ChannelId: Clone,
 {
     async fn relay_channel_open_try(
@@ -59,8 +62,18 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
+        let src_client_state = dst_chain
+            .query_client_state(relay.dst_client_id())
+            .await
+            .map_err(Relay::dst_chain_error)?;
+
         let open_try_payload = src_chain
-            .build_channel_open_try_payload(&src_proof_height, src_port_id, src_channel_id)
+            .build_channel_open_try_payload(
+                &src_client_state,
+                &src_proof_height,
+                src_port_id,
+                src_channel_id,
+            )
             .await
             .map_err(Relay::src_chain_error)?;
 

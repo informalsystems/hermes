@@ -13,6 +13,7 @@ pub trait CanBuildConnectionHandshakePayloads<Counterparty>:
 {
     async fn build_connection_open_init_payload(
         &self,
+        client_state: &Self::ClientState,
     ) -> Result<Self::ConnectionOpenInitPayload, Self::Error>;
 
     async fn build_connection_open_try_payload(

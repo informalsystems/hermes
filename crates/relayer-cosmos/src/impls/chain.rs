@@ -423,6 +423,7 @@ where
 
     async fn build_connection_open_init_payload(
         &self,
+        _client_state: &Self::ClientState,
     ) -> Result<CosmosConnectionOpenInitPayload, Error> {
         build_connection_open_init_payload(self).await
     }
@@ -459,6 +460,7 @@ where
 
     async fn build_channel_open_try_payload(
         &self,
+        _client_state: &TendermintClientState,
         height: &Height,
         port_id: &PortId,
         channel_id: &ChannelId,
@@ -468,6 +470,7 @@ where
 
     async fn build_channel_open_ack_payload(
         &self,
+        _client_state: &TendermintClientState,
         height: &Height,
         port_id: &PortId,
         channel_id: &ChannelId,
@@ -477,6 +480,7 @@ where
 
     async fn build_channel_open_confirm_payload(
         &self,
+        _client_state: &TendermintClientState,
         height: &Height,
         port_id: &PortId,
         channel_id: &ChannelId,

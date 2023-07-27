@@ -401,6 +401,7 @@ where
 
     async fn build_connection_open_init_payload(
         &self,
+        client_state: &SolomachineClientState,
     ) -> Result<SolomachineConnectionOpenInitPayload, Chain::Error> {
         todo!()
     }
@@ -437,6 +438,7 @@ where
 
     async fn build_channel_open_try_payload(
         &self,
+        client_state: &SolomachineClientState,
         height: &Height,
         port_id: &PortId,
         channel_id: &ChannelId,
@@ -446,6 +448,7 @@ where
 
     async fn build_channel_open_ack_payload(
         &self,
+        client_state: &SolomachineClientState,
         height: &Height,
         port_id: &PortId,
         channel_id: &ChannelId,
@@ -455,6 +458,7 @@ where
 
     async fn build_channel_open_confirm_payload(
         &self,
+        client_state: &SolomachineClientState,
         height: &Height,
         port_id: &PortId,
         channel_id: &ChannelId,

@@ -107,8 +107,11 @@ where
 {
     async fn build_connection_open_init_payload(
         &self,
+        client_state: &Self::ClientState,
     ) -> Result<Self::ConnectionOpenInitPayload, Self::Error> {
-        self.chain.build_connection_open_init_payload().await
+        self.chain
+            .build_connection_open_init_payload(client_state)
+            .await
     }
 
     async fn build_connection_open_try_payload(
