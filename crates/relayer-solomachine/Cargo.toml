@@ -8,6 +8,7 @@ keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/ibc-rs"
 authors      = ["Informal Systems <hello@informal.systems>"]
 rust-version = "1.68"
+description  = "An IBC relayer for relaying between Cosmos and Solomachin clients."
 
 [package.metadata.docs.rs]
 all-features = true
