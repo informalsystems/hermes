@@ -798,6 +798,14 @@ where
         todo!()
     }
 
+    async fn find_consensus_state_height_before(
+        &self,
+        client_id: &ClientId,
+        target_height: &Height,
+    ) -> Result<Height, CosmosError> {
+        todo!()
+    }
+
     async fn query_is_packet_received(
         &self,
         port_id: &PortId,
@@ -863,14 +871,6 @@ where
         };
 
         Ok(vec![message.to_cosmos_message()])
-    }
-
-    async fn find_consensus_state_height_before(
-        &self,
-        client_id: &ClientId,
-        target_height: &Height,
-    ) -> Result<Height, CosmosError> {
-        todo!()
     }
 
     async fn build_connection_open_init_message(
