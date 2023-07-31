@@ -10,8 +10,8 @@ use crate::types::sign_data::SolomachineSignData;
 // Create a sign data for the connection proof that the solomachine has
 // the connection end of the counterparty Cosmos chain
 pub fn connection_proof_data(
-    commitment_prefix: &str,
     client_state: &SolomachineClientState,
+    commitment_prefix: &str,
     connection_id: &ConnectionId,
     connection_end: ConnectionEnd,
 ) -> Result<SolomachineSignData, EncodeError> {
