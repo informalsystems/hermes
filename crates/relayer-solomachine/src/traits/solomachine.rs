@@ -17,6 +17,10 @@ pub trait SolomachineChain: Async {
 
     type Logger: HasBaseLogLevels;
 
+    /// A type used to differentiate between IBC messages signed using the
+    /// same public key. It is useful in mitigating false positives when it
+    /// comes to misbehavior detection of Solomachine clients. Every UpdateClient
+    /// includes a new Diversifier for every IBC message sent.
     type Diversifier: Display + Async;
 
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
