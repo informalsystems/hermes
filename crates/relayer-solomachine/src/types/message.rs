@@ -3,6 +3,6 @@ use ibc_relayer_cosmos::types::payloads::client::{
 };
 
 pub enum SolomachineMessage {
-    CosmosCreateClient(CosmosCreateClientPayload),
-    CosmosUpdateClient(CosmosUpdateClientPayload),
+    CosmosCreateClient(Box<CosmosCreateClientPayload>),
+    CosmosUpdateClient(Box<CosmosUpdateClientPayload>),
 }

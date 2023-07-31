@@ -1,3 +1,6 @@
+#![allow(clippy::let_and_return)]
+#![allow(clippy::needless_lifetimes)]
+
 extern crate alloc;
 
 pub mod impls;

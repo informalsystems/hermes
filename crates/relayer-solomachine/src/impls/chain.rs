@@ -337,7 +337,7 @@ where
         &self,
         create_client_options: &(),
     ) -> Result<SolomachineCreateClientPayload, Chain::Error> {
-        let public_key = self.chain.public_key().clone();
+        let public_key = *self.chain.public_key();
         let diversifier = self.chain.new_diversifier().await;
         let timestamp = self.chain.current_time();
 
@@ -350,7 +350,7 @@ where
         let client_state = SolomachineClientState {
             sequence: 0,
             is_frozen: false,
-            consensus_state: consensus_state,
+            consensus_state,
         };
 
         let payload = SolomachineCreateClientPayload { client_state };
@@ -376,14 +376,14 @@ where
         let timestamp = self.chain.current_time();
 
         let header_data = SolomachineHeaderData {
-            new_public_key: public_key.clone(),
+            new_public_key: *public_key,
             new_diversifier: next_diversifier,
         };
 
         let sign_data = SolomachineSignHeaderData {
             header_data,
             sequence: client_state.sequence,
-            timestamp: timestamp,
+            timestamp,
             diversifier: current_diversifier.clone(),
         };
 
@@ -598,7 +598,7 @@ where
         &self,
         counterparty_payload: CosmosCreateClientPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        let message = SolomachineMessage::CosmosCreateClient(counterparty_payload);
+        let message = SolomachineMessage::CosmosCreateClient(Box::new(counterparty_payload));
 
         Ok(message)
     }
@@ -608,7 +608,7 @@ where
         client_id: &ClientId,
         counterparty_payload: CosmosUpdateClientPayload,
     ) -> Result<Vec<SolomachineMessage>, Chain::Error> {
-        let message = SolomachineMessage::CosmosUpdateClient(counterparty_payload);
+        let message = SolomachineMessage::CosmosUpdateClient(Box::new(counterparty_payload));
 
         Ok(vec![message])
     }
