@@ -83,11 +83,9 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let packet = packet.clone();
             let ack = ack.ack.clone();
 
             Ok(CosmosAckPacketPayload {
-                packet,
                 ack,
                 update_height: proofs.height(),
                 proof_acked: proofs.object_proof().clone(),
@@ -97,10 +95,11 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
 }
 
 pub fn build_ack_packet_message(
+    packet: &Packet,
     payload: CosmosAckPacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
     let message = CosmosAckPacketMessage {
-        packet: payload.packet,
+        packet: packet.clone(),
         acknowledgement: payload.ack,
         update_height: payload.update_height,
         proof_acked: payload.proof_acked,

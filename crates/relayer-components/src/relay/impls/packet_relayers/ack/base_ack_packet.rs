@@ -55,7 +55,7 @@ where
 
         let message = relay
             .src_chain()
-            .build_ack_packet_message(payload)
+            .build_ack_packet_message(packet, payload)
             .await
             .map_err(Relay::src_chain_error)?;
 

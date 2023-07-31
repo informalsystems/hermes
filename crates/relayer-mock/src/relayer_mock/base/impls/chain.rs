@@ -443,7 +443,11 @@ impl CanBuildAckPacketPayload<MockChainContext> for MockChainContext {
 
 #[async_trait]
 impl CanBuildAckPacketMessage<MockChainContext> for MockChainContext {
-    async fn build_ack_packet_message(&self, payload: MockMessage) -> Result<MockMessage, Error> {
+    async fn build_ack_packet_message(
+        &self,
+        _packet: &PacketKey,
+        payload: MockMessage,
+    ) -> Result<MockMessage, Error> {
         Ok(payload)
     }
 }

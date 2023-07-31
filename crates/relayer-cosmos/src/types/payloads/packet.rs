@@ -8,7 +8,6 @@ pub struct CosmosReceivePacketPayload {
 }
 
 pub struct CosmosAckPacketPayload {
-    pub packet: Packet,
     pub ack: Vec<u8>,
     pub update_height: Height,
     pub proof_acked: CommitmentProofBytes,

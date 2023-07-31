@@ -583,6 +583,7 @@ where
 
     async fn build_ack_packet_message(
         &self,
+        packet: &Packet,
         payload: CosmosAckPacketPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
         todo!()
@@ -815,6 +816,7 @@ where
 
     async fn build_ack_packet_message(
         &self,
+        packet: &Packet,
         payload: SolomachineAckPacketPayload,
     ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()

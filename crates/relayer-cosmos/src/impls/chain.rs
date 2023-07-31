@@ -641,9 +641,10 @@ where
 
     async fn build_ack_packet_message(
         &self,
+        packet: &Packet,
         payload: CosmosAckPacketPayload,
     ) -> Result<Arc<dyn CosmosMessage>, Error> {
-        build_ack_packet_message(payload)
+        build_ack_packet_message(packet, payload)
     }
 
     async fn build_timeout_unordered_packet_message(

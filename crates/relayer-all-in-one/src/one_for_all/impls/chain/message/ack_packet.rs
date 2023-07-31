@@ -47,8 +47,9 @@ where
 {
     async fn build_ack_packet_message(
         &self,
+        packet: &Chain::OutgoingPacket,
         payload: Counterparty::AckPacketPayload,
     ) -> Result<Self::Message, Self::Error> {
-        self.chain.build_ack_packet_message(payload).await
+        self.chain.build_ack_packet_message(packet, payload).await
     }
 }

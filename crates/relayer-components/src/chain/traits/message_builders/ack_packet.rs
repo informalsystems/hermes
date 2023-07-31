@@ -31,12 +31,14 @@ where
 }
 
 #[async_trait]
-pub trait CanBuildAckPacketMessage<Counterparty>: HasMessageType + HasErrorType
+pub trait CanBuildAckPacketMessage<Counterparty>:
+    HasMessageType + HasErrorType + HasIbcPacketTypes<Counterparty>
 where
     Counterparty: HasAckPacketPayload<Self>,
 {
     async fn build_ack_packet_message(
         &self,
+        packet: &Self::OutgoingPacket,
         payload: Counterparty::AckPacketPayload,
     ) -> Result<Self::Message, Self::Error>;
 }

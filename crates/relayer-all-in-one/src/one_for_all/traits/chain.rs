@@ -427,6 +427,7 @@ where
 
     async fn build_ack_packet_message(
         &self,
+        packet: &Self::OutgoingPacket,
         payload: Counterparty::AckPacketPayload,
     ) -> Result<Self::Message, Self::Error>;
 
