@@ -402,6 +402,7 @@ impl CanBuildReceivePacketPayload<MockChainContext> for MockChainContext {
 impl CanBuildReceivePacketMessage<MockChainContext> for MockChainContext {
     async fn build_receive_packet_message(
         &self,
+        _packet: &PacketKey,
         payload: MockMessage,
     ) -> Result<MockMessage, Error> {
         Ok(payload)

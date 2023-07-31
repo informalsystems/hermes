@@ -44,7 +44,7 @@ where
 
         let message = relay
             .dst_chain()
-            .build_receive_packet_message(payload)
+            .build_receive_packet_message(packet, payload)
             .await
             .map_err(Relay::dst_chain_error)?;
 

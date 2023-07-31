@@ -421,6 +421,7 @@ where
 
     async fn build_receive_packet_message(
         &self,
+        packet: &Self::IncomingPacket,
         payload: Counterparty::ReceivePacketPayload,
     ) -> Result<Self::Message, Self::Error>;
 

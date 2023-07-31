@@ -3,7 +3,6 @@ use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc_relayer_types::Height;
 
 pub struct CosmosReceivePacketPayload {
-    pub packet: Packet,
     pub update_height: Height,
     pub proof_commitment: CommitmentProofBytes,
 }

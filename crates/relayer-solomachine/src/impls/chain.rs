@@ -575,6 +575,7 @@ where
 
     async fn build_receive_packet_message(
         &self,
+        packet: &Packet,
         payload: CosmosReceivePacketPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
         todo!()
@@ -806,6 +807,7 @@ where
 
     async fn build_receive_packet_message(
         &self,
+        packet: &Packet,
         payload: SolomachineReceivePacketPayload,
     ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()

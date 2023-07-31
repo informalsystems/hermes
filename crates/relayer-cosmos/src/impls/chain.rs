@@ -633,9 +633,10 @@ where
 
     async fn build_receive_packet_message(
         &self,
+        packet: &Packet,
         payload: CosmosReceivePacketPayload,
     ) -> Result<Arc<dyn CosmosMessage>, Error> {
-        build_receive_packet_message(payload)
+        build_receive_packet_message(packet, payload)
     }
 
     async fn build_ack_packet_message(

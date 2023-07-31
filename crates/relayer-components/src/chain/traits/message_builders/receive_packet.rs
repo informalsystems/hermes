@@ -28,12 +28,14 @@ where
 }
 
 #[async_trait]
-pub trait CanBuildReceivePacketMessage<Counterparty>: HasMessageType + HasErrorType
+pub trait CanBuildReceivePacketMessage<Counterparty>:
+    HasMessageType + HasErrorType + HasIbcPacketTypes<Counterparty>
 where
     Counterparty: HasReceivePacketPayload<Self>,
 {
     async fn build_receive_packet_message(
         &self,
+        packet: &Self::IncomingPacket,
         payload: Counterparty::ReceivePacketPayload,
     ) -> Result<Self::Message, Self::Error>;
 }

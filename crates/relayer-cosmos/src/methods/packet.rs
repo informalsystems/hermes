@@ -40,10 +40,7 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let packet = packet.clone();
-
             Ok(CosmosReceivePacketPayload {
-                packet,
                 update_height: proofs.height(),
                 proof_commitment: proofs.object_proof().clone(),
             })
@@ -52,10 +49,11 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
 }
 
 pub fn build_receive_packet_message(
+    packet: &Packet,
     payload: CosmosReceivePacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
     let message = CosmosReceivePacketMessage {
-        packet: payload.packet,
+        packet: packet.clone(),
         update_height: payload.update_height,
         proof_commitment: payload.proof_commitment,
     };

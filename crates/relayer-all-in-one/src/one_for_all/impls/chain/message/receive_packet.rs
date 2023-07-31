@@ -46,8 +46,11 @@ where
 {
     async fn build_receive_packet_message(
         &self,
+        packet: &Chain::IncomingPacket,
         payload: Counterparty::ReceivePacketPayload,
     ) -> Result<Self::Message, Self::Error> {
-        self.chain.build_receive_packet_message(payload).await
+        self.chain
+            .build_receive_packet_message(packet, payload)
+            .await
     }
 }
