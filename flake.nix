@@ -48,6 +48,8 @@
               juno
               stride
               stride-no-admin
+              stride-consumer-no-admin
+              stride-consumer
               migaloo
               neutron
             ;

@@ -6,21 +6,17 @@ use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 
 use crate::contexts::chain::CosmosChain;
+use crate::methods::runtime::HasBlockingChainHandle;
 use crate::types::error::{BaseError, Error};
 
 pub async fn query_client_state<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     client_id: &ClientId,
 ) -> Result<ClientState, Error> {
-    let chain_handle = chain.handle.clone();
-
     let client_id = client_id.clone();
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let (client_state, _) = chain_handle
                 .query_client_state(
                     QueryClientStateRequest {
@@ -37,5 +33,4 @@ pub async fn query_client_state<Chain: ChainHandle>(
             }
         })
         .await
-        .map_err(BaseError::join)?
 }

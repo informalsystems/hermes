@@ -304,7 +304,9 @@ where
         event: &'a Self::OutgoingPacket,
     ) -> <Self::Logger as BaseLogger>::LogValue<'a>;
 
-    fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
+    fn counterparty_message_height_for_update_client(
+        message: &Self::Message,
+    ) -> Option<Counterparty::Height>;
 
     async fn query_chain_id_from_channel_id(
         &self,

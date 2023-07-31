@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-test-framework"
-version    = "0.24.1"
+version    = "0.25.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -14,10 +14,10 @@ description = """
 """
 
 [dependencies]
-ibc-relayer-types = { version = "=0.24.1",     path = "../../crates/relayer-types" }
-ibc-relayer       = { version = "=0.24.1",     path = "../../crates/relayer" }
-ibc-relayer-cli   = { version = "=1.5.1",      path = "../../crates/relayer-cli" }
-ibc-relayer-cosmos   = { version = "=0.24.1",      path = "../../crates/relayer-cosmos" }
+ibc-relayer-types  = { version = "=0.25.0",     path = "../../crates/relayer-types" }
+ibc-relayer        = { version = "=0.25.0",     path = "../../crates/relayer" }
+ibc-relayer-cosmos = { version = "=0.25.0",      path = "../../crates/relayer-cosmos" }
+ibc-relayer-cli   = { version = "=1.6.0",      path = "../../crates/relayer-cli" }
 ibc-relayer-all-in-one   = { version = "=0.1.0",      path = "../../crates/relayer-all-in-one" }
 ibc-relayer-components = { version = "=0.1.0",      path = "../../crates/relayer-components" }
 ibc-proto         = { version = "0.32.0" }

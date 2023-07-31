@@ -29,18 +29,16 @@ where
         relay: &Relay,
         messages: Vec<TargetChain::Message>,
     ) -> Result<Vec<Vec<TargetChain::Event>>, Relay::Error> {
-        let source_heights: BTreeSet<CounterpartyChain::Height> = messages
+        let update_heights: BTreeSet<CounterpartyChain::Height> = messages
             .iter()
-            .flat_map(|message| TargetChain::counterparty_message_height(message).into_iter())
+            .flat_map(|message| {
+                TargetChain::counterparty_message_height_for_update_client(message).into_iter()
+            })
             .collect();
 
         let mut in_messages = Vec::new();
 
-        for height in source_heights {
-            // IBC requires the update client height to be at least one greater than the proof height
-            let update_height = CounterpartyChain::increment_height(&height)
-                .map_err(Target::counterparty_chain_error)?;
-
+        for update_height in update_heights {
             let messages = relay
                 .build_update_client_messages(Target::default(), &update_height)
                 .await?;
@@ -51,7 +49,7 @@ where
                 Relay::Logger::LEVEL_TRACE,
                 "built update client messages for sending message at height",
                 |log| {
-                    log.display("height", &height)
+                    log.display("height", &update_height)
                         .display("messages_count", &messages_count);
                 },
             );

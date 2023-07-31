@@ -93,8 +93,10 @@ where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
-    fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height> {
-        Chain::counterparty_message_height(message)
+    fn counterparty_message_height_for_update_client(
+        message: &Self::Message,
+    ) -> Option<Counterparty::Height> {
+        Chain::counterparty_message_height_for_update_client(message)
     }
 }
 

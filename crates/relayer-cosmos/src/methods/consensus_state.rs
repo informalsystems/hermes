@@ -10,6 +10,7 @@ use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 use ibc_relayer_types::Height;
 
 use crate::contexts::chain::CosmosChain;
+use crate::methods::runtime::HasBlockingChainHandle;
 use crate::types::error::{BaseError, Error};
 
 pub async fn query_consensus_state<Chain: ChainHandle>(
@@ -17,16 +18,11 @@ pub async fn query_consensus_state<Chain: ChainHandle>(
     client_id: &ClientId,
     height: &Height,
 ) -> Result<ConsensusState, Error> {
-    let chain_handle = chain.handle.clone();
-
     let client_id = client_id.clone();
     let height = *height;
 
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let (any_consensus_state, _) = chain_handle
                 .query_consensus_state(
                     QueryConsensusStateRequest {
@@ -44,7 +40,6 @@ pub async fn query_consensus_state<Chain: ChainHandle>(
             }
         })
         .await
-        .map_err(BaseError::join)?
 }
 
 pub async fn find_consensus_state_height_before<Chain: ChainHandle>(
@@ -55,13 +50,8 @@ pub async fn find_consensus_state_height_before<Chain: ChainHandle>(
     let client_id = client_id.clone();
     let target_height = *target_height;
 
-    let chain_handle = chain.handle.clone();
-
     chain
-        .runtime
-        .runtime
-        .runtime
-        .spawn_blocking(move || {
+        .with_blocking_chain_handle(move |chain_handle| {
             let heights = {
                 let mut heights = chain_handle
                     .query_consensus_state_heights(QueryConsensusStateHeightsRequest {
@@ -88,5 +78,4 @@ pub async fn find_consensus_state_height_before<Chain: ChainHandle>(
             Ok(height)
         })
         .await
-        .map_err(BaseError::join)?
 }

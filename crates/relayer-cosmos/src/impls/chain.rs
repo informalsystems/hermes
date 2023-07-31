@@ -57,8 +57,7 @@ use crate::methods::packet::{
     build_ack_packet_message, build_ack_packet_payload, build_receive_packet_message,
     build_receive_packet_payload, build_timeout_unordered_packet_message,
     build_timeout_unordered_packet_payload, query_is_packet_received,
-    query_write_acknowledgement_event, CosmosAckPacketPayload, CosmosReceivePacketPayload,
-    CosmosTimeoutUnorderedPacketPayload,
+    query_write_acknowledgement_event,
 };
 use crate::methods::unreceived_packet::{
     query_packet_commitments, query_unreceived_packet_sequences, query_unreceived_packets,
@@ -66,18 +65,25 @@ use crate::methods::unreceived_packet::{
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
 use crate::traits::message::CosmosMessage;
 use crate::types::channel::{
-    CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenInitEvent,
-    CosmosChannelOpenTryEvent, CosmosChannelOpenTryPayload, CosmosInitChannelOptions,
+    CosmosChannelOpenInitEvent, CosmosChannelOpenTryEvent, CosmosInitChannelOptions,
 };
 use crate::types::client::{
     CosmosCreateClientEvent, CosmosCreateClientPayload, CosmosUpdateClientPayload,
 };
 use crate::types::connection::{
-    CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
-    CosmosConnectionOpenInitEvent, CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryEvent,
-    CosmosConnectionOpenTryPayload, CosmosInitConnectionOptions,
+    CosmosConnectionOpenInitEvent, CosmosConnectionOpenTryEvent, CosmosInitConnectionOptions,
 };
 use crate::types::error::{BaseError, Error};
+use crate::types::payloads::channel::{
+    CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenTryPayload,
+};
+use crate::types::payloads::connection::{
+    CosmosConnectionOpenAckPayload, CosmosConnectionOpenConfirmPayload,
+    CosmosConnectionOpenInitPayload, CosmosConnectionOpenTryPayload,
+};
+use crate::types::payloads::packet::{
+    CosmosAckPacketPayload, CosmosReceivePacketPayload, CosmosTimeoutUnorderedPacketPayload,
+};
 use crate::types::telemetry::CosmosTelemetry;
 
 #[async_trait]
@@ -502,8 +508,10 @@ where
         LogValue::Display(packet)
     }
 
-    fn counterparty_message_height(message: &Arc<dyn CosmosMessage>) -> Option<Height> {
-        message.counterparty_height()
+    fn counterparty_message_height_for_update_client(
+        message: &Arc<dyn CosmosMessage>,
+    ) -> Option<Height> {
+        message.counterparty_message_height_for_update_client()
     }
 
     async fn query_chain_id_from_channel_id(

@@ -3,12 +3,10 @@ use async_trait::async_trait;
 use crate::chain::traits::message_builders::channel::{
     CanBuildChannelHandshakeMessages, CanBuildChannelHandshakePayloads,
 };
-use crate::chain::traits::message_sender::CanSendMessages;
 use crate::chain::traits::queries::status::CanQueryChainHeight;
-use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::channel::open_confirm::ChannelOpenConfirmRelayer;
-use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
+use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
 use crate::relay::traits::target::DestinationTarget;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
@@ -32,9 +30,9 @@ pub struct RelayChannelOpenConfirm;
 impl<Relay, SrcChain, DstChain> ChannelOpenConfirmRelayer<Relay> for RelayChannelOpenConfirm
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
-        + CanBuildUpdateClientMessage<DestinationTarget>,
-    SrcChain: CanQueryChainHeight + CanIncrementHeight + CanBuildChannelHandshakePayloads<DstChain>,
-    DstChain: CanSendMessages + CanBuildChannelHandshakeMessages<SrcChain>,
+        + CanSendSingleIbcMessage<DestinationTarget>,
+    SrcChain: CanQueryChainHeight + CanBuildChannelHandshakePayloads<DstChain>,
+    DstChain: CanBuildChannelHandshakeMessages<SrcChain>,
 {
     async fn relay_channel_open_confirm(
         relay: &Relay,
@@ -56,28 +54,14 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
-        let src_update_height =
-            SrcChain::increment_height(&src_proof_height).map_err(Relay::src_chain_error)?;
-
-        let dst_update_client_messages = relay
-            .build_update_client_messages(DestinationTarget, &src_update_height)
-            .await?;
-
         let open_confirm_message = dst_chain
             .build_channel_open_confirm_message(dst_port_id, dst_channel_id, open_confirm_payload)
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        let dst_messages = {
-            let mut messages = dst_update_client_messages;
-            messages.push(open_confirm_message);
-            messages
-        };
-
-        dst_chain
-            .send_messages(dst_messages)
-            .await
-            .map_err(Relay::dst_chain_error)?;
+        relay
+            .send_message(DestinationTarget, open_confirm_message)
+            .await?;
 
         Ok(())
     }
