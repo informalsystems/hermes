@@ -45,10 +45,11 @@ where
 {
     async fn build_timeout_unordered_packet_message(
         &self,
+        packet: &Chain::OutgoingPacket,
         payload: Counterparty::TimeoutUnorderedPacketPayload,
     ) -> Result<Self::Message, Self::Error> {
         self.chain
-            .build_timeout_unordered_packet_message(payload)
+            .build_timeout_unordered_packet_message(packet, payload)
             .await
     }
 }

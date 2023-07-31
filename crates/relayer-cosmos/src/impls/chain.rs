@@ -649,9 +649,10 @@ where
 
     async fn build_timeout_unordered_packet_message(
         &self,
+        packet: &Packet,
         payload: CosmosTimeoutUnorderedPacketPayload,
     ) -> Result<Arc<dyn CosmosMessage>, Error> {
-        build_timeout_unordered_packet_message(payload)
+        build_timeout_unordered_packet_message(packet, payload)
     }
 
     async fn build_create_client_message(

@@ -45,7 +45,7 @@ where
 
         let message = relay
             .src_chain()
-            .build_timeout_unordered_packet_message(payload)
+            .build_timeout_unordered_packet_message(packet, payload)
             .await
             .map_err(Relay::src_chain_error)?;
 

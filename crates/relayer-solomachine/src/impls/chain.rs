@@ -591,6 +591,7 @@ where
 
     async fn build_timeout_unordered_packet_message(
         &self,
+        packet: &Packet,
         counterparty_payload: CosmosTimeoutUnorderedPacketPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
         todo!()
@@ -824,6 +825,7 @@ where
 
     async fn build_timeout_unordered_packet_message(
         &self,
+        packet: &Packet,
         payload: SolomachineTimeoutUnorderedPacketPayload,
     ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
         todo!()

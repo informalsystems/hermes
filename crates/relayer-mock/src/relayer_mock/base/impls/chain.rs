@@ -483,6 +483,7 @@ impl CanBuildTimeoutUnorderedPacketPayload<MockChainContext> for MockChainContex
 impl CanBuildTimeoutUnorderedPacketMessage<MockChainContext> for MockChainContext {
     async fn build_timeout_unordered_packet_message(
         &self,
+        _packet: &PacketKey,
         payload: MockMessage,
     ) -> Result<MockMessage, Error> {
         Ok(payload)
