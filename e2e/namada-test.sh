@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script executes ibc-rs' E2E test for Namada locally
+# This script executes Hermes' E2E test for Namada locally
 # `make build-release` and `make build-wasm-scripts` on Namada directory in advance
 # Run with `namada-test.sh ${namada_dir}`
 

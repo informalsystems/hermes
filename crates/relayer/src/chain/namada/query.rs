@@ -1,8 +1,9 @@
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_relayer_types::events::{IbcEvent, IbcEventType};
+use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height as ICSHeight;
+use namada::ledger::events::EventType as NamadaEventType;
 use namada::ledger::queries::RPC;
 use namada::tendermint::block::Height as TmHeight;
 use namada::tendermint_rpc::Client;
@@ -243,33 +244,26 @@ impl NamadaChain {
             let event = into_abci_event(event);
             match ibc_event_try_from_abci_event(&event) {
                 Ok(e) => ibc_events.push(IbcEventWithHeight::new(e, height)),
-                Err(err) => {
+                Err(_) => {
+                    // check the transaction result
+                    if event.kind == NamadaEventType::Applied.to_string() {
+                        let success_code_tag = EventAttribute {
+                            key: "code".to_string(),
+                            value: "0".to_string(),
+                            index: true,
+                        };
+                        if !event.attributes.contains(&success_code_tag) {
+                            let ibc_event = IbcEventWithHeight::new(
+                                IbcEvent::ChainError(format!(
+                                    "The transaction was invalid: Event {:?}",
+                                    event,
+                                )),
+                                height,
+                            );
+                            ibc_events.push(ibc_event);
+                        }
+                    }
                     // skip special ibc-rs events
-                    if event.kind == "app_module"
-                        || event.kind == IbcEventType::ReceivePacket.as_str()
-                        || event.kind == "ibc_transfer"
-                        || event.kind == "denomination_trace"
-                        || event.kind == "fungible_token_packet"
-                        || event.kind == "timeout"
-                        || event.kind == "message"
-                    {
-                        continue;
-                    }
-                    let success_code_tag = EventAttribute {
-                        key: "code".to_string(),
-                        value: "0".to_string(),
-                        index: true,
-                    };
-                    if !event.attributes.contains(&success_code_tag) {
-                        let ibc_event = IbcEventWithHeight::new(
-                            IbcEvent::ChainError(format!(
-                                "The transaction was invalid: event {:?} error {}",
-                                event, err
-                            )),
-                            height,
-                        );
-                        ibc_events.push(ibc_event);
-                    }
                 }
             }
         }

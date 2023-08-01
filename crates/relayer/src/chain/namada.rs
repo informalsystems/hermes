@@ -44,7 +44,8 @@ use namada::proof_of_stake::parameters::PosParams;
 use namada::proof_of_stake::storage as pos_storage;
 use namada::tendermint::block::Height as TmHeight;
 use namada::tendermint_rpc::{Client, HttpClient, Url};
-use namada::types::storage::PrefixValue;
+use namada::types::address::{Address, InternalAddress};
+use namada::types::storage::{Key, KeySeg, PrefixValue};
 use namada::types::token;
 use namada_apps::wallet::CliWalletUtils;
 use prost::Message;
@@ -367,32 +368,42 @@ impl ChainEndpoint for NamadaChain {
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
         let key_name = key_name.unwrap_or(&self.config.key_name);
         let denom = denom.unwrap_or(tx::FEE_TOKEN);
+        let token = match self.wallet.find_address(denom) {
+            Some(addr) => addr.clone(),
+            None => Address::decode(&denom)
+                .map_err(|_| Error::namada_address_not_found(denom.to_string()))?,
+        };
 
         let owner = self
             .wallet
             .find_address(key_name)
             .ok_or_else(|| Error::namada_address_not_found(key_name.to_string()))?;
-        let token = storage::token(denom).map_err(|e| {
-            Error::query(format!(
-                "The denom for the balance query is invalid: denom {}, error {}",
-                denom, e
-            ))
-        })?;
 
         let balance_key = token::balance_key(&token, owner);
         let (value, _) = self.query(balance_key, QueryHeight::Latest, IncludeProof::No)?;
+        if value.is_empty() {
+            return Ok(Balance {
+                amount: "0".to_string(),
+                denom: denom.to_string(),
+            });
+        }
         let amount = token::Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+        let denom_key = token::denom_key(&token);
+        let (value, _) = self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
+        let namada_denom =
+            token::Denomination::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+        let denominated_amount = token::DenominatedAmount {
+            amount,
+            denom: namada_denom,
+        };
 
         Ok(Balance {
-            amount: amount.to_string_native(),
+            amount: denominated_amount.to_string(),
             denom: denom.to_string(),
         })
     }
 
     fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
-        use namada::types::address::{Address, InternalAddress};
-        use namada::types::storage::{Key, KeySeg};
-
         let key_name = key_name.unwrap_or(&self.config.key_name);
         let key_owner = self
             .wallet
@@ -406,9 +417,23 @@ impl ChainEndpoint for NamadaChain {
                 if key_owner == owner {
                     let amount =
                         token::Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+                    let denom_key = token::denom_key(&token);
+                    let (value, _) =
+                        self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
+                    let namada_denom = token::Denomination::try_from_slice(&value[..])
+                        .map_err(Error::borsh_decode)?;
+                    let denominated_amount = token::DenominatedAmount {
+                        amount,
+                        denom: namada_denom,
+                    };
+                    let alias = self
+                        .wallet
+                        .find_alias(token)
+                        .map(|a| a.to_string())
+                        .unwrap_or(token.to_string());
                     let balance = Balance {
-                        amount: amount.to_string_native(),
-                        denom: token.to_string(),
+                        amount: denominated_amount.to_string(),
+                        denom: alias,
                     };
                     balances.push(balance);
                 }
@@ -417,23 +442,14 @@ impl ChainEndpoint for NamadaChain {
         Ok(balances)
     }
 
-    // Query the denom trace with "{IbcToken}" which hash a hashed denom.
+    // Query the denom trace with "{IbcToken}" address which has a hashed denom.
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
-        let token_hash = match storage::token_hash_from_denom(&hash).map_err(|e| {
-            Error::query(format!(
-                "Parsing the denom failed: denom {}, error {}",
-                hash, e
-            ))
-        })? {
-            Some(h) => h,
-            None => {
-                return Err(Error::query(format!(
-                    "The denom doesn't have the IBC token hash: denom {}",
-                    hash
-                )))
-            }
+        let token = Address::decode(&hash)
+            .map_err(|_| Error::namada_address_not_found(hash.to_string()))?;
+        let key = match token {
+            Address::Internal(InternalAddress::IbcToken(hash)) => storage::ibc_denom_key(hash),
+            _ => return Err(Error::namada_address_not_found(token.to_string())),
         };
-        let key = storage::ibc_denom_key(token_hash);
         let (value, _) = self.query(key, QueryHeight::Latest, IncludeProof::No)?;
         let denom = String::try_from_slice(&value[..]).map_err(|e| {
             Error::query(format!(
@@ -741,10 +757,10 @@ impl ChainEndpoint for NamadaChain {
             if key == storage::channel_counter_key() {
                 continue;
             }
-            let port_channel_id =
+            let (port_id, channel_id) =
                 storage::port_channel_id(&key).map_err(|e| Error::query(e.to_string()))?;
-            let port_id = port_channel_id.port_id.as_ref().parse().unwrap();
-            let channel_id = port_channel_id.channel_id.as_ref().parse().unwrap();
+            let port_id = port_id.as_ref().parse().unwrap();
+            let channel_id = channel_id.as_ref().parse().unwrap();
             let channel = ChannelEnd::decode_vec(&value).map_err(Error::decode)?;
             channels.push(IdentifiedChannelEnd::new(port_id, channel_id, channel))
         }
@@ -1068,8 +1084,7 @@ impl ChainEndpoint for NamadaChain {
         );
         let encoded = namada::ibc_proto::protobuf::Protobuf::<
             namada::ibc_proto::google::protobuf::Any,
-        >::encode_vec(&cs)
-        .unwrap();
+        >::encode_vec(&cs);
         let consensus_state = Protobuf::<Any>::decode_vec(&encoded).unwrap();
         Ok(consensus_state)
     }
