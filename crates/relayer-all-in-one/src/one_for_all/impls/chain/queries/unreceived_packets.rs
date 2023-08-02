@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
-    CanQueryUnreceivedPacketSequences, CanQueryUnreceivedPackets,
+    CanQuerySendPacketsFromSequences, CanQueryUnreceivedPacketSequences,
 };
 
 use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
@@ -34,12 +34,14 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> CanQueryUnreceivedPackets<OfaChainWrapper<Counterparty>>
+impl<Chain, Counterparty> CanQuerySendPacketsFromSequences<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty> + OfaChainTypes,
     Counterparty: OfaIbcChain<Chain>,
 {
+    /// Given a list of sequences, a channel and port will query a list of outgoing
+    /// packets which have not been relayed.
     async fn query_unreceived_packets(
         &self,
         channel_id: &Self::ChannelId,

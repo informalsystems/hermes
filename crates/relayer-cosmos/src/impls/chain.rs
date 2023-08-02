@@ -567,6 +567,8 @@ where
         query_unreceived_packet_sequences(self, channel_id, port_id, sequences).await
     }
 
+    /// Given a list of sequences, a channel and port will query a list of outgoing
+    /// packets which have not been relayed.
     async fn query_unreceived_packets(
         &self,
         channel_id: &ChannelId,

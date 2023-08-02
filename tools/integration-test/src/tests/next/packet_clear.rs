@@ -1,7 +1,7 @@
 use ibc_relayer::config::PacketFilter;
 use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
 use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
-    CanQueryUnreceivedPacketSequences, CanQueryUnreceivedPackets,
+    CanQuerySendPacketsFromSequences, CanQueryUnreceivedPacketSequences,
 };
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
@@ -128,7 +128,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             info!("Assert query unreceived packets works as expected");
 
-            let unreceived_packets = CanQueryUnreceivedPackets::query_unreceived_packets(
+            let unreceived_packets = CanQuerySendPacketsFromSequences::query_unreceived_packets(
                 relay_context.relay_a_to_b().src_chain(),
                 channel.channel_id_a.value(),
                 channel.port_a.value(),
@@ -142,7 +142,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             assert_eq!(unreceived_packets.len(), 1);
 
-            let unreceived_packets = CanQueryUnreceivedPackets::query_unreceived_packets(
+            let unreceived_packets = CanQuerySendPacketsFromSequences::query_unreceived_packets(
                 relay_context.relay_a_to_b().dst_chain(),
                 channel.channel_id_b.value(),
                 channel.port_b.value(),

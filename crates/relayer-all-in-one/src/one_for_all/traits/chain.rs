@@ -352,6 +352,8 @@ where
         sequences: &[Counterparty::Sequence],
     ) -> Result<Vec<Counterparty::Sequence>, Self::Error>;
 
+    /// Given a list of sequences, a channel and port will query a list of outgoing
+    /// packets which have not been relayed.
     async fn query_unreceived_packets(
         &self,
         channel_id: &Self::ChannelId,

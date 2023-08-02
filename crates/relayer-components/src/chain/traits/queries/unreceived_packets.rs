@@ -23,11 +23,13 @@ where
 }
 
 #[async_trait]
-pub trait UnreceivedPacketsQuerier<Chain, Counterparty>
+pub trait SendPacketsFromSequencesQuerier<Chain, Counterparty>
 where
     Chain: HasIbcChainTypes<Counterparty> + HasIbcPacketTypes<Counterparty> + HasErrorType,
     Counterparty: HasIbcChainTypes<Chain>,
 {
+    /// Given a list of sequences, a channel and port will query a list of outgoing
+    /// packets which have not been relayed.
     async fn query_unreceived_packets(
         &self,
         channel_id: &Chain::ChannelId,
@@ -40,11 +42,13 @@ where
 }
 
 #[async_trait]
-pub trait CanQueryUnreceivedPackets<Counterparty>:
+pub trait CanQuerySendPacketsFromSequences<Counterparty>:
     HasIbcChainTypes<Counterparty> + HasIbcPacketTypes<Counterparty> + HasErrorType
 where
     Counterparty: HasIbcChainTypes<Self>,
 {
+    /// Given a list of sequences, a channel and port will query a list of outgoing
+    /// packets which have not been relayed.
     async fn query_unreceived_packets(
         &self,
         channel_id: &Self::ChannelId,

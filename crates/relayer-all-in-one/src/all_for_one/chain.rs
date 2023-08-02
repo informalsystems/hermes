@@ -4,7 +4,7 @@ use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQuery
 use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus;
 use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
-    CanQueryUnreceivedPacketSequences, CanQueryUnreceivedPackets,
+    CanQuerySendPacketsFromSequences, CanQueryUnreceivedPacketSequences,
 };
 use ibc_relayer_components::chain::traits::types::chain::HasChainTypes;
 use ibc_relayer_components::chain::traits::types::channel::{
@@ -35,7 +35,7 @@ pub trait AfoChain<Counterparty>:
     + CanQueryReceivedPacket<Counterparty>
     + CanQueryPacketCommitments<Counterparty>
     + CanQueryUnreceivedPacketSequences<Counterparty>
-    + CanQueryUnreceivedPackets<Counterparty>
+    + CanQuerySendPacketsFromSequences<Counterparty>
     + HasCreateClientOptions<Counterparty>
     + HasInitConnectionOptionsType<Counterparty>
     + HasConnectionHandshakePayloads<Counterparty>
@@ -74,7 +74,7 @@ where
         + CanQueryReceivedPacket<Counterparty>
         + CanQueryPacketCommitments<Counterparty>
         + CanQueryUnreceivedPacketSequences<Counterparty>
-        + CanQueryUnreceivedPackets<Counterparty>
+        + CanQuerySendPacketsFromSequences<Counterparty>
         + HasCreateClientOptions<Counterparty>
         + HasInitConnectionOptionsType<Counterparty>
         + HasConnectionHandshakePayloads<Counterparty>

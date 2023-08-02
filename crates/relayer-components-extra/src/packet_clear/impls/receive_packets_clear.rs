@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use futures_util::{stream, StreamExt};
 use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
 use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
-    CanQueryUnreceivedPacketSequences, CanQueryUnreceivedPackets,
+    CanQuerySendPacketsFromSequences, CanQueryUnreceivedPacketSequences,
 };
 use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
 use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
@@ -18,8 +18,8 @@ impl<Relay> ReceivePacketClearer<Relay> for ReceivePacketClearRelayer
 where
     Relay: HasRelayPacket + CanRelayPacket,
     Relay::DstChain: CanQueryUnreceivedPacketSequences<Relay::SrcChain>,
-    Relay::SrcChain:
-        CanQueryPacketCommitments<Relay::DstChain> + CanQueryUnreceivedPackets<Relay::DstChain>,
+    Relay::SrcChain: CanQueryPacketCommitments<Relay::DstChain>
+        + CanQuerySendPacketsFromSequences<Relay::DstChain>,
 {
     async fn clear_receive_packets(
         relay: &Relay,

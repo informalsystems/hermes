@@ -88,6 +88,8 @@ pub async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
     Ok(response_sequences)
 }
 
+/// Given a list of sequences, a channel and port will query a list of outgoing
+/// packets which have not been relayed.
 pub async fn query_unreceived_packets<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     channel_id: &ChannelId,
