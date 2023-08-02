@@ -64,7 +64,7 @@ type = 'namada'
 rpc_addr = 'http://127.0.0.1:27657'
 grpc_addr = 'http://127.0.0.1:9090'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:27657/websocket', batch_delay = '500ms' }
-account_prefix = 'cosmos'
+account_prefix = ''
 key_name = 'relayer'
 store_prefix = 'ibc'
 gas_price = { price = 0.001, denom = 'nam' }
@@ -119,8 +119,6 @@ function copy_wasm() {
 
   cp ${NAMADA_DIR}/wasm/checksums.json ${base_dir}/${chain_id}/setup/validator-0/.namada/${chain_id}/wasm/
   cp ${NAMADA_DIR}/wasm/*.wasm ${base_dir}/${chain_id}/setup/validator-0/.namada/${chain_id}/wasm/
-  cp ${NAMADA_DIR}/wasm/checksums.json ${base_dir}/${chain_id}/wasm/
-  cp ${NAMADA_DIR}/wasm/*.wasm ${base_dir}/${chain_id}/wasm/
 }
 
 function init_relayer_acc() {
@@ -135,7 +133,7 @@ function init_relayer_acc() {
     key gen --alias relayer --unsafe-dont-encrypt
 
   mkdir -p ${wallet_dir}
-  cp ${base_dir}/${chain_id}/wallet.toml ${wallet_dir}
+  ln -s ${base_dir}/${chain_id}/wallet.toml ${wallet_dir}
 }
 
 # ==== main ====

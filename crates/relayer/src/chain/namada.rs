@@ -390,11 +390,15 @@ impl ChainEndpoint for NamadaChain {
         let amount = token::Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
         let denom_key = token::denom_key(&token);
         let (value, _) = self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
-        let namada_denom =
-            token::Denomination::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
-        let denominated_amount = token::DenominatedAmount {
-            amount,
-            denom: namada_denom,
+        let denominated_amount = if value.is_empty() {
+            token::DenominatedAmount::native(amount)
+        } else {
+            let token_denom =
+                token::Denomination::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+            token::DenominatedAmount {
+                amount,
+                denom: token_denom,
+            }
         };
 
         Ok(Balance {
@@ -420,11 +424,15 @@ impl ChainEndpoint for NamadaChain {
                     let denom_key = token::denom_key(&token);
                     let (value, _) =
                         self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
-                    let namada_denom = token::Denomination::try_from_slice(&value[..])
-                        .map_err(Error::borsh_decode)?;
-                    let denominated_amount = token::DenominatedAmount {
-                        amount,
-                        denom: namada_denom,
+                    let denominated_amount = if value.is_empty() {
+                        token::DenominatedAmount::native(amount)
+                    } else {
+                        let namada_denom = token::Denomination::try_from_slice(&value[..])
+                            .map_err(Error::borsh_decode)?;
+                        token::DenominatedAmount {
+                            amount,
+                            denom: namada_denom,
+                        }
                     };
                     let alias = self
                         .wallet
