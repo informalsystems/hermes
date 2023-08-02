@@ -15,12 +15,15 @@ where
     Chain: OfaIbcChain<Counterparty> + OfaChainTypes,
     Counterparty: OfaIbcChain<Chain>,
 {
+    /// Given a list of counterparty commitment sequences,
+    /// return a filtered list of sequences which the chain
+    /// has not received the packet from the counterparty chain.
     async fn query_unreceived_packet_sequences(
         &self,
         channel_id: &Chain::ChannelId,
         port_id: &Chain::PortId,
         sequences: &[Counterparty::Sequence],
-    ) -> Result<(Vec<Chain::Sequence>, Chain::Height), Self::Error> {
+    ) -> Result<Vec<Counterparty::Sequence>, Self::Error> {
         let unreceived_packet_sequences = self
             .chain
             .query_unreceived_packet_sequences(channel_id, port_id, sequences)
@@ -43,8 +46,8 @@ where
         port_id: &Self::PortId,
         counterparty_channel_id: &Counterparty::ChannelId,
         counterparty_port_id: &Counterparty::PortId,
-        sequences: &[Counterparty::Sequence],
-        height: &Counterparty::Height,
+        sequences: &[Self::Sequence],
+        height: &Self::Height,
     ) -> Result<Vec<Self::OutgoingPacket>, Self::Error> {
         let unreceived_packet = self
             .chain

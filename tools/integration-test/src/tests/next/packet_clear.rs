@@ -78,7 +78,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
         runtime.block_on(async {
             info!("Assert query packet commitments works as expected");
 
-            let src_commitments: Vec<Sequence> =
+            let (src_commitments, src_height): (Vec<Sequence>, Height) =
                 CanQueryPacketCommitments::query_packet_commitments(
                     relay_context.relay_a_to_b().src_chain(),
                     channel.channel_id_a.value(),
@@ -89,7 +89,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             assert_eq!(src_commitments, vec!(Sequence::from(1)));
 
-            let dst_commitments: Vec<Sequence> =
+            let (dst_commitments, dst_height): (Vec<Sequence>, Height) =
                 CanQueryPacketCommitments::query_packet_commitments(
                     relay_context.relay_a_to_b().dst_chain(),
                     channel.channel_id_b.value(),
@@ -102,7 +102,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             info!("Assert query unreceived packet sequences works as expected");
 
-            let (unreceived_packet_sequences, height): (Vec<Sequence>, Height) =
+            let unreceived_packet_sequences: Vec<Sequence> =
                 CanQueryUnreceivedPacketSequences::query_unreceived_packet_sequences(
                     relay_context.relay_a_to_b().src_chain(),
                     channel.channel_id_a.value(),
@@ -114,7 +114,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             assert_eq!(unreceived_packet_sequences, vec!(Sequence::from(1)));
 
-            let (unreceived_packet_sequences, _): (Vec<Sequence>, Height) =
+            let unreceived_packet_sequences: Vec<Sequence> =
                 CanQueryUnreceivedPacketSequences::query_unreceived_packet_sequences(
                     relay_context.relay_a_to_b().dst_chain(),
                     channel.channel_id_b.value(),
@@ -135,7 +135,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
                 channel.channel_id_b.value(),
                 channel.port_b.value(),
                 &unreceived_packet_sequences,
-                &height,
+                &src_height,
             )
             .await
             .unwrap();
@@ -149,7 +149,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
                 channel.channel_id_a.value(),
                 channel.port_a.value(),
                 &unreceived_packet_sequences,
-                &height,
+                &dst_height,
             )
             .await
             .unwrap();

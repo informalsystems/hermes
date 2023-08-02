@@ -22,7 +22,7 @@ pub async fn query_packet_commitments<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     channel_id: &ChannelId,
     port_id: &PortId,
-) -> Result<Vec<Sequence>, Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     let mut client =
         ChannelQueryClient::connect(chain.tx_context.tx_context.tx_config.grpc_address.clone())
             .await
@@ -48,15 +48,23 @@ pub async fn query_packet_commitments<Chain: ChainHandle>(
         .map(|packet_state| packet_state.sequence.into())
         .collect();
 
-    Ok(commitment_sequences)
+    let raw_height = response
+        .height
+        .ok_or_else(|| BaseError::missing_height("query_packet_commitments".to_owned()))?;
+    let height = raw_height.try_into().map_err(BaseError::ics02)?;
+
+    Ok((commitment_sequences, height))
 }
 
+/// Given a list of counterparty commitment sequences,
+/// return a filtered list of sequences which the chain
+/// has not received the packet from the counterparty chain.
 pub async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     channel_id: &ChannelId,
     port_id: &PortId,
     sequences: &[Sequence],
-) -> Result<(Vec<Sequence>, Height), Error> {
+) -> Result<Vec<Sequence>, Error> {
     let mut client =
         ChannelQueryClient::connect(chain.tx_context.tx_context.tx_config.grpc_address.clone())
             .await
@@ -76,12 +84,8 @@ pub async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
         .map_err(|e| BaseError::grpc_status(e, "unreceived_packets".to_owned()))?
         .into_inner();
 
-    let raw_height = response
-        .height
-        .ok_or_else(|| BaseError::missing_height("query_unreceived_packets".to_owned()))?;
-    let height = raw_height.try_into().map_err(BaseError::ics02)?;
     let response_sequences = response.sequences.into_iter().map(|s| s.into()).collect();
-    Ok((response_sequences, height))
+    Ok(response_sequences)
 }
 
 pub async fn query_unreceived_packets<Chain: ChainHandle>(

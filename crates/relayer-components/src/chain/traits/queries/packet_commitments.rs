@@ -14,5 +14,5 @@ where
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
-    ) -> Result<Vec<Self::Sequence>, Self::Error>;
+    ) -> Result<(Vec<Self::Sequence>, Self::Height), Self::Error>;
 }

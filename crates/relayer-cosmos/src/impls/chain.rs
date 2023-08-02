@@ -547,16 +547,19 @@ where
         &self,
         channel_id: &ChannelId,
         port_id: &PortId,
-    ) -> Result<Vec<Sequence>, Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         query_packet_commitments(self, channel_id, port_id).await
     }
 
+    /// Given a list of counterparty commitment sequences,
+    /// return a filtered list of sequences which the chain
+    /// has not received the packet from the counterparty chain.
     async fn query_unreceived_packet_sequences(
         &self,
         channel_id: &ChannelId,
         port_id: &PortId,
         sequences: &[Sequence],
-    ) -> Result<(Vec<Sequence>, Height), Self::Error> {
+    ) -> Result<Vec<Sequence>, Self::Error> {
         query_unreceived_packet_sequences(self, channel_id, port_id, sequences).await
     }
 

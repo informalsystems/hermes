@@ -17,11 +17,11 @@ where
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
-    ) -> Result<Vec<Self::Sequence>, Self::Error> {
-        let sequences = self
+    ) -> Result<(Vec<Self::Sequence>, Self::Height), Self::Error> {
+        let (sequences, height) = self
             .chain
             .query_packet_commitments(channel_id, port_id)
             .await?;
-        Ok(sequences)
+        Ok((sequences, height))
     }
 }
