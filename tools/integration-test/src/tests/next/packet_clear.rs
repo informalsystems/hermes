@@ -39,6 +39,11 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
         let relay_context = build_cosmos_relay_context(&relayer.config, chains, pf)?;
 
+        let relay_a_to_b = relay_context.relay_a_to_b();
+        let relay_b_to_a = relay_context.relay_b_to_a();
+        let chain_a = relay_a_to_b.src_chain();
+        let chain_b = relay_a_to_b.dst_chain();
+
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
         let denom_a = chains.node_a.denom();
@@ -78,23 +83,15 @@ impl BinaryChannelTest for IbcClearPacketTest {
         runtime.block_on(async {
             info!("Assert query packet commitments works as expected");
 
-            let (src_commitments, src_height): (Vec<Sequence>, Height) =
-                CanQueryPacketCommitments::query_packet_commitments(
-                    relay_context.relay_a_to_b().src_chain(),
-                    channel.channel_id_a.value(),
-                    channel.port_a.value(),
-                )
+            let (src_commitments, src_height): (Vec<Sequence>, Height) = chain_a
+                .query_packet_commitments(channel.channel_id_a.value(), channel.port_a.value())
                 .await
                 .unwrap();
 
             assert_eq!(src_commitments, vec!(Sequence::from(1)));
 
-            let (dst_commitments, dst_height): (Vec<Sequence>, Height) =
-                CanQueryPacketCommitments::query_packet_commitments(
-                    relay_context.relay_a_to_b().dst_chain(),
-                    channel.channel_id_b.value(),
-                    channel.port_b.value(),
-                )
+            let (dst_commitments, dst_height): (Vec<Sequence>, Height) = chain_b
+                .query_packet_commitments(channel.channel_id_b.value(), channel.port_b.value())
                 .await
                 .unwrap();
 
@@ -102,9 +99,8 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             info!("Assert query unreceived packet sequences works as expected");
 
-            let unreceived_packet_sequences: Vec<Sequence> =
-                CanQueryUnreceivedPacketSequences::query_unreceived_packet_sequences(
-                    relay_context.relay_a_to_b().src_chain(),
+            let unreceived_packet_sequences: Vec<Sequence> = chain_a
+                .query_unreceived_packet_sequences(
                     channel.channel_id_a.value(),
                     channel.port_a.value(),
                     &src_commitments,
@@ -114,9 +110,8 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             assert_eq!(unreceived_packet_sequences, vec!(Sequence::from(1)));
 
-            let unreceived_packet_sequences: Vec<Sequence> =
-                CanQueryUnreceivedPacketSequences::query_unreceived_packet_sequences(
-                    relay_context.relay_a_to_b().dst_chain(),
+            let unreceived_packet_sequences: Vec<Sequence> = chain_b
+                .query_unreceived_packet_sequences(
                     channel.channel_id_b.value(),
                     channel.port_b.value(),
                     &src_commitments,
@@ -128,36 +123,35 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             info!("Assert query unreceived packets works as expected");
 
-            let unreceived_packets = CanQuerySendPacketsFromSequences::query_unreceived_packets(
-                relay_context.relay_a_to_b().src_chain(),
-                channel.channel_id_a.value(),
-                channel.port_a.value(),
-                channel.channel_id_b.value(),
-                channel.port_b.value(),
-                &unreceived_packet_sequences,
-                &src_height,
-            )
-            .await
-            .unwrap();
+            let unreceived_packets = chain_a
+                .query_unreceived_packets(
+                    channel.channel_id_a.value(),
+                    channel.port_a.value(),
+                    channel.channel_id_b.value(),
+                    channel.port_b.value(),
+                    &unreceived_packet_sequences,
+                    &src_height,
+                )
+                .await
+                .unwrap();
 
             assert_eq!(unreceived_packets.len(), 1);
 
-            let unreceived_packets = CanQuerySendPacketsFromSequences::query_unreceived_packets(
-                relay_context.relay_a_to_b().dst_chain(),
-                channel.channel_id_b.value(),
-                channel.port_b.value(),
-                channel.channel_id_a.value(),
-                channel.port_a.value(),
-                &unreceived_packet_sequences,
-                &dst_height,
-            )
-            .await
-            .unwrap();
+            let unreceived_packets = chain_b
+                .query_unreceived_packets(
+                    channel.channel_id_b.value(),
+                    channel.port_b.value(),
+                    channel.channel_id_a.value(),
+                    channel.port_a.value(),
+                    &unreceived_packet_sequences,
+                    &dst_height,
+                )
+                .await
+                .unwrap();
 
             assert_eq!(unreceived_packets.len(), 0);
 
-            let _ = relay_context
-                .relay_b_to_a()
+            let _ = relay_b_to_a
                 .clear_receive_packets(
                     channel.channel_id_a.value(),
                     channel.port_a.value(),
@@ -187,8 +181,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             assert_eq!(amount.value().amount, denom_b.with_amount(0u64).amount());
 
-            let _ = relay_context
-                .relay_a_to_b()
+            let _ = relay_a_to_b
                 .clear_receive_packets(
                     cloned_channel.channel_id_a.value(),
                     cloned_channel.port_a.value(),
