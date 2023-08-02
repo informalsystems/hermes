@@ -576,6 +576,9 @@ where
         counterparty_channel_id: &ChannelId,
         counterparty_port_id: &PortId,
         sequences: &[Sequence],
+        // The height is given to query the packets from a specific height.
+        // This height should be the same as the query height from the
+        // `CanQueryPacketCommitments` made on the same chain.
         height: &Height,
     ) -> Result<Vec<Packet>, Self::Error> {
         query_unreceived_packets(

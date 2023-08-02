@@ -37,6 +37,9 @@ where
         counterparty_channel_id: &Counterparty::ChannelId,
         counterparty_port_id: &Counterparty::PortId,
         sequences: &[Chain::Sequence],
+        // The height is given to query the packets from a specific height.
+        // This height should be the same as the query height from the
+        // `CanQueryPacketCommitments` made on the same chain.
         height: &Chain::Height,
     ) -> Result<Vec<Chain::OutgoingPacket>, Chain::Error>;
 }
@@ -56,6 +59,9 @@ where
         counterparty_channel_id: &Counterparty::ChannelId,
         counterparty_port_id: &Counterparty::PortId,
         sequences: &[Self::Sequence],
+        // The height is given to query the packets from a specific height.
+        // This height should be the same as the query height from the
+        // `CanQueryPacketCommitments` made on the same chain.
         height: &Self::Height,
     ) -> Result<Vec<Self::OutgoingPacket>, Self::Error>;
 }
