@@ -44,7 +44,7 @@ dyn-clone = "1.0.12"
 num-rational = "0.4.1"
 
 [dependencies.tendermint]
-version = "0.32.0"
+version = "0.33.0"
 features = ["clock"]
 
 [dependencies.tendermint-proto]
