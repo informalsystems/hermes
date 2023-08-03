@@ -327,7 +327,7 @@ impl BinaryChannelTest for RedundantAcksTest {
             ))
             .unwrap();
 
-        debug!("[1] Event emitted in response to Recv: {events1:#?}");
+        debug!("[1] Events emitted in response to Recv: {events1:#?}");
 
         info!("[2] Building client update on B");
 
@@ -415,7 +415,7 @@ impl BinaryChannelTest for RedundantAcksTest {
             .unwrap();
 
         info!(
-            "[3] Events emitted in resonse to redundant Ack and non-redundant Recv: {events3:#?}"
+            "[3] Events emitted in response to redundant Ack and non-redundant Recv: {events3:#?}"
         );
 
         Ok(())
