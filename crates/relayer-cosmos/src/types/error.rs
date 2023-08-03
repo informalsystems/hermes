@@ -72,6 +72,9 @@ define_error! {
         MissingSimulateGasInfo
             | _ | { "missing gas info returned from send_tx_simulate" },
 
+        MissingSendPacket
+            | _ | { "missing send packet" },
+
         CheckTx
             { response: Response }
             | e | { format_args!("check tx error: {:?}", e.response) },

@@ -354,7 +354,7 @@ where
 
     /// Given a list of sequences, a channel and port will query a list of outgoing
     /// packets which have not been relayed.
-    async fn query_unreceived_packets(
+    async fn query_send_packets_from_sequences(
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,

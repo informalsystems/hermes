@@ -42,7 +42,7 @@ where
 {
     /// Given a list of sequences, a channel and port will query a list of outgoing
     /// packets which have not been relayed.
-    async fn query_unreceived_packets(
+    async fn query_send_packets_from_sequences(
         &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
@@ -54,9 +54,9 @@ where
         // `CanQueryPacketCommitments` made on the same chain.
         height: &Self::Height,
     ) -> Result<Vec<Self::OutgoingPacket>, Self::Error> {
-        let unreceived_packet = self
+        let send_packets = self
             .chain
-            .query_unreceived_packets(
+            .query_send_packets_from_sequences(
                 channel_id,
                 port_id,
                 counterparty_channel_id,
@@ -65,6 +65,6 @@ where
                 height,
             )
             .await?;
-        Ok(unreceived_packet)
+        Ok(send_packets)
     }
 }

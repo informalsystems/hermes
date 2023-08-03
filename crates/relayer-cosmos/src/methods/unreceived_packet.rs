@@ -1,4 +1,7 @@
 use alloc::sync::Arc;
+use futures::stream::{self, StreamExt, TryStreamExt};
+use tonic::Request;
+
 use ibc_proto::ibc::core::channel::v1::query_client::QueryClient as ChannelQueryClient;
 use ibc_relayer::chain::cosmos::query::packet_query;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -13,7 +16,6 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::events::WithBlockDataType;
 use ibc_relayer_types::Height;
 use tendermint_rpc::{Client, Order};
-use tonic::Request;
 
 use crate::contexts::chain::CosmosChain;
 use crate::types::error::{BaseError, Error};
@@ -88,17 +90,17 @@ pub async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
     Ok(response_sequences)
 }
 
-/// Given a list of sequences, a channel and port will query a list of outgoing
-/// packets which have not been relayed.
-pub async fn query_unreceived_packets<Chain: ChainHandle>(
+/// Given a single sequence, a channel and port will query the outgoing
+/// packets if it hasn't been relayed.
+async fn query_send_packet_from_sequence<Chain: ChainHandle>(
     chain: &CosmosChain<Chain>,
     channel_id: &ChannelId,
     port_id: &PortId,
     counterparty_channel_id: &ChannelId,
     counterparty_port_id: &PortId,
-    sequences: &[Sequence],
+    sequence: &Sequence,
     height: &Height,
-) -> Result<Vec<Packet>, Error> {
+) -> Result<Packet, Error> {
     // The unreceived packet are queried from the source chain, so the destination
     // channel id and port id are the counterparty channel id and counterparty port id.
     let request = QueryPacketEventDataRequest {
@@ -107,37 +109,69 @@ pub async fn query_unreceived_packets<Chain: ChainHandle>(
         source_port_id: port_id.clone(),
         destination_channel_id: counterparty_channel_id.clone(),
         destination_port_id: counterparty_port_id.clone(),
-        sequences: sequences.to_vec(),
+        sequences: vec![*sequence],
         height: Qualified::SmallerEqual(QueryHeight::Specific(*height)),
     };
     let mut events = vec![];
-    for sequence in sequences.iter() {
-        let query = packet_query(&request, *sequence);
-        let response = chain
-            .tx_context
-            .tx_context
-            .rpc_client
-            .tx_search(query, false, 1, 10, Order::Descending)
-            .await
-            .unwrap();
-        for tx in response.txs.iter() {
-            let mut event = tx
-                .tx_result
-                .events
-                .iter()
-                .map(|event| Arc::new(event.clone()))
-                .collect();
-            events.append(&mut event);
-        }
+    let query = packet_query(&request, *sequence);
+    let response = chain
+        .tx_context
+        .tx_context
+        .rpc_client
+        .tx_search(query, false, 1, 10, Order::Descending)
+        .await
+        .map_err(BaseError::tendermint_rpc)?;
+
+    for tx in response.txs.iter() {
+        let mut event = tx
+            .tx_result
+            .events
+            .iter()
+            .map(|event| Arc::new(event.clone()))
+            .collect();
+        events.append(&mut event);
     }
 
-    let send_packets = events
+    let send_packets: Vec<Packet> = events
         .iter()
         .filter_map(<CosmosChain<Chain> as OfaChain>::try_extract_send_packet_event)
         .map(|event| {
             <CosmosChain<Chain> as OfaChain>::extract_packet_from_send_packet_event(&event)
         })
         .collect();
+
+    let send_packet = send_packets
+        .first()
+        .ok_or_else(BaseError::missing_send_packet)?;
+
+    Ok(send_packet.clone())
+}
+
+/// Given a list of sequences, a channel and port will query a list of outgoing
+/// packets which have not been relayed.
+pub async fn query_send_packets_from_sequences<Chain: ChainHandle>(
+    chain: &CosmosChain<Chain>,
+    channel_id: &ChannelId,
+    port_id: &PortId,
+    counterparty_channel_id: &ChannelId,
+    counterparty_port_id: &PortId,
+    sequences: &[Sequence],
+    height: &Height,
+) -> Result<Vec<Packet>, Error> {
+    let send_packets = stream::iter(sequences)
+        .then(|sequence| {
+            query_send_packet_from_sequence(
+                chain,
+                channel_id,
+                port_id,
+                counterparty_channel_id,
+                counterparty_port_id,
+                sequence,
+                height,
+            )
+        })
+        .try_collect::<Vec<_>>()
+        .await?;
 
     Ok(send_packets)
 }

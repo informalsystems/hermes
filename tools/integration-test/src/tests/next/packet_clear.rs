@@ -123,8 +123,8 @@ impl BinaryChannelTest for IbcClearPacketTest {
 
             info!("Assert query unreceived packets works as expected");
 
-            let unreceived_packets = chain_a
-                .query_unreceived_packets(
+            let send_packets = chain_a
+                .query_send_packets_from_sequences(
                     channel.channel_id_a.value(),
                     channel.port_a.value(),
                     channel.channel_id_b.value(),
@@ -135,10 +135,10 @@ impl BinaryChannelTest for IbcClearPacketTest {
                 .await
                 .unwrap();
 
-            assert_eq!(unreceived_packets.len(), 1);
+            assert_eq!(send_packets.len(), 1);
 
-            let unreceived_packets = chain_b
-                .query_unreceived_packets(
+            let send_packets = chain_b
+                .query_send_packets_from_sequences(
                     channel.channel_id_b.value(),
                     channel.port_b.value(),
                     channel.channel_id_a.value(),
@@ -146,10 +146,12 @@ impl BinaryChannelTest for IbcClearPacketTest {
                     &unreceived_packet_sequences,
                     &dst_height,
                 )
-                .await
-                .unwrap();
+                .await;
 
-            assert_eq!(unreceived_packets.len(), 0);
+            assert!(
+                send_packets.is_err(),
+                "There should be no send packets from Chain B"
+            );
 
             let _ = relay_b_to_a
                 .clear_receive_packets(

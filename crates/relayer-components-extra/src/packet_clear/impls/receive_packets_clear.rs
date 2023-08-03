@@ -41,8 +41,8 @@ where
             .await
             .map_err(Relay::dst_chain_error)?;
 
-        let unreceived_packets = src_chain
-            .query_unreceived_packets(
+        let send_packets = src_chain
+            .query_send_packets_from_sequences(
                 src_channel_id,
                 src_port_id,
                 dst_channel_id,
@@ -53,7 +53,7 @@ where
             .await
             .map_err(Relay::src_chain_error)?;
 
-        stream::iter(unreceived_packets)
+        stream::iter(send_packets)
             .for_each_concurrent(None, |t| async move {
                 // Ignore any relaying errors, as the relayer still needs to proceed
                 // relaying the next event regardless.

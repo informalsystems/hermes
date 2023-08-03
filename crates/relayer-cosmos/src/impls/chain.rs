@@ -60,7 +60,7 @@ use crate::methods::packet::{
     query_write_acknowledgement_event,
 };
 use crate::methods::unreceived_packet::{
-    query_packet_commitments, query_unreceived_packet_sequences, query_unreceived_packets,
+    query_packet_commitments, query_send_packets_from_sequences, query_unreceived_packet_sequences,
 };
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
 use crate::traits::message::CosmosMessage;
@@ -569,7 +569,7 @@ where
 
     /// Given a list of sequences, a channel and port will query a list of outgoing
     /// packets which have not been relayed.
-    async fn query_unreceived_packets(
+    async fn query_send_packets_from_sequences(
         &self,
         channel_id: &ChannelId,
         port_id: &PortId,
@@ -581,7 +581,7 @@ where
         // `CanQueryPacketCommitments` made on the same chain.
         height: &Height,
     ) -> Result<Vec<Packet>, Self::Error> {
-        query_unreceived_packets(
+        query_send_packets_from_sequences(
             self,
             channel_id,
             port_id,
