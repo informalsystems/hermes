@@ -13,6 +13,7 @@ use ibc_relayer_cosmos::traits::message::{CosmosMessage, ToCosmosMessage};
 use ibc_relayer_cosmos::types::error::{BaseError as CosmosBaseError, Error as CosmosError};
 use ibc_relayer_cosmos::types::messages::client::create::CosmosCreateClientMessage;
 use ibc_relayer_cosmos::types::messages::client::update::CosmosUpdateClientMessage;
+use ibc_relayer_cosmos::types::messages::connection::open_try::CosmosConnectionOpenTryMessage;
 use ibc_relayer_cosmos::types::payloads::channel::{
     CosmosChannelOpenAckPayload, CosmosChannelOpenConfirmPayload, CosmosChannelOpenTryPayload,
 };
@@ -28,12 +29,14 @@ use ibc_relayer_cosmos::types::payloads::packet::{
 };
 use ibc_relayer_cosmos::types::telemetry::CosmosTelemetry;
 use ibc_relayer_cosmos::types::tendermint::{TendermintClientState, TendermintConsensusState};
+use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
+use ibc_relayer_types::proofs::ConsensusProof;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 
@@ -41,6 +44,10 @@ use crate::methods::encode::client_state::encode_client_state;
 use crate::methods::encode::consensus_state::encode_consensus_state;
 use crate::methods::encode::header::encode_header;
 use crate::methods::encode::header_data::sign_header_data;
+use crate::methods::encode::sign_data::sign_with_data;
+use crate::methods::proofs::client_state::client_state_proof_data;
+use crate::methods::proofs::connection::connection_proof_data;
+use crate::methods::proofs::consensus_state::consensus_state_proof_data;
 use crate::traits::solomachine::SolomachineChain;
 use crate::types::chain::SolomachineChainWrapper;
 use crate::types::client_state::SolomachineClientState;
@@ -411,12 +418,78 @@ where
 
     async fn build_connection_open_try_payload(
         &self,
-        client_state: &SolomachineClientState,
+        solo_client_state: &SolomachineClientState,
         height: &Height,
         client_id: &ClientId,
         connection_id: &ConnectionId,
     ) -> Result<SolomachineConnectionOpenTryPayload, Chain::Error> {
-        todo!()
+        let connection = self.chain.query_connection(connection_id).await?;
+
+        if connection.state != ConnectionState::Init {
+            return Err(Chain::invalid_connection_state_error(
+                ConnectionState::Init,
+                connection.state,
+            ));
+        }
+
+        let versions = connection.versions().to_vec();
+
+        let delay_period = connection.delay_period();
+
+        let commitment_prefix = self.chain.commitment_prefix();
+
+        let connection_data = connection_proof_data(
+            solo_client_state,
+            commitment_prefix,
+            connection_id,
+            connection,
+        )
+        .map_err(Chain::encode_error)?;
+
+        let cosmos_client_state = self.chain.query_client_state(client_id).await?;
+
+        let client_state_data = client_state_proof_data(
+            solo_client_state,
+            commitment_prefix,
+            client_id,
+            &cosmos_client_state,
+        )
+        .map_err(Chain::encode_error)?;
+
+        let cosmos_consensus_state = self.chain.query_consensus_state(client_id, *height).await?;
+
+        let consensus_state_data = consensus_state_proof_data(
+            solo_client_state,
+            commitment_prefix,
+            client_id,
+            *height,
+            &cosmos_consensus_state,
+        )
+        .map_err(Chain::encode_error)?;
+
+        let secret_key = self.chain.secret_key();
+
+        let connection_proof =
+            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+
+        let client_state_proof =
+            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+
+        let consensus_state_proof =
+            sign_with_data(secret_key, &consensus_state_data).map_err(Chain::encode_error)?;
+
+        let payload = SolomachineConnectionOpenTryPayload {
+            commitment_prefix: commitment_prefix.to_string(),
+            client_state: cosmos_client_state,
+            versions,
+            delay_period,
+            update_height: *height,
+            proof_init: connection_proof,
+            proof_client: client_state_proof,
+            proof_consensus: consensus_state_proof,
+        };
+
+        Ok(payload)
     }
 
     async fn build_connection_open_ack_payload(
@@ -553,7 +626,7 @@ where
         &self,
         client_id: &ClientId,
     ) -> Result<TendermintClientState, Chain::Error> {
-        todo!()
+        self.chain.query_client_state(client_id).await
     }
 
     async fn query_consensus_state(
@@ -561,7 +634,7 @@ where
         client_id: &ClientId,
         height: &Height,
     ) -> Result<TendermintConsensusState, Chain::Error> {
-        todo!()
+        self.chain.query_consensus_state(client_id, *height).await
     }
 
     async fn query_is_packet_received(
@@ -798,6 +871,14 @@ where
         todo!()
     }
 
+    async fn find_consensus_state_height_before(
+        &self,
+        client_id: &ClientId,
+        target_height: &Height,
+    ) -> Result<Height, CosmosError> {
+        todo!()
+    }
+
     async fn query_is_packet_received(
         &self,
         port_id: &PortId,
@@ -865,14 +946,6 @@ where
         Ok(vec![message.to_cosmos_message()])
     }
 
-    async fn find_consensus_state_height_before(
-        &self,
-        client_id: &ClientId,
-        target_height: &Height,
-    ) -> Result<Height, CosmosError> {
-        todo!()
-    }
-
     async fn build_connection_open_init_message(
         &self,
         client_id: &ClientId,
@@ -888,9 +961,41 @@ where
         client_id: &ClientId,
         counterparty_client_id: &ClientId,
         counterparty_connection_id: &ConnectionId,
-        counterparty_payload: SolomachineConnectionOpenTryPayload,
+        payload: SolomachineConnectionOpenTryPayload,
     ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
-        todo!()
+        let counterparty_commitment_prefix = Vec::from(payload.commitment_prefix)
+            .try_into()
+            .map_err(CosmosBaseError::ics23)?;
+
+        let proof_init = Vec::from(payload.proof_init.serialize_compact())
+            .try_into()
+            .map_err(CosmosBaseError::proofs)?;
+
+        let proof_client: ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes = Vec::from(payload.proof_client.serialize_compact()).try_into()
+            .map_err(CosmosBaseError::proofs)?;
+
+        let consensus_signature = Vec::from(payload.proof_consensus.serialize_compact())
+            .try_into()
+            .map_err(CosmosBaseError::proofs)?;
+
+        let proof_consensus = ConsensusProof::new(consensus_signature, payload.update_height)
+            .map_err(CosmosBaseError::proofs)?;
+
+        let message = CosmosConnectionOpenTryMessage {
+            client_id: client_id.clone(),
+            counterparty_client_id: counterparty_client_id.clone(),
+            counterparty_connection_id: counterparty_connection_id.clone(),
+            counterparty_commitment_prefix,
+            counterparty_versions: payload.versions,
+            delay_period: payload.delay_period,
+            client_state: payload.client_state.into(),
+            update_height: payload.update_height,
+            proof_init,
+            proof_client,
+            proof_consensus,
+        };
+
+        Ok(message.to_cosmos_message())
     }
 
     async fn build_connection_open_ack_message(
