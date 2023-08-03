@@ -885,6 +885,7 @@ pub struct TxChanUpgradeTryCmd {
         long = "dst-channel",
         visible_alias = "dst-chan",
         required = true,
+        help_heading = "REQUIRED",
         value_name = "DST_CHANNEL_ID",
         help = "Identifier of the destination channel (optional)"
     )]
@@ -1038,6 +1039,8 @@ pub struct TxChanUpgradeAckCmd {
     #[clap(
         long = "dst-channel",
         visible_alias = "dst-chan",
+        required = true,
+        help_heading = "REQUIRED",
         value_name = "DST_CHANNEL_ID",
         help = "Identifier of the destination channel (optional)"
     )]
@@ -1182,6 +1185,8 @@ pub struct TxChanUpgradeOpenCmd {
     #[clap(
         long = "dst-channel",
         visible_alias = "dst-chan",
+        required = true,
+        help_heading = "REQUIRED",
         value_name = "DST_CHANNEL_ID",
         help = "Identifier of the destination channel (optional)"
     )]
