@@ -371,7 +371,7 @@ where
         target_height: &Height,
         client_state: SolomachineClientState,
     ) -> Result<SolomachineUpdateClientPayload, Chain::Error> {
-        // TODO: check that the public key is that same in the consensus state.
+        // TODO: check that the public key is the same in the consensus state.
         // We currently only support updating the diversifier but not the public key.
 
         let public_key = self.chain.public_key();
@@ -413,7 +413,13 @@ where
         &self,
         client_state: &SolomachineClientState,
     ) -> Result<SolomachineConnectionOpenInitPayload, Chain::Error> {
-        todo!()
+        let commitment_prefix = self.chain.commitment_prefix();
+
+        let payload = SolomachineConnectionOpenInitPayload {
+            commitment_prefix: commitment_prefix.to_string(),
+        };
+
+        Ok(payload)
     }
 
     async fn build_connection_open_try_payload(

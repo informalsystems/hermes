@@ -5,7 +5,9 @@ use ibc_relayer_types::core::ics03_connection::version::Version;
 use ibc_relayer_types::Height;
 use secp256k1::ecdsa::Signature;
 
-pub struct SolomachineConnectionOpenInitPayload {}
+pub struct SolomachineConnectionOpenInitPayload {
+    pub commitment_prefix: String,
+}
 
 pub struct SolomachineConnectionOpenTryPayload {
     pub commitment_prefix: String,
