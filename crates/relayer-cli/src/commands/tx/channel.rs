@@ -884,6 +884,7 @@ pub struct TxChanUpgradeTryCmd {
     #[clap(
         long = "dst-channel",
         visible_alias = "dst-chan",
+        required = true,
         value_name = "DST_CHANNEL_ID",
         help = "Identifier of the destination channel (optional)"
     )]
