@@ -20,6 +20,13 @@ pub struct SolomachineConnectionOpenTryPayload {
     pub proof_consensus: Signature,
 }
 
-pub struct SolomachineConnectionOpenAckPayload {}
+pub struct SolomachineConnectionOpenAckPayload {
+    pub client_state: TendermintClientState,
+    pub version: Version,
+    pub update_height: Height,
+    pub proof_try: Signature,
+    pub proof_client: Signature,
+    pub proof_consensus: Signature,
+}
 
 pub struct SolomachineConnectionOpenConfirmPayload {}

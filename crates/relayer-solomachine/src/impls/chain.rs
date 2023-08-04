@@ -413,7 +413,7 @@ where
 
     async fn build_connection_open_init_payload(
         &self,
-        client_state: &SolomachineClientState,
+        _client_state: &SolomachineClientState,
     ) -> Result<SolomachineConnectionOpenInitPayload, Chain::Error> {
         let commitment_prefix = self.chain.commitment_prefix();
 
@@ -507,7 +507,63 @@ where
         client_id: &ClientId,
         connection_id: &ConnectionId,
     ) -> Result<SolomachineConnectionOpenAckPayload, Chain::Error> {
-        todo!()
+        let connection = self.chain.query_connection(connection_id).await?;
+
+        if connection.state != ConnectionState::TryOpen {
+            return Err(Chain::invalid_connection_state_error(
+                ConnectionState::TryOpen,
+                connection.state,
+            ));
+        }
+
+        let commitment_prefix = self.chain.commitment_prefix();
+
+        let cosmos_client_state = self.chain.query_client_state(client_id).await?;
+
+        let client_state_data = client_state_proof_data(
+            client_state,
+            commitment_prefix,
+            client_id,
+            &cosmos_client_state,
+        )
+        .map_err(Chain::encode_error)?;
+
+        let cosmos_consensus_state = self.chain.query_consensus_state(client_id, *height).await?;
+
+        let consensus_state_data = consensus_state_proof_data(
+            client_state,
+            commitment_prefix,
+            client_id,
+            *height,
+            &cosmos_consensus_state,
+        )
+        .map_err(Chain::encode_error)?;
+        
+        let version = connection
+            .versions()
+            .iter()
+            .next()
+            .cloned()
+            .unwrap_or_default();
+
+        let secret_key = self.chain.secret_key();
+
+        let connection_proof = sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+
+        let client_state_proof = sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+
+        let consensus_state_proof = sign_with_data(secret_key, &consensus_state_data).map_err(Chain::encode_error)?;
+
+        let payload = SolomachineConnectionOpenAckPayload {
+            client_state: cosmos_client_state,
+            version,
+            update_height: *height,
+            proof_try: connection_proof,
+            proof_client: client_state_proof,
+            proof_consensus: consensus_state_proof,
+        };
+
+        Ok(payload)
     }
 
     async fn build_connection_open_confirm_payload(
