@@ -11,6 +11,7 @@ use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
 use ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages;
 use ibc_relayer_components::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
+use ibc_relayer_components::relay::traits::packet_clear::CanClearReceivePackets;
 use ibc_relayer_components::relay::traits::packet_filter::CanFilterPackets;
 use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
@@ -52,6 +53,7 @@ pub trait AfoRelay:
     + CanInitChannel
     + CanRelayChannelOpenHandshake
     + SupportsPacketRetry
+    + CanClearReceivePackets
 {
     type AfoSrcChain: AfoChain<Self::AfoDstChain>;
 
@@ -91,7 +93,8 @@ where
         + CanRelayConnectionOpenHandshake
         + CanInitChannel
         + CanRelayChannelOpenHandshake
-        + SupportsPacketRetry,
+        + SupportsPacketRetry
+        + CanClearReceivePackets,
 {
     type AfoSrcChain = SrcChain;
 

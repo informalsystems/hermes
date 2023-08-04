@@ -40,7 +40,7 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let packet = packet.clone();
+            let packet = packet;
 
             Ok(CosmosReceivePacketPayload {
                 packet,
@@ -86,7 +86,7 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
                 .map_err(BaseError::relayer)?;
 
             let packet = packet.clone();
-            let ack = ack.ack.clone();
+            let ack = ack.ack;
 
             Ok(CosmosAckPacketPayload {
                 packet,
@@ -131,7 +131,7 @@ pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let packet = packet.clone();
+            let packet = packet;
 
             Ok(CosmosTimeoutUnorderedPacketPayload {
                 packet,

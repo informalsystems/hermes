@@ -274,8 +274,8 @@ pub fn build_connection_open_ack_message(
     let counterparty_connection_id = counterparty_connection_id.clone();
 
     let message = CosmosConnectionOpenAckMessage {
-        connection_id: connection_id.clone(),
-        counterparty_connection_id: counterparty_connection_id.clone(),
+        connection_id,
+        counterparty_connection_id,
         version: counterparty_payload.version,
         client_state: counterparty_payload.client_state.into(),
         update_height: counterparty_payload.update_height,
