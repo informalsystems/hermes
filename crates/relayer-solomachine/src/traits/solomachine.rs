@@ -7,7 +7,11 @@ use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_cosmos::types::tendermint::{TendermintClientState, TendermintConsensusState};
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
+use ibc_relayer_types::core::ics04_channel::channel::ChannelEnd;
+use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
+use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc_relayer_types::Height;
 use prost::EncodeError;
@@ -35,6 +39,8 @@ pub trait SolomachineChain: Async {
         expected: ConnectionState,
         actual: ConnectionState,
     ) -> Self::Error;
+
+    fn invalid_channel_state_error(expected: ChannelState, actual: ChannelState) -> Self::Error;
 
     fn public_key(&self) -> &PublicKey;
 
@@ -71,6 +77,12 @@ pub trait SolomachineChain: Async {
         &self,
         connection_id: &ConnectionId,
     ) -> Result<ConnectionEnd, Self::Error>;
+
+    async fn query_channel(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+    ) -> Result<ChannelEnd, Self::Error>;
 
     async fn handle_receive_packet(&self, packet: &Packet) -> Result<Vec<u8>, Self::Error>;
 }

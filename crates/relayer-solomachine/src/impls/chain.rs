@@ -30,6 +30,7 @@ use ibc_relayer_cosmos::types::payloads::packet::{
 use ibc_relayer_cosmos::types::telemetry::CosmosTelemetry;
 use ibc_relayer_cosmos::types::tendermint::{TendermintClientState, TendermintConsensusState};
 use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
+use ibc_relayer_types::core::ics04_channel::channel::State;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
@@ -45,6 +46,7 @@ use crate::methods::encode::consensus_state::encode_consensus_state;
 use crate::methods::encode::header::encode_header;
 use crate::methods::encode::header_data::sign_header_data;
 use crate::methods::encode::sign_data::sign_with_data;
+use crate::methods::proofs::channel::channel_proof_data;
 use crate::methods::proofs::client_state::client_state_proof_data;
 use crate::methods::proofs::connection::connection_proof_data;
 use crate::methods::proofs::consensus_state::consensus_state_proof_data;
@@ -519,7 +521,39 @@ where
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> Result<SolomachineChannelOpenTryPayload, Chain::Error> {
-        todo!()
+        let channel = self.chain.query_channel(channel_id, port_id).await?;
+
+        if channel.state != State::Init {
+            return Err(Chain::invalid_channel_state_error(
+                State::Init,
+                channel.state,
+            ));
+        }
+
+        let ordering = *channel.ordering();
+        let connection_hops = channel.connection_hops().clone();
+        let version = channel.version().clone();
+
+        let commitment_prefix = self.chain.commitment_prefix();
+
+        let channel_state_data =
+            channel_proof_data(client_state, commitment_prefix, channel_id, channel)
+                .map_err(Chain::encode_error)?;
+
+        let secret_key = self.chain.secret_key();
+
+        let channel_proof =
+            sign_with_data(secret_key, &channel_state_data).map_err(Chain::encode_error)?;
+
+        let payload = SolomachineChannelOpenTryPayload {
+            ordering,
+            connection_hops,
+            version,
+            update_height: *height,
+            proof_init: channel_proof,
+        };
+
+        Ok(payload)
     }
 
     async fn build_channel_open_ack_payload(
