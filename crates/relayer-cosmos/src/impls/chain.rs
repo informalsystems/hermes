@@ -6,7 +6,6 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::event::{
     channel_open_init_try_from_abci_event, channel_open_try_try_from_abci_event,
     connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
-    extract_packet_and_write_ack_from_tx,
 };
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -53,7 +52,9 @@ use crate::methods::connection::{
 };
 use crate::methods::consensus_state::{find_consensus_state_height_before, query_consensus_state};
 use crate::methods::create_client::{build_create_client_message, build_create_client_payload};
-use crate::methods::event::try_extract_send_packet_event;
+use crate::methods::event::{
+    try_extract_send_packet_event, try_extract_write_acknowledgement_event,
+};
 use crate::methods::packet::{
     build_ack_packet_message, build_ack_packet_payload, build_receive_packet_message,
     build_receive_packet_payload, build_timeout_unordered_packet_message,
@@ -227,18 +228,7 @@ where
     fn try_extract_write_acknowledgement_event(
         event: &Arc<AbciEvent>,
     ) -> Option<WriteAcknowledgement> {
-        if let IbcEventType::WriteAck = event.kind.parse().ok()? {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event).ok()?;
-
-            let ack = WriteAcknowledgement {
-                packet,
-                ack: write_ack,
-            };
-
-            Some(ack)
-        } else {
-            None
-        }
+        try_extract_write_acknowledgement_event(event)
     }
 
     fn try_extract_send_packet_event(event: &Arc<AbciEvent>) -> Option<SendPacket> {
