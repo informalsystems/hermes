@@ -538,7 +538,7 @@ where
             &cosmos_consensus_state,
         )
         .map_err(Chain::encode_error)?;
-        
+
         let version = connection
             .versions()
             .iter()
@@ -548,11 +548,14 @@ where
 
         let secret_key = self.chain.secret_key();
 
-        let connection_proof = sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+        let connection_proof =
+            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
 
-        let client_state_proof = sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+        let client_state_proof =
+            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
 
-        let consensus_state_proof = sign_with_data(secret_key, &consensus_state_data).map_err(Chain::encode_error)?;
+        let consensus_state_proof =
+            sign_with_data(secret_key, &consensus_state_data).map_err(Chain::encode_error)?;
 
         let payload = SolomachineConnectionOpenAckPayload {
             client_state: cosmos_client_state,
@@ -571,9 +574,29 @@ where
         client_state: &SolomachineClientState,
         height: &Height,
         client_id: &ClientId,
-        connection_id: &ConnectionId,
+        _connection_id: &ConnectionId,
     ) -> Result<SolomachineConnectionOpenConfirmPayload, Chain::Error> {
-        todo!()
+        let secret_key = self.chain.secret_key();
+        let commitment_prefix = self.chain.commitment_prefix();
+        let cosmos_client_state = self.chain.query_client_state(client_id).await?;
+
+        let client_state_data = client_state_proof_data(
+            client_state,
+            commitment_prefix,
+            client_id,
+            &cosmos_client_state,
+        )
+        .map_err(Chain::encode_error)?;
+
+        let connection_proof =
+            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+
+        let payload = SolomachineConnectionOpenConfirmPayload {
+            update_height: *height,
+            proof_ack: connection_proof,
+        };
+
+        Ok(payload)
     }
 
     async fn build_channel_open_try_payload(

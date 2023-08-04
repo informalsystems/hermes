@@ -29,4 +29,7 @@ pub struct SolomachineConnectionOpenAckPayload {
     pub proof_consensus: Signature,
 }
 
-pub struct SolomachineConnectionOpenConfirmPayload {}
+pub struct SolomachineConnectionOpenConfirmPayload {
+    pub update_height: Height,
+    pub proof_ack: Signature,
+}
