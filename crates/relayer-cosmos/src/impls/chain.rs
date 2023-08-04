@@ -53,6 +53,7 @@ use crate::methods::connection::{
 };
 use crate::methods::consensus_state::{find_consensus_state_height_before, query_consensus_state};
 use crate::methods::create_client::{build_create_client_message, build_create_client_payload};
+use crate::methods::event::try_extract_send_packet_event;
 use crate::methods::packet::{
     build_ack_packet_message, build_ack_packet_payload, build_receive_packet_message,
     build_receive_packet_payload, build_timeout_unordered_packet_message,
@@ -241,17 +242,7 @@ where
     }
 
     fn try_extract_send_packet_event(event: &Arc<AbciEvent>) -> Option<SendPacket> {
-        let event_type = event.kind.parse().ok()?;
-
-        if let IbcEventType::SendPacket = event_type {
-            let (packet, _) = extract_packet_and_write_ack_from_tx(event).ok()?;
-
-            let send_packet_event = SendPacket { packet };
-
-            Some(send_packet_event)
-        } else {
-            None
-        }
+        try_extract_send_packet_event(event)
     }
 
     fn extract_packet_from_send_packet_event(event: &SendPacket) -> Packet {

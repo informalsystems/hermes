@@ -18,6 +18,7 @@ use ibc_relayer_types::Height;
 use tendermint_rpc::{Client, Order};
 
 use crate::contexts::chain::CosmosChain;
+use crate::methods::event::try_extract_send_packet_event;
 use crate::types::error::{BaseError, Error};
 
 pub async fn query_packet_commitments<Chain: ChainHandle>(
@@ -134,7 +135,7 @@ async fn query_send_packet_from_sequence<Chain: ChainHandle>(
 
     let send_packets: Vec<Packet> = events
         .iter()
-        .filter_map(<CosmosChain<Chain> as OfaChain>::try_extract_send_packet_event)
+        .filter_map(try_extract_send_packet_event)
         .map(|event| {
             <CosmosChain<Chain> as OfaChain>::extract_packet_from_send_packet_event(&event)
         })
