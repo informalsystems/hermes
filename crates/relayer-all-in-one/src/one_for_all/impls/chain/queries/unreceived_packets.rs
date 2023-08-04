@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 
-use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
-    CanQuerySendPacketsFromSequences, CanQueryUnreceivedPacketSequences,
-};
+use ibc_relayer_components::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
+use ibc_relayer_components::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
 
 use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;

@@ -1,9 +1,8 @@
 use async_trait::async_trait;
 use futures_util::{stream, StreamExt};
 use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
-use ibc_relayer_components::chain::traits::queries::unreceived_packets::{
-    CanQuerySendPacketsFromSequences, CanQueryUnreceivedPacketSequences,
-};
+use ibc_relayer_components::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
+use ibc_relayer_components::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
 use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
 use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
 use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
