@@ -1,4 +1,4 @@
-use ibc_relayer_components::core::traits::sync::Async;
+use crate::core::traits::sync::Async;
 
 pub trait HasClearInterval {
     type ClearInterval: Async + Clone + Into<u64>;

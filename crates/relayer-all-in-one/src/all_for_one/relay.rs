@@ -11,6 +11,7 @@ use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
 use ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages;
 use ibc_relayer_components::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
+use ibc_relayer_components::relay::traits::packet_clear::CanClearReceivePackets;
 use ibc_relayer_components::relay::traits::packet_filter::CanFilterPackets;
 use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
@@ -18,7 +19,6 @@ use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::CanR
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_components_extra::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
-use ibc_relayer_components_extra::packet_clear::traits::packet_clear::CanClearReceivePackets;
 use ibc_relayer_components_extra::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 
 use crate::all_for_one::chain::AfoChain;

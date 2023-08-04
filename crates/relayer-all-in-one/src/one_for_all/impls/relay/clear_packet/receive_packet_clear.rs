@@ -1,8 +1,9 @@
 use async_trait::async_trait;
+
 use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
+use ibc_relayer_components::relay::impls::packet_clear::receive_packets_clear::ReceivePacketClearRelayer;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
-use ibc_relayer_components_extra::packet_clear::impls::receive_packets_clear::ReceivePacketClearRelayer;
-use ibc_relayer_components_extra::packet_clear::traits::packet_clear::{
+use ibc_relayer_components::relay::traits::packet_clear::{
     CanClearReceivePackets, ReceivePacketClearer,
 };
 

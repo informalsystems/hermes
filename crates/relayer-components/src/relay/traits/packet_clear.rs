@@ -1,7 +1,8 @@
 use async_trait::async_trait;
-use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
-use ibc_relayer_components::core::traits::sync::Async;
-use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
+
+use crate::chain::types::aliases::{ChannelId, PortId};
+use crate::core::traits::sync::Async;
+use crate::relay::traits::packet::HasRelayPacket;
 
 use crate::std_prelude::*;
 

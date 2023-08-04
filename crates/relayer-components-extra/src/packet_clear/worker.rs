@@ -1,16 +1,15 @@
-use core::time::Duration;
-use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
-
 use async_trait::async_trait;
+use core::time::Duration;
+
+use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
+use ibc_relayer_components::relay::traits::clear_interval::HasClearInterval;
+use ibc_relayer_components::relay::traits::packet_clear::CanClearReceivePackets;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 
-use crate::packet_clear::traits::packet_clear::CanClearReceivePackets;
 use crate::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
 use crate::std_prelude::*;
-
-use super::traits::clear_interval::HasClearInterval;
 
 #[async_trait]
 pub trait CanSpawnPacketClearWorker: HasRelayChains {

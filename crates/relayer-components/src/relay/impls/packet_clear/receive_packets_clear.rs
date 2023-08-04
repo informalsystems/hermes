@@ -1,13 +1,14 @@
 use async_trait::async_trait;
-use futures_util::{stream, StreamExt};
-use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
-use ibc_relayer_components::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
-use ibc_relayer_components::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
-use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
-use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
-use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
+use futures_util::stream;
+use futures_util::StreamExt;
 
-use crate::packet_clear::traits::packet_clear::ReceivePacketClearer;
+use crate::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
+use crate::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
+use crate::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
+use crate::chain::types::aliases::{ChannelId, PortId};
+use crate::relay::traits::packet::HasRelayPacket;
+use crate::relay::traits::packet_clear::ReceivePacketClearer;
+use crate::relay::traits::packet_relayer::CanRelayPacket;
 use crate::std_prelude::*;
 
 pub struct ReceivePacketClearRelayer;
