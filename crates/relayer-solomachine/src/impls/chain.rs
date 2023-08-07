@@ -542,13 +542,9 @@ where
         )
         .map_err(Chain::encode_error)?;
 
-        let connection_data = connection_proof_data(
-            client_state,
-            commitment_prefix,
-            connection_id,
-            connection,
-        )
-        .map_err(Chain::encode_error)?;
+        let connection_data =
+            connection_proof_data(client_state, commitment_prefix, connection_id, connection)
+                .map_err(Chain::encode_error)?;
 
         let cosmos_consensus_state = self.chain.query_consensus_state(client_id, *height).await?;
 
@@ -953,7 +949,8 @@ where
         connection_id: &ConnectionId,
         counterparty_payload: CosmosConnectionOpenConfirmPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        let message = SolomachineMessage::CosmosConnectionOpenConfirm(Box::new(counterparty_payload));
+        let message =
+            SolomachineMessage::CosmosConnectionOpenConfirm(Box::new(counterparty_payload));
 
         Ok(message)
     }
