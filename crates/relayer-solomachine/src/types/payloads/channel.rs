@@ -13,6 +13,10 @@ pub struct SolomachineChannelOpenTryPayload {
     pub proof_init: Signature,
 }
 
-pub struct SolomachineChannelOpenAckPayload {}
+pub struct SolomachineChannelOpenAckPayload {
+    pub version: Version,
+    pub update_height: Height,
+    pub proof_try: Signature,
+}
 
 pub struct SolomachineChannelOpenConfirmPayload {}

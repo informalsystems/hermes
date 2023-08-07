@@ -648,7 +648,35 @@ where
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> Result<SolomachineChannelOpenAckPayload, Chain::Error> {
-        todo!()
+        let channel = self.chain.query_channel(channel_id, port_id).await?;
+
+        if channel.state != State::TryOpen {
+            return Err(Chain::invalid_channel_state_error(
+                State::Init,
+                channel.state,
+            ));
+        }
+
+        let version = channel.version().clone();
+
+        let commitment_prefix = self.chain.commitment_prefix();
+
+        let channel_state_data =
+            channel_proof_data(client_state, commitment_prefix, channel_id, channel)
+                .map_err(Chain::encode_error)?;
+
+        let secret_key = self.chain.secret_key();
+
+        let channel_proof =
+            sign_with_data(secret_key, &channel_state_data).map_err(Chain::encode_error)?;
+
+        let payload = SolomachineChannelOpenAckPayload {
+            version,
+            update_height: *height,
+            proof_try: channel_proof,
+        };
+
+        Ok(payload)
     }
 
     async fn build_channel_open_confirm_payload(
