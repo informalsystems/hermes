@@ -523,6 +523,13 @@ where
             ));
         }
 
+        let version = connection
+            .versions()
+            .iter()
+            .next()
+            .cloned()
+            .unwrap_or_default();
+
         let commitment_prefix = self.chain.commitment_prefix();
 
         let cosmos_client_state = self.chain.query_client_state(client_id).await?;
@@ -532,6 +539,14 @@ where
             commitment_prefix,
             client_id,
             &cosmos_client_state,
+        )
+        .map_err(Chain::encode_error)?;
+
+        let connection_data = connection_proof_data(
+            client_state,
+            commitment_prefix,
+            connection_id,
+            connection,
         )
         .map_err(Chain::encode_error)?;
 
@@ -546,17 +561,10 @@ where
         )
         .map_err(Chain::encode_error)?;
 
-        let version = connection
-            .versions()
-            .iter()
-            .next()
-            .cloned()
-            .unwrap_or_default();
-
         let secret_key = self.chain.secret_key();
 
         let connection_proof =
-            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+            sign_with_data(secret_key, &connection_data).map_err(Chain::encode_error)?;
 
         let client_state_proof =
             sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
