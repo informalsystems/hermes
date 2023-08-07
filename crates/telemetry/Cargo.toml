@@ -23,7 +23,7 @@ moka                     = "0.11.2"
 dashmap                  = "5.4.0"
 serde_json               = "1.0.94"
 serde                    = "1.0.166"
-axum                     = "0.6.18"
+axum                     = "0.6.20"
 tokio                    = "1.26.0"
 tracing                  = "0.1.36"
 
