@@ -12,9 +12,10 @@ OPTIONS:
             Height that, once it has been surpassed on the originating chain, the upgrade will time
             out. Required if no timeout timestamp is specified.
 
-        --timeout-timestamp <TIMEOUT_TIMESTAMP>
-            Timestamp that, once it has been surpassed on the originating chain, the upgrade will
-            time out. Required if no timeout height is specified.
+        --timeout-time <TIMEOUT_TIME>
+            Timeout in human readable format since current that, once it has been surpassed on the
+            originating chain, the upgrade will time out. Required if no timeout height is
+            specified.
 
 REQUIRED:
         --dst-chain <DST_CHAIN_ID>
