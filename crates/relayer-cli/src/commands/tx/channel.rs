@@ -1,7 +1,7 @@
-use core::time::Duration;
-
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::Command;
+use abscissa_core::Runnable;
+use humantime::Duration as HumanDuration;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
@@ -15,7 +15,6 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
 use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 
 use crate::cli_utils::ChainHandlePair;
@@ -741,12 +740,12 @@ pub struct TxChanUpgradeInitCmd {
     timeout_height: Option<Height>,
 
     #[clap(
-        long = "timeout-timestamp",
+        long = "timeout-time",
         required = false,
-        value_name = "TIMEOUT_TIMESTAMP",
-        help = "Timestamp that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout height is specified."
+        value_name = "TIMEOUT_TIME",
+        help = "Timeout in human readable format since current that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout height is specified."
     )]
-    timeout_timestamp: u64,
+    timeout_time: Option<HumanDuration>,
 }
 
 impl Runnable for TxChanUpgradeInitCmd {
@@ -758,15 +757,14 @@ impl Runnable for TxChanUpgradeInitCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let dst_chain_status = chains.dst.query_application_status().unwrap();
-
-        let timeout_timestamp = if self.timeout_timestamp > 0 {
-            Some(
-                (dst_chain_status.timestamp + Duration::from_secs(self.timeout_timestamp)).unwrap(),
-            )
-        } else {
-            None
+        let dst_chain_status = match chains.dst.query_application_status() {
+            Ok(application_status) => application_status,
+            Err(e) => Output::error(format!("query_application_status error {}", e)).exit(),
         };
+
+        let timeout_timestamp = self
+            .timeout_time
+            .map(|timeout_time| (dst_chain_status.timestamp + *timeout_time).unwrap());
 
         // Check that at least one of timeout_height and timeout_timestamp has been provided
         let Ok(timeout) = UpgradeTimeout::new(self.timeout_height, timeout_timestamp) else {
@@ -900,20 +898,34 @@ pub struct TxChanUpgradeTryCmd {
     timeout_height: Option<Height>,
 
     #[clap(
-        long = "timeout-timestamp",
+        long = "timeout-time",
         required = false,
-        value_name = "TIMEOUT_TIMESTAMP",
-        help = "Timestamp that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout height is specified."
+        value_name = "TIMEOUT_TIME",
+        help = "Timeout in human readable format since current that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout height is specified."
     )]
-    timeout_timestamp: Option<Timestamp>,
+    timeout_time: Option<HumanDuration>,
 }
 
 impl Runnable for TxChanUpgradeTryCmd {
     fn run(&self) {
         let config = app_config();
 
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
+            Ok(chains) => chains,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
+
+        let dst_chain_status = match chains.dst.query_application_status() {
+            Ok(application_status) => application_status,
+            Err(e) => Output::error(format!("query_application_status error {}", e)).exit(),
+        };
+
+        let timeout_timestamp = self
+            .timeout_time
+            .map(|timeout_time| (dst_chain_status.timestamp + *timeout_time).unwrap());
+
         // Check that at least one of timeout_height and timeout_timestamp has been provided
-        let Ok(timeout) = UpgradeTimeout::new(self.timeout_height, self.timeout_timestamp) else {
+        let Ok(timeout) = UpgradeTimeout::new(self.timeout_height, timeout_timestamp) else {
             Output::error(
                 "At least one of --timeout-height or --timeout-timestamp must be specified.",
             )
@@ -1045,22 +1057,6 @@ pub struct TxChanUpgradeAckCmd {
         help = "Identifier of the destination channel (optional)"
     )]
     dst_chan_id: Option<ChannelId>,
-
-    #[clap(
-        long = "timeout-height",
-        required = false,
-        value_name = "TIMEOUT_HEIGHT",
-        help = "Height that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout timestamp is specified."
-    )]
-    timeout_height: Option<Height>,
-
-    #[clap(
-        long = "timeout-timestamp",
-        required = false,
-        value_name = "TIMEOUT_TIMESTAMP",
-        help = "Timestamp that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout height is specified."
-    )]
-    timeout_timestamp: Option<Timestamp>,
 }
 
 impl Runnable for TxChanUpgradeAckCmd {
@@ -1191,22 +1187,6 @@ pub struct TxChanUpgradeOpenCmd {
         help = "Identifier of the destination channel (optional)"
     )]
     dst_chan_id: Option<ChannelId>,
-
-    #[clap(
-        long = "timeout-height",
-        required = false,
-        value_name = "TIMEOUT_HEIGHT",
-        help = "Height that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout timestamp is specified."
-    )]
-    timeout_height: Option<Height>,
-
-    #[clap(
-        long = "timeout-timestamp",
-        required = false,
-        value_name = "TIMEOUT_TIMESTAMP",
-        help = "Timestamp that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout height is specified."
-    )]
-    timeout_timestamp: Option<Timestamp>,
 }
 
 impl Runnable for TxChanUpgradeOpenCmd {
@@ -1268,17 +1248,17 @@ impl Runnable for TxChanUpgradeOpenCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        TxChanCloseConfirmCmd, TxChanCloseInitCmd, TxChanOpenAckCmd, TxChanOpenConfirmCmd,
-        TxChanOpenInitCmd, TxChanOpenTryCmd,
-    };
-
+    use abscissa_core::clap::Parser;
     use std::str::FromStr;
 
-    use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::{
         ics04_channel::channel::Ordering,
         ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId},
+    };
+
+    use crate::commands::tx::channel::{
+        TxChanCloseConfirmCmd, TxChanCloseInitCmd, TxChanOpenAckCmd, TxChanOpenConfirmCmd,
+        TxChanOpenInitCmd, TxChanOpenTryCmd,
     };
 
     #[test]
