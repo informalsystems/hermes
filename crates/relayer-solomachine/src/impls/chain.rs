@@ -11,6 +11,7 @@ use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_cosmos::contexts::chain::CosmosChain;
 use ibc_relayer_cosmos::traits::message::{CosmosMessage, ToCosmosMessage};
 use ibc_relayer_cosmos::types::error::{BaseError as CosmosBaseError, Error as CosmosError};
+use ibc_relayer_cosmos::types::messages::channel::open_try::CosmosChannelOpenTryMessage;
 use ibc_relayer_cosmos::types::messages::client::create::CosmosCreateClientMessage;
 use ibc_relayer_cosmos::types::messages::client::update::CosmosUpdateClientMessage;
 use ibc_relayer_cosmos::types::messages::connection::open_try::CosmosConnectionOpenTryMessage;
@@ -30,7 +31,9 @@ use ibc_relayer_cosmos::types::payloads::packet::{
 use ibc_relayer_cosmos::types::telemetry::CosmosTelemetry;
 use ibc_relayer_cosmos::types::tendermint::{TendermintClientState, TendermintConsensusState};
 use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
-use ibc_relayer_types::core::ics04_channel::channel::State;
+use ibc_relayer_types::core::ics04_channel::channel::{
+    ChannelEnd, Counterparty as ChannelCounterparty, State,
+};
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
@@ -1261,7 +1264,32 @@ where
         counterparty_channel_id: &ChannelId,
         counterparty_payload: SolomachineChannelOpenTryPayload,
     ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
-        todo!()
+        let proof_init = Vec::from(counterparty_payload.proof_init.serialize_compact())
+            .try_into()
+            .map_err(CosmosBaseError::proofs)?;
+
+        let counterparty = ChannelCounterparty::new(
+            counterparty_port_id.clone(),
+            Some(counterparty_channel_id.clone()),
+        );
+
+        let channel = ChannelEnd::new(
+            State::TryOpen,
+            counterparty_payload.ordering,
+            counterparty,
+            counterparty_payload.connection_hops,
+            counterparty_payload.version.clone(),
+        );
+
+        let message = CosmosChannelOpenTryMessage {
+            port_id: port_id.clone(),
+            channel,
+            counterparty_version: counterparty_payload.version,
+            update_height: counterparty_payload.update_height,
+            proof_init,
+        };
+
+        Ok(message.to_cosmos_message())
     }
 
     async fn build_channel_open_ack_message(
