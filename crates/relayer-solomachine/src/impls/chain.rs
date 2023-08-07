@@ -956,7 +956,9 @@ where
         counterparty_channel_id: &ChannelId,
         counterparty_payload: CosmosChannelOpenTryPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
+        let message = SolomachineMessage::CosmosChannelOpenTry(Box::new(counterparty_payload));
+
+        Ok(message)
     }
 
     async fn build_channel_open_ack_message(
@@ -966,7 +968,9 @@ where
         counterparty_channel_id: &ChannelId,
         counterparty_payload: CosmosChannelOpenAckPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
+        let message = SolomachineMessage::CosmosChannelOpenAck(Box::new(counterparty_payload));
+
+        Ok(message)
     }
 
     async fn build_channel_open_confirm_message(
@@ -975,7 +979,9 @@ where
         channel_id: &ChannelId,
         counterparty_payload: CosmosChannelOpenConfirmPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
+        let message = SolomachineMessage::CosmosChannelOpenConfirm(Box::new(counterparty_payload));
+
+        Ok(message)
     }
 }
 
