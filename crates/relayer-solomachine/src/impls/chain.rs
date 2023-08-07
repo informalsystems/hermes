@@ -920,7 +920,9 @@ where
         init_connection_options: &Self::InitConnectionOptions,
         counterparty_payload: CosmosConnectionOpenInitPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
+        let message = SolomachineMessage::CosmosConnectionOpenInit(Box::new(counterparty_payload));
+
+        Ok(message)
     }
 
     async fn build_connection_open_try_message(
@@ -930,7 +932,9 @@ where
         counterparty_connection_id: &ConnectionId,
         counterparty_payload: CosmosConnectionOpenTryPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
+        let message = SolomachineMessage::CosmosConnectionOpenTry(Box::new(counterparty_payload));
+
+        Ok(message)
     }
 
     async fn build_connection_open_ack_message(
@@ -939,7 +943,9 @@ where
         counterparty_connection_id: &ConnectionId,
         counterparty_payload: CosmosConnectionOpenAckPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
+        let message = SolomachineMessage::CosmosConnectionOpenAck(Box::new(counterparty_payload));
+
+        Ok(message)
     }
 
     async fn build_connection_open_confirm_message(
@@ -947,7 +953,9 @@ where
         connection_id: &ConnectionId,
         counterparty_payload: CosmosConnectionOpenConfirmPayload,
     ) -> Result<SolomachineMessage, Chain::Error> {
-        todo!()
+        let message = SolomachineMessage::CosmosConnectionOpenConfirm(Box::new(counterparty_payload));
+
+        Ok(message)
     }
 
     async fn build_channel_open_init_message(
