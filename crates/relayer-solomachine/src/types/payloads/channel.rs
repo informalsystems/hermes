@@ -19,4 +19,7 @@ pub struct SolomachineChannelOpenAckPayload {
     pub proof_try: Signature,
 }
 
-pub struct SolomachineChannelOpenConfirmPayload {}
+pub struct SolomachineChannelOpenConfirmPayload {
+    pub update_height: Height,
+    pub proof_ack: Signature,
+}
