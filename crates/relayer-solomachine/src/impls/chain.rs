@@ -818,6 +818,35 @@ where
         todo!()
     }
 
+    async fn query_packet_commitments(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+    ) -> Result<(Vec<Sequence>, Height), Chain::Error> {
+        todo!()
+    }
+
+    async fn query_unreceived_packet_sequences(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        sequences: &[Sequence],
+    ) -> Result<Vec<Sequence>, Chain::Error> {
+        todo!()
+    }
+
+    async fn query_send_packets_from_sequences(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_channel_id: &ChannelId,
+        counterparty_port_id: &PortId,
+        sequences: &[Sequence],
+        height: &Height,
+    ) -> Result<Vec<Packet>, Chain::Error> {
+        todo!()
+    }
+
     async fn build_receive_packet_message(
         &self,
         packet: &Packet,
@@ -1057,6 +1086,35 @@ where
         channel_id: &ChannelId,
         sequence: &Sequence,
     ) -> Result<bool, CosmosError> {
+        todo!()
+    }
+
+    async fn query_packet_commitments(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+    ) -> Result<(Vec<Sequence>, Height), CosmosError> {
+        todo!()
+    }
+
+    async fn query_unreceived_packet_sequences(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        sequences: &[Sequence],
+    ) -> Result<Vec<Sequence>, CosmosError> {
+        todo!()
+    }
+
+    async fn query_send_packets_from_sequences(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_channel_id: &ChannelId,
+        counterparty_port_id: &PortId,
+        sequences: &[Sequence],
+        height: &Height,
+    ) -> Result<Vec<Packet>, CosmosError> {
         todo!()
     }
 

@@ -1,7 +1,10 @@
 use ibc_relayer_components::chain::traits::client::create::HasCreateClientOptions;
 use ibc_relayer_components::chain::traits::queries::consensus_state::CanQueryConsensusState;
+use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
 use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
+use ibc_relayer_components::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
 use ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus;
+use ibc_relayer_components::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
 use ibc_relayer_components::chain::traits::types::chain::HasChainTypes;
 use ibc_relayer_components::chain::traits::types::channel::{
     HasChannelHandshakePayloads, HasInitChannelOptionsType,
@@ -29,6 +32,9 @@ pub trait AfoChain<Counterparty>:
     + HasConsensusStateType<Counterparty>
     + CanQueryConsensusState<Counterparty>
     + CanQueryReceivedPacket<Counterparty>
+    + CanQueryPacketCommitments<Counterparty>
+    + CanQueryUnreceivedPacketSequences<Counterparty>
+    + CanQuerySendPacketsFromSequences<Counterparty>
     + HasCreateClientOptions<Counterparty>
     + HasInitConnectionOptionsType<Counterparty>
     + HasConnectionHandshakePayloads<Counterparty>
@@ -65,6 +71,9 @@ where
         + HasConsensusStateType<Counterparty>
         + CanQueryConsensusState<Counterparty>
         + CanQueryReceivedPacket<Counterparty>
+        + CanQueryPacketCommitments<Counterparty>
+        + CanQueryUnreceivedPacketSequences<Counterparty>
+        + CanQuerySendPacketsFromSequences<Counterparty>
         + HasCreateClientOptions<Counterparty>
         + HasInitConnectionOptionsType<Counterparty>
         + HasConnectionHandshakePayloads<Counterparty>

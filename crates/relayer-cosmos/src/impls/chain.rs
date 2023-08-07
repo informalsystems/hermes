@@ -6,7 +6,6 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::event::{
     channel_open_init_try_from_abci_event, channel_open_try_try_from_abci_event,
     connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
-    extract_packet_and_write_ack_from_tx,
 };
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
@@ -51,11 +50,17 @@ use crate::methods::connection::{
 };
 use crate::methods::consensus_state::{find_consensus_state_height_before, query_consensus_state};
 use crate::methods::create_client::{build_create_client_message, build_create_client_payload};
+use crate::methods::event::{
+    try_extract_send_packet_event, try_extract_write_acknowledgement_event,
+};
 use crate::methods::packet::{
     build_ack_packet_message, build_ack_packet_payload, build_receive_packet_message,
     build_receive_packet_payload, build_timeout_unordered_packet_message,
     build_timeout_unordered_packet_payload, query_is_packet_received,
     query_write_acknowledgement_event,
+};
+use crate::methods::unreceived_packet::{
+    query_packet_commitments, query_send_packets_from_sequences, query_unreceived_packet_sequences,
 };
 use crate::methods::update_client::{build_update_client_message, build_update_client_payload};
 use crate::traits::message::CosmosMessage;
@@ -229,32 +234,11 @@ where
     fn try_extract_write_acknowledgement_event(
         event: &Arc<AbciEvent>,
     ) -> Option<WriteAcknowledgement> {
-        if let IbcEventType::WriteAck = event.kind.parse().ok()? {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event).ok()?;
-
-            let ack = WriteAcknowledgement {
-                packet,
-                ack: write_ack,
-            };
-
-            Some(ack)
-        } else {
-            None
-        }
+        try_extract_write_acknowledgement_event(event)
     }
 
     fn try_extract_send_packet_event(event: &Arc<AbciEvent>) -> Option<SendPacket> {
-        let event_type = event.kind.parse().ok()?;
-
-        if let IbcEventType::SendPacket = event_type {
-            let (packet, _) = extract_packet_and_write_ack_from_tx(event).ok()?;
-
-            let send_packet_event = SendPacket { packet };
-
-            Some(send_packet_event)
-        } else {
-            None
-        }
+        try_extract_send_packet_event(event)
     }
 
     fn extract_packet_from_send_packet_event(event: &SendPacket) -> Packet {
@@ -629,6 +613,56 @@ where
         sequence: &Sequence,
     ) -> Result<bool, Error> {
         query_is_packet_received(self, port_id, channel_id, sequence).await
+    }
+
+    /// Query the sequences of the packets that the chain has committed to be
+    /// sent to the counterparty chain, of which the full packet relaying is not
+    /// yet completed. Once the chain receives the ack from the counterparty
+    /// chain, a given sequence should be removed from the packet commitment list.
+    async fn query_packet_commitments(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+    ) -> Result<(Vec<Sequence>, Height), Error> {
+        query_packet_commitments(self, channel_id, port_id).await
+    }
+
+    /// Given a list of counterparty commitment sequences,
+    /// return a filtered list of sequences which the chain
+    /// has not received the packet from the counterparty chain.
+    async fn query_unreceived_packet_sequences(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        sequences: &[Sequence],
+    ) -> Result<Vec<Sequence>, Self::Error> {
+        query_unreceived_packet_sequences(self, channel_id, port_id, sequences).await
+    }
+
+    /// Given a list of sequences, a channel and port will query a list of outgoing
+    /// packets which have not been relayed.
+    async fn query_send_packets_from_sequences(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_channel_id: &ChannelId,
+        counterparty_port_id: &PortId,
+        sequences: &[Sequence],
+        // The height is given to query the packets from a specific height.
+        // This height should be the same as the query height from the
+        // `CanQueryPacketCommitments` made on the same chain.
+        height: &Height,
+    ) -> Result<Vec<Packet>, Self::Error> {
+        query_send_packets_from_sequences(
+            self,
+            channel_id,
+            port_id,
+            counterparty_channel_id,
+            counterparty_port_id,
+            sequences,
+            height,
+        )
+        .await
     }
 
     async fn build_receive_packet_message(

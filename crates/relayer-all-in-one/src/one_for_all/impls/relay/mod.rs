@@ -1,6 +1,7 @@
 pub mod auto_relayer;
 pub mod batch;
 pub mod channel;
+pub mod clear_packet;
 pub mod client;
 pub mod connection;
 pub mod error;

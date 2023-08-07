@@ -7,6 +7,7 @@ use ibc_relayer::foreign_client::ForeignClientError;
 use ibc_relayer::spawn::SpawnError;
 use ibc_relayer::supervisor::error::Error as SupervisorError;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
 use ibc_relayer_types::core::ics23_commitment;
 use ibc_relayer_types::proofs::ProofError;
@@ -15,6 +16,8 @@ use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::Error as TendermintRpcError;
 use tokio::task::JoinError;
+use tonic::transport::Error as TransportError;
+use tonic::Status as GrpcStatus;
 
 pub type Error = Arc<BaseError>;
 
@@ -79,6 +82,9 @@ define_error! {
         MissingSimulateGasInfo
             | _ | { "missing gas info returned from send_tx_simulate" },
 
+        MissingSendPacket
+            | _ | { "missing send packet" },
+
         CheckTx
             { response: Response }
             | e | { format_args!("check tx error: {:?}", e.response) },
@@ -86,5 +92,21 @@ define_error! {
         Join
             [ TraceError<JoinError> ]
             | _ | { "error joining tokio tasks" },
+
+        GrpcTransport
+            [ TraceError<TransportError> ]
+            |_| { "error in underlying transport when making gRPC call" },
+
+        GrpcStatus
+            { status: GrpcStatus, query: String }
+            |e| { format!("gRPC call `{}` failed with status: {1}", e.query, e.status) },
+
+        MissingHeight
+            { query: String }
+            | e | { format_args!("height from query `{}` is missing", e.query) },
+
+        Ics02
+            [ ClientError ]
+            |e| { format!("ICS 02 error: {}", e.source) },
     }
 }

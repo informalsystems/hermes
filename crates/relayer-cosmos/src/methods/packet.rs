@@ -83,7 +83,7 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let ack = ack.ack.clone();
+            let ack = ack.ack;
 
             Ok(CosmosAckPacketPayload {
                 ack,

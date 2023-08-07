@@ -39,6 +39,7 @@ itertools = "0.10.3"
 futures = "0.3"
 tracing = "0.1.36"
 opentelemetry = { version = "0.17.0", features = ["metrics"] }
+tonic = { version = "0.9", features = ["tls", "tls-roots"] }
 moka = { version = "0.10", features = ["future"] }
 
 [dependencies.tendermint]
@@ -48,3 +49,4 @@ features = ["secp256k1"]
 [dependencies.tendermint-rpc]
 version = "=0.32.0"
 features = ["http-client", "websocket-client"]
+

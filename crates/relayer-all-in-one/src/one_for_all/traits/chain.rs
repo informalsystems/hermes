@@ -425,6 +425,41 @@ where
         sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
 
+    /// Query the sequences of the packets that the chain has committed to be
+    /// sent to the counterparty chain, of which the full packet relaying is not
+    /// yet completed. Once the chain receives the ack from the counterparty
+    /// chain, a given sequence should be removed from the packet commitment list.
+    async fn query_packet_commitments(
+        &self,
+        channel_id: &Self::ChannelId,
+        port_id: &Self::PortId,
+    ) -> Result<(Vec<Self::Sequence>, Self::Height), Self::Error>;
+
+    /// Given a list of counterparty commitment sequences,
+    /// return a filtered list of sequences which the chain
+    /// has not received the packet from the counterparty chain.
+    async fn query_unreceived_packet_sequences(
+        &self,
+        channel_id: &Self::ChannelId,
+        port_id: &Self::PortId,
+        sequences: &[Counterparty::Sequence],
+    ) -> Result<Vec<Counterparty::Sequence>, Self::Error>;
+
+    /// Given a list of sequences, a channel and port will query a list of outgoing
+    /// packets which have not been relayed.
+    async fn query_send_packets_from_sequences(
+        &self,
+        channel_id: &Self::ChannelId,
+        port_id: &Self::PortId,
+        counterparty_channel_id: &Counterparty::ChannelId,
+        counterparty_port_id: &Counterparty::PortId,
+        sequences: &[Self::Sequence],
+        // The height is given to query the packets from a specific height.
+        // This height should be the same as the query height from the
+        // `CanQueryPacketCommitments` made on the same chain.
+        height: &Self::Height,
+    ) -> Result<Vec<Self::OutgoingPacket>, Self::Error>;
+
     async fn build_receive_packet_message(
         &self,
         packet: &Self::IncomingPacket,
