@@ -370,7 +370,7 @@ impl ChainEndpoint for NamadaChain {
         let denom = denom.unwrap_or(tx::FEE_TOKEN);
         let token = match self.wallet.find_address(denom) {
             Some(addr) => addr.clone(),
-            None => Address::decode(&denom)
+            None => Address::decode(denom)
                 .map_err(|_| Error::namada_address_not_found(denom.to_string()))?,
         };
 
@@ -421,7 +421,7 @@ impl ChainEndpoint for NamadaChain {
                 if key_owner == owner {
                     let amount =
                         token::Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
-                    let denom_key = token::denom_key(&token);
+                    let denom_key = token::denom_key(token);
                     let (value, _) =
                         self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
                     let denominated_amount = if value.is_empty() {

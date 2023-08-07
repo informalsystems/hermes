@@ -78,6 +78,15 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
     }
 
     pub fn spawn_wallet_worker(&mut self, chain: Chain) {
+        match chain.config() {
+            Ok(config) if config.r#type == ChainType::Namada => {
+                // skip spawning a Wallet worker for Namada
+                // because Namada uses its own wallet
+                return;
+            }
+            _ => {}
+        }
+
         let wallet_object = Object::Wallet(Wallet {
             chain_id: chain.id(),
         });
