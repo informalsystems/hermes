@@ -12,6 +12,7 @@ use ibc_relayer_cosmos::contexts::chain::CosmosChain;
 use ibc_relayer_cosmos::traits::message::{CosmosMessage, ToCosmosMessage};
 use ibc_relayer_cosmos::types::error::{BaseError as CosmosBaseError, Error as CosmosError};
 use ibc_relayer_cosmos::types::messages::channel::open_ack::CosmosChannelOpenAckMessage;
+use ibc_relayer_cosmos::types::messages::channel::open_confirm::CosmosChannelOpenConfirmMessage;
 use ibc_relayer_cosmos::types::messages::channel::open_try::CosmosChannelOpenTryMessage;
 use ibc_relayer_cosmos::types::messages::client::create::CosmosCreateClientMessage;
 use ibc_relayer_cosmos::types::messages::client::update::CosmosUpdateClientMessage;
@@ -1322,6 +1323,17 @@ where
         channel_id: &ChannelId,
         counterparty_payload: SolomachineChannelOpenConfirmPayload,
     ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
-        todo!()
+        let proof_ack = Vec::from(counterparty_payload.proof_ack.serialize_compact())
+            .try_into()
+            .map_err(CosmosBaseError::proofs)?;
+
+        let message = CosmosChannelOpenConfirmMessage {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            update_height: counterparty_payload.update_height,
+            proof_ack,
+        };
+
+        Ok(message.to_cosmos_message())
     }
 }
