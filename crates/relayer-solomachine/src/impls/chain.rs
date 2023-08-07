@@ -10,9 +10,11 @@ use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_cosmos::contexts::chain::CosmosChain;
 use ibc_relayer_cosmos::traits::message::{CosmosMessage, ToCosmosMessage};
+use ibc_relayer_cosmos::types::channel::CosmosInitChannelOptions;
 use ibc_relayer_cosmos::types::error::{BaseError as CosmosBaseError, Error as CosmosError};
 use ibc_relayer_cosmos::types::messages::channel::open_ack::CosmosChannelOpenAckMessage;
 use ibc_relayer_cosmos::types::messages::channel::open_confirm::CosmosChannelOpenConfirmMessage;
+use ibc_relayer_cosmos::types::messages::channel::open_init::CosmosChannelOpenInitMessage;
 use ibc_relayer_cosmos::types::messages::channel::open_try::CosmosChannelOpenTryMessage;
 use ibc_relayer_cosmos::types::messages::client::create::CosmosCreateClientMessage;
 use ibc_relayer_cosmos::types::messages::client::update::CosmosUpdateClientMessage;
@@ -1260,9 +1262,27 @@ where
         &self,
         port_id: &PortId,
         counterparty_port_id: &PortId,
-        init_channel_options: &Self::InitChannelOptions,
+        init_channel_options: &CosmosInitChannelOptions,
     ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
-        todo!()
+        let ordering = init_channel_options.ordering;
+        let connection_hops = init_channel_options.connection_hops.clone();
+        let channel_version = init_channel_options.channel_version.clone();
+        let counterparty = ChannelCounterparty::new(counterparty_port_id.clone(), None);
+
+        let channel = ChannelEnd::new(
+            State::Init,
+            ordering,
+            counterparty,
+            connection_hops,
+            channel_version,
+        );
+
+        let message = CosmosChannelOpenInitMessage {
+            port_id: port_id.clone(),
+            channel,
+        };
+
+        Ok(message.to_cosmos_message())
     }
 
     async fn build_channel_open_try_message(
