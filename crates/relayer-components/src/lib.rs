@@ -14,3 +14,4 @@ pub mod logger;
 pub mod relay;
 pub mod runtime;
 pub mod transaction;
+pub mod vendor;

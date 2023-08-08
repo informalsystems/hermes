@@ -46,3 +46,28 @@ where
         Relay::Components::build_update_client_messages(self, target, height).await
     }
 }
+
+#[macro_export]
+macro_rules! derive_update_client_message_builder {
+    ( $target:ident $( < $( $param:ident ),* $(,)? > )?, $source:ty $(,)?  ) => {
+        #[$crate::vendor::async_trait::async_trait]
+        impl<Relay, Target, $( $( $param ),* )*>
+            $crate::relay::traits::messages::update_client::UpdateClientMessageBuilder<Relay, Target>
+            for $target $( < $( $param ),* > )*
+        where
+            Relay: $crate::relay::traits::chains::HasRelayChains,
+            Target: $crate::relay::traits::target::ChainTarget<Relay>,
+            $source: $crate::relay::traits::messages::update_client::UpdateClientMessageBuilder<Relay, Target>,
+        {
+            async fn build_update_client_messages(
+                relay: &Relay,
+                target: Target,
+                height: &<Target::CounterpartyChain as $crate::chain::traits::types::height::HasHeightType>::Height,
+            ) -> Result<Vec<<Target::TargetChain as $crate::chain::traits::types::message::HasMessageType>::Message>, Relay::Error> {
+                <$source as $crate::relay::traits::messages::update_client::UpdateClientMessageBuilder<Relay, Target>>
+                    ::build_update_client_messages(relay, target, height).await
+            }
+        }
+
+    };
+}
