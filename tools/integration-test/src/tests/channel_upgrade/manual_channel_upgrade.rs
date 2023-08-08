@@ -80,7 +80,16 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
         let new_ordering = None;
         let new_connection_hops = None;
 
-        let old_attrs = ChannelUpgradableAttributes::new(
+        let initial_attrs = ChannelUpgradableAttributes::new(
+            old_version.clone(),
+            old_version.clone(),
+            old_ordering,
+            old_connection_hops_a.clone(),
+            old_connection_hops_b.clone(),
+        );
+
+        let intermediary_attrs = ChannelUpgradableAttributes::new(
+            new_version.clone(),
             old_version,
             old_ordering,
             old_connection_hops_a.clone(),
@@ -88,6 +97,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
         );
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
+            new_version.clone(),
             new_version.clone(),
             old_ordering,
             old_connection_hops_a,
@@ -117,7 +127,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            &old_attrs,
+            &initial_attrs,
         )?;
 
         info!("Will run ChanUpgradeTry step...");
@@ -131,7 +141,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &chains.handle_a,
             &channels.channel_id_b.as_ref(),
             &channels.port_b.as_ref(),
-            &old_attrs.flipped(),
+            &initial_attrs.flipped(),
         )?;
 
         info!("Will run ChanUpgradeAck step...");
@@ -145,16 +155,12 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            &old_attrs,
+            &intermediary_attrs,
         )?;
 
         info!("Will run first ChanUpgradeOpen step...");
 
         channel.build_chan_upgrade_open_and_send()?;
-
-        info!("Will run second ChanUpgradeOpen step...");
-
-        channel.flipped().build_chan_upgrade_open_and_send()?;
 
         info!("Check that the ChanUpgradeOpen steps were correctly executed...");
 

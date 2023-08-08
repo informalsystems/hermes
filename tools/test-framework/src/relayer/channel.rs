@@ -38,7 +38,8 @@ impl<ChainA, ChainB> TaggedChannelEndExt<ChainA, ChainB>
 
 /// This struct contains the attributes which can be modified with a channel upgrade
 pub struct ChannelUpgradableAttributes {
-    version: Version,
+    version_a: Version,
+    version_b: Version,
     ordering: Ordering,
     connection_hops_a: Vec<ConnectionId>,
     connection_hops_b: Vec<ConnectionId>,
@@ -46,13 +47,15 @@ pub struct ChannelUpgradableAttributes {
 
 impl ChannelUpgradableAttributes {
     pub fn new(
-        version: Version,
+        version_a: Version,
+        version_b: Version,
         ordering: Ordering,
         connection_hops_a: Vec<ConnectionId>,
         connection_hops_b: Vec<ConnectionId>,
     ) -> Self {
         Self {
-            version,
+            version_a,
+            version_b,
             ordering,
             connection_hops_a,
             connection_hops_b,
@@ -61,15 +64,20 @@ impl ChannelUpgradableAttributes {
 
     pub fn flipped(&self) -> Self {
         Self {
-            version: self.version.clone(),
+            version_a: self.version_b.clone(),
+            version_b: self.version_a.clone(),
             ordering: self.ordering,
             connection_hops_a: self.connection_hops_b.clone(),
             connection_hops_b: self.connection_hops_a.clone(),
         }
     }
 
-    pub fn version(&self) -> &Version {
-        &self.version
+    pub fn version_a(&self) -> &Version {
+        &self.version_a
+    }
+
+    pub fn version_b(&self) -> &Version {
+        &self.version_b
     }
 
     pub fn ordering(&self) -> &Ordering {
@@ -334,9 +342,11 @@ pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainH
         Duration::from_secs(1),
         || {
             assert_channel_upgrade_state(
-                ChannelState::AckUpgrade,
+                // Since there are no in-flight packets, channel
+                // state will directly be set to Open
+                ChannelState::Open,
                 ChannelState::TryUpgrade,
-                FlushStatus::Flushcomplete,
+                FlushStatus::NotinflushUnspecified,
                 FlushStatus::Flushcomplete,
                 handle_a,
                 handle_b,
@@ -411,11 +421,11 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !channel_end_a
         .value()
-        .version_matches(upgrade_attrs.version())
+        .version_matches(upgrade_attrs.version_a())
     {
         return Err(Error::generic(eyre!(
             "expected channel end A version to be `{}`, but it is instead `{}`",
-            upgrade_attrs.version(),
+            upgrade_attrs.version_a(),
             channel_end_a.value().version()
         )));
     }
@@ -471,11 +481,11 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !channel_end_b
         .value()
-        .version_matches(upgrade_attrs.version())
+        .version_matches(upgrade_attrs.version_b())
     {
         return Err(Error::generic(eyre!(
             "expected channel end B version to be `{}`, but it is instead `{}`",
-            upgrade_attrs.version(),
+            upgrade_attrs.version_b(),
             channel_end_b.value().version()
         )));
     }
