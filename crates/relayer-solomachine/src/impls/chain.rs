@@ -485,7 +485,7 @@ where
         let secret_key = self.chain.secret_key();
 
         let connection_proof =
-            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+            sign_with_data(secret_key, &connection_data).map_err(Chain::encode_error)?;
 
         let client_state_proof =
             sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
