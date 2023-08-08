@@ -11,3 +11,5 @@ crate::derive_update_client_message_builder!(
     DefaultComponents<BaseComponents>,
     SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessages>>,
 );
+
+crate::derive_chain_status_querier!(DefaultComponents<BaseComponents>, BaseComponents,);

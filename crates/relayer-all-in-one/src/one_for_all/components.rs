@@ -14,13 +14,9 @@ use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_event::P
 use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 use ibc_relayer_components_extra::relay::impls::packet_relayers::retry::RetryRelayer;
 use ibc_relayer_components_extra::telemetry::impls::consensus_state::ConsensusStateTelemetryQuerier;
-use ibc_relayer_components_extra::telemetry::impls::status::ChainStatusTelemetryQuerier;
 
 use crate::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
-use crate::one_for_all::impls::chain::queries::status::SendChainStatusQueryToOfa;
 use crate::one_for_all::impls::relay::packet_filter::FilterPacketFromOfa;
-
-pub type ChainStatusQuerier = ChainStatusTelemetryQuerier<SendChainStatusQueryToOfa>;
 
 pub type ConsensusStateQuerier = ConsensusStateTelemetryQuerier<SendConsensusStateQueryToOfa>;
 
