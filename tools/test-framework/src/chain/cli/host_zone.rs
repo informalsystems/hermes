@@ -38,8 +38,6 @@ pub fn register_host_zone(
             chain_id,
             "--gas",
             "auto",
-            "-b",
-            "block",
             "--yes",
         ],
     )?;
