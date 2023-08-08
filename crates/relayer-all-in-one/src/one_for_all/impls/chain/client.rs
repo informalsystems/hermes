@@ -12,15 +12,15 @@ use ibc_relayer_components::chain::traits::types::client_state::{
     HasClientStateFields, HasClientStateType,
 };
 
-use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 impl<Chain, Counterparty> HasCreateClientOptions<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type CreateClientPayloadOptions = Chain::CreateClientPayloadOptions;
 }
@@ -28,8 +28,8 @@ where
 impl<Chain, Counterparty> HasCreateClientPayload<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type CreateClientPayload = Chain::CreateClientPayload;
 }
@@ -38,7 +38,7 @@ impl<Chain, Counterparty> HasCreateClientEvent<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     type CreateClientEvent = Chain::CreateClientEvent;
 
@@ -56,7 +56,7 @@ impl<Chain, Counterparty> CanBuildCreateClientPayload<OfaChainWrapper<Counterpar
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_create_client_payload(
         &self,
@@ -73,7 +73,7 @@ impl<Chain, Counterparty> CanBuildCreateClientMessage<OfaChainWrapper<Counterpar
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_create_client_message(
         &self,
@@ -89,8 +89,8 @@ where
 impl<Chain, Counterparty> HasClientStateType<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type ClientState = Chain::ClientState;
 }
@@ -99,8 +99,8 @@ where
 impl<Chain, Counterparty> HasUpdateClientPayload<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type UpdateClientPayload = Chain::UpdateClientPayload;
 }
@@ -110,7 +110,7 @@ impl<Chain, Counterparty> CanBuildUpdateClientPayload<OfaChainWrapper<Counterpar
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_update_client_payload(
         &self,
@@ -129,7 +129,7 @@ impl<Chain, Counterparty> CanBuildUpdateClientMessage<OfaChainWrapper<Counterpar
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_update_client_message(
         &self,
@@ -147,7 +147,7 @@ impl<Chain, Counterparty> CanFindConsensusStateHeight<OfaChainWrapper<Counterpar
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn find_consensus_state_height_before(
         &self,
@@ -164,7 +164,7 @@ impl<Chain, Counterparty> HasClientStateFields<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     fn client_state_latest_height(client_state: &Self::ClientState) -> &Self::Height {
         Chain::client_state_latest_height(client_state)
@@ -176,7 +176,7 @@ impl<Chain, Counterparty> CanQueryClientState<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn query_client_state(
         &self,

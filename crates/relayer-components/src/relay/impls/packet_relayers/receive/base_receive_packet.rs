@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::client::client_state::CanQueryClientState;
 use crate::chain::traits::message_builders::receive_packet::{
     CanBuildReceivePacketMessage, CanBuildReceivePacketPayload,
 };
@@ -18,26 +19,32 @@ pub struct BaseReceivePacketRelayer;
 impl<Relay, AckEvent> ReceivePacketRelayer<Relay> for BaseReceivePacketRelayer
 where
     Relay::SrcChain: CanBuildReceivePacketPayload<Relay::DstChain>,
-    Relay::DstChain: CanBuildReceivePacketMessage<Relay::SrcChain>,
     Relay: CanSendSingleIbcMessage<DestinationTarget>,
     Relay: HasRelayChains,
-    Relay::DstChain:
-        HasWriteAcknowledgementEvent<Relay::SrcChain, WriteAcknowledgementEvent = AckEvent>,
+    Relay::DstChain: CanQueryClientState<Relay::SrcChain>
+        + CanBuildReceivePacketMessage<Relay::SrcChain>
+        + HasWriteAcknowledgementEvent<Relay::SrcChain, WriteAcknowledgementEvent = AckEvent>,
 {
     async fn relay_receive_packet(
         relay: &Relay,
         source_height: &Height<Relay::SrcChain>,
         packet: &Packet<Relay>,
     ) -> Result<Option<AckEvent>, Relay::Error> {
+        let src_client_state = relay
+            .dst_chain()
+            .query_client_state(relay.dst_client_id())
+            .await
+            .map_err(Relay::dst_chain_error)?;
+
         let payload = relay
             .src_chain()
-            .build_receive_packet_payload(source_height, packet)
+            .build_receive_packet_payload(&src_client_state, source_height, packet)
             .await
             .map_err(Relay::src_chain_error)?;
 
         let message = relay
             .dst_chain()
-            .build_receive_packet_message(payload)
+            .build_receive_packet_message(packet, payload)
             .await
             .map_err(Relay::dst_chain_error)?;
 

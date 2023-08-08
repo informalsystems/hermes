@@ -16,7 +16,7 @@ use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
-use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
@@ -33,7 +33,7 @@ impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
     }
 }
 
-impl<Chain: OfaChain> HasMessageType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChainTypes> HasMessageType for OfaChainWrapper<Chain> {
     type Message = Chain::Message;
 }
 
@@ -43,11 +43,11 @@ impl<Chain: OfaChain> CanEstimateMessageSize for OfaChainWrapper<Chain> {
     }
 }
 
-impl<Chain: OfaChain> HasEventType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChainTypes> HasEventType for OfaChainWrapper<Chain> {
     type Event = Chain::Event;
 }
 
-impl<Chain: OfaChain> HasHeightType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChainTypes> HasHeightType for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
 }
 
@@ -57,11 +57,11 @@ impl<Chain: OfaChain> CanIncrementHeight for OfaChainWrapper<Chain> {
     }
 }
 
-impl<Chain: OfaChain> HasChainIdType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChainTypes> HasChainIdType for OfaChainWrapper<Chain> {
     type ChainId = Chain::ChainId;
 }
 
-impl<Chain: OfaChain> HasTimestampType for OfaChainWrapper<Chain> {
+impl<Chain: OfaChainTypes> HasTimestampType for OfaChainWrapper<Chain> {
     type Timestamp = Chain::Timestamp;
 }
 
@@ -73,8 +73,8 @@ impl<Chain: OfaChain> HasChainId for OfaChainWrapper<Chain> {
 
 impl<Chain, Counterparty> HasIbcChainTypes<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type ClientId = Chain::ClientId;
 
@@ -91,7 +91,7 @@ impl<Chain, Counterparty> HasCounterpartyMessageHeight<OfaChainWrapper<Counterpa
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     fn counterparty_message_height_for_update_client(
         message: &Self::Message,
@@ -103,8 +103,8 @@ where
 impl<Chain, Counterparty> HasIbcPacketTypes<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type IncomingPacket = Chain::IncomingPacket;
 
@@ -115,7 +115,7 @@ impl<Chain, Counterparty> HasIbcPacketFields<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId {
         Chain::incoming_packet_src_channel_id(packet)
@@ -182,7 +182,7 @@ impl<Chain, Counterparty> HasWriteAcknowledgementEvent<OfaChainWrapper<Counterpa
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 
@@ -197,7 +197,7 @@ impl<Chain, Counterparty> CanBuildPacketFromWriteAckEvent<OfaChainWrapper<Counte
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     fn build_packet_from_write_acknowledgement_event(
         ack: &Self::WriteAcknowledgementEvent,
@@ -210,7 +210,7 @@ impl<Chain, Counterparty> HasSendPacketEvent<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     type SendPacketEvent = Chain::SendPacketEvent;
 

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::queries::write_ack::CanQueryWriteAcknowledgement;
 
-use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
@@ -10,7 +10,7 @@ impl<Chain, Counterparty> CanQueryWriteAcknowledgement<OfaChainWrapper<Counterpa
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn query_write_acknowledgement_event(
         &self,

@@ -40,10 +40,7 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let packet = packet;
-
             Ok(CosmosReceivePacketPayload {
-                packet,
                 update_height: proofs.height(),
                 proof_commitment: proofs.object_proof().clone(),
             })
@@ -52,10 +49,11 @@ pub async fn build_receive_packet_payload<Chain: ChainHandle>(
 }
 
 pub fn build_receive_packet_message(
+    packet: &Packet,
     payload: CosmosReceivePacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
     let message = CosmosReceivePacketMessage {
-        packet: payload.packet,
+        packet: packet.clone(),
         update_height: payload.update_height,
         proof_commitment: payload.proof_commitment,
     };
@@ -85,11 +83,9 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let packet = packet.clone();
             let ack = ack.ack;
 
             Ok(CosmosAckPacketPayload {
-                packet,
                 ack,
                 update_height: proofs.height(),
                 proof_acked: proofs.object_proof().clone(),
@@ -99,10 +95,11 @@ pub async fn build_ack_packet_payload<Chain: ChainHandle>(
 }
 
 pub fn build_ack_packet_message(
+    packet: &Packet,
     payload: CosmosAckPacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
     let message = CosmosAckPacketMessage {
-        packet: payload.packet,
+        packet: packet.clone(),
         acknowledgement: payload.ack,
         update_height: payload.update_height,
         proof_acked: payload.proof_acked,
@@ -131,10 +128,7 @@ pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
                 )
                 .map_err(BaseError::relayer)?;
 
-            let packet = packet;
-
             Ok(CosmosTimeoutUnorderedPacketPayload {
-                packet,
                 update_height: proofs.height(),
                 proof_unreceived: proofs.object_proof().clone(),
             })
@@ -143,11 +137,12 @@ pub async fn build_timeout_unordered_packet_payload<Chain: ChainHandle>(
 }
 
 pub fn build_timeout_unordered_packet_message(
+    packet: &Packet,
     payload: CosmosTimeoutUnorderedPacketPayload,
 ) -> Result<Arc<dyn CosmosMessage>, Error> {
     let message = CosmosTimeoutPacketMessage {
-        next_sequence_recv: payload.packet.sequence,
-        packet: payload.packet,
+        next_sequence_recv: packet.sequence,
+        packet: packet.clone(),
         update_height: payload.update_height,
         proof_unreceived: payload.proof_unreceived,
     };

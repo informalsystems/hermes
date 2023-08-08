@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use core::iter::Iterator;
 
+use crate::chain::traits::client::client_state::CanQueryClientState;
 use crate::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
@@ -31,6 +32,7 @@ where
     SrcChain: CanSendSingleMessage
         + HasInitConnectionOptionsType<DstChain>
         + CanBuildConnectionHandshakeMessages<DstChain>
+        + CanQueryClientState<DstChain>
         + HasConnectionOpenInitEvent<DstChain>,
     DstChain: CanBuildConnectionHandshakePayloads<SrcChain>,
     SrcChain::ConnectionId: Clone,
@@ -45,8 +47,13 @@ where
         let src_client_id = relay.src_client_id();
         let dst_client_id = relay.dst_client_id();
 
+        let dst_client_state = src_chain
+            .query_client_state(src_client_id)
+            .await
+            .map_err(Relay::src_chain_error)?;
+
         let open_init_payload = dst_chain
-            .build_connection_open_init_payload()
+            .build_connection_open_init_payload(&dst_client_state)
             .await
             .map_err(Relay::dst_chain_error)?;
 
