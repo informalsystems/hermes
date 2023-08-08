@@ -1,0 +1,242 @@
+#!/bin/bash
+
+# This script sets up Namada and Gaia locally
+# `make build-release` and `make build-wasm-scripts` on Namada directory in advance
+# Run with `namada-gaia-simple-transfers ${namada_dir}`
+
+set -e
+
+NAMADA_DIR=$1
+if [ -z "${NAMADA_DIR}" ]
+then
+  echo "ERROR: Namada directory should be given"
+  exit 1
+fi
+cd $(dirname $0)
+HERMES_DIR=${PWD%/e2e*}
+
+# edit for your environment
+NAMADAC="${NAMADA_DIR}/target/debug/namadac"
+NAMADAN="${NAMADA_DIR}/target/debug/namadan"
+NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
+BASE_GENESIS_PATH="${NAMADA_DIR}/genesis/e2e-tests-single-node.toml"
+CHECKSUM_PATH="${NAMADA_DIR}/wasm/checksums.json"
+DATA_DIR="${HERMES_DIR}/data"
+GENESIS_PATH="${DATA_DIR}/e2e-tests-single-node.toml"
+# IbcToken from `transfer/channel-0/samoleans`
+IBC_TOKEN="atest1d93xxw36xgmkzd3n8y6xxvmx89nxvwtr89jxxe34v3nxvctyvcukyc34vejnjcfnxa3nwefe6325dv"
+
+NAMADA_LEDGER_ADDR="127.0.0.1:27657"
+
+HERMES_CONFIG_TEMPLATE="
+[global]
+log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 10
+clear_on_start = false
+tx_confirmation = true
+
+[telemetry]
+enabled = false
+host = '127.0.0.1'
+port = 3001
+
+[[chains]]
+id = '_CHAIN_ID_'
+type = 'namada'
+rpc_addr = 'http://127.0.0.1:27657'
+grpc_addr = 'http://127.0.0.1:9090'
+event_source = { mode = 'push', url = 'ws://127.0.0.1:27657/websocket', batch_delay = '500ms' }
+account_prefix = 'cosmos'
+key_name = 'relayer'
+store_prefix = 'ibc'
+gas_price = { price = 0.001, denom = 'nam' }
+
+[[chains]]
+id = 'gaia'
+type = 'cosmos-sdk'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas_price = { price = 0.001, denom = 'stake' }
+"
+
+function init_relayer_balance() {
+  local base_dir=${DATA_DIR}/namada/.namada
+
+  local cnt=0
+  local cnt_max=10
+  while [ ${cnt} -lt ${cnt_max} ]
+  do
+      ${NAMADAC} --base-dir ${base_dir} \
+        transfer \
+        --source faucet \
+        --target relayer \
+        --token nam \
+        --amount 1000 \
+        --signer relayer \
+        --ledger-address ${NAMADA_LEDGER_ADDR}
+
+      cnt=$((${cnt} + 1))
+  done
+}
+
+#### main ####
+mkdir -p ${DATA_DIR}
+
+# Gaia
+rm -rf ${DATA_DIR}/gaia
+
+${HERMES_DIR}/scripts/one-chain gaiad gaia ${DATA_DIR} \
+  26657 26656 6060 9090 10000
+
+# Namada
+# make a genesis file
+sed "s/epochs_per_year = .*/epochs_per_year = 31536/g" \
+  ${BASE_GENESIS_PATH} > ${GENESIS_PATH}
+mkdir -p ${DATA_DIR}/namada
+base_dir=${DATA_DIR}/namada/.namada
+# init network
+chain_id=$(NAMADA_BASE_DIR=${base_dir} \
+  ${NAMADAC} utils init-network \
+  --unsafe-dont-encrypt \
+  --genesis-path ${GENESIS_PATH} \
+  --chain-prefix namada-test \
+  --localhost \
+  --dont-archive \
+  --wasm-checksums-path ${CHECKSUM_PATH} \
+  | awk '$1 == "Derived" {print $4}')
+
+# copy wasms
+cp ${NAMADA_DIR}/wasm/checksums.json ${base_dir}/${chain_id}/setup/validator-0/.namada/${chain_id}/wasm/
+cp ${NAMADA_DIR}/wasm/*.wasm ${base_dir}/${chain_id}/setup/validator-0/.namada/${chain_id}/wasm/
+
+# Run Namada
+NAMADA_LOG=debug ${NAMADAN} --base-dir ${base_dir}/${chain_id}/setup/validator-0/.namada/ \
+  ledger run > ${DATA_DIR}/namada/namada.log 2>&1 &
+echo "Namada chain ID: ${chain_id}"
+sleep 5
+
+# set the wallet
+${NAMADAW} --base-dir ${base_dir} key gen --alias relayer --unsafe-dont-encrypt
+wallet_dir=${HERMES_DIR}/namada_wallet/${chain_id}
+mkdir -p ${wallet_dir}
+cp ${base_dir}/${chain_id}/wallet.toml ${wallet_dir}
+
+# Set the chain ID to the config
+cd ${HERMES_DIR}
+echo "${HERMES_CONFIG_TEMPLATE}" \
+  | sed -e "s/_CHAIN_ID_/${chain_id}/g" \
+  > ${HERMES_DIR}/config_for_namada.toml
+
+# add Gaia key
+cargo run -q --bin hermes -- --config config_for_namada.toml \
+  keys add --chain gaia --key-file ${DATA_DIR}/gaia/user_seed.json --overwrite
+
+# Initialize Relayer's balance on Namada
+init_relayer_balance
+
+# create a channel
+cargo run --bin hermes -- --config config_for_namada.toml \
+  create channel --a-chain ${chain_id} \
+  --b-chain gaia \
+  --a-port transfer \
+  --b-port transfer \
+  --new-client-connection --yes
+
+
+# Transfer 100 samoleans from Gaia to Namada
+namada_receiver=$(${NAMADAW} --base-dir ${base_dir} address find --alias relayer | awk '{print $4}')
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx ft-transfer \
+  --dst-chain ${chain_id} \
+  --src-chain gaia \
+  --src-port transfer \
+  --src-channel channel-0 \
+  --amount 100 \
+  --receiver ${namada_receiver} \
+  --denom samoleans \
+  --timeout-height-offset 1000
+
+# packet-recv
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx packet-recv \
+  --dst-chain ${chain_id} \
+  --src-chain gaia \
+  --src-port transfer \
+  --src-channel channel-0
+
+# packet-ack
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx packet-ack \
+  --dst-chain gaia \
+  --src-chain ${chain_id} \
+  --src-port transfer \
+  --src-channel channel-0
+
+echo "Balances on Namada"
+${NAMADAC} --base-dir ${base_dir} balance \
+  --token ${IBC_TOKEN} \
+  --owner relayer \
+  --ledger-address ${NAMADA_LEDGER_ADDR}
+
+echo "Balances on Gaia"
+gaia_user=$(gaiad --home ${DATA_DIR}/gaia \
+  keys --keyring-backend="test" show user -a)
+gaiad query bank balances ${gaia_user}
+
+# transfer back 50 samoleans from Namada to Gaia
+${NAMADAC} --base-dir ${base_dir} ibc-transfer \
+  --source relayer \
+  --receiver ${gaia_user} \
+  --token ${IBC_TOKEN} \
+  --amount 50 \
+  --signer relayer \
+  --channel-id channel-0 \
+  --ledger-address ${NAMADA_LEDGER_ADDR}
+
+# packet-recv
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx packet-recv \
+  --dst-chain gaia \
+  --src-chain ${chain_id} \
+  --src-port transfer \
+  --src-channel channel-0
+
+# packet-ack
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx packet-ack \
+  --dst-chain ${chain_id} \
+  --src-chain gaia \
+  --src-port transfer \
+  --src-channel channel-0
+
+echo "Balances on Namada"
+${NAMADAC} --base-dir ${base_dir} balance \
+  --token ${IBC_TOKEN} \
+  --owner relayer \
+  --ledger-address ${NAMADA_LEDGER_ADDR}
+
+echo "Balances on Gaia"
+gaiad query bank balances ${gaia_user}
+
+killall gaiad
+killall namadan

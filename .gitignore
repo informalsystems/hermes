@@ -16,6 +16,7 @@ target/
 
 # Ignore chain's data
 data
+namada_wallet
 
 # Ignore Python artifacts
 .mypy_cache/

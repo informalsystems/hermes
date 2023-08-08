@@ -2,7 +2,7 @@
 
 # This script executes Hermes' E2E test for Namada locally
 # `make build-release` and `make build-wasm-scripts` on Namada directory in advance
-# Run with `namada-test.sh ${namada_dir}`
+# Run with `namada-e2e-test ${namada_dir}`
 
 set -xe
 
@@ -49,7 +49,7 @@ function init_relayer_balance() {
 # ==== main ====
 
 # Run 2 Namada chains
-${HERMES_DIR}/scripts/setup-namada.sh ${NAMADA_DIR}
+${HERMES_DIR}/scripts/setup-namada ${NAMADA_DIR}
 
 # Initialize the balances
 init_relayer_balance "a" ${LEDGER_ADDR_A}
