@@ -10,15 +10,15 @@ use ibc_relayer_components::chain::traits::types::ibc_events::channel::{
     HasChannelOpenInitEvent, HasChannelOpenTryEvent,
 };
 
-use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 impl<Chain, Counterparty> HasChannelHandshakePayloads<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type ChannelOpenTryPayload = Chain::ChannelOpenTryPayload;
 
@@ -30,8 +30,8 @@ where
 impl<Chain, Counterparty> HasInitChannelOptionsType<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
-    Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Chain: OfaChainTypes,
+    Counterparty: OfaChainTypes,
 {
     type InitChannelOptions = Chain::InitChannelOptions;
 }
@@ -40,7 +40,7 @@ impl<Chain, Counterparty> HasChannelOpenInitEvent<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     type ChannelOpenInitEvent = Chain::ChannelOpenInitEvent;
 
@@ -61,7 +61,7 @@ impl<Chain, Counterparty> HasChannelOpenTryEvent<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     type ChannelOpenTryEvent = Chain::ChannelOpenTryEvent;
 
@@ -81,38 +81,41 @@ impl<Chain, Counterparty> CanBuildChannelHandshakePayloads<OfaChainWrapper<Count
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_channel_open_try_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
     ) -> Result<Self::ChannelOpenTryPayload, Self::Error> {
         self.chain
-            .build_channel_open_try_payload(height, port_id, channel_id)
+            .build_channel_open_try_payload(client_state, height, port_id, channel_id)
             .await
     }
 
     async fn build_channel_open_ack_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
     ) -> Result<Self::ChannelOpenAckPayload, Self::Error> {
         self.chain
-            .build_channel_open_ack_payload(height, port_id, channel_id)
+            .build_channel_open_ack_payload(client_state, height, port_id, channel_id)
             .await
     }
 
     async fn build_channel_open_confirm_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
     ) -> Result<Self::ChannelOpenConfirmPayload, Self::Error> {
         self.chain
-            .build_channel_open_confirm_payload(height, port_id, channel_id)
+            .build_channel_open_confirm_payload(client_state, height, port_id, channel_id)
             .await
     }
 }
@@ -122,7 +125,7 @@ impl<Chain, Counterparty> CanBuildChannelHandshakeMessages<OfaChainWrapper<Count
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     async fn build_channel_open_init_message(
         &self,

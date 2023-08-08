@@ -3,7 +3,7 @@ use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 
-use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 
 impl<Chain> HasLoggerType for OfaChainWrapper<Chain>
@@ -35,7 +35,7 @@ impl<Chain, Counterparty> CanLogChainPacket<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaIbcChain<Chain>,
+    Counterparty: OfaChainTypes,
 {
     fn log_incoming_packet<'a>(
         packet: &'a Self::IncomingPacket,

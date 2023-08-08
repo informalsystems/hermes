@@ -10,6 +10,7 @@
 
 use async_trait::async_trait;
 use eyre::eyre;
+use ibc_relayer_components::chain::traits::client::client_state::CanQueryClientState;
 use ibc_relayer_components::chain::traits::logs::event::CanLogChainEvent;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::chain::traits::message_builders::ack_packet::{
@@ -27,6 +28,7 @@ use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryRec
 use ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus;
 use ibc_relayer_components::chain::traits::queries::write_ack::CanQueryWriteAcknowledgement;
 use ibc_relayer_components::chain::traits::types::chain_id::{HasChainId, HasChainIdType};
+use ibc_relayer_components::chain::traits::types::client_state::HasClientStateType;
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
 use ibc_relayer_components::chain::traits::types::event::HasEventType;
 use ibc_relayer_components::chain::traits::types::height::{CanIncrementHeight, HasHeightType};
@@ -196,6 +198,11 @@ impl HasConsensusStateType<MockChainContext> for MockChainContext {
     type ConsensusState = ConsensusState;
 }
 
+impl HasClientStateType<MockChainContext> for MockChainContext {
+    // TODO
+    type ClientState = ();
+}
+
 impl HasChainStatusType for MockChainContext {
     type ChainStatus = ChainStatus;
 
@@ -314,6 +321,13 @@ impl CanQueryConsensusState<MockChainContext> for MockChainContext {
 }
 
 #[async_trait]
+impl CanQueryClientState<MockChainContext> for MockChainContext {
+    async fn query_client_state(&self, _client_id: &Self::ClientId) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+#[async_trait]
 impl CanQueryReceivedPacket<MockChainContext> for MockChainContext {
     async fn query_is_packet_received(
         &self,
@@ -363,6 +377,7 @@ impl HasReceivePacketPayload<MockChainContext> for MockChainContext {
 impl CanBuildReceivePacketPayload<MockChainContext> for MockChainContext {
     async fn build_receive_packet_payload(
         &self,
+        _client_state: &Self::ClientState,
         height: &MockHeight,
         packet: &PacketKey,
     ) -> Result<MockMessage, Error> {
@@ -387,6 +402,7 @@ impl CanBuildReceivePacketPayload<MockChainContext> for MockChainContext {
 impl CanBuildReceivePacketMessage<MockChainContext> for MockChainContext {
     async fn build_receive_packet_message(
         &self,
+        _packet: &PacketKey,
         payload: MockMessage,
     ) -> Result<MockMessage, Error> {
         Ok(payload)
@@ -401,6 +417,7 @@ impl HasAckPacketPayload<MockChainContext> for MockChainContext {
 impl CanBuildAckPacketPayload<MockChainContext> for MockChainContext {
     async fn build_ack_packet_payload(
         &self,
+        _client_state: &Self::ClientState,
         height: &MockHeight,
         packet: &PacketKey,
         _ack: &WriteAcknowledgementEvent,
@@ -426,7 +443,11 @@ impl CanBuildAckPacketPayload<MockChainContext> for MockChainContext {
 
 #[async_trait]
 impl CanBuildAckPacketMessage<MockChainContext> for MockChainContext {
-    async fn build_ack_packet_message(&self, payload: MockMessage) -> Result<MockMessage, Error> {
+    async fn build_ack_packet_message(
+        &self,
+        _packet: &PacketKey,
+        payload: MockMessage,
+    ) -> Result<MockMessage, Error> {
         Ok(payload)
     }
 }
@@ -439,6 +460,7 @@ impl HasTimeoutUnorderedPacketPayload<MockChainContext> for MockChainContext {
 impl CanBuildTimeoutUnorderedPacketPayload<MockChainContext> for MockChainContext {
     async fn build_timeout_unordered_packet_payload(
         &self,
+        _client_state: &Self::ClientState,
         height: &MockHeight,
         packet: &PacketKey,
     ) -> Result<MockMessage, Error> {
@@ -461,6 +483,7 @@ impl CanBuildTimeoutUnorderedPacketPayload<MockChainContext> for MockChainContex
 impl CanBuildTimeoutUnorderedPacketMessage<MockChainContext> for MockChainContext {
     async fn build_timeout_unordered_packet_message(
         &self,
+        _packet: &PacketKey,
         payload: MockMessage,
     ) -> Result<MockMessage, Error> {
         Ok(payload)

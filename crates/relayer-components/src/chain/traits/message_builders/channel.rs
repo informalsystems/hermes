@@ -3,15 +3,17 @@ use async_trait::async_trait;
 use crate::chain::traits::types::channel::{
     HasChannelHandshakePayloads, HasInitChannelOptionsType,
 };
+use crate::chain::traits::types::client_state::HasClientStateType;
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CanBuildChannelHandshakePayloads<Counterparty>:
-    HasChannelHandshakePayloads<Counterparty> + HasErrorType
+    HasChannelHandshakePayloads<Counterparty> + HasClientStateType<Counterparty> + HasErrorType
 {
     async fn build_channel_open_try_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
@@ -19,6 +21,7 @@ pub trait CanBuildChannelHandshakePayloads<Counterparty>:
 
     async fn build_channel_open_ack_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
@@ -26,6 +29,7 @@ pub trait CanBuildChannelHandshakePayloads<Counterparty>:
 
     async fn build_channel_open_confirm_payload(
         &self,
+        client_state: &Self::ClientState,
         height: &Self::Height,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,

@@ -38,7 +38,6 @@ tokio = "1.24"
 itertools = "0.10.3"
 futures = "0.3"
 tracing = "0.1.36"
-http = "0.2.8"
 opentelemetry = { version = "0.17.0", features = ["metrics"] }
 tonic = { version = "0.9", features = ["tls", "tls-roots"] }
 moka = { version = "0.10", features = ["future"] }
@@ -51,14 +50,3 @@ features = ["secp256k1"]
 version = "=0.32.0"
 features = ["http-client", "websocket-client"]
 
-[dependencies.tendermint-light-client]
-version = "=0.32.0"
-default-features = false
-features = ["rpc-client", "secp256k1", "unstable"]
-
-[dependencies.tendermint-light-client-verifier]
-version = "=0.32.0"
-default-features = false
-
-[dependencies.tendermint-proto]
-version = "=0.32.0"

@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::client::client_state::CanQueryClientState;
 use crate::chain::traits::message_builders::channel::{
     CanBuildChannelHandshakeMessages, CanBuildChannelHandshakePayloads,
 };
@@ -31,7 +32,7 @@ impl<Relay, SrcChain, DstChain> ChannelOpenAckRelayer<Relay> for RelayChannelOpe
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + CanSendSingleIbcMessage<SourceTarget>,
-    SrcChain: CanBuildChannelHandshakeMessages<DstChain>,
+    SrcChain: CanQueryClientState<DstChain> + CanBuildChannelHandshakeMessages<DstChain>,
     DstChain: CanQueryChainHeight + CanBuildChannelHandshakePayloads<SrcChain>,
 {
     async fn relay_channel_open_ack(
@@ -49,8 +50,18 @@ where
             .await
             .map_err(Relay::dst_chain_error)?;
 
+        let dst_client_state = src_chain
+            .query_client_state(relay.src_client_id())
+            .await
+            .map_err(Relay::src_chain_error)?;
+
         let open_ack_payload = dst_chain
-            .build_channel_open_ack_payload(&dst_proof_height, dst_port_id, dst_channel_id)
+            .build_channel_open_ack_payload(
+                &dst_client_state,
+                &dst_proof_height,
+                dst_port_id,
+                dst_channel_id,
+            )
             .await
             .map_err(Relay::dst_chain_error)?;
 

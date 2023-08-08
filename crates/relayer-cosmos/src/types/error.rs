@@ -9,6 +9,8 @@ use ibc_relayer::supervisor::error::Error as SupervisorError;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
+use ibc_relayer_types::core::ics23_commitment;
+use ibc_relayer_types::proofs::ProofError;
 use prost::EncodeError;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
@@ -53,6 +55,14 @@ define_error! {
         Encode
             [ TraceError<EncodeError> ]
             | _ | { "protobuf encode error" },
+
+        Ics23
+            [ ics23_commitment::error::Error ]
+            | _ | { "ICS23 error" },
+
+        Proofs
+            [ ProofError ]
+            | _ | { "proofs error" },
 
         TendermintRpc
             [ TendermintRpcError ]
