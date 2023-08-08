@@ -14,11 +14,13 @@ use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
-use ibc_test_framework::chain::config::set_voting_period;
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::assert_eventually_channel_established;
+use ibc_test_framework::util::interchain_security::{
+    update_genesis_for_consumer_chain, update_relayer_config_for_consumer_chain,
+};
 
 #[test]
 fn test_ics_ica_transfer() -> Result<(), Error> {
@@ -46,14 +48,8 @@ impl TestOverrides for InterchainSecurityIcaTransferTest {
             return Err(Error::generic(eyre!("failed to update genesis file")));
         }
 
-        // Consumer chain doesn't have a gov key.
-        if genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get("gov"))
-            .is_some()
-        {
-            set_voting_period(genesis, "10s")?;
-        }
+        update_genesis_for_consumer_chain(genesis)?;
+
         Ok(())
     }
 
@@ -64,12 +60,7 @@ impl TestOverrides for InterchainSecurityIcaTransferTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
 
-        for chain_config in config.chains.iter_mut() {
-            if chain_config.id == ChainId::from_string("ibcconsumer") {
-                chain_config.ccv_consumer_chain = true;
-                chain_config.trusting_period = Some(Duration::from_secs(99));
-            }
-        }
+        update_relayer_config_for_consumer_chain(config);
     }
 }
 

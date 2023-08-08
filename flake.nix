@@ -48,8 +48,9 @@
               evmos
               juno
               stride
-              stride-consumer
               stride-no-admin
+              stride-consumer-no-admin
+              stride-consumer
               migaloo
               neutron
             ;
