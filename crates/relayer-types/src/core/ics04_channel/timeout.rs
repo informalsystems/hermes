@@ -229,16 +229,24 @@ impl TryFrom<RawUpgradeTimeout> for UpgradeTimeout {
     type Error = ChannelError;
 
     fn try_from(value: RawUpgradeTimeout) -> Result<Self, Self::Error> {
-        let timeout_height = value
-            .height
-            .map(Height::try_from)
-            .transpose()
-            .map_err(|_| Self::Error::invalid_timeout_height())?;
+        let raw_timeout_height = value.height.map(Height::try_from).transpose();
 
-        let timeout_timestamp = Timestamp::from_nanoseconds(value.timestamp)
+        let raw_timeout_timestamp = Timestamp::from_nanoseconds(value.timestamp)
             .map_err(|_| Self::Error::invalid_timeout_timestamp)
             .ok()
             .filter(|ts| ts.nanoseconds() > 0);
+
+        let (timeout_height, timeout_timestamp) = match (raw_timeout_height, raw_timeout_timestamp)
+        {
+            (Ok(timeout_height), Some(timeout_timestamp)) => {
+                (timeout_height, Some(timeout_timestamp))
+            }
+            (Ok(timeout_height), None) => (timeout_height, None),
+            (Err(_), Some(timeout_timestamp)) => (None, Some(timeout_timestamp)),
+            (Err(e), None) => {
+                return Err(e).map_err(|_| Self::Error::invalid_timeout_height());
+            }
+        };
 
         Self::new(timeout_height, timeout_timestamp)
     }

@@ -50,6 +50,12 @@ pub enum TxCmd {
     /// Relay the channel upgrade attempt (ChannelUpgradeTry)
     ChanUpgradeTry(channel::TxChanUpgradeTryCmd),
 
+    /// Relay the channel upgrade attempt (ChannelUpgradeAck)
+    ChanUpgradeAck(channel::TxChanUpgradeAckCmd),
+
+    /// Relay the channel upgrade attempt (ChannelUpgradeOpen)
+    ChanUpgradeOpen(channel::TxChanUpgradeOpenCmd),
+
     /// Send a fungible token transfer test transaction (ICS20 MsgTransfer)
     FtTransfer(transfer::TxIcs20MsgTransferCmd),
 

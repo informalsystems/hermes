@@ -1735,8 +1735,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c888103095b45bee90cb9104513ade30abd69902153b0682b5ad81940ae1f865"
+source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=romac/channel-upgrade-only#9e0ecb6f3c4b736e3ff95e1518f19deeead1a675"
 dependencies = [
  "base64 0.21.2",
  "bytes",
@@ -1815,7 +1814,6 @@ name = "ibc-relayer-cli"
 version = "1.6.0"
 dependencies = [
  "abscissa_core",
- "atty",
  "clap 3.2.25",
  "clap_complete 3.2.5",
  "color-eyre",
