@@ -4,6 +4,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::queries::consensus_state::CanQueryConsensusState;
 use crate::chain::traits::types::consensus_state::HasConsensusStateType;
+use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::types::aliases::Height;
 use crate::logger::traits::level::HasBaseLogLevels;
 use crate::relay::traits::chains::HasRelayChains;
@@ -21,7 +22,7 @@ where
     Relay: HasRelayChains + CanLogRelayTarget<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
-    CounterpartyChain: HasConsensusStateType<TargetChain>,
+    CounterpartyChain: HasConsensusStateType<TargetChain> + HasHeightType,
     TargetChain: CanQueryConsensusState<CounterpartyChain>,
 {
     async fn build_update_client_messages(

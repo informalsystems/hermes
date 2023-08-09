@@ -15,6 +15,8 @@ pub struct DefaultComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
 crate::derive_chain_status_querier!(DefaultComponents<BaseComponents>, BaseComponents);
 
+crate::derive_consensus_state_querier!(DefaultComponents<BaseComponents>, BaseComponents);
+
 crate::derive_update_client_message_builder!(
     DefaultComponents<BaseComponents>,
     SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessages>>,

@@ -5,23 +5,15 @@ use ibc_relayer_components::relay::impls::packet_relayers::receive::base_receive
 use ibc_relayer_components::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use ibc_relayer_components_extra::batch::impls::message_sender::SendMessagesToBatchWorker;
-use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_bidirectional::ParallelBidirectionalRelayer;
-use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
 use ibc_relayer_components_extra::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
-use ibc_relayer_components_extra::telemetry::impls::consensus_state::ConsensusStateTelemetryQuerier;
 
-use crate::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
 use crate::one_for_all::impls::relay::packet_filter::FilterPacketFromOfa;
-
-pub type ConsensusStateQuerier = ConsensusStateTelemetryQuerier<SendConsensusStateQueryToOfa>;
 
 pub type AckPacketRelayer = BaseAckPacketRelayer;
 
 pub type ReceivePacketRelayer = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
 
 pub type TimeoutUnorderedPacketRelayer = BaseTimeoutUnorderedPacketRelayer;
-
-pub type AutoRelayer = ParallelBidirectionalRelayer<ParallelEventSubscriptionRelayer>;
 
 pub type PacketFilter = FilterPacketFromOfa;
 

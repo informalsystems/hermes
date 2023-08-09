@@ -4,6 +4,7 @@ use crate::relay::impls::auto_relayers::parallel_bidirectional::ParallelBidirect
 use crate::relay::impls::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
 use crate::relay::impls::packet_relayers::retry::RetryRelayer;
 use crate::std_prelude::*;
+use crate::telemetry::impls::consensus_state::ConsensusStateTelemetryQuerier;
 use crate::telemetry::impls::status::ChainStatusTelemetryQuerier;
 use ibc_relayer_components::relay::impls::client::update::BuildUpdateClientMessages;
 use ibc_relayer_components::relay::impls::messages::skip_update_client::SkipUpdateClient;
@@ -23,6 +24,11 @@ ibc_relayer_components::derive_update_client_message_builder!(
 ibc_relayer_components::derive_chain_status_querier!(
     ExtraComponents<BaseComponents>,
     ChainStatusTelemetryQuerier<BaseComponents>,
+);
+
+ibc_relayer_components::derive_consensus_state_querier!(
+    ExtraComponents<BaseComponents>,
+    ConsensusStateTelemetryQuerier<BaseComponents>,
 );
 
 ibc_relayer_components::derive_packet_relayer!(

@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
+use ibc_relayer_components::chain::traits::types::height::HasHeightType;
 use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 
@@ -17,7 +18,7 @@ impl<InQuerier, Chain, Counterparty, Telemetry> ConsensusStateQuerier<Chain, Cou
     for ConsensusStateTelemetryQuerier<InQuerier>
 where
     Chain: HasIbcChainTypes<Counterparty> + HasTelemetry<Telemetry = Telemetry> + HasErrorType,
-    Counterparty: HasConsensusStateType<Chain>,
+    Counterparty: HasConsensusStateType<Chain> + HasHeightType,
     InQuerier: ConsensusStateQuerier<Chain, Counterparty>,
     Telemetry: HasMetric<TelemetryCounter>,
     Telemetry::Value: From<u64>,
