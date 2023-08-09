@@ -1,5 +1,6 @@
 use alloc::collections::VecDeque;
 use core::mem;
+use ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages;
 use ibc_relayer_components::relay::traits::logs::logger::CanLogRelayTarget;
 
 use async_trait::async_trait;
@@ -17,9 +18,9 @@ use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 use ibc_relayer_components::runtime::traits::time::HasTime;
 use ibc_relayer_components::runtime::types::aliases::Runtime;
 
-use crate::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use crate::batch::types::aliases::{BatchSubmission, EventResultSender, MessageBatchReceiver};
 use crate::batch::types::config::BatchConfig;
+use crate::batch::types::sink::BatchWorkerSink;
 use crate::runtime::traits::channel::{CanUseChannels, HasChannelTypes};
 use crate::runtime::traits::channel_once::{CanUseChannelsOnce, HasChannelOnceTypes};
 use crate::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
@@ -285,7 +286,7 @@ where
 #[async_trait]
 impl<Relay, Target, Runtime> CanSendReadyBatches<Target> for Relay
 where
-    Relay: CanLogRelayTarget<Target> + CanSendIbcMessagesFromBatchWorker<Target>,
+    Relay: CanLogRelayTarget<Target> + CanSendIbcMessages<BatchWorkerSink, Target>,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasRuntime<Runtime = Runtime>,
     Runtime: CanUseChannelsOnce + CanUseChannels,
@@ -315,7 +316,7 @@ where
             },
         );
 
-        let send_result = self.send_messages_from_batch_worker(in_messages).await;
+        let send_result = self.send_messages(Target::default(), in_messages).await;
 
         match send_result {
             Err(e) => {

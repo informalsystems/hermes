@@ -14,12 +14,12 @@ use crate::std_prelude::*;
 pub struct SendIbcMessagesWithUpdateClient<Sender>(pub Sender);
 
 #[async_trait]
-impl<Sender, Relay, Target, TargetChain, CounterpartyChain> IbcMessageSender<Relay, Target>
-    for SendIbcMessagesWithUpdateClient<Sender>
+impl<InSender, Relay, Sink, Target, TargetChain, CounterpartyChain>
+    IbcMessageSender<Relay, Sink, Target> for SendIbcMessagesWithUpdateClient<InSender>
 where
     Relay: CanLogRelayTarget<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
-    Sender: IbcMessageSender<Relay, Target>,
+    InSender: IbcMessageSender<Relay, Sink, Target>,
     TargetChain: HasIbcChainTypes<CounterpartyChain>,
     TargetChain: HasCounterpartyMessageHeight<CounterpartyChain>,
     CounterpartyChain: HasIbcChainTypes<TargetChain> + CanIncrementHeight,
@@ -61,7 +61,7 @@ where
 
         in_messages.extend(messages);
 
-        let in_events = Sender::send_messages(relay, in_messages).await?;
+        let in_events = InSender::send_messages(relay, in_messages).await?;
 
         let events = in_events.into_iter().skip(update_messages_count).collect();
 

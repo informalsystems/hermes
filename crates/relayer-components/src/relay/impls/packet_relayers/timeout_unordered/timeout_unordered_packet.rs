@@ -6,7 +6,7 @@ use crate::chain::traits::message_builders::timeout_unordered_packet::{
 };
 use crate::chain::types::aliases::Height;
 use crate::relay::traits::chains::HasRelayChains;
-use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
+use crate::relay::traits::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
 use crate::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use crate::relay::traits::target::SourceTarget;
 use crate::relay::types::aliases::Packet;
@@ -21,7 +21,7 @@ pub struct BaseTimeoutUnorderedPacketRelayer;
 impl<Relay> TimeoutUnorderedPacketRelayer<Relay> for BaseTimeoutUnorderedPacketRelayer
 where
     Relay: HasRelayChains,
-    Relay: CanSendSingleIbcMessage<SourceTarget>,
+    Relay: CanSendSingleIbcMessage<MainSink, SourceTarget>,
     Relay::SrcChain: CanQueryClientState<Relay::DstChain>
         + CanBuildTimeoutUnorderedPacketMessage<Relay::DstChain>,
     Relay::DstChain: CanBuildTimeoutUnorderedPacketPayload<Relay::SrcChain>,

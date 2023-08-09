@@ -10,7 +10,8 @@ use crate::std_prelude::*;
 pub struct SendIbcMessagesToChain;
 
 #[async_trait]
-impl<Relay, Target, TargetChain> IbcMessageSender<Relay, Target> for SendIbcMessagesToChain
+impl<Relay, Sink, Target, TargetChain> IbcMessageSender<Relay, Sink, Target>
+    for SendIbcMessagesToChain
 where
     Relay: HasRelayChains,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,

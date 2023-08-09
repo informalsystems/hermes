@@ -7,7 +7,7 @@ use crate::chain::traits::message_builders::ack_packet::{
 use crate::chain::traits::types::client_state::HasClientStateType;
 use crate::chain::traits::types::packet::HasIbcPacketTypes;
 use crate::core::traits::sync::Async;
-use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
+use crate::relay::traits::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
 use crate::relay::traits::packet::HasRelayPacket;
 use crate::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::relay::traits::target::SourceTarget;
@@ -26,7 +26,7 @@ where
         DstChainWithPacket = DstChain,
         Packet = Packet,
     >,
-    Relay: CanSendSingleIbcMessage<SourceTarget>,
+    Relay: CanSendSingleIbcMessage<MainSink, SourceTarget>,
     SrcChain: CanQueryClientState<DstChain>
         + CanBuildAckPacketMessage<DstChain>
         + HasIbcPacketTypes<DstChain, OutgoingPacket = Packet>,

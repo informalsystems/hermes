@@ -5,7 +5,7 @@ use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::ibc_message_sender::{
-    CanSendIbcMessages, IbcMessageSender,
+    CanSendIbcMessages, IbcMessageSender, MainSink,
 };
 use ibc_relayer_components::relay::traits::messages::update_client::{
     CanBuildUpdateClientMessage, UpdateClientMessageBuilder,
@@ -166,24 +166,34 @@ impl HasPacketLock for MockRelayContext {
 }
 
 #[async_trait]
-impl CanSendIbcMessages<SourceTarget> for MockRelayContext {
+impl CanSendIbcMessages<MainSink, SourceTarget> for MockRelayContext {
     async fn send_messages(
         &self,
         _target: SourceTarget,
         messages: Vec<MockMessage>,
     ) -> Result<Vec<Vec<Event>>, Error> {
-        <components::IbcMessageSender as IbcMessageSender<MockRelayContext, SourceTarget>>::send_messages(self, messages).await
+        <components::IbcMessageSender as IbcMessageSender<
+            MockRelayContext,
+            MainSink,
+            SourceTarget,
+        >>::send_messages(self, messages)
+        .await
     }
 }
 
 #[async_trait]
-impl CanSendIbcMessages<DestinationTarget> for MockRelayContext {
+impl CanSendIbcMessages<MainSink, DestinationTarget> for MockRelayContext {
     async fn send_messages(
         &self,
         _target: DestinationTarget,
         messages: Vec<MockMessage>,
     ) -> Result<Vec<Vec<Event>>, Error> {
-        <components::IbcMessageSender as IbcMessageSender<MockRelayContext, DestinationTarget>>::send_messages(self, messages).await
+        <components::IbcMessageSender as IbcMessageSender<
+            MockRelayContext,
+            MainSink,
+            DestinationTarget,
+        >>::send_messages(self, messages)
+        .await
     }
 }
 

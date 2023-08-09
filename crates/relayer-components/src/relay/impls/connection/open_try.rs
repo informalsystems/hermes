@@ -11,7 +11,7 @@ use crate::chain::traits::types::ibc_events::connection::HasConnectionOpenTryEve
 use crate::relay::impls::update_client::CanSendUpdateClientMessage;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::connection::open_try::ConnectionOpenTryRelayer;
-use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
+use crate::relay::traits::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
@@ -40,7 +40,7 @@ impl<Relay, SrcChain, DstChain> ConnectionOpenTryRelayer<Relay> for RelayConnect
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
         + CanSendUpdateClientMessage<SourceTarget>
-        + CanSendSingleIbcMessage<DestinationTarget>
+        + CanSendSingleIbcMessage<MainSink, DestinationTarget>
         + InjectMissingConnectionTryEventError,
     SrcChain: CanQueryChainHeight + CanBuildConnectionHandshakePayloads<DstChain>,
     DstChain: CanQueryClientState<SrcChain>

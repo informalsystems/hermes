@@ -8,7 +8,7 @@ use ibc_relayer_components::relay::traits::channel::open_init::CanInitChannel;
 use ibc_relayer_components::relay::traits::connection::open_handshake::CanRelayConnectionOpenHandshake;
 use ibc_relayer_components::relay::traits::connection::open_init::CanInitConnection;
 use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
-use ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages;
+use ibc_relayer_components::relay::traits::ibc_message_sender::{CanSendIbcMessages, MainSink};
 use ibc_relayer_components::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
 use ibc_relayer_components::relay::traits::packet_clear::CanClearReceivePackets;
@@ -18,7 +18,6 @@ use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::CanRelay
 use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components_extra::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use ibc_relayer_components_extra::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 
 use crate::all_for_one::chain::AfoChain;
@@ -34,8 +33,8 @@ pub trait AfoRelay:
     + HasRelayPacket<SrcChainWithPacket = Self::AfoSrcChain, DstChainWithPacket = Self::AfoDstChain>
     + CanBuildUpdateClientMessage<SourceTarget>
     + CanBuildUpdateClientMessage<DestinationTarget>
-    + CanSendIbcMessages<SourceTarget>
-    + CanSendIbcMessages<DestinationTarget>
+    + CanSendIbcMessages<MainSink, SourceTarget>
+    + CanSendIbcMessages<MainSink, DestinationTarget>
     + CanRelayEvent<SourceTarget>
     + CanRelayEvent<DestinationTarget>
     + CanAutoRelay
@@ -44,8 +43,6 @@ pub trait AfoRelay:
     + CanRelayPacket
     + CanRelayAckPacket
     + CanRelayTimeoutUnorderedPacket
-    + CanSendIbcMessagesFromBatchWorker<SourceTarget>
-    + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
     + CanCreateClient<SourceTarget>
     + CanCreateClient<DestinationTarget>
     + CanInitConnection
@@ -75,8 +72,8 @@ where
         + HasRelayPacket<SrcChainWithPacket = SrcChain, DstChainWithPacket = DstChain>
         + CanBuildUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>
-        + CanSendIbcMessages<SourceTarget>
-        + CanSendIbcMessages<DestinationTarget>
+        + CanSendIbcMessages<MainSink, SourceTarget>
+        + CanSendIbcMessages<MainSink, DestinationTarget>
         + CanRelayEvent<SourceTarget>
         + CanRelayEvent<DestinationTarget>
         + CanAutoRelay
@@ -85,8 +82,6 @@ where
         + CanRelayPacket
         + CanRelayAckPacket
         + CanRelayTimeoutUnorderedPacket
-        + CanSendIbcMessagesFromBatchWorker<SourceTarget>
-        + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
         + CanCreateClient<SourceTarget>
         + CanCreateClient<DestinationTarget>
         + CanInitConnection
