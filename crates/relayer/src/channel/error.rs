@@ -39,7 +39,8 @@ define_error! {
             |_| { "attempted to upgrade a channel to a more strict ordring, which is not allowed" },
 
         InvalidChannelUpgradeState
-            |_| { "attempted to upgrade a channel that is not in the OPEN state" },
+            { state: String, expected: String }
+            | e | { format_args!("attempted to upgrade a channel that is in the state {} instead of the state {}", e.state, e.expected) },
 
         InvalidChannelUpgradeTimeout
             |_| { "attempted to upgrade a channel without supplying at least one of timeout height or timeout timestamp" },

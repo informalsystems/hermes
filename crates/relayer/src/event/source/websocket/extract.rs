@@ -127,6 +127,7 @@ pub fn extract_events(
         query,
     } = result;
     let events = events.ok_or("missing events")?;
+    tracing::debug!("query: {query}");
 
     match data {
         RpcEventData::NewBlock { block, .. } if query == queries::new_block().to_string() => {
@@ -150,6 +151,7 @@ pub fn extract_events(
             .map_err(|_| String::from("tx_result.height: invalid header height of 0"))?;
 
             for abci_event in &tx_result.result.events {
+                tracing::debug!("abci event: {abci_event:#?}");
                 if let Ok(ibc_event) = ibc_event_try_from_abci_event(abci_event) {
                     if query == queries::ibc_client().to_string()
                         && event_is_type_client(&ibc_event)
@@ -201,6 +203,9 @@ pub fn extract_events(
         _ => {}
     }
 
+    tracing::debug!("Events:");
+    tracing::debug!("{events_with_height:#?}");
+
     Ok(events_with_height)
 }
 
@@ -233,6 +238,10 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
             | IbcEvent::OpenConfirmChannel(_)
             | IbcEvent::CloseInitChannel(_)
             | IbcEvent::CloseConfirmChannel(_)
+            | IbcEvent::UpgradeInitChannel(_)
+            | IbcEvent::UpgradeTryChannel(_)
+            | IbcEvent::UpgradeAckChannel(_)
+            | IbcEvent::UpgradeOpenChannel(_)
             | IbcEvent::SendPacket(_)
             | IbcEvent::ReceivePacket(_)
             | IbcEvent::WriteAcknowledgement(_)

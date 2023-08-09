@@ -149,7 +149,14 @@ pub struct UpgradeAttributes {
     pub channel_flush_status: FlushStatus,
 }
 
-impl UpgradeAttributes {}
+impl UpgradeAttributes {
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+}
 
 impl Display for UpgradeAttributes {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {

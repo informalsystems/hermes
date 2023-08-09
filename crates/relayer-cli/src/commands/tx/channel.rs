@@ -888,49 +888,11 @@ pub struct TxChanUpgradeTryCmd {
         help = "Identifier of the destination channel (optional)"
     )]
     dst_chan_id: Option<ChannelId>,
-
-    #[clap(
-        long = "timeout-height",
-        required = false,
-        value_name = "TIMEOUT_HEIGHT",
-        help = "Height that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout timestamp is specified."
-    )]
-    timeout_height: Option<Height>,
-
-    #[clap(
-        long = "timeout-time",
-        required = false,
-        value_name = "TIMEOUT_TIME",
-        help = "Timeout in human readable format since current that, once it has been surpassed on the originating chain, the upgrade will time out. Required if no timeout height is specified."
-    )]
-    timeout_time: Option<HumanDuration>,
 }
 
 impl Runnable for TxChanUpgradeTryCmd {
     fn run(&self) {
         let config = app_config();
-
-        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
-            Ok(chains) => chains,
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        };
-
-        let dst_chain_status = match chains.dst.query_application_status() {
-            Ok(application_status) => application_status,
-            Err(e) => Output::error(format!("query_application_status error {}", e)).exit(),
-        };
-
-        let timeout_timestamp = self
-            .timeout_time
-            .map(|timeout_time| (dst_chain_status.timestamp + *timeout_time).unwrap());
-
-        // Check that at least one of timeout_height and timeout_timestamp has been provided
-        let Ok(timeout) = UpgradeTimeout::new(self.timeout_height, timeout_timestamp) else {
-            Output::error(
-                "At least one of --timeout-height or --timeout-timestamp must be specified.",
-            )
-            .exit();
-        };
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
@@ -975,7 +937,7 @@ impl Runnable for TxChanUpgradeTryCmd {
         info!("message ChanUpgradeTry: {}", channel);
 
         let res: Result<IbcEvent, Error> = channel
-            .build_chan_upgrade_try_and_send(timeout)
+            .build_chan_upgrade_try_and_send()
             .map_err(Error::channel);
 
         match res {

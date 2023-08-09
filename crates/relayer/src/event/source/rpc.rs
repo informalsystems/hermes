@@ -220,6 +220,8 @@ impl EventSource {
             }
         }
 
+        debug!("fetched batch: {batches:#?}");
+
         Ok(batches)
     }
 

@@ -313,6 +313,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(ChannelError::relayer)?;
 
+        tracing::info!("Channel A from restore_from_state: {a_channel:#?}");
+
         let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
             ChannelError::supervisor(SupervisorError::missing_connection_hops(
                 channel.src_channel_id.clone(),
@@ -761,6 +763,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         &mut self,
         state: State,
     ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
+        tracing::info!(
+            "state: {}, counterparty state: {}",
+            state,
+            self.counterparty_state()?
+        );
         let event = match (state, self.counterparty_state()?) {
             // Open handshake steps
             (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),
@@ -778,15 +785,42 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             (State::Closed, State::Closed) => return Ok((None, Next::Abort)),
             (State::Closed, _) => Some(self.build_chan_close_confirm_and_send()?),
 
+            (State::InitUpgrade, State::Open) => {
+                tracing::info!("handshake_step from InitUpgrade state");
+                Some(self.build_chan_upgrade_try_and_send()?)
+            }
+
+            (State::InitUpgrade, State::InitUpgrade) => {
+                tracing::info!("handshake_step from InitUpgrade state 2");
+                Some(self.build_chan_upgrade_try_and_send()?)
+            }
+
+            (State::TryUpgrade, State::InitUpgrade) => {
+                tracing::info!("handshake_step from TryUpgrade state");
+                Some(self.build_chan_upgrade_ack_and_send()?)
+            }
+
+            (State::Open, State::TryUpgrade) => {
+                tracing::info!("handshake_step from OpenUpgrade state");
+                Some(self.build_chan_upgrade_open_and_send()?)
+            }
+
             _ => None,
         };
+
+        tracing::info!(
+            "Resulting event from build_chan_upgrade_try_and_send: {:#?}",
+            event
+        );
 
         // Abort if the channel is at OpenAck, OpenConfirm or CloseConfirm stage, as there is
         // nothing more for the worker to do
         match event {
             Some(IbcEvent::OpenConfirmChannel(_))
             | Some(IbcEvent::OpenAckChannel(_))
-            | Some(IbcEvent::CloseConfirmChannel(_)) => Ok((event, Next::Abort)),
+            | Some(IbcEvent::CloseConfirmChannel(_))
+            | Some(IbcEvent::UpgradeAckChannel(_))
+            | Some(IbcEvent::UpgradeOpenChannel(_)) => Ok((event, Next::Abort)),
             _ => Ok((event, Next::Continue)),
         }
     }
@@ -802,7 +836,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     RetryResult::Err(index)
                 } else {
                     error!("failed Chan{} with error: {}", state, e);
-                    RetryResult::Retry(index)
+                    RetryResult::Err(index)
                 }
             }
             Ok((Some(ev), handshake_completed)) => {
@@ -820,6 +854,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             IbcEvent::OpenAckChannel(_) => State::Open,
             IbcEvent::OpenConfirmChannel(_) => State::Open,
             IbcEvent::CloseInitChannel(_) => State::Closed,
+            IbcEvent::UpgradeInitChannel(_) => State::InitUpgrade,
+            IbcEvent::UpgradeTryChannel(_) => State::TryUpgrade,
+            IbcEvent::UpgradeAckChannel(_) => State::AckUpgrade,
+            IbcEvent::UpgradeOpenChannel(_) => State::Open,
             _ => State::Uninitialized,
         };
 
@@ -1510,7 +1548,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         if channel_end.state != State::Open {
-            return Err(ChannelError::invalid_channel_upgrade_state());
+            return Err(ChannelError::invalid_channel_upgrade_state(
+                channel_end.state.to_string(),
+                State::Open.to_string(),
+            ));
         }
 
         if let Some(new_ordering) = new_ordering {
@@ -1594,10 +1635,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
-    pub fn build_chan_upgrade_try(
-        &self,
-        timeout: UpgradeTimeout,
-    ) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_chan_upgrade_try(&self) -> Result<Vec<Any>, ChannelError> {
         let src_channel_id = self
             .src_channel_id()
             .ok_or_else(ChannelError::missing_local_channel_id)?;
@@ -1691,7 +1729,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         if channel_end.state != State::InitUpgrade {
-            return Err(ChannelError::invalid_channel_upgrade_state());
+            return Err(ChannelError::invalid_channel_upgrade_state(
+                channel_end.state.to_string(),
+                State::InitUpgrade.to_string(),
+            ));
         }
 
         let signer = self
@@ -1704,7 +1745,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             port_id: dst_port_id.clone(),
             channel_id: dst_channel_id.clone(),
             proposed_upgrade_connection_hops: dst_channel_end.connection_hops,
-            upgrade_timeout: timeout,
+            upgrade_timeout: upgrade.timeout.clone(),
             counterparty_proposed_upgrade: upgrade,
             counterparty_upgrade_sequence: channel_end.upgraded_sequence,
             proof_channel: src_proof.object_proof().clone(),
@@ -1720,11 +1761,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(chain_a_msgs)
     }
 
-    pub fn build_chan_upgrade_try_and_send(
-        &self,
-        timeout: UpgradeTimeout,
-    ) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = self.build_chan_upgrade_try(timeout)?;
+    pub fn build_chan_upgrade_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs = self.build_chan_upgrade_try()?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeTry");
 
@@ -1976,59 +2014,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             b_side: self.b_side.map_chain(mapper_b),
             connection_delay: self.connection_delay,
         }
-    }
-
-    pub fn get_upgrade_fields(
-        &self,
-        new_version: Option<Version>,
-        new_ordering: Option<Ordering>,
-        new_connection_hops: Option<Vec<ConnectionId>>,
-    ) -> Result<UpgradeFields, ChannelError> {
-        // Destination channel ID must exist
-        let channel_id = self
-            .dst_channel_id()
-            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
-
-        let port_id = self.dst_port_id();
-
-        // Channel must exist on destination
-        let (mut channel_end, _proof) = self
-            .dst_chain()
-            .query_channel(
-                QueryChannelRequest {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
-                    height: QueryHeight::Latest,
-                },
-                IncludeProof::No,
-            )
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
-
-        if channel_end.state != State::Open {
-            return Err(ChannelError::invalid_channel_upgrade_state());
-        }
-
-        if let Some(new_ordering) = new_ordering {
-            if new_ordering == Ordering::Uninitialized || new_ordering > channel_end.ordering {
-                return Err(ChannelError::invalid_channel_upgrade_ordering());
-            }
-
-            channel_end.ordering = new_ordering;
-        }
-
-        if let Some(new_version) = new_version {
-            channel_end.version = new_version;
-        }
-
-        if let Some(new_connection_hops) = new_connection_hops {
-            channel_end.connection_hops = new_connection_hops;
-        }
-
-        Ok(UpgradeFields::new(
-            channel_end.ordering,
-            channel_end.connection_hops,
-            channel_end.version,
-        ))
     }
 }
 

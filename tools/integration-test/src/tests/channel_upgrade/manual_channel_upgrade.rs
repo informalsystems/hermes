@@ -117,7 +117,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             Some(new_version),
             new_ordering,
             new_connection_hops,
-            timeout.clone(),
+            timeout,
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
@@ -132,7 +132,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
 
         info!("Will run ChanUpgradeTry step...");
 
-        channel.build_chan_upgrade_try_and_send(timeout)?;
+        channel.build_chan_upgrade_try_and_send()?;
 
         info!("Check that the step ChanUpgradeTry was correctly executed...");
 
