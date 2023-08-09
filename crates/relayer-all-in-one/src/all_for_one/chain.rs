@@ -13,6 +13,7 @@ use ibc_relayer_components::chain::traits::types::connection::{
     HasConnectionHandshakePayloads, HasInitConnectionOptionsType,
 };
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
+use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
 use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
 use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
@@ -27,6 +28,7 @@ pub trait AfoChain<Counterparty>:
     + HasTelemetry
     + HasChainTypes
     + CanQueryChainStatus
+    + HasIbcChainTypes<Counterparty>
     + HasIbcPacketFields<Counterparty>
     + HasWriteAcknowledgementEvent<Counterparty>
     + HasConsensusStateType<Counterparty>
@@ -46,7 +48,8 @@ where
 }
 
 pub trait AfoCounterpartyChain<Chain>:
-    HasConsensusStateType<Chain>
+    HasIbcChainTypes<Chain>
+    + HasConsensusStateType<Chain>
     + HasIbcPacketTypes<
         Chain,
         IncomingPacket = Chain::OutgoingPacket,

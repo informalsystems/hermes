@@ -9,7 +9,7 @@ use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::channel::HasChannelOpenTryEvent;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::channel::open_try::ChannelOpenTryRelayer;
-use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
+use crate::relay::traits::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
 use crate::relay::traits::target::DestinationTarget;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
@@ -40,7 +40,7 @@ pub struct RelayChannelOpenTry;
 impl<Relay, SrcChain, DstChain> ChannelOpenTryRelayer<Relay> for RelayChannelOpenTry
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
-        + CanSendSingleIbcMessage<DestinationTarget>
+        + CanSendSingleIbcMessage<MainSink, DestinationTarget>
         + InjectMissingChannelTryEventError,
     SrcChain: CanQueryChainHeight + CanBuildChannelHandshakePayloads<DstChain>,
     DstChain: CanQueryClientState<SrcChain>

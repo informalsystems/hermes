@@ -1,4 +1,4 @@
-pub mod auto_relay;
+pub mod components;
 pub mod error;
 pub mod logger;
 pub mod runtime;

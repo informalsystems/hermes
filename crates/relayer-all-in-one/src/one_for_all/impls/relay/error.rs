@@ -1,4 +1,4 @@
-use ibc_relayer_components_extra::relay::impls::packet_relayers::retry::SupportsPacketRetry;
+use ibc_relayer_components_extra::relay::components::packet_relayers::retry::SupportsPacketRetry;
 
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
