@@ -25,11 +25,6 @@ use ibc_relayer_components::relay::traits::ibc_message_sender::MainSink;
 
 pub struct ExtraComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
-ibc_relayer_components::derive_update_client_message_builder!(
-    ExtraComponents<BaseComponents>,
-    SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessages>>,
-);
-
 ibc_relayer_components::derive_chain_status_querier!(
     ExtraComponents<BaseComponents>,
     ChainStatusTelemetryQuerier<BaseComponents>,
@@ -50,6 +45,11 @@ ibc_relayer_components::derive_ibc_message_sender!(
     BatchWorkerSink,
     ExtraComponents<BaseComponents>,
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
+);
+
+ibc_relayer_components::derive_update_client_message_builder!(
+    ExtraComponents<BaseComponents>,
+    SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessages>>,
 );
 
 ibc_relayer_components::derive_packet_relayer!(
