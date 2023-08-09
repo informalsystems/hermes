@@ -11,5 +11,6 @@
        to declare a single abstract `Error` type.
 */
 
+pub mod macros;
 pub mod traits;
 pub mod types;

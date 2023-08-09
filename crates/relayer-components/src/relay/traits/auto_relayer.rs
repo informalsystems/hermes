@@ -45,26 +45,38 @@ where
     }
 }
 
-#[macro_export]
-macro_rules! derive_auto_relayer {
-    ( $target:ident $( < $( $param:ident ),* $(,)? > )?, $source:ty $(,)?  ) => {
-        #[$crate::vendor::async_trait::async_trait]
-        impl<Relay, $( $( $param ),* )*>
-            $crate::relay::traits::auto_relayer::AutoRelayer<Relay>
-            for $target $( < $( $param ),* > )*
-        where
-            Relay: $crate::relay::traits::packet::HasRelayPacket,
-            $source: $crate::relay::traits::auto_relayer::AutoRelayer<Relay>,
-            $target $( < $( $param ),* > )*: $crate::core::traits::sync::Async,
-        {
-            async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error> {
-                <$source as $crate::relay::traits::auto_relayer::AutoRelayer<Relay>>
-                    ::auto_relay(relay).await
-            }
-        }
+crate::define_component_deriver!(
+    $,
+    derive_auto_relayer,
+    crate::relay::traits::auto_relayer::AutoRelayer,
+    <Relay>
+    where
+        Relay: HasErrorType,
+    {
+        auto_relay(relay: &Relay) -> Result<(), Relay::Error>;
+    }
+);
 
-    };
-}
+// #[macro_export]
+// macro_rules! derive_auto_relayer {
+//     ( $target:ident $( < $( $param:ident ),* $(,)? > )?, $source:ty $(,)?  ) => {
+//         #[$crate::vendor::async_trait::async_trait]
+//         impl<Relay, $( $( $param ),* )*>
+//             $crate::relay::traits::auto_relayer::AutoRelayer<Relay>
+//             for $target $( < $( $param ),* > )*
+//         where
+//             Relay: $crate::core::traits::error::HasErrorType,
+//             $source: $crate::relay::traits::auto_relayer::AutoRelayer<Relay>,
+//             $target $( < $( $param ),* > )*: $crate::core::traits::sync::Async,
+//         {
+//             async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error> {
+//                 <$source as $crate::relay::traits::auto_relayer::AutoRelayer<Relay>>
+//                     ::auto_relay(relay).await
+//             }
+//         }
+
+//     };
+// }
 
 /// Similar to the `CanAutoRelay` trait, the main differences are that this
 /// trait only relays to a specific target, i.e., in one direction, as well
