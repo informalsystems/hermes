@@ -5,6 +5,7 @@ use crate::relay::impls::auto_relayers::concurrent_event::ConcurrentEventSubscri
 use crate::relay::impls::client::update::BuildUpdateClientMessages;
 use crate::relay::impls::messages::skip_update_client::SkipUpdateClient;
 use crate::relay::impls::messages::wait_update_client::WaitUpdateClient;
+use crate::relay::impls::packet_relayers::ack::base_ack_packet::BaseAckPacketRelayer;
 use crate::relay::impls::packet_relayers::general::filter_relayer::FilterRelayer;
 use crate::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
 use crate::relay::impls::packet_relayers::general::lock::LockPacketRelayer;
@@ -33,6 +34,8 @@ crate::derive_receive_packet_relayer!(
     DefaultComponents<BaseComponents>,
     SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
 );
+
+crate::derive_ack_packet_relayer!(DefaultComponents<BaseComponents>, BaseAckPacketRelayer,);
 
 crate::derive_auto_relayer!(
     DefaultComponents<BaseComponents>,

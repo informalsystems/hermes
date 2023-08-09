@@ -9,6 +9,7 @@ use crate::telemetry::impls::status::ChainStatusTelemetryQuerier;
 use ibc_relayer_components::relay::impls::client::update::BuildUpdateClientMessages;
 use ibc_relayer_components::relay::impls::messages::skip_update_client::SkipUpdateClient;
 use ibc_relayer_components::relay::impls::messages::wait_update_client::WaitUpdateClient;
+use ibc_relayer_components::relay::impls::packet_relayers::ack::base_ack_packet::BaseAckPacketRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::general::filter_relayer::FilterRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::general::lock::LockPacketRelayer;
@@ -41,6 +42,11 @@ ibc_relayer_components::derive_packet_relayer!(
 ibc_relayer_components::derive_receive_packet_relayer!(
     ExtraComponents<BaseComponents>,
     SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
+);
+
+ibc_relayer_components::derive_ack_packet_relayer!(
+    ExtraComponents<BaseComponents>,
+    BaseAckPacketRelayer,
 );
 
 ibc_relayer_components::derive_auto_relayer!(
