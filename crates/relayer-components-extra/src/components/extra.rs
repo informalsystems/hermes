@@ -57,6 +57,8 @@ ibc_relayer_components::derive_packet_relayer!(
     LockPacketRelayer<LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>>,
 );
 
+ibc_relayer_components::derive_packet_filter!(ExtraComponents<BaseComponents>, BaseComponents);
+
 ibc_relayer_components::derive_receive_packet_relayer!(
     ExtraComponents<BaseComponents>,
     SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,

@@ -40,6 +40,8 @@ crate::derive_packet_relayer!(
     LockPacketRelayer<LoggerRelayer<FilterRelayer<FullCycleRelayer>>>,
 );
 
+crate::derive_packet_filter!(DefaultComponents<BaseComponents>, BaseComponents);
+
 crate::derive_receive_packet_relayer!(
     DefaultComponents<BaseComponents>,
     SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
