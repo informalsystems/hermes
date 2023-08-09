@@ -13,6 +13,8 @@ use ibc_relayer_components::relay::impls::packet_relayers::general::filter_relay
 use ibc_relayer_components::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::general::log::LoggerRelayer;
+use ibc_relayer_components::relay::impls::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
+use ibc_relayer_components::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 
 pub struct ExtraComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
@@ -34,6 +36,11 @@ ibc_relayer_components::derive_consensus_state_querier!(
 ibc_relayer_components::derive_packet_relayer!(
     ExtraComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>>,
+);
+
+ibc_relayer_components::derive_receive_packet_relayer!(
+    ExtraComponents<BaseComponents>,
+    SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
 );
 
 ibc_relayer_components::derive_auto_relayer!(

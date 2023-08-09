@@ -9,6 +9,8 @@ use crate::relay::impls::packet_relayers::general::filter_relayer::FilterRelayer
 use crate::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
 use crate::relay::impls::packet_relayers::general::lock::LockPacketRelayer;
 use crate::relay::impls::packet_relayers::general::log::LoggerRelayer;
+use crate::relay::impls::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
+use crate::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 use crate::std_prelude::*;
 
 pub struct DefaultComponents<BaseComponents>(pub PhantomData<BaseComponents>);
@@ -25,6 +27,11 @@ crate::derive_update_client_message_builder!(
 crate::derive_packet_relayer!(
     DefaultComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<FullCycleRelayer>>>,
+);
+
+crate::derive_receive_packet_relayer!(
+    DefaultComponents<BaseComponents>,
+    SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
 );
 
 crate::derive_auto_relayer!(
