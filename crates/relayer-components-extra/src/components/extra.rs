@@ -16,6 +16,7 @@ use ibc_relayer_components::relay::impls::packet_relayers::general::lock::LockPa
 use ibc_relayer_components::relay::impls::packet_relayers::general::log::LoggerRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
+use ibc_relayer_components::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 
 pub struct ExtraComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
@@ -47,6 +48,11 @@ ibc_relayer_components::derive_receive_packet_relayer!(
 ibc_relayer_components::derive_ack_packet_relayer!(
     ExtraComponents<BaseComponents>,
     BaseAckPacketRelayer,
+);
+
+ibc_relayer_components::derive_timeout_unordered_packet_relayer!(
+    ExtraComponents<BaseComponents>,
+    BaseTimeoutUnorderedPacketRelayer,
 );
 
 ibc_relayer_components::derive_auto_relayer!(

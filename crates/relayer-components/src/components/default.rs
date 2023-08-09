@@ -12,6 +12,7 @@ use crate::relay::impls::packet_relayers::general::lock::LockPacketRelayer;
 use crate::relay::impls::packet_relayers::general::log::LoggerRelayer;
 use crate::relay::impls::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
 use crate::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
+use crate::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use crate::std_prelude::*;
 
 pub struct DefaultComponents<BaseComponents>(pub PhantomData<BaseComponents>);
@@ -36,6 +37,11 @@ crate::derive_receive_packet_relayer!(
 );
 
 crate::derive_ack_packet_relayer!(DefaultComponents<BaseComponents>, BaseAckPacketRelayer,);
+
+crate::derive_timeout_unordered_packet_relayer!(
+    DefaultComponents<BaseComponents>,
+    BaseTimeoutUnorderedPacketRelayer,
+);
 
 crate::derive_auto_relayer!(
     DefaultComponents<BaseComponents>,
