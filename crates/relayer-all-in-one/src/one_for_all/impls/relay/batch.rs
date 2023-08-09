@@ -1,31 +1,9 @@
-use async_trait::async_trait;
-use ibc_relayer_components::chain::types::aliases::{Event, Message};
-use ibc_relayer_components::relay::traits::ibc_message_sender::IbcMessageSender;
-use ibc_relayer_components::relay::traits::target::ChainTarget;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_components_extra::batch::traits::channel::HasMessageBatchSender;
-use ibc_relayer_components_extra::batch::traits::send_messages_from_batch::CanSendIbcMessagesFromBatchWorker;
 use ibc_relayer_components_extra::batch::types::aliases::MessageBatchSender;
 
-use crate::one_for_all::components;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::std_prelude::*;
-
-#[async_trait]
-impl<Relay, Target> CanSendIbcMessagesFromBatchWorker<Target> for OfaRelayWrapper<Relay>
-where
-    Relay: OfaRelay,
-    Target: ChainTarget<Self>,
-    components::IbcMessageSenderForBatchWorker: IbcMessageSender<Self, Target>,
-{
-    async fn send_messages_from_batch_worker(
-        &self,
-        messages: Vec<Message<Target::TargetChain>>,
-    ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Self::Error> {
-        components::IbcMessageSenderForBatchWorker::send_messages(self, messages).await
-    }
-}
 
 impl<Relay> HasMessageBatchSender<SourceTarget> for OfaRelayWrapper<Relay>
 where

@@ -1,15 +1,11 @@
 use async_trait::async_trait;
-use ibc_relayer_components::chain::traits::queries::status::{
-    CanQueryChainStatus, ChainStatusQuerier,
-};
+use ibc_relayer_components::chain::traits::queries::status::ChainStatusQuerier;
 use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 
-use crate::one_for_all::components;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::one_for_all::types::chain::OfaChainWrapper;
+use crate::one_for_all::types::component::OfaComponents;
 use crate::std_prelude::*;
-
-pub struct SendChainStatusQueryToOfa;
 
 impl<Chain> HasChainStatusType for OfaChainWrapper<Chain>
 where
@@ -27,7 +23,7 @@ where
 }
 
 #[async_trait]
-impl<Chain> ChainStatusQuerier<OfaChainWrapper<Chain>> for SendChainStatusQueryToOfa
+impl<Chain> ChainStatusQuerier<OfaChainWrapper<Chain>> for OfaComponents
 where
     Chain: OfaChain,
 {
@@ -37,15 +33,5 @@ where
         let status = context.chain.query_chain_status().await?;
 
         Ok(status)
-    }
-}
-
-#[async_trait]
-impl<Chain> CanQueryChainStatus for OfaChainWrapper<Chain>
-where
-    Chain: OfaChain,
-{
-    async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
-        components::ChainStatusQuerier::query_chain_status(self).await
     }
 }

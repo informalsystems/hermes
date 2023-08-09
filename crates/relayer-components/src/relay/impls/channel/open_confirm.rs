@@ -7,7 +7,7 @@ use crate::chain::traits::message_builders::channel::{
 use crate::chain::traits::queries::status::CanQueryChainHeight;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::channel::open_confirm::ChannelOpenConfirmRelayer;
-use crate::relay::traits::ibc_message_sender::CanSendSingleIbcMessage;
+use crate::relay::traits::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
 use crate::relay::traits::target::DestinationTarget;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;
@@ -31,7 +31,7 @@ pub struct RelayChannelOpenConfirm;
 impl<Relay, SrcChain, DstChain> ChannelOpenConfirmRelayer<Relay> for RelayChannelOpenConfirm
 where
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
-        + CanSendSingleIbcMessage<DestinationTarget>,
+        + CanSendSingleIbcMessage<MainSink, DestinationTarget>,
     SrcChain: CanQueryChainHeight + CanBuildChannelHandshakePayloads<DstChain>,
     DstChain: CanQueryClientState<SrcChain> + CanBuildChannelHandshakeMessages<SrcChain>,
 {

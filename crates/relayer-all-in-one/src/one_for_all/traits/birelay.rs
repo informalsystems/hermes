@@ -21,6 +21,7 @@ pub trait OfaBiRelay: Async {
         SrcChain = <Self::RelayAToB as OfaRelay>::DstChain,
         DstChain = <Self::RelayAToB as OfaRelay>::SrcChain,
         Error = <Self::RelayAToB as OfaRelay>::Error,
+        Logger = <Self::RelayAToB as OfaRelay>::Logger,
     >;
 
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
