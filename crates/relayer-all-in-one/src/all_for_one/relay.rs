@@ -18,7 +18,7 @@ use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::CanRelay
 use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components_extra::relay::impls::packet_relayers::retry::SupportsPacketRetry;
+use ibc_relayer_components_extra::relay::components::packet_relayers::retry::SupportsPacketRetry;
 
 use crate::all_for_one::chain::AfoChain;
 use crate::all_for_one::runtime::HasAfoRuntime;
