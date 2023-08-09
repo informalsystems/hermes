@@ -1,19 +1,13 @@
 use core::marker::PhantomData;
 
+use ibc_relayer_components::components::default::DefaultComponents;
 use ibc_relayer_components::relay::components::message_senders::chain_sender::SendIbcMessagesToChain;
 use ibc_relayer_components::relay::components::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use ibc_relayer_components::relay::components::update_client::build::BuildUpdateClientMessages;
-use ibc_relayer_components::relay::components::update_client::skip::SkipUpdateClient;
-use ibc_relayer_components::relay::components::update_client::wait::WaitUpdateClient;
 use ibc_relayer_components::relay::components::packet_relayers::general::filter_relayer::FilterRelayer;
-use ibc_relayer_components::relay::components::packet_relayers::ack::base_ack_packet::BaseAckPacketRelayer;
-use ibc_relayer_components::relay::components::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::full_relay::FullCycleRelayer;
-use ibc_relayer_components::relay::components::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
+use ibc_relayer_components::relay::components::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::log::LoggerRelayer;
-use ibc_relayer_components::relay::components::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
-use ibc_relayer_components::relay::components::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
-use ibc_relayer_components::relay::traits::auto_relayer::{RelayMode, BiRelayMode};
+use ibc_relayer_components::relay::traits::auto_relayer::{BiRelayMode, RelayMode};
 use ibc_relayer_components::relay::traits::ibc_message_sender::MainSink;
 
 use crate::batch::components::message_sender::SendMessagesToBatchWorker;
@@ -52,7 +46,7 @@ ibc_relayer_components::derive_ibc_message_sender!(
 
 ibc_relayer_components::derive_update_client_message_builder!(
     ExtraComponents<BaseComponents>,
-    SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessages>>,
+    DefaultComponents<BaseComponents>,
 );
 
 ibc_relayer_components::derive_packet_relayer!(
@@ -60,21 +54,24 @@ ibc_relayer_components::derive_packet_relayer!(
     LockPacketRelayer<LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>>,
 );
 
-ibc_relayer_components::derive_packet_filter!(ExtraComponents<BaseComponents>, BaseComponents);
+ibc_relayer_components::derive_packet_filter!(
+    ExtraComponents<BaseComponents>,
+    DefaultComponents<BaseComponents>,
+);
 
 ibc_relayer_components::derive_receive_packet_relayer!(
     ExtraComponents<BaseComponents>,
-    SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
+    DefaultComponents<BaseComponents>,
 );
 
 ibc_relayer_components::derive_ack_packet_relayer!(
     ExtraComponents<BaseComponents>,
-    BaseAckPacketRelayer,
+    DefaultComponents<BaseComponents>,
 );
 
 ibc_relayer_components::derive_timeout_unordered_packet_relayer!(
     ExtraComponents<BaseComponents>,
-    BaseTimeoutUnorderedPacketRelayer,
+    DefaultComponents<BaseComponents>,
 );
 
 ibc_relayer_components::derive_auto_relayer!(
