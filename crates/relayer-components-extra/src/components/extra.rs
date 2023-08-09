@@ -4,6 +4,7 @@ use crate::batch::impls::message_sender::SendMessagesToBatchWorker;
 use crate::batch::types::sink::BatchWorkerSink;
 use crate::relay::impls::auto_relayers::parallel_bidirectional::ParallelBidirectionalRelayer;
 use crate::relay::impls::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
+use crate::relay::impls::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 use crate::relay::impls::packet_relayers::retry::RetryRelayer;
 use crate::std_prelude::*;
 use crate::telemetry::impls::consensus_state::ConsensusStateTelemetryQuerier;
@@ -21,6 +22,7 @@ use ibc_relayer_components::relay::impls::packet_relayers::general::log::LoggerR
 use ibc_relayer_components::relay::impls::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 use ibc_relayer_components::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
+use ibc_relayer_components::relay::traits::auto_relayer::{RelayMode, BiRelayMode};
 use ibc_relayer_components::relay::traits::ibc_message_sender::MainSink;
 
 pub struct ExtraComponents<BaseComponents>(pub PhantomData<BaseComponents>);
@@ -75,6 +77,13 @@ ibc_relayer_components::derive_timeout_unordered_packet_relayer!(
 );
 
 ibc_relayer_components::derive_auto_relayer!(
+    RelayMode,
     ExtraComponents<BaseComponents>,
     ParallelBidirectionalRelayer<ParallelEventSubscriptionRelayer>,
+);
+
+ibc_relayer_components::derive_auto_relayer!(
+    BiRelayMode,
+    ExtraComponents<BaseComponents>,
+    ParallelTwoWayAutoRelay,
 );

@@ -7,9 +7,12 @@ use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
+pub struct RelayMode;
+pub struct BiRelayMode;
+
 /// Provider trait for the `CanAutoRelay` trait.
 #[async_trait]
-pub trait AutoRelayer<Relay>: Async
+pub trait AutoRelayer<Relay, Mode>: Async
 where
     Relay: HasErrorType,
 {
@@ -29,16 +32,16 @@ where
 /// auto-relay process will relay in one direction as appropriate for
 /// the implementing context.
 #[async_trait]
-pub trait CanAutoRelay: HasErrorType {
+pub trait CanAutoRelay<Mode>: HasErrorType {
     /// Starts the auto-relaying process.
     async fn auto_relay(&self) -> Result<(), Self::Error>;
 }
 
 #[async_trait]
-impl<Relay> CanAutoRelay for Relay
+impl<Relay, Mode> CanAutoRelay<Mode> for Relay
 where
     Relay: HasErrorType + HasComponents,
-    Relay::Components: AutoRelayer<Relay>,
+    Relay::Components: AutoRelayer<Relay, Mode>,
 {
     async fn auto_relay(&self) -> Result<(), Self::Error> {
         Relay::Components::auto_relay(self).await
@@ -47,18 +50,18 @@ where
 
 #[macro_export]
 macro_rules! derive_auto_relayer {
-    ( $target:ident $( < $( $param:ident ),* $(,)? > )?, $source:ty $(,)?  ) => {
+    ( $mode:ty, $target:ident $( < $( $param:ident ),* $(,)? > )?, $source:ty $(,)?  ) => {
         #[$crate::vendor::async_trait::async_trait]
         impl<Relay, $( $( $param ),* )*>
-            $crate::relay::traits::auto_relayer::AutoRelayer<Relay>
+            $crate::relay::traits::auto_relayer::AutoRelayer<Relay, $mode>
             for $target $( < $( $param ),* > )*
         where
-            Relay: $crate::relay::traits::packet::HasRelayPacket,
-            $source: $crate::relay::traits::auto_relayer::AutoRelayer<Relay>,
+            Relay: $crate::core::traits::error::HasErrorType,
+            $source: $crate::relay::traits::auto_relayer::AutoRelayer<Relay, $mode>,
             $target $( < $( $param ),* > )*: $crate::core::traits::sync::Async,
         {
             async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error> {
-                <$source as $crate::relay::traits::auto_relayer::AutoRelayer<Relay>>
+                <$source as $crate::relay::traits::auto_relayer::AutoRelayer<Relay, $mode>>
                     ::auto_relay(relay).await
             }
         }

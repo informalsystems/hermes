@@ -12,7 +12,7 @@ use crate::std_prelude::*;
 
 /// A concurrent bidirectional relay context that supports auto-relaying between two
 /// targets, a `SourceTarget` and a `DestinationTarget`. It is composed of two
-/// unidirectional relay contexts.   
+/// unidirectional relay contexts.
 ///
 /// Note that the `InRelayer` parameter is constrained such that the two sub-relay
 /// contexts must relay between the same two connected chains, the `SourceTarget`
@@ -25,7 +25,7 @@ use crate::std_prelude::*;
 pub struct ConcurrentBidirectionalRelayer<InRelayer>(pub PhantomData<InRelayer>);
 
 #[async_trait]
-impl<Relay, InRelayer> AutoRelayer<Relay> for ConcurrentBidirectionalRelayer<InRelayer>
+impl<Relay, Mode, InRelayer> AutoRelayer<Relay, Mode> for ConcurrentBidirectionalRelayer<InRelayer>
 where
     Relay: HasRelayChains,
     InRelayer: AutoRelayerWithTarget<Relay, SourceTarget>,

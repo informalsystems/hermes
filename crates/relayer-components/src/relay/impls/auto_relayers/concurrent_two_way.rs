@@ -4,7 +4,7 @@ use core::pin::Pin;
 use async_trait::async_trait;
 use futures_util::stream::{self, StreamExt};
 
-use crate::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
+use crate::relay::traits::auto_relayer::{AutoRelayer, BiRelayMode, CanAutoRelay, RelayMode};
 use crate::relay::traits::two_way::HasTwoWayRelay;
 use crate::std_prelude::*;
 
@@ -16,11 +16,11 @@ use crate::std_prelude::*;
 pub struct ConcurrentTwoWayAutoRelay;
 
 #[async_trait]
-impl<BiRelay> AutoRelayer<BiRelay> for ConcurrentTwoWayAutoRelay
+impl<BiRelay> AutoRelayer<BiRelay, BiRelayMode> for ConcurrentTwoWayAutoRelay
 where
     BiRelay: HasTwoWayRelay,
-    BiRelay::RelayAToB: CanAutoRelay,
-    BiRelay::RelayBToA: CanAutoRelay,
+    BiRelay::RelayAToB: CanAutoRelay<RelayMode>,
+    BiRelay::RelayBToA: CanAutoRelay<RelayMode>,
 {
     async fn auto_relay(birelay: &BiRelay) -> Result<(), BiRelay::Error> {
         let a_to_b_task: Pin<Box<dyn Future<Output = ()> + Send>> = Box::pin(async move {

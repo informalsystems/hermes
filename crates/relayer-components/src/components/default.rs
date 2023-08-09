@@ -15,6 +15,7 @@ use crate::relay::impls::packet_relayers::general::log::LoggerRelayer;
 use crate::relay::impls::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
 use crate::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 use crate::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
+use crate::relay::traits::auto_relayer::RelayMode;
 use crate::relay::traits::ibc_message_sender::MainSink;
 use crate::std_prelude::*;
 
@@ -55,6 +56,7 @@ crate::derive_timeout_unordered_packet_relayer!(
 );
 
 crate::derive_auto_relayer!(
+    RelayMode,
     DefaultComponents<BaseComponents>,
     ConcurrentBidirectionalRelayer<ConcurrentEventSubscriptionRelayer>,
 );
