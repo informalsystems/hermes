@@ -1,5 +1,7 @@
 use core::marker::PhantomData;
 
+use crate::relay::impls::auto_relayers::parallel_bidirectional::ParallelBidirectionalRelayer;
+use crate::relay::impls::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
 use crate::relay::impls::packet_relayers::retry::RetryRelayer;
 use crate::std_prelude::*;
 use crate::telemetry::impls::status::ChainStatusTelemetryQuerier;
@@ -26,4 +28,9 @@ ibc_relayer_components::derive_chain_status_querier!(
 ibc_relayer_components::derive_packet_relayer!(
     ExtraComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>>,
+);
+
+ibc_relayer_components::derive_auto_relayer!(
+    ExtraComponents<BaseComponents>,
+    ParallelBidirectionalRelayer<ParallelEventSubscriptionRelayer>,
 );

@@ -1,5 +1,7 @@
 use core::marker::PhantomData;
 
+use crate::relay::impls::auto_relayers::concurrent_bidirectional::ConcurrentBidirectionalRelayer;
+use crate::relay::impls::auto_relayers::concurrent_event::ConcurrentEventSubscriptionRelayer;
 use crate::relay::impls::client::update::BuildUpdateClientMessages;
 use crate::relay::impls::messages::skip_update_client::SkipUpdateClient;
 use crate::relay::impls::messages::wait_update_client::WaitUpdateClient;
@@ -21,4 +23,9 @@ crate::derive_update_client_message_builder!(
 crate::derive_packet_relayer!(
     DefaultComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<FullCycleRelayer>>>,
+);
+
+crate::derive_auto_relayer!(
+    DefaultComponents<BaseComponents>,
+    ConcurrentBidirectionalRelayer<ConcurrentEventSubscriptionRelayer>,
 );
