@@ -219,7 +219,7 @@ fn handle_light_client_attack(
 
             MsgSubmitIcsConsumerMisbehaviour {
                 submitter: signer,
-                misbehaviour,
+                misbehaviour: misbehaviour.to_any(),
             }
             .to_any()
         } else {

@@ -2,10 +2,10 @@ use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
+use ibc_proto::google::protobuf::Any as ProtoAny;
 use ibc_proto::interchain_security::ccv::provider::v1::MsgSubmitConsumerMisbehaviour as RawIcsMisbehaviour;
 use ibc_proto::protobuf::Protobuf;
 
-use crate::clients::ics07_tendermint::misbehaviour::Misbehaviour;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
@@ -17,7 +17,7 @@ pub const ICS_MISBEHAVIOR_TYPE_URL: &str =
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgSubmitIcsConsumerMisbehaviour {
     pub submitter: Signer,
-    pub misbehaviour: Misbehaviour,
+    pub misbehaviour: ProtoAny,
 }
 
 impl Msg for MsgSubmitIcsConsumerMisbehaviour {
@@ -39,15 +39,11 @@ impl TryFrom<RawIcsMisbehaviour> for MsgSubmitIcsConsumerMisbehaviour {
     type Error = Error;
 
     fn try_from(raw: RawIcsMisbehaviour) -> Result<Self, Self::Error> {
-        let mis = raw
-            .misbehaviour
-            .ok_or_else(|| Error::invalid_raw_misbehaviour("missing misbehaviour".into()))?;
-
         Ok(Self {
             submitter: raw.submitter.parse().map_err(Error::signer)?,
-            misbehaviour: mis.try_into().map_err(|_e| {
-                Error::invalid_raw_misbehaviour("cannot convert misbehaviour".into())
-            })?,
+            misbehaviour: raw
+                .misbehaviour
+                .ok_or_else(|| Error::invalid_raw_misbehaviour("missing misbehaviour".into()))?,
         })
     }
 }
@@ -56,13 +52,16 @@ impl From<MsgSubmitIcsConsumerMisbehaviour> for RawIcsMisbehaviour {
     fn from(value: MsgSubmitIcsConsumerMisbehaviour) -> Self {
         RawIcsMisbehaviour {
             submitter: value.submitter.to_string(),
-            misbehaviour: Some(value.misbehaviour.into()),
+            misbehaviour: Some(value.misbehaviour),
         }
     }
 }
 
 impl fmt::Display for MsgSubmitIcsConsumerMisbehaviour {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}: {}", self.submitter, self.misbehaviour)
+        f.debug_struct("MsgSubmitIcsConsumerMisbehaviour")
+            .field("submitter", &self.submitter)
+            .field("misbehaviour", &"[...]")
+            .finish()
     }
 }
