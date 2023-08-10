@@ -3,17 +3,17 @@
 ## Table of Contents
 
 - [CometBFT RPC](#cometbft-rpc)
-  * [`/health`](#--health-)
-  * [`/consensus_params`](#--consensus-params-)
-  * [`/status`](#--status-)
-  * [`/header`](#--header-)
-  * [`/latest_commit`, `/commit`, `/validators`](#--latest-commit-----commit-----validators-)
-  * [`/abci_query`](#--abci-query-)
-  * [`/tx_search`](#--tx-search-)
-  * [`/block_search`](#--block-search-)
-  * [`/block_results`](#--block-results-)
-  * [`/broadcast_tx_sync`](#--broadcast-tx-sync-)
-  * [`/broadcast_evidence`](#--broadcast-evidence-)
+  * [`/health`](#health)
+  * [`/consensus_params`](#consensus_params)
+  * [`/status`](#status)
+  * [`/header`](#header)
+  * [`/latest_commit`, `/commit`, `/validators`](#latest_commit-commit-validators)
+  * [`/abci_query`](#abci_query)
+  * [`/tx_search`](#tx_search)
+  * [`/block_search`](#block_search)
+  * [`/block_results`](#block_results)
+  * [`/broadcast_tx_sync`](#broadcast_tx_sync)
+  * [`/broadcast_evidence`](#broadcast_evidence)
 - [CometBFT WebSocket](#cometbft-websocket)
 
 ## CometBFT RPC
