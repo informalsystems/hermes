@@ -1,29 +1,23 @@
 //! The following tests are for the Interchain Security.
-//! These tests require the first chain to be a Producer chain and
+//! These tests require the first chain to be a Provider chain and
 //! the second chain a Consumer chain.
-use ibc_test_framework::chain::config::set_voting_period;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
+use ibc_test_framework::util::interchain_security::{
+    update_genesis_for_consumer_chain, update_relayer_config_for_consumer_chain,
+};
 use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
 fn test_ics_transfer() -> Result<(), Error> {
-    run_binary_interchain_security_channel_test(&InterchainSecurityTest)
+    run_binary_interchain_security_channel_test(&InterchainSecurityTransferTest)
 }
 
-struct InterchainSecurityTest;
+struct InterchainSecurityTransferTest;
 
-impl TestOverrides for InterchainSecurityTest {
+impl TestOverrides for InterchainSecurityTransferTest {
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        // Consumer chain doesn't have a gov key.
-        if genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get("gov"))
-            .is_some()
-        {
-            set_voting_period(genesis, "10s")?;
-        }
-        Ok(())
+        update_genesis_for_consumer_chain(genesis)
     }
 
     // The `ccv_consumer_chain` must be `true` for the Consumer chain.
@@ -31,16 +25,11 @@ impl TestOverrides for InterchainSecurityTest {
     // specified in the Consumer chain proposal. The test framework uses 100s in
     // the proposal.
     fn modify_relayer_config(&self, config: &mut Config) {
-        for chain_config in config.chains.iter_mut() {
-            if chain_config.id == ChainId::from_string("ibcconsumer") {
-                chain_config.ccv_consumer_chain = true;
-                chain_config.trusting_period = Some(Duration::from_secs(99));
-            }
-        }
+        update_relayer_config_for_consumer_chain(config);
     }
 }
 
-impl BinaryChannelTest for InterchainSecurityTest {
+impl BinaryChannelTest for InterchainSecurityTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,

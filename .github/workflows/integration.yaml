@@ -94,7 +94,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -132,7 +132,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -173,7 +173,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -222,7 +222,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -268,7 +268,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -308,7 +308,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -350,7 +350,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -390,7 +390,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -406,7 +406,7 @@ jobs:
             test -p ibc-integration-test --features clean-workers --no-fail-fast -- \
             --nocapture --test-threads=1 clean_workers::
 
-  interchain-security:
+  interchain-security-no-ica:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -430,7 +430,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -444,6 +444,86 @@ jobs:
         run: |
           nix shell .#gaia9 .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features interchain-security --no-fail-fast -- \
+            --nocapture --test-threads=1 interchain_security::
+
+  interchain-security-ica:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: stride-consumer
+            command: strided
+            account_prefix: stride
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
+      - env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
+        run: |
+          nix shell .#gaia9 .#${{ matrix.chain.package }} -c cargo \
+            test -p ibc-integration-test --features interchain-security,ica --no-fail-fast -- \
+            --nocapture --test-threads=1 interchain_security::
+
+  interchain-security-icq:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: stride-consumer-no-admin
+            command: strided
+            account_prefix: stride
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
+      - env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
+        run: |
+          nix shell .#gaia9 .#${{ matrix.chain.package }} -c cargo \
+            test -p ibc-integration-test --features interchain-security,ics31 --no-fail-fast -- \
             --nocapture --test-threads=1 interchain_security::
 
   model-based-test:
@@ -468,7 +548,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test

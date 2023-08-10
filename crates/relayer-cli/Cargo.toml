@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "1.5.1"
+version    = "1.6.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -25,13 +25,20 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
+<<<<<<< HEAD
 ibc-relayer-types  = { version = "0.24.1", path = "../relayer-types" }
 ibc-relayer        = { version = "0.24.1", path = "../relayer" }
 ibc-telemetry      = { version = "0.24.1", path = "../telemetry", optional = true }
 ibc-relayer-rest   = { version = "0.24.1", path = "../relayer-rest", optional = true }
 ibc-chain-registry = { version = "0.24.1" ,path = "../chain-registry" }
+=======
+ibc-relayer-types  = { version = "0.25.0", path = "../relayer-types" }
+ibc-relayer        = { version = "0.25.0", path = "../relayer" }
+ibc-telemetry      = { version = "0.25.0", path = "../telemetry", optional = true }
+ibc-relayer-rest   = { version = "0.25.0", path = "../relayer-rest", optional = true }
+ibc-chain-registry = { version = "0.25.0" , path = "../chain-registry" }
+>>>>>>> master
 
-chrono = "0.4.24"
 clap                     = { version = "3.2", features = ["cargo"] }
 clap_complete            = "3.2"
 color-eyre               = "0.6"
@@ -50,11 +57,12 @@ oneline-eyre             = "0.1"
 regex                    = "1.8.1"
 serde                    = { version = "1.0", features = ["serde_derive"] }
 serde_json               = "1"
-signal-hook              = "0.3.15"
+signal-hook              = "0.3.17"
 subtle-encoding          = "0.5"
 tokio                    = { version = "1.0", features = ["full"] }
 tracing                  = "0.1.36"
 tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
+time                     = "0.3"
 
 [dependencies.tendermint]
 version = "0.32.0"
