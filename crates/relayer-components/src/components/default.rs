@@ -17,7 +17,7 @@ use crate::relay::components::update_client::build::BuildUpdateClientMessages;
 use crate::relay::components::update_client::skip::SkipUpdateClient;
 use crate::relay::components::update_client::wait::WaitUpdateClient;
 use crate::relay::traits::auto_relayer::{BiRelayMode, RelayMode};
-use crate::relay::traits::ibc_message_sender::MainSink;
+use crate::relay::traits::ibc_message_sender::{ForwardIbcMessageSender, MainSink};
 use crate::relay::traits::packet_relayer::ForwardPacketRelayer;
 use crate::std_prelude::*;
 
@@ -27,8 +27,8 @@ crate::derive_chain_status_querier!(DefaultComponents<BaseComponents>, BaseCompo
 
 crate::derive_consensus_state_querier!(DefaultComponents<BaseComponents>, BaseComponents);
 
-crate::derive_ibc_message_sender!(
-    MainSink,
+crate::forward_component!(
+    ForwardIbcMessageSender<MainSink>,
     DefaultComponents<BaseComponents>,
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
 );

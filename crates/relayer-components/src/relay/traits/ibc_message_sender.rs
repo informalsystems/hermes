@@ -1,9 +1,11 @@
+use core::marker::PhantomData;
+
 use async_trait::async_trait;
 
 use crate::chain::traits::message_sender::InjectMismatchIbcEventsCountError;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::types::aliases::{Event, Message};
-use crate::core::traits::component::HasComponents;
+use crate::core::traits::component::{ForwardComponent, HasComponents};
 use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
@@ -21,6 +23,24 @@ where
         relay: &Relay,
         messages: Vec<Message<Target::TargetChain>>,
     ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Relay::Error>;
+}
+
+pub struct ForwardIbcMessageSender<Sink>(pub PhantomData<Sink>);
+
+#[async_trait]
+impl<Component, Relay, Sink, Target> IbcMessageSender<Relay, Sink, Target> for Component
+where
+    Relay: HasRelayChains,
+    Target: ChainTarget<Relay>,
+    Component: ForwardComponent<ForwardIbcMessageSender<Sink>>,
+    Component::Forward: IbcMessageSender<Relay, Sink, Target>,
+{
+    async fn send_messages(
+        relay: &Relay,
+        messages: Vec<Message<Target::TargetChain>>,
+    ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Relay::Error> {
+        Component::Forward::send_messages(relay, messages).await
+    }
 }
 
 #[async_trait]
@@ -49,31 +69,6 @@ where
     ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Self::Error> {
         Relay::Components::send_messages(self, messages).await
     }
-}
-
-#[macro_export]
-macro_rules! derive_ibc_message_sender {
-    ( $sink:ty, $target:ident $( < $( $param:ident ),* $(,)? > )?, $source:ty $(,)?  ) => {
-        #[$crate::vendor::async_trait::async_trait]
-        impl<Relay, Target, $( $( $param ),* )*>
-            $crate::relay::traits::ibc_message_sender::IbcMessageSender<Relay, $sink, Target>
-            for $target $( < $( $param ),* > )*
-        where
-            Relay: $crate::relay::traits::chains::HasRelayChains,
-            Target: $crate::relay::traits::target::ChainTarget<Relay>,
-            $source: $crate::relay::traits::ibc_message_sender::IbcMessageSender<Relay, $sink, Target>,
-            $target $( < $( $param ),* > )*: $crate::core::traits::sync::Async,
-        {
-            async fn send_messages(
-                relay: &Relay,
-                messages: Vec<<Target::TargetChain as $crate::chain::traits::types::message::HasMessageType>::Message>,
-            ) -> Result<Vec<Vec<<Target::TargetChain as $crate::chain::traits::types::event::HasEventType>::Event>>, Relay::Error> {
-                <$source as $crate::relay::traits::ibc_message_sender::IbcMessageSender<Relay, $sink, Target>>
-                    ::send_messages(relay, messages).await
-            }
-        }
-
-    };
 }
 
 #[async_trait]

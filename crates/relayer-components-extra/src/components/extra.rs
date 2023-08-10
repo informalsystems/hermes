@@ -8,7 +8,9 @@ use ibc_relayer_components::relay::components::packet_relayers::general::full_re
 use ibc_relayer_components::relay::components::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::log::LoggerRelayer;
 use ibc_relayer_components::relay::traits::auto_relayer::{BiRelayMode, RelayMode};
-use ibc_relayer_components::relay::traits::ibc_message_sender::MainSink;
+use ibc_relayer_components::relay::traits::ibc_message_sender::{
+    ForwardIbcMessageSender, MainSink,
+};
 use ibc_relayer_components::relay::traits::packet_relayer::ForwardPacketRelayer;
 
 use crate::batch::components::message_sender::SendMessagesToBatchWorker;
@@ -33,14 +35,14 @@ ibc_relayer_components::derive_consensus_state_querier!(
     ConsensusStateTelemetryQuerier<BaseComponents>,
 );
 
-ibc_relayer_components::derive_ibc_message_sender!(
-    MainSink,
+ibc_relayer_components::forward_component!(
+    ForwardIbcMessageSender<MainSink>,
     ExtraComponents<BaseComponents>,
     SendMessagesToBatchWorker,
 );
 
-ibc_relayer_components::derive_ibc_message_sender!(
-    BatchWorkerSink,
+ibc_relayer_components::forward_component!(
+    ForwardIbcMessageSender<BatchWorkerSink>,
     ExtraComponents<BaseComponents>,
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
 );
