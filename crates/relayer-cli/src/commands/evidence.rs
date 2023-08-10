@@ -214,26 +214,30 @@ fn handle_light_client_attack(
             false
         };
 
-        let msg_misbehaviour = if counterparty_is_provider {
+        let mut msgs = if counterparty_is_provider {
             info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
 
-            MsgSubmitIcsConsumerMisbehaviour {
-                submitter: signer,
-                misbehaviour: misbehaviour.to_any(),
+            let msg = MsgSubmitIcsConsumerMisbehaviour {
+                submitter: signer.clone(),
+                misbehaviour: misbehaviour.clone().to_any(),
             }
-            .to_any()
-        } else {
-            info!("submitting sovereign misbehaviour to chain {counterparty_chain_id}");
+            .to_any();
 
-            MsgSubmitMisbehaviour {
-                client_id: counterparty_client_id,
-                misbehaviour: misbehaviour.to_any(),
-                signer,
-            }
-            .to_any()
+            vec![msg]
+        } else {
+            vec![]
         };
 
-        msgs.push(msg_misbehaviour);
+        info!("submitting sovereign misbehaviour to chain {counterparty_chain_id}");
+
+        let msg = MsgSubmitMisbehaviour {
+            client_id: counterparty_client_id,
+            misbehaviour: misbehaviour.to_any(),
+            signer,
+        }
+        .to_any();
+
+        msgs.push(msg);
 
         let tracked_msgs = TrackedMsgs::new_static(msgs, "submit_misbehaviour");
         let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
