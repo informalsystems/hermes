@@ -9,6 +9,7 @@ use ibc_relayer_components::relay::components::packet_relayers::general::lock::L
 use ibc_relayer_components::relay::components::packet_relayers::general::log::LoggerRelayer;
 use ibc_relayer_components::relay::traits::auto_relayer::{BiRelayMode, RelayMode};
 use ibc_relayer_components::relay::traits::ibc_message_sender::MainSink;
+use ibc_relayer_components::relay::traits::packet_relayer::ForwardPacketRelayer;
 
 use crate::batch::components::message_sender::SendMessagesToBatchWorker;
 use crate::batch::types::sink::BatchWorkerSink;
@@ -49,7 +50,8 @@ ibc_relayer_components::derive_update_client_message_builder!(
     DefaultComponents<BaseComponents>,
 );
 
-ibc_relayer_components::derive_packet_relayer!(
+ibc_relayer_components::forward_component!(
+    ForwardPacketRelayer,
     ExtraComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>>,
 );

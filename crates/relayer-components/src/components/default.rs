@@ -18,6 +18,7 @@ use crate::relay::components::update_client::skip::SkipUpdateClient;
 use crate::relay::components::update_client::wait::WaitUpdateClient;
 use crate::relay::traits::auto_relayer::{BiRelayMode, RelayMode};
 use crate::relay::traits::ibc_message_sender::MainSink;
+use crate::relay::traits::packet_relayer::ForwardPacketRelayer;
 use crate::std_prelude::*;
 
 pub struct DefaultComponents<BaseComponents>(pub PhantomData<BaseComponents>);
@@ -37,7 +38,8 @@ crate::derive_update_client_message_builder!(
     SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessages>>,
 );
 
-crate::derive_packet_relayer!(
+crate::forward_component!(
+    ForwardPacketRelayer,
     DefaultComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<FullCycleRelayer>>>,
 );

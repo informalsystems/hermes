@@ -8,6 +8,7 @@ use ibc_relayer_components::relay::components::packet_relayers::receive::base_re
 use ibc_relayer_components::relay::components::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use ibc_relayer_components::relay::traits::ibc_message_sender::MainSink;
+use ibc_relayer_components::relay::traits::packet_relayer::ForwardPacketRelayer;
 
 use crate::relayer_mock::base::impls::relay::MockBuildUpdateClientMessage;
 
@@ -19,7 +20,7 @@ ibc_relayer_components::derive_ibc_message_sender!(
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
 );
 
-ibc_relayer_components::derive_packet_relayer!(MockComponents, FullCycleRelayer,);
+ibc_relayer_components::forward_component!(ForwardPacketRelayer, MockComponents, FullCycleRelayer,);
 
 ibc_relayer_components::derive_receive_packet_relayer!(
     MockComponents,
