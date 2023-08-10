@@ -187,9 +187,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.71"
+version = "0.1.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a564d521dd56509c4c47480d00b80ee55f7e385ae48db5744c67ad50c92d2ebf"
+checksum = "cc6dde6e4ed435a4c1ee4e73592f5ba9da2151af10076cc04858746af9352d09"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -340,9 +340,9 @@ checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
 
 [[package]]
 name = "bitcoin"
-version = "0.30.0"
+version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b36f4c848f6bd9ff208128f08751135846cc23ae57d66ab10a22efff1c675f3c"
+checksum = "4e99ff7289b20a7385f66a0feda78af2fc119d28fb56aea8886a9cd0a4abdd75"
 dependencies = [
  "bech32",
  "bitcoin-private",
@@ -920,9 +920,9 @@ dependencies = [
 
 [[package]]
 name = "dyn-clone"
-version = "1.0.11"
+version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68b0cf012f1230e43cd00ebb729c6bb58707ecfa8ad08b52ef3a4ccd2697fc30"
+checksum = "304e6508efa593091e97a9abbc10f90aa7ca635b6d2784feff3c89d41dd12272"
 
 [[package]]
 name = "ecdsa"
@@ -1734,9 +1734,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c888103095b45bee90cb9104513ade30abd69902153b0682b5ad81940ae1f865"
+checksum = "59d0bc49ee5fc8e5d0e668765d470cb201fd0cdee4166f49c6cbcf3100466137"
 dependencies = [
  "base64 0.21.2",
  "bytes",
@@ -1815,7 +1815,6 @@ name = "ibc-relayer-cli"
 version = "1.6.0"
 dependencies = [
  "abscissa_core",
- "atty",
  "clap 3.2.25",
  "clap_complete 3.2.5",
  "color-eyre",
@@ -2318,9 +2317,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.11.2"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "206bf83f415b0579fd885fe0804eb828e727636657dc1bf73d80d2f1218e14a1"
+checksum = "fa6e72583bf6830c956235bff0d5afec8cf2952f579ebad18ae7821a917d950f"
 dependencies = [
  "crossbeam-channel 0.5.8",
  "crossbeam-epoch",
@@ -3633,9 +3632,9 @@ checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
 
 [[package]]
 name = "signal-hook"
-version = "0.3.15"
+version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "732768f1176d21d09e076c23a93123d40bba92d50c4058da34d45c8de8e682b9"
+checksum = "8621587d4798caf8eb44879d42e56b9a93ea5dcd315a6487c357130095b62801"
 dependencies = [
  "libc",
  "signal-hook-registry",
@@ -3877,9 +3876,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a46ec6b25b028097ab682ffae11d09d64fe1e2535833b902f26a278a0f88a705"
+checksum = "f6d550db02d6bec4ebcbbebc4301ec22181bc489c37fb3f167e64b14c1be8321"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -3908,9 +3907,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dbb7610ef8422d5886116868e48ab6a9ea72859b3bf9021c6d87318e5600225"
+checksum = "36a787b139f314c92756becbcae855bef6772227d97d8ecee948ad90327fe6e7"
 dependencies = [
  "flex-error",
  "serde",
@@ -3922,9 +3921,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9940a1376b5c1e3e5759143bc4308a7114f6293167ca5f05365d3386389de0ff"
+checksum = "b5907c615802bcd54a9e209caada2abe9b945fb1031744d7c8643996239cec6e"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3947,9 +3946,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-detector"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "765f272201f8dd04067498421b68a449a48623bf8f4df69b7e50071bec193daf"
+checksum = "af6153c010c32cbd4ff8f97f106c66da773343808965fe4b74ca365c370d426f"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3971,9 +3970,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-verifier"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4bc4c47cf36e740645e04128bd14ff5723aef86f5377fbd4d3b0149198dfc7e"
+checksum = "6bc1e4e3dd6f65cfa7979cf721b5afa1d79d32c4a2fe5fddb6416a98638634a9"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3984,9 +3983,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce23c8ff0e6634eb4c3c4aeed45076dc97dac91aac5501a905a67fa222e165b"
+checksum = "1834fa2eb884ba69b9c0eea55f0178270bed421217596ca4e54c19ef75dcb660"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4002,9 +4001,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd2cc789170db5a35d4e0bb2490035c03ef96df08f119bee25fd8dab5a09aa25"
+checksum = "03f8ff62948110e58d6df12c3bb73a00e74553384255d6413deed4c21d7480bf"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4038,9 +4037,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-testgen"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "023911e751fea64f20cd13bb9e15b5aae283aa3c7aaeb7e9bec1512032b32c99"
+checksum = "23a1e92079f943bdb0868795e9550c5185b8d0c6222be1475548314cf4f44c49"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",

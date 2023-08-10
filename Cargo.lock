@@ -1441,9 +1441,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.32.1"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11c352715b36685c2543556a77091fb16af5d26257d5ce9c28e6756c1ccd71aa"
+checksum = "59d0bc49ee5fc8e5d0e668765d470cb201fd0cdee4166f49c6cbcf3100466137"
 dependencies = [
  "base64 0.21.2",
  "bytes",
@@ -3306,8 +3306,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6d550db02d6bec4ebcbbebc4301ec22181bc489c37fb3f167e64b14c1be8321"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -3336,8 +3337,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36a787b139f314c92756becbcae855bef6772227d97d8ecee948ad90327fe6e7"
 dependencies = [
  "flex-error",
  "serde",
@@ -3349,8 +3351,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5907c615802bcd54a9e209caada2abe9b945fb1031744d7c8643996239cec6e"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3373,8 +3376,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-detector"
-version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af6153c010c32cbd4ff8f97f106c66da773343808965fe4b74ca365c370d426f"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3396,8 +3400,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-verifier"
-version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bc1e4e3dd6f65cfa7979cf721b5afa1d79d32c4a2fe5fddb6416a98638634a9"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3408,8 +3413,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1834fa2eb884ba69b9c0eea55f0178270bed421217596ca4e54c19ef75dcb660"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3425,8 +3431,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03f8ff62948110e58d6df12c3bb73a00e74553384255d6413deed4c21d7480bf"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3460,8 +3467,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-testgen"
-version = "0.32.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=mikhail/cometbft-rpc-0.38#51e47d00219d43e3334e6c0b0ecca6c1d2356b2d"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23a1e92079f943bdb0868795e9550c5185b8d0c6222be1475548314cf4f44c49"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
