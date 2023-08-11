@@ -118,6 +118,62 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             TrackingId::new_static("packet-recv"),
         )
     }
+    /// Implements the `packet-recv` CLI
+    pub fn relay_recv_packet_and_timeout_messages_with_packet_data_query_height_skip_sequences(
+        &self,
+        packet_data_query_height: Option<Height>,
+        skip_sequences: Vec<Sequence>,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
+        let _span = error_span!(
+            "relay_recv_packet_and_timeout_messages",
+            src_chain = %self.a_to_b.src_chain().id(),
+            src_port = %self.a_to_b.src_port_id(),
+            src_channel = %self.a_to_b.src_channel_id(),
+            dst_chain = %self.a_to_b.dst_chain().id(),
+        )
+        .entered();
+
+        // Find the sequence numbers of unreceived packets
+        let (sequences, src_response_height) = unreceived_packets(
+            self.a_to_b.dst_chain(),
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+        )
+        .map_err(LinkError::supervisor)?;
+
+        if sequences.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let mut new_sequences = vec![];
+        for s in sequences.iter() {
+            if !skip_sequences.contains(s) {
+                new_sequences.push(*s);
+            }
+        }
+
+        if new_sequences.is_empty() {
+            return Ok(vec![]);
+        }
+
+        info!(
+            "{} unreceived packets found: {} ",
+            new_sequences.len(),
+            PrettySlice(&new_sequences)
+        );
+
+        let query_height = match packet_data_query_height {
+            Some(height) => Qualified::Equal(height),
+            None => Qualified::SmallerEqual(src_response_height),
+        };
+
+        self.relay_packet_messages(
+            new_sequences,
+            query_height,
+            query_send_packet_events,
+            TrackingId::new_static("packet-recv"),
+        )
+    }
 
     pub fn relay_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
         self.relay_ack_packet_messages_with_packet_data_query_height(None)
@@ -162,6 +218,63 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         self.relay_packet_messages(
             sequences,
+            query_height,
+            query_write_ack_events,
+            TrackingId::new_static("packet-ack"),
+        )
+    }
+
+    /// Implements the `packet-ack` CLI
+    pub fn relay_ack_packet_messages_with_packet_data_query_height_skip_sequences(
+        &self,
+        packet_data_query_height: Option<Height>,
+        skip_sequences: Vec<Sequence>,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
+        let _span = error_span!(
+            "relay_ack_packet_messages",
+            src_chain = %self.a_to_b.src_chain().id(),
+            src_port = %self.a_to_b.src_port_id(),
+            src_channel = %self.a_to_b.src_channel_id(),
+            dst_chain = %self.a_to_b.dst_chain().id(),
+        )
+        .entered();
+
+        // Find the sequence numbers of unreceived acknowledgements
+        let Some((sequences, src_response_height)) = unreceived_acknowledgements(
+            self.a_to_b.dst_chain(),
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+        )
+        .map_err(LinkError::supervisor)? else { return Ok(vec![]) };
+
+        if sequences.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let mut new_sequences = vec![];
+        for s in sequences.iter() {
+            if !skip_sequences.contains(s) {
+                new_sequences.push(*s);
+            }
+        }
+
+        if new_sequences.is_empty() {
+            return Ok(vec![]);
+        }
+
+        info!(
+            "{} unreceived acknowledgements found: {} ",
+            new_sequences.len(),
+            new_sequences.iter().copied().collated().format(", "),
+        );
+
+        let query_height = match packet_data_query_height {
+            Some(height) => Qualified::Equal(height),
+            None => Qualified::SmallerEqual(src_response_height),
+        };
+
+        self.relay_packet_messages(
+            new_sequences,
             query_height,
             query_write_ack_events,
             TrackingId::new_static("packet-ack"),

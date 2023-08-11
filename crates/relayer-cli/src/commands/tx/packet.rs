@@ -4,6 +4,7 @@ use ibc_relayer_types::core::ics02_client::height::Height;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::link::{Link, LinkParameters};
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::events::IbcEvent;
 
@@ -56,6 +57,13 @@ pub struct TxPacketRecvCmd {
         help = "Exact height at which the packet data is queried via block_results RPC"
     )]
     packet_data_query_height: Option<u64>,
+
+    #[clap(
+        long = "skip-sequences",
+        value_delimiter = ',',
+        help = "Sequences to skip"
+    )]
+    skip_sequences: Option<Vec<u64>>,
 }
 
 impl Runnable for TxPacketRecvCmd {
@@ -80,15 +88,31 @@ impl Runnable for TxPacketRecvCmd {
             .packet_data_query_height
             .map(|height| Height::new(link.a_to_b.src_chain().id().version(), height).unwrap());
 
-        let res: Result<Vec<IbcEvent>, Error> = link
-            .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
-                packet_data_query_height,
-            )
-            .map_err(Error::link);
+        if let Some(skip) = self.skip_sequences.clone() {
+            let skip_sequences: Vec<Sequence> = skip.into_iter().map(|s| s.into()).collect();
 
-        match res {
-            Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(e).exit(),
+            let res: Result<Vec<IbcEvent>, Error> = link
+                .relay_recv_packet_and_timeout_messages_with_packet_data_query_height_skip_sequences(
+                    packet_data_query_height,
+                    skip_sequences,
+                )
+                .map_err(Error::link);
+
+            match res {
+                Ok(ev) => Output::success(ev).exit(),
+                Err(e) => Output::error(e).exit(),
+            }
+        } else {
+            let res: Result<Vec<IbcEvent>, Error> = link
+                .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
+                    packet_data_query_height,
+                )
+                .map_err(Error::link);
+
+            match res {
+                Ok(ev) => Output::success(ev).exit(),
+                Err(e) => Output::error(e).exit(),
+            }
         }
     }
 }
@@ -137,6 +161,13 @@ pub struct TxPacketAckCmd {
         help = "Exact height at which the packet data is queried via block_results RPC"
     )]
     packet_data_query_height: Option<u64>,
+
+    #[clap(
+        long = "skip-sequences",
+        value_delimiter = ',',
+        help = "Sequences to skip"
+    )]
+    skip_sequences: Option<Vec<u64>>,
 }
 
 impl Runnable for TxPacketAckCmd {
@@ -160,14 +191,29 @@ impl Runnable for TxPacketAckCmd {
         let packet_data_query_height = self
             .packet_data_query_height
             .map(|height| Height::new(link.a_to_b.src_chain().id().version(), height).unwrap());
+        if let Some(skip) = self.skip_sequences.clone() {
+            let skip_sequences: Vec<Sequence> = skip.into_iter().map(|s| s.into()).collect();
 
-        let res: Result<Vec<IbcEvent>, Error> = link
-            .relay_ack_packet_messages_with_packet_data_query_height(packet_data_query_height)
-            .map_err(Error::link);
+            let res: Result<Vec<IbcEvent>, Error> = link
+                .relay_ack_packet_messages_with_packet_data_query_height_skip_sequences(
+                    packet_data_query_height,
+                    skip_sequences,
+                )
+                .map_err(Error::link);
 
-        match res {
-            Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(e).exit(),
+            match res {
+                Ok(ev) => Output::success(ev).exit(),
+                Err(e) => Output::error(e).exit(),
+            }
+        } else {
+            let res: Result<Vec<IbcEvent>, Error> = link
+                .relay_ack_packet_messages_with_packet_data_query_height(packet_data_query_height)
+                .map_err(Error::link);
+
+            match res {
+                Ok(ev) => Output::success(ev).exit(),
+                Err(e) => Output::error(e).exit(),
+            }
         }
     }
 }
@@ -189,7 +235,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                packet_data_query_height: None
+                packet_data_query_height: None,
+                skip_sequences: None,
             },
             TxPacketRecvCmd::parse_from([
                 "test",
@@ -213,7 +260,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                packet_data_query_height: None
+                packet_data_query_height: None,
+                skip_sequences: None,
             },
             TxPacketRecvCmd::parse_from([
                 "test",
@@ -237,6 +285,7 @@ mod tests {
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
                 packet_data_query_height: Some(5),
+                skip_sequences: None,
             },
             TxPacketRecvCmd::parse_from([
                 "test",
@@ -318,7 +367,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                packet_data_query_height: None
+                packet_data_query_height: None,
+                skip_sequences: None,
             },
             TxPacketAckCmd::parse_from([
                 "test",
@@ -342,7 +392,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                packet_data_query_height: None
+                packet_data_query_height: None,
+                skip_sequences: None,
             },
             TxPacketAckCmd::parse_from([
                 "test",
