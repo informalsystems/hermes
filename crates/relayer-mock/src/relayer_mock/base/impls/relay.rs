@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use alloc::vec::Vec;
-use ibc_relayer_components::core::traits::component::HasComponents;
+use ibc_relayer_components::core::traits::component::{HasComponent, HasComponents};
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
@@ -27,6 +27,10 @@ use crate::relayer_mock::contexts::relay::MockRelayContext;
 
 impl HasComponents for MockRelayContext {
     type Components = MockComponents;
+}
+
+impl<Name> HasComponent<Name> for MockRelayContext {
+    type Component = MockComponents;
 }
 
 impl HasErrorType for MockRelayContext {

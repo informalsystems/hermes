@@ -1,4 +1,4 @@
-use ibc_relayer_components::core::traits::component::HasComponents;
+use ibc_relayer_components::core::traits::component::{HasComponent, HasComponents};
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
@@ -17,6 +17,13 @@ where
     Relay: Async,
 {
     type Components = ExtraComponents<OfaComponents>;
+}
+
+impl<Relay, Name> HasComponent<Name> for OfaRelayWrapper<Relay>
+where
+    Relay: Async,
+{
+    type Component = ExtraComponents<OfaComponents>;
 }
 
 impl<Relay: OfaRelay> HasErrorType for OfaRelayWrapper<Relay>
