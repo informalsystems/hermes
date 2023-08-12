@@ -13,7 +13,7 @@ use ibc_relayer_components::chain::traits::types::message::{
 };
 use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
 use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
-use ibc_relayer_components::core::traits::component::{HasComponent, HasComponents};
+use ibc_relayer_components::core::traits::component::HasComponent;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
@@ -24,13 +24,6 @@ use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::component::OfaComponents;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
-
-impl<Chain> HasComponents for OfaChainWrapper<Chain>
-where
-    Chain: Async,
-{
-    type Components = ExtraComponents<OfaComponents>;
-}
 
 impl<Chain, Name> HasComponent<Name> for OfaChainWrapper<Chain>
 where
