@@ -1,5 +1,7 @@
 use core::marker::PhantomData;
 
+use crate::chain::traits::queries::consensus_state::ConsensusStateQuerierComponent;
+use crate::chain::traits::queries::status::ChainStatusQuerierComponent;
 use crate::relay::components::auto_relayers::concurrent_bidirectional::ConcurrentBidirectionalRelayer;
 use crate::relay::components::auto_relayers::concurrent_event::ConcurrentEventSubscriptionRelayer;
 use crate::relay::components::auto_relayers::concurrent_two_way::ConcurrentTwoWayAutoRelay;
@@ -23,9 +25,17 @@ use crate::std_prelude::*;
 
 pub struct DefaultComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
-crate::derive_chain_status_querier!(DefaultComponents<BaseComponents>, BaseComponents);
+crate::forward_component!(
+    ChainStatusQuerierComponent,
+    DefaultComponents<BaseComponents>,
+    BaseComponents,
+);
 
-crate::derive_consensus_state_querier!(DefaultComponents<BaseComponents>, BaseComponents);
+crate::forward_component!(
+    ConsensusStateQuerierComponent,
+    DefaultComponents<BaseComponents>,
+    BaseComponents
+);
 
 crate::forward_component!(
     IbcMessageSenderComponent<MainSink>,

@@ -1,5 +1,7 @@
 use core::marker::PhantomData;
 
+use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerierComponent;
+use ibc_relayer_components::chain::traits::queries::status::ChainStatusQuerierComponent;
 use ibc_relayer_components::components::default::DefaultComponents;
 use ibc_relayer_components::relay::components::message_senders::chain_sender::SendIbcMessagesToChain;
 use ibc_relayer_components::relay::components::message_senders::update_client::SendIbcMessagesWithUpdateClient;
@@ -25,12 +27,14 @@ use crate::telemetry::components::status::ChainStatusTelemetryQuerier;
 
 pub struct ExtraComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
-ibc_relayer_components::derive_chain_status_querier!(
+ibc_relayer_components::forward_component!(
+    ChainStatusQuerierComponent,
     ExtraComponents<BaseComponents>,
     ChainStatusTelemetryQuerier<BaseComponents>,
 );
 
-ibc_relayer_components::derive_consensus_state_querier!(
+ibc_relayer_components::forward_component!(
+    ConsensusStateQuerierComponent,
     ExtraComponents<BaseComponents>,
     ConsensusStateTelemetryQuerier<BaseComponents>,
 );
