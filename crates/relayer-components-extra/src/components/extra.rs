@@ -9,11 +9,18 @@ use ibc_relayer_components::relay::components::packet_relayers::general::filter_
 use ibc_relayer_components::relay::components::packet_relayers::general::full_relay::FullCycleRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::log::LoggerRelayer;
-use ibc_relayer_components::relay::traits::auto_relayer::{BiRelayMode, RelayMode};
+use ibc_relayer_components::relay::traits::auto_relayer::{
+    AutoRelayerComponent, BiRelayMode, RelayMode,
+};
 use ibc_relayer_components::relay::traits::ibc_message_sender::{
     IbcMessageSenderComponent, MainSink,
 };
+use ibc_relayer_components::relay::traits::messages::update_client::UpdateClientMessageBuilderComponent;
+use ibc_relayer_components::relay::traits::packet_filter::PacketFilterComponent;
 use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayerComponent;
+use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::AckPacketRelayerComponent;
+use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayerComponnent;
+use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayerComponent;
 
 use crate::batch::components::message_sender::SendMessagesToBatchWorker;
 use crate::batch::types::sink::BatchWorkerSink;
@@ -21,7 +28,6 @@ use crate::relay::components::auto_relayers::parallel_bidirectional::ParallelBid
 use crate::relay::components::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
 use crate::relay::components::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 use crate::relay::components::packet_relayers::retry::RetryRelayer;
-use crate::std_prelude::*;
 use crate::telemetry::components::consensus_state::ConsensusStateTelemetryQuerier;
 use crate::telemetry::components::status::ChainStatusTelemetryQuerier;
 
@@ -51,7 +57,8 @@ ibc_relayer_components::forward_component!(
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
 );
 
-ibc_relayer_components::derive_update_client_message_builder!(
+ibc_relayer_components::forward_component!(
+    UpdateClientMessageBuilderComponent,
     ExtraComponents<BaseComponents>,
     DefaultComponents<BaseComponents>,
 );
@@ -62,34 +69,38 @@ ibc_relayer_components::forward_component!(
     LockPacketRelayer<LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>>,
 );
 
-ibc_relayer_components::derive_packet_filter!(
+ibc_relayer_components::forward_component!(
+    PacketFilterComponent,
     ExtraComponents<BaseComponents>,
     DefaultComponents<BaseComponents>,
 );
 
-ibc_relayer_components::derive_receive_packet_relayer!(
+ibc_relayer_components::forward_component!(
+    ReceivePacketRelayerComponnent,
     ExtraComponents<BaseComponents>,
     DefaultComponents<BaseComponents>,
 );
 
-ibc_relayer_components::derive_ack_packet_relayer!(
+ibc_relayer_components::forward_component!(
+    AckPacketRelayerComponent,
     ExtraComponents<BaseComponents>,
     DefaultComponents<BaseComponents>,
 );
 
-ibc_relayer_components::derive_timeout_unordered_packet_relayer!(
+ibc_relayer_components::forward_component!(
+    TimeoutUnorderedPacketRelayerComponent,
     ExtraComponents<BaseComponents>,
     DefaultComponents<BaseComponents>,
 );
 
-ibc_relayer_components::derive_auto_relayer!(
-    RelayMode,
+ibc_relayer_components::forward_component!(
+    AutoRelayerComponent<RelayMode>,
     ExtraComponents<BaseComponents>,
     ParallelBidirectionalRelayer<ParallelEventSubscriptionRelayer>,
 );
 
-ibc_relayer_components::derive_auto_relayer!(
-    BiRelayMode,
+ibc_relayer_components::forward_component!(
+    AutoRelayerComponent<BiRelayMode>,
     ExtraComponents<BaseComponents>,
     ParallelTwoWayAutoRelay,
 );

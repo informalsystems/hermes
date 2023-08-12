@@ -1,13 +1,18 @@
+use core::marker::PhantomData;
+
 use async_trait::async_trait;
 
-use crate::core::traits::component::HasComponents;
+use crate::core::traits::component::HasComponent;
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
+pub struct AutoRelayerComponent<Mode>(pub PhantomData<Mode>);
+
 pub struct RelayMode;
+
 pub struct BiRelayMode;
 
 /// Provider trait for the `CanAutoRelay` trait.
@@ -18,6 +23,18 @@ where
 {
     /// Starts the auto-relaying process for the given `Relay`.
     async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error>;
+}
+
+#[async_trait]
+impl<Relay, Mode, Component> AutoRelayer<Relay, Mode> for Component
+where
+    Relay: HasErrorType,
+    Component: HasComponent<AutoRelayerComponent<Mode>>,
+    Component::Component: AutoRelayer<Relay, Mode>,
+{
+    async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error> {
+        Component::Component::auto_relay(relay).await
+    }
 }
 
 /// Trait that encodes the capability of a relayer to relay
@@ -40,33 +57,13 @@ pub trait CanAutoRelay<Mode>: HasErrorType {
 #[async_trait]
 impl<Relay, Mode> CanAutoRelay<Mode> for Relay
 where
-    Relay: HasErrorType + HasComponents,
-    Relay::Components: AutoRelayer<Relay, Mode>,
+    Relay: HasErrorType + HasComponent<AutoRelayerComponent<Mode>>,
+    Relay::Component: AutoRelayer<Relay, Mode>,
+    Mode: Async,
 {
     async fn auto_relay(&self) -> Result<(), Self::Error> {
-        Relay::Components::auto_relay(self).await
+        Relay::Component::auto_relay(self).await
     }
-}
-
-#[macro_export]
-macro_rules! derive_auto_relayer {
-    ( $mode:ty, $target:ident $( < $( $param:ident ),* $(,)? > )?, $source:ty $(,)?  ) => {
-        #[$crate::vendor::async_trait::async_trait]
-        impl<Relay, $( $( $param ),* )*>
-            $crate::relay::traits::auto_relayer::AutoRelayer<Relay, $mode>
-            for $target $( < $( $param ),* > )*
-        where
-            Relay: $crate::core::traits::error::HasErrorType,
-            $source: $crate::relay::traits::auto_relayer::AutoRelayer<Relay, $mode>,
-            $target $( < $( $param ),* > )*: $crate::core::traits::sync::Async,
-        {
-            async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error> {
-                <$source as $crate::relay::traits::auto_relayer::AutoRelayer<Relay, $mode>>
-                    ::auto_relay(relay).await
-            }
-        }
-
-    };
 }
 
 /// Similar to the `CanAutoRelay` trait, the main differences are that this
