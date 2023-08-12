@@ -58,39 +58,9 @@ ibc_relayer_components::forward_component!(
 );
 
 ibc_relayer_components::forward_component!(
-    UpdateClientMessageBuilderComponent,
-    ExtraComponents<BaseComponents>,
-    DefaultComponents<BaseComponents>,
-);
-
-ibc_relayer_components::forward_component!(
     PacketRelayerComponent,
     ExtraComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>>,
-);
-
-ibc_relayer_components::forward_component!(
-    PacketFilterComponent,
-    ExtraComponents<BaseComponents>,
-    DefaultComponents<BaseComponents>,
-);
-
-ibc_relayer_components::forward_component!(
-    ReceivePacketRelayerComponnent,
-    ExtraComponents<BaseComponents>,
-    DefaultComponents<BaseComponents>,
-);
-
-ibc_relayer_components::forward_component!(
-    AckPacketRelayerComponent,
-    ExtraComponents<BaseComponents>,
-    DefaultComponents<BaseComponents>,
-);
-
-ibc_relayer_components::forward_component!(
-    TimeoutUnorderedPacketRelayerComponent,
-    ExtraComponents<BaseComponents>,
-    DefaultComponents<BaseComponents>,
 );
 
 ibc_relayer_components::forward_component!(
@@ -103,4 +73,16 @@ ibc_relayer_components::forward_component!(
     AutoRelayerComponent<BiRelayMode>,
     ExtraComponents<BaseComponents>,
     ParallelTwoWayAutoRelay,
+);
+
+ibc_relayer_components::forward_components!(
+    ExtraComponents<BaseComponents>,
+    DefaultComponents<BaseComponents>,
+    [
+        UpdateClientMessageBuilderComponent,
+        PacketFilterComponent,
+        ReceivePacketRelayerComponnent,
+        AckPacketRelayerComponent,
+        TimeoutUnorderedPacketRelayerComponent,
+    ]
 );

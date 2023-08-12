@@ -17,3 +17,14 @@ macro_rules! forward_component {
         }
     };
 }
+
+#[macro_export]
+macro_rules! forward_components {
+    ( $target:ident $( < $( $param:ident ),* $(,)? > )?, $forwarded:ty $(,)?, [$(,)?] ) => {
+
+    };
+    ( $target:ident $( < $( $param:ident ),* $(,)? > )?, $forwarded:ty $(,)?, [$name:ty, $($rest:tt)*]  ) => {
+        $crate::forward_component!($name, $target $( < $( $param ),* > )*, $forwarded);
+        $crate::forward_components!($target $( < $( $param ),* > )*, $forwarded, [ $($rest)* ]);
+    };
+}
