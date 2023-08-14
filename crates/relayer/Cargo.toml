@@ -62,7 +62,7 @@ uuid = { version = "1.4.0", features = ["v4"] }
 bs58 = "0.5.0"
 digest = "0.10.6"
 ed25519 = "1.5.2"
-ed25519-dalek = { version = "1.0.1", features = ["serde"] }
+ed25519-dalek = { version = "2.0.0", features = ["serde"] }
 ed25519-dalek-bip32 = "0.2.0"
 generic-array = "0.14.7"
 secp256k1 = { version = "0.27.0", features = ["rand-std"] }
