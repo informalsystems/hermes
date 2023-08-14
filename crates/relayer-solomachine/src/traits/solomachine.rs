@@ -16,7 +16,6 @@ use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc_relayer_types::Height;
 use prost::EncodeError;
 use secp256k1::{PublicKey, SecretKey};
-use std::time::Instant;
 
 #[async_trait]
 pub trait SolomachineChain: Async {

@@ -120,35 +120,35 @@ impl SolomachineChain for MockSolomachineChainContext {
 
     async fn query_client_state(
         &self,
-        client_id: &ClientId,
+        _client_id: &ClientId,
     ) -> Result<TendermintClientState, Self::Error> {
         todo!()
     }
 
     async fn query_consensus_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
+        _client_id: &ClientId,
+        _height: Height,
     ) -> Result<TendermintConsensusState, Self::Error> {
         todo!()
     }
 
     async fn query_connection(
         &self,
-        connection_id: &ConnectionId,
+        _connection_id: &ConnectionId,
     ) -> Result<ConnectionEnd, Self::Error> {
         todo!()
     }
 
     async fn query_channel(
         &self,
-        channel_id: &ChannelId,
-        port_id: &PortId,
+        _channel_id: &ChannelId,
+        _port_id: &PortId,
     ) -> Result<ChannelEnd, Self::Error> {
         todo!()
     }
 
-    async fn handle_receive_packet(&self, packet: &Packet) -> Result<Vec<u8>, Self::Error> {
+    async fn handle_receive_packet(&self, _packet: &Packet) -> Result<Vec<u8>, Self::Error> {
         todo!()
     }
 }
