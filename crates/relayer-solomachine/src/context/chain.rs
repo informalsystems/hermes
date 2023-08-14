@@ -1,3 +1,4 @@
+use crypto_hash::{hex_digest, Algorithm};
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
@@ -68,7 +69,7 @@ impl SolomachineChain for MockSolomachineChainContext {
     }
 
     fn logger(&self) -> &Self::Logger {
-        todo!()
+        &TracingLogger
     }
 
     fn encode_error(e: EncodeError) -> Self::Error {
@@ -114,11 +115,7 @@ impl SolomachineChain for MockSolomachineChainContext {
     }
 
     async fn next_diversifier(&self, diversifier: &str) -> String {
-        // TODO: opinion on this solution?
-        // use crypt_hash::{Algorithm, hex_digest};
-        //
-        // hex_digest(Algorithm::SHA256, diversifier.as_bytes());
-        DEFAULT_DIVERSIFIER.to_string()
+        hex_digest(Algorithm::SHA256, diversifier.as_bytes())
     }
 
     async fn query_client_state(

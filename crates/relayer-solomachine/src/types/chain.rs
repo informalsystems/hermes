@@ -1,12 +1,11 @@
-use crate::context::chain::MockSolomachineChainContext;
+use crate::traits::solomachine::SolomachineChain;
 
 pub struct SolomachineChainWrapper<Chain> {
     pub chain: Chain,
 }
 
-impl SolomachineChainWrapper<Chain> {
-    pub fn new(commitment_prefix: String, runtime: OfaRuntimeWrapper<TokioRuntimeContext>) -> Self {
-        let chain = MockSolomachineChainContext::new(commitment_prefix, runtime);
+impl<Chain: SolomachineChain> SolomachineChainWrapper<Chain> {
+    pub fn new(chain: Chain) -> Self {
         SolomachineChainWrapper { chain }
     }
 }

@@ -10,47 +10,47 @@ use ibc_relayer_cosmos::types::channel::CosmosInitChannelOptions;
 use ibc_relayer_cosmos::types::error::Error as CosmosError;
 
 #[tokio::test]
-    async fn connection_handshake() -> Result<(), Error> {
+async fn connection_handshake() -> Result<(), Error> {
 
-        let runtime = todo!();
+    let runtime = todo!();
 
-        runtime
-            .block_on(async move {
-                let birelay = todo!();
+    runtime
+        .block_on(async move {
+            let birelay = todo!();
 
-                let (connection_id_a, connection_id_b) = birelay
-                    .relay_a_to_b()
-                    .bootstrap_connection(&Default::default())
-                    .await?;
+            let (connection_id_a, connection_id_b) = birelay
+                .relay_a_to_b()
+                .bootstrap_connection(&Default::default())
+                .await?;
 
-                info!(
-                    "bootstrapped new IBC connections with ID {} and {}",
-                    connection_id_a, connection_id_b
-                );
+            info!(
+                "bootstrapped new IBC connections with ID {} and {}",
+                connection_id_a, connection_id_b
+            );
 
-                let channel_init_options = CosmosInitChannelOptions {
-                    ordering: Ordering::Unordered,
-                    connection_hops: vec![connection_id_a],
-                    channel_version: Version::ics20(),
-                };
+            let channel_init_options = CosmosInitChannelOptions {
+                ordering: Ordering::Unordered,
+                connection_hops: vec![connection_id_a],
+                channel_version: Version::ics20(),
+            };
 
-                let (channel_id_a, channel_id_b) = birelay
-                    .relay_a_to_b()
-                    .bootstrap_channel(
-                        &PortId::transfer(),
-                        &PortId::transfer(),
-                        &channel_init_options,
-                    )
-                    .await?;
+            let (channel_id_a, channel_id_b) = birelay
+                .relay_a_to_b()
+                .bootstrap_channel(
+                    &PortId::transfer(),
+                    &PortId::transfer(),
+                    &channel_init_options,
+                )
+                .await?;
 
-                info!(
-                    "bootstrapped new IBC channel with ID {} and {}",
-                    channel_id_a, channel_id_b
-                );
+            info!(
+                "bootstrapped new IBC channel with ID {} and {}",
+                channel_id_a, channel_id_b
+            );
 
-                <Result<(), CosmosError>>::Ok(())
-            })
-            .unwrap();
+            <Result<(), CosmosError>>::Ok(())
+        })
+        .unwrap();
 
-        Ok(())
-    }
+    Ok(())
+}
