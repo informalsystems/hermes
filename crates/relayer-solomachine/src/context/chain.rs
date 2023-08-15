@@ -28,7 +28,7 @@ use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc_relayer_types::Height;
 
-use crate::traits::solomachine_chain::SolomachineChain;
+use crate::traits::solomachine::SolomachineChain;
 use crate::types::error::BaseError;
 use crate::types::error::Error;
 

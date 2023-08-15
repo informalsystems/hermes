@@ -1,4 +1,4 @@
-use crate::traits::solomachine_chain::SolomachineChain;
+use crate::traits::solomachine::SolomachineChain;
 
 pub struct SolomachineChainWrapper<Chain> {
     pub chain: Chain,

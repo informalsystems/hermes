@@ -57,7 +57,7 @@ use crate::methods::proofs::channel::channel_proof_data;
 use crate::methods::proofs::client_state::client_state_proof_data;
 use crate::methods::proofs::connection::connection_proof_data;
 use crate::methods::proofs::consensus_state::consensus_state_proof_data;
-use crate::traits::solomachine_chain::SolomachineChain;
+use crate::traits::solomachine::SolomachineChain;
 use crate::types::chain::SolomachineChainWrapper;
 use crate::types::client_state::SolomachineClientState;
 use crate::types::consensus_state::SolomachineConsensusState;

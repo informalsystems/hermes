@@ -1,1 +1,1 @@
-pub mod solomachine_chain;
+pub mod solomachine;
