@@ -8,6 +8,7 @@ use ibc_relayer_components::relay::components::packet_relayers::general::full_re
 use ibc_relayer_components::relay::components::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::log::LoggerRelayer;
 use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayerComponent;
+use ibc_relayer_components::relay::traits::create_client::ClientCreatorComponent;
 use ibc_relayer_components::relay::traits::event_relayer::EventRelayerComponent;
 use ibc_relayer_components::relay::traits::ibc_message_sender::{
     IbcMessageSenderComponent, MainSink,
@@ -59,6 +60,7 @@ ibc_relayer_components::delegate_components!(
         AckPacketRelayerComponent,
         TimeoutUnorderedPacketRelayerComponent,
         EventRelayerComponent,
+        ClientCreatorComponent,
     ],
     ExtraRelayComponents<BaseComponents>,
     DefaultRelayComponents<BaseComponents>,

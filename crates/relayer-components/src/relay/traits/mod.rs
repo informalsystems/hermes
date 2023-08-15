@@ -3,6 +3,7 @@ pub mod chains;
 pub mod channel;
 pub mod clear_interval;
 pub mod connection;
+pub mod create_client;
 pub mod event_relayer;
 pub mod ibc_message_sender;
 pub mod logs;
