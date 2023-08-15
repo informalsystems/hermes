@@ -24,11 +24,11 @@ use crate::runtime::traits::channel::{CanCreateChannels, HasChannelTypes};
 use crate::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::std_prelude::*;
 
-pub struct BuildBatchWorker;
+pub struct BuildRelayWithBatchWorker;
 
 #[async_trait]
 impl<Build, Target, Relay, SrcChain, DstChain, SrcRuntime, DstRuntime>
-    RelayFromChainsBuilder<Build, Target> for BuildBatchWorker
+    RelayFromChainsBuilder<Build, Target> for BuildRelayWithBatchWorker
 where
     Build: HasBiRelayType
         + HasRuntimeWithMutex
@@ -53,7 +53,6 @@ where
 {
     async fn build_relay_from_chains(
         build: &Build,
-        target: Target,
         src_client_id: &SrcChain::ClientId,
         dst_client_id: &DstChain::ClientId,
         src_chain: SrcChain,
@@ -84,7 +83,7 @@ where
 
         let relay = build
             .build_relay_with_batch(
-                target,
+                Target::default(),
                 src_client_id,
                 dst_client_id,
                 src_chain,

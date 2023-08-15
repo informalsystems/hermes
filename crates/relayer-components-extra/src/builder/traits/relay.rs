@@ -22,7 +22,6 @@ where
 {
     async fn build_relay_with_batch(
         build: &Build,
-        target: Target,
         src_client_id: &TargetSrcClientId<Build, Target>,
         dst_client_id: &TargetDstClientId<Build, Target>,
         src_chain: TargetSrcChain<Build, Target>,
@@ -43,7 +42,6 @@ where
 {
     async fn build_relay_with_batch(
         build: &Build,
-        target: Target,
         src_client_id: &TargetSrcClientId<Build, Target>,
         dst_client_id: &TargetDstClientId<Build, Target>,
         src_chain: TargetSrcChain<Build, Target>,
@@ -53,7 +51,6 @@ where
     ) -> Result<TargetRelay<Build, Target>, Build::Error> {
         Component::Delegate::build_relay_with_batch(
             build,
-            target,
             src_client_id,
             dst_client_id,
             src_chain,
@@ -97,7 +94,7 @@ where
 {
     async fn build_relay_with_batch(
         &self,
-        target: Target,
+        _target: Target,
         src_client_id: &TargetSrcClientId<Self, Target>,
         dst_client_id: &TargetDstClientId<Self, Target>,
         src_chain: TargetSrcChain<Self, Target>,
@@ -107,7 +104,6 @@ where
     ) -> Result<TargetRelay<Self, Target>, Self::Error> {
         Build::Delegate::build_relay_with_batch(
             self,
-            target,
             src_client_id,
             dst_client_id,
             src_chain,

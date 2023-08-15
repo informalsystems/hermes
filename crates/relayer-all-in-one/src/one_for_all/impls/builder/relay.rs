@@ -19,7 +19,6 @@ where
 {
     async fn build_relay_with_batch(
         build: &OfaBuilderWrapper<Build>,
-        _target: RelayAToBTarget,
         src_client_id: &ClientIdA<Build>,
         dst_client_id: &ClientIdB<Build>,
         src_chain: OfaChainWrapper<ChainA<Build>>,
@@ -49,7 +48,6 @@ where
 {
     async fn build_relay_with_batch(
         build: &OfaBuilderWrapper<Build>,
-        _target: RelayBToATarget,
         src_client_id: &ClientIdB<Build>,
         dst_client_id: &ClientIdA<Build>,
         src_chain: OfaChainWrapper<ChainB<Build>>,
