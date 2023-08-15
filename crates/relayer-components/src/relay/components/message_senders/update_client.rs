@@ -7,8 +7,8 @@ use crate::chain::traits::types::ibc::{HasCounterpartyMessageHeight, HasIbcChain
 use crate::logger::traits::level::HasBaseLogLevels;
 use crate::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::relay::traits::logs::logger::CanLogRelayTarget;
-use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::relay::traits::target::ChainTarget;
+use crate::relay::traits::update_client::CanBuildUpdateClientMessage;
 use crate::std_prelude::*;
 
 pub struct SendIbcMessagesWithUpdateClient<Sender>(pub Sender);

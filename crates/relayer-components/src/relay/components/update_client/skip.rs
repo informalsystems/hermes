@@ -9,8 +9,8 @@ use crate::chain::types::aliases::Height;
 use crate::logger::traits::level::HasBaseLogLevels;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::logs::logger::CanLogRelayTarget;
-use crate::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::relay::traits::target::ChainTarget;
+use crate::relay::traits::update_client::UpdateClientMessageBuilder;
 use crate::std_prelude::*;
 
 pub struct SkipUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);

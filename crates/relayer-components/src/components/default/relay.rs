@@ -19,12 +19,12 @@ use crate::relay::components::update_client::wait::WaitUpdateClient;
 use crate::relay::traits::auto_relayer::AutoRelayerComponent;
 use crate::relay::traits::event_relayer::EventRelayerComponent;
 use crate::relay::traits::ibc_message_sender::{IbcMessageSenderComponent, MainSink};
-use crate::relay::traits::messages::update_client::UpdateClientMessageBuilderComponent;
 use crate::relay::traits::packet_filter::PacketFilterComponent;
 use crate::relay::traits::packet_relayer::PacketRelayerComponent;
 use crate::relay::traits::packet_relayers::ack_packet::AckPacketRelayerComponent;
 use crate::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayerComponnent;
 use crate::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayerComponent;
+use crate::relay::traits::update_client::UpdateClientMessageBuilderComponent;
 
 pub struct DefaultRelayComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 

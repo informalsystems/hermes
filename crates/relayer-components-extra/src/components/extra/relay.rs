@@ -12,12 +12,12 @@ use ibc_relayer_components::relay::traits::event_relayer::EventRelayerComponent;
 use ibc_relayer_components::relay::traits::ibc_message_sender::{
     IbcMessageSenderComponent, MainSink,
 };
-use ibc_relayer_components::relay::traits::messages::update_client::UpdateClientMessageBuilderComponent;
 use ibc_relayer_components::relay::traits::packet_filter::PacketFilterComponent;
 use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayerComponent;
 use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::AckPacketRelayerComponent;
 use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayerComponnent;
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayerComponent;
+use ibc_relayer_components::relay::traits::update_client::UpdateClientMessageBuilderComponent;
 
 use crate::batch::components::message_sender::SendMessagesToBatchWorker;
 use crate::batch::types::sink::BatchWorkerSink;

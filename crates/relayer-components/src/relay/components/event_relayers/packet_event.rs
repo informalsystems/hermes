@@ -6,7 +6,7 @@ use crate::chain::traits::types::ibc_events::write_ack::{
 };
 use crate::chain::types::aliases::{Event, Height};
 use crate::logger::traits::level::HasBaseLogLevels;
-use crate::relay::impls::packet_filters::chain::{
+use crate::relay::components::packet_filters::chain::{
     MatchPacketDestinationChain, MatchPacketSourceChain,
 };
 use crate::relay::traits::event_relayer::EventRelayer;

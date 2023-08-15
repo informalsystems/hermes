@@ -8,7 +8,7 @@ use ibc_relayer_components::relay::components::packet_relayers::receive::base_re
 use ibc_relayer_components::relay::components::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use ibc_relayer_components::relay::traits::ibc_message_sender::{MainSink, IbcMessageSenderComponent};
-use ibc_relayer_components::relay::traits::messages::update_client::UpdateClientMessageBuilderComponent;
+use ibc_relayer_components::relay::traits::update_client::UpdateClientMessageBuilderComponent;
 use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayerComponent;
 use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::AckPacketRelayerComponent;
 use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayerComponnent;
