@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::chain::traits::types::consensus_state::HasConsensusStateType;
 use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::core::traits::component::HasComponent;
+use crate::core::traits::component::DelegateComponent;
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
@@ -27,15 +27,15 @@ impl<Chain, Counterparty, Component> ConsensusStateQuerier<Chain, Counterparty> 
 where
     Chain: HasIbcChainTypes<Counterparty> + HasErrorType,
     Counterparty: HasConsensusStateType<Chain> + HasHeightType,
-    Component: HasComponent<ConsensusStateQuerierComponent>,
-    Component::Component: ConsensusStateQuerier<Chain, Counterparty>,
+    Component: DelegateComponent<ConsensusStateQuerierComponent>,
+    Component::Delegate: ConsensusStateQuerier<Chain, Counterparty>,
 {
     async fn query_consensus_state(
         chain: &Chain,
         client_id: &Chain::ClientId,
         height: &Counterparty::Height,
     ) -> Result<Counterparty::ConsensusState, Chain::Error> {
-        Component::Component::query_consensus_state(chain, client_id, height).await
+        Component::Delegate::query_consensus_state(chain, client_id, height).await
     }
 }
 
@@ -57,15 +57,15 @@ impl<Chain, Counterparty> CanQueryConsensusState<Counterparty> for Chain
 where
     Chain: HasIbcChainTypes<Counterparty>
         + HasErrorType
-        + HasComponent<ConsensusStateQuerierComponent>,
+        + DelegateComponent<ConsensusStateQuerierComponent>,
     Counterparty: HasConsensusStateType<Self> + HasHeightType,
-    Chain::Component: ConsensusStateQuerier<Chain, Counterparty>,
+    Chain::Delegate: ConsensusStateQuerier<Chain, Counterparty>,
 {
     async fn query_consensus_state(
         &self,
         client_id: &Self::ClientId,
         height: &Counterparty::Height,
     ) -> Result<Counterparty::ConsensusState, Self::Error> {
-        Chain::Component::query_consensus_state(self, client_id, height).await
+        Chain::Delegate::query_consensus_state(self, client_id, height).await
     }
 }

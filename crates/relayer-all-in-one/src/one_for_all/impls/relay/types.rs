@@ -1,4 +1,4 @@
-use ibc_relayer_components::core::traits::component::HasComponent;
+use ibc_relayer_components::core::traits::component::DelegateComponent;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
@@ -12,11 +12,11 @@ use crate::one_for_all::types::component::OfaComponents;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 
-impl<Relay, Name> HasComponent<Name> for OfaRelayWrapper<Relay>
+impl<Relay, Name> DelegateComponent<Name> for OfaRelayWrapper<Relay>
 where
     Relay: Async,
 {
-    type Component = ExtraComponents<OfaComponents>;
+    type Delegate = ExtraComponents<OfaComponents>;
 }
 
 impl<Relay: OfaRelay> HasErrorType for OfaRelayWrapper<Relay>

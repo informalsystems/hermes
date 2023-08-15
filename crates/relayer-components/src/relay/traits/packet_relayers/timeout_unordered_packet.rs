@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::chain::types::aliases::Height;
-use crate::core::traits::component::HasComponent;
+use crate::core::traits::component::DelegateComponent;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
@@ -24,16 +24,15 @@ where
 impl<Relay, Component> TimeoutUnorderedPacketRelayer<Relay> for Component
 where
     Relay: HasRelayPacket,
-    Component: HasComponent<TimeoutUnorderedPacketRelayerComponent>,
-    Component::Component: TimeoutUnorderedPacketRelayer<Relay>,
+    Component: DelegateComponent<TimeoutUnorderedPacketRelayerComponent>,
+    Component::Delegate: TimeoutUnorderedPacketRelayer<Relay>,
 {
     async fn relay_timeout_unordered_packet(
         relay: &Relay,
         destination_height: &Height<Relay::DstChain>,
         packet: &Relay::Packet,
     ) -> Result<(), Relay::Error> {
-        Component::Component::relay_timeout_unordered_packet(relay, destination_height, packet)
-            .await
+        Component::Delegate::relay_timeout_unordered_packet(relay, destination_height, packet).await
     }
 }
 
@@ -59,14 +58,14 @@ pub trait CanRelayTimeoutUnorderedPacket: HasRelayPacket {
 #[async_trait]
 impl<Relay> CanRelayTimeoutUnorderedPacket for Relay
 where
-    Relay: HasRelayPacket + HasComponent<TimeoutUnorderedPacketRelayerComponent>,
-    Relay::Component: TimeoutUnorderedPacketRelayer<Relay>,
+    Relay: HasRelayPacket + DelegateComponent<TimeoutUnorderedPacketRelayerComponent>,
+    Relay::Delegate: TimeoutUnorderedPacketRelayer<Relay>,
 {
     async fn relay_timeout_unordered_packet(
         &self,
         destination_height: &Height<Self::DstChain>,
         packet: &Self::Packet,
     ) -> Result<(), Self::Error> {
-        Relay::Component::relay_timeout_unordered_packet(self, destination_height, packet).await
+        Relay::Delegate::relay_timeout_unordered_packet(self, destination_height, packet).await
     }
 }

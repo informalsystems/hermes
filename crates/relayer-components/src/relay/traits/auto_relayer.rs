@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::core::traits::component::HasComponent;
+use crate::core::traits::component::DelegateComponent;
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
@@ -29,11 +29,11 @@ where
 impl<Relay, Mode, Component> AutoRelayer<Relay, Mode> for Component
 where
     Relay: HasErrorType,
-    Component: HasComponent<AutoRelayerComponent<Mode>>,
-    Component::Component: AutoRelayer<Relay, Mode>,
+    Component: DelegateComponent<AutoRelayerComponent<Mode>>,
+    Component::Delegate: AutoRelayer<Relay, Mode>,
 {
     async fn auto_relay(relay: &Relay) -> Result<(), Relay::Error> {
-        Component::Component::auto_relay(relay).await
+        Component::Delegate::auto_relay(relay).await
     }
 }
 
@@ -57,12 +57,12 @@ pub trait CanAutoRelay<Mode>: HasErrorType {
 #[async_trait]
 impl<Relay, Mode> CanAutoRelay<Mode> for Relay
 where
-    Relay: HasErrorType + HasComponent<AutoRelayerComponent<Mode>>,
-    Relay::Component: AutoRelayer<Relay, Mode>,
+    Relay: HasErrorType + DelegateComponent<AutoRelayerComponent<Mode>>,
+    Relay::Delegate: AutoRelayer<Relay, Mode>,
     Mode: Async,
 {
     async fn auto_relay(&self) -> Result<(), Self::Error> {
-        Relay::Component::auto_relay(self).await
+        Relay::Delegate::auto_relay(self).await
     }
 }
 

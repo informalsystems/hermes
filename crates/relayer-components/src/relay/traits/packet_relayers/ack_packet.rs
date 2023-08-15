@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::types::aliases::{Height, WriteAcknowledgementEvent};
-use crate::core::traits::component::HasComponent;
+use crate::core::traits::component::DelegateComponent;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
@@ -27,9 +27,9 @@ where
 impl<Relay, Component> AckPacketRelayer<Relay> for Component
 where
     Relay: HasRelayPacket,
-    Component: HasComponent<AckPacketRelayerComponent>,
+    Component: DelegateComponent<AckPacketRelayerComponent>,
     Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
-    Component::Component: AckPacketRelayer<Relay>,
+    Component::Delegate: AckPacketRelayer<Relay>,
 {
     async fn relay_ack_packet(
         relay: &Relay,
@@ -37,7 +37,7 @@ where
         packet: &Relay::Packet,
         ack: &WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>,
     ) -> Result<(), Relay::Error> {
-        Component::Component::relay_ack_packet(relay, destination_height, packet, ack).await
+        Component::Delegate::relay_ack_packet(relay, destination_height, packet, ack).await
     }
 }
 
@@ -57,9 +57,9 @@ where
 #[async_trait]
 impl<Relay> CanRelayAckPacket for Relay
 where
-    Relay: HasRelayPacket + HasComponent<AckPacketRelayerComponent>,
+    Relay: HasRelayPacket + DelegateComponent<AckPacketRelayerComponent>,
     Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
-    Relay::Component: AckPacketRelayer<Relay>,
+    Relay::Delegate: AckPacketRelayer<Relay>,
 {
     async fn relay_ack_packet(
         &self,
@@ -67,6 +67,6 @@ where
         packet: &Self::Packet,
         ack: &WriteAcknowledgementEvent<Self::DstChain, Self::SrcChain>,
     ) -> Result<(), Self::Error> {
-        Relay::Component::relay_ack_packet(self, destination_height, packet, ack).await
+        Relay::Delegate::relay_ack_packet(self, destination_height, packet, ack).await
     }
 }

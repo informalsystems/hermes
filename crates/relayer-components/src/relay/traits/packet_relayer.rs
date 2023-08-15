@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::HasComponent;
+use crate::core::traits::component::DelegateComponent;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
@@ -19,11 +19,11 @@ where
 impl<Component, Relay> PacketRelayer<Relay> for Component
 where
     Relay: HasRelayPacket,
-    Component: HasComponent<PacketRelayerComponent>,
-    Component::Component: PacketRelayer<Relay>,
+    Component: DelegateComponent<PacketRelayerComponent>,
+    Component::Delegate: PacketRelayer<Relay>,
 {
     async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error> {
-        Component::Component::relay_packet(relay, packet).await
+        Component::Delegate::relay_packet(relay, packet).await
     }
 }
 
@@ -35,10 +35,10 @@ pub trait CanRelayPacket: HasRelayPacket {
 #[async_trait]
 impl<Relay> CanRelayPacket for Relay
 where
-    Relay: HasRelayPacket + HasComponent<PacketRelayerComponent>,
-    Relay::Component: PacketRelayer<Relay>,
+    Relay: HasRelayPacket + DelegateComponent<PacketRelayerComponent>,
+    Relay::Delegate: PacketRelayer<Relay>,
 {
     async fn relay_packet(&self, packet: &Self::Packet) -> Result<(), Self::Error> {
-        Relay::Component::relay_packet(self, packet).await
+        Relay::Delegate::relay_packet(self, packet).await
     }
 }
