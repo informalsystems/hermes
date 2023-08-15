@@ -17,7 +17,9 @@ use crate::relay::components::packet_relayers::timeout_unordered::timeout_unorde
 use crate::relay::components::update_client::build::BuildUpdateClientMessages;
 use crate::relay::components::update_client::skip::SkipUpdateClient;
 use crate::relay::components::update_client::wait::WaitUpdateClient;
+use crate::relay::impls::clear_packet::receive_packet::ClearReceivePackets;
 use crate::relay::traits::auto_relayer::AutoRelayerComponent;
+use crate::relay::traits::clear_packet::PacketClearerComponent;
 use crate::relay::traits::create_client::ClientCreatorComponent;
 use crate::relay::traits::event_relayer::EventRelayerComponent;
 use crate::relay::traits::ibc_message_sender::{IbcMessageSenderComponent, MainSink};
@@ -88,4 +90,10 @@ crate::delegate_component!(
     ClientCreatorComponent,
     DefaultRelayComponents<BaseComponents>,
     CreateClientWithChains,
+);
+
+crate::delegate_component!(
+    PacketClearerComponent,
+    DefaultRelayComponents<BaseComponents>,
+    ClearReceivePackets,
 );

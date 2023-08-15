@@ -4,7 +4,7 @@ use core::time::Duration;
 use ibc_relayer_components::chain::types::aliases::{ChannelId, PortId};
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::clear_interval::HasClearInterval;
-use ibc_relayer_components::relay::traits::packet_clear::CanClearReceivePackets;
+use ibc_relayer_components::relay::traits::clear_packet::CanClearPackets;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 
@@ -57,7 +57,7 @@ trait CanRunLoop: HasRelayChains {
 #[async_trait]
 impl<Relay> CanRunLoop for Relay
 where
-    Relay: HasRuntime + CanClearReceivePackets + HasClearInterval,
+    Relay: HasRuntime + CanClearPackets + HasClearInterval,
     Relay::Runtime: CanSleep,
 {
     async fn run_loop(
@@ -72,7 +72,7 @@ where
 
         loop {
             let _ = self
-                .clear_receive_packets(src_channel_id, src_port_id, dst_channel_id, dst_port_id)
+                .clear_packets(src_channel_id, src_port_id, dst_channel_id, dst_port_id)
                 .await;
             runtime.sleep(Duration::from_secs(clear_interval)).await;
         }

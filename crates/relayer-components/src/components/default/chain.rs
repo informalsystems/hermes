@@ -4,14 +4,8 @@ use crate::chain::traits::queries::consensus_state::ConsensusStateQuerierCompone
 use crate::chain::traits::queries::status::ChainStatusQuerierComponent;
 pub struct DefaultChainComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
-crate::delegate_component!(
-    ChainStatusQuerierComponent,
+crate::delegate_components!(
+    [ChainStatusQuerierComponent, ConsensusStateQuerierComponent,],
     DefaultChainComponents<BaseComponents>,
     BaseComponents,
-);
-
-crate::delegate_component!(
-    ConsensusStateQuerierComponent,
-    DefaultChainComponents<BaseComponents>,
-    BaseComponents
 );

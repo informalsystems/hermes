@@ -6,22 +6,22 @@ use crate::chain::traits::queries::packet_commitments::CanQueryPacketCommitments
 use crate::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
 use crate::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
 use crate::chain::types::aliases::{ChannelId, PortId};
+use crate::relay::traits::clear_packet::PacketClearer;
 use crate::relay::traits::packet::HasRelayPacket;
-use crate::relay::traits::packet_clear::ReceivePacketClearer;
 use crate::relay::traits::packet_relayer::CanRelayPacket;
 use crate::std_prelude::*;
 
-pub struct ReceivePacketClearRelayer;
+pub struct ClearReceivePackets;
 
 #[async_trait]
-impl<Relay> ReceivePacketClearer<Relay> for ReceivePacketClearRelayer
+impl<Relay> PacketClearer<Relay> for ClearReceivePackets
 where
     Relay: HasRelayPacket + CanRelayPacket,
     Relay::DstChain: CanQueryUnreceivedPacketSequences<Relay::SrcChain>,
     Relay::SrcChain: CanQueryPacketCommitments<Relay::DstChain>
         + CanQuerySendPacketsFromSequences<Relay::DstChain>,
 {
-    async fn clear_receive_packets(
+    async fn clear_packets(
         relay: &Relay,
         src_channel_id: &ChannelId<Relay::SrcChain, Relay::DstChain>,
         src_port_id: &PortId<Relay::SrcChain, Relay::DstChain>,
