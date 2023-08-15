@@ -1,7 +1,7 @@
 use ibc_relayer_components::chain::types::aliases::{IncomingPacket, OutgoingPacket};
 use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
 use ibc_relayer_components::relay::impls::client::create::CanCreateClient;
-use ibc_relayer_components::relay::traits::auto_relayer::{CanAutoRelay, RelayMode};
+use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::channel::open_handshake::CanRelayChannelOpenHandshake;
 use ibc_relayer_components::relay::traits::channel::open_init::CanInitChannel;
@@ -37,7 +37,7 @@ pub trait AfoRelay:
     + CanSendIbcMessages<MainSink, DestinationTarget>
     + CanRelayEvent<SourceTarget>
     + CanRelayEvent<DestinationTarget>
-    + CanAutoRelay<RelayMode>
+    + CanAutoRelay
     + CanFilterPackets
     + CanRelayReceivePacket
     + CanRelayPacket
@@ -76,7 +76,7 @@ where
         + CanSendIbcMessages<MainSink, DestinationTarget>
         + CanRelayEvent<SourceTarget>
         + CanRelayEvent<DestinationTarget>
-        + CanAutoRelay<RelayMode>
+        + CanAutoRelay
         + CanFilterPackets
         + CanRelayReceivePacket
         + CanRelayPacket

@@ -4,7 +4,7 @@ use alloc::sync::Arc;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc_relayer_all_in_one::all_for_one::builder::CanBuildAfoBiRelay;
-use ibc_relayer_components::relay::traits::auto_relayer::{BiRelayMode, CanAutoRelay};
+use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_cosmos::contexts::builder::CosmosBuilder;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
@@ -87,9 +87,7 @@ impl Runnable for NewRelayPacketsCmd {
                 .await
                 .map_err(handle_generic_error)?;
 
-            <_ as CanAutoRelay<BiRelayMode>>::auto_relay(&birelay)
-                .await
-                .map_err(handle_generic_error)?;
+            birelay.auto_relay().await.map_err(handle_generic_error)?;
 
             Ok(())
         });

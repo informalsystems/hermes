@@ -25,7 +25,7 @@ use crate::std_prelude::*;
 pub struct ConcurrentBidirectionalRelayer<InRelayer>(pub PhantomData<InRelayer>);
 
 #[async_trait]
-impl<Relay, Mode, InRelayer> AutoRelayer<Relay, Mode> for ConcurrentBidirectionalRelayer<InRelayer>
+impl<Relay, InRelayer> AutoRelayer<Relay> for ConcurrentBidirectionalRelayer<InRelayer>
 where
     Relay: HasRelayChains,
     InRelayer: AutoRelayerWithTarget<Relay, SourceTarget>,

@@ -7,7 +7,7 @@ use ibc_relayer_components::relay::components::packet_relayers::general::filter_
 use ibc_relayer_components::relay::components::packet_relayers::general::full_relay::FullCycleRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::log::LoggerRelayer;
-use ibc_relayer_components::relay::traits::auto_relayer::{AutoRelayerComponent, RelayMode};
+use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayerComponent;
 use ibc_relayer_components::relay::traits::ibc_message_sender::{
     IbcMessageSenderComponent, MainSink,
 };
@@ -45,7 +45,7 @@ ibc_relayer_components::delegate_component!(
 );
 
 ibc_relayer_components::delegate_component!(
-    AutoRelayerComponent<RelayMode>,
+    AutoRelayerComponent,
     ExtraRelayComponents<BaseComponents>,
     ParallelBidirectionalRelayer<ParallelEventSubscriptionRelayer>,
 );
