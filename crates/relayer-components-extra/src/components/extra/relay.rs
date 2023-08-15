@@ -1,17 +1,13 @@
 use core::marker::PhantomData;
 
-use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerierComponent;
-use ibc_relayer_components::chain::traits::queries::status::ChainStatusQuerierComponent;
-use ibc_relayer_components::components::default::DefaultComponents;
+use ibc_relayer_components::components::default::relay::DefaultRelayComponents;
 use ibc_relayer_components::relay::components::message_senders::chain_sender::SendIbcMessagesToChain;
 use ibc_relayer_components::relay::components::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use ibc_relayer_components::relay::components::packet_relayers::general::filter_relayer::FilterRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::full_relay::FullCycleRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::log::LoggerRelayer;
-use ibc_relayer_components::relay::traits::auto_relayer::{
-    AutoRelayerComponent, BiRelayMode, RelayMode,
-};
+use ibc_relayer_components::relay::traits::auto_relayer::{AutoRelayerComponent, RelayMode};
 use ibc_relayer_components::relay::traits::ibc_message_sender::{
     IbcMessageSenderComponent, MainSink,
 };
@@ -26,53 +22,32 @@ use crate::batch::components::message_sender::SendMessagesToBatchWorker;
 use crate::batch::types::sink::BatchWorkerSink;
 use crate::relay::components::auto_relayers::parallel_bidirectional::ParallelBidirectionalRelayer;
 use crate::relay::components::auto_relayers::parallel_event::ParallelEventSubscriptionRelayer;
-use crate::relay::components::auto_relayers::parallel_two_way::ParallelTwoWayAutoRelay;
 use crate::relay::components::packet_relayers::retry::RetryRelayer;
-use crate::telemetry::components::consensus_state::ConsensusStateTelemetryQuerier;
-use crate::telemetry::components::status::ChainStatusTelemetryQuerier;
 
-pub struct ExtraComponents<BaseComponents>(pub PhantomData<BaseComponents>);
-
-ibc_relayer_components::delegate_component!(
-    ChainStatusQuerierComponent,
-    ExtraComponents<BaseComponents>,
-    ChainStatusTelemetryQuerier<BaseComponents>,
-);
-
-ibc_relayer_components::delegate_component!(
-    ConsensusStateQuerierComponent,
-    ExtraComponents<BaseComponents>,
-    ConsensusStateTelemetryQuerier<BaseComponents>,
-);
+pub struct ExtraRelayComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
 ibc_relayer_components::delegate_component!(
     IbcMessageSenderComponent<MainSink>,
-    ExtraComponents<BaseComponents>,
+    ExtraRelayComponents<BaseComponents>,
     SendMessagesToBatchWorker,
 );
 
 ibc_relayer_components::delegate_component!(
     IbcMessageSenderComponent<BatchWorkerSink>,
-    ExtraComponents<BaseComponents>,
+    ExtraRelayComponents<BaseComponents>,
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
 );
 
 ibc_relayer_components::delegate_component!(
     PacketRelayerComponent,
-    ExtraComponents<BaseComponents>,
+    ExtraRelayComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>>,
 );
 
 ibc_relayer_components::delegate_component!(
     AutoRelayerComponent<RelayMode>,
-    ExtraComponents<BaseComponents>,
+    ExtraRelayComponents<BaseComponents>,
     ParallelBidirectionalRelayer<ParallelEventSubscriptionRelayer>,
-);
-
-ibc_relayer_components::delegate_component!(
-    AutoRelayerComponent<BiRelayMode>,
-    ExtraComponents<BaseComponents>,
-    ParallelTwoWayAutoRelay,
 );
 
 ibc_relayer_components::delegate_components!(
@@ -83,6 +58,6 @@ ibc_relayer_components::delegate_components!(
         AckPacketRelayerComponent,
         TimeoutUnorderedPacketRelayerComponent,
     ],
-    ExtraComponents<BaseComponents>,
-    DefaultComponents<BaseComponents>,
+    ExtraRelayComponents<BaseComponents>,
+    DefaultRelayComponents<BaseComponents>,
 );
