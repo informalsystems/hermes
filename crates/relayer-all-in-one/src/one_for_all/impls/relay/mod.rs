@@ -4,7 +4,6 @@ pub mod clear_packet;
 pub mod client;
 pub mod connection;
 pub mod error;
-pub mod event_relayer;
 pub mod logger;
 pub mod packet_filter;
 pub mod packet_relayers;
