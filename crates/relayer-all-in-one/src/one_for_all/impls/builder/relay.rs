@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_components::builder::impls::cache::BuildWithCache;
+use ibc_relayer_components::builder::impls::cache::BuildRelayWithCache;
 use ibc_relayer_components::builder::impls::relay::BuildRelayFromChains;
 use ibc_relayer_components::builder::traits::relay::{CanBuildRelay, RelayBuilder};
 use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
@@ -93,7 +93,7 @@ where
         src_client_id: &ClientIdA<Builder>,
         dst_client_id: &ClientIdB<Builder>,
     ) -> Result<OfaRelayWrapper<RelayAToB<Builder>>, Self::Error> {
-        <BuildWithCache<BuildRelayFromChains<BuildBatchWorker<BuildRelayFromChainsWithOfa>>>>::build_relay(
+        <BuildRelayWithCache<BuildRelayFromChains<BuildBatchWorker<BuildRelayFromChainsWithOfa>>>>::build_relay(
             self,
             target,
             src_chain_id,
@@ -118,7 +118,7 @@ where
         src_client_id: &ClientIdB<Builder>,
         dst_client_id: &ClientIdA<Builder>,
     ) -> Result<OfaRelayWrapper<RelayBToA<Builder>>, Self::Error> {
-        <BuildWithCache<BuildRelayFromChains<BuildBatchWorker<BuildRelayFromChainsWithOfa>>>>::build_relay(
+        <BuildRelayWithCache<BuildRelayFromChains<BuildBatchWorker<BuildRelayFromChainsWithOfa>>>>::build_relay(
             self,
             target,
             src_chain_id,
