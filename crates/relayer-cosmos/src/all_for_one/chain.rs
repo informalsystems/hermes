@@ -20,7 +20,7 @@ use crate::types::error::Error;
 pub trait AfoCosmosChain<Counterparty>:
     AfoChain<
     Counterparty,
-    AfoRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
+    AfoRuntime = TokioRuntimeContext,
     Error = Error,
     Height = Height,
     Timestamp = Timestamp,
@@ -48,7 +48,7 @@ impl<Chain, Counterparty> AfoCosmosChain<Counterparty> for Chain
 where
     Chain: AfoChain<
         Counterparty,
-        AfoRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
+        AfoRuntime = TokioRuntimeContext,
         Error = Error,
         Height = Height,
         Timestamp = Timestamp,

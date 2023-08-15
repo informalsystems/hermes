@@ -25,7 +25,7 @@ pub struct CosmosChain<Handle: ChainHandle> {
     pub handle: Handle,
     pub chain_id: ChainId,
     pub compat_mode: CompatMode,
-    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    pub runtime: TokioRuntimeContext,
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     pub subscription: Arc<dyn Subscription<Item = (Height, Arc<AbciEvent>)>>,
     pub tx_context: OfaTxWrapper<CosmosTxContext>,
@@ -39,7 +39,7 @@ impl<Handle: ChainHandle> CosmosChain<Handle> {
         compat_mode: CompatMode,
         key_entry: Secp256k1KeyPair,
         event_source_mode: EventSourceMode,
-        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+        runtime: TokioRuntimeContext,
         telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     ) -> Self {
         let chain_version = tx_config.chain_id.version();

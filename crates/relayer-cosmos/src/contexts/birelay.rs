@@ -10,7 +10,7 @@ where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
 {
-    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    pub runtime: TokioRuntimeContext,
     pub relay_a_to_b: OfaRelayWrapper<CosmosRelay<ChainA, ChainB>>,
     pub relay_b_to_a: OfaRelayWrapper<CosmosRelay<ChainB, ChainA>>,
 }
@@ -21,7 +21,7 @@ where
     ChainB: ChainHandle,
 {
     pub fn new(
-        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+        runtime: TokioRuntimeContext,
         relay_a_to_b: OfaRelayWrapper<CosmosRelay<ChainA, ChainB>>,
         relay_b_to_a: OfaRelayWrapper<CosmosRelay<ChainB, ChainA>>,
     ) -> Self {

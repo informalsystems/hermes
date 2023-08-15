@@ -5,14 +5,14 @@
 use core::fmt::Debug;
 
 use async_trait::async_trait;
+use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 
+use crate::all_for_one::runtime::AfoRuntime;
 use crate::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
-use crate::one_for_all::traits::runtime::OfaRuntime;
 use crate::one_for_all::types::batch::aliases::MessageBatchSender;
 use crate::one_for_all::types::chain::OfaChainWrapper;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -22,7 +22,7 @@ pub trait OfaRelay: Async {
     */
     type Error: Debug + Clone + Async;
 
-    type Runtime: OfaRuntime;
+    type Runtime: AfoRuntime;
 
     type Logger: HasBaseLogLevels;
 
@@ -39,7 +39,7 @@ pub trait OfaRelay: Async {
 
     type PacketLock<'a>: Send;
 
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Self::Error;
 
     fn src_chain_error(e: <Self::SrcChain as OfaChainTypes>::Error) -> Self::Error;
 
@@ -73,7 +73,7 @@ pub trait OfaRelay: Async {
         src_channel_id: &<Self::SrcChain as OfaChainTypes>::ChannelId,
     ) -> Self::Error;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
+    fn runtime(&self) -> &Self::Runtime;
 
     fn logger(&self) -> &Self::Logger;
 

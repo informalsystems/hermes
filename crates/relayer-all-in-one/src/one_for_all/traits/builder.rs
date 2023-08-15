@@ -1,35 +1,36 @@
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use core::fmt::Debug;
+use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
+use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 use ibc_relayer_components_extra::batch::types::config::BatchConfig;
 
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
 
+use crate::all_for_one::runtime::AfoRuntime;
 use crate::one_for_all::traits::birelay::OfaBiRelay;
 use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::traits::relay::OfaRelay;
-use crate::one_for_all::traits::runtime::OfaRuntime;
 use crate::one_for_all::types::batch::aliases::MessageBatchSender;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait OfaBuilder: Async {
     type Error: Debug + Async;
 
-    type Runtime: OfaRuntime;
+    type Runtime: AfoRuntime;
 
     type Logger: HasBaseLogLevels;
 
     type BiRelay: OfaBiRelay;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
+    fn runtime(&self) -> &Self::Runtime;
 
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Self::Error;
 
     fn birelay_error(e: <Self::BiRelay as OfaBiRelay>::Error) -> Self::Error;
 
@@ -90,7 +91,7 @@ pub type ClientIdB<Builder> = <ChainB<Builder> as OfaChainTypes>::ClientId;
 
 pub type Runtime<Builder> = <Builder as OfaBuilder>::Runtime;
 
-pub type Mutex<Builder, T> = <Runtime<Builder> as OfaRuntime>::Mutex<T>;
+pub type Mutex<Builder, T> = <Runtime<Builder> as HasMutex>::Mutex<T>;
 
 pub type ChainACache<Builder> =
     Arc<Mutex<Builder, BTreeMap<ChainIdA<Builder>, OfaChainWrapper<ChainA<Builder>>>>>;

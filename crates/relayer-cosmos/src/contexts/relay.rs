@@ -18,7 +18,7 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    pub runtime: TokioRuntimeContext,
     pub src_chain: OfaChainWrapper<CosmosChain<SrcChain>>,
     pub dst_chain: OfaChainWrapper<CosmosChain<DstChain>>,
     pub src_client_id: ClientId,
@@ -35,7 +35,7 @@ where
     DstChain: ChainHandle,
 {
     pub fn new(
-        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+        runtime: TokioRuntimeContext,
         src_chain: OfaChainWrapper<CosmosChain<SrcChain>>,
         dst_chain: OfaChainWrapper<CosmosChain<DstChain>>,
         src_client_id: ClientId,

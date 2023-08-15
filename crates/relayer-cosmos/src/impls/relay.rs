@@ -5,7 +5,6 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::OfaChain;
 use ibc_relayer_all_in_one::one_for_all::traits::relay::OfaRelay;
 use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::types::error::Error as TokioError;
 use ibc_relayer_runtime::types::log::logger::TracingLogger;
 use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
@@ -61,7 +60,7 @@ where
         e
     }
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+    fn runtime(&self) -> &TokioRuntimeContext {
         &self.runtime
     }
 
@@ -103,7 +102,7 @@ where
         } else {
             lock_table.insert(packet_key.clone());
 
-            let runtime = &self.runtime().runtime.runtime;
+            let runtime = &self.runtime().runtime;
 
             let (sender, receiver) = channel();
 

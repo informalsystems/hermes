@@ -56,7 +56,7 @@ impl OfaTxContext for CosmosTxContext {
 
     type TxResponse = TxResponse;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+    fn runtime(&self) -> &TokioRuntimeContext {
         &self.runtime
     }
 

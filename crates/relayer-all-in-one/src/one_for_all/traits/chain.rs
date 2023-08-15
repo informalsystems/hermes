@@ -4,6 +4,7 @@
 
 use alloc::sync::Arc;
 use core::fmt::{Debug, Display};
+use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 
@@ -11,9 +12,8 @@ use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 
-use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::all_for_one::runtime::AfoRuntime;
 use crate::one_for_all::traits::telemetry::OfaTelemetry;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use crate::std_prelude::*;
 
@@ -29,7 +29,7 @@ pub trait OfaChainTypes: Async {
        Corresponds to
        [`HasRuntime::Runtime`](ibc_relayer_components::runtime::traits::runtime::HasRuntime::Runtime).
     */
-    type Runtime: OfaRuntime;
+    type Runtime: AfoRuntime;
 
     type Logger: HasBaseLogLevels;
 
@@ -172,9 +172,9 @@ pub trait OfaChainTypes: Async {
 
 #[async_trait]
 pub trait OfaChain: OfaChainTypes {
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
+    fn runtime(&self) -> &Self::Runtime;
 
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Self::Error;
 
     fn logger(&self) -> &Self::Logger;
 

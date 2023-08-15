@@ -27,7 +27,7 @@ impl OfaBuilder for CosmosBuilder {
 
     type BiRelay = CosmosBiRelay<BaseChainHandle, BaseChainHandle>;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+    fn runtime(&self) -> &TokioRuntimeContext {
         &self.runtime
     }
 

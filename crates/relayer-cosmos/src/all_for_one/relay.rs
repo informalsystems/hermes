@@ -10,7 +10,7 @@ pub trait AfoCosmosRelay:
     AfoSrcChain = Self::CosmosSrcChain,
     AfoDstChain = Self::CosmosDstChain,
     Packet = Packet,
-    AfoRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
+    AfoRuntime = TokioRuntimeContext,
 >
 {
     type CosmosSrcChain: AfoCosmosChain<Self::CosmosDstChain>;
@@ -24,7 +24,7 @@ where
         AfoSrcChain = SrcChain,
         AfoDstChain = DstChain,
         Packet = Packet,
-        AfoRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
+        AfoRuntime = TokioRuntimeContext,
     >,
     SrcChain: AfoCosmosChain<DstChain>,
     DstChain: AfoCosmosChain<SrcChain>,

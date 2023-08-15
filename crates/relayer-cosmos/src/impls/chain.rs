@@ -177,7 +177,7 @@ impl<Chain> OfaChain for CosmosChain<Chain>
 where
     Chain: ChainHandle,
 {
-    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+    fn runtime(&self) -> &TokioRuntimeContext {
         &self.runtime
     }
 

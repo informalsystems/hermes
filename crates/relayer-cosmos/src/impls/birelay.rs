@@ -25,7 +25,7 @@ where
 
     type RelayBToA = CosmosRelay<ChainB, ChainA>;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
+    fn runtime(&self) -> &Self::Runtime {
         &self.runtime
     }
 
