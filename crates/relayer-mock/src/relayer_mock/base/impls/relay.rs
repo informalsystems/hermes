@@ -1,13 +1,13 @@
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use alloc::vec::Vec;
-use ibc_relayer_components::core::traits::component::HasComponents;
+use ibc_relayer_components::core::traits::component::DelegateComponent;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
-use ibc_relayer_components::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use ibc_relayer_components::relay::traits::packet_relayers::lock::HasPacketLock;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
+use ibc_relayer_components::relay::traits::update_client::UpdateClientMessageBuilder;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use std::vec;
@@ -25,8 +25,8 @@ use crate::relayer_mock::components::MockComponents;
 use crate::relayer_mock::contexts::chain::MockChainContext;
 use crate::relayer_mock::contexts::relay::MockRelayContext;
 
-impl HasComponents for MockRelayContext {
-    type Components = MockComponents;
+impl<Name> DelegateComponent<Name> for MockRelayContext {
+    type Delegate = MockComponents;
 }
 
 impl HasErrorType for MockRelayContext {

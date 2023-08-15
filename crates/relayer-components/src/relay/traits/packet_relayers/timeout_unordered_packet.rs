@@ -1,10 +1,12 @@
 use async_trait::async_trait;
 
 use crate::chain::types::aliases::Height;
-use crate::core::traits::component::HasComponents;
+use crate::core::traits::component::DelegateComponent;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
+
+pub struct TimeoutUnorderedPacketRelayerComponent;
 
 #[async_trait]
 pub trait TimeoutUnorderedPacketRelayer<Relay>: Async
@@ -12,10 +14,26 @@ where
     Relay: HasRelayPacket,
 {
     async fn relay_timeout_unordered_packet(
-        context: &Relay,
+        relay: &Relay,
         destination_height: &Height<Relay::DstChain>,
         packet: &Relay::Packet,
     ) -> Result<(), Relay::Error>;
+}
+
+#[async_trait]
+impl<Relay, Component> TimeoutUnorderedPacketRelayer<Relay> for Component
+where
+    Relay: HasRelayPacket,
+    Component: DelegateComponent<TimeoutUnorderedPacketRelayerComponent>,
+    Component::Delegate: TimeoutUnorderedPacketRelayer<Relay>,
+{
+    async fn relay_timeout_unordered_packet(
+        relay: &Relay,
+        destination_height: &Height<Relay::DstChain>,
+        packet: &Relay::Packet,
+    ) -> Result<(), Relay::Error> {
+        Component::Delegate::relay_timeout_unordered_packet(relay, destination_height, packet).await
+    }
 }
 
 /// Encapsulates the capability of a relayer to send timeout packets over
@@ -40,39 +58,14 @@ pub trait CanRelayTimeoutUnorderedPacket: HasRelayPacket {
 #[async_trait]
 impl<Relay> CanRelayTimeoutUnorderedPacket for Relay
 where
-    Relay: HasRelayPacket + HasComponents,
-    Relay::Components: TimeoutUnorderedPacketRelayer<Relay>,
+    Relay: HasRelayPacket + DelegateComponent<TimeoutUnorderedPacketRelayerComponent>,
+    Relay::Delegate: TimeoutUnorderedPacketRelayer<Relay>,
 {
     async fn relay_timeout_unordered_packet(
         &self,
         destination_height: &Height<Self::DstChain>,
         packet: &Self::Packet,
     ) -> Result<(), Self::Error> {
-        Relay::Components::relay_timeout_unordered_packet(self, destination_height, packet).await
+        Relay::Delegate::relay_timeout_unordered_packet(self, destination_height, packet).await
     }
-}
-
-#[macro_export]
-macro_rules! derive_timeout_unordered_packet_relayer {
-    ( $target:ident $( < $( $param:ident ),* $(,)? > )?, $source:ty $(,)?  ) => {
-        #[$crate::vendor::async_trait::async_trait]
-        impl<Relay, $( $( $param ),* )*>
-            $crate::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer<Relay>
-            for $target $( < $( $param ),* > )*
-        where
-            Relay: $crate::relay::traits::packet::HasRelayPacket,
-            $source: $crate::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer<Relay>,
-            $target $( < $( $param ),* > )*: $crate::core::traits::sync::Async,
-        {
-            async fn relay_timeout_unordered_packet(
-                relay: &Relay,
-                destination_height: &<Relay::DstChain as $crate::chain::traits::types::height::HasHeightType>::Height,
-                packet: &Relay::Packet,
-            ) -> Result<(), Relay::Error> {
-                <$source as $crate::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer<Relay>>
-                    ::relay_timeout_unordered_packet(relay, destination_height, packet).await
-            }
-        }
-
-    };
 }

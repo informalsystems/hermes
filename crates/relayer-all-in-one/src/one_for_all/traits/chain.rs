@@ -121,10 +121,6 @@ pub trait OfaChainTypes: Async {
     */
     type OutgoingPacket: Async;
 
-    type ConnectionDetails: Async;
-
-    type ConnectionVersion: Eq + Default + Async;
-
     type CreateClientPayloadOptions: Async;
 
     type InitConnectionOptions: Async;

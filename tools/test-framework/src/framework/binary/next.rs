@@ -280,10 +280,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> HasTwoChannels for TestContextV2<
 impl<ChainA: ChainHandle, ChainB: ChainHandle> CanSpawnRelayer for TestContextV2<ChainA, ChainB> {
     fn spawn_relayer(&self) -> Result<Option<JoinHandle<()>>, Error> {
         let runtime = self.relayer.birelay.runtime();
-        let relay_contex = self.relayer.clone();
+        let birelay = self.relayer.clone();
 
         let handle = runtime.runtime.runtime.spawn(async move {
-            let _ = relay_contex.auto_relay().await;
+            let _ = birelay.auto_relay().await;
         });
 
         Ok(Some(handle))

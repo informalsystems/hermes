@@ -1,4 +1,4 @@
-use ibc_relayer_components::relay::impls::client::create::InjectMissingCreateClientEventError;
+use ibc_relayer_components::relay::components::create_client::InjectMissingCreateClientEventError;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 
 use crate::one_for_all::traits::relay::OfaRelay;

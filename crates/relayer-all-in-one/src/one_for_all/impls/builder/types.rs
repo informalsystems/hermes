@@ -1,4 +1,4 @@
-use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
+use ibc_relayer_components::builder::traits::birelay::types::HasBiRelayType;
 
 use crate::one_for_all::traits::birelay::OfaBiRelay;
 use crate::one_for_all::traits::builder::OfaBuilder;

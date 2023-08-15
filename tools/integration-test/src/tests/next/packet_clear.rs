@@ -3,7 +3,7 @@ use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQuery
 use ibc_relayer_components::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
 use ibc_relayer_components::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
-use ibc_relayer_components::relay::traits::packet_clear::CanClearReceivePackets;
+use ibc_relayer_components::relay::traits::clear_packet::CanClearPackets;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::Height;
@@ -153,7 +153,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
             );
 
             let _ = relay_b_to_a
-                .clear_receive_packets(
+                .clear_packets(
                     channel.channel_id_a.value(),
                     channel.port_a.value(),
                     channel.channel_id_b.value(),
@@ -183,7 +183,7 @@ impl BinaryChannelTest for IbcClearPacketTest {
             assert_eq!(amount.value().amount, denom_b.with_amount(0u64).amount());
 
             let _ = relay_a_to_b
-                .clear_receive_packets(
+                .clear_packets(
                     cloned_channel.channel_id_a.value(),
                     cloned_channel.port_a.value(),
                     cloned_channel.channel_id_b.value(),

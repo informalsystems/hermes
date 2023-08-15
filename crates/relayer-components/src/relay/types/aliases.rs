@@ -1,4 +1,3 @@
-use crate::chain::traits::types::connection::HasConnectionVersionType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::packet::HasRelayPacket;
@@ -14,9 +13,6 @@ pub type SrcConnectionId<Relay> =
 
 pub type DstConnectionId<Relay> =
     <DstChain<Relay> as HasIbcChainTypes<SrcChain<Relay>>>::ConnectionId;
-
-pub type SrcConnectionVersion<Relay> =
-    <SrcChain<Relay> as HasConnectionVersionType<DstChain<Relay>>>::ConnectionVersion;
 
 pub type SrcPortId<Relay> = <SrcChain<Relay> as HasIbcChainTypes<DstChain<Relay>>>::PortId;
 

@@ -8,8 +8,8 @@ use crate::chain::traits::queries::status::CanQueryChainHeight;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::connection::open_confirm::ConnectionOpenConfirmRelayer;
 use crate::relay::traits::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
-use crate::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::relay::traits::target::DestinationTarget;
+use crate::relay::traits::update_client::CanBuildUpdateClientMessage;
 use crate::std_prelude::*;
 
 /**

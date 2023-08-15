@@ -1,6 +1,6 @@
 use alloc::collections::BTreeMap;
 
-use crate::builder::traits::birelay::HasBiRelayType;
+use crate::builder::traits::birelay::types::HasBiRelayType;
 use crate::builder::traits::target::chain::ChainBuildTarget;
 use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::chain::traits::types::chain_id::HasChainIdType;
