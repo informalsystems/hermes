@@ -18,37 +18,37 @@ use crate::relayer_mock::base::impls::relay::MockBuildUpdateClientMessage;
 
 pub struct MockComponents;
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     IbcMessageSenderComponent<MainSink>,
     MockComponents,
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     PacketRelayerComponent,
     MockComponents,
     FullCycleRelayer,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     ReceivePacketRelayerComponnent,
     MockComponents,
     SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     AckPacketRelayerComponent,
     MockComponents,
     BaseAckPacketRelayer,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     TimeoutUnorderedPacketRelayerComponent,
     MockComponents,
     BaseTimeoutUnorderedPacketRelayer,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     UpdateClientMessageBuilderComponent,
     MockComponents,
     SkipUpdateClient<WaitUpdateClient<MockBuildUpdateClientMessage>>,

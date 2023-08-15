@@ -5,7 +5,7 @@ pub trait HasComponent<Name>: Async {
 }
 
 #[macro_export]
-macro_rules! forward_component {
+macro_rules! delegate_component {
     ( $key:ty, $target:ident $( < $( $param:ident ),* $(,)? > )?, $forwarded:ty $(,)?  ) => {
         impl< $( $( $param ),* )* >
             $crate::core::traits::component::HasComponent<$key>
@@ -19,12 +19,12 @@ macro_rules! forward_component {
 }
 
 #[macro_export]
-macro_rules! forward_components {
-    ( $target:ident $( < $( $param:ident ),* $(,)? > )?, $forwarded:ty $(,)?, [$(,)?] ) => {
+macro_rules! delegate_components {
+    ( [$(,)?], $target:ident $( < $( $param:ident ),* $(,)? > )?, $forwarded:ty $(,)? ) => {
 
     };
-    ( $target:ident $( < $( $param:ident ),* $(,)? > )?, $forwarded:ty $(,)?, [$name:ty, $($rest:tt)*]  ) => {
-        $crate::forward_component!($name, $target $( < $( $param ),* > )*, $forwarded);
-        $crate::forward_components!($target $( < $( $param ),* > )*, $forwarded, [ $($rest)* ]);
+    ( [$name:ty, $($rest:tt)*], $target:ident $( < $( $param:ident ),* $(,)? > )?, $forwarded:ty $(,)?  ) => {
+        $crate::delegate_component!($name, $target $( < $( $param ),* > )*, $forwarded);
+        $crate::delegate_components!([ $($rest)* ], $target $( < $( $param ),* > )*, $forwarded);
     };
 }

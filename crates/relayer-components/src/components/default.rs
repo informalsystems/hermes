@@ -29,67 +29,67 @@ use crate::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnor
 
 pub struct DefaultComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
-crate::forward_component!(
+crate::delegate_component!(
     ChainStatusQuerierComponent,
     DefaultComponents<BaseComponents>,
     BaseComponents,
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     ConsensusStateQuerierComponent,
     DefaultComponents<BaseComponents>,
     BaseComponents
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     IbcMessageSenderComponent<MainSink>,
     DefaultComponents<BaseComponents>,
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     UpdateClientMessageBuilderComponent,
     DefaultComponents<BaseComponents>,
     SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessages>>,
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     PacketRelayerComponent,
     DefaultComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<FullCycleRelayer>>>,
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     PacketFilterComponent,
     DefaultComponents<BaseComponents>,
     BaseComponents,
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     ReceivePacketRelayerComponnent,
     DefaultComponents<BaseComponents>,
     SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     AckPacketRelayerComponent,
     DefaultComponents<BaseComponents>,
     BaseAckPacketRelayer,
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     TimeoutUnorderedPacketRelayerComponent,
     DefaultComponents<BaseComponents>,
     BaseTimeoutUnorderedPacketRelayer,
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     AutoRelayerComponent<RelayMode>,
     DefaultComponents<BaseComponents>,
     ConcurrentBidirectionalRelayer<ConcurrentEventSubscriptionRelayer>,
 );
 
-crate::forward_component!(
+crate::delegate_component!(
     AutoRelayerComponent<BiRelayMode>,
     DefaultComponents<BaseComponents>,
     ConcurrentTwoWayAutoRelay,

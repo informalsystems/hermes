@@ -33,56 +33,56 @@ use crate::telemetry::components::status::ChainStatusTelemetryQuerier;
 
 pub struct ExtraComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     ChainStatusQuerierComponent,
     ExtraComponents<BaseComponents>,
     ChainStatusTelemetryQuerier<BaseComponents>,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     ConsensusStateQuerierComponent,
     ExtraComponents<BaseComponents>,
     ConsensusStateTelemetryQuerier<BaseComponents>,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     IbcMessageSenderComponent<MainSink>,
     ExtraComponents<BaseComponents>,
     SendMessagesToBatchWorker,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     IbcMessageSenderComponent<BatchWorkerSink>,
     ExtraComponents<BaseComponents>,
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     PacketRelayerComponent,
     ExtraComponents<BaseComponents>,
     LockPacketRelayer<LoggerRelayer<FilterRelayer<RetryRelayer<FullCycleRelayer>>>>,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     AutoRelayerComponent<RelayMode>,
     ExtraComponents<BaseComponents>,
     ParallelBidirectionalRelayer<ParallelEventSubscriptionRelayer>,
 );
 
-ibc_relayer_components::forward_component!(
+ibc_relayer_components::delegate_component!(
     AutoRelayerComponent<BiRelayMode>,
     ExtraComponents<BaseComponents>,
     ParallelTwoWayAutoRelay,
 );
 
-ibc_relayer_components::forward_components!(
-    ExtraComponents<BaseComponents>,
-    DefaultComponents<BaseComponents>,
+ibc_relayer_components::delegate_components!(
     [
         UpdateClientMessageBuilderComponent,
         PacketFilterComponent,
         ReceivePacketRelayerComponnent,
         AckPacketRelayerComponent,
         TimeoutUnorderedPacketRelayerComponent,
-    ]
+    ],
+    ExtraComponents<BaseComponents>,
+    DefaultComponents<BaseComponents>,
 );
