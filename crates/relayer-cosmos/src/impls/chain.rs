@@ -17,8 +17,6 @@ use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_runtime::tokio::logger::value::LogValue;
 use ibc_relayer_types::core::ics02_client::events::CLIENT_ID_ATTRIBUTE_KEY;
-use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
-use ibc_relayer_types::core::ics03_connection::version::Version as ConnectionVersion;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -128,10 +126,6 @@ where
     type IncomingPacket = Packet;
 
     type OutgoingPacket = Packet;
-
-    type ConnectionVersion = ConnectionVersion;
-
-    type ConnectionDetails = ConnectionEnd;
 
     type CreateClientPayloadOptions = ClientSettings;
 
