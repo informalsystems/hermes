@@ -1,7 +1,7 @@
 use core::cell::RefCell;
 use core::fmt::{self, Display};
 
-use crate::tokio::logger::value::LogValue;
+use crate::types::log::value::LogValue;
 
 #[derive(Default)]
 pub struct Log<'a> {

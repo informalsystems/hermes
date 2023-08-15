@@ -9,7 +9,7 @@ use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::transaction::OfaTxWrapper;
 use ibc_relayer_components::runtime::impls::subscription::empty::EmptySubscription;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint::abci::Event as AbciEvent;

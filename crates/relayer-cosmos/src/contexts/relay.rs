@@ -6,7 +6,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
 

@@ -19,7 +19,7 @@ use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components_extra::batch::types::config::BatchConfig;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 use tokio::runtime::Runtime as TokioRuntime;

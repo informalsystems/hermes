@@ -5,11 +5,10 @@ use ibc_relayer_components::logger::traits::level::{
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use tracing::{debug, error, event_enabled, info, trace, warn, Level};
 
-use crate::tokio::logger::level::LogLevel;
-use crate::tokio::logger::log::Log;
-use crate::tokio::logger::value::LogValue;
-
-pub struct TracingLogger;
+use crate::types::log::level::LogLevel;
+use crate::types::log::log::Log;
+use crate::types::log::logger::TracingLogger;
+use crate::types::log::value::LogValue;
 
 impl BaseLogger for TracingLogger {
     type Log<'a, 'r> = Log<'a>;

@@ -1,4 +1,3 @@
-use alloc::sync::Arc;
 use core::future::Future;
 use core::pin::Pin;
 use core::time::Duration;
@@ -8,33 +7,19 @@ use async_trait::async_trait;
 use futures::lock::{Mutex, MutexGuard};
 use futures::stream::Stream;
 use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaRuntime;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::LogLevel;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components_extra::runtime::traits::spawn::TaskHandle;
-use tokio::runtime::Runtime;
 use tokio::sync::{mpsc, oneshot};
-use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use tracing;
 
-use super::error::Error as TokioError;
-
-pub struct TokioRuntimeContext {
-    pub runtime: Arc<Runtime>,
-}
-
-pub struct TokioTaskHandle(pub JoinHandle<()>);
-
-impl TokioRuntimeContext {
-    pub fn new(runtime: Arc<Runtime>) -> Self {
-        Self { runtime }
-    }
-}
+use crate::types::error::Error;
+use crate::types::runtime::TokioRuntimeContext;
+use crate::types::task::TokioTaskHandle;
 
 #[async_trait]
 impl OfaRuntime for TokioRuntimeContext {
-    type Error = TokioError;
+    type Error = Error;
 
     type Time = Instant;
 
@@ -57,16 +42,6 @@ impl OfaRuntime for TokioRuntimeContext {
     type ReceiverOnce<T> = oneshot::Receiver<T>
     where
         T: Async;
-
-    async fn log(&self, level: LogLevel, message: &str) {
-        match level {
-            LogLevel::Error => tracing::error!(message),
-            LogLevel::Warn => tracing::warn!(message),
-            LogLevel::Info => tracing::info!(message),
-            LogLevel::Debug => tracing::debug!(message),
-            LogLevel::Trace => tracing::trace!(message),
-        }
-    }
 
     async fn sleep(&self, duration: Duration) {
         sleep(duration).await;
@@ -110,14 +85,14 @@ impl OfaRuntime for TokioRuntimeContext {
     where
         T: Async,
     {
-        sender.send(value).map_err(|_| TokioError::channel_closed())
+        sender.send(value).map_err(|_| Error::channel_closed())
     }
 
     async fn receive<T>(receiver: &mut Self::Receiver<T>) -> Result<T, Self::Error>
     where
         T: Async,
     {
-        receiver.recv().await.ok_or_else(TokioError::channel_closed)
+        receiver.recv().await.ok_or_else(Error::channel_closed)
     }
 
     fn try_receive<T>(receiver: &mut Self::Receiver<T>) -> Result<Option<T>, Self::Error>
@@ -127,7 +102,7 @@ impl OfaRuntime for TokioRuntimeContext {
         match receiver.try_recv() {
             Ok(batch) => Ok(Some(batch)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),
-            Err(mpsc::error::TryRecvError::Disconnected) => Err(TokioError::channel_closed()),
+            Err(mpsc::error::TryRecvError::Disconnected) => Err(Error::channel_closed()),
         }
     }
 
@@ -152,14 +127,14 @@ impl OfaRuntime for TokioRuntimeContext {
     where
         T: Async,
     {
-        sender.send(value).map_err(|_| TokioError::channel_closed())
+        sender.send(value).map_err(|_| Error::channel_closed())
     }
 
     async fn receive_once<T>(receiver: Self::ReceiverOnce<T>) -> Result<T, Self::Error>
     where
         T: Async,
     {
-        receiver.await.map_err(|_| TokioError::channel_closed())
+        receiver.await.map_err(|_| Error::channel_closed())
     }
 }
 
