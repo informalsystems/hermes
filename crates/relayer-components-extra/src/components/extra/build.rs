@@ -1,6 +1,7 @@
 use core::marker::PhantomData;
 
 use ibc_relayer_components::builder::traits::birelay::build::BiRelayBuilderComponent;
+use ibc_relayer_components::builder::traits::birelay::from_relays::BiRelayFromRelayBuilderComponent;
 use ibc_relayer_components::builder::traits::chain::ChainBuilderComponent;
 use ibc_relayer_components::builder::traits::relay::build::RelayBuilderComponent;
 use ibc_relayer_components::builder::traits::relay::from_chains::RelayFromChainsBuilderComponent;
@@ -28,6 +29,7 @@ ibc_relayer_components::delegate_components!(
         ChainBuilderComponent,
         RelayBuilderComponent,
         BiRelayBuilderComponent,
+        BiRelayFromRelayBuilderComponent,
     ],
     ExtraBuildComponents<BaseComponents>,
     DefaultBuildComponents<BaseComponents>,
