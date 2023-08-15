@@ -3,7 +3,7 @@ use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 
-pub struct MockSolomachineRelayContext<SrcChain, DstChain>
+pub struct SolomachineRelay<SrcChain, DstChain>
 where
     SrcChain: OfaIbcChain<DstChain>,
     DstChain: OfaIbcChain<SrcChain>,

@@ -1,22 +1,17 @@
-use ibc_relayer::chain::client::ClientSettings;
-use ibc_relayer::chain::cosmos::client::Settings;
-use ibc_relayer::channel::version::Version;
-use ibc_relayer::config::PacketFilter;
-use ibc_relayer_components::builder::impls::bootstrap::birelay::CanBootstrapBiRelay;
-use ibc_relayer_components::relay::impls::channel::bootstrap::CanBootstrapChannel;
-use ibc_relayer_components::relay::impls::connection::bootstrap::CanBootstrapConnection;
-use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
-use ibc_relayer_cosmos::types::channel::CosmosInitChannelOptions;
-use ibc_relayer_cosmos::types::error::Error as CosmosError;
+use ibc_relayer_components::relay::traits::connection::open_handshake::CanRelayConnectionOpenHandshake;
+use ibc_relayer_components::relay::traits::connection::open_init::CanInitConnection;
 
-#[tokio::test]
+use crate::tests::utils::context::solomachine_to_cosmos_relay_context;
+use crate::types::error::Error;
+
+/*#[tokio::test]
 async fn connection_handshake() -> Result<(), Error> {
 
     let runtime = todo!();
 
     runtime
         .block_on(async move {
-            let birelay = todo!();
+            let birelay = solomachine_birelay_context();
 
             let (connection_id_a, connection_id_b) = birelay
                 .relay_a_to_b()
@@ -50,6 +45,23 @@ async fn connection_handshake() -> Result<(), Error> {
 
             <Result<(), CosmosError>>::Ok(())
         })
+        .unwrap();
+
+    Ok(())
+}*/
+
+#[tokio::test]
+async fn single_step_connection_handshake() -> Result<(), Error> {
+    let relay_context = solomachine_to_cosmos_relay_context();
+
+    let src_connection_id = relay_context
+        .init_connection(&Default::default())
+        .await
+        .unwrap();
+
+    let _dst_connection_id = relay_context
+        .relay_connection_open_handshake(&src_connection_id)
+        .await
         .unwrap();
 
     Ok(())

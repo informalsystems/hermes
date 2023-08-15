@@ -1,4 +1,8 @@
 use crypto_hash::{hex_digest, Algorithm};
+use eyre::eyre;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
@@ -34,6 +38,8 @@ pub struct MockSolomachineChainContext {
     commitment_prefix: String,
     public_key: PublicKey,
     secret_key: SecretKey,
+    client_states: Arc<Mutex<HashMap<ClientId, TendermintClientState>>>,
+    client_consensus_states: Arc<Mutex<HashMap<ClientId, TendermintConsensusState>>>,
     pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
 }
 
@@ -45,6 +51,8 @@ impl MockSolomachineChainContext {
             commitment_prefix,
             public_key,
             secret_key,
+            client_states: Arc::new(Mutex::new(HashMap::new())),
+            client_consensus_states: Arc::new(Mutex::new(HashMap::new())),
             runtime,
         }
     }
@@ -120,17 +128,25 @@ impl SolomachineChain for MockSolomachineChainContext {
 
     async fn query_client_state(
         &self,
-        _client_id: &ClientId,
+        client_id: &ClientId,
     ) -> Result<TendermintClientState, Self::Error> {
-        todo!()
+        let client_states = self.client_states.lock().unwrap();
+        client_states
+            .get(client_id)
+            .ok_or_else(|| BaseError::generic(eyre!("tmp")).into())
+            .cloned()
     }
 
     async fn query_consensus_state(
         &self,
-        _client_id: &ClientId,
+        client_id: &ClientId,
         _height: Height,
     ) -> Result<TendermintConsensusState, Self::Error> {
-        todo!()
+        let client_consensus_statesl = self.client_consensus_states.lock().unwrap();
+        client_consensus_statesl
+            .get(client_id)
+            .ok_or_else(|| BaseError::generic(eyre!("tmp")).into())
+            .cloned()
     }
 
     async fn query_connection(
