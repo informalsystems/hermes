@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
-use ibc_relayer_components_extra::builder::traits::relay::RelayBuilderWithBatch;
+use ibc_relayer_components_extra::builder::traits::relay::RelayWithBatchBuilder;
 
 use crate::one_for_all::traits::builder::{
     ChainA, ChainB, ClientIdA, ClientIdB, OfaBuilder, RelayAToB, RelayBToA, RelayError,
@@ -13,7 +13,7 @@ use crate::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
-impl<Build> RelayBuilderWithBatch<OfaBuilderWrapper<Build>, RelayAToBTarget> for OfaComponents
+impl<Build> RelayWithBatchBuilder<OfaBuilderWrapper<Build>, RelayAToBTarget> for OfaComponents
 where
     Build: OfaBuilder,
 {
@@ -43,7 +43,7 @@ where
 }
 
 #[async_trait]
-impl<Build> RelayBuilderWithBatch<OfaBuilderWrapper<Build>, RelayBToATarget> for OfaComponents
+impl<Build> RelayWithBatchBuilder<OfaBuilderWrapper<Build>, RelayBToATarget> for OfaComponents
 where
     Build: OfaBuilder,
 {

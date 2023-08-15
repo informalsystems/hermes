@@ -1,5 +1,3 @@
-use core::marker::PhantomData;
-
 use async_trait::async_trait;
 use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
 use ibc_relayer_components::builder::traits::relay::from_chains::RelayFromChainsBuilder;
@@ -21,19 +19,22 @@ use crate::batch::traits::config::HasBatchConfig;
 use crate::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
 use crate::batch::worker::CanSpawnBatchMessageWorker;
 use crate::builder::traits::cache::HasBatchSenderCache;
-use crate::builder::traits::relay::RelayBuilderWithBatch;
+use crate::builder::traits::relay::CanBuildRelayWithBatch;
 use crate::runtime::traits::channel::{CanCreateChannels, HasChannelTypes};
 use crate::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::std_prelude::*;
 
-pub struct BuildBatchWorker<InBuilder>(pub PhantomData<InBuilder>);
+pub struct BuildBatchWorker;
 
 #[async_trait]
-impl<Build, InBuilder, Target, Relay, SrcChain, DstChain, SrcRuntime, DstRuntime>
-    RelayFromChainsBuilder<Build, Target> for BuildBatchWorker<InBuilder>
+impl<Build, Target, Relay, SrcChain, DstChain, SrcRuntime, DstRuntime>
+    RelayFromChainsBuilder<Build, Target> for BuildBatchWorker
 where
-    InBuilder: RelayBuilderWithBatch<Build, Target>,
-    Build: HasBiRelayType + HasRuntimeWithMutex + HasBatchConfig + HasErrorType,
+    Build: HasBiRelayType
+        + HasRuntimeWithMutex
+        + HasBatchConfig
+        + HasErrorType
+        + CanBuildRelayWithBatch<Target>,
     Build:
         CanBuildBatchChannel<Target::SrcChainTarget> + CanBuildBatchChannel<Target::DstChainTarget>,
     Target: RelayBuildTarget<Build, TargetRelay = Relay>,
@@ -81,17 +82,17 @@ where
             )
             .await?;
 
-        let relay = InBuilder::build_relay_with_batch(
-            build,
-            target,
-            src_client_id,
-            dst_client_id,
-            src_chain,
-            dst_chain,
-            src_sender,
-            dst_sender,
-        )
-        .await?;
+        let relay = build
+            .build_relay_with_batch(
+                target,
+                src_client_id,
+                dst_client_id,
+                src_chain,
+                dst_chain,
+                src_sender,
+                dst_sender,
+            )
+            .await?;
 
         if let Some(src_receiver) = m_src_receiver {
             relay.clone().spawn_batch_message_worker(

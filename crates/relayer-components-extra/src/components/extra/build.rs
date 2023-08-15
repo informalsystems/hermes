@@ -6,13 +6,20 @@ use ibc_relayer_components::builder::traits::relay::from_chains::RelayFromChains
 use ibc_relayer_components::components::default::build::DefaultBuildComponents;
 
 use crate::builder::impls::batch::BuildBatchWorker;
+use crate::builder::traits::relay::RelayWithBatchBuilderComponent;
 
 pub struct ExtraBuildComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
 ibc_relayer_components::delegate_component!(
     RelayFromChainsBuilderComponent,
     ExtraBuildComponents<BaseComponents>,
-    BuildBatchWorker<BaseComponents>,
+    BuildBatchWorker,
+);
+
+ibc_relayer_components::delegate_component!(
+    RelayWithBatchBuilderComponent,
+    ExtraBuildComponents<BaseComponents>,
+    BaseComponents,
 );
 
 ibc_relayer_components::delegate_components!(
