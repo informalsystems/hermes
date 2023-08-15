@@ -7,8 +7,8 @@ extern crate alloc;
 
 pub mod batch;
 pub mod builder;
+pub mod clear_packet;
 pub mod components;
-pub mod packet_clear;
 pub mod relay;
 pub mod runtime;
 pub mod telemetry;

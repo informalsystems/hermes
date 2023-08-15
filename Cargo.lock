@@ -1757,7 +1757,7 @@ dependencies = [
  "ibc-relayer-types",
  "ibc-telemetry",
  "itertools",
- "moka 0.10.4",
+ "moka 0.10.3",
  "opentelemetry 0.17.0",
  "prost",
  "serde",
@@ -2164,9 +2164,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.10.4"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0be0a3dd6fe7c99233c2b1476e703147fb7516c68dce585b19b51efc08fe93d8"
+checksum = "713518e40360e799c7a0b991b63fcd59814b00901ad3acbe8ecfb5daa23723be"
 dependencies = [
  "async-io",
  "async-lock",

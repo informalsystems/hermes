@@ -1,7 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_components::relay::traits::auto_relayer::{
-    AutoRelayer, BiRelayMode, CanAutoRelay, RelayMode,
-};
+use ibc_relayer_components::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
@@ -20,12 +18,12 @@ use crate::std_prelude::*;
 pub struct ParallelTwoWayAutoRelay;
 
 #[async_trait]
-impl<BiRelay, Runtime> AutoRelayer<BiRelay, BiRelayMode> for ParallelTwoWayAutoRelay
+impl<BiRelay, Runtime> AutoRelayer<BiRelay> for ParallelTwoWayAutoRelay
 where
     BiRelay: HasTwoWayRelay,
     Runtime: HasSpawner,
-    BiRelay::RelayAToB: CanAutoRelay<RelayMode> + HasRuntime<Runtime = Runtime> + Clone,
-    BiRelay::RelayBToA: CanAutoRelay<RelayMode> + Clone,
+    BiRelay::RelayAToB: CanAutoRelay + HasRuntime<Runtime = Runtime> + Clone,
+    BiRelay::RelayBToA: CanAutoRelay + Clone,
 {
     async fn auto_relay(birelay: &BiRelay) -> Result<(), BiRelay::Error> {
         let relay_a_to_b = birelay.relay_a_to_b().clone();

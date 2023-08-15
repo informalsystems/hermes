@@ -1,4 +1,4 @@
-use crate::builder::traits::birelay::HasBiRelayType;
+use crate::builder::traits::birelay::types::HasBiRelayType;
 use crate::builder::traits::target::chain::{ChainATarget, ChainBTarget, ChainBuildTarget};
 use crate::builder::types::aliases::{RelayAToB, RelayBToA, RelayError};
 use crate::core::traits::sync::Async;

@@ -3,8 +3,7 @@ use ibc_relayer_components::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
 use ibc_relayer_components::chain::traits::types::connection::{
-    HasConnectionDetailsType, HasConnectionHandshakePayloads, HasConnectionVersionType,
-    HasInitConnectionOptionsType,
+    HasConnectionHandshakePayloads, HasInitConnectionOptionsType,
 };
 use ibc_relayer_components::chain::traits::types::ibc_events::connection::{
     HasConnectionOpenInitEvent, HasConnectionOpenTryEvent,
@@ -36,24 +35,6 @@ where
     Counterparty: OfaChainTypes,
 {
     type InitConnectionOptions = Chain::InitConnectionOptions;
-}
-
-impl<Chain, Counterparty> HasConnectionVersionType<OfaChainWrapper<Counterparty>>
-    for OfaChainWrapper<Chain>
-where
-    Chain: OfaChainTypes,
-    Counterparty: OfaChainTypes,
-{
-    type ConnectionVersion = Chain::ConnectionVersion;
-}
-
-impl<Chain, Counterparty> HasConnectionDetailsType<OfaChainWrapper<Counterparty>>
-    for OfaChainWrapper<Chain>
-where
-    Chain: OfaChainTypes,
-    Counterparty: OfaChainTypes,
-{
-    type ConnectionDetails = Chain::ConnectionDetails;
 }
 
 impl<Chain, Counterparty> HasConnectionOpenInitEvent<OfaChainWrapper<Counterparty>>
