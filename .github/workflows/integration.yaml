@@ -99,21 +99,6 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - name: run integration tests
-        uses: nick-fields/retry@v2
-        env:
-          RUST_LOG: info,ibc_relayer_runtime=trace
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        with:
-           max_attempts: 2
-           timeout_minutes: 90
-           command: |
-             nix shell .#python .#${{ matrix.chain.package }} -c cargo \
-               test -p ibc-integration-test --no-fail-fast -- \
-               --nocapture --test-threads=2
 
   relayer-next-integration-test:
     runs-on: ubuntu-20.04
@@ -179,14 +164,6 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - name: run integration tests
-        uses: nick-fields/retry@v2
-        env:
-          RUST_LOG: info,ibc_relayer_runtime=trace
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         with:
           max_attempts: 3
           timeout_minutes: 45
