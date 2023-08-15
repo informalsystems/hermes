@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
+use ibc_relayer_components::builder::traits::birelay::types::HasBiRelayType;
 use ibc_relayer_components::builder::traits::target::relay::RelayBuildTarget;
 use ibc_relayer_components::builder::types::aliases::{
     TargetDstChain, TargetDstClientId, TargetRelay, TargetSrcChain, TargetSrcClientId,

@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer_components::builder::impls::birelay::BuildBiRelayFromRelays;
-use ibc_relayer_components::builder::traits::birelay::{
-    BiRelayBuilder, CanBuildBiRelay, CanBuildBiRelayFromRelays,
-};
+use ibc_relayer_components::builder::traits::birelay::build::{BiRelayBuilder, CanBuildBiRelay};
+use ibc_relayer_components::builder::traits::birelay::from_relays::CanBuildBiRelayFromRelays;
 
 use crate::one_for_all::traits::builder::{
     ChainIdA, ChainIdB, ClientIdA, ClientIdB, OfaBuilder, RelayAToB, RelayBToA,

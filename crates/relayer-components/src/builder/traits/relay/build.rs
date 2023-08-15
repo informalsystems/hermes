@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::builder::traits::birelay::HasBiRelayType;
+use crate::builder::traits::birelay::types::HasBiRelayType;
 use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::builder::types::aliases::{
     TargetDstChainId, TargetDstClientId, TargetRelay, TargetSrcChainId, TargetSrcClientId,
