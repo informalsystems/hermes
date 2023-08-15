@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use async_trait::async_trait;
 
 use crate::builder::traits::cache::HasRelayCache;
-use crate::builder::traits::relay::RelayBuilder;
+use crate::builder::traits::relay::build::RelayBuilder;
 use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::builder::types::aliases::{
     TargetDstChainId, TargetDstClientId, TargetRelay, TargetSrcChainId, TargetSrcClientId,

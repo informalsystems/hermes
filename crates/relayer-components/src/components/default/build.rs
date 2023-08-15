@@ -4,7 +4,8 @@ use crate::builder::components::chain::cache::BuildChainWithCache;
 use crate::builder::components::relay::build_from_chain::BuildRelayFromChains;
 use crate::builder::components::relay::cache::BuildRelayWithCache;
 use crate::builder::traits::chain::ChainBuilderComponent;
-use crate::builder::traits::relay::RelayBuilderComponent;
+use crate::builder::traits::relay::build::RelayBuilderComponent;
+use crate::builder::traits::relay::from_chains::RelayFromChainsBuilderComponent;
 pub struct DefaultBuildComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
 crate::delegate_component!(
@@ -16,5 +17,11 @@ crate::delegate_component!(
 crate::delegate_component!(
     RelayBuilderComponent,
     DefaultBuildComponents<BaseComponents>,
-    BuildRelayWithCache<BuildRelayFromChains<BaseComponents>>,
+    BuildRelayWithCache<BuildRelayFromChains>,
+);
+
+crate::delegate_component!(
+    RelayFromChainsBuilderComponent,
+    DefaultBuildComponents<BaseComponents>,
+    BaseComponents,
 );

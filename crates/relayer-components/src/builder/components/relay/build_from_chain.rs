@@ -1,9 +1,8 @@
-use core::marker::PhantomData;
-
 use async_trait::async_trait;
 
 use crate::builder::traits::chain::CanBuildChain;
-use crate::builder::traits::relay::{RelayBuilder, RelayFromChainsBuilder};
+use crate::builder::traits::relay::build::RelayBuilder;
+use crate::builder::traits::relay::from_chains::CanBuildRelayFromChains;
 use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::builder::types::aliases::{DstChainTarget, SrcChainTarget};
 use crate::builder::types::aliases::{
@@ -11,14 +10,14 @@ use crate::builder::types::aliases::{
 };
 use crate::std_prelude::*;
 
-pub struct BuildRelayFromChains<InBuilder>(pub PhantomData<InBuilder>);
+pub struct BuildRelayFromChains;
 
 #[async_trait]
-impl<Build, InBuilder, Target> RelayBuilder<Build, Target> for BuildRelayFromChains<InBuilder>
+impl<Build, Target> RelayBuilder<Build, Target> for BuildRelayFromChains
 where
-    Build:
-        CanBuildChain<SrcChainTarget<Build, Target>> + CanBuildChain<DstChainTarget<Build, Target>>,
-    InBuilder: RelayFromChainsBuilder<Build, Target>,
+    Build: CanBuildChain<SrcChainTarget<Build, Target>>
+        + CanBuildChain<DstChainTarget<Build, Target>>
+        + CanBuildRelayFromChains<Target>,
     Target: RelayBuildTarget<Build>,
 {
     async fn build_relay(
@@ -37,14 +36,8 @@ where
             .build_chain(<DstChainTarget<Build, Target>>::default(), dst_chain_id)
             .await?;
 
-        InBuilder::build_relay_from_chains(
-            build,
-            target,
-            src_client_id,
-            dst_client_id,
-            src_chain,
-            dst_chain,
-        )
-        .await
+        build
+            .build_relay_from_chains(target, src_client_id, dst_client_id, src_chain, dst_chain)
+            .await
     }
 }

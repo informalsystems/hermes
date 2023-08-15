@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::builder::traits::birelay::{BiRelayBuilder, CanBuildBiRelayFromRelays};
-use crate::builder::traits::relay::CanBuildRelay;
+use crate::builder::traits::relay::build::CanBuildRelay;
 use crate::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
 use crate::builder::types::aliases::{ChainIdA, ChainIdB, ClientIdA, ClientIdB};
 use crate::std_prelude::*;
