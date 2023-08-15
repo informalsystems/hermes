@@ -3,7 +3,7 @@ use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 use ibc_relayer_components::runtime::traits::time::HasTime;
 use ibc_relayer_components_extra::runtime::traits::channel::{
-    CanCreateChannels, CanStreamReceiver, CanUseChannels, HasChannelTypes,
+    CanCloneSender, CanCreateChannels, CanStreamReceiver, CanUseChannels, HasChannelTypes,
 };
 use ibc_relayer_components_extra::runtime::traits::channel_once::{
     CanCreateChannelsOnce, CanUseChannelsOnce, HasChannelOnceTypes,
@@ -11,7 +11,8 @@ use ibc_relayer_components_extra::runtime::traits::channel_once::{
 use ibc_relayer_components_extra::runtime::traits::spawn::HasSpawner;
 
 pub trait AfoRuntime:
-    HasMutex
+    Clone
+    + HasMutex
     + CanSleep
     + HasTime
     + HasSpawner
@@ -20,13 +21,15 @@ pub trait AfoRuntime:
     + CanCreateChannels
     + CanCreateChannelsOnce
     + CanStreamReceiver
+    + CanCloneSender
     + CanUseChannels
     + CanUseChannelsOnce
 {
 }
 
 impl<Runtime> AfoRuntime for Runtime where
-    Runtime: HasMutex
+    Runtime: Clone
+        + HasMutex
         + CanSleep
         + HasTime
         + HasSpawner
@@ -35,6 +38,7 @@ impl<Runtime> AfoRuntime for Runtime where
         + CanCreateChannels
         + CanCreateChannelsOnce
         + CanStreamReceiver
+        + CanCloneSender
         + CanUseChannels
         + CanUseChannelsOnce
 {

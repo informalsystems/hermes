@@ -1,4 +1,5 @@
 use core::future::Future;
+use core::pin::Pin;
 use ibc_relayer_components_extra::runtime::traits::spawn::{HasSpawner, Spawner, TaskHandle};
 
 use crate::types::runtime::TokioRuntimeContext;
@@ -22,5 +23,17 @@ impl Spawner for TokioRuntimeContext {
             task.await;
         });
         Box::new(TokioTaskHandle(join_handle))
+    }
+}
+
+impl TaskHandle for TokioTaskHandle {
+    fn abort(self: Box<Self>) {
+        self.0.abort();
+    }
+
+    fn into_future(self: Box<Self>) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
+        Box::pin(async move {
+            let _ = self.0.await;
+        })
     }
 }

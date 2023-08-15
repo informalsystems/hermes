@@ -1,5 +1,4 @@
 use ibc_relayer_all_in_one::all_for_one::relay::AfoRelay;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 

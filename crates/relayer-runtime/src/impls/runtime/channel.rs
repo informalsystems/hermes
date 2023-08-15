@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use futures::Stream;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components_extra::runtime::traits::channel::{
-    CanCreateChannels, CanStreamReceiver, CanUseChannels, HasChannelTypes,
+    CanCloneSender, CanCreateChannels, CanStreamReceiver, CanUseChannels, HasChannelTypes,
 };
 use ibc_relayer_components_extra::runtime::traits::channel_once::{
     CanCreateChannelsOnce, CanUseChannelsOnce, HasChannelOnceTypes,
@@ -107,5 +107,14 @@ impl CanStreamReceiver for TokioRuntimeContext {
         T: Async,
     {
         Box::pin(UnboundedReceiverStream::new(receiver))
+    }
+}
+
+impl CanCloneSender for TokioRuntimeContext {
+    fn clone_sender<T>(sender: &Self::Sender<T>) -> Self::Sender<T>
+    where
+        T: Async,
+    {
+        sender.clone()
     }
 }

@@ -58,21 +58,28 @@ pub trait CanBuildAfoBiRelayFromOfa:
     ) -> Result<Self::AfoBiRelay, Self::Error>;
 }
 
-// #[async_trait]
-// impl<Build> CanBuildAfoBiRelayFromOfa for OfaBuilderWrapper<Build>
-// where
-//     Build: OfaBuilder,
-// {
-//     type AfoBiRelay = OfaBiRelayWrapper<Build::BiRelay>;
+#[async_trait]
+impl<Build> CanBuildAfoBiRelayFromOfa for OfaBuilderWrapper<Build>
+where
+    Build: OfaBuilder,
+    // OfaBuilderWrapper<Build>: CanBuildBiRelayFromRelays
+{
+    type AfoBiRelay = OfaBiRelayWrapper<Build::BiRelay>;
 
-//     async fn build_afo_birelay_from_ofa(
-//         &self,
-//         chain_id_a: &ChainIdA<Self>,
-//         chain_id_b: &ChainIdB<Self>,
-//         client_id_a: &ClientIdA<Self>,
-//         client_id_b: &ClientIdB<Self>,
-//     ) -> Result<OfaBiRelayWrapper<Build::BiRelay>, Build::Error> {
-//         self.build_afo_birelay(chain_id_a, chain_id_b, client_id_a, client_id_b)
-//             .await
-//     }
-// }
+    async fn build_afo_birelay_from_ofa(
+        &self,
+        chain_id_a: &ChainIdA<Self>,
+        chain_id_b: &ChainIdB<Self>,
+        client_id_a: &ClientIdA<Self>,
+        client_id_b: &ClientIdB<Self>,
+    ) -> Result<OfaBiRelayWrapper<Build::BiRelay>, Build::Error> {
+        <OfaBuilderWrapper<Build> as CanBuildAfoBiRelay>::build_afo_birelay(
+            self,
+            chain_id_a,
+            chain_id_b,
+            client_id_a,
+            client_id_b,
+        )
+        .await
+    }
+}

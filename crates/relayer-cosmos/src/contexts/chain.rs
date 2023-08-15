@@ -4,7 +4,6 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::EventSourceMode;
 use ibc_relayer::event::source::queries::all as all_queries;
 use ibc_relayer::keyring::Secp256k1KeyPair;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::transaction::OfaTxWrapper;
 use ibc_relayer_components::runtime::impls::subscription::empty::EmptySubscription;
