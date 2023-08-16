@@ -9,6 +9,7 @@ use ibc_relayer_components::transaction::traits::nonce::allocate::NonceAllocator
 use ibc_relayer_components::transaction::traits::nonce::query::NonceQuerierComponent;
 use ibc_relayer_components::transaction::traits::response::poll::TxResponsePollerComponent;
 use ibc_relayer_components::transaction::traits::response::query::TxResponseQuerierComponent;
+use ibc_relayer_components::transaction::traits::submit::TxSubmitterComponent;
 
 pub struct ExtraTxComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
@@ -20,6 +21,7 @@ ibc_relayer_components::delegate_components!(
         NonceAllocatorComponent,
         TxEncoderComponent,
         TxFeeEstimatorComponent,
+        TxSubmitterComponent,
         TxResponsePollerComponent,
         TxResponseQuerierComponent,
     ],

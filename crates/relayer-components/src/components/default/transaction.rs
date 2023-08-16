@@ -12,6 +12,7 @@ use crate::transaction::traits::nonce::allocate::NonceAllocatorComponent;
 use crate::transaction::traits::nonce::query::NonceQuerierComponent;
 use crate::transaction::traits::response::poll::TxResponsePollerComponent;
 use crate::transaction::traits::response::query::TxResponseQuerierComponent;
+use crate::transaction::traits::submit::TxSubmitterComponent;
 
 pub struct DefaultTxComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 
@@ -44,6 +45,7 @@ crate::delegate_components!(
         NonceQuerierComponent,
         TxEncoderComponent,
         TxFeeEstimatorComponent,
+        TxSubmitterComponent,
         TxResponseQuerierComponent,
     ],
     DefaultTxComponents<BaseComponents>,
