@@ -10,7 +10,7 @@ use crate::transaction::traits::fee::HasFeeForSimulation;
 use crate::transaction::traits::logs::logger::CanLogTx;
 use crate::transaction::traits::logs::nonce::CanLogNonce;
 use crate::transaction::traits::message::{CanSendMessagesAsTx, MessageAsTxSender};
-use crate::transaction::traits::nonce::CanAllocateNonce;
+use crate::transaction::traits::nonce::allocate::CanAllocateNonce;
 use crate::transaction::traits::response::CanPollTxResponse;
 use crate::transaction::traits::signer::HasSigner;
 use crate::transaction::traits::submit::CanSubmitTx;

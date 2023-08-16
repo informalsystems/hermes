@@ -2,35 +2,12 @@ use async_trait::async_trait;
 
 use crate::logger::traits::level::HasBaseLogLevels;
 use crate::runtime::traits::mutex::HasMutex;
-use crate::runtime::traits::runtime::HasRuntime;
 use crate::std_prelude::*;
 use crate::transaction::traits::logs::logger::CanLogTx;
 use crate::transaction::traits::logs::nonce::CanLogNonce;
-use crate::transaction::traits::nonce::{CanQueryNonce, HasNonceGuard, NonceAllocator};
-
-/**
-   A naive nonce allocator that simply query the current nonce from the context
-   and then pass it to the continuation.
-
-   To ensure that the nonce works safely with parallel transaction submissions,
-   the allocator requires the context to provide a mutex, which is acquired across
-   the time when the nonce is being allocated and used. Because of this, the naive
-   allocator only allows one transaction to be submitted at a time.
-*/
-pub trait HasMutexForNonceAllocation: HasRuntime + HasNonceGuard
-where
-    Self::Runtime: HasMutex,
-{
-    fn mutex_for_nonce_allocation(
-        &self,
-        signer: &Self::Signer,
-    ) -> &<Self::Runtime as HasMutex>::Mutex<()>;
-
-    fn mutex_to_nonce_guard<'a>(
-        mutex_guard: <Self::Runtime as HasMutex>::MutexGuard<'a, ()>,
-        nonce: Self::Nonce,
-    ) -> Self::NonceGuard<'a>;
-}
+use crate::transaction::traits::nonce::allocate::NonceAllocator;
+use crate::transaction::traits::nonce::mutex::HasMutexForNonceAllocation;
+use crate::transaction::traits::nonce::query::CanQueryNonce;
 
 pub struct AllocateNonceWithMutex;
 

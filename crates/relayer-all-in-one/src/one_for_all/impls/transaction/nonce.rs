@@ -1,9 +1,11 @@
 use async_trait::async_trait;
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 use ibc_relayer_components::transaction::impls::nonces::mutex::AllocateNonceWithMutex;
-use ibc_relayer_components::transaction::traits::nonce::{
-    CanAllocateNonce, CanQueryNonce, HasNonceGuard, NonceAllocator,
+use ibc_relayer_components::transaction::traits::nonce::allocate::{
+    CanAllocateNonce, NonceAllocator,
 };
+use ibc_relayer_components::transaction::traits::nonce::guard::HasNonceGuard;
+use ibc_relayer_components::transaction::traits::nonce::query::CanQueryNonce;
 
 use crate::one_for_all::traits::transaction::OfaTxContext;
 use crate::one_for_all::types::transaction::OfaTxWrapper;

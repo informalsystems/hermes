@@ -1,6 +1,6 @@
 use ibc_relayer_components::chain::traits::types::event::HasEventType;
 use ibc_relayer_components::chain::traits::types::message::HasMessageType;
-use ibc_relayer_components::transaction::traits::types::HasTxTypes;
+use ibc_relayer_components::transaction::traits::types::{HasNonceType, HasSignerType, HasTxTypes};
 
 use crate::one_for_all::traits::transaction::OfaTxContext;
 use crate::one_for_all::types::transaction::OfaTxWrapper;
@@ -19,17 +19,27 @@ where
     type Event = TxContext::Event;
 }
 
+impl<TxContext> HasNonceType for OfaTxWrapper<TxContext>
+where
+    TxContext: OfaTxContext,
+{
+    type Nonce = TxContext::Nonce;
+}
+
+impl<TxContext> HasSignerType for OfaTxWrapper<TxContext>
+where
+    TxContext: OfaTxContext,
+{
+    type Signer = TxContext::Signer;
+}
+
 impl<TxContext> HasTxTypes for OfaTxWrapper<TxContext>
 where
     TxContext: OfaTxContext,
 {
     type Transaction = TxContext::Transaction;
 
-    type Nonce = TxContext::Nonce;
-
     type Fee = TxContext::Fee;
-
-    type Signer = TxContext::Signer;
 
     type TxHash = TxContext::TxHash;
 
