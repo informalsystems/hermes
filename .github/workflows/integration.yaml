@@ -99,20 +99,19 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - uses: nick-fields/retry@v2
+      - name: Install cargo-nextest
+        run:
+          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - name: Run integration test
         env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        with:
-           max_attempts: 2
-           timeout_minutes: 90
-           command: |
-             nix shell .#python .#${{ matrix.chain.package }} -c cargo \
-               test -p ibc-integration-test --no-fail-fast -- \
-               --nocapture --test-threads=2
+        run: |
+             nix shell .#python .#${{ matrix.chain.package }} -c \
+               cargo nextest run --retries 2 -p ibc-integration-test --no-fail-fast --nocapture
 
   ordered-channel-test:
     runs-on: ubuntu-20.04
