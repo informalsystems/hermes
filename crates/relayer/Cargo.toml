@@ -52,7 +52,7 @@ retry = { version = "2.0.0", default-features = false }
 async-stream = "0.3.5"
 http = "0.2.9"
 flex-error = { version = "0.4.4", default-features = false }
-signature = "1.6.0"
+signature = "2.1.0"
 anyhow = "1.0"
 semver = "1.0"
 humantime = "2.1.0"
@@ -61,9 +61,9 @@ moka = "0.11.3"
 uuid = { version = "1.4.0", features = ["v4"] }
 bs58 = "0.5.0"
 digest = "0.10.6"
-ed25519 = "1.5.2"
+ed25519 = "2.2.2"
 ed25519-dalek = { version = "2.0.0", features = ["serde"] }
-ed25519-dalek-bip32 = "0.2.0"
+ed25519-dalek-bip32 = "0.3.0"
 generic-array = "0.14.7"
 secp256k1 = { version = "0.27.0", features = ["rand-std"] }
 strum = { version = "0.25", features = ["derive"] }
