@@ -20,6 +20,7 @@ ibc-relayer-components = { version = "0.1.0", path = "../../crates/relayer-compo
 ibc-relayer-components-extra = { version = "0.1.0", path = "../../crates/relayer-components-extra" }
 ibc-relayer-runtime    = { path = "../../crates/relayer-runtime" }
 ibc-relayer-cosmos     = { path = "../../crates/relayer-cosmos" }
+ibc-relayer-solomachine     = { path = "../../crates/relayer-solomachine" }
 ibc-test-framework = { path = "../test-framework" }
 
 http = "0.2.9"

@@ -1618,6 +1618,7 @@ dependencies = [
  "ibc-relayer-components-extra",
  "ibc-relayer-cosmos",
  "ibc-relayer-runtime",
+ "ibc-relayer-solomachine",
  "ibc-relayer-types",
  "ibc-test-framework",
  "prost",
