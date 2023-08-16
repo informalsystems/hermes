@@ -6,6 +6,7 @@ use ibc_relayer_components::transaction::traits::encode::TxEncoderComponent;
 use ibc_relayer_components::transaction::traits::estimate::TxFeeEstimatorComponent;
 use ibc_relayer_components::transaction::traits::message_as_tx::MessageAsTxSenderComponent;
 use ibc_relayer_components::transaction::traits::nonce::allocate::NonceAllocatorComponent;
+use ibc_relayer_components::transaction::traits::nonce::query::NonceQuerierComponent;
 use ibc_relayer_components::transaction::traits::response::poll::TxResponsePollerComponent;
 use ibc_relayer_components::transaction::traits::response::query::TxResponseQuerierComponent;
 
@@ -15,9 +16,10 @@ ibc_relayer_components::delegate_components!(
     [
         MessageSenderComponent,
         MessageAsTxSenderComponent,
+        NonceQuerierComponent,
+        NonceAllocatorComponent,
         TxEncoderComponent,
         TxFeeEstimatorComponent,
-        NonceAllocatorComponent,
         TxResponsePollerComponent,
         TxResponseQuerierComponent,
     ],

@@ -9,6 +9,7 @@ use crate::transaction::traits::encode::TxEncoderComponent;
 use crate::transaction::traits::estimate::TxFeeEstimatorComponent;
 use crate::transaction::traits::message_as_tx::MessageAsTxSenderComponent;
 use crate::transaction::traits::nonce::allocate::NonceAllocatorComponent;
+use crate::transaction::traits::nonce::query::NonceQuerierComponent;
 use crate::transaction::traits::response::poll::TxResponsePollerComponent;
 use crate::transaction::traits::response::query::TxResponseQuerierComponent;
 
@@ -40,6 +41,7 @@ crate::delegate_component!(
 
 crate::delegate_components!(
     [
+        NonceQuerierComponent,
         TxEncoderComponent,
         TxFeeEstimatorComponent,
         TxResponseQuerierComponent,
