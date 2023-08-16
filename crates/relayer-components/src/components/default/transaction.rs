@@ -5,6 +5,7 @@ use crate::transaction::components::message_as_tx::EstimateFeesAndSendTx;
 use crate::transaction::components::message_sender::send_as_tx::SendMessagesAsTx;
 use crate::transaction::components::nonce::mutex::AllocateNonceWithMutex;
 use crate::transaction::components::poll::PollTxResponse;
+use crate::transaction::traits::estimate::TxFeeEstimatorComponent;
 use crate::transaction::traits::message_as_tx::MessageAsTxSenderComponent;
 use crate::transaction::traits::nonce::allocate::NonceAllocatorComponent;
 use crate::transaction::traits::response::poll::TxResponsePollerComponent;
@@ -37,7 +38,7 @@ crate::delegate_component!(
 );
 
 crate::delegate_components!(
-    [TxResponseQuerierComponent,],
+    [TxFeeEstimatorComponent, TxResponseQuerierComponent,],
     DefaultTxComponents<BaseComponents>,
     BaseComponents,
 );
