@@ -8,7 +8,6 @@ use futures_core::{Future, Stream};
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components_extra::runtime::traits::spawn::TaskHandle;
 
-use crate::one_for_all::types::runtime::LogLevel;
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -36,8 +35,6 @@ pub trait OfaRuntime: Async {
     type ReceiverOnce<T>: Async
     where
         T: Async;
-
-    async fn log(&self, level: LogLevel, message: &str);
 
     async fn sleep(&self, duration: Duration);
 

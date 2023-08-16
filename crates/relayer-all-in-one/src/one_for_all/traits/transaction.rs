@@ -2,19 +2,20 @@ use core::fmt::{Debug, Display};
 use core::time::Duration;
 
 use async_trait::async_trait;
+use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
+use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 
-use crate::one_for_all::traits::runtime::OfaRuntime;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
+use crate::all_for_one::runtime::AfoRuntime;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait OfaTxContext: Async {
     type Error: Async + Debug;
 
-    type Runtime: OfaRuntime;
+    type Runtime: AfoRuntime;
 
     type Logger: HasBaseLogLevels;
 
@@ -44,9 +45,9 @@ pub trait OfaTxContext: Async {
 
     type TxResponse: Async;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
+    fn runtime(&self) -> &Self::Runtime;
 
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Self::Error;
 
     fn logger(&self) -> &Self::Logger;
 
@@ -88,7 +89,7 @@ pub trait OfaTxContext: Async {
     fn mutex_for_nonce_allocation(
         &self,
         signer: &Self::Signer,
-    ) -> &<Self::Runtime as OfaRuntime>::Mutex<()>;
+    ) -> &<Self::Runtime as HasMutex>::Mutex<()>;
 
     fn parse_tx_response_as_events(
         response: Self::TxResponse,

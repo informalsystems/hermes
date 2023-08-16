@@ -9,11 +9,11 @@ use ibc_relayer_components::relay::traits::packet_relayers::lock::HasPacketLock;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_components::relay::traits::update_client::UpdateClientMessageBuilder;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
-use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
+use ibc_relayer_runtime::types::log::logger::TracingLogger;
 use std::vec;
 
 use async_trait::async_trait;
-use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_runtime::types::error::Error as TokioError;
 
 use crate::relayer_mock::base::error::{BaseError, Error};
 use crate::relayer_mock::base::types::aliases::ClientId;

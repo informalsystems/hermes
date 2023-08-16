@@ -15,11 +15,10 @@ use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::types::Memo;
 use ibc_relayer::keyring::{Secp256k1KeyPair, SigningKeyPair};
 use ibc_relayer_all_in_one::one_for_all::traits::transaction::OfaTxContext;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-use ibc_relayer_runtime::tokio::error::Error as TokioError;
-use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
-use ibc_relayer_runtime::tokio::logger::value::LogValue;
+use ibc_relayer_runtime::types::error::Error as TokioError;
+use ibc_relayer_runtime::types::log::logger::TracingLogger;
+use ibc_relayer_runtime::types::log::value::LogValue;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use prost::Message as _;
 use tendermint::abci::Event as AbciEvent;
@@ -56,7 +55,7 @@ impl OfaTxContext for CosmosTxContext {
 
     type TxResponse = TxResponse;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+    fn runtime(&self) -> &TokioRuntimeContext {
         &self.runtime
     }
 
