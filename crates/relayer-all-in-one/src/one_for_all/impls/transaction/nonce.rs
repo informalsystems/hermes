@@ -1,11 +1,8 @@
-use core::future::Future;
-use core::pin::Pin;
-
 use async_trait::async_trait;
-use ibc_relayer_components::core::traits::sync::Async;
-use ibc_relayer_components::transaction::impls::nonces::naive::NaiveNonceAllocator;
+use ibc_relayer_components::runtime::traits::mutex::HasMutex;
+use ibc_relayer_components::transaction::impls::nonces::mutex::AllocateNonceWithMutex;
 use ibc_relayer_components::transaction::traits::nonce::{
-    CanAllocateNonce, CanQueryNonce, NonceAllocator,
+    CanAllocateNonce, CanQueryNonce, HasNonceGuard, NonceAllocator,
 };
 
 use crate::one_for_all::traits::transaction::OfaTxContext;
@@ -23,22 +20,29 @@ where
 }
 
 #[async_trait]
+impl<TxContext> HasNonceGuard for OfaTxWrapper<TxContext>
+where
+    TxContext: OfaTxContext,
+{
+    type NonceGuard<'a> = (
+        <TxContext::Runtime as HasMutex>::MutexGuard<'a, ()>,
+        TxContext::Nonce,
+    );
+
+    fn deref_nonce<'a, 'b>((_, nonce): &'a Self::NonceGuard<'b>) -> &'a Self::Nonce {
+        &nonce
+    }
+}
+
+#[async_trait]
 impl<TxContext> CanAllocateNonce for OfaTxWrapper<TxContext>
 where
     TxContext: OfaTxContext,
 {
-    fn with_allocated_nonce<'a, R, Cont>(
+    async fn allocate_nonce<'a>(
         &'a self,
         signer: &'a Self::Signer,
-        cont: &'a Cont,
-    ) -> Pin<Box<dyn Future<Output = Result<R, Self::Error>> + Send + 'a>>
-    where
-        R: Async + 'a,
-        Cont: Fn(Self::Nonce) -> Pin<Box<dyn Future<Output = Result<R, Self::Error>> + Send + 'a>>
-            + Send
-            + Sync
-            + 'a,
-    {
-        NaiveNonceAllocator::with_allocated_nonce(self, signer, cont)
+    ) -> Result<Self::NonceGuard<'a>, Self::Error> {
+        AllocateNonceWithMutex::allocate_nonce(self, signer).await
     }
 }

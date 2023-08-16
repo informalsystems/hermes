@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
-use ibc_relayer_components::transaction::impls::nonces::naive::HasMutexForNonceAllocation;
+use ibc_relayer_components::transaction::impls::nonces::mutex::HasMutexForNonceAllocation;
 use ibc_relayer_components::transaction::impls::poll::HasPollTimeout;
 use ibc_relayer_components::transaction::traits::fee::HasFeeForSimulation;
 use ibc_relayer_components::transaction::traits::signer::HasSigner;
@@ -49,5 +49,12 @@ where
         signer: &Self::Signer,
     ) -> &<Self::Runtime as HasMutex>::Mutex<()> {
         self.tx_context.mutex_for_nonce_allocation(signer)
+    }
+
+    fn mutex_to_nonce_guard<'a>(
+        mutex_guard: <Self::Runtime as HasMutex>::MutexGuard<'a, ()>,
+        nonce: Self::Nonce,
+    ) -> Self::NonceGuard<'a> {
+        (mutex_guard, nonce)
     }
 }

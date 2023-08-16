@@ -32,15 +32,10 @@ where
         messages: Vec<Chain::Message>,
     ) -> Result<Vec<Vec<Chain::Event>>, Chain::Error> {
         let signer = chain.get_signer();
+        let nonce = chain.allocate_nonce(signer).await?;
+
         let response = chain
-            .with_allocated_nonce(signer, &|nonce| {
-                let messages_ref = &messages;
-                Box::pin(async move {
-                    chain
-                        .send_messages_as_tx(signer, &nonce, messages_ref)
-                        .await
-                })
-            })
+            .send_messages_as_tx(signer, Chain::deref_nonce(&nonce), &messages)
             .await?;
 
         let events = Chain::parse_tx_response_as_events(response)?;
