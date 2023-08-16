@@ -6,7 +6,6 @@ pub mod estimate;
 pub mod event;
 pub mod fields;
 pub mod logger;
-pub mod message;
 pub mod nonce;
 pub mod response;
 pub mod runtime;
