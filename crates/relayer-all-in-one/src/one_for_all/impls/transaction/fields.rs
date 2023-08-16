@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
-use ibc_relayer_components::transaction::impls::poll::HasPollTimeout;
+use ibc_relayer_components::transaction::components::poll::HasPollTimeout;
 use ibc_relayer_components::transaction::traits::fee::HasFeeForSimulation;
 use ibc_relayer_components::transaction::traits::nonce::mutex::HasMutexForNonceAllocation;
 use ibc_relayer_components::transaction::traits::signer::HasSigner;

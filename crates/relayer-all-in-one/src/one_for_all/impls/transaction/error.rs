@@ -1,5 +1,5 @@
 use ibc_relayer_components::core::traits::error::HasErrorType;
-use ibc_relayer_components::transaction::impls::poll::InjectNoTxResponseError;
+use ibc_relayer_components::transaction::components::poll::InjectNoTxResponseError;
 
 use crate::one_for_all::traits::transaction::OfaTxContext;
 use crate::one_for_all::types::transaction::OfaTxWrapper;
