@@ -8,7 +8,7 @@ use crate::transaction::traits::fee::HasFeeForSimulation;
 use crate::transaction::traits::logs::logger::CanLogTx;
 use crate::transaction::traits::logs::nonce::CanLogNonce;
 use crate::transaction::traits::message_as_tx::MessageAsTxSender;
-use crate::transaction::traits::response::CanPollTxResponse;
+use crate::transaction::traits::response::poll::CanPollTxResponse;
 use crate::transaction::traits::submit::CanSubmitTx;
 use crate::transaction::traits::types::HasTxTypes;
 

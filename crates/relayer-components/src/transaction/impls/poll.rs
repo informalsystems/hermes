@@ -8,7 +8,8 @@ use crate::runtime::traits::sleep::CanSleep;
 use crate::runtime::traits::time::HasTime;
 use crate::std_prelude::*;
 use crate::transaction::traits::logs::logger::CanLogTx;
-use crate::transaction::traits::response::{CanQueryTxResponse, TxResponsePoller};
+use crate::transaction::traits::response::poll::TxResponsePoller;
+use crate::transaction::traits::response::query::CanQueryTxResponse;
 use crate::transaction::traits::types::HasTxTypes;
 
 pub trait InjectNoTxResponseError: HasTxTypes {
