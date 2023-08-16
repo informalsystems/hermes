@@ -1417,7 +1417,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "tendermint-rpc",
+ "tendermint-rpc 0.33.0",
  "tokio",
  "tracing",
 ]
@@ -1452,7 +1452,7 @@ dependencies = [
  "prost",
  "serde",
  "subtle-encoding",
- "tendermint-proto",
+ "tendermint-proto 0.32.0",
  "tonic",
 ]
 
@@ -1504,10 +1504,10 @@ dependencies = [
  "signature 1.6.4",
  "strum",
  "subtle-encoding",
- "tendermint",
+ "tendermint 0.32.0",
  "tendermint-light-client",
  "tendermint-light-client-detector",
- "tendermint-rpc",
+ "tendermint-rpc 0.33.0",
  "tendermint-testgen",
  "test-log",
  "thiserror",
@@ -1554,9 +1554,9 @@ dependencies = [
  "serial_test",
  "signal-hook",
  "subtle-encoding",
- "tendermint",
+ "tendermint 0.32.0",
  "tendermint-light-client-verifier",
- "tendermint-rpc",
+ "tendermint-rpc 0.33.0",
  "time",
  "tokio",
  "tracing",
@@ -1599,10 +1599,10 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "subtle-encoding",
- "tendermint",
+ "tendermint 0.32.0",
  "tendermint-light-client-verifier",
- "tendermint-proto",
- "tendermint-rpc",
+ "tendermint-proto 0.32.0",
+ "tendermint-rpc 0.33.0",
  "tendermint-testgen",
  "test-log",
  "time",
@@ -1625,7 +1625,7 @@ dependencies = [
  "prometheus",
  "serde",
  "serde_json",
- "tendermint",
+ "tendermint 0.32.0",
  "tokio",
  "tracing",
 ]
@@ -1655,7 +1655,7 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.7",
  "subtle-encoding",
- "tendermint-rpc",
+ "tendermint-rpc 0.33.0",
  "tokio",
  "toml 0.7.6",
  "tonic",
@@ -3371,7 +3371,36 @@ dependencies = [
  "signature 2.1.0",
  "subtle",
  "subtle-encoding",
- "tendermint-proto",
+ "tendermint-proto 0.32.0",
+ "time",
+ "zeroize",
+]
+
+[[package]]
+name = "tendermint"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6d550db02d6bec4ebcbbebc4301ec22181bc489c37fb3f167e64b14c1be8321"
+dependencies = [
+ "bytes",
+ "digest 0.10.7",
+ "ed25519 2.2.1",
+ "ed25519-consensus",
+ "flex-error",
+ "futures",
+ "num-traits",
+ "once_cell",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "serde_repr",
+ "sha2 0.10.7",
+ "signature 2.1.0",
+ "subtle",
+ "subtle-encoding",
+ "tendermint-proto 0.33.0",
  "time",
  "zeroize",
 ]
@@ -3385,7 +3414,21 @@ dependencies = [
  "flex-error",
  "serde",
  "serde_json",
- "tendermint",
+ "tendermint 0.32.0",
+ "toml 0.5.11",
+ "url",
+]
+
+[[package]]
+name = "tendermint-config"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36a787b139f314c92756becbcae855bef6772227d97d8ecee948ad90327fe6e7"
+dependencies = [
+ "flex-error",
+ "serde",
+ "serde_json",
+ "tendermint 0.33.0",
  "toml 0.5.11",
  "url",
 ]
@@ -3407,9 +3450,9 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "static_assertions",
- "tendermint",
+ "tendermint 0.32.0",
  "tendermint-light-client-verifier",
- "tendermint-rpc",
+ "tendermint-rpc 0.32.0",
  "time",
  "tokio",
  "tracing",
@@ -3431,10 +3474,10 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "static_assertions",
- "tendermint",
+ "tendermint 0.32.0",
  "tendermint-light-client",
- "tendermint-proto",
- "tendermint-rpc",
+ "tendermint-proto 0.32.0",
+ "tendermint-rpc 0.32.0",
  "time",
  "tracing",
 ]
@@ -3448,7 +3491,7 @@ dependencies = [
  "derive_more",
  "flex-error",
  "serde",
- "tendermint",
+ "tendermint 0.32.0",
  "time",
 ]
 
@@ -3471,10 +3514,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "tendermint-proto"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1834fa2eb884ba69b9c0eea55f0178270bed421217596ca4e54c19ef75dcb660"
+dependencies = [
+ "bytes",
+ "flex-error",
+ "num-derive",
+ "num-traits",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "subtle-encoding",
+ "time",
+]
+
+[[package]]
 name = "tendermint-rpc"
 version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd2cc789170db5a35d4e0bb2490035c03ef96df08f119bee25fd8dab5a09aa25"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "flex-error",
+ "futures",
+ "getrandom 0.2.10",
+ "http",
+ "hyper",
+ "hyper-proxy",
+ "hyper-rustls 0.22.1",
+ "peg",
+ "pin-project",
+ "semver",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "subtle",
+ "subtle-encoding",
+ "tendermint 0.32.0",
+ "tendermint-config 0.32.0",
+ "tendermint-proto 0.32.0",
+ "thiserror",
+ "time",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid 0.8.2",
+ "walkdir",
+]
+
+[[package]]
+name = "tendermint-rpc"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03f8ff62948110e58d6df12c3bb73a00e74553384255d6413deed4c21d7480bf"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3494,9 +3590,9 @@ dependencies = [
  "serde_json",
  "subtle",
  "subtle-encoding",
- "tendermint",
- "tendermint-config",
- "tendermint-proto",
+ "tendermint 0.33.0",
+ "tendermint-config 0.33.0",
+ "tendermint-proto 0.33.0",
  "thiserror",
  "time",
  "tokio",
@@ -3518,7 +3614,7 @@ dependencies = [
  "serde_json",
  "simple-error",
  "tempfile",
- "tendermint",
+ "tendermint 0.32.0",
  "time",
 ]
 
