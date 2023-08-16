@@ -5,13 +5,13 @@ use ibc_relayer_components::logger::traits::level::{
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use tracing::{debug, error, event_enabled, info, trace, warn, Level};
 
+use crate::types::log::entries::LogEntries;
 use crate::types::log::level::LogLevel;
-use crate::types::log::log::Log;
 use crate::types::log::logger::TracingLogger;
 use crate::types::log::value::LogValue;
 
 impl BaseLogger for TracingLogger {
-    type Log<'a, 'r> = Log<'a>;
+    type Log<'a, 'r> = LogEntries<'a>;
 
     type LogValue<'a> = LogValue<'a>;
 
@@ -26,35 +26,35 @@ impl BaseLogger for TracingLogger {
         match level {
             LogLevel::Trace => {
                 if event_enabled!(Level::TRACE) {
-                    let log = Log::default();
+                    let log: LogEntries<'_> = LogEntries::default();
                     build_log(&log);
                     trace!(message = message, details = log.to_string())
                 }
             }
             LogLevel::Debug => {
                 if event_enabled!(Level::DEBUG) {
-                    let log = Log::default();
+                    let log = LogEntries::default();
                     build_log(&log);
                     debug!(message = message, details = log.to_string())
                 }
             }
             LogLevel::Info => {
                 if event_enabled!(Level::INFO) {
-                    let log = Log::default();
+                    let log = LogEntries::default();
                     build_log(&log);
                     info!(message = message, details = log.to_string())
                 }
             }
             LogLevel::Warn => {
                 if event_enabled!(Level::WARN) {
-                    let log = Log::default();
+                    let log = LogEntries::default();
                     build_log(&log);
                     warn!(warning = message, details = log.to_string())
                 }
             }
             LogLevel::Error => {
                 if event_enabled!(Level::ERROR) {
-                    let log = Log::default();
+                    let log = LogEntries::default();
                     build_log(&log);
                     error!(message = message, details = log.to_string())
                 }
@@ -62,7 +62,7 @@ impl BaseLogger for TracingLogger {
         }
     }
 
-    fn log_field<'a, 'b, 'r>(log: &Log<'a>, key: &'b str, value: LogValue<'a>)
+    fn log_field<'a, 'b, 'r>(log: &LogEntries<'a>, key: &'b str, value: LogValue<'a>)
     where
         'b: 'a,
     {
@@ -88,7 +88,7 @@ impl BaseLogger for TracingLogger {
     }
 
     fn map_values<'a>(build_log: impl for<'s> FnOnce(&'s Self::Log<'a, 's>)) -> LogValue<'a> {
-        let in_log = Log::default();
+        let in_log = LogEntries::default();
         build_log(&in_log);
         let values = in_log.fields.into_inner();
         LogValue::Nested(values)
