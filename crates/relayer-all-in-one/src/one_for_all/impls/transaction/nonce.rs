@@ -1,9 +1,5 @@
 use async_trait::async_trait;
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
-use ibc_relayer_components::transaction::impls::nonces::mutex::AllocateNonceWithMutex;
-use ibc_relayer_components::transaction::traits::nonce::allocate::{
-    CanAllocateNonce, NonceAllocator,
-};
 use ibc_relayer_components::transaction::traits::nonce::guard::HasNonceGuard;
 use ibc_relayer_components::transaction::traits::nonce::query::CanQueryNonce;
 
@@ -33,18 +29,5 @@ where
 
     fn deref_nonce<'a, 'b>((_, nonce): &'a Self::NonceGuard<'b>) -> &'a Self::Nonce {
         &nonce
-    }
-}
-
-#[async_trait]
-impl<TxContext> CanAllocateNonce for OfaTxWrapper<TxContext>
-where
-    TxContext: OfaTxContext,
-{
-    async fn allocate_nonce<'a>(
-        &'a self,
-        signer: &'a Self::Signer,
-    ) -> Result<Self::NonceGuard<'a>, Self::Error> {
-        AllocateNonceWithMutex::allocate_nonce(self, signer).await
     }
 }
