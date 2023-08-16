@@ -1,55 +1,28 @@
-use alloc::sync::Arc;
-use std::collections::HashMap;
-use std::sync::Mutex;
-
-use ibc_relayer_all_in_one::one_for_all::traits::telemetry::OfaTelemetry;
-use opentelemetry::{
-    global,
-    metrics::{Counter, Meter, Unit, UpDownCounter, ValueRecorder},
+use ibc_relayer_components_extra::telemetry::traits::metrics::{
+    HasLabel, HasMetric, TelemetryCounter, TelemetryUpDownCounter, TelemetryValueRecorder,
 };
+use opentelemetry::metrics::Unit;
+use opentelemetry::KeyValue;
 
-pub struct TelemetryState {
-    pub meter: Meter,
-    pub counters: HashMap<String, Counter<u64>>,
-    pub value_recorders: HashMap<String, ValueRecorder<u64>>,
-    pub updown_counters: HashMap<String, UpDownCounter<i64>>,
-}
+use crate::types::telemetry::CosmosTelemetry;
 
-#[derive(Clone)]
-pub struct CosmosTelemetry {
-    pub telemetry_state: Arc<Mutex<TelemetryState>>,
-}
-
-impl CosmosTelemetry {
-    pub fn new(telemetry_state: TelemetryState) -> Self {
-        Self {
-            telemetry_state: Arc::new(Mutex::new(telemetry_state)),
-        }
+impl HasLabel for CosmosTelemetry {
+    type Label = KeyValue;
+    fn new_label(key: &str, value: &str) -> Self::Label {
+        KeyValue::new(key.to_string(), value.to_string())
     }
 }
 
-impl Default for CosmosTelemetry {
-    fn default() -> Self {
-        Self::new(TelemetryState {
-            meter: global::meter("hermes"),
-            counters: HashMap::new(),
-            value_recorders: HashMap::new(),
-            updown_counters: HashMap::new(),
-        })
-    }
-}
+impl HasMetric<TelemetryCounter> for CosmosTelemetry {
+    type Value = u64;
 
-impl OfaTelemetry for CosmosTelemetry {
-    type CounterType = u64;
-    type ValueRecorderType = u64;
-    type UpDownCounterType = i64;
     type Unit = Unit;
 
-    fn update_counter_metric(
+    fn update_metric(
         &self,
         name: &str,
         labels: &[Self::Label],
-        value: Self::CounterType,
+        value: Self::Value,
         description: Option<&str>,
         unit: Option<Self::Unit>,
     ) {
@@ -73,12 +46,18 @@ impl OfaTelemetry for CosmosTelemetry {
             telemetry_state.counters.insert(name.to_string(), metric);
         }
     }
+}
 
-    fn update_value_recorder_metric(
+impl HasMetric<TelemetryValueRecorder> for CosmosTelemetry {
+    type Value = u64;
+
+    type Unit = Unit;
+
+    fn update_metric(
         &self,
         name: &str,
         labels: &[Self::Label],
-        value: Self::ValueRecorderType,
+        value: Self::Value,
         description: Option<&str>,
         unit: Option<Self::Unit>,
     ) {
@@ -104,12 +83,18 @@ impl OfaTelemetry for CosmosTelemetry {
                 .insert(name.to_string(), metric);
         }
     }
+}
 
-    fn update_up_down_counter_metric(
+impl HasMetric<TelemetryUpDownCounter> for CosmosTelemetry {
+    type Value = i64;
+
+    type Unit = Unit;
+
+    fn update_metric(
         &self,
         name: &str,
         labels: &[Self::Label],
-        value: Self::UpDownCounterType,
+        value: Self::Value,
         description: Option<&str>,
         unit: Option<Self::Unit>,
     ) {

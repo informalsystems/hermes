@@ -16,7 +16,6 @@ use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer::spawn::spawn_chain_runtime;
 use ibc_relayer_all_in_one::one_for_all::types::builder::OfaBuilderWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components_extra::batch::types::config::BatchConfig;
 use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -32,7 +31,7 @@ use crate::types::telemetry::CosmosTelemetry;
 pub struct CosmosBuilder {
     pub config: Config,
     pub packet_filter: PacketFilter,
-    pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
+    pub telemetry: CosmosTelemetry,
     pub runtime: TokioRuntimeContext,
     pub batch_config: BatchConfig,
     pub key_map: HashMap<ChainId, Secp256k1KeyPair>,
@@ -47,8 +46,6 @@ impl CosmosBuilder {
         batch_config: BatchConfig,
         key_map: HashMap<ChainId, Secp256k1KeyPair>,
     ) -> Self {
-        let telemetry = OfaTelemetryWrapper::new(telemetry);
-
         let runtime = TokioRuntimeContext::new(runtime);
 
         Self {

@@ -7,14 +7,13 @@ use core::fmt::{Debug, Display};
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
+use ibc_relayer_components_extra::telemetry::traits::metrics::HasBasicMetrics;
 
 use async_trait::async_trait;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 
 use crate::all_for_one::runtime::AfoRuntime;
-use crate::one_for_all::traits::telemetry::OfaTelemetry;
-use crate::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -33,7 +32,7 @@ pub trait OfaChainTypes: Async {
 
     type Logger: HasBaseLogLevels;
 
-    type Telemetry: OfaTelemetry;
+    type Telemetry: HasBasicMetrics;
 
     /**
        Corresponds to
@@ -178,7 +177,7 @@ pub trait OfaChain: OfaChainTypes {
 
     fn logger(&self) -> &Self::Logger;
 
-    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry>;
+    fn telemetry(&self) -> &Self::Telemetry;
 
     fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a>;
 
