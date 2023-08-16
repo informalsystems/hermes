@@ -150,13 +150,13 @@ fn subscribe(
             url.clone(),
             compat_mode,
             *batch_delay,
-            rt.clone(),
+            rt,
         ),
         EventSourceMode::Pull { interval } => EventSource::rpc(
             chain_config.id.clone(),
             HttpClient::new(chain_config.rpc_addr.clone())?,
             *interval,
-            rt.clone(),
+            rt,
         ),
     }?;
 
