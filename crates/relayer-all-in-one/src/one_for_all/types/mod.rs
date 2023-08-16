@@ -4,4 +4,3 @@ pub mod builder;
 pub mod chain;
 pub mod component;
 pub mod relay;
-pub mod transaction;
