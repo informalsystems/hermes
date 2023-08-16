@@ -1,16 +1,16 @@
 use async_trait::async_trait;
 
-use crate::builder::traits::birelay::HasBiRelayType;
+use crate::builder::traits::birelay::types::HasBiRelayType;
 use crate::builder::traits::chain::CanBuildChain;
-use crate::builder::traits::relay::CanBuildRelay;
+use crate::builder::traits::relay::build::CanBuildRelay;
 use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::builder::types::aliases::{
     RelayError, TargetDstChain, TargetDstChainId, TargetRelay, TargetSrcChain, TargetSrcChainId,
 };
 use crate::chain::traits::client::create::HasCreateClientOptions;
 use crate::core::traits::error::HasErrorType;
-use crate::relay::impls::client::create::CanCreateClient;
 use crate::relay::traits::chains::HasRelayChains;
+use crate::relay::traits::create_client::CanCreateClient;
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::relay::traits::two_way::HasTwoWayRelay;
 use crate::std_prelude::*;

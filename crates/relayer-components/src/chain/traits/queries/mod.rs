@@ -1,5 +1,4 @@
 pub mod channel;
-pub mod connection;
 pub mod consensus_state;
 pub mod packet_commitments;
 pub mod received_packet;
