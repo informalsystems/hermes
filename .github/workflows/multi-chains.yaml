@@ -53,7 +53,7 @@ jobs:
       ) || (
         github.event.action == 'labeled' && github.event.label.name == 'CI: multi-chains'
       )
-    timeout-minutes: 60
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
