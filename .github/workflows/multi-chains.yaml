@@ -112,4 +112,4 @@ jobs:
         run: |
              CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first-package.package }} -c which ${{ matrix.first-package.command }}),$(nix shell .#${{ matrix.second-package.package }} -c which ${{ matrix.second-package.command }}) \
                nix shell .#python -c \
-                 cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture
+                 cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2
