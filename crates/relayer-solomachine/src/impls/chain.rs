@@ -34,6 +34,7 @@ use ibc_relayer_cosmos::types::payloads::packet::{
 };
 use ibc_relayer_cosmos::types::telemetry::CosmosTelemetry;
 use ibc_relayer_cosmos::types::tendermint::{TendermintClientState, TendermintConsensusState};
+use ibc_relayer_runtime::tokio::logger::value::LogValue;
 use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty as ChannelCounterparty, State,
@@ -178,15 +179,15 @@ where
     Chain: SolomachineChain,
 {
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
-        todo!()
+        Chain::runtime(&self.chain)
     }
 
     fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Chain::Error {
-        todo!()
+        Chain::runtime_error(e)
     }
 
     fn logger(&self) -> &Self::Logger {
-        todo!()
+        Chain::logger(&self.chain)
     }
 
     fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry> {

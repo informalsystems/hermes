@@ -14,3 +14,25 @@ where
     pub src_client_id: ClientId,
     pub dst_client_id: ClientId,
 }
+
+impl<SrcChain, DstChain> SolomachineRelay<SrcChain, DstChain>
+where
+    SrcChain: OfaIbcChain<DstChain>,
+    DstChain: OfaIbcChain<SrcChain>,
+{
+    pub fn new(
+        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+        src_chain: SrcChain,
+        dst_chain: DstChain,
+        src_client_id: ClientId,
+        dst_client_id: ClientId,
+    ) -> Self {
+        Self {
+            runtime,
+            src_chain,
+            dst_chain,
+            src_client_id,
+            dst_client_id,
+        }
+    }
+}
