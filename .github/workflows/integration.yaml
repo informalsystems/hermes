@@ -100,7 +100,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - name: Run integration test
         env:
           RUST_LOG: info
@@ -137,7 +137,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -181,7 +181,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -233,7 +233,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --features ics29-fee --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -282,7 +282,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --features forward-packet --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -325,7 +325,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --features ics31 --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -370,7 +370,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --features fee-grant --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -412,7 +412,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --features ics31 --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -455,7 +455,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -498,7 +498,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -541,7 +541,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1

@@ -90,7 +90,7 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v2
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - uses: actions-rs/cargo@v1
         with:
           command: test

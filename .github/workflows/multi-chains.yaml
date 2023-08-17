@@ -102,7 +102,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
