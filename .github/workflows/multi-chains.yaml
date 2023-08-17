@@ -101,17 +101,15 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - uses: nick-fields/retry@v2
-        env:
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+      - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           ACCOUNT_PREFIXES: ${{ matrix.first-package.account_prefix }},${{ matrix.second-package.account_prefix }}
-        with:
-           max_attempts: 2
-           timeout_minutes: 60
-           command: |
+        run: |
              CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first-package.package }} -c which ${{ matrix.first-package.command }}),$(nix shell .#${{ matrix.second-package.package }} -c which ${{ matrix.second-package.command }}) \
-              nix shell .#python -c cargo \
-              test -p ibc-integration-test --no-fail-fast -- \
-              --nocapture --test-threads=2
+               nix shell .#python -c \
+                 cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture

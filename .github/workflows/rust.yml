@@ -89,14 +89,16 @@ jobs:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
       - uses: actions-rs/cargo@v1
         with:
           command: test
           args: --all-features --no-fail-fast --no-run
       - uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --all-features --no-fail-fast --workspace --exclude ibc-integration-test -- --nocapture
+          command: nextest
+          args: run --all-features --no-fail-fast --workspace --exclude ibc-integration-test --no-capture
 
   # test-coverage:
   #   runs-on: ubuntu-latest
