@@ -111,7 +111,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
             nix shell .#python .#${{ matrix.chain.package }} -c \
-              cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture
+              cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2
 
   ordered-channel-test:
     runs-on: ubuntu-20.04
@@ -145,7 +145,7 @@ jobs:
           NEXTEST_RETRIES: 2
         run: |
           nix shell .#python .#gaia6-ordered -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features ordered test_ordered_channel
 
   ica-filter-test:
@@ -191,7 +191,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features ica test_ica_filter
 
   ics29-fee-test:
@@ -243,7 +243,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features ics29-fee fee::
 
   forward-packet:
@@ -292,7 +292,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features forward-packet forward::
 
   ics31:
@@ -335,7 +335,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell ${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features ics31 ics31::
   fee-grant:
     runs-on: ubuntu-20.04
@@ -379,7 +379,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features fee-grant fee_grant::
 
   clean-workers:
@@ -422,7 +422,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features clean-workers clean_workers::
 
   interchain-security-no-ica:
@@ -465,7 +465,7 @@ jobs:
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#gaia9 .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security interchain_security::
 
   interchain-security-ica:
@@ -508,7 +508,7 @@ jobs:
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#gaia9 .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security,ica interchain_security::
 
   interchain-security-icq:
@@ -550,7 +550,7 @@ jobs:
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#gaia9 .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --nocapture \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security,ics31 interchain_security::
 
   model-based-test:
@@ -591,4 +591,4 @@ jobs:
       #       .#apalache \
       #       -c cargo \
       #       test -p ibc-integration-test --features mbt --no-fail-fast -- \
-      #       --nocapture --test-threads=1 mbt
+      #       --failure-output final --test-threads=2 --test-threads=1 mbt
