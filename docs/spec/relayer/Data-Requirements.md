@@ -161,3 +161,14 @@ The relayer connects to the node's CometBFT websocket interface and subscribes t
     - `EXISTS acknowledge_packet`
     - `EXISTS timeout_packet`
 
+## CometBFT gRPC
+
+The following are the gRPC endpoints that Hermes makes use of.
+
+### `interchain_security.ccv.consumer.v1.QueryParams`
+
+Queries for the CCV Consumer chain staking parameters.
+
+### `cosmos.staking.v1beta1.QueryParams`
+
+Queries for the Cosmos chain staking parameters.

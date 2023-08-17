@@ -342,7 +342,7 @@ impl CosmosSdkChain {
         Ok(monitor_tx)
     }
 
-    /// Query the chain staking parameters
+    /// Query for CCV Consumer chain staking parameters
     pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
         crate::time!(
             "query_ccv_consumer_chain_params",
@@ -379,7 +379,7 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    /// Query the chain staking parameters
+    /// Query for Cosmos chain staking parameters
     pub fn query_staking_params(&self) -> Result<StakingParams, Error> {
         crate::time!(
             "query_staking_params",
