@@ -123,10 +123,6 @@ where
 
     type OutgoingPacket = Packet;
 
-    type ConnectionDetails = ();
-
-    type ConnectionVersion = ();
-
     type CreateClientPayloadOptions = ();
 
     type InitConnectionOptions = ();
