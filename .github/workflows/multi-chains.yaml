@@ -103,7 +103,8 @@ jobs:
           args: -p ibc-integration-test --no-fail-fast --no-run
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - env:
+      - name: Run multi-chains integration tests
+        env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
