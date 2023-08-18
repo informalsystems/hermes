@@ -41,8 +41,8 @@ function init_relayer_balance() {
         --target relayer \
         --token nam \
         --amount 1000 \
-        --signer relayer \
-        --ledger-address ${ledger_addr}
+        --signing-keys relayer-key \
+        --node ${ledger_addr}
 
       cnt=$((${cnt} + 1))
   done
@@ -78,8 +78,8 @@ ${NAMADAC} --base-dir ${base_dir_a} transfer \
   --target relayer \
   --token apfel \
   --amount 1000 \
-  --signer relayer \
-  --ledger-address ${LEDGER_ADDR_A}
+  --signing-keys relayer-key \
+  --node ${LEDGER_ADDR_A}
 
 # Get the receiver addresses
 receiver_a=$(${NAMADAW} --base-dir ${base_dir_a} address find --alias relayer | awk '{print $4}')
@@ -92,9 +92,9 @@ ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --receiver ${receiver_b} \
   --token apfel \
   --amount 100 \
-  --signer relayer \
+  --signing_keys relayer-key \
   --channel-id channel-0 \
-  --ledger-address ${LEDGER_ADDR_A}
+  --node ${LEDGER_ADDR_A}
 
 # packet-recv
 cargo run --bin hermes -- --config config_for_namada.toml \
@@ -115,12 +115,12 @@ cargo run --bin hermes -- --config config_for_namada.toml \
 echo "Balances on chain A"
 ${NAMADAC} --base-dir ${base_dir_a} balance \
   --owner relayer \
-  --ledger-address ${LEDGER_ADDR_A}
+  --node ${LEDGER_ADDR_A}
 
 echo "Balances on chain B"
 ${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner relayer \
-  --ledger-address ${LEDGER_ADDR_B}
+  --node ${LEDGER_ADDR_B}
 
 # transfer back 50 apfel from chain_b to chain_a
 ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
@@ -128,9 +128,9 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --receiver ${receiver_a} \
   --token ${IBC_TOKEN} \
   --amount 50 \
-  --signer relayer \
+  --signing_keys relayer-key \
   --channel-id channel-0 \
-  --ledger-address ${LEDGER_ADDR_B}
+  --node ${LEDGER_ADDR_B}
 
 # packet-recv
 cargo run --bin hermes -- --config config_for_namada.toml \
@@ -151,11 +151,11 @@ cargo run --bin hermes -- --config config_for_namada.toml \
 echo "Balances on chain A"
 ${NAMADAC} --base-dir ${base_dir_a} balance \
   --owner relayer \
-  --ledger-address ${LEDGER_ADDR_A}
+  --node ${LEDGER_ADDR_A}
 
 echo "Balances on chain B"
 ${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner relayer \
-  --ledger-address ${LEDGER_ADDR_B}
+  --node ${LEDGER_ADDR_B}
 
 killall namadan

@@ -65,7 +65,7 @@ rpc_addr = 'http://127.0.0.1:27657'
 grpc_addr = 'http://127.0.0.1:9090'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:27657/websocket', batch_delay = '500ms' }
 account_prefix = ''
-key_name = 'relayer'
+key_name = 'relayer-key'
 store_prefix = 'ibc'
 gas_price = { price = 0.001, denom = 'nam' }
 
@@ -76,7 +76,7 @@ rpc_addr = 'http://127.0.0.1:28657'
 grpc_addr = 'http://127.0.0.1:9090'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:28657/websocket', batch_delay = '500ms' }
 account_prefix = ''
-key_name = 'relayer'
+key_name = 'relayer-key'
 store_prefix = 'ibc'
 gas_price = { price = 0.001, denom = 'nam' }
 "
@@ -124,13 +124,20 @@ function copy_wasm() {
 function init_relayer_acc() {
   local suffix=$1
   local chain_id=$2
-  local ledger_addr=$2
+  local ledger_addr=$3
 
   local base_dir=${DATA_DIR}/namada-${suffix}/.namada
   local wallet_dir=${HERMES_DIR}/namada_wallet/${chain_id}
 
   ${NAMADAW} --base-dir ${base_dir} \
-    key gen --alias relayer --unsafe-dont-encrypt
+    key gen --alias relayer-key --unsafe-dont-encrypt
+
+  ${NAMADAC} --base-dir ${base_dir} \
+    init-account \
+    --alias relayer \
+    --public-keys relayer-key \
+    --signing-keys relayer-key \
+    --node ${ledger_addr}
 
   mkdir -p ${wallet_dir}
   ln -s ${base_dir}/${chain_id}/wallet.toml ${wallet_dir}

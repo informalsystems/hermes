@@ -3516,7 +3516,7 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.41.0"
-source = "git+https://github.com/heliaxdev/cosmos-ibc-rs.git?rev=9db6892da825a8e928d3f175aa43903d19af7806#9db6892da825a8e928d3f175aa43903d19af7806"
+source = "git+https://github.com/heliaxdev/cosmos-ibc-rs.git?rev=38a827d3901e590b2935ee5b6b81b4d67c399560#38a827d3901e590b2935ee5b6b81b4d67c399560"
 dependencies = [
  "bytes",
  "derive_more",
@@ -4635,8 +4635,8 @@ dependencies = [
 
 [[package]]
 name = "namada"
-version = "0.20.1"
-source = "git+https://github.com/anoma/namada?rev=c85f75d06d50e90325738c8e456642fd4ffe4bfd#c85f75d06d50e90325738c8e456642fd4ffe4bfd"
+version = "0.21.0"
+source = "git+https://github.com/anoma/namada?rev=ba8932a6dc6a63bd0b5309be194cb31b49299168#ba8932a6dc6a63bd0b5309be194cb31b49299168"
 dependencies = [
  "async-trait",
  "bimap",
@@ -4694,8 +4694,8 @@ dependencies = [
 
 [[package]]
 name = "namada_apps"
-version = "0.20.1"
-source = "git+https://github.com/anoma/namada?rev=c85f75d06d50e90325738c8e456642fd4ffe4bfd#c85f75d06d50e90325738c8e456642fd4ffe4bfd"
+version = "0.21.0"
+source = "git+https://github.com/anoma/namada?rev=ba8932a6dc6a63bd0b5309be194cb31b49299168#ba8932a6dc6a63bd0b5309be194cb31b49299168"
 dependencies = [
  "ark-serialize",
  "ark-std",
@@ -4779,8 +4779,8 @@ dependencies = [
 
 [[package]]
 name = "namada_core"
-version = "0.20.1"
-source = "git+https://github.com/anoma/namada?rev=c85f75d06d50e90325738c8e456642fd4ffe4bfd#c85f75d06d50e90325738c8e456642fd4ffe4bfd"
+version = "0.21.0"
+source = "git+https://github.com/anoma/namada?rev=ba8932a6dc6a63bd0b5309be194cb31b49299168#ba8932a6dc6a63bd0b5309be194cb31b49299168"
 dependencies = [
  "ark-bls12-381",
  "ark-ec",
@@ -4832,8 +4832,8 @@ dependencies = [
 
 [[package]]
 name = "namada_ethereum_bridge"
-version = "0.20.1"
-source = "git+https://github.com/anoma/namada?rev=c85f75d06d50e90325738c8e456642fd4ffe4bfd#c85f75d06d50e90325738c8e456642fd4ffe4bfd"
+version = "0.21.0"
+source = "git+https://github.com/anoma/namada?rev=ba8932a6dc6a63bd0b5309be194cb31b49299168#ba8932a6dc6a63bd0b5309be194cb31b49299168"
 dependencies = [
  "borsh 0.9.4",
  "ethers",
@@ -4853,8 +4853,8 @@ dependencies = [
 
 [[package]]
 name = "namada_macros"
-version = "0.20.1"
-source = "git+https://github.com/anoma/namada?rev=c85f75d06d50e90325738c8e456642fd4ffe4bfd#c85f75d06d50e90325738c8e456642fd4ffe4bfd"
+version = "0.21.0"
+source = "git+https://github.com/anoma/namada?rev=ba8932a6dc6a63bd0b5309be194cb31b49299168#ba8932a6dc6a63bd0b5309be194cb31b49299168"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4863,8 +4863,8 @@ dependencies = [
 
 [[package]]
 name = "namada_proof_of_stake"
-version = "0.20.1"
-source = "git+https://github.com/anoma/namada?rev=c85f75d06d50e90325738c8e456642fd4ffe4bfd#c85f75d06d50e90325738c8e456642fd4ffe4bfd"
+version = "0.21.0"
+source = "git+https://github.com/anoma/namada?rev=ba8932a6dc6a63bd0b5309be194cb31b49299168#ba8932a6dc6a63bd0b5309be194cb31b49299168"
 dependencies = [
  "borsh 0.9.4",
  "data-encoding",
@@ -7265,9 +7265,9 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.29.6"
+version = "0.27.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7cb97a5a85a136d84e75d5c3cf89655090602efb1be0d8d5337b7e386af2908"
+checksum = "a902e9050fca0a5d6877550b769abd2bd1ce8c04634b941dbe2809735e1a1e33"
 dependencies = [
  "cfg-if 1.0.0",
  "core-foundation-sys",

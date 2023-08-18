@@ -6,18 +6,19 @@ use std::time::Instant;
 
 use borsh::BorshDeserialize;
 use ibc_proto::google::protobuf::Any;
-use namada::ledger::args::{InputAmount, Tx as TxArgs};
+use namada::ledger::args::{InputAmount, Tx as TxArgs, TxCustom};
 use namada::ledger::parameters::storage as parameter_storage;
 use namada::ledger::rpc::TxBroadcastData;
-use namada::ledger::signing::{sign_tx, TxSigningKey};
-use namada::ledger::tx::{broadcast_tx, prepare_tx};
+use namada::ledger::tx::broadcast_tx;
 use namada::ledger::tx::{TX_IBC_WASM, TX_REVEAL_PK};
-use namada::proto::{Code, Data, Tx};
+use namada::ledger::{signing, tx};
 use namada::tendermint_rpc::endpoint::broadcast::tx_sync::Response as AbciPlusRpcResponse;
+use namada::tendermint_rpc::HttpClient;
 use namada::types::chain::ChainId;
 use namada::types::token::{Amount, DenominatedAmount};
 use namada::types::transaction::{GasLimit, TxType};
-use namada_apps::client::rpc::query_wasm_code_hash;
+use namada_apps::cli::api::CliClient;
+use namada_apps::facade::tendermint_config::net::Address as TendermintAddress;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::chain::cosmos;
@@ -28,43 +29,47 @@ use crate::error::Error;
 
 use super::NamadaChain;
 
-pub const FEE_TOKEN: &str = "NAM";
 const DEFAULT_MAX_GAS: u64 = 100_000;
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);
 
 impl NamadaChain {
     pub fn send_tx(&mut self, proto_msg: &Any) -> Result<Response, Error> {
-        let tx_code_hash = self
-            .rt
-            .block_on(query_wasm_code_hash(&self.rpc_client, TX_IBC_WASM))
-            .expect("invalid wasm path");
+        let mut ledger_address = TendermintAddress::from_str(&format!(
+            "{}:{}",
+            self.config.rpc_addr.host(),
+            self.config.rpc_addr.port()
+        ))
+        .expect("invalid ledger address");
+        let client = HttpClient::from_tendermint_address(&mut ledger_address);
+
         let mut tx_data = vec![];
         prost::Message::encode(proto_msg, &mut tx_data)
             .map_err(|e| Error::protobuf_encode(String::from("Message"), e))?;
+
         let chain_id = ChainId::from_str(self.config.id.as_str()).expect("invalid chain ID");
 
-        let mut tx = Tx::new(TxType::Raw);
-        tx.header.chain_id = chain_id.clone();
-        tx.header.expiration = None;
-        tx.set_data(Data::new(tx_data));
-        tx.set_code(Code::from_hash(tx_code_hash));
-
-        let fee_token = self
+        let gas_token = self.config.gas_price.denom.clone();
+        let gas_token = self
             .wallet
-            .find_address(FEE_TOKEN)
-            .ok_or_else(|| Error::namada_address_not_found(FEE_TOKEN.to_string()))?
+            .find_address(&gas_token)
+            .ok_or_else(|| Error::namada_address_not_found(gas_token))?
             .clone();
 
         // fee
         let wrapper_tx_fees_key = parameter_storage::get_wrapper_tx_fees_key();
         let (value, _) = self.query(wrapper_tx_fees_key, QueryHeight::Latest, IncludeProof::No)?;
-        let fee_amount = Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
-        let fee_amount = InputAmount::Unvalidated(DenominatedAmount::native(fee_amount));
+        let gas_amount = Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+        let gas_amount = InputAmount::Unvalidated(DenominatedAmount::native(gas_amount));
 
         let gas_limit = Amount::native_whole(self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS));
         let gas_limit = GasLimit::from(gas_limit);
 
         // the wallet should exist because it's confirmed when the bootstrap
+        let relayer_key_pair = self
+            .wallet
+            .find_key(&self.config.key_name, None)
+            .expect("The relayer key should exist in the wallet");
+
         let relayer_addr = self
             .wallet
             .find_address(&self.config.key_name)
@@ -74,38 +79,58 @@ impl NamadaChain {
             dry_run: false,
             dump_tx: false,
             force: false,
+            output_folder: None,
             broadcast_only: true,
             ledger_address: (),
             initialized_account_alias: None,
             wallet_alias_force: false,
-            fee_amount,
-            fee_token,
+            gas_payer: Some(relayer_key_pair.clone()),
+            gas_amount,
+            gas_token,
             gas_limit,
             expiration: None,
             chain_id: Some(chain_id),
-            signing_key: None,
-            signer: Some(relayer_addr.clone()),
+            signing_keys: vec![relayer_key_pair],
+            signatures: vec![],
             tx_reveal_code_path: PathBuf::from(TX_REVEAL_PK),
             verification_key: None,
             password: None,
         };
+        let args = TxCustom {
+            tx: tx_args,
+            code_path: Some(PathBuf::from(TX_IBC_WASM)),
+            data_path: Some(tx_data),
+            serialized_tx: None,
+            owner: relayer_addr.clone(),
+        };
 
-        let (mut tx, _, pk) = self
+        let signing_data = self
             .rt
-            .block_on(prepare_tx(
-                &self.rpc_client,
+            .block_on(signing::aux_signing_data(
+                &client,
                 &mut self.wallet,
-                &tx_args,
-                tx,
-                TxSigningKey::None,
-                #[cfg(not(feature = "mainnet"))]
-                false,
+                &args.tx,
+                &Some(args.owner.clone()),
+                Some(args.owner.clone()),
             ))
             .map_err(Error::namada_tx)?;
 
-        self.rt
-            .block_on(sign_tx(&mut self.wallet, &mut tx, &tx_args, &pk))
+        let mut tx = self
+            .rt
+            .block_on(tx::build_custom(
+                &client,
+                args.clone(),
+                &signing_data.gas_payer,
+            ))
             .map_err(Error::namada_tx)?;
+
+        self.rt.block_on(signing::generate_test_vector(
+            &client,
+            &mut self.wallet,
+            &tx,
+        ));
+
+        signing::sign_tx(&mut self.wallet, &args.tx, &mut tx, signing_data);
 
         let wrapper_hash = tx.header_hash().to_string();
         let decrypted_hash = tx

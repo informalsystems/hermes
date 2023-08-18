@@ -367,7 +367,7 @@ impl ChainEndpoint for NamadaChain {
 
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
         let key_name = key_name.unwrap_or(&self.config.key_name);
-        let denom = denom.unwrap_or(tx::FEE_TOKEN);
+        let denom = denom.unwrap_or("NAM");
         let token = match self.wallet.find_address(denom) {
             Some(addr) => addr.clone(),
             None => Address::decode(denom)
