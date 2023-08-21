@@ -28,7 +28,7 @@ subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
 serde = "1.0"
 serde_derive = "1.0"
-thiserror = "1.0.40"
+thiserror = "1.0.47"
 toml = "0.7"
 tracing = "0.1.36"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
