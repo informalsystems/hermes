@@ -19,7 +19,7 @@ tendermint-rpc = { version = "0.33.0", features = [
     "websocket-client",
 ] }
 
-async-trait = "0.1.72"
+async-trait = "0.1.73"
 flex-error  = { version = "0.4.4", default-features = false }
 futures     = { version = "0.3.27", features = ["executor"] }
 http        = "0.2"
