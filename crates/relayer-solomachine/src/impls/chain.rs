@@ -324,6 +324,11 @@ where
         height: &Height,
         packet: &Packet,
     ) -> Result<SolomachineReceivePacketPayload, Chain::Error> {
+        // Get the fields we need from the Packet.
+        // Construct a SignData where the path contains the packet data
+        // Determine the path based on the source channel ID and the sequence
+        // PacketCommitmentPrefix (can use `/` for now) / ports / port ID / channels / channel ID / sequences / sequence
+        // Use the `CommitmentsPath` type 
         todo!()
     }
 

@@ -3,10 +3,13 @@ pub struct SolomachineSignData {
     pub diversifier: String,
     pub sequence: u64,
     pub timestamp: u64,
+    /// The `path` serves as the key for accessing the `data` field in the key-value store.
     pub path: Vec<u8>,
+    /// The content stored at the `path` in the key-value store.
     pub data: Vec<u8>,
 }
 
+/// 
 pub fn membership_sign_data(
     diversifier: &str,
     sequence: u64,
