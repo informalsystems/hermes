@@ -441,16 +441,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     /// [`ChainConfig.max_block_time`] for the two networks that
     /// this connection belongs to.
     fn max_block_times(&self) -> Result<Duration, ConnectionError> {
-        let a_block_time = self
-            .a_chain()
-            .config()
-            .map_err(ConnectionError::relayer)?
-            .max_block_time;
-        let b_block_time = self
-            .b_chain()
-            .config()
-            .map_err(ConnectionError::relayer)?
-            .max_block_time;
+        let a_block_time = self.a_chain().max_block_time();
+        let b_block_time = self.b_chain().max_block_time();
         Ok(a_block_time.max(b_block_time))
     }
 

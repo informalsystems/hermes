@@ -107,9 +107,7 @@ pub trait ChainEndpoint: Sized {
     // Misc
 
     /// Return the max block time for this chain
-    fn max_block_time(&self) -> Duration {
-        self.config().max_block_time
-    }
+    fn max_block_time(&self) -> Duration;
 
     // Keyring
 

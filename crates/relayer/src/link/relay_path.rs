@@ -288,13 +288,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub(crate) fn src_max_block_time(&self) -> Result<Duration, LinkError> {
-        // TODO(hu55a1n1): Ideally, we should get the `max_expected_time_per_block` using the
-        // `/genesis` endpoint once it is working in tendermint-rs.
-        Ok(self
-            .src_chain()
-            .config()
-            .map_err(LinkError::relayer)?
-            .max_block_time)
+        Ok(self.src_chain().max_block_time())
     }
 
     pub(crate) fn dst_max_block_time(&self) -> Result<Duration, LinkError> {

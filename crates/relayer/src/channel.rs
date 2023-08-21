@@ -477,16 +477,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     /// [`ChainConfig.max_block_time`] for the two networks that
     /// this channel belongs to.
     fn max_block_times(&self) -> Result<Duration, ChannelError> {
-        let a_block_time = self
-            .a_chain()
-            .config()
-            .map_err(ChannelError::relayer)?
-            .max_block_time;
-        let b_block_time = self
-            .b_chain()
-            .config()
-            .map_err(ChannelError::relayer)?
-            .max_block_time;
+        let a_block_time = self.a_chain().max_block_time();
+        let b_block_time = self.b_chain().max_block_time();
         Ok(a_block_time.max(b_block_time))
     }
 

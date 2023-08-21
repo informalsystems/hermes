@@ -587,6 +587,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 e,
             )
         })?;
+
         let dst_config = self.dst_chain.config().map_err(|e| {
             ForeignClientError::client_create(
                 self.dst_chain.id(),
@@ -594,7 +595,15 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 e,
             )
         })?;
-        let settings = ClientSettings::for_create_command(options, &src_config, &dst_config);
+
+        let settings = ClientSettings::for_create_command(
+            options,
+            src_config.clock_drift,
+            src_config.trust_threshold.into(),
+            dst_config.clock_drift,
+            self.dst_chain.max_block_time(),
+            &self.dst_chain.id(),
+        );
 
         let client_state: AnyClientState = self
             .src_chain

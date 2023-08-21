@@ -298,14 +298,16 @@ impl CosmosSdkChain {
         match self.block_on(self.rpc_client.genesis::<GenesisAppState>()) {
             Ok(genesis_reponse) => {
                 let old_max_block_time = self.config.max_block_time;
+                let new_max_block_time =
+                    Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
+
                 info!(
                     "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
                     old_max_block_time.as_secs(),
-                    self.config.max_block_time.as_secs()
+                    new_max_block_time.as_secs()
                 );
 
-                *self.max_block_time.write() =
-                    Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
+                *self.max_block_time.write() = new_max_block_time;
             }
             Err(e) => {
                 warn!(
@@ -1118,6 +1120,10 @@ impl ChainEndpoint for CosmosSdkChain {
     /// Get the chain configuration
     fn config(&self) -> &ChainConfig {
         &self.config
+    }
+
+    fn max_block_time(&self) -> Duration {
+        *self.max_block_time.read()
     }
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
