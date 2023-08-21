@@ -99,20 +99,19 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - uses: nick-fields/retry@v2
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - name: Run integration test
         env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        with:
-           max_attempts: 2
-           timeout_minutes: 90
-           command: |
-             nix shell .#python .#${{ matrix.chain.package }} -c cargo \
-               test -p ibc-integration-test --no-fail-fast -- \
-               --nocapture --test-threads=2
+        run: |
+            nix shell .#python .#${{ matrix.chain.package }} -c \
+              cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2
 
   ordered-channel-test:
     runs-on: ubuntu-20.04
@@ -137,14 +136,17 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
         run: |
-          nix shell .#python .#gaia6-ordered -c cargo \
-            test -p ibc-integration-test --features ordered --no-fail-fast -- \
-            --nocapture --test-threads=1 test_ordered_channel
+          nix shell .#python .#gaia6-ordered -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features ordered test_ordered_channel
 
   ica-filter-test:
     runs-on: ubuntu-20.04
@@ -178,16 +180,19 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features ica --no-fail-fast -- \
-            --nocapture --test-threads=1 test_ica_filter
+          nix shell .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features ica test_ica_filter
 
   ics29-fee-test:
     runs-on: ubuntu-20.04
@@ -227,16 +232,19 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --features ics29-fee --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
-            --nocapture --test-threads=1 fee::
+          nix shell .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features ics29-fee fee::
 
   forward-packet:
     runs-on: ubuntu-20.04
@@ -273,16 +281,19 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --features forward-packet --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features forward-packet --no-fail-fast -- \
-            --nocapture --test-threads=1 forward::
+          nix shell .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features forward-packet forward::
 
   ics31:
     runs-on: ubuntu-20.04
@@ -313,16 +324,19 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --features ics31 --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell ${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features ics31 --no-fail-fast -- \
-            --nocapture --test-threads=1 ics31::
+          nix shell ${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features ics31 ics31::
   fee-grant:
     runs-on: ubuntu-20.04
     strategy:
@@ -355,6 +369,8 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --features fee-grant --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -362,9 +378,9 @@ jobs:
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features fee-grant --no-fail-fast -- \
-            --nocapture --test-threads=1 fee_grant::
+          nix shell .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features fee-grant fee_grant::
 
   clean-workers:
     runs-on: ubuntu-20.04
@@ -395,16 +411,19 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --features ics31 --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features clean-workers --no-fail-fast -- \
-            --nocapture --test-threads=1 clean_workers::
+          nix shell .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features clean-workers clean_workers::
 
   interchain-security-no-ica:
     runs-on: ubuntu-20.04
@@ -435,16 +454,19 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#gaia9 .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features interchain-security --no-fail-fast -- \
-            --nocapture --test-threads=1 interchain_security::
+          nix shell .#gaia9 .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features interchain-security interchain_security::
 
   interchain-security-ica:
     runs-on: ubuntu-20.04
@@ -475,16 +497,19 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#gaia9 .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features interchain-security,ica --no-fail-fast -- \
-            --nocapture --test-threads=1 interchain_security::
+          nix shell .#gaia9 .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features interchain-security,ica interchain_security::
 
   interchain-security-icq:
     runs-on: ubuntu-20.04
@@ -515,6 +540,8 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -522,9 +549,9 @@ jobs:
           CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#gaia9 .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features interchain-security,ics31 --no-fail-fast -- \
-            --nocapture --test-threads=1 interchain_security::
+          nix shell .#gaia9 .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features interchain-security,ics31 interchain_security::
 
   model-based-test:
     runs-on: ubuntu-20.04
@@ -564,4 +591,4 @@ jobs:
       #       .#apalache \
       #       -c cargo \
       #       test -p ibc-integration-test --features mbt --no-fail-fast -- \
-      #       --nocapture --test-threads=1 mbt
+      #       --failure-output final --test-threads=2 --test-threads=1 mbt
