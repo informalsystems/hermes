@@ -1,6 +1,6 @@
 //! Definition of the application, based on the Abscissa framework
 
-use std::path::PathBuf;
+use std::{path::PathBuf, thread};
 
 use abscissa_core::{
     application::{self, AppCell},
@@ -16,6 +16,7 @@ use crate::{
     components::{JsonTracing, PrettyTracing},
     config::validate_config,
     entry::EntryPoint,
+    tracing_handle::spawn_reload_handler,
 };
 
 /// Application state
@@ -201,7 +202,10 @@ impl Application for CliApp {
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
             // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
-            let tracing = PrettyTracing::new(config.global, &self.debug_sections)?;
+            //let tracing = PrettyTracing::new(config.global, &self.debug_sections)?;
+            let (tracing, reload_handle) =
+                PrettyTracing::new_with_reload_handle(config.global, &self.debug_sections)?;
+            thread::spawn(move || spawn_reload_handler(reload_handle));
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
     }

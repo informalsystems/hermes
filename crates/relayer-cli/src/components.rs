@@ -1,7 +1,9 @@
 //! Various components for internal use by the Abscissa subsystem.
 
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
-use tracing_subscriber::{filter::EnvFilter, util::SubscriberInitExt, FmtSubscriber};
+use tracing_subscriber::{
+    filter::EnvFilter, reload::Handle, util::SubscriberInitExt, FmtSubscriber,
+};
 
 use ibc_relayer::{
     config::{GlobalConfig, LogLevel},
@@ -74,6 +76,29 @@ impl PrettyTracing {
 
         Ok(Self)
     }
+
+    pub fn new_with_reload_handle(
+        cfg: GlobalConfig,
+        debug_sections: &[DebugSection],
+    ) -> Result<(Self, Handle<EnvFilter, impl Sized>), FrameworkError> {
+        let filter = build_tracing_filter(cfg.log_level, debug_sections)?;
+
+        // Construct a tracing subscriber with the supplied filter and enable reloading.
+        let builder = FmtSubscriber::builder()
+            .with_target(false)
+            .with_env_filter(filter)
+            .with_writer(std::io::stderr)
+            .with_ansi(enable_ansi())
+            .with_thread_ids(true)
+            .with_filter_reloading();
+
+        let reload_handle = builder.reload_handle();
+
+        let subscriber = builder.finish();
+        subscriber.init();
+
+        Ok((Self, reload_handle))
+    }
 }
 
 /// Check if both stdout and stderr are proper terminal (tty),
@@ -90,7 +115,7 @@ const TARGET_CRATES: [&str; 2] = ["ibc_relayer", "ibc_relayer_cli"];
 
 /// Build a tracing directive setting the log level for the relayer crates to the
 /// given `log_level`.
-fn default_directive(log_level: LogLevel) -> String {
+pub fn default_directive(log_level: LogLevel) -> String {
     use itertools::Itertools;
 
     TARGET_CRATES

@@ -119,5 +119,12 @@ define_error! {
         KeyRing
             [ KeyRingError ]
             |_| { "keyring error" },
+
+        UnknownLogLevel
+            { level: String }
+            | e | {
+                format_args!("unknown log level: {}",
+                    e.level)
+            },
     }
 }
