@@ -295,7 +295,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia8 .#stride-no-admin
+          - package: .#gaia11 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
