@@ -6,7 +6,7 @@ use crate::error::{handle_generic_error, Error};
 
 /// Register a new interchain account controlled by the given account
 /// over the given connection.
-pub fn register_interchain_account(
+pub fn register_interchain_account_cli(
     chain_id: &str,
     command_path: &str,
     home_path: &str,
@@ -59,61 +59,23 @@ pub fn query_interchain_account(
         "--output",
         "json",
         "query",
-        "intertx",
-        "interchainaccounts",
-        connection_id,
+        "interchain-accounts",
+        "controller",
+        "interchain-account",
         account,
+        connection_id,
     ];
 
     let res = simple_exec(chain_id, command_path, args)?.stdout;
     let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
 
     let address = json_res
-        .get("interchain_account_address")
-        .ok_or_else(|| eyre!("expected `interchain_account_address` field"))?
+        .get("address")
+        .ok_or_else(|| eyre!("expected `address` field"))?
         .as_str()
         .ok_or_else(|| eyre!("expected string field"))?;
 
     Ok(address.to_string())
-}
-
-/// Submit a msg from a controller account over an ICA channel
-/// using the given connection.
-pub fn interchain_submit(
-    chain_id: &str,
-    command_path: &str,
-    home_path: &str,
-    rpc_listen_address: &str,
-    from: &str,
-    connection_id: &str,
-    msg: &str,
-) -> Result<(), Error> {
-    let args = &[
-        "--home",
-        home_path,
-        "--node",
-        rpc_listen_address,
-        "--output",
-        "json",
-        "tx",
-        "intertx",
-        "submit",
-        msg,
-        "--connection-id",
-        connection_id,
-        "--from",
-        from,
-        "--chain-id",
-        chain_id,
-        "--keyring-backend",
-        "test",
-        "-y",
-    ];
-
-    let res = simple_exec(chain_id, command_path, args)?.stdout;
-    check_result_code(&res)?;
-
-    Ok(())
 }
 
 /// Check that a command succeeded, by ensuring that the JSON emitted

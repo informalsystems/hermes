@@ -1,6 +1,7 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
+use std::time::Duration;
 
 use tracing::debug;
 
@@ -139,6 +140,11 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn config(&self) -> Result<ChainConfig, Error> {
         self.inc_metric("config");
         self.inner().config()
+    }
+
+    fn max_block_time(&self) -> Duration {
+        self.inc_metric("max_block_time");
+        self.inner().max_block_time()
     }
 
     fn get_key(&self) -> Result<AnySigningKeyPair, Error> {

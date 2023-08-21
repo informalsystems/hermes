@@ -1,5 +1,5 @@
 use core::fmt::{self, Debug, Display, Error as FmtError, Formatter};
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
@@ -142,6 +142,12 @@ impl ChainHandle for BaseChainHandle {
     fn config(&self) -> Result<ChainConfig, Error> {
         match self.chain.as_ref() {
             ChainImpl::CosmosSdk(chain) => Ok(chain.config().clone()), // FIXME
+        }
+    }
+
+    fn max_block_time(&self) -> Duration {
+        match self.chain.as_ref() {
+            ChainImpl::CosmosSdk(chain) => chain.max_block_time(),
         }
     }
 

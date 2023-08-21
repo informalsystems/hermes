@@ -101,6 +101,7 @@ where
         MAX_HEALTHY_QUERY_RETRIES,
     )
     .await?;
+
     let grpc_address = query_healthy_retry::<GrpcQuerier>(
         chain_name.to_string(),
         grpc_endpoints,
@@ -112,6 +113,12 @@ where
         rpc_data.websocket.clone().try_into().map_err(|e| {
             RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
         })?;
+
+    let avg_gas_price = if let Some(fee_token) = chain_data.fees.fee_tokens.first() {
+        fee_token.average_gas_price
+    } else {
+        0.1
+    };
 
     Ok(ChainConfig {
         id: chain_data.chain_id,
@@ -147,7 +154,7 @@ where
         proof_specs: Default::default(),
         trust_threshold: TrustThreshold::default(),
         gas_price: GasPrice {
-            price: 0.1,
+            price: avg_gas_price,
             denom: asset.base.to_owned(),
         },
         packet_filter: packet_filter.unwrap_or_default(),
@@ -190,6 +197,10 @@ where
     ))
 }
 
+/// Fetches the specified resources from the Cosmos chain registry, using the specified commit hash
+/// if it is provided. Fetching is done in a concurrent fashion by spawning a task for each resource.
+/// Returns a vector of handles that need to be awaited in order to access the fetched data, or the
+/// error that occurred while fetching.
 async fn get_handles<T: Fetchable + Send + 'static>(
     resources: &[String],
     commit: &Option<String>,
@@ -205,20 +216,23 @@ async fn get_handles<T: Fetchable + Send + 'static>(
     handles
 }
 
+/// Given a vector of handles, awaits them and returns a vector of results. Any errors
+/// that occurred are mapped to a `RegistryError`.
 async fn get_data_from_handles<T>(
     handles: Vec<JoinHandle<Result<T, RegistryError>>>,
     error_task: &str,
-) -> Result<Vec<T>, RegistryError> {
-    let data_array: Result<Vec<_>, JoinError> = join_all(handles).await.into_iter().collect();
-    let data_array: Result<Vec<T>, RegistryError> = data_array
-        .map_err(|e| RegistryError::join_error(error_task.to_string(), e))?
+) -> Result<Vec<Result<T, RegistryError>>, RegistryError> {
+    join_all(handles)
+        .await
         .into_iter()
-        .collect();
-    data_array
+        .collect::<Result<Vec<_>, JoinError>>()
+        .map_err(|e| RegistryError::join_error(error_task.to_string(), e))
 }
 
-/// Generates a `Vec<ChainConfig>` for a slice of chain names by fetching data from
-/// <https://github.com/cosmos/chain-registry>. Gas settings are set to default values.
+/// Fetches a list of ChainConfigs specified by the given slice of chain names. These
+/// configs are fetched from <https://github.com/cosmos/chain-registry>. The `default_gas`
+/// and `max_gas` parameters set to default values. The `gas_price` parameter is set to
+/// the average gas price for the chain listed in the chain registry.
 ///
 /// # Arguments
 ///
@@ -235,8 +249,9 @@ async fn get_data_from_handles<T>(
 pub async fn get_configs(
     chains: &[String],
     commit: Option<String>,
-) -> Result<Vec<ChainConfig>, RegistryError> {
+) -> Result<Vec<Result<ChainConfig, RegistryError>>, RegistryError> {
     let n = chains.len();
+
     if n == 0 {
         return Ok(Vec::new());
     }
@@ -246,6 +261,7 @@ pub async fn get_configs(
     let asset_lists_handle = get_handles::<AssetList>(chains, &commit).await;
 
     let mut path_handles = Vec::with_capacity(n * (n - 1) / 2);
+
     for i in 0..n {
         for chain_j in &chains[i + 1..] {
             let chain_i = &chains[i];
@@ -256,12 +272,21 @@ pub async fn get_configs(
             }));
         }
     }
-    // Collect data from the spawned tasks
 
-    let chain_data_array =
+    // Collect data from the spawned tasks
+    let chain_data_results =
         get_data_from_handles::<ChainData>(chain_data_handle, "chain_data_join").await?;
-    let asset_lists =
+    let asset_list_results =
         get_data_from_handles::<AssetList>(asset_lists_handle, "asset_handle_join").await?;
+
+    let chain_data_array: Vec<ChainData> = chain_data_results
+        .into_iter()
+        .filter_map(|chain_data| chain_data.ok())
+        .collect();
+    let asset_lists: Vec<AssetList> = asset_list_results
+        .into_iter()
+        .filter_map(|asset_list| asset_list.ok())
+        .collect();
 
     let path_data: Result<Vec<_>, JoinError> = join_all(path_handles).await.into_iter().collect();
     let path_data: Vec<IBCPath> = path_data
@@ -289,6 +314,7 @@ pub async fn get_configs(
             })
         })
         .collect();
+
     get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
 }
 
@@ -312,10 +338,16 @@ mod tests {
     // chain-registry repository: https://github.com/cosmos/chain-registry/tree/master/_IBC
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
         let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
+
         for config in configs {
-            match config.packet_filter.channel_policy {
-                ChannelPolicy::AllowAll => {}
-                _ => panic!("PacketFilter not allowed"),
+            match config {
+                Ok(config) => {
+                    assert_eq!(config.packet_filter.channel_policy, ChannelPolicy::AllowAll);
+                }
+                Err(e) => panic!(
+                    "Encountered an unexpected error in chain registry test: {}",
+                    e
+                ),
             }
         }
 
@@ -335,73 +367,79 @@ mod tests {
         let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
 
         for config in configs {
-            match config.packet_filter.channel_policy {
-                ChannelPolicy::Allow(channel_filter) => {
-                    if config.id.as_str().contains("cosmoshub") {
-                        assert!(channel_filter.is_exact());
+            match config {
+                Ok(config) => match config.packet_filter.channel_policy {
+                    ChannelPolicy::Allow(channel_filter) => {
+                        if config.id.as_str().contains("cosmoshub") {
+                            assert!(channel_filter.is_exact());
 
-                        let cosmoshub_juno = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-207").unwrap(),
-                        );
+                            let cosmoshub_juno = (
+                                &PortId::from_str("transfer").unwrap(),
+                                &ChannelId::from_str("channel-207").unwrap(),
+                            );
 
-                        let cosmoshub_osmosis = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-141").unwrap(),
-                        );
+                            let cosmoshub_osmosis = (
+                                &PortId::from_str("transfer").unwrap(),
+                                &ChannelId::from_str("channel-141").unwrap(),
+                            );
 
-                        assert!(channel_filter.matches(cosmoshub_juno));
-                        assert!(channel_filter.matches(cosmoshub_osmosis));
-                        assert!(channel_filter.len() == 2);
-                    } else if config.id.as_str().contains("juno") {
-                        assert!(channel_filter.is_exact());
+                            assert!(channel_filter.matches(cosmoshub_juno));
+                            assert!(channel_filter.matches(cosmoshub_osmosis));
+                            assert!(channel_filter.len() == 2);
+                        } else if config.id.as_str().contains("juno") {
+                            assert!(channel_filter.is_exact());
 
-                        let juno_cosmoshub = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-1").unwrap(),
-                        );
+                            let juno_cosmoshub = (
+                                &PortId::from_str("transfer").unwrap(),
+                                &ChannelId::from_str("channel-1").unwrap(),
+                            );
 
-                        let juno_osmosis_1 = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-0").unwrap(),
-                        );
+                            let juno_osmosis_1 = (
+                                &PortId::from_str("transfer").unwrap(),
+                                &ChannelId::from_str("channel-0").unwrap(),
+                            );
 
-                        let juno_osmosis_2 = (
-                            &PortId::from_str("wasm.juno1v4887y83d6g28puzvt8cl0f3cdhd3y6y9mpysnsp3k8krdm7l6jqgm0rkn").unwrap(),
-                            &ChannelId::from_str("channel-47").unwrap()
-                        );
+                            let juno_osmosis_2 = (
+                                    &PortId::from_str("wasm.juno1v4887y83d6g28puzvt8cl0f3cdhd3y6y9mpysnsp3k8krdm7l6jqgm0rkn").unwrap(),
+                                    &ChannelId::from_str("channel-47").unwrap()
+                                );
 
-                        assert!(channel_filter.matches(juno_cosmoshub));
-                        assert!(channel_filter.matches(juno_osmosis_1));
-                        assert!(channel_filter.matches(juno_osmosis_2));
-                        assert!(channel_filter.len() == 3);
-                    } else if config.id.as_str().contains("osmosis") {
-                        assert!(channel_filter.is_exact());
+                            assert!(channel_filter.matches(juno_cosmoshub));
+                            assert!(channel_filter.matches(juno_osmosis_1));
+                            assert!(channel_filter.matches(juno_osmosis_2));
+                            assert!(channel_filter.len() == 3);
+                        } else if config.id.as_str().contains("osmosis") {
+                            assert!(channel_filter.is_exact());
 
-                        let osmosis_cosmoshub = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-0").unwrap(),
-                        );
+                            let osmosis_cosmoshub = (
+                                &PortId::from_str("transfer").unwrap(),
+                                &ChannelId::from_str("channel-0").unwrap(),
+                            );
 
-                        let osmosis_juno_1 = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-42").unwrap(),
-                        );
+                            let osmosis_juno_1 = (
+                                &PortId::from_str("transfer").unwrap(),
+                                &ChannelId::from_str("channel-42").unwrap(),
+                            );
 
-                        let osmosis_juno_2 = (
-                            &PortId::from_str("transfer").unwrap(),
-                            &ChannelId::from_str("channel-169").unwrap(),
-                        );
+                            let osmosis_juno_2 = (
+                                &PortId::from_str("transfer").unwrap(),
+                                &ChannelId::from_str("channel-169").unwrap(),
+                            );
 
-                        assert!(channel_filter.matches(osmosis_cosmoshub));
-                        assert!(channel_filter.matches(osmosis_juno_1));
-                        assert!(channel_filter.matches(osmosis_juno_2));
-                        assert!(channel_filter.len() == 3);
-                    } else {
-                        panic!("Unknown chain");
+                            assert!(channel_filter.matches(osmosis_cosmoshub));
+                            assert!(channel_filter.matches(osmosis_juno_1));
+                            assert!(channel_filter.matches(osmosis_juno_2));
+                            assert!(channel_filter.len() == 3);
+                        } else {
+                            panic!("Unknown chain");
+                        }
                     }
-                }
-                _ => panic!("PacketFilter not allowed"),
+                    _ => panic!("PacketFilter not allowed"),
+                },
+                Err(e) => panic!(
+                    "Encountered an unexpected error in chain registry test: {}",
+                    e
+                ),
             }
         }
 

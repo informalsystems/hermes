@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
+use std::time::Duration;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -102,6 +103,13 @@ pub trait ChainEndpoint: Sized {
 
     // Events
     fn subscribe(&self) -> Result<Subscription, Error>;
+
+    // Misc
+
+    /// Return the max block time for this chain
+    fn max_block_time(&self) -> Duration {
+        self.config().max_block_time
+    }
 
     // Keyring
 

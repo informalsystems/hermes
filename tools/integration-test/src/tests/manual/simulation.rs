@@ -28,7 +28,7 @@ pub struct SimulationTest;
 
 impl TestOverrides for SimulationTest {
     fn modify_relayer_config(&self, config: &mut Config) {
-        for mut chain in config.chains.iter_mut() {
+        for chain in config.chains.iter_mut() {
             chain.max_msg_num = MaxMsgNum::new(MAX_MSGS).unwrap();
         }
     }

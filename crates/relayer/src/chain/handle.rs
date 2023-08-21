@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::fmt::{self, Debug, Display};
+use std::time::Duration;
 
 use crossbeam_channel as channel;
 
@@ -125,6 +126,8 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     fn get_signer(&self) -> Result<Signer, Error>;
 
     fn config(&self) -> Result<ChainConfig, Error>;
+
+    fn max_block_time(&self) -> Duration;
 
     fn get_key(&self) -> Result<AnySigningKeyPair, Error>;
 

@@ -81,7 +81,8 @@ impl PrettyTracing {
 /// using ANSI escape codes. If either is not, eg. because
 /// stdout is redirected to a file, we don't enable colored output.
 pub fn enable_ansi() -> bool {
-    atty::is(atty::Stream::Stdout) && atty::is(atty::Stream::Stderr)
+    use std::io::IsTerminal;
+    std::io::stdout().is_terminal() && std::io::stderr().is_terminal()
 }
 
 /// The relayer crates targeted by the default log level.

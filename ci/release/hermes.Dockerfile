@@ -15,6 +15,8 @@ RUN git clone -b ${TAG} --depth 1 https://github.com/informalsystems/hermes \
 
 FROM ubuntu:rolling
 LABEL maintainer="hello@informal.systems"
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
+RUN update-ca-certificates
 RUN useradd -m hermes -s /bin/bash
 WORKDIR /home/hermes
 USER hermes:hermes

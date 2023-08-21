@@ -12,6 +12,7 @@
 */
 
 pub mod binary;
+pub mod consumer;
 pub mod init;
 pub mod nary;
 pub mod single;

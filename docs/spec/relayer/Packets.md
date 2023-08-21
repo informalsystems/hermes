@@ -126,7 +126,7 @@ func CreateDatagram(ev WriteAcknowledgementEvent,
                     proofHeight Height) (PacketAcknowledgement, Error) {   
 
     // Stage 1 
-    // Verify if acknowledment is committed to chain A and it is still pending
+    // Verify if acknowledgement is committed to chain A and it is still pending
     packetAck, PacketStateProof, error = 
         GetPacketAcknowledgement(chainA, ev.port, ev.channel, ev.sequence, proofHeight) 
     if error != nil { return (nil, error) }

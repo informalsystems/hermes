@@ -21,6 +21,7 @@
 */
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use ibc_relayer::spawn::ChainImpl;
 
@@ -112,6 +113,10 @@ where
 
     fn config(&self) -> Result<ChainConfig, Error> {
         self.value().config()
+    }
+
+    fn max_block_time(&self) -> Duration {
+        self.value().max_block_time()
     }
 
     fn get_key(&self) -> Result<AnySigningKeyPair, Error> {

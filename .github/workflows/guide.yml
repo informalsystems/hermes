@@ -17,45 +17,14 @@ concurrency:
 
 jobs:
   guide:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
 
-      - name: cache .cargo directory
-        uses: actions/cache@v3
+      - name: Install mdbook and plugins
+        uses: taiki-e/install-action@v2
         with:
-          path: ~/.cargo
-          key: cargo-dir
-          restore-keys: |
-            cargo-dir
-
-      - name: Install mdbook
-        uses: actions-rs/install@v0.1
-        with:
-          crate: mdbook
-          version: latest
-          use-tool-cache: true
-
-      - name: Install mdbook-mermaid
-        uses: actions-rs/install@v0.1
-        with:
-          crate: mdbook-mermaid
-          version: latest
-          use-tool-cache: true
-
-      - name: Install mdbook-template
-        uses: actions-rs/install@v0.1
-        with:
-          crate: mdbook-template
-          version: latest
-          use-tool-cache: true
-
-      - name: Install mdbook-toc
-        uses: actions-rs/install@v0.1
-        with:
-          crate: mdbook-toc
-          version: latest
-          use-tool-cache: true
+          tool: mdbook,mdbook-mermaid,mdbook-template,mdbook-toc
 
       - name: Build guide
         run: |

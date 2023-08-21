@@ -298,11 +298,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub(crate) fn dst_max_block_time(&self) -> Result<Duration, LinkError> {
-        Ok(self
-            .dst_chain()
-            .config()
-            .map_err(LinkError::relayer)?
-            .max_block_time)
+        Ok(self.dst_chain().max_block_time())
     }
 
     fn unordered_channel(&self) -> bool {
@@ -1336,7 +1332,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),
-            packet.sequence,
+            next_sequence_received,
             proofs.clone(),
             self.src_signer()?,
         );

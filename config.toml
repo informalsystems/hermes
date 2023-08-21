@@ -293,9 +293,12 @@ max_tx_size = 2097152
 # can drift into the future. Default: 5s
 clock_drift = '5s'
 
-# Specify the maximum time per block for this chain.
+# Specify the fallback value for the maximum time per block for this chain.
 # The block time together with the clock drift are added to the source drift to estimate
 # the maximum clock drift when creating a client on this chain. Default: 30s
+# When validating the configuration, Hermes will query the /genesis RPC endpoint in order
+# to retrieve the `max_expected_time_per_block` and use it as the `max_block_time`.
+# If the query fails, the configured `max_block_time` is used instead.
 # For cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
 # Note: This MUST be the same as the `max_expected_time_per_block` genesis parameter for Tendermint chains.
 max_block_time = '30s'

@@ -115,7 +115,7 @@ impl TestOverrides for ExpirationTestOverrides {
             },
         };
 
-        for mut chain_config in config.chains.iter_mut() {
+        for chain_config in config.chains.iter_mut() {
             chain_config.trusting_period = Some(CLIENT_EXPIRY);
         }
     }
@@ -147,44 +147,50 @@ impl BinaryChainTest for ChannelExpirationTest {
             {
                 info!("Trying to create connection and channel after client is expired");
 
-                let (connection_id_b, _) = init_connection(
+                match init_connection(
                     &chains.handle_a,
                     &chains.handle_b,
                     &chains.client_id_a(),
                     &chains.client_id_b(),
-                )?;
+                ) {
+                    // Up to simapp v7.0.0 sending a `ConnOpenInit` with an expired client would not
+                    // return an error so it is required to assert the connection and channel remain
+                    // in the init state.
+                    Ok((connection_id_b, _)) => {
 
-                let (channel_id_b, _) = init_channel(
-                    &chains.handle_a,
-                    &chains.handle_b,
-                    &chains.client_id_a(),
-                    &chains.client_id_b(),
-                    &connection.connection_id_a.as_ref(),
-                    &connection.connection_id_b.as_ref(),
-                    &port_a.as_ref(),
-                    &port_b.as_ref(),
-                )?;
+                        let (channel_id_b, _) = init_channel(
+                            &chains.handle_a,
+                            &chains.handle_b,
+                            &chains.client_id_a(),
+                            &chains.client_id_b(),
+                            &connection.connection_id_a.as_ref(),
+                            &connection.connection_id_b.as_ref(),
+                            &port_a.as_ref(),
+                            &port_b.as_ref(),
+                        )?;
 
-                info!("Sleeping for 10 seconds to make sure that connection and channel fails to establish");
 
-                sleep(Duration::from_secs(10));
+                    info!("Sleeping for 10 seconds to make sure that connection and channel fails to establish");
 
-                {
-                    let connection_end_b =
-                        query_connection_end(&chains.handle_b, &connection_id_b.as_ref())?;
+                    sleep(Duration::from_secs(10));
 
-                    assert_eq(
-                        "connection end status should remain init",
-                        connection_end_b.value().state(),
-                        &ConnectionState::Init,
-                    )?;
+                    {
+                        let connection_end_b =
+                            query_connection_end(&chains.handle_b, &connection_id_b.as_ref())?;
 
-                    assert_eq(
-                        "connection end should not have counterparty",
-                        &connection_end_b.tagged_counterparty_connection_id(),
-                        &None,
-                    )?;
-                }
+                        assert_eq(
+                            "connection end status should remain init",
+                            connection_end_b.value().state(),
+                            &ConnectionState::Init,
+                        )?;
+
+                        assert_eq(
+                            "connection end should not have counterparty",
+                            &connection_end_b.tagged_counterparty_connection_id(),
+                            &None,
+                        )?;
+                    }
+
 
                 {
                     let channel_end_b =
@@ -201,6 +207,13 @@ impl BinaryChainTest for ChannelExpirationTest {
                         &channel_end_b.tagged_counterparty_channel_id(),
                         &None,
                     )?;
+                }
+
+                    },
+                    // From simapp version v7.1.0 if `ConnOpenInit` is sent while the client
+                    // is expired, an error will be returned.
+                    // See https://github.com/cosmos/ibc-go/blob/v7.1.0/modules/core/03-connection/keeper/handshake.go#L40
+                    Err(e) => assert!(e.to_string().contains("status is Expired: client state is not active")),
                 }
             }
 

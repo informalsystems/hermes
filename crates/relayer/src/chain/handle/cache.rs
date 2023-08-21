@@ -1,5 +1,6 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use std::sync::Arc;
+use std::time::Duration;
 
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketRequest;
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketResponse;
@@ -113,6 +114,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
     fn config(&self) -> Result<ChainConfig, Error> {
         self.inner().config()
+    }
+
+    fn max_block_time(&self) -> Duration {
+        self.inner().max_block_time()
     }
 
     fn get_key(&self) -> Result<AnySigningKeyPair, Error> {
