@@ -47,9 +47,7 @@ impl Settings {
         Settings {
             max_clock_drift,
             trusting_period: options.trusting_period,
-            trust_threshold: options
-                .trust_threshold
-                .unwrap_or_else(|| src_trust_threshold.into()),
+            trust_threshold: options.trust_threshold.unwrap_or(src_trust_threshold),
         }
     }
 }
