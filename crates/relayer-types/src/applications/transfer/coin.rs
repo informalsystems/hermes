@@ -1,13 +1,16 @@
-use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
-use safe_regex::regex;
-use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
-use std::str::{from_utf8, FromStr};
+use std::str::FromStr;
+
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+
+use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
+
+use crate::serializers::serde_string;
 
 use super::amount::Amount;
 use super::denom::{BaseDenom, PrefixedDenom};
 use super::error::Error;
-use crate::serializers::serde_string;
 
 /// A `Coin` type with fully qualified `PrefixedDenom`.
 pub type PrefixedCoin = Coin<PrefixedDenom>;
@@ -61,24 +64,21 @@ where
 {
     type Err = Error;
 
-    #[allow(clippy::assign_op_pattern)]
+    // #[allow(clippy::assign_op_pattern)]
     fn from_str(coin_str: &str) -> Result<Self, Error> {
         // Denominations can be 3 ~ 128 characters long and support letters, followed by either
         // a letter, a number or a separator ('/', ':', '.', '_' or '-').
         // Loosely copy the regex from here:
         // https://github.com/cosmos/cosmos-sdk/blob/v0.45.5/types/coin.go#L760-L762
-        let matcher = regex!(br"([0-9]+)([a-zA-Z0-9/:\\._\x2d]+)");
+        let regex = Regex::new(r"(?<amount>[0-9]+)(?<denom>[a-zA-Z0-9/:\\._\x2d]+)")
+            .expect("failed to compile regex");
 
-        let (m1, m2) = matcher
-            .match_slices(coin_str.as_bytes())
-            .ok_or_else(|| Error::invalid_coin(coin_str.to_string()))?;
+        let captures = regex.captures(coin_str).ok_or_else(|| {
+            Error::invalid_coin(format!("{coin_str} (expected format: <amount><denom>)"))
+        })?;
 
-        let amount = from_utf8(m1).map_err(Error::utf8_decode)?.parse()?;
-
-        let denom = from_utf8(m2)
-            .map_err(Error::utf8_decode)?
-            .parse()
-            .map_err(Into::into)?;
+        let amount = captures["amount"].parse()?;
+        let denom = captures["denom"].parse().map_err(Into::into)?;
 
         Ok(Coin { amount, denom })
     }
