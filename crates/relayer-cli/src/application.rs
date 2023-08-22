@@ -205,7 +205,9 @@ impl Application for CliApp {
             //let tracing = PrettyTracing::new(config.global, &self.debug_sections)?;
             let (tracing, reload_handle) =
                 PrettyTracing::new_with_reload_handle(config.global, &self.debug_sections)?;
-            thread::spawn(move || spawn_reload_handler(reload_handle));
+            thread::spawn(move || {
+                spawn_reload_handler(reload_handle, config.tracing_server.clone())
+            });
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
     }

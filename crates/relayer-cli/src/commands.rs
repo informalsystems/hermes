@@ -86,6 +86,7 @@ pub enum CliCmd {
     /// Listen to and display IBC events emitted by a chain
     Listen(ListenCmd),
 
+    /// Update tracing log directives
     #[clap(subcommand)]
     Logs(LogsCmd),
 

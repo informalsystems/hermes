@@ -6,6 +6,7 @@ use abscissa_core::Runnable;
 use tracing::error;
 
 use crate::error::Error;
+use crate::prelude::app_config;
 use crate::tracing_handle::send_command;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -48,23 +49,37 @@ impl FromStr for LogLevelCommands {
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct LogLevelCmd {
-    #[clap(long = "log-level", help = "tmp")]
+    #[clap(
+        long = "log-level",
+        required = true,
+        value_name = "LOG_LEVEL",
+        help = "The new lowest log level which will be displayed. Possible values are `trace`, `debug`, `info`, `warn` or `error`"
+    )]
     log_level: LogLevelCommands,
 
-    #[clap(long = "log-filter", help = "tmp")]
+    #[clap(
+        long = "log-filter",
+        help_heading = "FLAGS",
+        value_name = "LOG_FILTER",
+        help = "The target of the log level to update, if left empty all the targets will be updated. Example `ibc` or `tendermint_rpc`"
+    )]
     log_filter: Option<String>,
 }
 
 impl Runnable for LogLevelCmd {
     fn run(&self) {
+        let config = app_config();
+
+        let port = config.tracing_server.port;
+
         let log_cmd: Result<String, Error> = self.log_level.clone().try_into();
         match log_cmd {
             Ok(cmd) => {
                 if let Some(log_filter) = self.log_filter.clone() {
                     let log_cmd = format!("{log_filter}={cmd}");
-                    send_command(log_cmd)
+                    send_command(log_cmd, port)
                 } else {
-                    send_command(cmd)
+                    send_command(cmd, port)
                 }
             }
             Err(e) => error!("error: {e}"),

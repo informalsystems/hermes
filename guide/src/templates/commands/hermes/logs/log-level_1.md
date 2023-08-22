@@ -1,0 +1,1 @@
+[[#BINARY hermes]][[#GLOBALOPTIONS]] logs log-level[[#OPTIONS]] --log-level [[#LOG_LEVEL]]

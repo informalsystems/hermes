@@ -13,8 +13,10 @@ impl Runnable for ResetCmd {
     fn run(&self) {
         let config = app_config();
 
+        let port = config.tracing_server.port;
+
         let directive = default_directive(config.global.log_level);
 
-        send_command(directive);
+        send_command(directive, port);
     }
 }

@@ -1,0 +1,1 @@
+[[#BINARY hermes]][[#GLOBALOPTIONS]] logs raw --raw-cmd [[#RAW_CMD]]
