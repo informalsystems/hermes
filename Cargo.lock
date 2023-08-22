@@ -1665,14 +1665,14 @@ dependencies = [
 
 [[package]]
 name = "ics23"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af9e8f569c5cc88e08b8d076dc207e0748aa1f52d4b84910ec919c8f2bed6ea7"
+checksum = "442d4bab37956e76f739c864f246c825d87c0bb7f9afa65660c57833c91bf6d4"
 dependencies = [
  "anyhow",
  "bytes",
  "hex",
- "pbjson",
+ "informalsystems-pbjson",
  "prost",
  "ripemd",
  "serde",
@@ -1729,6 +1729,16 @@ checksum = "d5477fe2230a79769d8dc68e0eabf5437907c0457a5614a9e8dddb67f65eb65d"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.0",
+]
+
+[[package]]
+name = "informalsystems-pbjson"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4eecd90f87bea412eac91c6ef94f6b1e390128290898cbe14f2b926787ae1fb"
+dependencies = [
+ "base64 0.13.1",
+ "serde",
 ]
 
 [[package]]
@@ -2160,16 +2170,6 @@ name = "paste"
 version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4b27ab7be369122c218afc2079489cdcb4b517c0a3fc386ff11e1fedfcc2b35"
-
-[[package]]
-name = "pbjson"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "048f9ac93c1eab514f9470c4bc8d97ca2a0a236b84f45cc19d69a59fc11467f6"
-dependencies = [
- "base64 0.13.1",
- "serde",
-]
 
 [[package]]
 name = "pbkdf2"
