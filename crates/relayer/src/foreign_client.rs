@@ -107,7 +107,7 @@ define_error! {
                 height: Height,
             }
             |e| {
-                format_args!("client {} is already up-to-date with chain {}@{}",
+                format_args!("client {} is already up-to-date with chain {} at height {}",
                     e.client_id, e.chain_id, e.height)
             },
 
