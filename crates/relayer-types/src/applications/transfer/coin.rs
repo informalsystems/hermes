@@ -70,8 +70,10 @@ where
         // a letter, a number or a separator ('/', ':', '.', '_' or '-').
         // Loosely copy the regex from here:
         // https://github.com/cosmos/cosmos-sdk/blob/v0.45.5/types/coin.go#L760-L762
-        let regex = Regex::new(r"(?<amount>[0-9]+)(?<denom>[a-zA-Z0-9/:\\._\x2d]+)")
-            .expect("failed to compile regex");
+        let regex = Regex::new(
+            r"^(?<amount>[0-9]+(?:\.[0-9]+)?|\.[0-9]+)\s*(?<denom>[a-zA-Z][a-zA-Z0-9/:._-]{2,127})$",
+        )
+        .expect("failed to compile regex");
 
         let captures = regex.captures(coin_str).ok_or_else(|| {
             Error::invalid_coin(format!("{coin_str} (expected format: <amount><denom>)"))
@@ -134,14 +136,14 @@ mod tests {
         }
 
         {
-            let coin = RawCoin::from_str("1a1")?;
-            assert_eq!(coin.denom, "a1");
+            let coin = RawCoin::from_str("1 ab1")?;
+            assert_eq!(coin.denom, "ab1");
             assert_eq!(coin.amount, 1u64.into());
         }
 
         {
-            let coin = RawCoin::from_str("0x1/:.\\_-")?;
-            assert_eq!(coin.denom, "x1/:.\\_-");
+            let coin = RawCoin::from_str("0x1/:._-")?;
+            assert_eq!(coin.denom, "x1/:._-");
             assert_eq!(coin.amount, 0u64.into());
         }
 
@@ -157,16 +159,16 @@ mod tests {
     #[test]
     fn test_parse_raw_coin_list() -> Result<(), Error> {
         {
-            let coins = RawCoin::from_string_list("123stake,1a1,999den0m")?;
+            let coins = RawCoin::from_string_list("123stake,1ab1,999de-n0m")?;
             assert_eq!(coins.len(), 3);
 
             assert_eq!(coins[0].denom, "stake");
             assert_eq!(coins[0].amount, 123u64.into());
 
-            assert_eq!(coins[1].denom, "a1");
+            assert_eq!(coins[1].denom, "ab1");
             assert_eq!(coins[1].amount, 1u64.into());
 
-            assert_eq!(coins[2].denom, "den0m");
+            assert_eq!(coins[2].denom, "de-n0m");
             assert_eq!(coins[2].amount, 999u64.into());
         }
 
