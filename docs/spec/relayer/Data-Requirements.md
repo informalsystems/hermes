@@ -163,20 +163,28 @@ The relayer connects to the node's CometBFT websocket interface and subscribes t
 
 ## CometBFT gRPC
 
-The following are the gRPC endpoints that Hermes makes use of.
+The following are the gRPC endpoints that Hermes makes use of, listed in rough priority from most used to least used. 
 
 ### `ibc.core.channel.v1.QueryClient`
 
-### `ibc.core.connection.v1.QueryClient`
+Queries for channel-associated data, such as packet commitments, unreceived packets, all channels associated with a given connection, etc.
 
 ### `ibc.core.client.v1.QueryClient`
 
-### `cosmos.staking.v1beta1.QueryParams`
+Queries the client in order to fetch client and consensus states.
 
-Queries for the Cosmos chain staking parameters.
+### `ibc.core.connection.v1.QueryClient`
 
-### `cosmos.base.node.v1beta1.ServiceClient`
+Queries the connection in order to fetch connection data and connected clients.
 
 ### `interchain_security.ccv.consumer.v1.QueryParams`
 
-Queries for the CCV Consumer chain staking parameters.
+Queries a CCV Consumer chain to fetch its staking parameters, notably its unbonding period and the number of historical entries that the chain keeps.
+
+### `cosmos.staking.v1beta1.QueryParams`
+
+Queries a Cosmos chain to fetch its staking parameters, most notably the chain's unbonding period.
+
+### `cosmos.base.node.v1beta1.ServiceClient`
+
+Queries a Cosmos full node in order to fetch its configuration parameters.
