@@ -110,12 +110,13 @@ Also for `write_acknowledgement` packet events.
 Used in two situations ([diagram for reference](https://app.excalidraw.com/l/4XqkU6POmGI/9jbKsT6mHxf)):
 
 1. Similar to point (4) from `/tx_search`: Used In conjunction with `block_search` and `tx_search` for periodic packet clearing.
-    - Pattern: `/block_results?height=X` where X is a specific height, obtained with `block_results`, where a block has relevant packet events. Only `begin_block_events` and `end_block_events` are used in this case.
+    - Pattern: `/block_results?height=X` where X is a specific height, obtained with `block_results`, where a block has relevant packet events. Only `begin_block_events` and `end_block_events` are used in this case. Since CometBFT 0.38, these fields are replaced with `finalize_block_events`.
 2. For CLIs `tx packet-recv` and `tx packet-ack` when the user passes the flag `--packet-data-query-height=X`.
 
 **Response fields used:**
-- `begin_block_events`
-- `end_block_events`
+- `begin_block_events` (before CometBFT 0.38)
+- `end_block_events` (before CometBFT 0.38)
+- `finalize_block_events` (since CometBFT 0.38)
 - `height`
 - `tx_results[].events`
 

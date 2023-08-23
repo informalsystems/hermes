@@ -2,11 +2,13 @@ use std::convert::{From, Infallible};
 use std::fmt::{Debug, Display, Error as FmtError, Formatter};
 use std::str::FromStr;
 
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use super::validate::*;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics24_host::error::ValidationError;
+
+use super::validate::*;
 
 /// This type is subject to future changes.
 ///
@@ -101,8 +103,8 @@ impl ChainId {
     /// assert_eq!(ChainId::is_epoch_format("chainA-1"), true);
     /// ```
     pub fn is_epoch_format(chain_id: &str) -> bool {
-        let re = safe_regex::regex!(br".+[^-]-{1}[1-9][0-9]*");
-        re.is_match(chain_id.as_bytes())
+        let re = Regex::new(r"^.+[^-]-{1}[1-9][0-9]*$").expect("failed to compile regex");
+        re.is_match(chain_id)
     }
 }
 
