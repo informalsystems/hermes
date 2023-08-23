@@ -56,7 +56,7 @@ signature = "2.1.0"
 anyhow = "1.0"
 semver = "1.0"
 humantime = "2.1.0"
-regex = "1.8.1"
+regex = "1"
 moka = "0.11.3"
 uuid = { version = "1.4.0", features = ["v4"] }
 bs58 = "0.5.0"

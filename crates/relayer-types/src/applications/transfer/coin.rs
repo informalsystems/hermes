@@ -1,13 +1,16 @@
-use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
-use safe_regex::regex;
-use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
-use std::str::{from_utf8, FromStr};
+use std::str::FromStr;
+
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+
+use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
+
+use crate::serializers::serde_string;
 
 use super::amount::Amount;
 use super::denom::{BaseDenom, PrefixedDenom};
 use super::error::Error;
-use crate::serializers::serde_string;
 
 /// A `Coin` type with fully qualified `PrefixedDenom`.
 pub type PrefixedCoin = Coin<PrefixedDenom>;
@@ -61,24 +64,23 @@ where
 {
     type Err = Error;
 
-    #[allow(clippy::assign_op_pattern)]
+    // #[allow(clippy::assign_op_pattern)]
     fn from_str(coin_str: &str) -> Result<Self, Error> {
         // Denominations can be 3 ~ 128 characters long and support letters, followed by either
         // a letter, a number or a separator ('/', ':', '.', '_' or '-').
         // Loosely copy the regex from here:
         // https://github.com/cosmos/cosmos-sdk/blob/v0.45.5/types/coin.go#L760-L762
-        let matcher = regex!(br"([0-9]+)([a-zA-Z0-9/:\\._\x2d]+)");
+        let regex = Regex::new(
+            r"^(?<amount>[0-9]+(?:\.[0-9]+)?|\.[0-9]+)\s*(?<denom>[a-zA-Z][a-zA-Z0-9/:._-]{2,127})$",
+        )
+        .expect("failed to compile regex");
 
-        let (m1, m2) = matcher
-            .match_slices(coin_str.as_bytes())
-            .ok_or_else(|| Error::invalid_coin(coin_str.to_string()))?;
+        let captures = regex.captures(coin_str).ok_or_else(|| {
+            Error::invalid_coin(format!("{coin_str} (expected format: <amount><denom>)"))
+        })?;
 
-        let amount = from_utf8(m1).map_err(Error::utf8_decode)?.parse()?;
-
-        let denom = from_utf8(m2)
-            .map_err(Error::utf8_decode)?
-            .parse()
-            .map_err(Into::into)?;
+        let amount = captures["amount"].parse()?;
+        let denom = captures["denom"].parse().map_err(Into::into)?;
 
         Ok(Coin { amount, denom })
     }
@@ -134,14 +136,14 @@ mod tests {
         }
 
         {
-            let coin = RawCoin::from_str("1a1")?;
-            assert_eq!(coin.denom, "a1");
+            let coin = RawCoin::from_str("1 ab1")?;
+            assert_eq!(coin.denom, "ab1");
             assert_eq!(coin.amount, 1u64.into());
         }
 
         {
-            let coin = RawCoin::from_str("0x1/:.\\_-")?;
-            assert_eq!(coin.denom, "x1/:.\\_-");
+            let coin = RawCoin::from_str("0x1/:._-")?;
+            assert_eq!(coin.denom, "x1/:._-");
             assert_eq!(coin.amount, 0u64.into());
         }
 
@@ -157,16 +159,16 @@ mod tests {
     #[test]
     fn test_parse_raw_coin_list() -> Result<(), Error> {
         {
-            let coins = RawCoin::from_string_list("123stake,1a1,999den0m")?;
+            let coins = RawCoin::from_string_list("123stake,1ab1,999de-n0m")?;
             assert_eq!(coins.len(), 3);
 
             assert_eq!(coins[0].denom, "stake");
             assert_eq!(coins[0].amount, 123u64.into());
 
-            assert_eq!(coins[1].denom, "a1");
+            assert_eq!(coins[1].denom, "ab1");
             assert_eq!(coins[1].amount, 1u64.into());
 
-            assert_eq!(coins[2].denom, "den0m");
+            assert_eq!(coins[2].denom, "de-n0m");
             assert_eq!(coins[2].amount, 999u64.into());
         }
 
