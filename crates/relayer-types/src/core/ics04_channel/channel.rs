@@ -418,9 +418,9 @@ pub enum State {
     /// A channel has been closed and can no longer be used to send or receive
     /// packets.
     Closed = 4,
-    /// A channel is being upgraded and is flushing in-flight packets.
+    /// A channel has just accepted the upgrade handshake attempt and is flushing in-flight packets.
     Flushing = 5,
-    /// A channel is being upgraded and all in-flight packets have been flushed.
+    /// A channel has just completed flushing any in-flight packets.
     Flushcomplete = 6,
     /// A channel has just started the upgrade handshake. The chain that is
     /// proposing the upgrade should set the channel state from OPEN to INITUPGRADE.
@@ -502,7 +502,6 @@ impl State {
 
             Flushing => !matches!(other, Uninitialized | Init | TryOpen | Open),
             Flushcomplete => !matches!(other, Uninitialized | Init | TryOpen | Open | Flushing),
-
             InitUpgrade => !matches!(
                 other,
                 Uninitialized | Init | TryOpen | Open | Flushing | Flushcomplete

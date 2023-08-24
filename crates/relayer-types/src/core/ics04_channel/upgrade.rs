@@ -9,7 +9,8 @@ use crate::core::ics04_channel::upgrade_fields::UpgradeFields;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Upgrade {
     pub fields: UpgradeFields,
-    pub timeout: UpgradeTimeout,
+    // timeout can be zero, see `TryFrom<RawUpgrade>` implementation
+    pub timeout: Option<UpgradeTimeout>,
     pub latest_sequence_send: Sequence,
 }
 
@@ -25,8 +26,8 @@ impl TryFrom<RawUpgrade> for Upgrade {
             .try_into()?;
         let timeout = value
             .timeout
-            .ok_or(ChannelError::missing_upgrade_timeout())?
-            .try_into()?;
+            .filter(|tm| UpgradeTimeout::try_from(tm.clone()).is_ok())
+            .map(|tm| UpgradeTimeout::try_from(tm).unwrap());
         let latest_sequence_send = value.latest_sequence_send.into();
 
         Ok(Self {
@@ -39,9 +40,10 @@ impl TryFrom<RawUpgrade> for Upgrade {
 
 impl From<Upgrade> for RawUpgrade {
     fn from(value: Upgrade) -> Self {
+        let timeout = value.timeout.map(|tm| tm.into());
         Self {
             fields: Some(value.fields.into()),
-            timeout: Some(value.timeout.into()),
+            timeout,
             latest_sequence_send: value.latest_sequence_send.into(),
         }
     }

@@ -286,7 +286,7 @@ pub fn assert_eventually_channel_upgrade_init<ChainA: ChainHandle, ChainB: Chain
                 Duration::from_secs(1),
                 || {
                     assert_channel_upgrade_state(
-                        ChannelState::InitUpgrade,
+                        ChannelState::Open,
                         ChannelState::Open,
                         FlushStatus::NotinflushUnspecified,
                         FlushStatus::NotinflushUnspecified,
@@ -315,9 +315,9 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
         Duration::from_secs(1),
         || {
             assert_channel_upgrade_state(
-                ChannelState::TryUpgrade,
-                ChannelState::InitUpgrade,
-                FlushStatus::Flushcomplete,
+                ChannelState::Flushing,
+                ChannelState::Open,
+                FlushStatus::NotinflushUnspecified,
                 FlushStatus::NotinflushUnspecified,
                 handle_a,
                 handle_b,
@@ -342,12 +342,37 @@ pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainH
         Duration::from_secs(1),
         || {
             assert_channel_upgrade_state(
-                // Since there are no in-flight packets, channel
-                // state will directly be set to Open
-                ChannelState::Open,
-                ChannelState::TryUpgrade,
+                ChannelState::Flushcomplete,
+                ChannelState::Flushing,
                 FlushStatus::NotinflushUnspecified,
-                FlushStatus::Flushcomplete,
+                FlushStatus::NotinflushUnspecified,
+                handle_a,
+                handle_b,
+                channel_id_a,
+                port_id_a,
+                upgrade_attrs,
+            )
+        },
+    )
+}
+
+pub fn assert_eventually_channel_upgrade_confirm<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    upgrade_attrs: &ChannelUpgradableAttributes,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel upgrade confirm step should be done",
+        20,
+        Duration::from_secs(1),
+        || {
+            assert_channel_upgrade_state(
+                ChannelState::Open,
+                ChannelState::Flushcomplete,
+                FlushStatus::NotinflushUnspecified,
+                FlushStatus::NotinflushUnspecified,
                 handle_a,
                 handle_b,
                 channel_id_a,

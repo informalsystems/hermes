@@ -1,8 +1,8 @@
 DESCRIPTION:
-Relay the channel upgrade attempt (ChannelUpgradeTry)
+Relay the channel upgrade attempt (ChannelUpgradeConfirm)
 
 USAGE:
-    hermes tx chan-upgrade-try --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --src-channel <SRC_CHANNEL_ID> --dst-channel <DST_CHANNEL_ID>
+    hermes tx chan-upgrade-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --src-channel <SRC_CHANNEL_ID> --dst-channel <DST_CHANNEL_ID>
 
 OPTIONS:
     -h, --help    Print help information

@@ -17,15 +17,6 @@ OPTIONS:
             only be upgraded from a stricter ordering to a less strict ordering, i.e., from ORDERED
             to UNORDERED. Defaults to the ordering of the initiating chain if not specified.
 
-        --timeout-height <TIMEOUT_HEIGHT>
-            Height that, once it has been surpassed on the originating chain, the upgrade will time
-            out. Required if no timeout timestamp is specified.
-
-        --timeout-time <TIMEOUT_TIME>
-            Timeout in human readable format since current that, once it has been surpassed on the
-            originating chain, the upgrade will time out. Required if no timeout height is
-            specified.
-
         --version <VERSION>
             Version of the channel that both chains will upgrade to. Defaults to the version of the
             initiating chain if not specified.

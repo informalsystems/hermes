@@ -20,7 +20,7 @@ default   = ["flex-error/std", "flex-error/eyre_tracer"]
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc-proto         = { version = "0.32.0" }
+ibc-proto         = { version = "0.33.0" }
 ibc-telemetry     = { version = "0.25.0", path = "../telemetry", optional = true }
 ibc-relayer-types = { version = "0.25.0", path = "../relayer-types", features = ["mocks"] }
 
@@ -52,18 +52,18 @@ retry = { version = "2.0.0", default-features = false }
 async-stream = "0.3.5"
 http = "0.2.9"
 flex-error = { version = "0.4.4", default-features = false }
-signature = "1.6.0"
+signature = "2.1.0"
 anyhow = "1.0"
 semver = "1.0"
 humantime = "2.1.0"
-regex = "1.8.1"
-moka = "0.11.2"
+regex = "1"
+moka = "0.11.3"
 uuid = { version = "1.4.0", features = ["v4"] }
 bs58 = "0.5.0"
 digest = "0.10.6"
-ed25519 = "1.5.2"
-ed25519-dalek = { version = "1.0.1", features = ["serde"] }
-ed25519-dalek-bip32 = "0.2.0"
+ed25519 = "2.2.2"
+ed25519-dalek = { version = "2.0.0", features = ["serde"] }
+ed25519-dalek-bip32 = "0.3.0"
 generic-array = "0.14.7"
 secp256k1 = { version = "0.27.0", features = ["rand-std"] }
 strum = { version = "0.25", features = ["derive"] }
@@ -84,20 +84,20 @@ version = "0.4.1"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "0.32.0"
+version = "0.33.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "0.32.0"
+version = "0.33.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "0.32.0"
+version = "0.33.0"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-detector]
-version = "0.32.0"
+version = "0.33.0"
 default-features = false
 
 [dev-dependencies]
@@ -108,4 +108,4 @@ tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "jso
 test-log = { version = "0.2.10", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "0.32.0" }
+tendermint-testgen = { version = "0.33.0" }

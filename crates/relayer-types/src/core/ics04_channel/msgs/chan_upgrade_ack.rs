@@ -1,9 +1,7 @@
-use ibc_proto::ibc::core::channel::v1::FlushStatus as RawFlushStatus;
 use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeAck as RawMsgChannelUpgradeAck;
 use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::flush_status::FlushStatus;
 use crate::core::ics04_channel::upgrade::Upgrade;
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
@@ -19,7 +17,6 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelUpgradeAck";
 pub struct MsgChannelUpgradeAck {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub counterparty_flush_status: FlushStatus,
     pub counterparty_upgrade: Upgrade,
     /// The proof of the counterparty channel
     pub proof_channel: CommitmentProofBytes,
@@ -35,7 +32,6 @@ impl MsgChannelUpgradeAck {
     pub fn new(
         port_id: PortId,
         channel_id: ChannelId,
-        counterparty_flush_status: FlushStatus,
         counterparty_upgrade: Upgrade,
         proof_channel: CommitmentProofBytes,
         proof_upgrade: CommitmentProofBytes,
@@ -45,7 +41,6 @@ impl MsgChannelUpgradeAck {
         Self {
             port_id,
             channel_id,
-            counterparty_flush_status,
             counterparty_upgrade,
             proof_channel,
             proof_upgrade,
@@ -88,7 +83,6 @@ impl TryFrom<RawMsgChannelUpgradeAck> for MsgChannelUpgradeAck {
         Ok(MsgChannelUpgradeAck {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
-            counterparty_flush_status: raw_msg.counterparty_flush_status.try_into()?,
             counterparty_upgrade,
             proof_channel: raw_msg
                 .proof_channel
@@ -109,8 +103,6 @@ impl From<MsgChannelUpgradeAck> for RawMsgChannelUpgradeAck {
         RawMsgChannelUpgradeAck {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
-            counterparty_flush_status: RawFlushStatus::from(domain_msg.counterparty_flush_status)
-                .into(),
             counterparty_upgrade: Some(domain_msg.counterparty_upgrade.into()),
             proof_upgrade: domain_msg.proof_upgrade.into(),
             proof_channel: domain_msg.proof_channel.into(),
@@ -134,7 +126,6 @@ pub mod test_util {
         RawMsgChannelUpgradeAck {
             port_id: PortId::default().to_string(),
             channel_id: ChannelId::default().to_string(),
-            counterparty_flush_status: 2, // Flushcomplete
             counterparty_upgrade: Some(get_dummy_upgrade()),
             proof_upgrade: get_dummy_proof(),
             proof_channel: get_dummy_proof(),

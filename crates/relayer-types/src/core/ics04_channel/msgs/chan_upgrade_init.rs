@@ -4,7 +4,6 @@ use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpg
 use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::timeout::UpgradeTimeout;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -18,7 +17,6 @@ pub struct MsgChannelUpgradeInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub fields: UpgradeFields,
-    pub timeout: UpgradeTimeout,
     pub signer: Signer,
 }
 
@@ -27,14 +25,12 @@ impl MsgChannelUpgradeInit {
         port_id: PortId,
         channel_id: ChannelId,
         fields: UpgradeFields,
-        timeout: UpgradeTimeout,
         signer: Signer,
     ) -> Self {
         Self {
             port_id,
             channel_id,
             fields,
-            timeout,
             signer,
         }
     }
@@ -59,9 +55,6 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
     type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelUpgradeInit) -> Result<Self, Self::Error> {
-        let raw_timeout = raw_msg.timeout.ok_or(Error::missing_upgrade_timeout())?;
-        let timeout = UpgradeTimeout::try_from(raw_timeout)?;
-
         let raw_fields = raw_msg.fields.ok_or(Error::missing_upgrade_fields())?;
         let fields = UpgradeFields::try_from(raw_fields)?;
 
@@ -70,7 +63,6 @@ impl TryFrom<RawMsgChannelUpgradeInit> for MsgChannelUpgradeInit {
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
             fields,
-            timeout,
         })
     }
 }
@@ -82,7 +74,6 @@ impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
             channel_id: domain_msg.channel_id.to_string(),
             signer: domain_msg.signer.to_string(),
             fields: Some(domain_msg.fields.into()),
-            timeout: Some(domain_msg.timeout.into()),
         }
     }
 }
@@ -90,26 +81,18 @@ impl From<MsgChannelUpgradeInit> for RawMsgChannelUpgradeInit {
 #[cfg(test)]
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
-    use ibc_proto::ibc::core::channel::v1::Timeout as RawUpgradeTimeout;
 
-    use crate::core::ics02_client::height::Height;
     use crate::core::ics04_channel::upgrade_fields::test_util::get_dummy_upgrade_fields;
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
     use crate::test_utils::get_dummy_bech32_account;
-    use crate::timestamp::Timestamp;
 
     /// Returns a dummy `RawMsgChannelUpgadeInit`, for testing only!
     pub fn get_dummy_raw_msg_chan_upgrade_init() -> RawMsgChannelUpgradeInit {
-        let dummy_timeout = RawUpgradeTimeout {
-            height: Some(Height::new(0, 10).unwrap().into()),
-            timestamp: Timestamp::now().nanoseconds(),
-        };
         RawMsgChannelUpgradeInit {
             port_id: PortId::default().to_string(),
             channel_id: ChannelId::default().to_string(),
             signer: get_dummy_bech32_account(),
             fields: Some(get_dummy_upgrade_fields()),
-            timeout: Some(dummy_timeout),
         }
     }
 }
@@ -119,7 +102,6 @@ mod tests {
     use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeInit as RawMsgChannelUpgradeInit;
-    use ibc_proto::ibc::core::channel::v1::Timeout as RawUpgradeTimeout;
 
     use crate::core::ics04_channel::msgs::chan_upgrade_init::test_util::get_dummy_raw_msg_chan_upgrade_init;
     use crate::core::ics04_channel::msgs::chan_upgrade_init::MsgChannelUpgradeInit;
@@ -185,14 +167,6 @@ mod tests {
                 raw: RawMsgChannelUpgradeInit {
                     channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
                     ..default_raw_msg.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Timeout timestamp is 0 and no timeout height provided".to_string(),
-                raw: RawMsgChannelUpgradeInit {
-                    timeout: Some(RawUpgradeTimeout { height: None, timestamp: 0 }),
-                    ..default_raw_msg
                 },
                 want_pass: false,
             },
