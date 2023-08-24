@@ -118,11 +118,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1692877927,
-        "narHash": "sha256-wZZMQqUuWImKk9U+SgAtBCxjSoQmTs5A4AL5vN8wiL0=",
+        "lastModified": 1692879240,
+        "narHash": "sha256-oVxjLGuWIaWeyI9KufDgQKtGyfKYMxDzvGk5UNuRjnk=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "b41a5541fa9e6460f25365c3f2a54cb66da3b69e",
+        "rev": "8cdc17fbefdafce7ff659838372a6ab740798b6e",
         "type": "github"
       },
       "original": {
