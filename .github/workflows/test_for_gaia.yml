@@ -1,0 +1,63 @@
+name: Test Triggered by Gaia
+
+on:
+  repository_dispatch:
+    types: [ trigger-workflow ]
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 1
+  CARGO_PROFILE_RELEASE_DEBUG: 1
+  RUST_BACKTRACE: short
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
+# Cancel previous runs of this workflow when a new commit is added to the PR, branch or tag
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 180
+
+  steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+    - uses: Swatinem/rust-cache@v2
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: -p ibc-integration-test --no-fail-fast --no-run
+    - uses: actions/setup-go@v4
+      with:
+        go-version: 1.20.x
+    - name: Checkout hermes version
+      run: |
+        git checkout ${{ github.event.client_payload.hermes_version }}
+    - name: Fetch Gaia Repo
+      run: |
+        git clone --branch ${{ github.event.client_payload.gaiad_version }} https://github.com/cosmos/gaia.git
+        cd gaia
+        make build
+        cd ../
+    - name: Make gaiad executable
+      run: chmod +x ${{ github.workspace }}/gaia/build/gaiad
+    - uses: nick-fields/retry@v2
+      env:
+        RUST_LOG: info
+        RUST_BACKTRACE: 1
+        NO_COLOR_LOG: 1
+        CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+        ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+      with:
+        max_attempts: 2
+        timeout_minutes: 90
+        command: |
+          CHAIN_COMMAND_PATHS=${{ github.workspace }}/gaia/build/gaiad ACCOUNT_PREFIXES=cosmos cargo test -p ibc-integration-test -- tests::transfer::test_ibc_transfer
