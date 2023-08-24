@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This script is used to generate the templates for the guide
 SCRIPT_NAME="$0"

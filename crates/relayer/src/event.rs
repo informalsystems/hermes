@@ -130,6 +130,10 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
         Ok(IbcEventType::UpgradeAckChannel) => Ok(IbcEvent::UpgradeAckChannel(
             channel_upgrade_ack_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
         )),
+        Ok(IbcEventType::UpgradeConfirmChannel) => Ok(IbcEvent::UpgradeConfirmChannel(
+            channel_upgrade_confirm_try_from_abci_event(abci_event)
+                .map_err(IbcEventError::channel)?,
+        )),
         Ok(IbcEventType::UpgradeOpenChannel) => Ok(IbcEvent::UpgradeOpenChannel(
             channel_upgrade_open_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
         )),
@@ -299,6 +303,16 @@ pub fn channel_upgrade_ack_try_from_abci_event(
 ) -> Result<channel_events::UpgradeAck, ChannelError> {
     match channel_upgrade_extract_attributes_from_tx(abci_event) {
         Ok(attrs) => channel_events::UpgradeAck::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_confirm_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeConfirm, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeConfirm::try_from(attrs)
             .map_err(|_| ChannelError::implementation_specific()),
         Err(e) => Err(e),
     }

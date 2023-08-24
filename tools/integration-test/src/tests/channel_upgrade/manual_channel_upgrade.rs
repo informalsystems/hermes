@@ -5,13 +5,13 @@
 //!   ACK and CONFIRM steps.
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
-use ibc_relayer_types::core::ics04_channel::timeout::UpgradeTimeout;
-use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::version::Version};
+use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_ack,
-    assert_eventually_channel_upgrade_init, assert_eventually_channel_upgrade_open,
-    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes,
+    assert_eventually_channel_upgrade_confirm, assert_eventually_channel_upgrade_init,
+    assert_eventually_channel_upgrade_open, assert_eventually_channel_upgrade_try,
+    ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -81,7 +81,16 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
         let new_connection_hops = None;
 
         let old_attrs = ChannelUpgradableAttributes::new(
+            old_version.clone(),
+            old_version.clone(),
+            old_ordering,
+            old_connection_hops_a.clone(),
+            old_connection_hops_b.clone(),
+        );
+
+        let interm_attrs = ChannelUpgradableAttributes::new(
             old_version,
+            new_version.clone(),
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
@@ -89,17 +98,11 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
             new_version.clone(),
+            new_version.clone(),
             old_ordering,
             old_connection_hops_a,
             old_connection_hops_b,
         );
-
-        let timeout_height = Height::new(
-            ChainId::chain_version(chains.chain_id_b().0.to_string().as_str()),
-            120,
-        )
-        .map_err(|e| eyre!("error creating height for timeout height: {e}"))?;
-        let timeout = UpgradeTimeout::Height(timeout_height);
 
         info!("Will run ChanUpgradeInit step...");
 
@@ -107,7 +110,6 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             Some(new_version),
             new_ordering,
             new_connection_hops,
-            timeout.clone(),
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
@@ -122,7 +124,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
 
         info!("Will run ChanUpgradeTry step...");
 
-        channel.build_chan_upgrade_try_and_send(timeout)?;
+        channel.build_chan_upgrade_try_and_send()?;
 
         info!("Check that the step ChanUpgradeTry was correctly executed...");
 
@@ -148,11 +150,21 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &old_attrs,
         )?;
 
-        info!("Will run first ChanUpgradeOpen step...");
+        info!("Will run ChanUpgradeConfirm step...");
 
-        channel.build_chan_upgrade_open_and_send()?;
+        channel.build_chan_upgrade_confirm_and_send()?;
 
-        info!("Will run second ChanUpgradeOpen step...");
+        info!("Check that the step ChanUpgradeConfirm was correctly executed...");
+
+        assert_eventually_channel_upgrade_confirm(
+            &chains.handle_b,
+            &chains.handle_a,
+            &channels.channel_id_b.as_ref(),
+            &channels.port_b.as_ref(),
+            &interm_attrs.flipped(),
+        )?;
+
+        info!("Will run ChanUpgradeOpen step...");
 
         channel.flipped().build_chan_upgrade_open_and_send()?;
 

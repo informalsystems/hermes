@@ -71,6 +71,7 @@ pub fn add_genesis_account(
         &[
             "--home",
             home_path,
+            "genesis",
             "add-genesis-account",
             wallet_address,
             &amounts_str,
@@ -93,6 +94,7 @@ pub fn add_genesis_validator(
         &[
             "--home",
             home_path,
+            "genesis",
             "gentx",
             wallet_id,
             "--keyring-backend",
@@ -110,7 +112,7 @@ pub fn collect_gen_txs(chain_id: &str, command_path: &str, home_path: &str) -> R
     simple_exec(
         chain_id,
         command_path,
-        &["--home", home_path, "collect-gentxs"],
+        &["--home", home_path, "genesis", "collect-gentxs"],
     )?;
 
     Ok(())

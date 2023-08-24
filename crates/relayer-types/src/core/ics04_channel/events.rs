@@ -879,6 +879,111 @@ impl EventType for UpgradeAck {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct UpgradeConfirm {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: Option<ChannelId>,
+    pub upgrade_connection_hops: Vec<ConnectionId>,
+    pub upgrade_version: Version,
+    pub upgrade_sequence: Sequence,
+    pub upgrade_ordering: Ordering,
+    pub channel_flush_status: FlushStatus,
+}
+
+impl Display for UpgradeConfirm {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        if let Some(counterparty_channel_id) = &self.counterparty_channel_id {
+            write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: {counterparty_channel_id}, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
+        } else {
+            write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
+        }
+        for hop in self.upgrade_connection_hops.iter() {
+            write!(f, " {} ", hop)?;
+        }
+        write!(
+            f,
+            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {}, channel_flush_status: {}  }}",
+            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering, self.channel_flush_status
+        )
+    }
+}
+
+impl From<UpgradeConfirm> for UpgradeAttributes {
+    fn from(ev: UpgradeConfirm) -> Self {
+        Self {
+            port_id: ev.port_id,
+            channel_id: ev.channel_id,
+            counterparty_port_id: ev.counterparty_port_id,
+            counterparty_channel_id: ev.counterparty_channel_id,
+            upgrade_connection_hops: ev.upgrade_connection_hops,
+            upgrade_version: ev.upgrade_version,
+            upgrade_sequence: ev.upgrade_sequence,
+            upgrade_ordering: ev.upgrade_ordering,
+            channel_flush_status: ev.channel_flush_status,
+        }
+    }
+}
+
+impl From<UpgradeConfirm> for abci::Event {
+    fn from(value: UpgradeConfirm) -> Self {
+        let kind = UpgradeConfirm::event_type().as_str().to_owned();
+        Self {
+            kind,
+            attributes: UpgradeAttributes::from(value).into(),
+        }
+    }
+}
+
+impl UpgradeConfirm {
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+
+    pub fn counterparty_port_id(&self) -> &PortId {
+        &self.counterparty_port_id
+    }
+
+    pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
+        self.counterparty_channel_id.as_ref()
+    }
+}
+
+impl TryFrom<UpgradeAttributes> for UpgradeConfirm {
+    type Error = EventError;
+
+    fn try_from(attrs: UpgradeAttributes) -> Result<Self, Self::Error> {
+        Ok(Self {
+            port_id: attrs.port_id,
+            channel_id: attrs.channel_id,
+            counterparty_port_id: attrs.counterparty_port_id,
+            counterparty_channel_id: attrs.counterparty_channel_id,
+            upgrade_connection_hops: attrs.upgrade_connection_hops,
+            upgrade_version: attrs.upgrade_version,
+            upgrade_sequence: attrs.upgrade_sequence,
+            upgrade_ordering: attrs.upgrade_ordering,
+            channel_flush_status: attrs.channel_flush_status,
+        })
+    }
+}
+
+impl From<UpgradeConfirm> for IbcEvent {
+    fn from(v: UpgradeConfirm) -> Self {
+        IbcEvent::UpgradeConfirmChannel(v)
+    }
+}
+
+impl EventType for UpgradeConfirm {
+    fn event_type() -> IbcEventType {
+        IbcEventType::UpgradeConfirmChannel
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct UpgradeOpen {
     pub port_id: PortId,
     pub channel_id: ChannelId,

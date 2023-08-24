@@ -418,19 +418,23 @@ pub enum State {
     /// A channel has been closed and can no longer be used to send or receive
     /// packets.
     Closed = 4,
+    /// A channel has just accepted the upgrade handshake attempt and is flushing in-flight packets.
+    Flushing = 5,
+    /// A channel has just completed flushing any in-flight packets.
+    Flushcomplete = 6,
     /// A channel has just started the upgrade handshake. The chain that is
     /// proposing the upgrade should set the channel state from OPEN to INITUPGRADE.
-    InitUpgrade = 5,
+    InitUpgrade = 7,
     /// A channel has acknowledged the upgrade handshake step on the counterparty chain.
     /// The counterparty chain that accepts the upgrade should set the channel state from
     /// OPEN to TRYUPGRADE.
     /// The counterparty chain blocks new packets until the channel upgrade is done or cancelled.
-    TryUpgrade = 6,
+    TryUpgrade = 8,
     /// A channel has confirmed the upgrade handshake step on the counterparty chain.
     /// The chain that confirmed the upgrade should set the channel state from
     /// INITUPGRADE to ACKUPGRADE.
     /// The chain blocks new packets until the channel upgrade is done or cancelled.
-    AckUpgrade = 7,
+    AckUpgrade = 9,
 }
 
 impl State {
@@ -442,6 +446,8 @@ impl State {
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
             Self::Closed => "CLOSED",
+            Self::Flushing => "FLUSHING",
+            Self::Flushcomplete => "FLUSHCOMPLETE",
             Self::InitUpgrade => "INITUPGRADE",
             Self::TryUpgrade => "TRYUPGRADE",
             Self::AckUpgrade => "ACKUPGRADE",
@@ -456,9 +462,11 @@ impl State {
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
             4 => Ok(Self::Closed),
-            5 => Ok(Self::InitUpgrade),
-            6 => Ok(Self::TryUpgrade),
-            7 => Ok(Self::AckUpgrade),
+            5 => Ok(Self::Flushing),
+            6 => Ok(Self::Flushcomplete),
+            7 => Ok(Self::InitUpgrade),
+            8 => Ok(Self::TryUpgrade),
+            9 => Ok(Self::AckUpgrade),
             _ => Err(Error::unknown_state(s)),
         }
     }
@@ -492,11 +500,26 @@ impl State {
             TryOpen => !matches!(other, Uninitialized | Init),
             Open => !matches!(other, Uninitialized | Init | TryOpen),
 
-            InitUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open),
-            TryUpgrade => !matches!(other, Uninitialized | Init | TryOpen | Open | InitUpgrade),
+            Flushing => !matches!(other, Uninitialized | Init | TryOpen | Open),
+            Flushcomplete => !matches!(other, Uninitialized | Init | TryOpen | Open | Flushing),
+            InitUpgrade => !matches!(
+                other,
+                Uninitialized | Init | TryOpen | Open | Flushing | Flushcomplete
+            ),
+            TryUpgrade => !matches!(
+                other,
+                Uninitialized | Init | TryOpen | Open | Flushing | Flushcomplete | InitUpgrade
+            ),
             AckUpgrade => !matches!(
                 other,
-                Uninitialized | Init | TryOpen | Open | InitUpgrade | TryUpgrade
+                Uninitialized
+                    | Init
+                    | TryOpen
+                    | Open
+                    | Flushing
+                    | Flushcomplete
+                    | InitUpgrade
+                    | TryUpgrade
             ),
 
             Closed => false,

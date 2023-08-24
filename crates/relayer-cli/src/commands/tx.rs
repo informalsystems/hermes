@@ -53,6 +53,9 @@ pub enum TxCmd {
     /// Relay the channel upgrade attempt (ChannelUpgradeAck)
     ChanUpgradeAck(channel::TxChanUpgradeAckCmd),
 
+    /// Relay the channel upgrade attempt (ChannelUpgradeConfirm)
+    ChanUpgradeConfirm(channel::TxChanUpgradeConfirmCmd),
+
     /// Relay the channel upgrade attempt (ChannelUpgradeOpen)
     ChanUpgradeOpen(channel::TxChanUpgradeOpenCmd),
 
