@@ -1,4 +1,4 @@
-name: Test Triggered by Gaia
+name: Test new Gaia release
 
 on:
   repository_dispatch:
