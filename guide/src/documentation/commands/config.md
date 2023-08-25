@@ -17,7 +17,7 @@ The available sub-commands are the following:
 ### Automatically generate configuration files for specified chains 
 Use `config auto` to automatically generate a configuration file from the [chain-registry](https://github.com/cosmos/chain-registry).
 
-> __WARNING__: Currently, gas parameters are set to default value and require to be set manually.
+> __WARNING__: Currently, `default_gas` and `max_gas` parameters are set to default values; these should be manually reset. The `gas_price` parameter is set as the average gas price listed for the chain in the chain registry.
 
 ```
 {{#include ../../templates/help_templates/config/auto.md}}
@@ -33,7 +33,7 @@ Use `config auto` to generate a configuration file that is able to relay between
 2022-08-16T17:27:27.800213Z  INFO ThreadId(01) cosmoshub-4: uses key "key_cosmoshub"
 2022-08-16T17:27:27.841167Z  INFO ThreadId(01) osmosis-1: uses key "key_osmosis"
 2022-08-16T17:27:27.841890Z  WARN ThreadId(01) Gas parameters are set to default values.
-SUCCESS "Config file written successfully : ~/example_config.toml."
+SUCCESS Config file written successfully at '~/example_config.toml'
 ```
 
 It is also possible to manually specify a key name for any chain.

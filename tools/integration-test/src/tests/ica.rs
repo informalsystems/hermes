@@ -1,18 +1,30 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use serde::Serialize;
-
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::{
     filter::{ChannelFilters, ChannelPolicy, FilterPattern},
     PacketFilter,
 };
+use ibc_relayer::event::IbcEventWithHeight;
+use ibc_relayer_types::applications::ics27_ica::msgs::send_tx::MsgSendTx;
+use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
+use ibc_relayer_types::applications::{
+    ics27_ica::cosmos_tx::CosmosTx,
+    transfer::{msgs::send::MsgSend, Amount, Coin},
+};
+use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::core::ics04_channel::channel::State;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::tx_msg::Msg;
 
-use ibc_test_framework::{
-    ibc::denom::Denom,
-    prelude::*,
-    relayer::channel::{assert_eventually_channel_established, query_channel_end},
+use ibc_test_framework::chain::ext::ica::register_interchain_account;
+use ibc_test_framework::ibc::denom::Denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::channel::{
+    assert_eventually_channel_established, query_channel_end,
 };
 
 #[test]
@@ -76,15 +88,14 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
     fn run<Controller: ChainHandle, Host: ChainHandle>(
         &self,
         _config: &TestConfig,
-        relayer: RelayerDriver,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<Controller, Host>,
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
         // Register an interchain account on behalf of
         // controller wallet `user1` where the counterparty chain is the interchain accounts host.
-        // Then spawn the supervisor.
-        let (_handle, wallet, channel_id, port_id) =
-            register_interchain_account(&relayer, &chains, &connection)?;
+        let (wallet, channel_id, port_id) =
+            register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
 
         // Check that the corresponding ICA channel is eventually established.
         let _counterparty_channel_id = assert_eventually_channel_established(
@@ -102,16 +113,9 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
 
         let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
 
-        // Query the interchain account balance on the host chain. It should be empty.
-        let ica_balance = chains
-            .node_b
-            .chain_driver()
-            .query_balance(&ica_address.as_ref(), &stake_denom.as_ref())?;
-
-        assert_eq(
-            "balance of ICA account should be 0",
-            &ica_balance.amount(),
-            &0u64.into(),
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(0u64).as_ref(),
         )?;
 
         // Send funds to the interchain account.
@@ -123,39 +127,42 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
             &stake_denom.with_amount(ica_fund).as_ref(),
         )?;
 
-        #[derive(Serialize)]
-        struct MsgSend {
-            #[serde(rename = "@type")]
-            tpe: String,
-            from_address: String,
-            to_address: String,
-            amount: Vec<Amount>,
-        }
-
-        #[derive(Serialize)]
-        struct Amount {
-            denom: String,
-            amount: String,
-        }
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(ica_fund).as_ref(),
+        )?;
 
         let amount = 12345;
 
         let msg = MsgSend {
-            tpe: "/cosmos.bank.v1beta1.MsgSend".to_string(),
             from_address: ica_address.to_string(),
-            to_address: chains.node_a.wallets().user2().address().to_string(),
-            amount: vec![Amount {
+            to_address: chains.node_b.wallets().user2().address().to_string(),
+            amount: vec![Coin {
                 denom: stake_denom.to_string(),
-                amount: amount.to_string(),
+                amount: Amount(U256::from(amount)),
             }],
         };
 
+        let raw_msg = msg.to_any();
+
+        let cosmos_tx = CosmosTx {
+            messages: vec![raw_msg],
+        };
+
+        let raw_cosmos_tx = cosmos_tx.to_any();
+
+        let interchain_account_packet_data = InterchainAccountPacketData::new(raw_cosmos_tx.value);
+
+        let signer = Signer::from_str(&wallet.address().to_string()).unwrap();
+
         // Send funds from the ICA account to the `user2` account on the host chain on behalf
         // of the `user1` account on the controller chain.
-        chains.node_a.chain_driver().interchain_submit(
-            &wallet.address(),
-            &connection.connection_id_a.as_ref(),
-            &msg,
+        interchain_send_tx(
+            chains.handle_a(),
+            &signer,
+            &connection.connection_id_a.0,
+            interchain_account_packet_data,
+            Timestamp::from_nanoseconds(120000000000).unwrap(),
         )?;
 
         // Check that the ICA account's balance has been debited the sent amount.
@@ -163,9 +170,31 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund - amount).as_ref(),
         )?;
-
         Ok(())
     }
+}
+
+fn interchain_send_tx<ChainA: ChainHandle>(
+    chain: &ChainA,
+    from: &Signer,
+    connection: &ConnectionId,
+    msg: InterchainAccountPacketData,
+    relative_timeout: Timestamp,
+) -> Result<Vec<IbcEventWithHeight>, Error> {
+    let msg = MsgSendTx {
+        owner: from.clone(),
+        connection_id: connection.clone(),
+        packet_data: msg,
+        relative_timeout,
+    };
+
+    let msg_any = msg.to_any();
+
+    let tm = TrackedMsgs::new_static(vec![msg_any], "SendTx");
+
+    chain
+        .send_messages_and_wait_commit(tm)
+        .map_err(Error::relayer)
 }
 
 #[test]
@@ -193,15 +222,14 @@ impl BinaryConnectionTest for IcaFilterTestDeny {
     fn run<Controller: ChainHandle, Host: ChainHandle>(
         &self,
         _config: &TestConfig,
-        relayer: RelayerDriver,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<Controller, Host>,
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
         // Register an interchain account on behalf of controller wallet `user1`
         // where the counterparty chain is the interchain accounts host.
-        // Then spawn the supervisor.
-        let (_handle, _, channel_id, port_id) =
-            register_interchain_account(&relayer, &chains, &connection)?;
+        let (_, channel_id, port_id) =
+            register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
 
         // Wait a bit, the relayer will refuse to complete the channel handshake
         // because the port is explicitly disallowed by the filter.
@@ -217,37 +245,4 @@ impl BinaryConnectionTest for IcaFilterTestDeny {
             &State::Init,
         )
     }
-}
-
-#[allow(clippy::type_complexity)]
-fn register_interchain_account<ChainA: ChainHandle, ChainB: ChainHandle>(
-    relayer: &RelayerDriver,
-    chains: &ConnectedChains<ChainA, ChainB>,
-    connection: &ConnectedConnection<ChainA, ChainB>,
-) -> Result<
-    (
-        SupervisorHandle,
-        MonoTagged<ChainA, Wallet>,
-        TaggedChannelId<ChainA, ChainB>,
-        TaggedPortId<ChainA, ChainB>,
-    ),
-    Error,
-> {
-    let wallet = chains.node_a.wallets().user1().cloned();
-    let handle = relayer.spawn_supervisor()?;
-
-    chains
-        .node_a
-        .chain_driver()
-        .register_interchain_account(&wallet.address(), &connection.connection_id_a.as_ref())?;
-
-    let channel_id: TaggedChannelId<ChainA, ChainB> =
-        TaggedChannelId::new("channel-0".parse().unwrap());
-
-    let icacontroller =
-        PortId::from_str(&format!("icacontroller-{}", wallet.address().value())).unwrap();
-
-    let port_id: TaggedPortId<ChainA, ChainB> = TaggedPortId::new(icacontroller);
-
-    Ok((handle, wallet, channel_id, port_id))
 }

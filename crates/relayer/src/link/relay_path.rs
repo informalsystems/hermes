@@ -1336,7 +1336,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),
-            packet.sequence,
+            next_sequence_received,
             proofs.clone(),
             self.src_signer()?,
         );

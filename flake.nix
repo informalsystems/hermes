@@ -34,7 +34,6 @@
               gaia7
               gaia8
               gaia9
-              ica
               osmosis
               wasmd
               gaia6-ordered
@@ -49,7 +48,10 @@
               juno
               stride
               stride-no-admin
+              stride-consumer-no-admin
+              stride-consumer
               migaloo
+              neutron
             ;
 
             python = nixpkgs.python3.withPackages (p: [

@@ -262,3 +262,20 @@ Depending on how old the missing events are:
   - if state-sync is used, specify an initial state with a height that is smaller than the height at which the event occurred.
     - in order to find out the height of the missing events, use an archive node or a node with bigger pruning window and do the same queries as above
   - restart the node
+
+## Unimplemented gRPC for Cosmos Staking Service
+
+When relaying for a consumer chain, the `ccv_consumer_chain` parameter *must* be set to `true` under its `[[chains]]` section in the `config.toml` file.
+If it is not, then when Hermes attempts to relay for a consumer chain, it will typically report an error related 
+to a gRPC endpoint being unimplemented for the staking service:
+
+```
+ERROR error raised while creating client for chain: failed when building client state: gRPC call failed with status: status: Unimplemented, message: "unknown service cosmos.staking.v1beta1.Query", details: [], metadata: MetadataMap { headers: {"content-type": "application/grpc", "content-length": "0", "date": "Thu, 16 Feb 2023 10:42:14 GMT", "server": "Caddy"} }
+```
+
+This error occurs because consumer chains do not utilize the same staking module as sovereign chains. The `ccv_consumer_chain`
+parameter must be set to `true` so that Hermes knows to query a different gRPC endpoint for the relevant `ccvconsumer` parameters
+that it needs in order to relay on behalf of a consumer chain. 
+
+### Fix
+Set `ccv_consumer_chain = true` in `config.toml`.
