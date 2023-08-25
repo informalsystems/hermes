@@ -451,7 +451,7 @@ jobs:
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
-          RUST_LOG: info
+          RUST_LOG: trace
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           NEXTEST_RETRIES: 2
