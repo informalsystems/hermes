@@ -41,7 +41,7 @@ jobs:
     - name: Checkout Hermes ${{ github.event.client_payload.hermes_version }}
       run: |
         git checkout ${{ github.event.client_payload.hermes_version }}
-    - name: Fetch Gaia Repo
+    - name: Build Gaia ${{ github.event.client_payload.gaiad_version }}
       run: |
         git clone --branch ${{ github.event.client_payload.gaiad_version }} https://github.com/cosmos/gaia.git
         cd gaia
