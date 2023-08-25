@@ -54,8 +54,8 @@ jobs:
         RUST_LOG: info
         RUST_BACKTRACE: 1
         NO_COLOR_LOG: 1
-        CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-        ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+        CHAIN_COMMAND_PATHS: ${{ github.workspace }}/gaia/build/gaiad
+        ACCOUNT_PREFIXES: cosmos
       with:
         max_attempts: 2
         timeout_minutes: 90
