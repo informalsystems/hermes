@@ -5,6 +5,7 @@ use abscissa_core::Runnable;
 use crate::prelude::app_config;
 use crate::tracing_handle::send_command;
 
+// TODO `hermes set-raw-filter`
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct RawCmd {
     #[clap(

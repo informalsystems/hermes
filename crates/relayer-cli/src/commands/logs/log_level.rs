@@ -9,6 +9,8 @@ use crate::error::Error;
 use crate::prelude::app_config;
 use crate::tracing_handle::send_command;
 
+// TODO use `Level` struct from tracing
+// TODO `set-log-level`
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum LogLevelCommands {
     Trace,
