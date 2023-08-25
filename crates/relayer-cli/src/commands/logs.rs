@@ -10,10 +10,10 @@ pub mod reset;
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum LogsCmd {
     /// Subcommand used to easily update the lowest log level displayed
-    LogLevel(log_level::LogLevelCmd),
+    SetLogLevel(log_level::SetLogLevelCmd),
 
-    /// Subcommand used to send a raw directive for log display
-    Raw(raw::RawCmd),
+    /// Subcommand used to send a raw filter directive for logs displayed
+    SetRawFilter(raw::SetRawFilterCmd),
 
     /// Subcommand to restore the log level by using the configuration defined in the config.toml file
     Reset(reset::ResetCmd),

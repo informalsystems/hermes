@@ -2,7 +2,7 @@ DESCRIPTION:
 Subcommand used to easily update the lowest log level displayed
 
 USAGE:
-    hermes logs log-level [OPTIONS] --log-level <LOG_LEVEL>
+    hermes logs set-log-level [OPTIONS] --log-level <LOG_LEVEL>
 
 OPTIONS:
     -h, --help                     Print help information

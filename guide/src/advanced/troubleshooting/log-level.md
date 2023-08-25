@@ -127,13 +127,13 @@ __Examples__
 The following command is equivalent to running the Hermes instance with `RUST_LOG=ibc=debug hermes start`:
 
   ```shell
-  {{#template ../../templates/commands/hermes/logs/log-level_1.md LOG_LEVEL=debug OPTIONS= --log-filter ibc}}
+  {{#template ../../templates/commands/hermes/logs/set-log-level_1.md LOG_LEVEL=debug OPTIONS= --log-filter ibc}}
   ```
 
   It is also possible to only change the `tendermint_rpc` log level:
 
   ```shell
-  {{#template ../../templates/commands/hermes/logs/log-level_1.md LOG_LEVEL=debug OPTIONS= --log-filter tendermint_rpc}}
+  {{#template ../../templates/commands/hermes/logs/set-log-level_1.md LOG_LEVEL=debug OPTIONS= --log-filter tendermint_rpc}}
   ```
 
   If the `--log-filter` is not specified, the log level will be set for all targets.
@@ -146,10 +146,10 @@ The following command is equivalent to running the Hermes instance with `RUST_LO
 
 __Example__
 
-The following command will only display logs which have a field `channel=channel-1` by setting the `<RAW_CMD>` to `"[{channel=channel-1}]"`:
+The following command will only display logs which have a field `channel=channel-1` by setting the `<RAW_FILTER>` to `"[{channel=channel-1}]"`:
 
   ```shell
-  {{#template ../../templates/commands/hermes/logs/raw_1.md RAW_CMD=<RAW_CMD>}}
+  {{#template ../../templates/commands/hermes/logs/set-raw-filter_1.md RAW_FILTER=<RAW_FILTER>}}
   ```
 
   ### Reset command
