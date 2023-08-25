@@ -60,4 +60,4 @@ jobs:
         max_attempts: 2
         timeout_minutes: 90
         command: |
-          CHAIN_COMMAND_PATHS=${{ github.workspace }}/gaia/build/gaiad ACCOUNT_PREFIXES=cosmos cargo test -p ibc-integration-test -- tests::transfer::test_ibc_transfer
+          cargo test -p ibc-integration-test -- tests::transfer::test_ibc_transfer
