@@ -1,0 +1,37 @@
+[package]
+name = "ibc-relayer-cosmos-mock"
+version = "0.1.0"
+edition = "2021"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.68"
+description  = """
+    TBD
+"""
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1.56"
+basecoin-app = { git = "https://github.com/informalsystems/basecoin-rs.git", rev = "e7f23d3" }
+basecoin-store = { git = "https://github.com/informalsystems/basecoin-rs.git", rev = "e7f23d3" }
+ibc = { git = "https://github.com/cosmos/ibc-rs.git", rev= "6ffe8ce", features = ["mocks"] }
+ibc-proto = "0.34.0"
+ibc-relayer-components = { version = "0.1.0", path = "../relayer-components" }
+ibc-relayer-runtime = { path = "../relayer-runtime" }
+ibc-relayer-types = { path = "../relayer-types" }
+primitive-types = { version = "0.12.0", default-features = false}
+prost = "0.11.0"
+serde_json = "1.0"
+sha2 = { version = "0.10", default-features = false }
+subtle-encoding = { version = "0.5", default-features = false }
+rand = "0.8.5"
+tendermint = { version = "0.33.0", features = ["rust-crypto"] }
+tendermint-testgen = "0.33.0"
+tracing = "0.1.36"
+tokio = { version = "1.0", features = ["full"] }
+tower-abci = "0.9"
+tower = { version = "0.4", features = ["full"] }
