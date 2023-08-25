@@ -143,7 +143,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
         )
-        .map_err(LinkError::supervisor)? else { return Ok(vec![]) };
+        .map_err(LinkError::supervisor)?
+        else {
+            return Ok(vec![]);
+        };
 
         if sequences.is_empty() {
             return Ok(vec![]);
