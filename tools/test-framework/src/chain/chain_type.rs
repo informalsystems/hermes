@@ -28,7 +28,7 @@ impl ChainType {
                 if use_random_id {
                     ChainId::from_string(&format!("ibc-{}-{:x}", prefix, random_u32()))
                 } else {
-                    ChainId::from_string(&format!("ibc-{prefix}"))
+                    ChainId::from_string(&format!("ibc{prefix}"))
                 }
             }
             Self::Evmos => ChainId::from_string(&format!("evmos_9000-{prefix}")),

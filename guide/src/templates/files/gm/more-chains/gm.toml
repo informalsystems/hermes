@@ -10,7 +10,7 @@
   wallet_mnemonic = ""
 
   [global.hermes]
-    binary = "$HOME/ibc-rs/target/release/hermes" #change this path according to your setup
+    binary = "$HOME/hermes/target/release/hermes" # change this path according to your setup
     config = "~/.hermes/config.toml"
     log_level = "info"
     telemetry_enabled = true

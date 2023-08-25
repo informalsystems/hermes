@@ -36,12 +36,12 @@ Execute the following command:
 If this command runs successfully, it should output the following:
 
 ```shell
-{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-2 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/hermes/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/hermes/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/hermes/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/hermes/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/hermes/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_2.md --yes BINARY="$HOME/hermes/target/release/hermes" A_CHAIN_ID=ibc-2 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
 ```
 
 Executing these commands will:

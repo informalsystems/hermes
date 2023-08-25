@@ -13,7 +13,7 @@ use std::{cmp::Ordering, thread};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{error, instrument, trace, warn};
+use tracing::{error, info, instrument, trace, warn};
 
 use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
@@ -107,6 +107,8 @@ use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
 
+use self::types::app_state::GenesisAppState;
+
 pub mod batch;
 pub mod client;
 pub mod compatibility;
@@ -190,7 +192,7 @@ impl CosmosSdkChain {
     ///
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
-    pub fn validate_params(&self) -> Result<(), Error> {
+    pub fn validate_params(&mut self) -> Result<(), Error> {
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = self.trusting_period(unbonding_period);
 
@@ -281,6 +283,28 @@ impl CosmosSdkChain {
                 self.id().clone(),
                 gas_multiplier,
             ));
+        }
+
+        // Query /genesis RPC endpoint to retrieve the `max_expected_time_per_block` value
+        // to use as `max_block_time`.
+        // If it is not found, keep the configured `max_block_time`.
+        match self.block_on(self.rpc_client.genesis::<GenesisAppState>()) {
+            Ok(genesis_reponse) => {
+                let old_max_block_time = self.config.max_block_time;
+                self.config.max_block_time =
+                    Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
+                info!(
+                    "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
+                    old_max_block_time.as_secs(),
+                    self.config.max_block_time.as_secs()
+                );
+            }
+            Err(e) => {
+                warn!(
+                    "Will use fallback value for max_block_time: `{}s`. Error: {e}",
+                    self.config.max_block_time.as_secs()
+                );
+            }
         }
 
         Ok(())
@@ -545,7 +569,6 @@ impl CosmosSdkChain {
         ))?;
 
         // TODO - Verify response proof, if requested.
-        if prove {}
 
         Ok(response)
     }
@@ -738,9 +761,6 @@ impl CosmosSdkChain {
         );
         crate::telemetry!(query, self.id(), "query_block");
 
-        let mut begin_block_events = vec![];
-        let mut end_block_events = vec![];
-
         let tm_height =
             tendermint::block::Height::try_from(block_height.revision_height()).unwrap();
 
@@ -751,24 +771,32 @@ impl CosmosSdkChain {
         let response_height = ICSHeight::new(self.id().version(), u64::from(response.height))
             .map_err(|_| Error::invalid_height_no_source())?;
 
-        begin_block_events.append(
-            &mut response
-                .begin_block_events
-                .unwrap_or_default()
-                .iter()
-                .filter_map(|ev| filter_matching_event(ev, request, seqs))
-                .map(|ev| IbcEventWithHeight::new(ev, response_height))
-                .collect(),
-        );
+        let begin_block_events = response
+            .begin_block_events
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|ev| filter_matching_event(ev, request, seqs))
+            .map(|ev| IbcEventWithHeight::new(ev, response_height))
+            .collect();
 
-        end_block_events.append(
-            &mut response
-                .end_block_events
-                .unwrap_or_default()
+        let mut end_block_events: Vec<_> = response
+            .end_block_events
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|ev| filter_matching_event(ev, request, seqs))
+            .map(|ev| IbcEventWithHeight::new(ev, response_height))
+            .collect();
+
+        // Since CometBFT 0.38, block events are returned in the
+        // finalize_block_events field and the other *_block_events fields
+        // are no longer present. We put these in place of the end_block_events
+        // in older protocol.
+        end_block_events.extend(
+            response
+                .finalize_block_events
                 .iter()
                 .filter_map(|ev| filter_matching_event(ev, request, seqs))
-                .map(|ev| IbcEventWithHeight::new(ev, response_height))
-                .collect(),
+                .map(|ev| IbcEventWithHeight::new(ev, response_height)),
         );
 
         Ok((begin_block_events, end_block_events))
@@ -850,8 +878,10 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
 
-        let compat_mode = CompatMode::from_version(node_info.version)
-            .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+        let compat_mode = CompatMode::from_version(node_info.version).unwrap_or_else(|e| {
+            warn!("Unsupported tendermint version, will use v0.37 compatibility mode but relaying might not work as desired: {e}");
+            CompatMode::V0_37
+        });
         rpc_client.set_compat_mode(compat_mode);
 
         let light_client = TmLightClient::from_config(&config, node_info.id)?;
@@ -929,7 +959,7 @@ impl ChainEndpoint for CosmosSdkChain {
     /// Emits a log warning in case anything is amiss.
     /// Exits early if any health check fails, without doing any
     /// further checks.
-    fn health_check(&self) -> Result<HealthCheck, Error> {
+    fn health_check(&mut self) -> Result<HealthCheck, Error> {
         if let Err(e) = do_health_check(self) {
             warn!("Health checkup for chain '{}' failed", self.id());
             warn!("    Reason: {}", e.detail());

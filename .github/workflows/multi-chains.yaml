@@ -53,7 +53,7 @@ jobs:
       ) || (
         github.event.action == 'labeled' && github.event.label.name == 'CI: multi-chains'
       )
-    timeout-minutes: 60
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -83,7 +83,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v21
+      - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
@@ -96,22 +96,21 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - uses: nick-fields/retry@v2
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - name: Run multi-chains integration tests
         env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           ACCOUNT_PREFIXES: ${{ matrix.first-package.account_prefix }},${{ matrix.second-package.account_prefix }}
-        with:
-           max_attempts: 2
-           timeout_minutes: 60
-           command: |
+        run: |
              CHAIN_COMMAND_PATHS=$(nix shell .#${{ matrix.first-package.package }} -c which ${{ matrix.first-package.command }}),$(nix shell .#${{ matrix.second-package.package }} -c which ${{ matrix.second-package.command }}) \
-              nix shell .#python -c cargo \
-              test -p ibc-integration-test --no-fail-fast -- \
-              --nocapture --test-threads=2
+               nix shell .#python -c \
+                 cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2

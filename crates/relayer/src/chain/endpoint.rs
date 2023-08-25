@@ -98,7 +98,7 @@ pub trait ChainEndpoint: Sized {
     fn shutdown(self) -> Result<(), Error>;
 
     /// Perform a health check
-    fn health_check(&self) -> Result<HealthCheck, Error>;
+    fn health_check(&mut self) -> Result<HealthCheck, Error>;
 
     // Events
     fn subscribe(&mut self) -> Result<Subscription, Error>;

@@ -7,6 +7,7 @@ use crate::conclude::Output;
 use ibc_relayer::config::{store, ChainConfig, Config};
 use ibc_relayer::keyring::list_keys;
 
+use std::collections::HashSet;
 use std::path::PathBuf;
 use tracing::{info, warn};
 
@@ -75,6 +76,7 @@ impl Runnable for AutoCmd {
         // Assert that for every chain, a key name is provided
         let runtime = tokio::runtime::Runtime::new().unwrap();
 
+        // Extract keys and sort chains by name
         let names_and_keys = extract_chains_and_keys(&self.chain_names);
         let sorted_names = names_and_keys
             .iter()
@@ -82,57 +84,94 @@ impl Runnable for AutoCmd {
             .cloned()
             .collect::<Vec<_>>();
 
+        let sorted_names_set: HashSet<String> = HashSet::from_iter(sorted_names.iter().cloned());
+
         let commit = self.commit.clone();
 
-        // Extract keys and sort chains by name
         // Fetch chain configs from the chain registry
-        info!("Fetching configuration for chains: {sorted_names:?}");
+        let config_results = runtime.block_on(get_configs(&sorted_names, commit));
 
-        match runtime.block_on(get_configs(&sorted_names, commit)) {
-            Ok(mut chain_configs) => {
-                let configs_and_keys = chain_configs
-                    .iter_mut()
-                    .zip(names_and_keys.iter().map(|n| &n.1).cloned());
+        if let Err(e) = config_results {
+            let config = Config::default();
 
-                for (chain_config, key_option) in configs_and_keys {
-                    // If a key is provided, use it
-                    if let Some(key_name) = key_option {
-                        info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
-                        chain_config.key_name = key_name;
-                    } else {
-                        // Otherwise, find the key in the keystore
-                        let chain_id = &chain_config.id;
-                        let key = find_key(chain_config);
-                        if let Some(key) = key {
-                            info!("{}: uses key \"{}\"", &chain_id, &key);
-                            chain_config.key_name = key;
-                        } else {
-                            // If no key is found, warn the user and continue
-                            warn!("No key found for chain: {}", chain_id);
-                        }
-                    }
-                }
+            match store(&config, &self.path) {
+                Ok(_) => Output::error(format!(
+                    "An error occurred while generating the chain config file: {}
+                    A default config file has been written at '{}'",
+                    e,
+                    self.path.display(),
+                ))
+                .exit(),
+                Err(e) => Output::error(format!(
+                    "An error occurred while attempting to write the config file: {}",
+                    e
+                ))
+                .exit(),
+            }
+        };
 
-                let config = Config {
-                    chains: chain_configs,
-                    ..Config::default()
-                };
+        let mut chain_configs: Vec<ChainConfig> = config_results
+            .unwrap()
+            .into_iter()
+            .filter_map(|r| r.ok())
+            .collect();
 
-                match store(&config, &self.path) {
-                    Ok(_) => {
-                        warn!("Gas parameters are set to default values.");
-                        Output::success(format!(
-                            "Config file written successfully : {}.",
-                            self.path.to_str().unwrap()
-                        ))
-                        .exit()
-                    }
-                    Err(e) => Output::error(e.to_string()).exit(),
+        // Determine which chains were not fetched
+        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id.name()));
+        let missing_chains_set: HashSet<_> =
+            sorted_names_set.difference(&fetched_chains_set).collect();
+
+        let configs_and_keys = chain_configs
+            .iter_mut()
+            .zip(names_and_keys.iter().map(|n| &n.1).cloned());
+
+        for (chain_config, key_option) in configs_and_keys {
+            // If a key is provided, use it
+            if let Some(key_name) = key_option {
+                info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
+                chain_config.key_name = key_name;
+            } else {
+                // Otherwise, find the key in the keystore
+                let chain_id = &chain_config.id;
+                let key = find_key(chain_config);
+                if let Some(key) = key {
+                    info!("{}: uses key '{}'", &chain_id, &key);
+                    chain_config.key_name = key;
+                } else {
+                    // If no key is found, warn the user and continue
+                    warn!("No key found for chain: {}", chain_id);
                 }
             }
-            Err(e) => {
-                Output::error(e.to_string()).exit();
+        }
+
+        let config = Config {
+            chains: chain_configs,
+            ..Config::default()
+        };
+
+        match store(&config, &self.path) {
+            Ok(_) => {
+                if missing_chains_set.is_empty() {
+                    Output::success_msg(format!(
+                        "Config file written successfully at '{}'",
+                        self.path.display()
+                    ))
+                    .exit()
+                } else {
+                    Output::success_msg(format!(
+                        "Config file written successfully at '{}'.
+                        However, configurations for the following chains were not able to be generated: {:?}",
+                        self.path.display(),
+                        missing_chains_set,
+                    ))
+                    .exit()
+                }
             }
+            Err(e) => Output::error(format!(
+                "An error occurred while attempting to write the config file: {}",
+                e
+            ))
+            .exit(),
         }
     }
 }

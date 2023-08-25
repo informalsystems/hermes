@@ -21,6 +21,7 @@ use std::{
     fs,
     fs::File,
     io::Write,
+    ops::Range,
     path::{Path, PathBuf},
 };
 use tendermint::block::Height as BlockHeight;
@@ -216,6 +217,26 @@ pub mod default {
         // Refresh the client three times per trusting period
         RefreshRate::new(1, 3)
     }
+
+    pub fn latency_submitted() -> HistogramConfig {
+        HistogramConfig {
+            range: Range {
+                start: 500,
+                end: 20000,
+            },
+            buckets: 10,
+        }
+    }
+
+    pub fn latency_confirmed() -> HistogramConfig {
+        HistogramConfig {
+            range: Range {
+                start: 1000,
+                end: 30000,
+            },
+            buckets: 10,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -397,6 +418,60 @@ pub struct TelemetryConfig {
     pub enabled: bool,
     pub host: String,
     pub port: u16,
+    #[serde(default = "HistogramBuckets::default")]
+    pub buckets: HistogramBuckets,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct HistogramBuckets {
+    #[serde(default = "default::latency_submitted")]
+    pub latency_submitted: HistogramConfig,
+    #[serde(default = "default::latency_confirmed")]
+    pub latency_confirmed: HistogramConfig,
+}
+
+impl Default for HistogramBuckets {
+    fn default() -> Self {
+        Self {
+            latency_submitted: default::latency_submitted(),
+            latency_confirmed: default::latency_confirmed(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "HistogramRangeUnchecked")]
+pub struct HistogramConfig {
+    #[serde(flatten)]
+    pub range: Range<u64>,
+    pub buckets: u64,
+}
+
+impl TryFrom<HistogramRangeUnchecked> for HistogramConfig {
+    type Error = String;
+
+    fn try_from(value: HistogramRangeUnchecked) -> Result<Self, Self::Error> {
+        if value.start > value.end {
+            return Err(format!(
+                "histogram range min `{}` must be smaller or equal than max `{}`",
+                value.start, value.end
+            ));
+        }
+        Ok(Self {
+            range: Range {
+                start: value.start,
+                end: value.end,
+            },
+            buckets: value.buckets,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct HistogramRangeUnchecked {
+    start: u64,
+    end: u64,
+    buckets: u64,
 }
 
 /// Default values for the telemetry configuration.
@@ -408,6 +483,7 @@ impl Default for TelemetryConfig {
             enabled: false,
             host: "127.0.0.1".to_string(),
             port: 3001,
+            buckets: HistogramBuckets::default(),
         }
     }
 }
@@ -676,6 +752,28 @@ mod tests {
         let config = load(path).expect("could not parse config");
 
         dbg!(config);
+    }
+
+    #[test]
+    fn parse_valid_telemetry() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_valid_telemetry.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
+    fn parse_invalid_telemetry() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_invalid_telemetry.toml"
+        );
+
+        assert!(load(path).is_err());
     }
 
     #[test]

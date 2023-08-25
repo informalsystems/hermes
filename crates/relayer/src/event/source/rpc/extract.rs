@@ -10,7 +10,7 @@ use crate::telemetry;
 use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
 pub fn extract_events(
-    chain_id: &ChainId,
+    _chain_id: &ChainId,
     height: Height,
     events: &[abci::Event],
 ) -> Result<Vec<IbcEventWithHeight>, String> {
@@ -22,7 +22,7 @@ pub fn extract_events(
                 if let IbcEvent::DistributeFeePacket(dist) = &event {
                     // Only record rewarded fees
                     if let DistributionType::Reward = dist.distribution_type {
-                        telemetry!(fees_amount, chain_id, &dist.receiver, dist.fee.clone());
+                        telemetry!(fees_amount, _chain_id, &dist.receiver, dist.fee.clone());
                     }
                 } else {
                     events_with_height.push(IbcEventWithHeight { height, event });

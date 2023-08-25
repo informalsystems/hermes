@@ -198,46 +198,45 @@ pub async fn query_packets_from_block(
         .await
         .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
-    let mut tx_events = vec![];
-    let mut begin_block_events = vec![];
-    let mut end_block_events = vec![];
+    let mut events: Vec<_> = block_results
+        .begin_block_events
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
+        .map(|ev| IbcEventWithHeight::new(ev, height))
+        .collect();
 
     if let Some(txs) = block_results.txs_results {
         for tx in txs {
-            tx_events.append(
-                &mut tx
-                    .events
+            events.extend(
+                tx.events
                     .iter()
                     .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
-                    .map(|ev| IbcEventWithHeight::new(ev, height))
-                    .collect(),
+                    .map(|ev| IbcEventWithHeight::new(ev, height)),
             )
         }
     }
 
-    begin_block_events.append(
-        &mut block_results
-            .begin_block_events
-            .unwrap_or_default()
-            .iter()
-            .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
-            .map(|ev| IbcEventWithHeight::new(ev, height))
-            .collect(),
-    );
-
-    end_block_events.append(
-        &mut block_results
+    events.extend(
+        block_results
             .end_block_events
             .unwrap_or_default()
             .iter()
             .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
-            .map(|ev| IbcEventWithHeight::new(ev, height))
-            .collect(),
+            .map(|ev| IbcEventWithHeight::new(ev, height)),
     );
 
-    let mut events = begin_block_events;
-    events.append(&mut tx_events);
-    events.append(&mut end_block_events);
+    // Since CometBFT 0.38, block events are returned in the
+    // finalize_block_events field and the other *_block_events fields
+    // are no longer present. We put these in place of the end_block_events
+    // in older protocol.
+    events.extend(
+        block_results
+            .finalize_block_events
+            .iter()
+            .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
+            .map(|ev| IbcEventWithHeight::new(ev, height)),
+    );
 
     Ok(events)
 }

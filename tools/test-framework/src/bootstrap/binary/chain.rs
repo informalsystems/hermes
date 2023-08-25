@@ -13,8 +13,9 @@ use ibc_relayer::foreign_client::{
 use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
-use std::fs;
 use std::path::Path;
+use std::time::Duration;
+use std::{fs, thread};
 use tracing::{debug, info};
 
 use crate::relayer::driver::RelayerDriver;
@@ -71,6 +72,9 @@ pub fn bootstrap_chains_with_full_nodes(
     // See [`spawn_chain_handle`] for more details.
     let handle_a = spawn_chain_handle(|| {}, &registry, &node_a)?;
     let handle_b = spawn_chain_handle(|| {}, &registry, &node_b)?;
+
+    // Wait for the chain handles to be spawned
+    thread::sleep(Duration::from_secs(10));
 
     pad_client_ids(&handle_a, &handle_b, options.pad_client_id_a_to_b)?;
     pad_client_ids(&handle_b, &handle_a, options.pad_client_id_b_to_a)?;

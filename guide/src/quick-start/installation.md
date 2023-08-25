@@ -92,10 +92,10 @@ hermes {{#include ../templates/hermes-version.md}}
 
 ### Clone the repository
 
-Open a terminal and clone the `ibc-rs` repository:
+Open a terminal and clone the `hermes` repository:
 
 ```shell
-{{#template ../templates/commands/git/clone_ibc_rs.md}}
+{{#template ../templates/commands/git/clone_hermes.md}}
 ```
 
 Change to the repository directory
@@ -115,7 +115,7 @@ git checkout {{#include ../templates/hermes-version.md}}
 
 ### Building with `cargo build`
 
-This command builds all the crates from the [__`ibc-rs`__](https://github.com/informalsystems/hermes) repository, namely: the [__`ibc-relayer`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli) crate.
+This command builds all the crates from the [__`hermes`__](https://github.com/informalsystems/hermes) repository, namely: the [__`ibc-relayer`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli) crate.
 The last of these crates contains the `hermes` binary.
 
 ```shell

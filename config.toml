@@ -110,6 +110,19 @@ host = '127.0.0.1'
 # by the telemetry service. Default: 3001
 port = 3001
 
+[telemetry.buckets]
+# Specify the range of the 10 histogram buckets in ms for the `tx_latency_submitted` metric.
+# Default: { start = 500, end = 10000, buckets = 10 }
+# The default will give the following buckets:
+# [500, 2450, 4400, 6350, 8300, 10250, 12200, 14150, 16100, 18050, 20000]
+# latency_submitted = { start = 500, end = 20000, buckets = 10 }
+
+# Specify the range of the 10 histogram buckets in ms for the `tx_latency_confirmed` metric.
+# Default: { start = 1000, end = 20000, buckets = 10 }
+# The default will give the following buckets:
+# [1000, 3900, 6800, 9700, 12600, 15500, 18400, 21300, 24200, 27100, 30000]
+# latency_confirmed = { start = 1000, end = 30000, buckets = 10 }
+
 
 # A chains section includes parameters related to a chain and the full node to which
 # the relayer can send transactions and queries.
@@ -271,9 +284,12 @@ max_tx_size = 2097152
 # can drift into the future. Default: 5s
 clock_drift = '5s'
 
-# Specify the maximum time per block for this chain.
+# Specify the fallback value for the maximum time per block for this chain.
 # The block time together with the clock drift are added to the source drift to estimate
 # the maximum clock drift when creating a client on this chain. Default: 30s
+# When validating the configuration, Hermes will query the /genesis RPC endpoint in order
+# to retrieve the `max_expected_time_per_block` and use it as the `max_block_time`.
+# If the query fails, the configured `max_block_time` is used instead.
 # For cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
 # Note: This MUST be the same as the `max_expected_time_per_block` genesis parameter for Tendermint chains.
 max_block_time = '30s'
@@ -375,5 +391,5 @@ max_tx_size = 2097152
 clock_drift = '5s'
 max_block_time = '30s'
 trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+trust_threshold = { numerator = '2', denominator = '3' }
 address_type = { derivation = 'cosmos' }

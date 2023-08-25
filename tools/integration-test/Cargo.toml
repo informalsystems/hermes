@@ -1,8 +1,8 @@
 [package]
 name         = "ibc-integration-test"
-version      = "0.24.1"
+version      = "0.25.0"
 edition      = "2021"
-rust-version = "1.65"
+rust-version = "1.70"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
@@ -23,7 +23,7 @@ serde_json = "1"
 time = "0.3"
 toml = "0.7"
 tonic = { version = "0.9", features = ["tls", "tls-roots"] }
-serde = "1.0.149"
+serde = "1.0.166"
 
 [features]
 default = []
@@ -36,10 +36,13 @@ experimental = []
 mbt = []
 forward-packet = []
 ics31 = []
+clean-workers = []
+fee-grant = []
+interchain-security = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
 doc = true
 
 [dev-dependencies]
-tempfile = "3.5.0"
+tempfile = "3.6.0"

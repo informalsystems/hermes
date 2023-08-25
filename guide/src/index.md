@@ -16,7 +16,9 @@ The relayer is a central element in the IBC network architecture. This is becaus
 
 We sometimes refer to Hermes as "IBC Relayer CLI", to make it clear that this is a relayer CLI (i.e., a binary) and distinguish it from the relayer core library (that is the crate called ibc-relayer).
 
-Hermes is actively developed and maintained by [Informal Systems](https://informal.systems) in the [ibc-rs](https://github.com/informalsystems/hermes) repository.
+Hermes is actively developed and maintained by [Informal Systems](https://informal.systems) in the [`informalsystems/hermes`](https://github.com/informalsystems/hermes) repository.
+
+> Note that Hermes is packaged as part of the `ibc-relayer-cli` crate and not the `hermes` crate, which is unrelated.
 
 ## Where to go
 
@@ -78,26 +80,18 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 ## Contact
 
 - Request a [new feature](#new-feature-request) via the [feature request][feature-request] issue template;
-- Consult the [list of reported issues][issues] and search by relevant
-  keywords to see if you're dealing with a known problem;
-- We would be grateful if you can submit a [bug report][bug-report]
-  discussing any problem you find, and from there on we can look at the
-  problem together;
-- Reach Hermes developpers and other relayer operators on the [Cosmos Network Discord server](https://discord.com/invite/cosmosnetwork).
+- Consult the [list of reported issues][issues] and search by relevant keywords to see if you're dealing with a known problem;
+- We would be grateful if you can submit a [bug report][bug-report] discussing any problem you find, and from there on we can look at the problem together;
+- Reach Hermes developers and other relayer operators in the `#hermes` channel on the [IBC Gang Discord](https://discord.com/invite/A9VqJSyUXU).
 
-Lastly, for general questions, you can reach us at `hello@informal.systems`,
-or on Twitter [@informalinc][twitter].
-
-> Note that Hermes is packaged as part of the `ibc-relayer-cli` crate.
-
+Lastly, for general questions, you can reach us at `hello@informal.systems`, or on Twitter [@informalinc][twitter].
 
 ---
 
-__Disclaimer__ This project is undergoing heavy development, use at your own risk.
+__Disclaimer__ As with all software offered by Informal Systems, Hermes is offered on an “as is” basis and you use at your own risk.
+Informal makes no warranties of any kind, express or implied, relating to Hermes, including no warranties of a “bug-free” nature.
 
 ---
-
-
 
 [feature-request]: https://github.com/informalsystems/hermes/issues/new?assignees=&labels=&template=feature-request.md
 [bug-report]: https://github.com/informalsystems/hermes/issues/new?assignees=&labels=&template=bug-report.md

@@ -56,7 +56,7 @@ jobs:
           toolchain: stable
           components: clippy
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/clippy-check@v1
         with:
           name: clippy-all-features
@@ -72,7 +72,7 @@ jobs:
           toolchain: stable
           components: clippy
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/clippy-check@v1
         with:
           name: clippy-no-default-features
@@ -88,15 +88,17 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - uses: actions-rs/cargo@v1
         with:
           command: test
           args: --all-features --no-fail-fast --no-run
       - uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --all-features --no-fail-fast --workspace --exclude ibc-integration-test -- --nocapture
+          command: nextest
+          args: run --all-features --no-fail-fast --workspace --exclude ibc-integration-test --no-capture
 
   # test-coverage:
   #   runs-on: ubuntu-latest
