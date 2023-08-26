@@ -13,7 +13,7 @@ use std::{cmp::Ordering, thread};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{error, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
@@ -103,7 +103,9 @@ use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
-use crate::util::pretty::{PrettyIdentifiedChannel, PrettyIdentifiedConnection};
+use crate::util::pretty::{
+    PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
+};
 
 use self::types::app_state::GenesisAppState;
 
@@ -1181,9 +1183,10 @@ impl ChainEndpoint for CosmosSdkChain {
             .into_iter()
             .filter_map(|cs| {
                 IdentifiedAnyClientState::try_from(cs.clone())
-                    .map_err(|_| {
+                    .map_err(|e| {
                         let (client_type, client_id) = (if let Some(client_state) = &cs.client_state { client_state.type_url.clone() } else { "None".to_string() }, &cs.client_id);
-                        warn!("encountered unsupported client type `{}` while scanning client `{}`, skipping the client", client_type, client_id)
+                        warn!("encountered unsupported client type `{}` while scanning client `{}`, skipping the client", client_type, client_id);
+                        debug!("failed to parse client state {}. Error: {}", PrettyIdentifiedClientState(&cs), e)
                     })
                     .ok()
             })
