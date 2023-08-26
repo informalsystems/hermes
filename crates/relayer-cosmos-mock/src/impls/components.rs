@@ -30,37 +30,37 @@ impl PacketRelayer<MockCosmosRelay> for MockCosmosComponents {
 }
 
 // ibc_relayer_components::delegate_component!(
-//     IbcMessageSenderComponent<MainSink>,
-//     MockCosmosComponents,
-//     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
-// );
-
-// ibc_relayer_components::delegate_component!(
 //     PacketRelayerComponent,
 //     MockCosmosComponents,
 //     FullCycleRelayer,
 // );
 
-// ibc_relayer_components::delegate_component!(
-//     ReceivePacketRelayerComponnent,
-//     MockCosmosComponents,
-//     SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
-// );
+ibc_relayer_components::delegate_component!(
+    IbcMessageSenderComponent<MainSink>,
+    MockCosmosComponents,
+    SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>,
+);
 
-// ibc_relayer_components::delegate_component!(
-//     AckPacketRelayerComponent,
-//     MockCosmosComponents,
-//     BaseAckPacketRelayer,
-// );
+ibc_relayer_components::delegate_component!(
+    ReceivePacketRelayerComponnent,
+    MockCosmosComponents,
+    SkipReceivedPacketRelayer<BaseReceivePacketRelayer>,
+);
 
-// ibc_relayer_components::delegate_component!(
-//     TimeoutUnorderedPacketRelayerComponent,
-//     MockCosmosComponents,
-//     BaseTimeoutUnorderedPacketRelayer,
-// );
+ibc_relayer_components::delegate_component!(
+    AckPacketRelayerComponent,
+    MockCosmosComponents,
+    BaseAckPacketRelayer,
+);
 
-// ibc_relayer_components::delegate_component!(
-//     UpdateClientMessageBuilderComponent,
-//     MockCosmosComponents,
-//     SkipUpdateClient<WaitUpdateClient<MockCosmosBuildUpdateClientMessage>>,
-// );
+ibc_relayer_components::delegate_component!(
+    TimeoutUnorderedPacketRelayerComponent,
+    MockCosmosComponents,
+    BaseTimeoutUnorderedPacketRelayer,
+);
+
+ibc_relayer_components::delegate_component!(
+    UpdateClientMessageBuilderComponent,
+    MockCosmosComponents,
+    SkipUpdateClient<WaitUpdateClient<MockCosmosBuildUpdateClientMessage>>,
+);

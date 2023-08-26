@@ -10,15 +10,10 @@ use basecoin_store::impls::RevertibleStore;
 
 use ibc::clients::ics07_tendermint::client_state::AllowUpdate;
 use ibc::clients::ics07_tendermint::client_state::ClientState;
-use ibc::clients::ics07_tendermint::client_type;
-use ibc::clients::ics07_tendermint::header::Header;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
-use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::core::ics24_host::identifier::ClientId;
 use ibc::core::timestamp::Timestamp;
 use ibc::core::Msg;
-use ibc::core::ValidationContext;
 use ibc::Any;
 use ibc::Height;
 
@@ -37,7 +32,6 @@ use crate::traits::endpoint::Endpoint;
 use crate::types::error::Error;
 use crate::types::status::ChainStatus;
 use crate::util::dummy::dummy_signer;
-use crate::util::dummy::generate_rand_app_hash;
 use crate::util::mutex::MutexUtil;
 
 #[derive(Clone)]
@@ -92,8 +86,6 @@ impl MockCosmosChain {
             runtime,
         };
 
-        chain.grow_blocks();
-
         chain
     }
 
@@ -124,19 +116,13 @@ impl MockCosmosChain {
 
         let current_time = Time::now();
 
-        let mut tm_light_block = LightBlock::new_default_with_time_and_chain_id(
+        let tm_light_block = LightBlock::new_default_with_time_and_chain_id(
             self.chain_id.to_string(),
             current_time,
             height,
         )
         .generate()
         .expect("failed to generate light block");
-
-        tm_light_block.signed_header.header.app_hash = generate_rand_app_hash();
-
-        let header_hash = tm_light_block.signed_header.header.hash();
-
-        tm_light_block.signed_header.commit.block_id.hash = header_hash;
 
         blocks.push(tm_light_block);
 
@@ -179,28 +165,5 @@ impl MockCosmosChain {
         };
 
         Ok(msg_create_client.to_any())
-    }
-
-    pub async fn build_msg_update_client(&self) -> Result<Any, Error> {
-        let client_counter = self.ibc_context().client_counter()?;
-
-        let client_id = ClientId::new(client_type(), client_counter)?;
-
-        let last_light_block = self.blocks.acquire_mutex().last().unwrap().clone();
-
-        let header = Header {
-            signed_header: last_light_block.signed_header,
-            validator_set: last_light_block.validators,
-            trusted_height: self.get_current_height(),
-            trusted_next_validator_set: last_light_block.next_validators,
-        };
-
-        let msg_update_client = MsgUpdateClient {
-            client_id,
-            client_message: header.into(),
-            signer: dummy_signer(),
-        };
-
-        Ok(msg_update_client.to_any())
     }
 }

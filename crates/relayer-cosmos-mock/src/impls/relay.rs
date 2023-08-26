@@ -2,8 +2,12 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use async_trait::async_trait;
 
+use ibc::clients::ics07_tendermint::client_type;
+use ibc::clients::ics07_tendermint::header::Header;
+use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ClientId;
+use ibc::core::{Msg, ValidationContext};
 use ibc::{Any, Height};
 
 use ibc_relayer_components::core::traits::component::DelegateComponent;
@@ -23,6 +27,8 @@ use crate::contexts::relay::MockCosmosRelay;
 use crate::contexts::runtime::MockRuntimeContext;
 use crate::impls::components::MockCosmosComponents;
 use crate::types::error::Error;
+use crate::util::dummy::dummy_signer;
+use crate::util::mutex::MutexUtil;
 
 impl<Name> DelegateComponent<Name> for MockCosmosRelay {
     type Delegate = MockCosmosComponents;
@@ -91,11 +97,42 @@ impl UpdateClientMessageBuilder<MockCosmosRelay, SourceTarget>
     for MockCosmosBuildUpdateClientMessage
 {
     async fn build_update_client_messages(
-        _context: &MockCosmosRelay,
+        context: &MockCosmosRelay,
         _target: SourceTarget,
-        _height: &Height,
+        height: &Height,
     ) -> Result<Vec<Any>, Error> {
-        Ok(vec![])
+        let client_counter = context.dst_chain().ibc_context().client_counter()?;
+
+        let client_id = ClientId::new(client_type(), client_counter)?;
+
+        let client_state = context
+            .dst_chain()
+            .ibc_context()
+            .client_state(&ClientId::default())?;
+
+        let revision_height = height.revision_height() as usize;
+
+        let blocks = context.src_chain().blocks.acquire_mutex();
+
+        if revision_height > blocks.len() {
+            return Err(Error::invalid("block index out of bounds"));
+        }
+        let light_block = blocks[revision_height - 1].clone();
+
+        let header = Header {
+            signed_header: light_block.signed_header,
+            validator_set: light_block.validators,
+            trusted_height: client_state.latest_height,
+            trusted_next_validator_set: light_block.next_validators,
+        };
+
+        let msg_update_client = MsgUpdateClient {
+            client_id,
+            client_message: header.into(),
+            signer: dummy_signer(),
+        };
+
+        Ok(vec![msg_update_client.to_any()])
     }
 }
 
@@ -104,11 +141,43 @@ impl UpdateClientMessageBuilder<MockCosmosRelay, DestinationTarget>
     for MockCosmosBuildUpdateClientMessage
 {
     async fn build_update_client_messages(
-        _context: &MockCosmosRelay,
+        context: &MockCosmosRelay,
         _target: DestinationTarget,
-        _height: &Height,
+        height: &Height,
     ) -> Result<Vec<Any>, Error> {
-        Ok(vec![])
+        let client_counter = context.src_chain().ibc_context().client_counter()?;
+
+        let client_id = ClientId::new(client_type(), client_counter)?;
+
+        let client_state = context
+            .src_chain()
+            .ibc_context()
+            .client_state(&ClientId::default())?;
+
+        let revision_height = height.revision_height() as usize;
+
+        let blocks = context.dst_chain().blocks.acquire_mutex();
+
+        if revision_height > blocks.len() {
+            return Err(Error::invalid("block index out of bounds"));
+        }
+
+        let light_block = blocks[revision_height - 1].clone();
+
+        let header = Header {
+            signed_header: light_block.signed_header,
+            validator_set: light_block.validators,
+            trusted_height: client_state.latest_height,
+            trusted_next_validator_set: light_block.next_validators,
+        };
+
+        let msg_update_client = MsgUpdateClient {
+            client_id,
+            client_message: header.into(),
+            signer: dummy_signer(),
+        };
+
+        Ok(vec![msg_update_client.to_any()])
     }
 }
 

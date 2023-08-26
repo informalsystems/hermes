@@ -3,6 +3,8 @@ use ibc::core::ics24_host::identifier::ClientId;
 use ibc::core::ValidationContext;
 use std::sync::Arc;
 
+use crate::types::error::Error;
+
 use super::chain::MockCosmosChain;
 use super::runtime::MockRuntimeContext;
 
@@ -20,28 +22,22 @@ impl MockCosmosRelay {
         src_chain: Arc<MockCosmosChain>,
         dst_chain: Arc<MockCosmosChain>,
         runtime: MockRuntimeContext,
-    ) -> Self {
-        let src_client_counter = src_chain
-            .ibc_context()
-            .client_counter()
-            .expect("never fails");
+    ) -> Result<MockCosmosRelay, Error> {
+        let src_client_counter = src_chain.ibc_context().client_counter()?;
 
-        let src_client_id = ClientId::new(client_type(), src_client_counter).expect("never fails");
+        let src_client_id = ClientId::new(client_type(), src_client_counter)?;
 
-        let dst_client_counter = dst_chain
-            .ibc_context()
-            .client_counter()
-            .expect("never fails");
+        let dst_client_counter = dst_chain.ibc_context().client_counter()?;
 
-        let dst_client_id = ClientId::new(client_type(), dst_client_counter).expect("never fails");
+        let dst_client_id = ClientId::new(client_type(), dst_client_counter)?;
 
-        Self {
+        Ok(Self {
             src_chain,
             dst_chain,
             src_client_id,
             dst_client_id,
             runtime,
-        }
+        })
     }
 
     pub fn src_chain(&self) -> &Arc<MockCosmosChain> {

@@ -97,7 +97,7 @@ impl ChainHandler for MockCosmosChain {
         loop {
             self.begin_block().await;
 
-            tokio::time::sleep(Duration::from_millis(1000)).await;
+            tokio::time::sleep(Duration::from_millis(100)).await;
 
             self.commit().await;
         }

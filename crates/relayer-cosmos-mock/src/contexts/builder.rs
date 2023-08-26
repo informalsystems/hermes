@@ -3,13 +3,12 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
 use tokio::task::JoinHandle;
 
-use crate::traits::handler::ChainHandler;
-use crate::util::msgs::build_transfer_packet;
-
 use super::chain::MockCosmosChain;
 use super::relay::MockCosmosRelay;
 use super::runtime::MockClock;
 use super::runtime::MockRuntimeContext;
+use crate::traits::handler::ChainHandler;
+use crate::util::msgs::build_transfer_packet;
 
 pub struct MockCosmosBuilder {
     pub chains: Vec<Arc<MockCosmosChain>>,
@@ -45,7 +44,8 @@ impl MockCosmosBuilder {
         src_chain: Arc<MockCosmosChain>,
         dst_chain: Arc<MockCosmosChain>,
     ) -> MockCosmosRelay {
-        let relayer = MockCosmosRelay::new(src_chain, dst_chain, self.runtime.clone());
+        let relayer = MockCosmosRelay::new(src_chain, dst_chain, self.runtime.clone())
+            .expect("failed to build relayer");
 
         self.relayers.push(Arc::new(relayer.clone()));
 
