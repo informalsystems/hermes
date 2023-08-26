@@ -103,9 +103,7 @@ use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
-use crate::util::pretty::{
-    PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
-};
+use crate::util::pretty::{PrettyIdentifiedChannel, PrettyIdentifiedConnection};
 
 use self::types::app_state::GenesisAppState;
 
@@ -1183,12 +1181,9 @@ impl ChainEndpoint for CosmosSdkChain {
             .into_iter()
             .filter_map(|cs| {
                 IdentifiedAnyClientState::try_from(cs.clone())
-                    .map_err(|e| {
-                        warn!(
-                            "failed to parse client state {}. Error: {}",
-                            PrettyIdentifiedClientState(&cs),
-                            e
-                        )
+                    .map_err(|_| {
+                        let (client_type, client_id) = (if let Some(client_state) = &cs.client_state { client_state.type_url.clone() } else { "None".to_string() }, &cs.client_id);
+                        warn!("encountered unsupported client type `{}` while scanning client `{}`, skipping the client", client_type, client_id)
                     })
                     .ok()
             })
