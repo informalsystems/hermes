@@ -1,17 +1,15 @@
 use crate::contexts::chain::MockCosmosChain;
 use crate::traits::handler::ChainHandler;
 use crate::types::error::Error;
-use crate::types::status::ChainStatus;
 use crate::util::conversion::convert_tm_to_ics_merkle_proof;
-use crate::util::dummy::generate_rand_app_hash;
 use crate::util::dummy::genesis_app_state;
 use crate::util::mutex::MutexUtil;
 
 use basecoin_app::modules::types::IdentifiedModule;
 use basecoin_store::context::ProvableStore;
 use basecoin_store::context::Store;
-
 use basecoin_store::utils::SharedRwExt;
+
 use ibc::core::events::IbcEvent;
 use ibc::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc::core::ics24_host::path::Path;
@@ -25,10 +23,7 @@ use tendermint::v0_37::abci::request::InitChain;
 use tendermint::v0_37::abci::request::Query;
 use tendermint::v0_37::abci::Request as AbciRequest;
 use tendermint::v0_37::abci::Response as AbciResponse;
-use tendermint::AppHash;
 use tendermint_testgen::consensus::default_consensus_params;
-use tendermint_testgen::Generator;
-use tendermint_testgen::LightBlock;
 use tower::Service;
 
 use async_trait::async_trait;
@@ -54,33 +49,26 @@ impl ChainHandler for MockCosmosChain {
         app.call(AbciRequest::InitChain(request))
             .await
             .expect("failed to initialize chain");
+
+        // Generates the genesis block
+        self.grow_blocks();
     }
 
-    async fn begin_block(&self) -> Result<(), Error> {
+    async fn begin_block(&self) {
         let last_block = self.blocks.acquire_mutex().last().unwrap().clone();
-
-        let mut header = last_block
-            .header
-            .unwrap()
-            .generate()
-            .map_err(Error::source)?;
-
-        header.app_hash = AppHash::try_from(generate_rand_app_hash()).map_err(Error::source)?;
 
         let mut events = Vec::new();
 
         let mut modules = self.app.modules.write_access();
 
         for IdentifiedModule { id: _, module } in modules.iter_mut() {
-            let event = module.begin_block(&header);
+            let event = module.begin_block(&last_block.signed_header.header);
             events.extend(event);
         }
-
-        Ok(())
     }
 
     /// Commits the chain state.
-    async fn commit(&self) -> Result<(), Error> {
+    async fn commit(&self) {
         let mut modules = self.app.modules.write_access();
 
         for IdentifiedModule { id, module } in modules.iter_mut() {
@@ -100,42 +88,18 @@ impl ChainHandler for MockCosmosChain {
 
         state.commit().expect("failed to commit to state");
 
-        let current_revision_height = state.current_height();
-
-        let current_height = Height::new(self.chain_id.revision_number(), current_revision_height)
-            .expect("failed to create pending height");
-
-        // Update blocks
-        {
-            let mut blocks = self.blocks.acquire_mutex();
-
-            blocks.push(LightBlock::new_default(current_revision_height));
-        }
-
-        // Update current chain status
-        {
-            let mut current_state = self.current_state.acquire_mutex();
-
-            *current_state = ChainStatus::new(current_height, current_state.timestamp);
-        }
-
-        Ok(())
+        self.grow_blocks();
     }
 
-    async fn run(&self) -> Result<(), Error> {
+    async fn run(&self) {
         self.init().await;
 
-        // Grow blocks every one second
         loop {
-            self.begin_block().await?;
+            self.begin_block().await;
 
             tokio::time::sleep(Duration::from_millis(1000)).await;
 
-            self.runtime
-                .clock
-                .increment_timestamp(Duration::from_millis(1000))?;
-
-            self.commit().await?;
+            self.commit().await;
         }
     }
 

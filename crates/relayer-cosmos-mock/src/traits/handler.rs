@@ -2,7 +2,8 @@ use async_trait::async_trait;
 use ibc::core::events::IbcEvent;
 use ibc::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc::core::ics24_host::path::Path;
-use ibc::{Any, Height};
+use ibc::Any;
+use ibc::Height;
 
 use crate::types::error::Error;
 
@@ -10,11 +11,11 @@ use crate::types::error::Error;
 pub trait ChainHandler {
     async fn init(&self);
 
-    async fn begin_block(&self) -> Result<(), Error>;
+    async fn begin_block(&self);
 
-    async fn commit(&self) -> Result<(), Error>;
+    async fn commit(&self);
 
-    async fn run(&self) -> Result<(), Error>;
+    async fn run(&self);
 
     async fn submit_messages(&self, msgs: Vec<Any>) -> Result<Vec<Vec<IbcEvent>>, Error>;
 

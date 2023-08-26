@@ -222,7 +222,7 @@ impl HasChainStatusType for MockCosmosChain {
 #[async_trait]
 impl CanQueryChainStatus for MockCosmosChain {
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
-        Ok(self.current_state.lock().unwrap().clone())
+        Ok(self.current_status.lock().unwrap().clone())
     }
 }
 

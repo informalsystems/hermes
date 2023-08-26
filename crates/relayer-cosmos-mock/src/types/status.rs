@@ -1,7 +1,7 @@
 use ibc::core::timestamp::Timestamp;
 use ibc::Height;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ChainStatus {
     pub timestamp: Timestamp,
     pub height: Height,

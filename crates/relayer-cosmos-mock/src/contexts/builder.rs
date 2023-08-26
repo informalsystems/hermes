@@ -57,7 +57,7 @@ impl MockCosmosBuilder {
             let c_clone = c.clone();
 
             let handle = tokio::spawn(async move {
-                c_clone.run().await.unwrap();
+                c_clone.run().await;
             });
 
             self.handlers.push(handle);

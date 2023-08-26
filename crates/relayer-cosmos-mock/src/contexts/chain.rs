@@ -21,14 +21,15 @@ use ibc::core::Msg;
 use ibc::core::ValidationContext;
 use ibc::Any;
 use ibc::Height;
+
+use tendermint::time::Time;
+use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::Generator;
+use tendermint_testgen::LightBlock;
 
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
-
-use tendermint::chain::Id;
-use tendermint_testgen::LightBlock;
 
 use super::runtime::MockClock;
 use crate::contexts::runtime::MockRuntimeContext;
@@ -36,6 +37,7 @@ use crate::traits::endpoint::Endpoint;
 use crate::types::error::Error;
 use crate::types::status::ChainStatus;
 use crate::util::dummy::dummy_signer;
+use crate::util::dummy::generate_rand_app_hash;
 use crate::util::mutex::MutexUtil;
 
 #[derive(Clone)]
@@ -43,11 +45,11 @@ pub struct MockCosmosChain {
     /// Chain identifier
     pub chain_id: ChainId,
     /// Current chain status
-    pub current_state: Arc<Mutex<ChainStatus>>,
+    pub current_status: Arc<Mutex<ChainStatus>>,
     /// Chain application
     pub app: BaseCoinApp<InMemoryStore>,
     /// Chain blocks
-    pub blocks: Arc<Mutex<Vec<LightBlock>>>,
+    pub blocks: Arc<Mutex<Vec<TmLightBlock>>>,
     /// Chain runtime
     pub runtime: MockRuntimeContext,
 }
@@ -77,22 +79,22 @@ impl MockCosmosChain {
 
         let runtime = MockRuntimeContext::new(clock.clone());
 
-        let genesis_height = 1;
-
-        let genesis_block = LightBlock::new_default(genesis_height);
-
-        let current_state = Arc::new(Mutex::new(ChainStatus::new(
-            Height::new(chain_id.revision_number(), genesis_height).unwrap(),
-            clock.get_timestamp(),
+        let current_status = Arc::new(Mutex::new(ChainStatus::new(
+            Height::new(chain_id.revision_number(), 1).expect("never fails"),
+            Time::now().into(),
         )));
 
-        Self {
+        let chain = Self {
             chain_id,
-            current_state,
+            current_status,
             app,
-            blocks: Arc::new(Mutex::new(vec![genesis_block])),
+            blocks: Arc::new(Mutex::new(vec![])),
             runtime,
-        }
+        };
+
+        chain.grow_blocks();
+
+        chain
     }
 
     pub fn chain_id(&self) -> &ChainId {
@@ -104,15 +106,50 @@ impl MockCosmosChain {
     }
 
     pub fn get_current_timestamp(&self) -> Timestamp {
-        self.current_state.acquire_mutex().timestamp
+        self.current_status.acquire_mutex().timestamp
     }
 
     pub fn get_current_height(&self) -> Height {
-        self.current_state.acquire_mutex().height
+        self.current_status.acquire_mutex().height
     }
 
     pub fn ibc_context(&self) -> IbcContext<RevertibleStore<InMemoryStore>> {
         self.app.ibc().ctx()
+    }
+
+    pub fn grow_blocks(&self) {
+        let mut blocks = self.blocks.acquire_mutex();
+
+        let height = blocks.len() as u64 + 1;
+
+        let current_time = Time::now();
+
+        let mut tm_light_block = LightBlock::new_default_with_time_and_chain_id(
+            self.chain_id.to_string(),
+            current_time,
+            height,
+        )
+        .generate()
+        .expect("failed to generate light block");
+
+        tm_light_block.signed_header.header.app_hash = generate_rand_app_hash();
+
+        let header_hash = tm_light_block.signed_header.header.hash();
+
+        tm_light_block.signed_header.commit.block_id.hash = header_hash;
+
+        blocks.push(tm_light_block);
+
+        self.runtime.clock.set_timestamp(current_time);
+
+        let current_status = ChainStatus::new(
+            Height::new(self.chain_id.revision_number(), height).expect("invalid height"),
+            current_time.into(),
+        );
+
+        let mut last_status = self.current_status.acquire_mutex();
+
+        *last_status = current_status;
     }
 
     pub async fn build_msg_create_client(&self) -> Result<Any, Error> {
@@ -149,18 +186,13 @@ impl MockCosmosChain {
 
         let client_id = ClientId::new(client_type(), client_counter)?;
 
-        let last_block = self.blocks.acquire_mutex().last().unwrap().clone();
-
-        let mut tm_light_block = last_block.generate().map_err(Error::source)?;
-
-        tm_light_block.signed_header.header.chain_id =
-            Id::try_from(self.chain_id.to_string()).unwrap();
+        let last_light_block = self.blocks.acquire_mutex().last().unwrap().clone();
 
         let header = Header {
-            signed_header: tm_light_block.signed_header,
-            validator_set: tm_light_block.validators,
+            signed_header: last_light_block.signed_header,
+            validator_set: last_light_block.validators,
             trusted_height: self.get_current_height(),
-            trusted_next_validator_set: tm_light_block.next_validators,
+            trusted_next_validator_set: last_light_block.next_validators,
         };
 
         let msg_update_client = MsgUpdateClient {
