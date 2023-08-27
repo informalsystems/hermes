@@ -1,5 +1,6 @@
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc::core::ValidationContext;
+use ibc_relayer_components::chain::traits::client::create::CanBuildCreateClientPayload;
 use ibc_relayer_components::relay::traits::target::SourceTarget;
 use ibc_relayer_components::relay::traits::update_client::CanBuildUpdateClientMessage;
 
@@ -13,7 +14,7 @@ async fn test_create_client() -> Result<(), Error> {
 
     tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
 
-    let msg_create_client = builder.chains[0].build_msg_create_client().await?;
+    let msg_create_client = builder.chains[0].build_create_client_payload(&()).await?;
 
     builder.chains[1]
         .submit_messages(vec![msg_create_client])
@@ -35,7 +36,7 @@ async fn test_update_client() -> Result<(), Error> {
 
     tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
 
-    let msg_create_client = builder.chains[0].build_msg_create_client().await?;
+    let msg_create_client = builder.chains[0].build_create_client_payload(&()).await?;
 
     builder.chains[1]
         .submit_messages(vec![msg_create_client])

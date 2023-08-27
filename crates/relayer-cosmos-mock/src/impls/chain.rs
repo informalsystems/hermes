@@ -1,8 +1,12 @@
+use std::time::Duration;
+
 use async_trait::async_trait;
 
-use ibc::clients::ics07_tendermint::client_state::ClientState as TmClientState;
+use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use ibc::core::events::IbcEvent;
+use ibc::core::ics02_client::events::CreateClient;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc::core::ics04_channel::msgs::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout};
 use ibc::core::ics04_channel::packet::Packet;
@@ -15,6 +19,11 @@ use ibc::core::{Msg, ValidationContext};
 use ibc::Any;
 use ibc::Height;
 
+use ibc_relayer_components::chain::traits::client::create::CanBuildCreateClientMessage;
+use ibc_relayer_components::chain::traits::client::create::CanBuildCreateClientPayload;
+use ibc_relayer_components::chain::traits::client::create::HasCreateClientEvent;
+use ibc_relayer_components::chain::traits::client::create::HasCreateClientOptions;
+use ibc_relayer_components::chain::traits::client::create::HasCreateClientPayload;
 use ibc_relayer_components::chain::traits::logs::event::CanLogChainEvent;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::chain::traits::message_builders::ack_packet::CanBuildAckPacketMessage;
@@ -59,6 +68,7 @@ use ibc_relayer_runtime::types::log::value::LogValue;
 
 use crate::contexts::chain::MockCosmosChain;
 use crate::contexts::runtime::MockRuntimeContext;
+use crate::traits::endpoint::Endpoint;
 use crate::traits::handler::ChainHandler;
 use crate::types::error::Error;
 use crate::types::status::ChainStatus;
@@ -84,6 +94,22 @@ impl HasLoggerType for MockCosmosChain {
     type Logger = TracingLogger;
 }
 
+impl HasLogger for MockCosmosChain {
+    fn logger(&self) -> &TracingLogger {
+        &TracingLogger
+    }
+}
+
+impl HasChainIdType for MockCosmosChain {
+    type ChainId = ChainId;
+}
+
+impl HasChainId for MockCosmosChain {
+    fn chain_id(&self) -> &Self::ChainId {
+        &self.chain_id
+    }
+}
+
 impl HasHeightType for MockCosmosChain {
     type Height = Height;
 }
@@ -92,16 +118,18 @@ impl HasEventType for MockCosmosChain {
     type Event = IbcEvent;
 }
 
+impl CanLogChainEvent for MockCosmosChain {
+    fn log_event<'a>(event: &Self::Event) -> LogValue<'_> {
+        LogValue::Debug(event)
+    }
+}
+
 impl HasTimestampType for MockCosmosChain {
     type Timestamp = Timestamp;
 }
 
 impl HasMessageType for MockCosmosChain {
     type Message = Any;
-}
-
-impl HasChainIdType for MockCosmosChain {
-    type ChainId = ChainId;
 }
 
 impl HasIbcChainTypes<MockCosmosChain> for MockCosmosChain {
@@ -120,6 +148,16 @@ impl HasIbcPacketTypes<MockCosmosChain> for MockCosmosChain {
     type IncomingPacket = Packet;
 
     type OutgoingPacket = Packet;
+}
+
+impl CanLogChainPacket<MockCosmosChain> for MockCosmosChain {
+    fn log_incoming_packet(packet: &Packet) -> LogValue<'_> {
+        LogValue::Display(packet)
+    }
+
+    fn log_outgoing_packet(packet: &Packet) -> LogValue<'_> {
+        LogValue::Display(packet)
+    }
 }
 
 impl HasIbcPacketFields<MockCosmosChain> for MockCosmosChain {
@@ -186,19 +224,6 @@ impl HasIbcPacketFields<MockCosmosChain> for MockCosmosChain {
     }
 }
 
-impl HasWriteAcknowledgementEvent<MockCosmosChain> for MockCosmosChain {
-    type WriteAcknowledgementEvent = WriteAcknowledgement;
-
-    fn try_extract_write_acknowledgement_event(
-        event: &Self::Event,
-    ) -> Option<Self::WriteAcknowledgementEvent> {
-        match event {
-            IbcEvent::WriteAcknowledgement(e) => Some(e.clone()),
-            _ => None,
-        }
-    }
-}
-
 impl HasConsensusStateType<MockCosmosChain> for MockCosmosChain {
     type ConsensusState = TmConsensusState;
 }
@@ -223,6 +248,74 @@ impl HasChainStatusType for MockCosmosChain {
 impl CanQueryChainStatus for MockCosmosChain {
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
         Ok(self.current_status.lock().unwrap().clone())
+    }
+}
+
+impl HasCreateClientOptions<MockCosmosChain> for MockCosmosChain {
+    type CreateClientPayloadOptions = ();
+}
+
+impl HasCreateClientPayload<MockCosmosChain> for MockCosmosChain {
+    type CreateClientPayload = Any;
+}
+
+impl HasCreateClientEvent<MockCosmosChain> for MockCosmosChain {
+    type CreateClientEvent = CreateClient;
+
+    fn try_extract_create_client_event(event: Self::Event) -> Option<Self::CreateClientEvent> {
+        match event {
+            IbcEvent::CreateClient(e) => Some(e.clone()),
+            _ => None,
+        }
+    }
+
+    fn create_client_event_client_id(event: &Self::CreateClientEvent) -> &Self::ClientId {
+        event.client_id()
+    }
+}
+
+#[async_trait]
+impl CanBuildCreateClientPayload<MockCosmosChain> for MockCosmosChain {
+    async fn build_create_client_payload(
+        &self,
+        _create_client_options: &Self::CreateClientPayloadOptions,
+    ) -> Result<Self::CreateClientPayload, Self::Error> {
+        let tm_client_state = TmClientState::new(
+            self.chain_id.clone(),
+            Default::default(),
+            Duration::from_secs(64000),
+            Duration::from_secs(128000),
+            Duration::from_millis(3000),
+            self.get_current_height(),
+            Default::default(),
+            Default::default(),
+            AllowUpdate {
+                after_expiry: false,
+                after_misbehaviour: false,
+            },
+        )?;
+
+        let current_height = self.get_current_height();
+
+        let tm_consensus_state = self.query_host_consensus_state(&current_height)?;
+
+        let msg_create_client = MsgCreateClient {
+            client_state: tm_client_state.into(),
+            consensus_state: tm_consensus_state.into(),
+            signer: dummy_signer(),
+        };
+
+        Ok(msg_create_client.to_any())
+    }
+}
+
+#[async_trait]
+impl CanBuildCreateClientMessage<MockCosmosChain> for MockCosmosChain {
+    async fn build_create_client_message(
+        &self,
+        counterparty_payload: Any,
+    ) -> Result<Any, Self::Error> {
+        Ok(counterparty_payload)
     }
 }
 
@@ -252,18 +345,6 @@ impl HasSendPacketEvent<MockCosmosChain> for MockCosmosChain {
     }
 }
 
-impl HasLogger for MockCosmosChain {
-    fn logger(&self) -> &TracingLogger {
-        &TracingLogger
-    }
-}
-
-impl CanLogChainEvent for MockCosmosChain {
-    fn log_event<'a>(event: &Self::Event) -> LogValue<'_> {
-        LogValue::Debug(event)
-    }
-}
-
 impl CanIncrementHeight for MockCosmosChain {
     fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error> {
         Ok(height.increment())
@@ -277,12 +358,6 @@ impl CanEstimateMessageSize for MockCosmosChain {
     }
 }
 
-impl HasChainId for MockCosmosChain {
-    fn chain_id(&self) -> &Self::ChainId {
-        &self.chain_id
-    }
-}
-
 #[async_trait]
 impl CanSendMessages for MockCosmosChain {
     async fn send_messages(
@@ -293,19 +368,9 @@ impl CanSendMessages for MockCosmosChain {
     }
 }
 
-impl CanLogChainPacket<MockCosmosChain> for MockCosmosChain {
-    fn log_incoming_packet(packet: &Packet) -> LogValue<'_> {
-        LogValue::Display(packet)
-    }
-
-    fn log_outgoing_packet(packet: &Packet) -> LogValue<'_> {
-        LogValue::Display(packet)
-    }
-}
-
 impl HasCounterpartyMessageHeight<MockCosmosChain> for MockCosmosChain {
     fn counterparty_message_height_for_update_client(_message: &Any) -> Option<Height> {
-        unimplemented!()
+        None
     }
 }
 
@@ -340,16 +405,6 @@ impl CanQueryReceivedPacket<MockCosmosChain> for MockCosmosChain {
         let receipt = self.ibc_context().get_packet_receipt(&path);
 
         Ok(receipt.is_ok())
-    }
-}
-
-#[async_trait]
-impl CanQueryWriteAcknowledgement<MockCosmosChain> for MockCosmosChain {
-    async fn query_write_acknowledgement_event(
-        &self,
-        _packet: &Packet,
-    ) -> Result<Option<WriteAcknowledgement>, Error> {
-        todo!()
     }
 }
 
@@ -392,6 +447,55 @@ impl CanBuildReceivePacketMessage<MockCosmosChain> for MockCosmosChain {
         payload: Any,
     ) -> Result<Any, Error> {
         Ok(payload)
+    }
+}
+
+#[async_trait]
+impl CanQueryWriteAcknowledgement<MockCosmosChain> for MockCosmosChain {
+    async fn query_write_acknowledgement_event(
+        &self,
+        packet: &Packet,
+    ) -> Result<Option<WriteAcknowledgement>, Error> {
+        let chan_counter = self.ibc_context().channel_counter()?;
+
+        let chan_id = ChannelId::new(chan_counter);
+
+        let port_id = PortId::transfer();
+
+        let ack_path = AckPath::new(&port_id, &chan_id, packet.seq_on_a);
+
+        self.ibc_context().get_packet_acknowledgement(&ack_path)?;
+
+        let events = self.ibc_context().events();
+
+        for e in events {
+            match e {
+                IbcEvent::WriteAcknowledgement(e) => {
+                    if e.port_id_on_a() == &port_id
+                        && e.chan_id_on_a() == &chan_id
+                        && e.seq_on_a() == &packet.seq_on_a
+                    {
+                        return Ok(Some(e));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        Ok(None)
+    }
+}
+
+impl HasWriteAcknowledgementEvent<MockCosmosChain> for MockCosmosChain {
+    type WriteAcknowledgementEvent = WriteAcknowledgement;
+
+    fn try_extract_write_acknowledgement_event(
+        event: &Self::Event,
+    ) -> Option<Self::WriteAcknowledgementEvent> {
+        match event {
+            IbcEvent::WriteAcknowledgement(e) => Some(e.clone()),
+            _ => None,
+        }
     }
 }
 

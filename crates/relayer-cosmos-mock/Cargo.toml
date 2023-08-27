@@ -16,8 +16,8 @@ description  = """
 
 [dependencies]
 async-trait = "0.1.56"
-basecoin-app = { git = "https://github.com/informalsystems/basecoin-rs.git", rev = "e7f23d3" }
-basecoin-store = { git = "https://github.com/informalsystems/basecoin-rs.git", rev = "e7f23d3" }
+basecoin-app = { git = "https://github.com/informalsystems/basecoin-rs.git", rev = "c05c32b" }
+basecoin-store = { git = "https://github.com/informalsystems/basecoin-rs.git", rev = "c05c32b" }
 ibc = { git = "https://github.com/cosmos/ibc-rs.git", rev= "6ffe8ce", features = ["mocks"] }
 ibc-proto = "0.34.0"
 ibc-relayer-components = { version = "0.1.0", path = "../relayer-components" }

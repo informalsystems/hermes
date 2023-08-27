@@ -8,13 +8,8 @@ use basecoin_app::{BaseCoinApp, Builder};
 use basecoin_store::impls::InMemoryStore;
 use basecoin_store::impls::RevertibleStore;
 
-use ibc::clients::ics07_tendermint::client_state::AllowUpdate;
-use ibc::clients::ics07_tendermint::client_state::ClientState;
-use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::timestamp::Timestamp;
-use ibc::core::Msg;
-use ibc::Any;
 use ibc::Height;
 
 use tendermint::time::Time;
@@ -24,14 +19,10 @@ use tendermint_testgen::LightBlock;
 
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::time::Duration;
 
 use super::runtime::MockClock;
 use crate::contexts::runtime::MockRuntimeContext;
-use crate::traits::endpoint::Endpoint;
-use crate::types::error::Error;
 use crate::types::status::ChainStatus;
-use crate::util::dummy::dummy_signer;
 use crate::util::mutex::MutexUtil;
 
 #[derive(Clone)]
@@ -136,34 +127,5 @@ impl MockCosmosChain {
         let mut last_status = self.current_status.acquire_mutex();
 
         *last_status = current_status;
-    }
-
-    pub async fn build_msg_create_client(&self) -> Result<Any, Error> {
-        let tm_client_state = ClientState::new(
-            self.chain_id.clone(),
-            Default::default(),
-            Duration::from_secs(64000),
-            Duration::from_secs(128000),
-            Duration::from_millis(3000),
-            self.get_current_height(),
-            Default::default(),
-            Default::default(),
-            AllowUpdate {
-                after_expiry: false,
-                after_misbehaviour: false,
-            },
-        )?;
-
-        let current_height = self.get_current_height();
-
-        let tm_consensus_state = self.query_host_consensus_state(&current_height)?;
-
-        let msg_create_client = MsgCreateClient {
-            client_state: tm_client_state.into(),
-            consensus_state: tm_consensus_state.into(),
-            signer: dummy_signer(),
-        };
-
-        Ok(msg_create_client.to_any())
     }
 }
