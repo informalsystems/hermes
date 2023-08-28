@@ -1,4 +1,5 @@
 use crate::contexts::basecoin::MockBasecoin;
+use crate::traits::endpoint::BasecoinEndpoint;
 use crate::traits::handle::BasecoinHandle;
 use crate::types::error::Error;
 use crate::util::conversion::convert_tm_to_ics_merkle_proof;
@@ -41,36 +42,6 @@ where
 {
     type Store = S;
 
-    fn chain_id(&self) -> &ChainId {
-        &self.chain_id
-    }
-
-    fn ibc(&self) -> Ibc<RevertibleStore<Self::Store>> {
-        self.app.ibc()
-    }
-
-    fn blocks(&self) -> Vec<TmLightBlock> {
-        self.blocks.acquire_mutex().clone()
-    }
-
-    fn grow_blocks(&self) {
-        let mut blocks = self.blocks.acquire_mutex();
-
-        let height = blocks.len() as u64 + 1;
-
-        let current_time = Time::now();
-
-        let tm_light_block = LightBlock::new_default_with_time_and_chain_id(
-            self.chain_id.to_string(),
-            current_time,
-            height,
-        )
-        .generate()
-        .expect("failed to generate light block");
-
-        blocks.push(tm_light_block);
-    }
-
     /// Initialize the chain with the app state.
     async fn init(&self) {
         let app_state = serde_json::to_vec(&genesis_app_state()).expect("infallible serialization");
@@ -105,6 +76,24 @@ where
             let event = module.begin_block(&last_block.signed_header.header);
             events.extend(event);
         }
+    }
+
+    fn grow_blocks(&self) {
+        let mut blocks = self.blocks.acquire_mutex();
+
+        let height = blocks.len() as u64 + 1;
+
+        let current_time = Time::now();
+
+        let tm_light_block = LightBlock::new_default_with_time_and_chain_id(
+            self.chain_id.to_string(),
+            current_time,
+            height,
+        )
+        .generate()
+        .expect("failed to generate light block");
+
+        blocks.push(tm_light_block);
     }
 
     /// Commits the chain state.
@@ -142,7 +131,11 @@ where
             self.commit().await;
         }
     }
+}
 
+#[async_trait]
+impl<S: ProvableStore + Default + Debug> BasecoinEndpoint for MockBasecoin<S> {
+    type Store = S;
     /// Queries the mock chain for the given path and height.
     async fn query(
         &self,
@@ -177,5 +170,29 @@ where
         let commitment_proof = merkle_proof.try_into().map_err(Error::source)?;
 
         Ok((response.value.into(), commitment_proof))
+    }
+
+    fn ibc(&self) -> Ibc<RevertibleStore<S>> {
+        self.app.ibc()
+    }
+
+    fn get_chain_id(&self) -> &ChainId {
+        &self.chain_id
+    }
+
+    fn get_blocks(&self) -> Vec<TmLightBlock> {
+        self.blocks.acquire_mutex().clone()
+    }
+
+    fn get_light_block(&self, height: &Height) -> Result<TmLightBlock, Error> {
+        let blocks = self.get_blocks();
+
+        let revision_height = height.revision_height() as usize;
+
+        if revision_height > blocks.len() {
+            return Err(Error::invalid("block index out of bounds"));
+        }
+
+        Ok(blocks[revision_height - 1].clone())
     }
 }

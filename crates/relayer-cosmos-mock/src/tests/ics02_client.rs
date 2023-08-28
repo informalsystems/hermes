@@ -1,3 +1,8 @@
+use crate::contexts::basecoin::MockBasecoin;
+use crate::contexts::chain::MockCosmosContext;
+use crate::tests::init::mock_basecoin_binary_stand;
+use crate::types::error::Error;
+
 use basecoin_store::impls::InMemoryStore;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc::core::ValidationContext;
@@ -5,14 +10,9 @@ use ibc_relayer_components::chain::traits::client::create::CanBuildCreateClientP
 use ibc_relayer_components::relay::traits::target::SourceTarget;
 use ibc_relayer_components::relay::traits::update_client::CanBuildUpdateClientMessage;
 
-use crate::contexts::basecoin::MockBasecoin;
-use crate::contexts::chain::MockCosmosContext;
-use crate::tests::init::binary_mock_basecoin_stand;
-use crate::types::error::Error;
-
 #[tokio::test]
 async fn test_create_client() -> Result<(), Error> {
-    let (src_chain_ctx, dst_chain_ctx, _) = binary_mock_basecoin_stand();
+    let (src_chain_ctx, dst_chain_ctx, _) = mock_basecoin_binary_stand();
 
     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 
@@ -34,7 +34,7 @@ async fn test_create_client() -> Result<(), Error> {
 
 #[tokio::test]
 async fn test_update_client() -> Result<(), Error> {
-    let (src_chain_ctx, dst_chain_ctx, relayer) = binary_mock_basecoin_stand();
+    let (src_chain_ctx, dst_chain_ctx, relayer) = mock_basecoin_binary_stand();
 
     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 

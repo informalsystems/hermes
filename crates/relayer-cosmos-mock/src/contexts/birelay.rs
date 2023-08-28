@@ -2,15 +2,15 @@ use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use std::sync::Arc;
 
 use super::relay::MockCosmosRelay;
-use crate::traits::handle::BasecoinHandle;
+use crate::traits::endpoint::BasecoinEndpoint;
 
-pub struct MockCosmosBiRelay<SrcChain: BasecoinHandle, DstChain: BasecoinHandle> {
+pub struct MockCosmosBiRelay<SrcChain: BasecoinEndpoint, DstChain: BasecoinEndpoint> {
     pub runtime: TokioRuntimeContext,
     pub relay_a_to_b: Arc<MockCosmosRelay<SrcChain, DstChain>>,
     pub relay_b_to_a: Arc<MockCosmosRelay<DstChain, SrcChain>>,
 }
 
-impl<SrcChain: BasecoinHandle, DstChain: BasecoinHandle> MockCosmosBiRelay<SrcChain, DstChain> {
+impl<SrcChain: BasecoinEndpoint, DstChain: BasecoinEndpoint> MockCosmosBiRelay<SrcChain, DstChain> {
     pub fn new(
         runtime: TokioRuntimeContext,
         relay_a_to_b: Arc<MockCosmosRelay<SrcChain, DstChain>>,

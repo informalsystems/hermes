@@ -26,31 +26,30 @@ use crate::contexts::chain::MockCosmosContext;
 use crate::contexts::relay::MockCosmosRelay;
 use crate::contexts::runtime::MockRuntimeContext;
 use crate::impls::components::MockCosmosComponents;
-use crate::traits::endpoint::Endpoint;
-use crate::traits::handle::BasecoinHandle;
+use crate::traits::endpoint::BasecoinEndpoint;
 use crate::types::error::Error;
 use crate::util::dummy::dummy_signer;
 
 impl<Name, SrcChain, DstChain> DelegateComponent<Name> for MockCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     type Delegate = MockCosmosComponents;
 }
 
 impl<SrcChain, DstChain> HasErrorType for MockCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     type Error = Error;
 }
 
 impl<SrcChain, DstChain> HasRuntime for MockCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     type Runtime = MockRuntimeContext;
 
@@ -65,16 +64,16 @@ where
 
 impl<SrcChain, DstChain> HasLoggerType for MockCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     type Logger = TracingLogger;
 }
 
 impl<SrcChain, DstChain> HasLogger for MockCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     fn logger(&self) -> &TracingLogger {
         &TracingLogger
@@ -83,8 +82,8 @@ where
 
 impl<SrcChain, DstChain> HasRelayChains for MockCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     type SrcChain = MockCosmosContext<SrcChain>;
 
@@ -122,8 +121,8 @@ impl<SrcChain, DstChain>
     UpdateClientMessageBuilder<MockCosmosRelay<SrcChain, DstChain>, SourceTarget>
     for MockCosmosBuildUpdateClientMessage
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     async fn build_update_client_messages(
         context: &MockCosmosRelay<SrcChain, DstChain>,
@@ -139,7 +138,7 @@ where
             .ibc_context()
             .client_state(&ClientId::default())?;
 
-        let light_block = context.src_chain().query_light_block(height)?;
+        let light_block = context.src_chain().get_light_block(height)?;
 
         let header = Header {
             signed_header: light_block.signed_header,
@@ -163,8 +162,8 @@ impl<SrcChain, DstChain>
     UpdateClientMessageBuilder<MockCosmosRelay<SrcChain, DstChain>, DestinationTarget>
     for MockCosmosBuildUpdateClientMessage
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     async fn build_update_client_messages(
         context: &MockCosmosRelay<SrcChain, DstChain>,
@@ -180,7 +179,7 @@ where
             .ibc_context()
             .client_state(&ClientId::default())?;
 
-        let light_block = context.dst_chain().query_light_block(height)?;
+        let light_block = context.dst_chain().get_light_block(height)?;
 
         let header = Header {
             signed_header: light_block.signed_header,
@@ -202,8 +201,8 @@ where
 #[async_trait]
 impl<SrcChain, DstChain> HasPacketLock for MockCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     type PacketLock<'a> = ();
 

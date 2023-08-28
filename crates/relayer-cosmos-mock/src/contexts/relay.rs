@@ -5,7 +5,7 @@ use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 
-use crate::traits::handle::BasecoinHandle;
+use crate::traits::endpoint::BasecoinEndpoint;
 use crate::types::error::Error;
 use crate::util::msgs::build_transfer_packet;
 
@@ -13,7 +13,11 @@ use super::chain::MockCosmosContext;
 use super::runtime::{MockClock, MockRuntimeContext};
 
 #[derive(Clone)]
-pub struct MockCosmosRelay<SrcChain: BasecoinHandle, DstChain: BasecoinHandle> {
+pub struct MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
     pub src_chain: Arc<MockCosmosContext<SrcChain>>,
     pub dst_chain: Arc<MockCosmosContext<DstChain>>,
     pub src_client_id: ClientId,
@@ -23,8 +27,8 @@ pub struct MockCosmosRelay<SrcChain: BasecoinHandle, DstChain: BasecoinHandle> {
 
 impl<SrcChain, DstChain> MockCosmosRelay<SrcChain, DstChain>
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     pub fn new(
         src_chain: Arc<MockCosmosContext<SrcChain>>,
@@ -72,7 +76,10 @@ where
         let relayer = self.clone();
 
         tokio::spawn(async move {
-            relayer.relay_packet(&packet).await.unwrap();
+            relayer
+                .relay_packet(&packet)
+                .await
+                .expect("failed to relay packet");
         })
     }
 }

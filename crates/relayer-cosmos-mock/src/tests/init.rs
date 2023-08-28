@@ -8,7 +8,7 @@ use crate::contexts::chain::MockCosmosContext;
 use crate::contexts::relay::MockCosmosRelay;
 use crate::contexts::runtime::MockClock;
 
-pub fn binary_mock_basecoin_stand() -> (
+pub fn mock_basecoin_binary_stand() -> (
     Arc<MockCosmosContext<MockBasecoin<InMemoryStore>>>,
     Arc<MockCosmosContext<MockBasecoin<InMemoryStore>>>,
     MockCosmosRelay<MockBasecoin<InMemoryStore>, MockBasecoin<InMemoryStore>>,
@@ -18,14 +18,16 @@ pub fn binary_mock_basecoin_stand() -> (
     // Source chain setup
     let src_chain_id = ChainId::from_str("mock-cosmos-chain-0").unwrap();
     let src_chain = Arc::new(MockBasecoin::new(src_chain_id, InMemoryStore::default()));
-    src_chain.spawn();
+    src_chain.start();
+
     let src_chain_ctx = Arc::new(MockCosmosContext::new(src_chain, clock.clone()));
     src_chain_ctx.subscribe();
 
     // Destination chain setup
     let dst_chain_id = ChainId::from_str("mock-cosmos-chain-1").unwrap();
     let dst_chain = Arc::new(MockBasecoin::new(dst_chain_id, InMemoryStore::default()));
-    dst_chain.spawn();
+    dst_chain.start();
+
     let dst_chain_ctx = Arc::new(MockCosmosContext::new(dst_chain, clock.clone()));
     dst_chain_ctx.subscribe();
 

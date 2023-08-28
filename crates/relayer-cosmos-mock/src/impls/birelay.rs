@@ -1,14 +1,11 @@
-use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
-use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketFields;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 
-use crate::contexts::chain::MockCosmosContext;
 use crate::contexts::{birelay::MockCosmosBiRelay, relay::MockCosmosRelay};
-use crate::traits::handle::BasecoinHandle;
+use crate::traits::endpoint::BasecoinEndpoint;
 use crate::types::error::Error;
 
-impl<SrcChain: BasecoinHandle, DstChain: BasecoinHandle> HasErrorType
+impl<SrcChain: BasecoinEndpoint, DstChain: BasecoinEndpoint> HasErrorType
     for MockCosmosBiRelay<SrcChain, DstChain>
 {
     type Error = Error;
@@ -16,11 +13,8 @@ impl<SrcChain: BasecoinHandle, DstChain: BasecoinHandle> HasErrorType
 
 impl<SrcChain, DstChain> HasTwoWayRelay for MockCosmosBiRelay<SrcChain, DstChain>
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
-    MockCosmosContext<SrcChain>: HasIbcPacketFields<MockCosmosContext<DstChain>>,
-    MockCosmosContext<DstChain>: HasIbcPacketFields<MockCosmosContext<SrcChain>>,
-    MockCosmosContext<DstChain>: HasIbcChainTypes<MockCosmosContext<SrcChain>>,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     type RelayAToB = MockCosmosRelay<SrcChain, DstChain>;
 

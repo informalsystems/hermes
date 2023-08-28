@@ -1,6 +1,5 @@
 use ibc::core::ics04_channel::packet::Packet;
-use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
-use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
+use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
 use ibc_relayer_components::relay::components::message_senders::chain_sender::SendIbcMessagesToChain;
 use ibc_relayer_components::relay::components::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use ibc_relayer_components::relay::components::update_client::skip::SkipUpdateClient;
@@ -18,10 +17,9 @@ use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::AckPacke
 use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayerComponnent;
 use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayerComponent;
 
-use crate::contexts::chain::MockCosmosContext;
 use crate::contexts::relay::MockCosmosRelay;
 use crate::impls::relay::MockCosmosBuildUpdateClientMessage;
-use crate::traits::handle::BasecoinHandle;
+use crate::traits::endpoint::BasecoinEndpoint;
 use crate::types::error::Error;
 
 pub struct MockCosmosComponents;
@@ -29,14 +27,12 @@ pub struct MockCosmosComponents;
 #[async_trait::async_trait]
 impl<SrcChain, DstChain> PacketRelayer<MockCosmosRelay<SrcChain, DstChain>> for MockCosmosComponents
 where
-    SrcChain: BasecoinHandle,
-    DstChain: BasecoinHandle,
-    MockCosmosContext<DstChain>: HasIbcChainTypes<MockCosmosContext<SrcChain>>,
-    MockCosmosContext<SrcChain>: HasIbcPacketFields<MockCosmosContext<DstChain>>,
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     async fn relay_packet(
         _relay: &MockCosmosRelay<SrcChain, DstChain>,
-        _packet: &<MockCosmosContext<SrcChain> as HasIbcPacketTypes<MockCosmosContext<DstChain>>>::OutgoingPacket,
+        _packet: &Packet,
     ) -> Result<(), Error> {
         unimplemented!()
     }

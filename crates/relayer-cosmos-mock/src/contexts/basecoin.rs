@@ -19,7 +19,7 @@ use crate::traits::handle::BasecoinHandle;
 #[derive(Clone)]
 pub struct MockBasecoin<S>
 where
-    S: ProvableStore + Default + Debug,
+    S: ProvableStore + Debug,
 {
     /// Chain identifier
     pub chain_id: ChainId,
@@ -59,7 +59,7 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
         }
     }
 
-    pub fn spawn(&self) -> JoinHandle<()> {
+    pub fn start(&self) -> JoinHandle<()> {
         let chain = self.clone();
 
         tokio::spawn(async move {
