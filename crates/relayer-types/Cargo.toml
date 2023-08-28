@@ -39,7 +39,7 @@ derive_more = { version = "0.99.17", default-features = false, features = ["from
 uint = { version = "0.9" }
 itertools = { version = "0.10.3" }
 primitive-types = { version = "0.12.1", default-features = false, features = ["serde_no_std"] }
-dyn-clone = "1.0.12"
+dyn-clone = "1.0.13"
 num-rational = "0.4.1"
 regex = "1"
 
