@@ -3,7 +3,6 @@ use core::time::Duration;
 use ibc::core::timestamp::Timestamp;
 use std::ops::Add;
 use std::sync::Mutex;
-use tendermint::Time;
 
 use crate::types::error::Error;
 use crate::util::mutex::MutexUtil;
@@ -42,8 +41,8 @@ impl Default for MockClock {
 }
 
 impl MockClock {
-    pub fn set_timestamp(&self, time: Time) {
-        *self.timestamp.acquire_mutex() = time.into();
+    pub fn set_timestamp(&self, timestamp: Timestamp) {
+        *self.timestamp.acquire_mutex() = timestamp;
     }
 
     pub fn increment_timestamp(&self, duration: Duration) -> Result<(), Error> {

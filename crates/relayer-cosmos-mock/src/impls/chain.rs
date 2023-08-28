@@ -66,19 +66,19 @@ use ibc_relayer_runtime::types::error::Error as TokioError;
 use ibc_relayer_runtime::types::log::logger::TracingLogger;
 use ibc_relayer_runtime::types::log::value::LogValue;
 
-use crate::contexts::chain::MockCosmosChain;
+use crate::contexts::chain::MockCosmosContext;
 use crate::contexts::runtime::MockRuntimeContext;
 use crate::traits::endpoint::Endpoint;
-use crate::traits::handler::ChainHandler;
+use crate::traits::handle::BasecoinHandle;
 use crate::types::error::Error;
 use crate::types::status::ChainStatus;
 use crate::util::dummy::dummy_signer;
 
-impl HasErrorType for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasErrorType for MockCosmosContext<Chain> {
     type Error = Error;
 }
 
-impl HasRuntime for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasRuntime for MockCosmosContext<Chain> {
     type Runtime = MockRuntimeContext;
 
     fn runtime(&self) -> &Self::Runtime {
@@ -90,49 +90,54 @@ impl HasRuntime for MockCosmosChain {
     }
 }
 
-impl HasLoggerType for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasLoggerType for MockCosmosContext<Chain> {
     type Logger = TracingLogger;
 }
 
-impl HasLogger for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasLogger for MockCosmosContext<Chain> {
     fn logger(&self) -> &TracingLogger {
         &TracingLogger
     }
 }
 
-impl HasChainIdType for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasChainIdType for MockCosmosContext<Chain> {
     type ChainId = ChainId;
 }
 
-impl HasChainId for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasChainId for MockCosmosContext<Chain> {
     fn chain_id(&self) -> &Self::ChainId {
-        &self.chain_id
+        &self.handle.chain_id()
     }
 }
 
-impl HasHeightType for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasHeightType for MockCosmosContext<Chain> {
     type Height = Height;
 }
 
-impl HasEventType for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasEventType for MockCosmosContext<Chain> {
     type Event = IbcEvent;
 }
 
-impl CanLogChainEvent for MockCosmosChain {
+impl<Chain: BasecoinHandle> CanLogChainEvent for MockCosmosContext<Chain> {
     fn log_event<'a>(event: &Self::Event) -> LogValue<'_> {
         LogValue::Debug(event)
     }
 }
 
-impl HasTimestampType for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasTimestampType for MockCosmosContext<Chain> {
     type Timestamp = Timestamp;
 }
 
-impl HasMessageType for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasMessageType for MockCosmosContext<Chain> {
     type Message = Any;
 }
 
-impl HasIbcChainTypes<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasIbcChainTypes<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type ClientId = ClientId;
 
     type ConnectionId = ConnectionId;
@@ -144,13 +149,23 @@ impl HasIbcChainTypes<MockCosmosChain> for MockCosmosChain {
     type Sequence = Sequence;
 }
 
-impl HasIbcPacketTypes<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasIbcPacketTypes<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type IncomingPacket = Packet;
 
     type OutgoingPacket = Packet;
 }
 
-impl CanLogChainPacket<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanLogChainPacket<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     fn log_incoming_packet(packet: &Packet) -> LogValue<'_> {
         LogValue::Display(packet)
     }
@@ -160,7 +175,12 @@ impl CanLogChainPacket<MockCosmosChain> for MockCosmosChain {
     }
 }
 
-impl HasIbcPacketFields<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasIbcPacketFields<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId {
         &packet.chan_id_on_a
     }
@@ -224,15 +244,25 @@ impl HasIbcPacketFields<MockCosmosChain> for MockCosmosChain {
     }
 }
 
-impl HasConsensusStateType<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasConsensusStateType<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type ConsensusState = TmConsensusState;
 }
 
-impl HasClientStateType<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasClientStateType<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type ClientState = TmClientState;
 }
 
-impl HasChainStatusType for MockCosmosChain {
+impl<Chain: BasecoinHandle> HasChainStatusType for MockCosmosContext<Chain> {
     type ChainStatus = ChainStatus;
 
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height {
@@ -245,21 +275,36 @@ impl HasChainStatusType for MockCosmosChain {
 }
 
 #[async_trait]
-impl CanQueryChainStatus for MockCosmosChain {
+impl<Chain: BasecoinHandle> CanQueryChainStatus for MockCosmosContext<Chain> {
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
         Ok(self.current_status.lock().unwrap().clone())
     }
 }
 
-impl HasCreateClientOptions<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasCreateClientOptions<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type CreateClientPayloadOptions = ();
 }
 
-impl HasCreateClientPayload<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasCreateClientPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type CreateClientPayload = Any;
 }
 
-impl HasCreateClientEvent<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasCreateClientEvent<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type CreateClientEvent = CreateClient;
 
     fn try_extract_create_client_event(event: Self::Event) -> Option<Self::CreateClientEvent> {
@@ -275,13 +320,18 @@ impl HasCreateClientEvent<MockCosmosChain> for MockCosmosChain {
 }
 
 #[async_trait]
-impl CanBuildCreateClientPayload<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanBuildCreateClientPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn build_create_client_payload(
         &self,
         _create_client_options: &Self::CreateClientPayloadOptions,
     ) -> Result<Self::CreateClientPayload, Self::Error> {
         let tm_client_state = TmClientState::new(
-            self.chain_id.clone(),
+            self.handle.chain_id().clone(),
             Default::default(),
             Duration::from_secs(64000),
             Duration::from_secs(128000),
@@ -310,7 +360,12 @@ impl CanBuildCreateClientPayload<MockCosmosChain> for MockCosmosChain {
 }
 
 #[async_trait]
-impl CanBuildCreateClientMessage<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanBuildCreateClientMessage<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn build_create_client_message(
         &self,
         counterparty_payload: Any,
@@ -319,7 +374,12 @@ impl CanBuildCreateClientMessage<MockCosmosChain> for MockCosmosChain {
     }
 }
 
-impl HasSendPacketEvent<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasSendPacketEvent<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type SendPacketEvent = SendPacket;
 
     fn try_extract_send_packet_event(event: &Self::Event) -> Option<Self::SendPacketEvent> {
@@ -345,13 +405,13 @@ impl HasSendPacketEvent<MockCosmosChain> for MockCosmosChain {
     }
 }
 
-impl CanIncrementHeight for MockCosmosChain {
+impl<Chain: BasecoinHandle> CanIncrementHeight for MockCosmosContext<Chain> {
     fn increment_height(height: &Self::Height) -> Result<Self::Height, Self::Error> {
         Ok(height.increment())
     }
 }
 
-impl CanEstimateMessageSize for MockCosmosChain {
+impl<Chain: BasecoinHandle> CanEstimateMessageSize for MockCosmosContext<Chain> {
     fn estimate_message_size(_message: &Self::Message) -> Result<usize, Self::Error> {
         // Only single messages are sent by the Mock Chain
         Ok(1)
@@ -359,23 +419,33 @@ impl CanEstimateMessageSize for MockCosmosChain {
 }
 
 #[async_trait]
-impl CanSendMessages for MockCosmosChain {
+impl<Chain: BasecoinHandle> CanSendMessages for MockCosmosContext<Chain> {
     async fn send_messages(
         &self,
         messages: Vec<Self::Message>,
     ) -> Result<Vec<Vec<Self::Event>>, Error> {
-        self.submit_messages(messages).await
+        self.submit_messages(messages)
     }
 }
 
-impl HasCounterpartyMessageHeight<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasCounterpartyMessageHeight<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     fn counterparty_message_height_for_update_client(_message: &Any) -> Option<Height> {
         None
     }
 }
 
 #[async_trait]
-impl CanQueryConsensusState<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanQueryConsensusState<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn query_consensus_state(
         &self,
         client_id: &ClientId,
@@ -393,7 +463,12 @@ impl CanQueryConsensusState<MockCosmosChain> for MockCosmosChain {
 }
 
 #[async_trait]
-impl CanQueryReceivedPacket<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanQueryReceivedPacket<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn query_is_packet_received(
         &self,
         port_id: &Self::PortId,
@@ -408,25 +483,32 @@ impl CanQueryReceivedPacket<MockCosmosChain> for MockCosmosChain {
     }
 }
 
-impl HasReceivePacketPayload<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasReceivePacketPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type ReceivePacketPayload = Any;
 }
 
 #[async_trait]
-impl CanBuildReceivePacketPayload<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanBuildReceivePacketPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn build_receive_packet_payload(
         &self,
         _client_state: &Self::ClientState,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
     ) -> Result<Self::ReceivePacketPayload, Error> {
-        let receipt_path = ReceiptPath::new(
-            Self::incoming_packet_src_port(packet),
-            Self::incoming_packet_src_channel_id(packet),
-            *Self::incoming_packet_sequence(packet),
-        );
+        let receipt_path =
+            ReceiptPath::new(&packet.port_id_on_a, &packet.chan_id_on_a, packet.seq_on_a);
 
-        let (_, proof_commitment_on_a) = self.query(receipt_path, height).await?;
+        let (_, proof_commitment_on_a) = self.handle.query(receipt_path, height).await?;
 
         let recv_packet_payload = MsgRecvPacket {
             packet: packet.clone(),
@@ -440,7 +522,12 @@ impl CanBuildReceivePacketPayload<MockCosmosChain> for MockCosmosChain {
 }
 
 #[async_trait]
-impl CanBuildReceivePacketMessage<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanBuildReceivePacketMessage<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn build_receive_packet_message(
         &self,
         _packet: &Packet,
@@ -451,7 +538,12 @@ impl CanBuildReceivePacketMessage<MockCosmosChain> for MockCosmosChain {
 }
 
 #[async_trait]
-impl CanQueryWriteAcknowledgement<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanQueryWriteAcknowledgement<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn query_write_acknowledgement_event(
         &self,
         packet: &Packet,
@@ -486,7 +578,12 @@ impl CanQueryWriteAcknowledgement<MockCosmosChain> for MockCosmosChain {
     }
 }
 
-impl HasWriteAcknowledgementEvent<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasWriteAcknowledgementEvent<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type WriteAcknowledgementEvent = WriteAcknowledgement;
 
     fn try_extract_write_acknowledgement_event(
@@ -499,12 +596,22 @@ impl HasWriteAcknowledgementEvent<MockCosmosChain> for MockCosmosChain {
     }
 }
 
-impl HasAckPacketPayload<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasAckPacketPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type AckPacketPayload = Any;
 }
 
 #[async_trait]
-impl CanBuildAckPacketPayload<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanBuildAckPacketPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn build_ack_packet_payload(
         &self,
         _client_state: &Self::ClientState,
@@ -512,13 +619,9 @@ impl CanBuildAckPacketPayload<MockCosmosChain> for MockCosmosChain {
         packet: &Self::IncomingPacket,
         ack: &Self::WriteAcknowledgementEvent,
     ) -> Result<Self::AckPacketPayload, Error> {
-        let ack_path = AckPath::new(
-            Self::outgoing_packet_src_port(packet),
-            Self::outgoing_packet_src_channel_id(packet),
-            *Self::outgoing_packet_sequence(packet),
-        );
+        let ack_path = AckPath::new(&packet.port_id_on_a, &packet.chan_id_on_a, packet.seq_on_a);
 
-        let (_, proof_acked_on_b) = self.query(ack_path, height).await?;
+        let (_, proof_acked_on_b) = self.handle.query(ack_path, height).await?;
 
         let ack_packet_payload = MsgAcknowledgement {
             packet: packet.clone(),
@@ -533,31 +636,43 @@ impl CanBuildAckPacketPayload<MockCosmosChain> for MockCosmosChain {
 }
 
 #[async_trait]
-impl CanBuildAckPacketMessage<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanBuildAckPacketMessage<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn build_ack_packet_message(&self, _packet: &Packet, payload: Any) -> Result<Any, Error> {
         Ok(payload)
     }
 }
 
-impl HasTimeoutUnorderedPacketPayload<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> HasTimeoutUnorderedPacketPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type TimeoutUnorderedPacketPayload = Any;
 }
 
 #[async_trait]
-impl CanBuildTimeoutUnorderedPacketPayload<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanBuildTimeoutUnorderedPacketPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn build_timeout_unordered_packet_payload(
         &self,
         _client_state: &Self::ClientState,
         height: &Self::Height,
         packet: &Self::IncomingPacket,
     ) -> Result<Self::TimeoutUnorderedPacketPayload, Error> {
-        let receipt_path = ReceiptPath::new(
-            Self::incoming_packet_src_port(packet),
-            Self::incoming_packet_src_channel_id(packet),
-            *Self::incoming_packet_sequence(packet),
-        );
+        let receipt_path =
+            ReceiptPath::new(&packet.port_id_on_a, &packet.chan_id_on_a, packet.seq_on_a);
 
-        let (_, proof_acked_on_b) = self.query(receipt_path, height).await?;
+        let (_, proof_acked_on_b) = self.handle.query(receipt_path, height).await?;
 
         let ack_packet_payload = MsgTimeout {
             packet: packet.clone(),
@@ -572,7 +687,12 @@ impl CanBuildTimeoutUnorderedPacketPayload<MockCosmosChain> for MockCosmosChain 
 }
 
 #[async_trait]
-impl CanBuildTimeoutUnorderedPacketMessage<MockCosmosChain> for MockCosmosChain {
+impl<SrcChain, DstChain> CanBuildTimeoutUnorderedPacketMessage<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     async fn build_timeout_unordered_packet_message(
         &self,
         _packet: &Packet,

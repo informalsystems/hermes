@@ -1,18 +1,37 @@
+use basecoin_store::impls::InMemoryStore;
 use ibc::core::ics24_host::identifier::ChainId;
 use std::str::FromStr;
+use std::sync::Arc;
 
-use crate::contexts::builder::MockCosmosBuilder;
+use crate::contexts::basecoin::MockBasecoin;
+use crate::contexts::chain::MockCosmosContext;
+use crate::contexts::relay::MockCosmosRelay;
+use crate::contexts::runtime::MockClock;
 
-pub fn init_binary_stand() -> MockCosmosBuilder {
-    let mut builder = MockCosmosBuilder::new_default();
+pub fn binary_mock_basecoin_stand() -> (
+    Arc<MockCosmosContext<MockBasecoin<InMemoryStore>>>,
+    Arc<MockCosmosContext<MockBasecoin<InMemoryStore>>>,
+    MockCosmosRelay<MockBasecoin<InMemoryStore>, MockBasecoin<InMemoryStore>>,
+) {
+    let clock = Arc::new(MockClock::default());
 
-    let src_chain = builder.build_chain(ChainId::from_str("mock-cosmos-chain-0").unwrap());
+    // Source chain setup
+    let src_chain_id = ChainId::from_str("mock-cosmos-chain-0").unwrap();
+    let src_chain = Arc::new(MockBasecoin::new(src_chain_id, InMemoryStore::default()));
+    src_chain.spawn();
+    let src_chain_ctx = Arc::new(MockCosmosContext::new(src_chain, clock.clone()));
+    src_chain_ctx.subscribe();
 
-    let dst_chain = builder.build_chain(ChainId::from_str("mock-cosmos-chain-1").unwrap());
+    // Destination chain setup
+    let dst_chain_id = ChainId::from_str("mock-cosmos-chain-1").unwrap();
+    let dst_chain = Arc::new(MockBasecoin::new(dst_chain_id, InMemoryStore::default()));
+    dst_chain.spawn();
+    let dst_chain_ctx = Arc::new(MockCosmosContext::new(dst_chain, clock.clone()));
+    dst_chain_ctx.subscribe();
 
-    builder.build_relayer(src_chain, dst_chain);
+    // Relayer setup
+    let relayer = MockCosmosRelay::new(src_chain_ctx.clone(), dst_chain_ctx.clone(), clock)
+        .expect("failed to build relayer");
 
-    builder.spawn_chains();
-
-    builder
+    (src_chain_ctx, dst_chain_ctx, relayer)
 }

@@ -22,23 +22,36 @@ use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_runtime::types::error::Error as TokioError;
 use ibc_relayer_runtime::types::log::logger::TracingLogger;
 
-use crate::contexts::chain::MockCosmosChain;
+use crate::contexts::chain::MockCosmosContext;
 use crate::contexts::relay::MockCosmosRelay;
 use crate::contexts::runtime::MockRuntimeContext;
 use crate::impls::components::MockCosmosComponents;
+use crate::traits::endpoint::Endpoint;
+use crate::traits::handle::BasecoinHandle;
 use crate::types::error::Error;
 use crate::util::dummy::dummy_signer;
-use crate::util::mutex::MutexUtil;
 
-impl<Name> DelegateComponent<Name> for MockCosmosRelay {
+impl<Name, SrcChain, DstChain> DelegateComponent<Name> for MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type Delegate = MockCosmosComponents;
 }
 
-impl HasErrorType for MockCosmosRelay {
+impl<SrcChain, DstChain> HasErrorType for MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type Error = Error;
 }
 
-impl HasRuntime for MockCosmosRelay {
+impl<SrcChain, DstChain> HasRuntime for MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type Runtime = MockRuntimeContext;
 
     fn runtime(&self) -> &Self::Runtime {
@@ -50,20 +63,32 @@ impl HasRuntime for MockCosmosRelay {
     }
 }
 
-impl HasLoggerType for MockCosmosRelay {
+impl<SrcChain, DstChain> HasLoggerType for MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type Logger = TracingLogger;
 }
 
-impl HasLogger for MockCosmosRelay {
+impl<SrcChain, DstChain> HasLogger for MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     fn logger(&self) -> &TracingLogger {
         &TracingLogger
     }
 }
 
-impl HasRelayChains for MockCosmosRelay {
-    type SrcChain = MockCosmosChain;
+impl<SrcChain, DstChain> HasRelayChains for MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
+    type SrcChain = MockCosmosContext<SrcChain>;
 
-    type DstChain = MockCosmosChain;
+    type DstChain = MockCosmosContext<DstChain>;
 
     fn src_chain_error(e: Error) -> Self::Error {
         e
@@ -73,11 +98,11 @@ impl HasRelayChains for MockCosmosRelay {
         e
     }
 
-    fn src_chain(&self) -> &MockCosmosChain {
+    fn src_chain(&self) -> &MockCosmosContext<SrcChain> {
         &self.src_chain
     }
 
-    fn dst_chain(&self) -> &MockCosmosChain {
+    fn dst_chain(&self) -> &MockCosmosContext<DstChain> {
         &self.dst_chain
     }
 
@@ -93,11 +118,15 @@ impl HasRelayChains for MockCosmosRelay {
 pub struct MockCosmosBuildUpdateClientMessage;
 
 #[async_trait]
-impl UpdateClientMessageBuilder<MockCosmosRelay, SourceTarget>
+impl<SrcChain, DstChain>
+    UpdateClientMessageBuilder<MockCosmosRelay<SrcChain, DstChain>, SourceTarget>
     for MockCosmosBuildUpdateClientMessage
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
 {
     async fn build_update_client_messages(
-        context: &MockCosmosRelay,
+        context: &MockCosmosRelay<SrcChain, DstChain>,
         _target: SourceTarget,
         height: &Height,
     ) -> Result<Vec<Any>, Error> {
@@ -110,14 +139,7 @@ impl UpdateClientMessageBuilder<MockCosmosRelay, SourceTarget>
             .ibc_context()
             .client_state(&ClientId::default())?;
 
-        let revision_height = height.revision_height() as usize;
-
-        let blocks = context.src_chain().blocks.acquire_mutex();
-
-        if revision_height > blocks.len() {
-            return Err(Error::invalid("block index out of bounds"));
-        }
-        let light_block = blocks[revision_height - 1].clone();
+        let light_block = context.src_chain().query_light_block(height)?;
 
         let header = Header {
             signed_header: light_block.signed_header,
@@ -137,11 +159,15 @@ impl UpdateClientMessageBuilder<MockCosmosRelay, SourceTarget>
 }
 
 #[async_trait]
-impl UpdateClientMessageBuilder<MockCosmosRelay, DestinationTarget>
+impl<SrcChain, DstChain>
+    UpdateClientMessageBuilder<MockCosmosRelay<SrcChain, DstChain>, DestinationTarget>
     for MockCosmosBuildUpdateClientMessage
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
 {
     async fn build_update_client_messages(
-        context: &MockCosmosRelay,
+        context: &MockCosmosRelay<SrcChain, DstChain>,
         _target: DestinationTarget,
         height: &Height,
     ) -> Result<Vec<Any>, Error> {
@@ -154,15 +180,7 @@ impl UpdateClientMessageBuilder<MockCosmosRelay, DestinationTarget>
             .ibc_context()
             .client_state(&ClientId::default())?;
 
-        let revision_height = height.revision_height() as usize;
-
-        let blocks = context.dst_chain().blocks.acquire_mutex();
-
-        if revision_height > blocks.len() {
-            return Err(Error::invalid("block index out of bounds"));
-        }
-
-        let light_block = blocks[revision_height - 1].clone();
+        let light_block = context.dst_chain().query_light_block(height)?;
 
         let header = Header {
             signed_header: light_block.signed_header,
@@ -182,7 +200,11 @@ impl UpdateClientMessageBuilder<MockCosmosRelay, DestinationTarget>
 }
 
 #[async_trait]
-impl HasPacketLock for MockCosmosRelay {
+impl<SrcChain, DstChain> HasPacketLock for MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinHandle,
+    DstChain: BasecoinHandle,
+{
     type PacketLock<'a> = ();
 
     async fn try_acquire_packet_lock<'a>(&'a self, _packet: &'a Packet) -> Option<()> {

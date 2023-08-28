@@ -1,61 +1,60 @@
+use basecoin_store::impls::InMemoryStore;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc::core::ValidationContext;
 use ibc_relayer_components::chain::traits::client::create::CanBuildCreateClientPayload;
 use ibc_relayer_components::relay::traits::target::SourceTarget;
 use ibc_relayer_components::relay::traits::update_client::CanBuildUpdateClientMessage;
 
-use crate::tests::init::init_binary_stand;
-use crate::traits::handler::ChainHandler;
+use crate::contexts::basecoin::MockBasecoin;
+use crate::contexts::chain::MockCosmosContext;
+use crate::tests::init::binary_mock_basecoin_stand;
 use crate::types::error::Error;
 
 #[tokio::test]
 async fn test_create_client() -> Result<(), Error> {
-    let builder = init_binary_stand();
+    let (src_chain_ctx, dst_chain_ctx, _) = binary_mock_basecoin_stand();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 
-    let msg_create_client = builder.chains[0].build_create_client_payload(&()).await?;
-
-    builder.chains[1]
-        .submit_messages(vec![msg_create_client])
+    let msg_create_client =
+        <MockCosmosContext<MockBasecoin<InMemoryStore>> as CanBuildCreateClientPayload<
+            MockCosmosContext<MockBasecoin<InMemoryStore>>,
+        >>::build_create_client_payload(&src_chain_ctx, &())
         .await?;
 
-    assert!(builder.chains[1]
+    dst_chain_ctx.submit_messages(vec![msg_create_client])?;
+
+    assert!(dst_chain_ctx
         .ibc_context()
         .client_state(&ClientId::default())
         .is_ok());
-
-    builder.stop();
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_update_client() -> Result<(), Error> {
-    let builder = init_binary_stand();
+    let (src_chain_ctx, dst_chain_ctx, relayer) = binary_mock_basecoin_stand();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 
-    let msg_create_client = builder.chains[0].build_create_client_payload(&()).await?;
-
-    builder.chains[1]
-        .submit_messages(vec![msg_create_client])
+    let msg_create_client =
+        <MockCosmosContext<MockBasecoin<InMemoryStore>> as CanBuildCreateClientPayload<
+            MockCosmosContext<MockBasecoin<InMemoryStore>>,
+        >>::build_create_client_payload(&src_chain_ctx, &())
         .await?;
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    dst_chain_ctx.submit_messages(vec![msg_create_client])?;
 
-    let src_current_height = builder.chains[0].get_current_height();
+    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
 
-    let msg_update_client = builder.relayers[0]
+    let src_current_height = src_chain_ctx.get_current_height();
+
+    let msg_update_client = relayer
         .build_update_client_messages(SourceTarget, &src_current_height)
         .await?;
 
-    builder.relayers[0]
-        .dst_chain()
-        .submit_messages(msg_update_client)
-        .await?;
-
-    builder.stop();
+    relayer.dst_chain().submit_messages(msg_update_client)?;
 
     Ok(())
 }
