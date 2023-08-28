@@ -21,6 +21,7 @@ macro_rules! conn_open_cmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
+        #[allow(clippy::redundant_closure_call)]
         let connection = $conn(chains);
 
         debug!("message {}: {:?}", $dbg_string, connection);
