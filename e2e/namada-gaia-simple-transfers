@@ -16,9 +16,9 @@ cd $(dirname $0)
 HERMES_DIR=${PWD%/e2e*}
 
 # edit for your environment
-NAMADAC="${NAMADA_DIR}/target/debug/namadac"
-NAMADAN="${NAMADA_DIR}/target/debug/namadan"
-NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
+NAMADAC="${NAMADA_DIR}/target/release/namadac"
+NAMADAN="${NAMADA_DIR}/target/release/namadan"
+NAMADAW="${NAMADA_DIR}/target/release/namadaw"
 BASE_GENESIS_PATH="${NAMADA_DIR}/genesis/e2e-tests-single-node.toml"
 CHECKSUM_PATH="${NAMADA_DIR}/wasm/checksums.json"
 DATA_DIR="${HERMES_DIR}/data"
@@ -92,8 +92,8 @@ function init_relayer_balance() {
         --target relayer \
         --token nam \
         --amount 1000 \
-        --signer relayer \
-        --ledger-address ${NAMADA_LEDGER_ADDR}
+        --signing-keys relayer \
+        --node ${NAMADA_LEDGER_ADDR}
 
       cnt=$((${cnt} + 1))
   done
@@ -139,7 +139,7 @@ sleep 5
 ${NAMADAW} --base-dir ${base_dir} key gen --alias relayer --unsafe-dont-encrypt
 wallet_dir=${HERMES_DIR}/namada_wallet/${chain_id}
 mkdir -p ${wallet_dir}
-cp ${base_dir}/${chain_id}/wallet.toml ${wallet_dir}
+ln -s ${base_dir}/${chain_id}/wallet.toml ${wallet_dir}
 
 # Set the chain ID to the config
 cd ${HERMES_DIR}
@@ -196,7 +196,7 @@ echo "Balances on Namada"
 ${NAMADAC} --base-dir ${base_dir} balance \
   --token ${IBC_TOKEN} \
   --owner relayer \
-  --ledger-address ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR}
 
 echo "Balances on Gaia"
 gaia_user=$(gaiad --home ${DATA_DIR}/gaia \
@@ -209,9 +209,9 @@ ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
   --receiver ${gaia_user} \
   --token ${IBC_TOKEN} \
   --amount 50 \
-  --signer relayer \
+  --signing-keys relayer \
   --channel-id channel-0 \
-  --ledger-address ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR}
 
 # packet-recv
 cargo run --bin hermes -- --config config_for_namada.toml \
@@ -233,7 +233,7 @@ echo "Balances on Namada"
 ${NAMADAC} --base-dir ${base_dir} balance \
   --token ${IBC_TOKEN} \
   --owner relayer \
-  --ledger-address ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR}
 
 echo "Balances on Gaia"
 gaiad query bank balances ${gaia_user}

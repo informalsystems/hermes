@@ -15,8 +15,8 @@ fi
 cd $(dirname $0)
 HERMES_DIR=${PWD%/e2e*}
 
-NAMADAC="${NAMADA_DIR}/target/debug/namadac"
-NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
+NAMADAC="${NAMADA_DIR}/target/release/namadac"
+NAMADAW="${NAMADA_DIR}/target/release/namadaw"
 DATA_DIR="${HERMES_DIR}/data"
 # IbcToken from `transfer/channel-0/#apfel`
 IBC_TOKEN="atest1d93xxw36xqckvdn9vgcxyv3jvyurqdrr89jrwvmxxcexxdnpx5cnyv3ex93kvepnxdjnqvrzucsc73"
@@ -41,7 +41,7 @@ function init_relayer_balance() {
         --target relayer \
         --token nam \
         --amount 1000 \
-        --signing-keys relayer-key \
+        --signing-keys relayer \
         --node ${ledger_addr}
 
       cnt=$((${cnt} + 1))
@@ -78,7 +78,7 @@ ${NAMADAC} --base-dir ${base_dir_a} transfer \
   --target relayer \
   --token apfel \
   --amount 1000 \
-  --signing-keys relayer-key \
+  --signing-keys relayer \
   --node ${LEDGER_ADDR_A}
 
 # Get the receiver addresses
@@ -92,7 +92,7 @@ ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --receiver ${receiver_b} \
   --token apfel \
   --amount 100 \
-  --signing_keys relayer-key \
+  --signing-keys relayer \
   --channel-id channel-0 \
   --node ${LEDGER_ADDR_A}
 
@@ -128,7 +128,7 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --receiver ${receiver_a} \
   --token ${IBC_TOKEN} \
   --amount 50 \
-  --signing_keys relayer-key \
+  --signing-keys relayer \
   --channel-id channel-0 \
   --node ${LEDGER_ADDR_B}
 

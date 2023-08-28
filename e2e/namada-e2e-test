@@ -39,8 +39,8 @@ function init_relayer_balance() {
         --target relayer \
         --token nam \
         --amount 1000 \
-        --signer relayer \
-        --ledger-address ${ledger_addr}
+        --signing-keys relayer \
+        --node ${ledger_addr}
 
       cnt=$((${cnt} + 1))
   done

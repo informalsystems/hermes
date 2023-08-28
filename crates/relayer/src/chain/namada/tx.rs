@@ -9,16 +9,18 @@ use ibc_proto::google::protobuf::Any;
 use namada::ledger::args::{InputAmount, Tx as TxArgs, TxCustom};
 use namada::ledger::parameters::storage as parameter_storage;
 use namada::ledger::rpc::TxBroadcastData;
-use namada::ledger::tx::broadcast_tx;
-use namada::ledger::tx::{TX_IBC_WASM, TX_REVEAL_PK};
+use namada::ledger::wallet::Wallet;
 use namada::ledger::{signing, tx};
 use namada::tendermint_rpc::endpoint::broadcast::tx_sync::Response as AbciPlusRpcResponse;
 use namada::tendermint_rpc::HttpClient;
+use namada::types::address::{Address, ImplicitAddress};
 use namada::types::chain::ChainId;
+use namada::types::key::RefTo;
 use namada::types::token::{Amount, DenominatedAmount};
 use namada::types::transaction::{GasLimit, TxType};
 use namada_apps::cli::api::CliClient;
 use namada_apps::facade::tendermint_config::net::Address as TendermintAddress;
+use namada_apps::wallet::CliWalletUtils;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::chain::cosmos;
@@ -73,7 +75,8 @@ impl NamadaChain {
         let relayer_addr = self
             .wallet
             .find_address(&self.config.key_name)
-            .expect("The relayer doesn't exist in the wallet");
+            .expect("The relayer doesn't exist in the wallet")
+            .clone();
 
         let tx_args = TxArgs {
             dry_run: false,
@@ -84,7 +87,7 @@ impl NamadaChain {
             ledger_address: (),
             initialized_account_alias: None,
             wallet_alias_force: false,
-            gas_payer: Some(relayer_key_pair.clone()),
+            gas_payer: None,
             gas_amount,
             gas_token,
             gas_limit,
@@ -92,13 +95,13 @@ impl NamadaChain {
             chain_id: Some(chain_id),
             signing_keys: vec![relayer_key_pair],
             signatures: vec![],
-            tx_reveal_code_path: PathBuf::from(TX_REVEAL_PK),
+            tx_reveal_code_path: PathBuf::from(tx::TX_REVEAL_PK),
             verification_key: None,
             password: None,
         };
         let args = TxCustom {
-            tx: tx_args,
-            code_path: Some(PathBuf::from(TX_IBC_WASM)),
+            tx: tx_args.clone(),
+            code_path: Some(PathBuf::from(tx::TX_IBC_WASM)),
             data_path: Some(tx_data),
             serialized_tx: None,
             owner: relayer_addr.clone(),
@@ -112,6 +115,14 @@ impl NamadaChain {
                 &args.tx,
                 &Some(args.owner.clone()),
                 Some(args.owner.clone()),
+            ))
+            .map_err(Error::namada_tx)?;
+        self.rt
+            .block_on(Self::submit_reveal_aux(
+                &mut self.wallet,
+                &client,
+                &tx_args,
+                &relayer_addr,
             ))
             .map_err(Error::namada_tx)?;
 
@@ -145,7 +156,7 @@ impl NamadaChain {
         };
         let mut response = self
             .rt
-            .block_on(broadcast_tx(&self.rpc_client, &to_broadcast))
+            .block_on(tx::broadcast_tx(&self.rpc_client, &to_broadcast))
             .map_err(Error::namada_tx)?;
         // overwrite the tx decrypted hash for the tx query
         response.hash = decrypted_hash.parse().expect("invalid hash");
@@ -192,6 +203,43 @@ impl NamadaChain {
                 }
             }
         }
+    }
+
+    // TODO: modify submit_reveal_aux() to call without Context in Namada
+    async fn submit_reveal_aux(
+        wallet: &mut Wallet<CliWalletUtils>,
+        client: &HttpClient,
+        args: &TxArgs,
+        address: &Address,
+    ) -> Result<(), tx::Error> {
+        if let Address::Implicit(ImplicitAddress(pkh)) = address {
+            let key = wallet
+                .find_key_by_pkh(pkh, args.clone().password)
+                .map_err(|e| tx::Error::Other(e.to_string()))?;
+            let public_key = key.ref_to();
+
+            if tx::is_reveal_pk_needed(client, address, args.force).await? {
+                let signing_data =
+                    signing::aux_signing_data(client, wallet, args, &None, None).await?;
+
+                let mut tx = tx::build_reveal_pk(
+                    client,
+                    args,
+                    address,
+                    &public_key,
+                    &signing_data.gas_payer,
+                )
+                .await?;
+
+                signing::generate_test_vector(client, wallet, &tx).await;
+
+                signing::sign_tx(wallet, args, &mut tx, signing_data);
+
+                tx::process_tx(client, wallet, args, tx).await?;
+            }
+        }
+
+        Ok(())
     }
 }
 
