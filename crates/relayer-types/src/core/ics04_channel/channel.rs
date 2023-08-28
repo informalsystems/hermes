@@ -59,7 +59,7 @@ impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
 impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
     fn from(value: IdentifiedChannelEnd) -> Self {
         RawIdentifiedChannel {
-            state: value.channel_end.state as i32,
+            state: value.channel_end.state.into_i32(),
             ordering: value.channel_end.ordering as i32,
             counterparty: Some(value.channel_end.counterparty().clone().into()),
             connection_hops: value
@@ -157,7 +157,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
 impl From<ChannelEnd> for RawChannel {
     fn from(value: ChannelEnd) -> Self {
         RawChannel {
-            state: value.state as i32,
+            state: value.state.into_i32(),
             ordering: value.ordering as i32,
             counterparty: Some(value.counterparty().clone().into()),
             connection_hops: value
@@ -207,9 +207,11 @@ impl ChannelEnd {
         self.remote.channel_id = Some(c);
     }
 
-    /// Returns `true` if this `ChannelEnd` is in state [`State::Open`].
+    /// Returns `true` if this `ChannelEnd` is in state [`State::Open`]
+    /// [`State::Open(UpgradeState::Upgrading)`] is only used in the channel upgrade
+    /// handshake so this method matches with [`State::Open(UpgradeState::NotUpgrading)`].
     pub fn is_open(&self) -> bool {
-        self.state_matches(&State::Open)
+        self.state_matches(&State::Open(UpgradeState::NotUpgrading))
     }
 
     pub fn state(&self) -> &State {
@@ -397,6 +399,15 @@ impl FromStr for Ordering {
     }
 }
 
+/// This enum is used to differentiate if a channel is being upgraded when
+/// a `UpgradeInitChannel` or a `UpgradeOpenChannel` is received.
+/// See `handshake_step` method in `crates/relayer/src/channel.rs`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum UpgradeState {
+    Upgrading,
+    NotUpgrading,
+}
+
 /// The possible state variants that a channel can exhibit.
 ///
 /// These are encoded with integer discriminants so that there is
@@ -407,34 +418,25 @@ impl FromStr for Ordering {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum State {
     /// Default state
-    Uninitialized = 0,
+    Uninitialized,
     /// A channel has just started the opening handshake.
-    Init = 1,
+    Init,
     /// A channel has acknowledged the handshake step on the counterparty chain.
-    TryOpen = 2,
+    TryOpen,
     /// A channel has completed the handshake step. Open channels are ready to
     /// send and receive packets.
-    Open = 3,
+    /// During some steps of channel upgrades, the state is still in Open. The
+    /// `UpgradeState` is used to differentiate these states during the upgrade
+    /// handshake.
+    /// https://github.com/cosmos/ibc/blob/main/spec/core/ics-004-channel-and-packet-semantics/UPGRADES.md#upgrade-handshake
+    Open(UpgradeState),
     /// A channel has been closed and can no longer be used to send or receive
     /// packets.
-    Closed = 4,
+    Closed,
     /// A channel has just accepted the upgrade handshake attempt and is flushing in-flight packets.
-    Flushing = 5,
+    Flushing,
     /// A channel has just completed flushing any in-flight packets.
-    Flushcomplete = 6,
-    /// A channel has just started the upgrade handshake. The chain that is
-    /// proposing the upgrade should set the channel state from OPEN to INITUPGRADE.
-    InitUpgrade = 7,
-    /// A channel has acknowledged the upgrade handshake step on the counterparty chain.
-    /// The counterparty chain that accepts the upgrade should set the channel state from
-    /// OPEN to TRYUPGRADE.
-    /// The counterparty chain blocks new packets until the channel upgrade is done or cancelled.
-    TryUpgrade = 8,
-    /// A channel has confirmed the upgrade handshake step on the counterparty chain.
-    /// The chain that confirmed the upgrade should set the channel state from
-    /// INITUPGRADE to ACKUPGRADE.
-    /// The chain blocks new packets until the channel upgrade is done or cancelled.
-    AckUpgrade = 9,
+    Flushcomplete,
 }
 
 impl State {
@@ -444,13 +446,10 @@ impl State {
             Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
             Self::TryOpen => "TRYOPEN",
-            Self::Open => "OPEN",
+            Self::Open(_) => "OPEN",
             Self::Closed => "CLOSED",
             Self::Flushing => "FLUSHING",
             Self::Flushcomplete => "FLUSHCOMPLETE",
-            Self::InitUpgrade => "INITUPGRADE",
-            Self::TryUpgrade => "TRYUPGRADE",
-            Self::AckUpgrade => "ACKUPGRADE",
         }
     }
 
@@ -460,20 +459,30 @@ impl State {
             0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
-            3 => Ok(Self::Open),
+            3 => Ok(Self::Open(UpgradeState::NotUpgrading)),
             4 => Ok(Self::Closed),
             5 => Ok(Self::Flushing),
             6 => Ok(Self::Flushcomplete),
-            7 => Ok(Self::InitUpgrade),
-            8 => Ok(Self::TryUpgrade),
-            9 => Ok(Self::AckUpgrade),
             _ => Err(Error::unknown_state(s)),
+        }
+    }
+
+    // Parses the State out from a i32.
+    pub fn into_i32(&self) -> i32 {
+        match self {
+            State::Uninitialized => 0,
+            State::Init => 1,
+            State::TryOpen => 2,
+            State::Open(_) => 3,
+            State::Closed => 4,
+            State::Flushing => 5,
+            State::Flushcomplete => 6,
         }
     }
 
     /// Returns whether or not this channel state is `Open`.
     pub fn is_open(self) -> bool {
-        self == State::Open
+        self == State::Open(UpgradeState::NotUpgrading)
     }
 
     /// Returns whether or not this channel state is `Closed`.
@@ -498,28 +507,28 @@ impl State {
 
             Init => !matches!(other, Uninitialized),
             TryOpen => !matches!(other, Uninitialized | Init),
-            Open => !matches!(other, Uninitialized | Init | TryOpen),
+            Open(UpgradeState::NotUpgrading) => !matches!(other, Uninitialized | Init | TryOpen),
+            Open(UpgradeState::Upgrading) => !matches!(
+                other,
+                Uninitialized | Init | TryOpen | Open(UpgradeState::NotUpgrading)
+            ),
 
-            Flushing => !matches!(other, Uninitialized | Init | TryOpen | Open),
-            Flushcomplete => !matches!(other, Uninitialized | Init | TryOpen | Open | Flushing),
-            InitUpgrade => !matches!(
-                other,
-                Uninitialized | Init | TryOpen | Open | Flushing | Flushcomplete
-            ),
-            TryUpgrade => !matches!(
-                other,
-                Uninitialized | Init | TryOpen | Open | Flushing | Flushcomplete | InitUpgrade
-            ),
-            AckUpgrade => !matches!(
+            Flushing => !matches!(
                 other,
                 Uninitialized
                     | Init
                     | TryOpen
-                    | Open
+                    | Open(UpgradeState::NotUpgrading)
+                    | Open(UpgradeState::Upgrading)
+            ),
+            Flushcomplete => !matches!(
+                other,
+                Uninitialized
+                    | Init
+                    | TryOpen
+                    | Open(UpgradeState::NotUpgrading)
+                    | Open(UpgradeState::Upgrading)
                     | Flushing
-                    | Flushcomplete
-                    | InitUpgrade
-                    | TryUpgrade
             ),
 
             Closed => false,

@@ -15,7 +15,7 @@ use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
 use ibc_relayer_types::core::ics04_channel::channel::{
-    ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State,
+    ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State, UpgradeState,
 };
 use ibc_relayer_types::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
@@ -309,7 +309,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     channel_id: channel.src_channel_id.clone(),
                     height: QueryHeight::Specific(height),
                 },
-                IncludeProof::No,
+                IncludeProof::Yes,
             )
             .map_err(ChannelError::relayer)?;
 
@@ -675,7 +675,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             }
 
             // send the Confirm message to chain B (destination)
-            (State::Open, State::TryOpen) => {
+            (State::Open(UpgradeState::NotUpgrading), State::TryOpen) => {
                 self.build_chan_open_confirm_and_send().map_err(|e| {
                     error!("failed ChanOpenConfirm {}: {}", self.b_side, e);
                     e
@@ -683,7 +683,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             }
 
             // send the Confirm message to chain A (source)
-            (State::TryOpen, State::Open) => {
+            (State::TryOpen, State::Open(UpgradeState::NotUpgrading)) => {
                 self.flipped()
                     .build_chan_open_confirm_and_send()
                     .map_err(|e| {
@@ -692,7 +692,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     })?;
             }
 
-            (State::Open, State::Open) => {
+            (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::NotUpgrading)) => {
                 info!("channel handshake already finished for {}", self);
                 return Ok(());
             }
@@ -774,44 +774,35 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             (State::Init, State::Init) => Some(self.build_chan_open_try_and_send()?),
             (State::TryOpen, State::Init) => Some(self.build_chan_open_ack_and_send()?),
             (State::TryOpen, State::TryOpen) => Some(self.build_chan_open_ack_and_send()?),
-            (State::Open, State::TryOpen) => Some(self.build_chan_open_confirm_and_send()?),
-            (State::Open, State::Open) => return Ok((None, Next::Abort)),
+            (State::Open(UpgradeState::NotUpgrading), State::TryOpen) => {
+                Some(self.build_chan_open_confirm_and_send()?)
+            }
+            (State::Open(UpgradeState::NotUpgrading), State::Open(_)) => {
+                return Ok((None, Next::Abort))
+            }
 
             // If the counterparty state is already Open but current state is TryOpen,
             // return anyway as the final step is to be done by the counterparty worker.
-            (State::TryOpen, State::Open) => return Ok((None, Next::Abort)),
+            (State::TryOpen, State::Open(_)) => return Ok((None, Next::Abort)),
 
             // Close handshake steps
             (State::Closed, State::Closed) => return Ok((None, Next::Abort)),
             (State::Closed, _) => Some(self.build_chan_close_confirm_and_send()?),
 
-            (State::InitUpgrade, State::Open) => {
-                tracing::info!("handshake_step from InitUpgrade state");
+            // Channel Upgrade handshake steps
+            (State::Open(UpgradeState::Upgrading), State::Open(_)) => {
                 Some(self.build_chan_upgrade_try_and_send()?)
             }
-
-            (State::InitUpgrade, State::InitUpgrade) => {
-                tracing::info!("handshake_step from InitUpgrade state 2");
-                Some(self.build_chan_upgrade_try_and_send()?)
+            (State::Flushing, State::Open(_)) => Some(self.build_chan_upgrade_ack_and_send()?),
+            (State::Flushcomplete, State::Flushing) => {
+                Some(self.build_chan_upgrade_confirm_and_send()?)
             }
-
-            (State::TryUpgrade, State::InitUpgrade) => {
-                tracing::info!("handshake_step from TryUpgrade state");
-                Some(self.build_chan_upgrade_ack_and_send()?)
-            }
-
-            (State::Open, State::TryUpgrade) => {
-                tracing::info!("handshake_step from OpenUpgrade state");
+            (State::Open(UpgradeState::Upgrading), State::Flushcomplete) => {
                 Some(self.build_chan_upgrade_open_and_send()?)
             }
 
             _ => None,
         };
-
-        tracing::info!(
-            "Resulting event from build_chan_upgrade_try_and_send: {:#?}",
-            event
-        );
 
         // Abort if the channel is at OpenAck, OpenConfirm or CloseConfirm stage, as there is
         // nothing more for the worker to do
@@ -819,7 +810,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             Some(IbcEvent::OpenConfirmChannel(_))
             | Some(IbcEvent::OpenAckChannel(_))
             | Some(IbcEvent::CloseConfirmChannel(_))
-            | Some(IbcEvent::UpgradeAckChannel(_))
+            | Some(IbcEvent::UpgradeConfirmChannel(_))
             | Some(IbcEvent::UpgradeOpenChannel(_)) => Ok((event, Next::Abort)),
             _ => Ok((event, Next::Continue)),
         }
@@ -851,13 +842,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let state = match event {
             IbcEvent::OpenInitChannel(_) => State::Init,
             IbcEvent::OpenTryChannel(_) => State::TryOpen,
-            IbcEvent::OpenAckChannel(_) => State::Open,
-            IbcEvent::OpenConfirmChannel(_) => State::Open,
+            IbcEvent::OpenAckChannel(_) => State::Open(UpgradeState::NotUpgrading),
+            IbcEvent::OpenConfirmChannel(_) => State::Open(UpgradeState::NotUpgrading),
             IbcEvent::CloseInitChannel(_) => State::Closed,
-            IbcEvent::UpgradeInitChannel(_) => State::InitUpgrade,
-            IbcEvent::UpgradeTryChannel(_) => State::TryUpgrade,
-            IbcEvent::UpgradeAckChannel(_) => State::AckUpgrade,
-            IbcEvent::UpgradeOpenChannel(_) => State::Open,
+            IbcEvent::UpgradeInitChannel(_) => State::Open(UpgradeState::Upgrading),
+            IbcEvent::UpgradeTryChannel(_) => State::Flushing,
+            IbcEvent::UpgradeAckChannel(_) => State::Flushcomplete,
+            IbcEvent::UpgradeConfirmChannel(_) => State::Flushcomplete,
+            IbcEvent::UpgradeOpenChannel(_) => State::Open(UpgradeState::Upgrading),
             _ => State::Uninitialized,
         };
 
@@ -979,7 +971,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let highest_state = match msg_type {
             ChannelMsgType::OpenAck => State::TryOpen,
             ChannelMsgType::OpenConfirm => State::TryOpen,
-            ChannelMsgType::CloseConfirm => State::Open,
+            ChannelMsgType::CloseConfirm => State::Open(UpgradeState::NotUpgrading),
             _ => State::Uninitialized,
         };
 
@@ -1546,9 +1538,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
-        if channel_end.state != State::Open {
+        if channel_end.state != State::Open(UpgradeState::NotUpgrading) {
             return Err(ChannelError::invalid_channel_upgrade_state(
-                State::Open.to_string(),
+                State::Open(UpgradeState::NotUpgrading).to_string(),
                 channel_end.state.to_string(),
             ));
         }
@@ -1725,9 +1717,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ));
         }
 
-        if channel_end.state != State::Open {
+        if channel_end.state != State::Open(UpgradeState::NotUpgrading) {
             return Err(ChannelError::invalid_channel_upgrade_state(
-                State::Open.to_string(),
+                State::Open(UpgradeState::NotUpgrading).to_string(),
                 channel_end.state.to_string(),
             ));
         }
@@ -2146,7 +2138,8 @@ fn check_destination_channel_state(
         existing_channel.connection_hops() == expected_channel.connection_hops();
 
     // TODO: Refactor into a method
-    let good_state = *existing_channel.state() as u32 <= *expected_channel.state() as u32;
+    let good_state =
+        existing_channel.state().into_i32() as u32 <= expected_channel.state().into_i32() as u32;
     let good_channel_port_ids = existing_channel.counterparty().channel_id().is_none()
         || existing_channel.counterparty().channel_id()
             == expected_channel.counterparty().channel_id()

@@ -90,7 +90,7 @@ impl From<MsgChannelUpgradeOpen> for RawMsgChannelUpgradeOpen {
         RawMsgChannelUpgradeOpen {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
-            counterparty_channel_state: domain_msg.counterparty_channel_state as i32,
+            counterparty_channel_state: domain_msg.counterparty_channel_state.into_i32(),
             proof_channel: domain_msg.proof_channel.into(),
             proof_height: Some(domain_msg.proof_height.into()),
             signer: domain_msg.signer.to_string(),

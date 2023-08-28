@@ -295,7 +295,7 @@ pub fn channel_on_destination(
                     channel_id: remote_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
-                IncludeProof::No,
+                IncludeProof::Yes,
             )
             .map(|(c, _)| IdentifiedChannelEnd {
                 port_id: channel.channel_end.counterparty().port_id().clone(),

@@ -55,6 +55,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                 IbcEventType::UpgradeInitChannel
                                 | IbcEventType::UpgradeTryChannel
                                 | IbcEventType::UpgradeAckChannel
+                                | IbcEventType::UpgradeConfirmChannel
                                 | IbcEventType::UpgradeOpenChannel => retry_with_index(
                                     channel_handshake_retry::default_strategy(max_block_times),
                                     |index| match RelayChannel::restore_from_state(

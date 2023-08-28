@@ -243,6 +243,7 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
             | IbcEvent::UpgradeInitChannel(_)
             | IbcEvent::UpgradeTryChannel(_)
             | IbcEvent::UpgradeAckChannel(_)
+            | IbcEvent::UpgradeConfirmChannel(_)
             | IbcEvent::UpgradeOpenChannel(_)
             | IbcEvent::SendPacket(_)
             | IbcEvent::ReceivePacket(_)

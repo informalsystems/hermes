@@ -455,6 +455,7 @@ impl IbcEvent {
             IbcEvent::UpgradeInitChannel(ev) => Some(ev.into()),
             IbcEvent::UpgradeTryChannel(ev) => Some(ev.into()),
             IbcEvent::UpgradeAckChannel(ev) => Some(ev.into()),
+            IbcEvent::UpgradeConfirmChannel(ev) => Some(ev.into()),
             IbcEvent::UpgradeOpenChannel(ev) => Some(ev.into()),
             _ => None,
         }

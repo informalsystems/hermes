@@ -4,7 +4,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 use ibc_relayer_types::core::ics04_channel::channel::{
-    ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState,
+    ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState, UpgradeState,
 };
 use ibc_relayer_types::core::ics04_channel::flush_status::FlushStatus;
 use ibc_relayer_types::core::ics04_channel::version::Version;
@@ -240,7 +240,10 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
         || {
             let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
 
-            if !channel_end_a.value().state_matches(&ChannelState::Open) {
+            if !channel_end_a
+                .value()
+                .state_matches(&ChannelState::Open(UpgradeState::NotUpgrading))
+            {
                 return Err(Error::generic(eyre!(
                     "expected channel end A to be in open state"
                 )));
@@ -257,7 +260,10 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
             let channel_end_b =
                 query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
 
-            if !channel_end_b.value().state_matches(&ChannelState::Open) {
+            if !channel_end_b
+                .value()
+                .state_matches(&ChannelState::Open(UpgradeState::NotUpgrading))
+            {
                 return Err(Error::generic(eyre!(
                     "expected channel end B to be in open state"
                 )));
@@ -286,8 +292,8 @@ pub fn assert_eventually_channel_upgrade_init<ChainA: ChainHandle, ChainB: Chain
                 Duration::from_secs(1),
                 || {
                     assert_channel_upgrade_state(
-                        ChannelState::Open,
-                        ChannelState::Open,
+                        ChannelState::Open(UpgradeState::NotUpgrading),
+                        ChannelState::Open(UpgradeState::NotUpgrading),
                         FlushStatus::NotinflushUnspecified,
                         FlushStatus::NotinflushUnspecified,
                         handle_a,
@@ -316,7 +322,7 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
         || {
             assert_channel_upgrade_state(
                 ChannelState::Flushing,
-                ChannelState::Open,
+                ChannelState::Open(UpgradeState::NotUpgrading),
                 FlushStatus::NotinflushUnspecified,
                 FlushStatus::NotinflushUnspecified,
                 handle_a,
@@ -369,7 +375,7 @@ pub fn assert_eventually_channel_upgrade_confirm<ChainA: ChainHandle, ChainB: Ch
         Duration::from_secs(1),
         || {
             assert_channel_upgrade_state(
-                ChannelState::Open,
+                ChannelState::Open(UpgradeState::NotUpgrading),
                 ChannelState::Flushcomplete,
                 FlushStatus::NotinflushUnspecified,
                 FlushStatus::NotinflushUnspecified,
@@ -396,8 +402,8 @@ pub fn assert_eventually_channel_upgrade_open<ChainA: ChainHandle, ChainB: Chain
         Duration::from_secs(1),
         || {
             assert_channel_upgrade_state(
-                ChannelState::Open,
-                ChannelState::Open,
+                ChannelState::Open(UpgradeState::NotUpgrading),
+                ChannelState::Open(UpgradeState::NotUpgrading),
                 FlushStatus::NotinflushUnspecified,
                 FlushStatus::NotinflushUnspecified,
                 handle_a,
