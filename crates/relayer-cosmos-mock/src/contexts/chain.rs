@@ -5,6 +5,7 @@ use ibc::core::timestamp::Timestamp;
 use ibc::core::ValidationContext;
 use ibc::Any;
 use ibc::Height;
+use tendermint::Time;
 
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -61,7 +62,8 @@ impl<Endpoint: BasecoinEndpoint> MockCosmosContext<Endpoint> {
         self.current_status.acquire_mutex().height
     }
 
-    pub fn subscribe(&self) {
+    /// Keeps mock chain context tracking the latest status of the chain.
+    pub fn connect(&self) {
         let ctx = self.clone();
         tokio::spawn(async move {
             let mut blocks_len = 1;
@@ -69,13 +71,13 @@ impl<Endpoint: BasecoinEndpoint> MockCosmosContext<Endpoint> {
                 tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
 
                 if ctx.get_blocks().len() > blocks_len {
-                    let current_time = ctx.ibc_context().host_timestamp().unwrap();
+                    ctx.runtime.clock.set_timestamp(Time::now().into());
+
+                    let current_timestamp = ctx.ibc_context().host_timestamp().unwrap();
 
                     let current_height = ctx.ibc_context().host_height().unwrap();
 
-                    ctx.runtime.clock.set_timestamp(current_time);
-
-                    let current_status = ChainStatus::new(current_height, current_time);
+                    let current_status = ChainStatus::new(current_height, current_timestamp);
 
                     let mut last_status = ctx.current_status.acquire_mutex();
 

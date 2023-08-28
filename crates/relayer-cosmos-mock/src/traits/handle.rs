@@ -10,9 +10,5 @@ pub trait BasecoinHandle {
 
     async fn begin_block(&self);
 
-    fn grow_blocks(&self);
-
     async fn commit(&self);
-
-    async fn run(&self);
 }

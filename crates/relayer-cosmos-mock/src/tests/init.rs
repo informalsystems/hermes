@@ -18,18 +18,18 @@ pub fn mock_basecoin_binary_stand() -> (
     // Source chain setup
     let src_chain_id = ChainId::from_str("mock-cosmos-chain-0").unwrap();
     let src_chain = Arc::new(MockBasecoin::new(src_chain_id, InMemoryStore::default()));
-    src_chain.start();
+    src_chain.run();
 
     let src_chain_ctx = Arc::new(MockCosmosContext::new(src_chain, clock.clone()));
-    src_chain_ctx.subscribe();
+    src_chain_ctx.connect();
 
     // Destination chain setup
     let dst_chain_id = ChainId::from_str("mock-cosmos-chain-1").unwrap();
     let dst_chain = Arc::new(MockBasecoin::new(dst_chain_id, InMemoryStore::default()));
-    dst_chain.start();
+    dst_chain.run();
 
     let dst_chain_ctx = Arc::new(MockCosmosContext::new(dst_chain, clock.clone()));
-    dst_chain_ctx.subscribe();
+    dst_chain_ctx.connect();
 
     // Relayer setup
     let relayer = MockCosmosRelay::new(src_chain_ctx.clone(), dst_chain_ctx.clone(), clock)

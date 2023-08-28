@@ -27,13 +27,10 @@ use tendermint::v0_37::abci::Request as AbciRequest;
 use tendermint::v0_37::abci::Response as AbciResponse;
 use tendermint_testgen::consensus::default_consensus_params;
 use tendermint_testgen::light_block::TmLightBlock;
-use tendermint_testgen::Generator;
-use tendermint_testgen::LightBlock;
 use tower::Service;
 
 use async_trait::async_trait;
 use std::fmt::Debug;
-use std::time::Duration;
 
 #[async_trait]
 impl<S> BasecoinHandle for MockBasecoin<S>
@@ -78,24 +75,6 @@ where
         }
     }
 
-    fn grow_blocks(&self) {
-        let mut blocks = self.blocks.acquire_mutex();
-
-        let height = blocks.len() as u64 + 1;
-
-        let current_time = Time::now();
-
-        let tm_light_block = LightBlock::new_default_with_time_and_chain_id(
-            self.chain_id.to_string(),
-            current_time,
-            height,
-        )
-        .generate()
-        .expect("failed to generate light block");
-
-        blocks.push(tm_light_block);
-    }
-
     /// Commits the chain state.
     async fn commit(&self) {
         let mut modules = self.app.modules.write_access();
@@ -118,18 +97,6 @@ where
         state.commit().expect("failed to commit to state");
 
         self.grow_blocks();
-    }
-
-    async fn run(&self) {
-        self.init().await;
-
-        loop {
-            self.begin_block().await;
-
-            tokio::time::sleep(Duration::from_millis(200)).await;
-
-            self.commit().await;
-        }
     }
 }
 

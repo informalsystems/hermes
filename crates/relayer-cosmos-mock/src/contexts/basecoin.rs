@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use basecoin_app::modules::auth::Auth;
 use basecoin_app::modules::bank::Bank;
@@ -11,10 +12,14 @@ use basecoin_app::BaseCoinApp;
 use basecoin_app::Builder;
 use basecoin_store::context::ProvableStore;
 use ibc::core::ics24_host::identifier::ChainId;
+use tendermint::Time;
 use tendermint_testgen::light_block::TmLightBlock;
+use tendermint_testgen::Generator;
+use tendermint_testgen::LightBlock;
 use tokio::task::JoinHandle;
 
 use crate::traits::handle::BasecoinHandle;
+use crate::util::mutex::MutexUtil;
 
 #[derive(Clone)]
 pub struct MockBasecoin<S>
@@ -59,11 +64,37 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
         }
     }
 
-    pub fn start(&self) -> JoinHandle<()> {
+    pub fn grow_blocks(&self) {
+        let mut blocks = self.blocks.acquire_mutex();
+
+        let height = blocks.len() as u64 + 1;
+
+        let current_time = Time::now();
+
+        let tm_light_block = LightBlock::new_default_with_time_and_chain_id(
+            self.chain_id.to_string(),
+            current_time,
+            height,
+        )
+        .generate()
+        .expect("failed to generate light block");
+
+        blocks.push(tm_light_block);
+    }
+
+    pub fn run(&self) -> JoinHandle<()> {
         let chain = self.clone();
 
         tokio::spawn(async move {
-            chain.run().await;
+            chain.init().await;
+
+            loop {
+                chain.begin_block().await;
+
+                tokio::time::sleep(Duration::from_millis(200)).await;
+
+                chain.commit().await;
+            }
         })
     }
 }
