@@ -1,4 +1,4 @@
-//! Tests the successful channel upgrade:
+//! Tests channel upgrade:
 //!
 //! - `ChannelUpgradeHandshake` tests that after the upgrade handshake is completed
 //!   after initialising the upgrade with `build_chan_upgrade_init_and_send` without
@@ -87,6 +87,9 @@ impl BinaryChannelTest for ChannelUpgradeHandshake {
 
         info!("Will initialise upgrade handshake by sending the ChanUpgradeInit step...");
 
+        // Note: Initialising a channel upgrade this way will eventually be removed.
+        // Only authority (gov module or other) will be able to trigger a channel upgrade.
+        // See: https://github.com/cosmos/ibc-go/issues/4186
         channel.flipped().build_chan_upgrade_init_and_send(
             Some(new_version),
             new_ordering,
