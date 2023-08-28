@@ -313,8 +313,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(ChannelError::relayer)?;
 
-        tracing::info!("Channel A from restore_from_state: {a_channel:#?}");
-
         let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
             ChannelError::supervisor(SupervisorError::missing_connection_hops(
                 channel.src_channel_id.clone(),
@@ -763,11 +761,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         &mut self,
         state: State,
     ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
-        tracing::info!(
-            "state: {}, counterparty state: {}",
-            state,
-            self.counterparty_state()?
-        );
         let event = match (state, self.counterparty_state()?) {
             // Open handshake steps
             (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),

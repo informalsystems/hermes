@@ -304,8 +304,6 @@ pub fn channel_on_destination(
             })
             .map_err(Error::relayer)?;
 
-        tracing::info!("counterparty on channel_on_destination: {counterparty:#?}");
-
         Ok(Some(counterparty))
     } else if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
         fetch_channel_on_destination(

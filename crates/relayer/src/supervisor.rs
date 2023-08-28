@@ -783,11 +783,7 @@ fn process_batch<Chain: ChainHandle>(
 
     telemetry!(received_event_batch, batch.tracking_id);
 
-    tracing::debug!("Events to collect: {batch:#?}");
-
     let collected = collect_events(config, workers, &src_chain, batch);
-
-    tracing::debug!("collected events to collect: {collected:#?}");
 
     // If there is a NewBlock event, forward this event first to any workers affected by it.
     if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {

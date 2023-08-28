@@ -45,9 +45,8 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                     WorkerCmd::IbcEvents { batch } => {
                         // there can be up to two event for this channel, e.g. init and try.
                         // process the last event, the one with highest "rank".
-                        tracing::info!("batch events: {:#?}", batch.events);
                         let last_event = batch.events.last();
-                        tracing::info!("starts processing {:?}", last_event);
+                        debug!("starts processing {:?}", last_event);
 
                         complete_handshake_on_new_block = false;
                         if let Some(event_with_height) = last_event {
