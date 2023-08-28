@@ -1,8 +1,7 @@
-//! Tests the successful channel upgrade handshake:
+//! Tests the successful channel upgrade:
 //!
-//! - `ChannelUpgradeManualHandshake` tests that after the channel can be upgraded
-//!   without relaying on the supervisor. This test manually calls the INIT, TRY,
-//!   ACK and CONFIRM steps.
+//! - `ChannelUpgradeManualHandshake` tests each step of the channel upgrade manually,
+//!   without relaying on the supervisor.
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer_types::core::ics04_channel::version::Version;
