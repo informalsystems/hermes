@@ -79,20 +79,18 @@ where
     async fn commit(&self) {
         let mut modules = self.app.modules.write_access();
 
+        let mut state = self.app.store.write_access();
+
         for IdentifiedModule { id, module } in modules.iter_mut() {
             module
                 .store_mut()
                 .commit()
                 .expect("failed to commit to state");
 
-            let mut state = self.app.store.write_access();
-
             state
                 .set(id.clone().into(), module.store().root_hash())
                 .expect("failed to update sub-store commitment");
         }
-
-        let mut state = self.app.store.write_access();
 
         state.commit().expect("failed to commit to state");
 
