@@ -6,6 +6,7 @@ use ibc::core::ValidationContext;
 use ibc::Any;
 use ibc::Height;
 use tendermint::Time;
+use tokio::task::JoinHandle;
 
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -64,31 +65,33 @@ impl<Endpoint: BasecoinEndpoint> MockCosmosContext<Endpoint> {
         self.current_status.acquire_mutex().height
     }
 
-    /// Keeps mock chain context tracking the latest status of the chain.
-    pub fn connect(&self) {
+    /// Keeps the chain context updated by continuously tracking the latest generated block.
+    pub fn sync(&self) -> JoinHandle<()> {
         let ctx = self.clone();
         tokio::spawn(async move {
             let mut blocks_len = 1;
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
 
-                if ctx.get_blocks().len() > blocks_len {
-                    ctx.runtime.clock.set_timestamp(Time::now().into());
-
-                    let current_timestamp = ctx.ibc_context().host_timestamp().unwrap();
-
-                    let current_height = ctx.ibc_context().host_height().unwrap();
-
-                    let current_status = ChainStatus::new(current_height, current_timestamp);
-
-                    let mut last_status = ctx.current_status.acquire_mutex();
-
-                    *last_status = current_status;
-
-                    blocks_len = ctx.get_blocks().len();
+                if ctx.get_blocks().len() <= blocks_len {
+                    continue;
                 }
+
+                ctx.runtime.clock.set_timestamp(Time::now().into());
+
+                let current_timestamp = ctx.ibc_context().host_timestamp().unwrap();
+
+                let current_height = ctx.ibc_context().host_height().unwrap();
+
+                let current_status = ChainStatus::new(current_height, current_timestamp);
+
+                let mut last_status = ctx.current_status.acquire_mutex();
+
+                *last_status = current_status;
+
+                blocks_len = ctx.get_blocks().len();
             }
-        });
+        })
     }
 
     pub fn submit_messages(&self, msgs: Vec<Any>) -> Result<Vec<Vec<IbcEvent>>, Error> {

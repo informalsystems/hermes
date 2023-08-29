@@ -21,7 +21,7 @@ pub fn mock_basecoin_binary_stand() -> (
     src_chain.run();
 
     let src_chain_ctx = Arc::new(MockCosmosContext::new(src_chain, clock.clone()));
-    src_chain_ctx.connect();
+    src_chain_ctx.sync();
 
     // Destination chain setup
     let dst_chain_id = ChainId::from_str("mock-cosmos-chain-1").expect("never fails");
@@ -29,7 +29,7 @@ pub fn mock_basecoin_binary_stand() -> (
     dst_chain.run();
 
     let dst_chain_ctx = Arc::new(MockCosmosContext::new(dst_chain, clock.clone()));
-    dst_chain_ctx.connect();
+    dst_chain_ctx.sync();
 
     // Relayer setup
     let relayer = MockCosmosRelay::new(src_chain_ctx.clone(), dst_chain_ctx.clone(), clock)
