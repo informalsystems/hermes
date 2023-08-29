@@ -136,7 +136,7 @@ impl BinaryChannelTest for ChannelUpgradeICS29 {
 
         info!("Will initialise upgrade handshake by sending the ChanUpgradeInit step...");
 
-        // Note: Initialising a channel upgrade this way, without requiring a 
+        // Note: Initialising a channel upgrade this way, without requiring a
         // signature or proof of authority to perform the channel upgrade, will
         // eventually be removed.
         // Only authority (gov module or other) will be able to trigger a channel upgrade.

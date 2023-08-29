@@ -105,7 +105,9 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
 
         info!("Will run ChanUpgradeInit step...");
 
-        // Note: Initialising a channel upgrade this way will eventually be removed.
+        // Note: Initialising a channel upgrade this way, without requiring a
+        // signature or proof of authority to perform the channel upgrade, will
+        // eventually be removed.
         // Only authority (gov module or other) will be able to trigger a channel upgrade.
         // See: https://github.com/cosmos/ibc-go/issues/4186
         channel.flipped().build_chan_upgrade_init_and_send(

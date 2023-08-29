@@ -309,6 +309,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     channel_id: channel.src_channel_id.clone(),
                     height: QueryHeight::Specific(height),
                 },
+                // IncludeProof::Yes forces a new query when the CachingChainHandle
+                // is used.
+                // TODO: Pass the BaseChainHandle instead of the CachingChainHandle
+                // to the channel worker to avoid querying for a Proof .
                 IncludeProof::Yes,
             )
             .map_err(ChannelError::relayer)?;
