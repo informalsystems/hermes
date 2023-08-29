@@ -45,6 +45,7 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
+use ibc_relayer_types::core::ics24_host::path::CommitmentsPath;
 use ibc_relayer_types::proofs::ConsensusProof;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
@@ -80,6 +81,7 @@ use crate::types::payloads::packet::{
     SolomachineAckPacketPayload, SolomachineReceivePacketPayload,
     SolomachineTimeoutUnorderedPacketPayload,
 };
+use crate::types::sign_data::SolomachineSignData;
 
 impl<Chain> OfaChainTypes for SolomachineChainWrapper<Chain>
 where
@@ -324,12 +326,34 @@ where
         height: &Height,
         packet: &Packet,
     ) -> Result<SolomachineReceivePacketPayload, Chain::Error> {
-        // Get the fields we need from the Packet.
-        // Construct a SignData where the path contains the packet data
-        // Determine the path based on the source channel ID and the sequence
-        // PacketCommitmentPrefix (can use `/` for now) / ports / port ID / channels / channel ID / sequences / sequence
-        // Use the `CommitmentsPath` type 
-        todo!()
+        let path = CommitmentsPath {
+            port_id: packet.source_port.clone(),
+            channel_id: packet.source_channel.clone(),
+            sequence: packet.sequence,
+        };
+
+        let path = path.to_string();
+
+        let new_diversifier = self.chain.new_diversifier().await;
+
+        let secret_key = self.chain.secret_key();
+
+        let sign_data = SolomachineSignData {
+            sequence: u64::from(packet.sequence),
+            timestamp: self.chain.current_time(),
+            diversifier: new_diversifier,
+            data: packet.data.clone(),
+            path: path.as_bytes().to_vec(),
+        };
+
+        let proof = sign_with_data(secret_key, &sign_data).map_err(Chain::encode_error)?;
+
+        let payload = SolomachineReceivePacketPayload {
+            update_height: *height,
+            proof_commitment: proof,
+        };
+
+        Ok(payload)
     }
 
     async fn build_ack_packet_payload(
