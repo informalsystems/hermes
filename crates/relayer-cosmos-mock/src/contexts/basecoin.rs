@@ -44,15 +44,17 @@ where
 {
     /// Chain identifier
     pub chain_id: ChainId,
-    /// Chain application
-    pub app: BaseCoinApp<S>,
+    /// Chain validators
+    pub validators: Arc<Mutex<Vec<Validator>>>,
     /// Chain blocks
     pub blocks: Arc<Mutex<Vec<TmLightBlock>>>,
+    /// Chain application
+    pub app: BaseCoinApp<S>,
 }
 
 impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
     /// Constructs a new mock cosmos chain instance.
-    pub fn new(chain_id: ChainId, store: S) -> Self {
+    pub fn new(chain_id: ChainId, validators: Vec<Validator>, store: S) -> Self {
         let app_builder = Builder::new(store);
 
         let auth = Auth::new(app_builder.module_store(&prefix::Auth {}.identifier()));
@@ -75,25 +77,32 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
 
         Self {
             chain_id,
-            app,
+            validators: Arc::new(Mutex::new(validators)),
             blocks: Arc::new(Mutex::new(vec![])),
+            app,
         }
     }
 
-    pub fn grow_blocks(&self) {
-        let mut blocks = self.blocks.acquire_mutex();
-
-        let validators = [
+    pub fn new_default(chain_id: ChainId) -> Self {
+        let validators = vec![
             Validator::new("1").voting_power(40),
             Validator::new("2").voting_power(30),
             Validator::new("3").voting_power(30),
         ];
 
+        Self::new(chain_id, validators, S::default())
+    }
+
+    pub fn grow_blocks(&self) {
+        let mut blocks = self.blocks.acquire_mutex();
+
+        let validators = self.validators.acquire_mutex();
+
         let header = Header::new(&validators)
-            .height(blocks.len() as u64 + 1)
             .chain_id(&self.chain_id.to_string())
-            .next_validators(&validators)
+            .height(blocks.len() as u64 + 1)
             .time(Time::now())
+            .next_validators(&validators)
             .app_hash(generate_rand_app_hash());
 
         let tm_light_block = LightBlock::new_default_with_header(header)

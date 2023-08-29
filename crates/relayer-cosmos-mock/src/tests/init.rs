@@ -16,16 +16,16 @@ pub fn mock_basecoin_binary_stand() -> (
     let clock = Arc::new(MockClock::default());
 
     // Source chain setup
-    let src_chain_id = ChainId::from_str("mock-cosmos-chain-0").unwrap();
-    let src_chain = Arc::new(MockBasecoin::new(src_chain_id, InMemoryStore::default()));
+    let src_chain_id = ChainId::from_str("mock-cosmos-chain-0").expect("never fails");
+    let src_chain = Arc::new(MockBasecoin::new_default(src_chain_id));
     src_chain.run();
 
     let src_chain_ctx = Arc::new(MockCosmosContext::new(src_chain, clock.clone()));
     src_chain_ctx.connect();
 
     // Destination chain setup
-    let dst_chain_id = ChainId::from_str("mock-cosmos-chain-1").unwrap();
-    let dst_chain = Arc::new(MockBasecoin::new(dst_chain_id, InMemoryStore::default()));
+    let dst_chain_id = ChainId::from_str("mock-cosmos-chain-1").expect("never fails");
+    let dst_chain = Arc::new(MockBasecoin::new_default(dst_chain_id));
     dst_chain.run();
 
     let dst_chain_ctx = Arc::new(MockCosmosContext::new(dst_chain, clock.clone()));
