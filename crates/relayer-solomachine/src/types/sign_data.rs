@@ -9,7 +9,6 @@ pub struct SolomachineSignData {
     pub data: Vec<u8>,
 }
 
-/// 
 pub fn membership_sign_data(
     diversifier: &str,
     sequence: u64,
