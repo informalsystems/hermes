@@ -1248,9 +1248,9 @@ dependencies = [
 
 [[package]]
 name = "errno"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b30f669a7961ef1631673d2766cc92f52d64f7ef354d4fe0ddfd30ed52f0f4f"
+checksum = "136526188508e25c6fef639d7927dfb3e0e3084488bf202267829cf7fc23dbdd"
 dependencies = [
  "errno-dragonfly",
  "libc",
@@ -1787,7 +1787,7 @@ dependencies = [
  "futures-util",
  "http",
  "hyper",
- "rustls 0.21.6",
+ "rustls 0.21.7",
  "tokio",
  "tokio-rustls 0.24.1",
 ]
@@ -2406,7 +2406,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb0889898416213fab133e1d33a0e5858a48177452750691bde3666d0fdbaf8b"
 dependencies = [
  "hermit-abi 0.3.2",
- "rustix 0.38.9",
+ "rustix 0.38.10",
  "windows-sys 0.48.0",
 ]
 
@@ -3291,7 +3291,7 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
- "rustls 0.21.6",
+ "rustls 0.21.7",
  "rustls-pemfile",
  "serde",
  "serde_json",
@@ -3390,9 +3390,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.9"
+version = "0.38.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9bfe0f2582b4931a45d1fa608f8a8722e8b3c7ac54dd6d5f3b3212791fedef49"
+checksum = "ed6248e1caa625eb708e266e06159f135e8c26f2bb7ceb72dc4b2766d0340964"
 dependencies = [
  "bitflags 2.4.0",
  "errno",
@@ -3416,9 +3416,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.20.8"
+version = "0.20.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fff78fc74d175294f4e83b28343315ffcfb114b156f0185e9741cb5570f50e2f"
+checksum = "1b80e3dec595989ea8510028f30c408a4630db12c9cbb8de34203b89d6577e99"
 dependencies = [
  "log",
  "ring",
@@ -3428,9 +3428,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.21.6"
+version = "0.21.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d1feddffcfcc0b33f5c6ce9a29e341e4cd59c3f78e7ee45f4a40c038b1d6cbb"
+checksum = "cd8d6c9f025a446bc4d18ad9632e69aec8f287aa84499ee335599fabd20c3fd8"
 dependencies = [
  "log",
  "ring",
@@ -4077,7 +4077,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "fastrand 2.0.0",
  "redox_syscall 0.3.5",
- "rustix 0.38.9",
+ "rustix 0.38.10",
  "windows-sys 0.48.0",
 ]
 
@@ -4115,7 +4115,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.33.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#70fa55863e83f3059169ec76ec3b31a5293f7855"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#a5cddcad6bb4cc6e2f9de28a0273489e383cd269"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -4264,7 +4264,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.33.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#70fa55863e83f3059169ec76ec3b31a5293f7855"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#a5cddcad6bb4cc6e2f9de28a0273489e383cd269"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4368,7 +4368,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.33.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#70fa55863e83f3059169ec76ec3b31a5293f7855"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#a5cddcad6bb4cc6e2f9de28a0273489e383cd269"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
@@ -4584,7 +4584,7 @@ version = "0.23.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c43ee83903113e03984cb9e5cebe6c04a5116269e900e3ddba8f068a62adda59"
 dependencies = [
- "rustls 0.20.8",
+ "rustls 0.20.9",
  "tokio",
  "webpki 0.22.0",
 ]
@@ -4595,7 +4595,7 @@ version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c28327cf380ac148141087fbfb9de9d7bd4e84ab5d2c28fbc911d753de8a7081"
 dependencies = [
- "rustls 0.21.6",
+ "rustls 0.21.7",
  "tokio",
 ]
 
@@ -4889,7 +4889,7 @@ dependencies = [
  "httparse",
  "log",
  "rand",
- "rustls 0.20.8",
+ "rustls 0.20.9",
  "sha1",
  "thiserror",
  "url",

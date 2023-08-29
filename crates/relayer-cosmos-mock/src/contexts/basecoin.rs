@@ -15,10 +15,13 @@ use ibc::core::ics24_host::identifier::ChainId;
 use tendermint::Time;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::Generator;
+use tendermint_testgen::Header;
 use tendermint_testgen::LightBlock;
+use tendermint_testgen::Validator;
 use tokio::task::JoinHandle;
 
 use crate::traits::handle::BasecoinHandle;
+use crate::util::dummy::generate_rand_app_hash;
 use crate::util::mutex::MutexUtil;
 
 #[derive(Clone)]
@@ -67,17 +70,22 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
     pub fn grow_blocks(&self) {
         let mut blocks = self.blocks.acquire_mutex();
 
-        let height = blocks.len() as u64 + 1;
+        let validators = [
+            Validator::new("1").voting_power(40),
+            Validator::new("2").voting_power(30),
+            Validator::new("3").voting_power(30),
+        ];
 
-        let current_time = Time::now();
+        let header = Header::new(&validators)
+            .height(blocks.len() as u64 + 1)
+            .chain_id(&self.chain_id.to_string())
+            .next_validators(&validators)
+            .time(Time::now())
+            .app_hash(generate_rand_app_hash());
 
-        let tm_light_block = LightBlock::new_default_with_time_and_chain_id(
-            self.chain_id.to_string(),
-            current_time,
-            height,
-        )
-        .generate()
-        .expect("failed to generate light block");
+        let tm_light_block = LightBlock::new_default_with_header(header)
+            .generate()
+            .expect("failed to generate light block");
 
         blocks.push(tm_light_block);
     }
