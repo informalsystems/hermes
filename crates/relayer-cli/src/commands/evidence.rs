@@ -214,7 +214,7 @@ fn handle_light_client_attack(
             false
         };
 
-        let mut msgs = if counterparty_is_provider {
+        let submit_msg = if counterparty_is_provider {
             info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
 
             let msg = MsgSubmitIcsConsumerMisbehaviour {
@@ -223,10 +223,14 @@ fn handle_light_client_attack(
             }
             .to_any();
 
-            vec![msg]
+            Some(msg)
         } else {
-            vec![]
+            None
         };
+
+        if let Some(msg) = submit_msg {
+            msgs.push(msg);
+        }
 
         info!("submitting sovereign misbehaviour to chain {counterparty_chain_id}");
 
