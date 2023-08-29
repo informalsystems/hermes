@@ -2,10 +2,10 @@ use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use ibc_proto::google::protobuf::Any as ProtoAny;
 use ibc_proto::interchain_security::ccv::provider::v1::MsgSubmitConsumerMisbehaviour as RawIcsMisbehaviour;
 use ibc_proto::protobuf::Protobuf;
 
+use crate::clients::ics07_tendermint::misbehaviour::Misbehaviour;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
@@ -17,7 +17,7 @@ pub const ICS_MISBEHAVIOR_TYPE_URL: &str =
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgSubmitIcsConsumerMisbehaviour {
     pub submitter: Signer,
-    pub misbehaviour: ProtoAny,
+    pub misbehaviour: Misbehaviour,
 }
 
 impl Msg for MsgSubmitIcsConsumerMisbehaviour {
@@ -43,7 +43,11 @@ impl TryFrom<RawIcsMisbehaviour> for MsgSubmitIcsConsumerMisbehaviour {
             submitter: raw.submitter.parse().map_err(Error::signer)?,
             misbehaviour: raw
                 .misbehaviour
-                .ok_or_else(|| Error::invalid_raw_misbehaviour("missing misbehaviour".into()))?,
+                .ok_or_else(|| Error::invalid_raw_misbehaviour("missing misbehaviour".into()))?
+                .try_into()
+                .map_err(|_e| {
+                    Error::invalid_raw_misbehaviour("cannot convert misbehaviour".into())
+                })?,
         })
     }
 }
@@ -52,7 +56,7 @@ impl From<MsgSubmitIcsConsumerMisbehaviour> for RawIcsMisbehaviour {
     fn from(value: MsgSubmitIcsConsumerMisbehaviour) -> Self {
         RawIcsMisbehaviour {
             submitter: value.submitter.to_string(),
-            misbehaviour: Some(value.misbehaviour),
+            misbehaviour: Some(value.misbehaviour.into()),
         }
     }
 }
@@ -61,7 +65,7 @@ impl fmt::Display for MsgSubmitIcsConsumerMisbehaviour {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("MsgSubmitIcsConsumerMisbehaviour")
             .field("submitter", &self.submitter)
-            .field("misbehaviour", &"[...]")
+            .field("misbehaviour", &self.misbehaviour)
             .finish()
     }
 }

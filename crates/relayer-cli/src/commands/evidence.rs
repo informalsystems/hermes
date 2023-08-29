@@ -219,7 +219,7 @@ fn handle_light_client_attack(
 
             let msg = MsgSubmitIcsConsumerMisbehaviour {
                 submitter: signer.clone(),
-                misbehaviour: misbehaviour.clone().to_any(),
+                misbehaviour: misbehaviour.clone(),
             }
             .to_any();
 
