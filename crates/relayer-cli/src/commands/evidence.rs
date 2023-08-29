@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::spawn::spawn_chain_runtime;
+use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
 use std::collections::HashMap;
 use std::ops::Deref;
 
@@ -9,7 +10,7 @@ use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint::block::Height as TendermintHeight;
-use tendermint::evidence::LightClientAttackEvidence;
+use tendermint::evidence::{DuplicateVoteEvidence, LightClientAttackEvidence};
 use tendermint::validator;
 
 use ibc_relayer::chain::cosmos::CosmosSdkChain;
@@ -125,11 +126,102 @@ fn check_misbehaviour_at(
         match evidence {
             tendermint::evidence::Evidence::DuplicateVote(dv) => {
                 warn!("found duplicate vote evidence {dv:?}");
+
+                handle_duplicate_vote(rt.clone(), chain, *dv)?;
             }
             tendermint::evidence::Evidence::LightClientAttack(lc) => {
                 warn!("found light client attack evidence {lc:?}");
 
                 handle_light_client_attack(rt.clone(), chain, *lc)?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn handle_duplicate_vote(
+    rt: Arc<TokioRuntime>,
+    chain: &CosmosSdkChain,
+    dv: DuplicateVoteEvidence,
+) -> eyre::Result<()> {
+    let config = app_config();
+
+    // Fetch all the counterparty clients of this chain.
+    let counterparty_clients = fetch_all_counterparty_clients(chain)?;
+
+    let mut chains = HashMap::new();
+
+    // For each counterparty client, build the double voting evidence and submit it to the chain,
+    // freezing that client.
+    for (counterparty_chain_id, counterparty_client_id) in counterparty_clients {
+        if !chains.contains_key(chain.id()) {
+            let chain_handle =
+                spawn_chain_runtime::<BaseChainHandle>(&config, chain.id(), Arc::clone(&rt))?;
+
+            chains.insert(chain.id().clone(), chain_handle);
+        }
+
+        if !chains.contains_key(&counterparty_chain_id) {
+            let chain_handle = spawn_chain_runtime::<BaseChainHandle>(
+                &config,
+                &counterparty_chain_id,
+                Arc::clone(&rt),
+            )?;
+
+            chains.insert(counterparty_chain_id.clone(), chain_handle);
+        };
+
+        let chain_handle = chains.get(chain.id()).unwrap();
+        let counterparty_chain_handle = chains.get(&counterparty_chain_id).unwrap();
+
+        let signer = counterparty_chain_handle.get_signer()?;
+
+        // If the misbehaving chain is a CCV consumer chain,
+        // then try fetch the consumer chains of the counterparty chains.
+        // If that fails, then that chain is not a provider chain.
+        // Otherwise, check if the misbehaving chain is a consumer of the counterparty chain,
+        // which is definitely a provider.
+        let counterparty_is_provider = if chain.config().ccv_consumer_chain {
+            let consumer_chains = counterparty_chain_handle
+                .query_consumer_chains()
+                .unwrap_or_default(); // If the query fails, use an empty list of consumers
+
+            // FIXME: Do do we need to check if the client id also matches?
+            // ie. is it okay to submit a `MsgSubmitIcsConsumerDoubleVoting` to all clients
+            // of the provider chain, or should we only do this for the CCV client, and
+            // use the standard message for other clients?
+            consumer_chains
+                .iter()
+                .any(|(chain_id, _)| chain_id == chain.id())
+        } else {
+            false
+        };
+
+        if !counterparty_is_provider {
+            debug!("counterparty chain {counterparty_chain_id} is not a CCV provider chain, skipping...");
+            continue;
+        }
+
+        info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
+
+        let submit_msg = MsgSubmitIcsConsumerDoubleVoting {
+            submitter: signer.clone(),
+            duplicate_vote_evidence: dv.clone(),
+            infraction_block_header: None,
+        }
+        .to_any();
+
+        let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "submit_double_vting");
+        let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
+
+        for response in responses {
+            if response.code.is_ok() {
+                info!("successfully submitted double voting evidence to chain {counterparty_chain_id}, tx hash: {}", response.hash);
+            } else {
+                error!(
+                    "failed to submit double voting evidence to chain {counterparty_chain_id}: {response:?}"
+                );
             }
         }
     }
