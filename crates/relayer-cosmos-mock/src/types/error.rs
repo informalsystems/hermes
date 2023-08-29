@@ -106,6 +106,8 @@ impl std::fmt::Display for Error {
     }
 }
 
+/// Defines all the possible error types and their corresponding codes for 
+/// interchain account errors.
 #[derive(Clone, Debug)]
 pub enum Code {
     /// cannot be empty!

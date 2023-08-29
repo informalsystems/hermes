@@ -75,7 +75,7 @@ where
         }
     }
 
-    /// Commits the chain state.
+    /// Commits the chain state to the store.
     async fn commit(&self) {
         let mut modules = self.app.modules.write_access();
 

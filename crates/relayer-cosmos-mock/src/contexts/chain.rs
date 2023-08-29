@@ -16,7 +16,8 @@ use crate::traits::endpoint::BasecoinEndpoint;
 use crate::types::error::Error;
 use crate::types::status::ChainStatus;
 use crate::util::mutex::MutexUtil;
-
+/// Holds the necessary fields for querying a mock Cosmos
+/// chain endpoint.
 #[derive(Clone)]
 pub struct MockCosmosContext<Endpoint: BasecoinEndpoint> {
     /// Chain handle

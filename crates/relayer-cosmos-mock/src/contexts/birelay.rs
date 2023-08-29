@@ -3,7 +3,8 @@ use std::sync::Arc;
 
 use super::relay::MockCosmosRelay;
 use crate::traits::endpoint::BasecoinEndpoint;
-
+/// Bi-directional relayer for relaying between 
+/// [`crates::relayer-cosmos-mock::contexts::MockCosmosRelay`]s
 pub struct MockCosmosBiRelay<SrcChain: BasecoinEndpoint, DstChain: BasecoinEndpoint> {
     pub runtime: TokioRuntimeContext,
     pub relay_a_to_b: Arc<MockCosmosRelay<SrcChain, DstChain>>,
