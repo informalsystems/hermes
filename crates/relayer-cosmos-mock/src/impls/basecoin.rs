@@ -1,6 +1,6 @@
 use crate::contexts::basecoin::MockBasecoin;
 use crate::traits::endpoint::BasecoinEndpoint;
-use crate::traits::handle::BasecoinHandle;
+use crate::traits::runner::BasecoinRunner;
 use crate::types::error::Error;
 use crate::util::conversion::convert_tm_to_ics_merkle_proof;
 use crate::util::dummy::genesis_app_state;
@@ -33,7 +33,7 @@ use async_trait::async_trait;
 use std::fmt::Debug;
 
 #[async_trait]
-impl<S> BasecoinHandle for MockBasecoin<S>
+impl<S> BasecoinRunner for MockBasecoin<S>
 where
     S: ProvableStore + Default + Debug,
 {

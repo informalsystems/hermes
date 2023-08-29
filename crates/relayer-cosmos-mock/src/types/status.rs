@@ -1,6 +1,7 @@
 use ibc::core::timestamp::Timestamp;
 use ibc::Height;
 
+/// Defines the type that tracks the current status of a mock Cosmos chain.
 #[derive(Clone, Debug)]
 pub struct ChainStatus {
     pub timestamp: Timestamp,

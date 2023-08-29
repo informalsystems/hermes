@@ -14,12 +14,16 @@ use std::sync::Arc;
 
 use crate::types::error::Error;
 
+/// Defines the interface that empowers a chain context with the ability to
+/// query different states of a chain.
 pub trait QueryService: Async {
     type Endpoint: BasecoinEndpoint;
 
     fn service(&self) -> &Arc<Self::Endpoint>;
 }
 
+/// Defines the interface that enables a mock Cosmos chain to provide query
+/// endpoints.
 #[async_trait]
 pub trait BasecoinEndpoint: Async + Clone {
     type Store: ProvableStore + Debug + Default;

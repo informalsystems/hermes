@@ -20,24 +20,23 @@ use tendermint_testgen::LightBlock;
 use tendermint_testgen::Validator;
 use tokio::task::JoinHandle;
 
-use crate::traits::handle::BasecoinHandle;
+use crate::traits::runner::BasecoinRunner;
 use crate::util::dummy::generate_rand_app_hash;
 use crate::util::mutex::MutexUtil;
 
-#[derive(Clone)]
 /// A mock ABCI application that includes simplified store, application,
 /// consensus layers.
 ///
 /// The store consists of an in-memory AVL implementation that facilitates
 /// proof verification.
-/// 
+///
 /// The application layer includes Authentication, Bank, and IBC modules,
-/// resulting in a fully operational ibc-rs implementation that runs in a 
+/// resulting in a fully operational ibc-rs implementation that runs in a
 /// lightweight manner.
 ///
 /// The consensus layer consists of a simple block production engine that
 /// forgoes voting, validation, and transaction phases for the sake of
-/// simplicity. 
+/// simplicity.
 #[derive(Clone)]
 pub struct MockBasecoin<S>
 where

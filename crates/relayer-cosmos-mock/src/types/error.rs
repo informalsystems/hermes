@@ -4,7 +4,8 @@ use ibc::clients::ics07_tendermint::error::Error as ClientError;
 use ibc::core::ics24_host::identifier::IdentifierError;
 use ibc::core::ContextError;
 
-/// Defines the interchain account error type
+/// Defines the error type for errors can occur when relaying between two mock
+/// Cosmos chains.
 #[derive(Clone, Debug)]
 pub struct Error {
     /// Error code.
@@ -18,7 +19,7 @@ pub struct Error {
 }
 
 impl Error {
-    /// Constructs a new interchain account error instance with the given code and message.
+    /// Constructs a new error instance with the given code and message.
     pub fn new(code: Code, origin: impl Into<String>) -> Self {
         Self {
             code,
@@ -106,8 +107,8 @@ impl std::fmt::Display for Error {
     }
 }
 
-/// Defines all the possible error types and their corresponding codes for 
-/// interchain account errors.
+/// Defines all the possible error types and their corresponding codes for
+/// errors can occur relaying between two mock Cosmos chains.
 #[derive(Clone, Debug)]
 pub enum Code {
     /// cannot be empty!
