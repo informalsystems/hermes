@@ -15,4 +15,5 @@ jobs:
         id: lychee
         uses: lycheeverse/lychee-action@v1.8.0
         with:
-          args: --verbose --no-progress './**/*.md'
+          args: --verbose --no-progress --max-concurrency 16 './**/*.md'
+          token: ${{ secrets.GITHUB_TOKEN }}
