@@ -1,14 +1,34 @@
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
+use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 
 use crate::contexts::{birelay::MockCosmosBiRelay, relay::MockCosmosRelay};
 use crate::traits::endpoint::BasecoinEndpoint;
 use crate::types::error::Error;
 
-impl<SrcChain: BasecoinEndpoint, DstChain: BasecoinEndpoint> HasErrorType
-    for MockCosmosBiRelay<SrcChain, DstChain>
+impl<SrcChain, DstChain> HasErrorType for MockCosmosBiRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
 {
     type Error = Error;
+}
+
+impl<SrcChain, DstChain> HasRuntime for MockCosmosBiRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
+    type Runtime = TokioRuntimeContext;
+
+    fn runtime(&self) -> &Self::Runtime {
+        &self.runtime
+    }
+
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Self::Error {
+        Error::source(e)
+    }
 }
 
 impl<SrcChain, DstChain> HasTwoWayRelay for MockCosmosBiRelay<SrcChain, DstChain>

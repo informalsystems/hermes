@@ -4,6 +4,7 @@ use basecoin_store::impls::RevertibleStore;
 use ibc::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::path::Path;
+use ibc::core::timestamp::Timestamp;
 use ibc::Height;
 use ibc_relayer_components::core::traits::sync::Async;
 use tendermint_testgen::light_block::TmLightBlock;
@@ -38,7 +39,9 @@ pub trait BasecoinEndpoint: Async + Clone {
 
     fn get_chain_id(&self) -> &ChainId;
 
-    fn get_blocks(&self) -> Vec<TmLightBlock>;
+    fn get_current_height(&self) -> Height;
+
+    fn get_current_timestamp(&self) -> Timestamp;
 
     fn get_light_block(&self, height: &Height) -> Result<TmLightBlock, Error>;
 }
@@ -66,8 +69,12 @@ where
         Ctx::service(self).get_chain_id()
     }
 
-    fn get_blocks(&self) -> Vec<TmLightBlock> {
-        Ctx::service(self).get_blocks()
+    fn get_current_height(&self) -> Height {
+        Ctx::service(self).get_current_height()
+    }
+
+    fn get_current_timestamp(&self) -> Timestamp {
+        Ctx::service(self).get_current_timestamp()
     }
 
     fn get_light_block(&self, height: &Height) -> Result<TmLightBlock, Error> {

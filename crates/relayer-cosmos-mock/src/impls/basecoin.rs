@@ -16,6 +16,7 @@ use basecoin_store::utils::SharedRwExt;
 use ibc::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::path::Path;
+use ibc::core::timestamp::Timestamp;
 use ibc::hosts::tendermint::IBC_QUERY_PATH;
 use ibc::Height;
 
@@ -57,9 +58,6 @@ where
         app.call(AbciRequest::InitChain(request))
             .await
             .expect("failed to initialize chain");
-
-        // Generates the genesis block
-        self.grow_blocks();
     }
 
     async fn begin_block(&self) {
@@ -95,6 +93,7 @@ where
         state.commit().expect("failed to commit to state");
 
         self.grow_blocks();
+        self.update_status();
     }
 }
 
@@ -145,8 +144,12 @@ impl<S: ProvableStore + Default + Debug> BasecoinEndpoint for MockBasecoin<S> {
         &self.chain_id
     }
 
-    fn get_blocks(&self) -> Vec<TmLightBlock> {
-        self.blocks.acquire_mutex().clone()
+    fn get_current_height(&self) -> Height {
+        self.get_current_status().height
+    }
+
+    fn get_current_timestamp(&self) -> Timestamp {
+        self.get_current_status().timestamp
     }
 
     fn get_light_block(&self, height: &Height) -> Result<TmLightBlock, Error> {

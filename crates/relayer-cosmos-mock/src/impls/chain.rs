@@ -278,7 +278,10 @@ impl<Chain: BasecoinEndpoint> HasChainStatusType for MockCosmosContext<Chain> {
 #[async_trait]
 impl<Chain: BasecoinEndpoint> CanQueryChainStatus for MockCosmosContext<Chain> {
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
-        Ok(self.current_status.lock().unwrap().clone())
+        Ok(ChainStatus::new(
+            self.get_current_height(),
+            self.get_current_timestamp(),
+        ))
     }
 }
 
