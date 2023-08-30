@@ -363,6 +363,17 @@ where
         packet: &Packet,
         ack: &Self::WriteAcknowledgementEvent,
     ) -> Result<SolomachineAckPacketPayload, Chain::Error> {
+        // how to encode the acknowledgement as bytes?
+        // let ack_bytes = ack.ack;
+
+        // let payload = SolomachineAckPacketPayload {
+        //     ack: ack.clone(),
+        //     update_height: *height,
+        //     proof_ack: Default::default(),
+        // };
+
+        // Ok(payload)
+
         todo!()
     }
 

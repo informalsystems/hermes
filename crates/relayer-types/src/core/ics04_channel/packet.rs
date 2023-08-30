@@ -1,6 +1,8 @@
 use std::str::FromStr;
+use std::sync::Arc;
 
 use serde_derive::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
@@ -177,6 +179,22 @@ impl Packet {
             && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired;
 
         height_timed_out || timestamp_timed_out
+    }
+
+    /// Encodes the `Packet` commitment data into a vector of Sha256-encoded bytes.
+    pub fn commitment_bytes(&self) -> Vec<u8> {
+        let mut buf = Vec::new();
+
+        let timeout_timestamp = self.timeout_timestamp.nanoseconds();
+        let timeout_revision_number = self.timeout_height.commitment_revision_number();
+        let timeout_revision_height = self.timeout_height.commitment_revision_height();
+
+        buf.extend(timeout_timestamp.to_be_bytes());
+        buf.extend(timeout_revision_number.to_be_bytes());
+        buf.extend(timeout_revision_height.to_be_bytes());
+        buf.extend(Sha256::digest(&self.data));
+
+        Sha256::digest(&buf).to_vec()
     }
 }
 

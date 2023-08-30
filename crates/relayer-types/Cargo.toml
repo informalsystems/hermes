@@ -30,6 +30,7 @@ time = { version = "0.3" }
 serde_derive = { version = "1.0.104" }
 serde = { version = "1.0" }
 serde_json = { version = "1" }
+sha2 = "0.10.2"
 erased-serde = { version = "0.3" }
 prost = { version = "0.11" }
 bytes = { version = "1.4.0" }
