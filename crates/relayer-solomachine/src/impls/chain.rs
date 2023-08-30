@@ -1,5 +1,7 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
+
+use ibc_proto::ibc::lightclients::solomachine::v2::PacketCommitmentData;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
@@ -326,6 +328,8 @@ where
         height: &Height,
         packet: &Packet,
     ) -> Result<SolomachineReceivePacketPayload, Chain::Error> {
+        let commitment_bytes = packet.commitment_bytes();
+
         let path = CommitmentsPath {
             port_id: packet.source_port.clone(),
             channel_id: packet.source_channel.clone(),
