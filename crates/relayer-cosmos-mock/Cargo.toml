@@ -16,13 +16,14 @@ description  = """
 
 [dependencies]
 async-trait = "0.1.56"
-basecoin-app = { git = "https://github.com/informalsystems/basecoin-rs.git", rev = "c05c32b" }
-basecoin-store = { git = "https://github.com/informalsystems/basecoin-rs.git", rev = "c05c32b" }
+basecoin-app = { git = "https://github.com/informalsystems/basecoin-rs.git" }
+basecoin-store = { git = "https://github.com/informalsystems/basecoin-rs.git" }
 ibc = { git = "https://github.com/cosmos/ibc-rs.git", rev= "6ffe8ce", features = ["mocks"] }
 ibc-proto = "0.34.0"
 ibc-relayer-components = { version = "0.1.0", path = "../relayer-components" }
-ibc-relayer-runtime = { path = "../relayer-runtime" }
-ibc-relayer-types = { path = "../relayer-types" }
+ibc-relayer-components-extra = { version = "0.1.0", path = "../relayer-components-extra" }
+ibc-relayer-runtime = { version = "0.1.0", path = "../relayer-runtime" }
+ibc-relayer-types = { version = "0.25.0", path = "../relayer-types" }
 primitive-types = { version = "0.12.0", default-features = false}
 prost = "0.11.0"
 serde_json = "1.0"

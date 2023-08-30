@@ -332,7 +332,7 @@ checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 [[package]]
 name = "basecoin-app"
 version = "0.1.0"
-source = "git+https://github.com/informalsystems/basecoin-rs.git?rev=c05c32b#c05c32b959401bf2eeb4387743041745f048a708"
+source = "git+https://github.com/informalsystems/basecoin-rs.git#aa59797863272119a7bcb63bdf13b6d037dcd5cf"
 dependencies = [
  "base64 0.21.3",
  "basecoin-store",
@@ -365,7 +365,7 @@ dependencies = [
 [[package]]
 name = "basecoin-store"
 version = "0.1.0"
-source = "git+https://github.com/informalsystems/basecoin-rs.git?rev=c05c32b#c05c32b959401bf2eeb4387743041745f048a708"
+source = "git+https://github.com/informalsystems/basecoin-rs.git#aa59797863272119a7bcb63bdf13b6d037dcd5cf"
 dependencies = [
  "base64 0.21.3",
  "derive_more",
@@ -2127,6 +2127,7 @@ dependencies = [
  "ibc",
  "ibc-proto 0.34.0",
  "ibc-relayer-components",
+ "ibc-relayer-components-extra",
  "ibc-relayer-runtime",
  "ibc-relayer-types",
  "primitive-types",

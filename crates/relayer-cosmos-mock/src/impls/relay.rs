@@ -21,10 +21,10 @@ use ibc_relayer_components::relay::traits::update_client::UpdateClientMessageBui
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_runtime::types::error::Error as TokioError;
 use ibc_relayer_runtime::types::log::logger::TracingLogger;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 
 use crate::contexts::chain::MockCosmosContext;
 use crate::contexts::relay::MockCosmosRelay;
-use crate::contexts::runtime::MockRuntimeContext;
 use crate::impls::components::MockCosmosComponents;
 use crate::traits::endpoint::BasecoinEndpoint;
 use crate::types::error::Error;
@@ -51,7 +51,7 @@ where
     SrcChain: BasecoinEndpoint,
     DstChain: BasecoinEndpoint,
 {
-    type Runtime = MockRuntimeContext;
+    type Runtime = TokioRuntimeContext;
 
     fn runtime(&self) -> &Self::Runtime {
         &self.runtime

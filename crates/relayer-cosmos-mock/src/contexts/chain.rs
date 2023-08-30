@@ -5,14 +5,14 @@ use ibc::core::timestamp::Timestamp;
 use ibc::core::ValidationContext;
 use ibc::Any;
 use ibc::Height;
-use tendermint::Time;
-use tokio::task::JoinHandle;
+use ibc_relayer_components::runtime::traits::sleep::CanSleep;
+use ibc_relayer_components_extra::runtime::traits::spawn::Spawner;
+use ibc_relayer_components_extra::runtime::traits::spawn::TaskHandle;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use super::runtime::MockClock;
-use crate::contexts::runtime::MockRuntimeContext;
 use crate::traits::endpoint::BasecoinEndpoint;
 use crate::types::error::Error;
 use crate::types::status::ChainStatus;
@@ -22,32 +22,30 @@ use crate::util::mutex::MutexUtil;
 /// chain endpoint.
 #[derive(Clone)]
 pub struct MockCosmosContext<Endpoint: BasecoinEndpoint> {
+    /// Chain runtime
+    pub runtime: TokioRuntimeContext,
     /// Chain handle
     pub querier: Arc<Endpoint>,
     /// Current chain status
     pub current_status: Arc<Mutex<ChainStatus>>,
-    /// Chain runtime
-    pub runtime: MockRuntimeContext,
 }
 
 impl<Endpoint: BasecoinEndpoint> MockCosmosContext<Endpoint> {
     /// Constructs a new mock cosmos chain instance.
-    pub fn new(querier: Arc<Endpoint>, clock: Arc<MockClock>) -> Self {
-        let runtime = MockRuntimeContext::new(clock.clone());
-
+    pub fn new(runtime: TokioRuntimeContext, querier: Arc<Endpoint>) -> Self {
         let current_status = Arc::new(Mutex::new(ChainStatus::new(
             Height::new(querier.get_chain_id().revision_number(), 1).expect("never fails"),
-            clock.get_timestamp(),
+            Timestamp::now(),
         )));
 
         Self {
+            runtime,
             querier,
             current_status,
-            runtime,
         }
     }
 
-    pub fn runtime(&self) -> &MockRuntimeContext {
+    pub fn runtime(&self) -> &TokioRuntimeContext {
         &self.runtime
     }
 
@@ -66,18 +64,18 @@ impl<Endpoint: BasecoinEndpoint> MockCosmosContext<Endpoint> {
     }
 
     /// Keeps the chain context updated by continuously tracking the latest generated block.
-    pub fn sync(&self) -> JoinHandle<()> {
+    pub fn sync(&self) -> Box<dyn TaskHandle> {
         let ctx = self.clone();
-        tokio::spawn(async move {
+        self.runtime().spawn(async move {
             let mut blocks_len = 1;
             loop {
-                tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+                ctx.runtime()
+                    .sleep(tokio::time::Duration::from_millis(200))
+                    .await;
 
                 if ctx.get_blocks().len() <= blocks_len {
                     continue;
                 }
-
-                ctx.runtime.clock.set_timestamp(Time::now().into());
 
                 let current_timestamp = ctx.ibc_context().host_timestamp().unwrap();
 

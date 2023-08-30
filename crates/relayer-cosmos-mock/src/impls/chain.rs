@@ -67,9 +67,9 @@ use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_runtime::types::error::Error as TokioError;
 use ibc_relayer_runtime::types::log::logger::TracingLogger;
 use ibc_relayer_runtime::types::log::value::LogValue;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 
 use crate::contexts::chain::MockCosmosContext;
-use crate::contexts::runtime::MockRuntimeContext;
 use crate::traits::endpoint::{BasecoinEndpoint, QueryService};
 use crate::types::error::Error;
 use crate::types::status::ChainStatus;
@@ -80,7 +80,7 @@ impl<Chain: BasecoinEndpoint> HasErrorType for MockCosmosContext<Chain> {
 }
 
 impl<Chain: BasecoinEndpoint> HasRuntime for MockCosmosContext<Chain> {
-    type Runtime = MockRuntimeContext;
+    type Runtime = TokioRuntimeContext;
 
     fn runtime(&self) -> &Self::Runtime {
         &self.runtime

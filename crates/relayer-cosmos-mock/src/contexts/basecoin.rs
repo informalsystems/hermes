@@ -12,13 +12,16 @@ use basecoin_app::BaseCoinApp;
 use basecoin_app::Builder;
 use basecoin_store::context::ProvableStore;
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_components_extra::runtime::traits::spawn::Spawner;
+use ibc_relayer_components_extra::runtime::traits::spawn::TaskHandle;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use tendermint::Time;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::Generator;
 use tendermint_testgen::Header;
 use tendermint_testgen::LightBlock;
 use tendermint_testgen::Validator;
-use tokio::task::JoinHandle;
+use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::traits::runner::BasecoinRunner;
 use crate::util::dummy::generate_rand_app_hash;
@@ -42,6 +45,8 @@ pub struct MockBasecoin<S>
 where
     S: ProvableStore + Debug,
 {
+    /// Chain runtime
+    pub runtime: TokioRuntimeContext,
     /// Chain identifier
     pub chain_id: ChainId,
     /// Chain validators
@@ -54,7 +59,12 @@ where
 
 impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
     /// Constructs a new mock cosmos chain instance.
-    pub fn new(chain_id: ChainId, validators: Vec<Validator>, store: S) -> Self {
+    pub fn new(
+        runtime: TokioRuntimeContext,
+        chain_id: ChainId,
+        validators: Vec<Validator>,
+        store: S,
+    ) -> Self {
         let app_builder = Builder::new(store);
 
         let auth = Auth::new(app_builder.module_store(&prefix::Auth {}.identifier()));
@@ -76,6 +86,7 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
             .build();
 
         Self {
+            runtime,
             chain_id,
             validators: Arc::new(Mutex::new(validators)),
             blocks: Arc::new(Mutex::new(vec![])),
@@ -90,7 +101,15 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
             Validator::new("3").voting_power(30),
         ];
 
-        Self::new(chain_id, validators, S::default())
+        let runtime = TokioRuntimeContext::new(Arc::new(
+            TokioRuntime::new().expect("failed to build runtime"),
+        ));
+
+        Self::new(runtime, chain_id, validators, S::default())
+    }
+
+    pub fn runtime(&self) -> &TokioRuntimeContext {
+        &self.runtime
     }
 
     pub fn grow_blocks(&self) {
@@ -112,10 +131,10 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
         blocks.push(tm_light_block);
     }
 
-    pub fn run(&self) -> JoinHandle<()> {
+    pub fn run(&self) -> Box<dyn TaskHandle> {
         let chain = self.clone();
 
-        tokio::spawn(async move {
+        self.runtime().spawn(async move {
             chain.init().await;
 
             loop {
