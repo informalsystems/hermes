@@ -8,11 +8,10 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::contexts::basecoin::MockBasecoin;
 use crate::contexts::builder::MockCosmosBuilder;
-use crate::contexts::chain::MockCosmosContext;
 use crate::contexts::relay::MockCosmosRelay;
 
 pub async fn binary_setup(
-) -> MockCosmosRelay<MockBasecoin<InMemoryStore>, MockBasecoin<InMemoryStore>> {
+) -> Arc<MockCosmosRelay<MockBasecoin<InMemoryStore>, MockBasecoin<InMemoryStore>>> {
     let mut builder = MockCosmosBuilder::new(TokioRuntime::new().expect("failed to build runtime"));
 
     // Setup and run the source chain
@@ -33,10 +32,7 @@ pub async fn binary_setup(
     let dst_chain = builder.build_chain(dst_chain_id, dst_validators);
 
     // Setup relayer
-    let src_chain_ctx = Arc::new(MockCosmosContext::new(builder.runtime.clone(), src_chain));
-    let dst_chain_ctx = Arc::new(MockCosmosContext::new(builder.runtime.clone(), dst_chain));
-    let relayer = MockCosmosRelay::new(builder.runtime.clone(), src_chain_ctx, dst_chain_ctx)
-        .expect("failed to build relayer");
+    let relayer = builder.build_relay(src_chain, dst_chain);
 
     // Wait for chains to produce some initial blocks
     relayer

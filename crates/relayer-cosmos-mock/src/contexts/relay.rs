@@ -1,22 +1,19 @@
 use ibc::clients::ics07_tendermint::client_type;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc::core::ValidationContext;
-use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
-use ibc_relayer_components_extra::runtime::traits::spawn::{Spawner, TaskHandle};
 use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use std::sync::Arc;
 
 use crate::traits::endpoint::BasecoinEndpoint;
 use crate::types::error::Error;
-use crate::util::msgs::build_transfer_packet;
 
 use super::chain::MockCosmosContext;
 
-/// The relay context for relaying between `BasecoinEndpoint`s. 
+/// The relay context for relaying between `BasecoinEndpoint`s.
 ///
 /// The `SrcChain` and `DstChain` endpoints are wrapped in
-/// `MockCosmosContext`, which bundles the `BasecoinEndpoint` with 
-/// the runtime. 
+/// `MockCosmosContext`, which bundles the `BasecoinEndpoint` with
+/// the runtime.
 #[derive(Clone)]
 pub struct MockCosmosRelay<SrcChain, DstChain>
 where
@@ -75,18 +72,5 @@ where
 
     pub fn dst_client_id(&self) -> &ClientId {
         &self.dst_client_id
-    }
-
-    pub fn spawn(&mut self) -> Box<dyn TaskHandle> {
-        let packet = build_transfer_packet(1);
-
-        let relayer = self.clone();
-
-        self.runtime().spawn(async move {
-            relayer
-                .relay_packet(&packet)
-                .await
-                .expect("failed to relay packet");
-        })
     }
 }
