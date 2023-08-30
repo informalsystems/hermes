@@ -11,9 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: markdown-link-check
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@v1.8.0
         with:
-          config-file: '.github/markdown-link-check.json'
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'yes'
+          args: --verbose --no-progress './**/*.md'
