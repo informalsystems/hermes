@@ -12,6 +12,11 @@ use crate::util::msgs::build_transfer_packet;
 
 use super::chain::MockCosmosContext;
 
+/// The relay context for relaying between `BasecoinEndpoint`s. 
+///
+/// The `SrcChain` and `DstChain` endpoints are wrapped in
+/// `MockCosmosContext`, which bundles the `BasecoinEndpoint` with 
+/// the runtime. 
 #[derive(Clone)]
 pub struct MockCosmosRelay<SrcChain, DstChain>
 where
