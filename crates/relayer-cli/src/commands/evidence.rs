@@ -243,6 +243,11 @@ fn handle_duplicate_vote(
                 );
             }
         }
+
+        // We have submitted the evidence to the provider, and because there can only be a single
+        // provider for a consumer chain, we can stop now. No need to check all the other
+        // counteparties.
+        break;
     }
 
     Ok(())
