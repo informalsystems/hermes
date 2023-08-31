@@ -154,14 +154,7 @@ fn handle_duplicate_vote(
 
     // For each counterparty client, build the double voting evidence and submit it to the chain,
     // freezing that client.
-    for (counterparty_chain_id, counterparty_client_id) in counterparty_clients {
-        if !chains.contains_key(chain.id()) {
-            let chain_handle =
-                spawn_chain_runtime::<BaseChainHandle>(&config, chain.id(), Arc::clone(&rt))?;
-
-            chains.insert(chain.id().clone(), chain_handle);
-        }
-
+    for (counterparty_chain_id, _counterparty_client_id) in counterparty_clients {
         if !chains.contains_key(&counterparty_chain_id) {
             let chain_handle = spawn_chain_runtime::<BaseChainHandle>(
                 &config,
@@ -172,7 +165,6 @@ fn handle_duplicate_vote(
             chains.insert(counterparty_chain_id.clone(), chain_handle);
         };
 
-        let chain_handle = chains.get(chain.id()).unwrap();
         let counterparty_chain_handle = chains.get(&counterparty_chain_id).unwrap();
 
         let signer = counterparty_chain_handle.get_signer()?;
