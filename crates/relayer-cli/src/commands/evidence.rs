@@ -9,7 +9,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use tendermint::block::{Height as TendermintHeight, Header};
+use tendermint::block::Height as TendermintHeight;
 use tendermint::evidence::{DuplicateVoteEvidence, LightClientAttackEvidence};
 use tendermint::validator;
 
