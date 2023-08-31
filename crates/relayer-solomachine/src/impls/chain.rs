@@ -348,12 +348,12 @@ where
             .map_err(CosmosBaseError::protobuf_encoding_error)?;
 
         let new_diversifier = self.chain.new_diversifier().await;
-
         let secret_key = self.chain.secret_key();
+        let consensus_timestamp = client_state.consensus_state.timestamp;
 
         let sign_data = SolomachineSignData {
             sequence: u64::from(packet.sequence),
-            timestamp: self.chain.current_time(),
+            timestamp: consensus_timestamp,
             diversifier: new_diversifier,
             data: packet_commitment_data_bytes,
             path: path.as_bytes().to_vec(),
@@ -376,17 +376,7 @@ where
         packet: &Packet,
         ack: &Self::WriteAcknowledgementEvent,
     ) -> Result<SolomachineAckPacketPayload, Chain::Error> {
-        // how to encode the acknowledgement as bytes?
-        let ack = ack.clone();
-        let ack_bytes = ack.ack;
-
-        let payload = SolomachineAckPacketPayload {
-            ack: ack_bytes,
-            update_height: *height,
-            proof_ack: Default::default(),
-        };
-
-        Ok(payload)
+        todo!()
     }
 
     async fn build_timeout_unordered_packet_payload(
@@ -414,12 +404,12 @@ where
             .map_err(CosmosBaseError::protobuf_encoding_error)?;
 
         let new_diversifier = self.chain.new_diversifier().await;
-
         let secret_key = self.chain.secret_key();
+        let consensus_timestamp = client_state.consensus_state.timestamp;
 
         let sign_data = SolomachineSignData {
             sequence: u64::from(packet.sequence),
-            timestamp: self.chain.current_time(),
+            timestamp: consensus_timestamp,
             diversifier: new_diversifier,
             data: packet_commitment_data_bytes,
             path: path.as_bytes().to_vec(),
