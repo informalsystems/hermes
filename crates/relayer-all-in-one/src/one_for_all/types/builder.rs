@@ -1,12 +1,12 @@
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
+use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 
 use crate::one_for_all::traits::birelay::OfaHomogeneousBiRelay;
 use crate::one_for_all::traits::builder::{
     BatchSenderCacheA, BatchSenderCacheB, ChainACache, ChainBCache, OfaBuilder, RelayAToBCache,
     RelayBToACache,
 };
-use crate::one_for_all::traits::runtime::OfaRuntime;
 
 pub struct OfaBuilderWrapper<Build>
 where

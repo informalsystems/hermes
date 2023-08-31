@@ -35,7 +35,6 @@ where
 
         self.runtime
             .runtime
-            .runtime
             .spawn_blocking(move || cont(chain_handle))
             .await
             .map_err(BaseError::join)?

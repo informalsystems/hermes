@@ -22,7 +22,6 @@ use ibc_relayer_components_extra::components::extra::chain::ExtraChainComponents
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::component::OfaComponents;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 use crate::std_prelude::*;
 
 impl<Chain, Name> DelegateComponent<Name> for OfaChainWrapper<Chain>
@@ -33,7 +32,7 @@ where
 }
 
 impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
-    type Runtime = OfaRuntimeWrapper<Chain::Runtime>;
+    type Runtime = Chain::Runtime;
 
     fn runtime(&self) -> &Self::Runtime {
         self.chain.runtime()

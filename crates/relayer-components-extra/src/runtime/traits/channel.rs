@@ -151,3 +151,9 @@ pub trait CanStreamReceiver: HasChannelTypes {
     where
         T: Async;
 }
+
+pub trait CanCloneSender: HasChannelTypes {
+    fn clone_sender<T>(sender: &Self::Sender<T>) -> Self::Sender<T>
+    where
+        T: Async;
+}

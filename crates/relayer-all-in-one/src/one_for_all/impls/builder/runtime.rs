@@ -3,13 +3,12 @@ use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 use crate::one_for_all::traits::builder::OfaBuilder;
 use crate::one_for_all::types::builder::OfaBuilderWrapper;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 impl<Builder> HasRuntime for OfaBuilderWrapper<Builder>
 where
     Builder: OfaBuilder,
 {
-    type Runtime = OfaRuntimeWrapper<Builder::Runtime>;
+    type Runtime = Builder::Runtime;
 
     fn runtime(&self) -> &Self::Runtime {
         self.builder.runtime()

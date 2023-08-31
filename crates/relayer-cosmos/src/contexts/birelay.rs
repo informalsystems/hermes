@@ -1,7 +1,6 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_all_in_one::one_for_all::types::relay::OfaRelayWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 
 use crate::contexts::relay::CosmosRelay;
 
@@ -10,7 +9,7 @@ where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
 {
-    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    pub runtime: TokioRuntimeContext,
     pub relay_a_to_b: OfaRelayWrapper<CosmosRelay<ChainA, ChainB>>,
     pub relay_b_to_a: OfaRelayWrapper<CosmosRelay<ChainB, ChainA>>,
 }
@@ -21,7 +20,7 @@ where
     ChainB: ChainHandle,
 {
     pub fn new(
-        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+        runtime: TokioRuntimeContext,
         relay_a_to_b: OfaRelayWrapper<CosmosRelay<ChainA, ChainB>>,
         relay_b_to_a: OfaRelayWrapper<CosmosRelay<ChainB, ChainA>>,
     ) -> Self {

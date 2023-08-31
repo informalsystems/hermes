@@ -16,10 +16,8 @@ use ibc_relayer::keyring::Secp256k1KeyPair;
 use ibc_relayer::spawn::spawn_chain_runtime;
 use ibc_relayer_all_in_one::one_for_all::types::builder::OfaBuilderWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components_extra::batch::types::config::BatchConfig;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -33,8 +31,8 @@ use crate::types::telemetry::CosmosTelemetry;
 pub struct CosmosBuilder {
     pub config: Config,
     pub packet_filter: PacketFilter,
-    pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
-    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    pub telemetry: CosmosTelemetry,
+    pub runtime: TokioRuntimeContext,
     pub batch_config: BatchConfig,
     pub key_map: HashMap<ChainId, Secp256k1KeyPair>,
 }
@@ -48,9 +46,7 @@ impl CosmosBuilder {
         batch_config: BatchConfig,
         key_map: HashMap<ChainId, Secp256k1KeyPair>,
     ) -> Self {
-        let telemetry = OfaTelemetryWrapper::new(telemetry);
-
-        let runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(runtime));
+        let runtime = TokioRuntimeContext::new(runtime);
 
         Self {
             config,
@@ -84,7 +80,7 @@ impl CosmosBuilder {
         &self,
         chain_id: &ChainId,
     ) -> Result<CosmosChain<BaseChainHandle>, Error> {
-        let runtime = self.runtime.runtime.runtime.clone();
+        let runtime = self.runtime.runtime.clone();
 
         let (handle, key, chain_config) = task::block_in_place(|| -> Result<_, Error> {
             let handle = spawn_chain_runtime::<BaseChainHandle>(&self.config, chain_id, runtime)

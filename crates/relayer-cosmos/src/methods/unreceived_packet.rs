@@ -26,10 +26,9 @@ pub async fn query_packet_commitments<Chain: ChainHandle>(
     channel_id: &ChannelId,
     port_id: &PortId,
 ) -> Result<(Vec<Sequence>, Height), Error> {
-    let mut client =
-        ChannelQueryClient::connect(chain.tx_context.tx_context.tx_config.grpc_address.clone())
-            .await
-            .map_err(BaseError::grpc_transport)?;
+    let mut client = ChannelQueryClient::connect(chain.tx_context.tx_config.grpc_address.clone())
+        .await
+        .map_err(BaseError::grpc_transport)?;
 
     let raw_request = QueryPacketCommitmentsRequest {
         port_id: port_id.clone(),
@@ -68,10 +67,9 @@ pub async fn query_unreceived_packet_sequences<Chain: ChainHandle>(
     port_id: &PortId,
     sequences: &[Sequence],
 ) -> Result<Vec<Sequence>, Error> {
-    let mut client =
-        ChannelQueryClient::connect(chain.tx_context.tx_context.tx_config.grpc_address.clone())
-            .await
-            .map_err(BaseError::grpc_transport)?;
+    let mut client = ChannelQueryClient::connect(chain.tx_context.tx_config.grpc_address.clone())
+        .await
+        .map_err(BaseError::grpc_transport)?;
 
     let raw_request = QueryUnreceivedPacketsRequest {
         port_id: port_id.clone(),
@@ -116,7 +114,6 @@ async fn query_send_packet_from_sequence<Chain: ChainHandle>(
     let mut events = vec![];
     let query = packet_query(&request, *sequence);
     let response = chain
-        .tx_context
         .tx_context
         .rpc_client
         .tx_search(query, false, 1, 10, Order::Descending)
