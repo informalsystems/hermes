@@ -377,17 +377,16 @@ where
         ack: &Self::WriteAcknowledgementEvent,
     ) -> Result<SolomachineAckPacketPayload, Chain::Error> {
         // how to encode the acknowledgement as bytes?
-        // let ack_bytes = ack.ack;
+        let ack = ack.clone();
+        let ack_bytes = ack.ack;
 
-        // let payload = SolomachineAckPacketPayload {
-        //     ack: ack.clone(),
-        //     update_height: *height,
-        //     proof_ack: Default::default(),
-        // };
+        let payload = SolomachineAckPacketPayload {
+            ack: ack_bytes,
+            update_height: *height,
+            proof_ack: Default::default(),
+        };
 
-        // Ok(payload)
-
-        todo!()
+        Ok(payload)
     }
 
     async fn build_timeout_unordered_packet_payload(
@@ -396,7 +395,44 @@ where
         height: &Height,
         packet: &Packet,
     ) -> Result<SolomachineTimeoutUnorderedPacketPayload, Chain::Error> {
-        todo!()
+        let commitment_bytes = packet.commitment_bytes();
+
+        let commitment_path = CommitmentsPath {
+            port_id: packet.source_port.clone(),
+            channel_id: packet.source_channel.clone(),
+            sequence: packet.sequence,
+        };
+
+        let commitment_path = commitment_path.to_string();
+
+        let packet_commitment_data = PacketCommitmentData {
+            path: commitment_path.as_bytes(),
+            commitment: commitment_bytes,
+        };
+
+        let packet_commitment_data_bytes = encode_protobuf(&packet_commitment_data)
+            .map_err(CosmosBaseError::protobuf_encoding_error)?;
+
+        let new_diversifier = self.chain.new_diversifier().await;
+
+        let secret_key = self.chain.secret_key();
+
+        let sign_data = SolomachineSignData {
+            sequence: u64::from(packet.sequence),
+            timestamp: self.chain.current_time(),
+            diversifier: new_diversifier,
+            data: packet_commitment_data_bytes,
+            path: path.as_bytes().to_vec(),
+        };
+
+        let proof = sign_with_data(secret_key, &sign_data).map_err(Chain::encode_error)?;
+
+        let payload = SolomachineTimeoutUnorderedPacketPayload {
+            update_height: *height,
+            proof_unreceived: proof,
+        };
+
+        Ok(payload)
     }
 
     async fn build_create_client_payload(
