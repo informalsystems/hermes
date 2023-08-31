@@ -17,7 +17,7 @@ pub const ICS_DOUBLE_VOTING_TYPE_URL: &str =
 pub struct MsgSubmitIcsConsumerDoubleVoting {
     pub submitter: Signer,
     pub duplicate_vote_evidence: DuplicateVoteEvidence,
-    pub infraction_block_header: Option<Header>,
+    pub infraction_block_header: Header,
 }
 
 impl Msg for MsgSubmitIcsConsumerDoubleVoting {
@@ -50,12 +50,13 @@ impl TryFrom<RawIcsDoubleVoting> for MsgSubmitIcsConsumerDoubleVoting {
                 })?,
             infraction_block_header: raw
                 .infraction_block_header
-                .map(|header| {
-                    header.try_into().map_err(|e| {
-                        Error::invalid_raw_double_voting(format!("cannot convert header: {e}"))
-                    })
-                })
-                .transpose()?,
+                .ok_or_else(|| {
+                    Error::invalid_raw_double_voting("missing infraction block header".into())
+                })?
+                .try_into()
+                .map_err(|e| {
+                    Error::invalid_raw_double_voting(format!("cannot convert header: {e}"))
+                })?,
         })
     }
 }
@@ -65,7 +66,7 @@ impl From<MsgSubmitIcsConsumerDoubleVoting> for RawIcsDoubleVoting {
         RawIcsDoubleVoting {
             submitter: value.submitter.to_string(),
             duplicate_vote_evidence: Some(value.duplicate_vote_evidence.into()),
-            infraction_block_header: value.infraction_block_header.map(Into::into),
+            infraction_block_header: Some(value.infraction_block_header.into()),
         }
     }
 }
@@ -74,7 +75,11 @@ impl fmt::Display for MsgSubmitIcsConsumerDoubleVoting {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("MsgSubmitIcsConsumerDoubleVoting")
             .field("submitter", &self.submitter)
-            .field("misbehaviour", &"[...]")
+            .field("duplicate_vote_evidence", &"[...]")
+            .field(
+                "infraction_block_header",
+                &self.infraction_block_header.signed_header.header.height,
+            )
             .finish()
     }
 }

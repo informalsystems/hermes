@@ -227,7 +227,7 @@ fn handle_duplicate_vote(
         let submit_msg = MsgSubmitIcsConsumerDoubleVoting {
             submitter: signer.clone(),
             duplicate_vote_evidence: dv.clone(),
-            infraction_block_header: Some(infraction_block_header),
+            infraction_block_header,
         }
         .to_any();
 
