@@ -72,7 +72,7 @@ use crate::chain::cosmos::batch::{
 use crate::chain::cosmos::encode::key_pair_to_signer;
 use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
-use crate::chain::cosmos::query::account::get_or_fetch_account;
+use crate::chain::cosmos::query::account::refresh_or_fetch_account;
 use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
 use crate::chain::cosmos::query::consensus_state::query_consensus_state_heights;
 use crate::chain::cosmos::query::custom::cross_chain_query_via_rpc;
@@ -683,7 +683,7 @@ impl CosmosSdkChain {
         let key_account = key_pair.account();
 
         let account =
-            get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
+            refresh_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
         if self.config.sequential_batch_tx {
             sequential_send_batched_messages_and_wait_commit(
@@ -734,7 +734,7 @@ impl CosmosSdkChain {
         let key_account = key_pair.account();
 
         let account =
-            get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
+            refresh_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
         send_batched_messages_and_wait_check_tx(
             &self.rpc_client,

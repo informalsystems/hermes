@@ -29,6 +29,31 @@ pub async fn get_or_fetch_account<'a>(
     }
 }
 
+/// Get a `&mut Account` from an `&mut Option<Account>` if it is `Some(Account)`,
+/// and refresh the account.
+/// Otherwise query for the account information, update the `Option` to `Some`,
+/// and return the underlying `&mut` reference.
+pub async fn refresh_or_fetch_account<'a>(
+    grpc_address: &'a Uri,
+    account_address: &'a str,
+    m_account: &'a mut Option<Account>,
+) -> Result<&'a mut Account, Error> {
+    match m_account {
+        Some(account) => {
+            refresh_account(grpc_address, account_address, account).await?;
+            Ok(account)
+        }
+        None => {
+            let account = query_account(grpc_address, account_address).await?;
+            *m_account = Some(account.into());
+
+            Ok(m_account
+                .as_mut()
+                .expect("account was supposedly just cached"))
+        }
+    }
+}
+
 /// Refresh the account sequence behind the `&mut Account` by refetching the
 /// account and updating the `&mut` reference.
 pub async fn refresh_account<'a>(
