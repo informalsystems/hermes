@@ -197,8 +197,7 @@ fn handle_duplicate_vote(
 
         info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
 
-        // construct the light client block header for the consumer chain
-        // at the infraction height
+        // Construct the light client block header for the consumer chain at the infraction height
         let infraction_block_header = {
             let infraction_height = dv.vote_a.height;
 
