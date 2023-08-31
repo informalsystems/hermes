@@ -1,3 +1,5 @@
+//! Helper functions for encoding protobuf messages into bytes.
+
 use ibc_proto::google::protobuf::Any;
 use prost::{EncodeError, Message as ProstMessage};
 
