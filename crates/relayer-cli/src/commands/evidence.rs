@@ -209,39 +209,36 @@ fn handle_duplicate_vote(
         // at the infraction height
         let infraction_block_header = {
             let infraction_height = dv.vote_a.height;
-        
+
             let trusted_validator_set = rt
-            .block_on(chain.rpc_client.validators(infraction_height, Paging::All))?
-            .validators;
-    
+                .block_on(chain.rpc_client.validators(infraction_height, Paging::All))?
+                .validators;
+
             let signed_header = rt
                 .block_on(chain.rpc_client.commit(infraction_height))?
                 .signed_header;
-    
+
             let validators = rt
-            .block_on(
-                chain
-                    .rpc_client
-                    .validators(infraction_height, Paging::All),
-            )?
-            .validators;
-    
+                .block_on(chain.rpc_client.validators(infraction_height, Paging::All))?
+                .validators;
+
             let validator_set =
-            validator::Set::with_proposer(validators, signed_header.header.proposer_address)?;
-    
+                validator::Set::with_proposer(validators, signed_header.header.proposer_address)?;
+
             TendermintHeader {
                 signed_header,
                 validator_set,
                 trusted_height: Height::from_tm(infraction_height, chain.id()),
-                trusted_validator_set: validator::Set::new(trusted_validator_set, None)
+                trusted_validator_set: validator::Set::new(trusted_validator_set, None),
             }
         };
 
         let submit_msg = MsgSubmitIcsConsumerDoubleVoting {
             submitter: signer.clone(),
             duplicate_vote_evidence: dv.clone(),
-            infraction_block_header: Some(infraction_block_header)
-        }.to_any();
+            infraction_block_header: Some(infraction_block_header),
+        }
+        .to_any();
 
         let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "submit_double_voting");
         let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
