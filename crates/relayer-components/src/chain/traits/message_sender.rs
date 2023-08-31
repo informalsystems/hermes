@@ -6,9 +6,44 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::traits::types::message::HasMessageType;
+use crate::core::traits::component::DelegateComponent;
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
+
+pub struct MessageSenderComponent;
+
+/**
+   The provider trait for [`CanSendMessages`].
+*/
+#[async_trait]
+pub trait MessageSender<Chain>: Async
+where
+    Chain: HasMessageType + HasEventType + HasErrorType,
+{
+    /**
+       Corresponds to [`CanSendMessages::send_messages`]
+    */
+    async fn send_messages(
+        chain: &Chain,
+        messages: Vec<Chain::Message>,
+    ) -> Result<Vec<Vec<Chain::Event>>, Chain::Error>;
+}
+
+#[async_trait]
+impl<Chain, Component> MessageSender<Chain> for Component
+where
+    Chain: HasMessageType + HasEventType + HasErrorType,
+    Component: DelegateComponent<MessageSenderComponent>,
+    Component::Delegate: MessageSender<Chain>,
+{
+    async fn send_messages(
+        chain: &Chain,
+        messages: Vec<Chain::Message>,
+    ) -> Result<Vec<Vec<Chain::Event>>, Chain::Error> {
+        Component::Delegate::send_messages(chain, messages).await
+    }
+}
 
 /**
    This is a simplified interface offered by a chain context or a transaction
@@ -84,21 +119,18 @@ pub trait CanSendMessages: HasMessageType + HasEventType + HasErrorType {
     ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
 }
 
-/**
-   The provider trait for [`CanSendMessages`].
-*/
 #[async_trait]
-pub trait MessageSender<Chain>: Async
+impl<Chain> CanSendMessages for Chain
 where
-    Chain: HasMessageType + HasEventType + HasErrorType,
+    Chain: HasMessageType + HasEventType + HasErrorType + DelegateComponent<MessageSenderComponent>,
+    Chain::Delegate: MessageSender<Chain>,
 {
-    /**
-       Corresponds to [`CanSendMessages::send_messages`]
-    */
     async fn send_messages(
-        chain: &Chain,
-        messages: Vec<Chain::Message>,
-    ) -> Result<Vec<Vec<Chain::Event>>, Chain::Error>;
+        &self,
+        messages: Vec<Self::Message>,
+    ) -> Result<Vec<Vec<Self::Event>>, Self::Error> {
+        Chain::Delegate::send_messages(self, messages).await
+    }
 }
 
 pub trait InjectMismatchIbcEventsCountError: HasErrorType {

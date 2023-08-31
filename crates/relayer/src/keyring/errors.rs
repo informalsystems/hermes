@@ -141,12 +141,21 @@ define_error! {
             |_| { "bs58 decode error" },
 
         UnsupportedAddressType
-          {
-              address_type: AddressType,
-              key_type: KeyType,
-          }
-          |e| {
-              format!("Unsupported address type {} for key type {}", e.address_type, e.key_type)
-          }
+            {
+                address_type: AddressType,
+                key_type: KeyType,
+            }
+            |e| {
+                format!("Unsupported address type {} for key type {}", e.address_type, e.key_type)
+            },
+
+        InvalidPublicKeyLength
+            {
+                got: usize,
+                expected: usize
+            }
+            |e| {
+                format!("Invalid public key length: expected {}, got {}", e.expected, e.got)
+            }
     }
 }

@@ -10,7 +10,6 @@ use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::component::OfaComponents;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 impl<Relay, Name> DelegateComponent<Name> for OfaRelayWrapper<Relay>
 where
@@ -30,7 +29,7 @@ impl<Relay> HasRuntime for OfaRelayWrapper<Relay>
 where
     Relay: OfaRelay,
 {
-    type Runtime = OfaRuntimeWrapper<Relay::Runtime>;
+    type Runtime = Relay::Runtime;
 
     fn runtime(&self) -> &Self::Runtime {
         self.relay.runtime()

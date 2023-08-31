@@ -1,4 +1,4 @@
-use crate::transaction::traits::types::HasTxTypes;
+use crate::transaction::traits::types::HasSignerType;
 
 /**
    A simplified accessor for a transaction context to provide
@@ -20,6 +20,6 @@ use crate::transaction::traits::types::HasTxTypes;
    where there is no need to implement the logic to support parallel
    transactions or multiple signers.
 */
-pub trait HasSigner: HasTxTypes {
+pub trait HasSigner: HasSignerType {
     fn get_signer(&self) -> &Self::Signer;
 }

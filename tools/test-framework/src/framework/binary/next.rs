@@ -282,7 +282,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> CanSpawnRelayer for TestContextV2
         let runtime = self.relayer.birelay.runtime();
         let birelay = self.relayer.clone();
 
-        let handle = runtime.runtime.runtime.spawn(async move {
+        let handle = runtime.runtime.spawn(async move {
             let _ = birelay.auto_relay().await;
         });
 

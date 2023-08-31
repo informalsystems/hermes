@@ -8,14 +8,12 @@ use ibc_relayer::event::{
     connection_open_ack_try_from_abci_event, connection_open_try_try_from_abci_event,
 };
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-use ibc_relayer_runtime::tokio::error::Error as TokioError;
-use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
-use ibc_relayer_runtime::tokio::logger::value::LogValue;
+use ibc_relayer_runtime::types::error::Error as TokioError;
+use ibc_relayer_runtime::types::log::logger::TracingLogger;
+use ibc_relayer_runtime::types::log::value::LogValue;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics02_client::events::CLIENT_ID_ATTRIBUTE_KEY;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
@@ -177,7 +175,7 @@ impl<Chain> OfaChain for CosmosChain<Chain>
 where
     Chain: ChainHandle,
 {
-    fn runtime(&self) -> &OfaRuntimeWrapper<TokioRuntimeContext> {
+    fn runtime(&self) -> &TokioRuntimeContext {
         &self.runtime
     }
 
@@ -201,7 +199,7 @@ where
         LogValue::Display(packet)
     }
 
-    fn telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry> {
+    fn telemetry(&self) -> &CosmosTelemetry {
         &self.telemetry
     }
 

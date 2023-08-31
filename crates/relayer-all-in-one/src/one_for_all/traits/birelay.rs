@@ -1,17 +1,17 @@
 use core::fmt::Debug;
 
+use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 
+use crate::all_for_one::runtime::AfoRuntime;
 use crate::one_for_all::traits::relay::{OfaHomogeneousRelay, OfaRelay};
-use crate::one_for_all::traits::runtime::OfaRuntime;
 use crate::one_for_all::types::relay::OfaRelayWrapper;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 pub trait OfaBiRelay: Async {
     type Error: Debug + Async;
 
-    type Runtime: OfaRuntime;
+    type Runtime: AfoRuntime;
 
     type Logger: HasBaseLogLevels;
 
@@ -24,9 +24,9 @@ pub trait OfaBiRelay: Async {
         Logger = <Self::RelayAToB as OfaRelay>::Logger,
     >;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
+    fn runtime(&self) -> &Self::Runtime;
 
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error;
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Self::Error;
 
     fn logger(&self) -> &Self::Logger;
 
