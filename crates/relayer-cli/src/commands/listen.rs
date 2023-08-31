@@ -145,7 +145,9 @@ fn subscribe(
     rt: Arc<TokioRuntime>,
 ) -> eyre::Result<Subscription> {
     let EventSourceMode::Push { url, batch_delay } = &chain_config.event_source else {
-        return Err(eyre!("unsupported event source mode, only 'push' is supported for listening to events"));
+        return Err(eyre!(
+            "unsupported event source mode, only 'push' is supported for listening to events"
+        ));
     };
 
     let (mut event_source, tx_cmd) = EventSource::new(
