@@ -568,8 +568,7 @@ impl CosmosSdkChain {
             prove,
         ))?;
 
-        // TODO - Verify response proof, if requested.
-        if prove {}
+        // TODO: Verify response proof, if requested.
 
         Ok(response)
     }
