@@ -6,7 +6,8 @@ use std::time::Instant;
 
 use borsh::BorshDeserialize;
 use ibc_proto::google::protobuf::Any;
-use namada::ledger::args::{InputAmount, Tx as TxArgs, TxCustom};
+use namada::ledger::args::{Tx as TxArgs, TxCustom};
+use namada::ledger::masp::ShieldedContext;
 use namada::ledger::parameters::storage as parameter_storage;
 use namada::ledger::rpc::TxBroadcastData;
 use namada::ledger::wallet::Wallet;
@@ -16,9 +17,9 @@ use namada::tendermint_rpc::HttpClient;
 use namada::types::address::{Address, ImplicitAddress};
 use namada::types::chain::ChainId;
 use namada::types::key::RefTo;
-use namada::types::token::{Amount, DenominatedAmount};
 use namada::types::transaction::{GasLimit, TxType};
 use namada_apps::cli::api::CliClient;
+use namada_apps::client::tx::CLIShieldedUtils;
 use namada_apps::facade::tendermint_config::net::Address as TendermintAddress;
 use namada_apps::wallet::CliWalletUtils;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
@@ -31,7 +32,6 @@ use crate::error::Error;
 
 use super::NamadaChain;
 
-const DEFAULT_MAX_GAS: u64 = 100_000;
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);
 
 impl NamadaChain {
@@ -50,21 +50,17 @@ impl NamadaChain {
 
         let chain_id = ChainId::from_str(self.config.id.as_str()).expect("invalid chain ID");
 
-        let gas_token = self.config.gas_price.denom.clone();
-        let gas_token = self
+        let fee_token = self.config.gas_price.denom.clone();
+        let fee_token = self
             .wallet
-            .find_address(&gas_token)
-            .ok_or_else(|| Error::namada_address_not_found(gas_token))?
+            .find_address(&fee_token)
+            .ok_or_else(|| Error::namada_address_not_found(fee_token))?
             .clone();
 
         // fee
-        let wrapper_tx_fees_key = parameter_storage::get_wrapper_tx_fees_key();
-        let (value, _) = self.query(wrapper_tx_fees_key, QueryHeight::Latest, IncludeProof::No)?;
-        let gas_amount = Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
-        let gas_amount = InputAmount::Unvalidated(DenominatedAmount::native(gas_amount));
-
-        let gas_limit = Amount::native_whole(self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS));
-        let gas_limit = GasLimit::from(gas_limit);
+        let gas_limit_key = parameter_storage::get_fee_unshielding_gas_limit_key();
+        let (value, _) = self.query(gas_limit_key, QueryHeight::Latest, IncludeProof::No)?;
+        let gas_limit = GasLimit::try_from_slice(&value).map_err(Error::borsh_decode)?;
 
         // the wallet should exist because it's confirmed when the bootstrap
         let relayer_key_pair = self
@@ -80,6 +76,7 @@ impl NamadaChain {
 
         let tx_args = TxArgs {
             dry_run: false,
+            dry_run_wrapper: false,
             dump_tx: false,
             force: false,
             output_folder: None,
@@ -87,11 +84,13 @@ impl NamadaChain {
             ledger_address: (),
             initialized_account_alias: None,
             wallet_alias_force: false,
-            gas_payer: None,
-            gas_amount,
-            gas_token,
+            wrapper_fee_payer: Some(relayer_key_pair.clone()),
+            fee_amount: None,
+            fee_token,
+            fee_unshield: None,
             gas_limit,
             expiration: None,
+            disposable_signing_key: false,
             chain_id: Some(chain_id),
             signing_keys: vec![relayer_key_pair],
             signatures: vec![],
@@ -126,12 +125,15 @@ impl NamadaChain {
             ))
             .map_err(Error::namada_tx)?;
 
-        let mut tx = self
+        let mut shielded = ShieldedContext::<CLIShieldedUtils>::default();
+        let (mut tx, _) = self
             .rt
             .block_on(tx::build_custom(
                 &client,
+                &mut self.wallet,
+                &mut shielded,
                 args.clone(),
-                &signing_data.gas_payer,
+                &signing_data.fee_payer,
             ))
             .map_err(Error::namada_tx)?;
 
@@ -149,7 +151,7 @@ impl NamadaChain {
             .update_header(TxType::Raw)
             .header_hash()
             .to_string();
-        let to_broadcast = TxBroadcastData::Wrapper {
+        let to_broadcast = TxBroadcastData::Live {
             tx,
             wrapper_hash,
             decrypted_hash: decrypted_hash.clone(),
@@ -222,12 +224,15 @@ impl NamadaChain {
                 let signing_data =
                     signing::aux_signing_data(client, wallet, args, &None, None).await?;
 
-                let mut tx = tx::build_reveal_pk(
+                let mut shielded = ShieldedContext::<CLIShieldedUtils>::default();
+                let (mut tx, _) = tx::build_reveal_pk(
                     client,
+                    wallet,
+                    &mut shielded,
                     args,
                     address,
                     &public_key,
-                    &signing_data.gas_payer,
+                    &signing_data.fee_payer,
                 )
                 .await?;
 

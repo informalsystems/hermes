@@ -26,8 +26,8 @@ ibc-relayer-types = { version = "0.25.0", path = "../relayer-types", features = 
 ics23 = { version = "0.10.1" }
 
 borsh = "0.9.0"
-namada_apps = { git = "https://github.com/anoma/namada", rev = "ba8932a6dc6a63bd0b5309be194cb31b49299168" }
-namada = { git = "https://github.com/anoma/namada", rev = "ba8932a6dc6a63bd0b5309be194cb31b49299168" }
+namada_apps = { git = "https://github.com/anoma/namada", rev = "8a131b588190ab4ff62dc5e86cf362e2a27044e3" }
+namada = { git = "https://github.com/anoma/namada", rev = "8a131b588190ab4ff62dc5e86cf362e2a27044e3" }
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
 serde = "1.0"
