@@ -9,11 +9,16 @@ use crate::runtime::traits::mutex::HasMutex;
 use crate::runtime::traits::sleep::CanSleep;
 use crate::runtime::traits::time::HasTime;
 use crate::transaction::components::poll::{CanRaiseNoTxResponseError, HasPollTimeout};
-use crate::transaction::traits::components::nonce_querier::NonceQuerier;
-use crate::transaction::traits::components::tx_encoder::TxEncoder;
-use crate::transaction::traits::components::tx_fee_estimater::TxFeeEstimator;
-use crate::transaction::traits::components::tx_response_querier::TxResponseQuerier;
-use crate::transaction::traits::components::tx_submitter::TxSubmitter;
+use crate::transaction::traits::components::message_as_tx_sender::CanSendMessagesAsTx;
+use crate::transaction::traits::components::nonce_allocater::CanAllocateNonce;
+use crate::transaction::traits::components::nonce_querier::{CanQueryNonce, NonceQuerier};
+use crate::transaction::traits::components::tx_encoder::{CanEncodeTx, TxEncoder};
+use crate::transaction::traits::components::tx_fee_estimater::{CanEstimateTxFee, TxFeeEstimator};
+use crate::transaction::traits::components::tx_response_poller::CanPollTxResponse;
+use crate::transaction::traits::components::tx_response_querier::{
+    CanQueryTxResponse, TxResponseQuerier,
+};
+use crate::transaction::traits::components::tx_submitter::{CanSubmitTx, TxSubmitter};
 use crate::transaction::traits::event::CanParseTxResponseAsEvents;
 use crate::transaction::traits::fee::HasFeeForSimulation;
 use crate::transaction::traits::logs::nonce::CanLogNonce;
@@ -22,9 +27,20 @@ use crate::transaction::traits::nonce::mutex::HasMutexForNonceAllocation;
 use crate::transaction::traits::signer::HasSigner;
 use crate::transaction::traits::types::HasTxTypes;
 
-pub trait HasDefaultTxMessageSenderClosure: CanSendMessages {}
+pub trait UseDefaultTxComponents:
+    CanSendMessages
+    + CanSendMessagesAsTx
+    + CanAllocateNonce
+    + CanPollTxResponse
+    + CanQueryNonce
+    + CanEncodeTx
+    + CanEstimateTxFee
+    + CanSubmitTx
+    + CanQueryTxResponse
+{
+}
 
-impl<Chain, BaseComponents> HasDefaultTxMessageSenderClosure for Chain
+impl<Chain, BaseComponents> UseDefaultTxComponents for Chain
 where
     Chain: HasErrorType
         + HasTxTypes
