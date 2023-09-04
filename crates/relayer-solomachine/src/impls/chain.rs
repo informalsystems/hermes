@@ -3,6 +3,7 @@ use std::str::FromStr;
 use alloc::sync::Arc;
 use async_trait::async_trait;
 use ibc_relayer::chain::cosmos::query::abci_query;
+use ibc_proto::ibc::lightclients::solomachine::v3::PacketCommitmentData;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
@@ -12,6 +13,7 @@ use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_cosmos::contexts::chain::CosmosChain;
+use ibc_relayer_cosmos::methods::encode::encode_protobuf;
 use ibc_relayer_cosmos::traits::message::{CosmosMessage, ToCosmosMessage};
 use ibc_relayer_cosmos::types::channel::CosmosInitChannelOptions;
 use ibc_relayer_cosmos::types::error::{BaseError as CosmosBaseError, Error as CosmosError};
@@ -58,6 +60,8 @@ use ibc_relayer_types::timestamp::{Timestamp, ZERO_DURATION};
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
+use crate::methods::encode::client_state::encode_client_state;
+use crate::methods::encode::consensus_state::encode_consensus_state;
 use crate::methods::encode::header::encode_header;
 use crate::methods::encode::header_data::sign_header_data;
 use crate::methods::encode::sign_data::{sign_with_data, timestamped_sign_data_to_bytes};
@@ -389,23 +393,33 @@ where
         height: &Height,
         packet: &Packet,
     ) -> Result<SolomachineReceivePacketPayload, Chain::Error> {
-        let path = CommitmentsPath {
+        let commitment_bytes = packet.commitment_bytes();
+
+        let commitment_path = CommitmentsPath {
             port_id: packet.source_port.clone(),
             channel_id: packet.source_channel.clone(),
             sequence: packet.sequence,
         };
 
-        let path = path.to_string();
+        let commitment_path = commitment_path.to_string();
 
-        let new_diversifier = self.chain.current_diversifier();
+        let packet_commitment_data = PacketCommitmentData {
+            path: commitment_path.as_bytes(),
+            commitment: commitment_bytes,
+        };
 
+        let packet_commitment_data_bytes = encode_protobuf(&packet_commitment_data)
+            .map_err(CosmosBaseError::protobuf_encoding_error)?;
+
+        let new_diversifier = self.chain.new_diversifier().await;
         let secret_key = self.chain.secret_key();
+        let consensus_timestamp = client_state.consensus_state.timestamp;
 
         let sign_data = SolomachineSignData {
             sequence: u64::from(packet.sequence),
-            timestamp: self.chain.current_time(),
+            timestamp: consensus_timestamp,
             diversifier: new_diversifier,
-            data: packet.data.clone(),
+            data: packet_commitment_data_bytes,
             path: path.as_bytes().to_vec(),
         };
 
@@ -435,7 +449,44 @@ where
         height: &Height,
         packet: &Packet,
     ) -> Result<SolomachineTimeoutUnorderedPacketPayload, Chain::Error> {
-        todo!()
+        let commitment_bytes = packet.commitment_bytes();
+
+        let commitment_path = CommitmentsPath {
+            port_id: packet.source_port.clone(),
+            channel_id: packet.source_channel.clone(),
+            sequence: packet.sequence,
+        };
+
+        let commitment_path = commitment_path.to_string();
+
+        let packet_commitment_data = PacketCommitmentData {
+            path: commitment_path.as_bytes(),
+            commitment: commitment_bytes,
+        };
+
+        let packet_commitment_data_bytes = encode_protobuf(&packet_commitment_data)
+            .map_err(CosmosBaseError::protobuf_encoding_error)?;
+
+        let new_diversifier = self.chain.new_diversifier().await;
+        let secret_key = self.chain.secret_key();
+        let consensus_timestamp = client_state.consensus_state.timestamp;
+
+        let sign_data = SolomachineSignData {
+            sequence: u64::from(packet.sequence),
+            timestamp: consensus_timestamp,
+            diversifier: new_diversifier,
+            data: packet_commitment_data_bytes,
+            path: path.as_bytes().to_vec(),
+        };
+
+        let proof = sign_with_data(secret_key, &sign_data).map_err(Chain::encode_error)?;
+
+        let payload = SolomachineTimeoutUnorderedPacketPayload {
+            update_height: *height,
+            proof_unreceived: proof,
+        };
+
+        Ok(payload)
     }
 
     async fn build_create_client_payload(

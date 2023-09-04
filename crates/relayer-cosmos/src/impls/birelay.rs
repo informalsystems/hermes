@@ -1,10 +1,9 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_all_in_one::one_for_all::traits::birelay::OfaBiRelay;
 use ibc_relayer_all_in_one::one_for_all::types::relay::OfaRelayWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-use ibc_relayer_runtime::tokio::error::Error as TokioError;
-use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
+use ibc_relayer_runtime::types::error::Error as TokioError;
+use ibc_relayer_runtime::types::log::logger::TracingLogger;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 
 use crate::contexts::birelay::CosmosBiRelay;
 use crate::contexts::relay::CosmosRelay;
@@ -25,7 +24,7 @@ where
 
     type RelayBToA = CosmosRelay<ChainB, ChainA>;
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
+    fn runtime(&self) -> &Self::Runtime {
         &self.runtime
     }
 

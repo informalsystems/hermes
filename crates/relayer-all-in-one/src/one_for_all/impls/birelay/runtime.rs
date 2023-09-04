@@ -3,13 +3,12 @@ use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 
 use crate::one_for_all::traits::birelay::OfaBiRelay;
 use crate::one_for_all::types::birelay::OfaBiRelayWrapper;
-use crate::one_for_all::types::runtime::OfaRuntimeWrapper;
 
 impl<BiRelay> HasRuntime for OfaBiRelayWrapper<BiRelay>
 where
     BiRelay: OfaBiRelay,
 {
-    type Runtime = OfaRuntimeWrapper<BiRelay::Runtime>;
+    type Runtime = BiRelay::Runtime;
 
     fn runtime(&self) -> &Self::Runtime {
         self.birelay.runtime()

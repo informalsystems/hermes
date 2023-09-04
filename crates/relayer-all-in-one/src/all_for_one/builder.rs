@@ -62,6 +62,7 @@ pub trait CanBuildAfoBiRelayFromOfa:
 impl<Build> CanBuildAfoBiRelayFromOfa for OfaBuilderWrapper<Build>
 where
     Build: OfaBuilder,
+    // OfaBuilderWrapper<Build>: CanBuildBiRelayFromRelays
 {
     type AfoBiRelay = OfaBiRelayWrapper<Build::BiRelay>;
 
@@ -72,7 +73,13 @@ where
         client_id_a: &ClientIdA<Self>,
         client_id_b: &ClientIdB<Self>,
     ) -> Result<OfaBiRelayWrapper<Build::BiRelay>, Build::Error> {
-        self.build_afo_birelay(chain_id_a, chain_id_b, client_id_a, client_id_b)
-            .await
+        <OfaBuilderWrapper<Build> as CanBuildAfoBiRelay>::build_afo_birelay(
+            self,
+            chain_id_a,
+            chain_id_b,
+            client_id_a,
+            client_id_b,
+        )
+        .await
     }
 }

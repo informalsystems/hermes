@@ -6,7 +6,7 @@ use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 use ibc_relayer_components::runtime::traits::time::HasTime;
 
 use async_trait::async_trait;
-use ibc_relayer_runtime::tokio::error::Error as TokioError;
+use ibc_relayer_runtime::types::error::Error as TokioError;
 
 use crate::relayer_mock::base::types::aliases::MockTimestamp;
 use crate::relayer_mock::util::clock::MockClock;

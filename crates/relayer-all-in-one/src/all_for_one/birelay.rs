@@ -6,7 +6,8 @@ use crate::all_for_one::relay::AfoRelay;
 use crate::all_for_one::runtime::HasAfoRuntime;
 
 pub trait AfoBiRelay:
-    HasAfoRuntime
+    Clone
+    + HasAfoRuntime
     + HasLoggerWithBaseLevels
     + CanAutoRelay
     + HasTwoWayRelay<RelayAToB = Self::AfoRelayAToB, RelayBToA = Self::AfoRelayBToA>

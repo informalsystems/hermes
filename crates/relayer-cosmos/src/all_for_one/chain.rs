@@ -1,8 +1,7 @@
 use alloc::sync::Arc;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer_all_in_one::all_for_one::chain::{AfoChain, AfoCounterpartyChain};
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
@@ -20,7 +19,7 @@ use crate::types::error::Error;
 pub trait AfoCosmosChain<Counterparty>:
     AfoChain<
     Counterparty,
-    AfoRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
+    AfoRuntime = TokioRuntimeContext,
     Error = Error,
     Height = Height,
     Timestamp = Timestamp,
@@ -48,7 +47,7 @@ impl<Chain, Counterparty> AfoCosmosChain<Counterparty> for Chain
 where
     Chain: AfoChain<
         Counterparty,
-        AfoRuntime = OfaRuntimeWrapper<TokioRuntimeContext>,
+        AfoRuntime = TokioRuntimeContext,
         Error = Error,
         Height = Height,
         Timestamp = Timestamp,

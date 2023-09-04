@@ -5,8 +5,7 @@ use futures::lock::Mutex;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
 
@@ -18,7 +17,7 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    pub runtime: TokioRuntimeContext,
     pub src_chain: OfaChainWrapper<CosmosChain<SrcChain>>,
     pub dst_chain: OfaChainWrapper<CosmosChain<DstChain>>,
     pub src_client_id: ClientId,
@@ -35,7 +34,7 @@ where
     DstChain: ChainHandle,
 {
     pub fn new(
-        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+        runtime: TokioRuntimeContext,
         src_chain: OfaChainWrapper<CosmosChain<SrcChain>>,
         dst_chain: OfaChainWrapper<CosmosChain<DstChain>>,
         src_client_id: ClientId,
