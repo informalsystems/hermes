@@ -1,13 +1,14 @@
 use async_trait::async_trait;
 
 use crate::core::traits::component::{DelegateComponent, HasComponents};
+use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
 use crate::transaction::traits::types::HasTxTypes;
 
 pub struct TxEncoderComponent;
 
 #[async_trait]
-pub trait TxEncoder<TxContext>
+pub trait TxEncoder<TxContext>: Async
 where
     TxContext: HasTxTypes,
 {

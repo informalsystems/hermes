@@ -12,7 +12,7 @@ use crate::transaction::traits::components::tx_response_querier::CanQueryTxRespo
 use crate::transaction::traits::logs::logger::CanLogTx;
 use crate::transaction::traits::types::HasTxTypes;
 
-pub trait InjectNoTxResponseError: HasTxTypes {
+pub trait CanRaiseNoTxResponseError: HasTxTypes {
     fn tx_no_response_error(tx_hash: &Self::TxHash) -> Self::Error;
 }
 
@@ -27,7 +27,8 @@ pub struct PollTxResponse;
 #[async_trait]
 impl<Context> TxResponsePoller<Context> for PollTxResponse
 where
-    Context: CanLogTx + CanQueryTxResponse + HasPollTimeout + HasRuntime + InjectNoTxResponseError,
+    Context:
+        CanLogTx + CanQueryTxResponse + HasPollTimeout + HasRuntime + CanRaiseNoTxResponseError,
     Context::Runtime: HasTime + CanSleep,
 {
     async fn poll_tx_response(
