@@ -11,6 +11,7 @@
 use async_trait::async_trait;
 use eyre::eyre;
 use ibc_relayer_components::chain::traits::client::client_state::CanQueryClientState;
+use ibc_relayer_components::chain::traits::components::message_sender::CanSendMessages;
 use ibc_relayer_components::chain::traits::logs::event::CanLogChainEvent;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::chain::traits::message_builders::ack_packet::{
@@ -22,7 +23,6 @@ use ibc_relayer_components::chain::traits::message_builders::receive_packet::{
 use ibc_relayer_components::chain::traits::message_builders::timeout_unordered_packet::{
     CanBuildTimeoutUnorderedPacketMessage, CanBuildTimeoutUnorderedPacketPayload,
 };
-use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
 use ibc_relayer_components::chain::traits::queries::consensus_state::CanQueryConsensusState;
 use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus;

@@ -1,5 +1,5 @@
 use core::marker::PhantomData;
-use ibc_relayer_components::chain::traits::message_sender::MessageSenderComponent;
+use ibc_relayer_components::chain::traits::components::message_sender::MessageSenderComponent;
 use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerierComponent;
 use ibc_relayer_components::chain::traits::queries::status::ChainStatusQuerierComponent;
 use ibc_relayer_components::components::default::chain::DefaultChainComponents;

@@ -6,7 +6,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::traits::types::message::HasMessageType;
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
@@ -122,14 +122,14 @@ pub trait CanSendMessages: HasMessageType + HasEventType + HasErrorType {
 #[async_trait]
 impl<Chain> CanSendMessages for Chain
 where
-    Chain: HasMessageType + HasEventType + HasErrorType + DelegateComponent<MessageSenderComponent>,
-    Chain::Delegate: MessageSender<Chain>,
+    Chain: HasMessageType + HasEventType + HasErrorType + HasComponents,
+    Chain::Components: MessageSender<Chain>,
 {
     async fn send_messages(
         &self,
         messages: Vec<Self::Message>,
     ) -> Result<Vec<Vec<Self::Event>>, Self::Error> {
-        Chain::Delegate::send_messages(self, messages).await
+        Chain::Components::send_messages(self, messages).await
     }
 }
 

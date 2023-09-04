@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::chain::traits::message_sender::MessageSenderComponent;
+use crate::chain::traits::components::message_sender::MessageSenderComponent;
 use crate::transaction::components::message_as_tx::EstimateFeesAndSendTx;
 use crate::transaction::components::message_sender::send_as_tx::SendMessagesAsTx;
 use crate::transaction::components::nonce::mutex::AllocateNonceWithMutex;

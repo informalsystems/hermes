@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::chain::traits::message_sender::MessageSender;
+use crate::chain::traits::components::message_sender::MessageSender;
 use crate::std_prelude::*;
 use crate::transaction::traits::event::CanParseTxResponseAsEvents;
 use crate::transaction::traits::message_as_tx::CanSendMessagesAsTx;

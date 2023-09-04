@@ -4,7 +4,7 @@ use crate::chain::traits::client::create::{
     CanBuildCreateClientMessage, CanBuildCreateClientPayload, HasCreateClientEvent,
     HasCreateClientPayload,
 };
-use crate::chain::traits::message_sender::CanSendSingleMessage;
+use crate::chain::traits::components::message_sender::CanSendSingleMessage;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::create_client::ClientCreator;
 use crate::relay::traits::target::ChainTarget;

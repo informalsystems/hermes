@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::chain::traits::message_sender::CanSendMessages;
+use crate::chain::traits::components::message_sender::CanSendMessages;
 use crate::chain::types::aliases::{Height, Message};
 use crate::core::traits::component::DelegateComponent;
 use crate::relay::traits::chains::HasRelayChains;

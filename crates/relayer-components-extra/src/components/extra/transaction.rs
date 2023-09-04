@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use ibc_relayer_components::chain::traits::message_sender::MessageSenderComponent;
+use ibc_relayer_components::chain::traits::components::message_sender::MessageSenderComponent;
 use ibc_relayer_components::components::default::transaction::DefaultTxComponents;
 use ibc_relayer_components::transaction::traits::encode::TxEncoderComponent;
 use ibc_relayer_components::transaction::traits::estimate::TxFeeEstimatorComponent;
