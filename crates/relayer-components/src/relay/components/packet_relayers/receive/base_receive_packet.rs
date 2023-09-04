@@ -18,9 +18,8 @@ pub struct BaseReceivePacketRelayer;
 #[async_trait]
 impl<Relay, AckEvent> ReceivePacketRelayer<Relay> for BaseReceivePacketRelayer
 where
+    Relay: HasRelayChains + CanSendSingleIbcMessage<MainSink, DestinationTarget>,
     Relay::SrcChain: CanBuildReceivePacketPayload<Relay::DstChain>,
-    Relay: CanSendSingleIbcMessage<MainSink, DestinationTarget>,
-    Relay: HasRelayChains,
     Relay::DstChain: CanQueryClientState<Relay::SrcChain>
         + CanBuildReceivePacketMessage<Relay::SrcChain>
         + HasWriteAcknowledgementEvent<Relay::SrcChain, WriteAcknowledgementEvent = AckEvent>,
