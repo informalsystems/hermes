@@ -2,8 +2,10 @@ use alloc::sync::Arc;
 use eyre::Report;
 use flex_error::define_error;
 use flex_error::TraceError;
+use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
 use prost::EncodeError;
 
+use ibc_relayer_cosmos::types::error::Error as CosmosError;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
 use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
@@ -13,6 +15,11 @@ pub type Error = Arc<BaseError>;
 define_error! {
     #[derive(Clone, Debug)]
     BaseError {
+        CosmosChainError
+            [ TraceError<CosmosError> ]
+            | _ | { "cosmos chain error" },
+
+
         Encode
             [ TraceError<EncodeError> ]
             | _ | { "protobuf encode error" },
@@ -28,6 +35,18 @@ define_error! {
         InvalidConnectionState
             { expected: ConnectionState, actual: ConnectionState }
             | e | { format_args!("connection state error, expected {} got {}", e.expected, e.actual) },
+
+        MissingClientState
+            { client_id: ClientId }
+            | e | { format_args!("client state for client id `{}` was not found", e.client_id) },
+
+        MissingConnectionEnd
+            { connection_id: ConnectionId }
+            | e | { format_args!("connection end for connection id `{}` was not found", e.connection_id) },
+
+        MissingConsensusState
+            { client_id: ClientId }
+            | e | { format_args!("consensus state for client id `{}` was not found", e.client_id) },
 
         Tokio
             [ TokioError ]

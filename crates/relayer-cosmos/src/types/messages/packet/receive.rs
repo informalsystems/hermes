@@ -11,6 +11,7 @@ use crate::traits::message::CosmosMessage;
 
 const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 
+#[derive(Debug)]
 pub struct CosmosReceivePacketMessage {
     pub packet: Packet,
     pub update_height: Height,

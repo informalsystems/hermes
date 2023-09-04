@@ -9,10 +9,12 @@ use ibc_relayer_types::Height;
 
 use crate::types::tendermint::TendermintClientState;
 
+#[derive(Debug)]
 pub struct CosmosConnectionOpenInitPayload {
     pub commitment_prefix: CommitmentPrefix,
 }
 
+#[derive(Debug)]
 pub struct CosmosConnectionOpenTryPayload {
     pub commitment_prefix: CommitmentPrefix,
     pub client_state: TendermintClientState,
@@ -24,6 +26,7 @@ pub struct CosmosConnectionOpenTryPayload {
     pub proof_consensus: ConsensusProof,
 }
 
+#[derive(Debug)]
 pub struct CosmosConnectionOpenAckPayload {
     pub client_state: TendermintClientState,
     pub version: Version,
@@ -33,6 +36,7 @@ pub struct CosmosConnectionOpenAckPayload {
     pub proof_consensus: ConsensusProof,
 }
 
+#[derive(Debug)]
 pub struct CosmosConnectionOpenConfirmPayload {
     pub update_height: Height,
     pub proof_ack: CommitmentProofBytes,

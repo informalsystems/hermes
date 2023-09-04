@@ -13,6 +13,7 @@ use crate::traits::message::CosmosMessage;
 
 const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenAck";
 
+#[derive(Debug)]
 pub struct CosmosConnectionOpenAckMessage {
     pub connection_id: ConnectionId,
     pub counterparty_connection_id: ConnectionId,

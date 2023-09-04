@@ -1,7 +1,8 @@
 use async_trait::async_trait;
+use eyre::eyre;
 
 use ibc_relayer::chain::handle::BaseChainHandle;
-use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
+use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes};
 use ibc_relayer_all_in_one::one_for_all::traits::relay::OfaRelay;
 use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaRuntime;
 use ibc_relayer_all_in_one::one_for_all::types::batch::aliases::MessageBatchSender;
@@ -14,15 +15,13 @@ use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
 use crate::context::chain::MockSolomachineChainContext;
 use crate::context::relay::SolomachineRelay;
+use crate::types::batch::CosmosBatchSender;
 use crate::types::chain::SolomachineChainWrapper;
+use crate::types::error::{BaseError, Error};
 
 #[async_trait]
-impl<SrcChain, DstChain> OfaRelay for SolomachineRelay<SrcChain, DstChain>
-where
-    SrcChain: OfaIbcChain<DstChain>,
-    DstChain: OfaIbcChain<SrcChain>,
-{
-    type Error = ();
+impl OfaRelay for SolomachineRelay {
+    type Error = Error;
 
     type Runtime = TokioRuntimeContext;
 
@@ -40,12 +39,12 @@ where
         todo!()
     }
 
-    fn src_chain_error(_e: <Self::SrcChain as OfaChainTypes>::Error) -> Self::Error {
-        todo!()
+    fn src_chain_error(e: <Self::SrcChain as OfaChainTypes>::Error) -> Self::Error {
+        e
     }
 
-    fn dst_chain_error(_e: <Self::DstChain as OfaChainTypes>::Error) -> Self::Error {
-        todo!()
+    fn dst_chain_error(e: <Self::DstChain as OfaChainTypes>::Error) -> Self::Error {
+        BaseError::cosmos_chain_error(e).into()
     }
 
     fn is_retryable_error(_e: &Self::Error) -> bool {
@@ -57,10 +56,13 @@ where
     }
 
     fn missing_src_create_client_event_error(
-        _src_chain: &Self::SrcChain,
-        _dst_chain: &Self::DstChain,
+        src_chain: &Self::SrcChain,
+        dst_chain: &Self::DstChain,
     ) -> Self::Error {
-        todo!()
+        BaseError::generic(eyre!("missing CreateClient event when creating client from chain {} with counterparty chain {}",
+            src_chain.chain_id(),
+            dst_chain.chain_id(),
+        )).into()
     }
 
     fn missing_dst_create_client_event_error(
@@ -71,7 +73,7 @@ where
     }
 
     fn missing_connection_init_event_error(&self) -> Self::Error {
-        todo!()
+        BaseError::generic(eyre!("missing ConnectionOpenInit event")).into()
     }
 
     fn missing_connection_try_event_error(
@@ -97,23 +99,23 @@ where
     }
 
     fn logger(&self) -> &Self::Logger {
-        todo!()
+        &TracingLogger
     }
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId {
-        todo!()
+        &self.src_client_id
     }
 
     fn dst_client_id(&self) -> &<Self::DstChain as OfaChainTypes>::ClientId {
-        todo!()
+        &self.dst_client_id
     }
 
     fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain> {
-        todo!()
+        &self.src_chain
     }
 
     fn dst_chain(&self) -> &OfaChainWrapper<Self::DstChain> {
-        todo!()
+        &self.dst_chain
     }
 
     async fn try_acquire_packet_lock<'a>(
@@ -131,7 +133,7 @@ where
         todo!()
     }
 
-    fn dst_chain_message_batch_sender(&self) -> &MessageBatchSender<Self::DstChain, Self::Error> {
-        todo!()
+    fn dst_chain_message_batch_sender(&self) -> &CosmosBatchSender {
+        &self.dst_chain_message_batch_sender
     }
 }

@@ -1,10 +1,11 @@
 use alloc::sync::Arc;
+use core::fmt::Debug;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height;
 use prost::EncodeError;
 
-pub trait CosmosMessage: Send + Sync + 'static {
+pub trait CosmosMessage: Debug + Send + Sync + 'static {
     fn counterparty_message_height_for_update_client(&self) -> Option<Height> {
         None
     }

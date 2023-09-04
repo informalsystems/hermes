@@ -1,5 +1,6 @@
 use crate::traits::solomachine::SolomachineChain;
 
+#[derive(Clone)]
 pub struct SolomachineChainWrapper<Chain> {
     pub chain: Chain,
 }

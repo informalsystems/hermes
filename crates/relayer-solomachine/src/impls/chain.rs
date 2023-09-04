@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use alloc::sync::Arc;
 use async_trait::async_trait;
+use ibc_relayer::chain::cosmos::query::abci_query;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
@@ -34,8 +37,9 @@ use ibc_relayer_cosmos::types::payloads::packet::{
 };
 use ibc_relayer_cosmos::types::telemetry::CosmosTelemetry;
 use ibc_relayer_cosmos::types::tendermint::{TendermintClientState, TendermintConsensusState};
-use ibc_relayer_runtime::tokio::logger::value::LogValue;
-use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
+use ibc_relayer_types::core::ics03_connection::connection::{
+    ConnectionEnd, Counterparty, State as ConnectionState,
+};
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty as ChannelCounterparty, State,
 };
@@ -45,25 +49,29 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
-use ibc_relayer_types::core::ics24_host::path::CommitmentsPath;
+use ibc_relayer_types::core::ics24_host::path::{
+    ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
+};
+use ibc_relayer_types::core::ics24_host::IBC_QUERY_PATH;
 use ibc_relayer_types::proofs::ConsensusProof;
-use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::timestamp::{Timestamp, ZERO_DURATION};
+use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
-use crate::methods::encode::client_state::encode_client_state;
-use crate::methods::encode::consensus_state::encode_consensus_state;
 use crate::methods::encode::header::encode_header;
 use crate::methods::encode::header_data::sign_header_data;
-use crate::methods::encode::sign_data::sign_with_data;
+use crate::methods::encode::sign_data::{sign_with_data, timestamped_sign_data_to_bytes};
 use crate::methods::proofs::channel::channel_proof_data;
 use crate::methods::proofs::client_state::client_state_proof_data;
 use crate::methods::proofs::connection::connection_proof_data;
 use crate::methods::proofs::consensus_state::consensus_state_proof_data;
 use crate::traits::solomachine::SolomachineChain;
 use crate::types::chain::SolomachineChainWrapper;
-use crate::types::client_state::SolomachineClientState;
-use crate::types::consensus_state::SolomachineConsensusState;
-use crate::types::event::SolomachineEvent;
+use crate::types::client_state::{decode_client_state, SolomachineClientState};
+use crate::types::consensus_state::{decode_client_consensus_state, SolomachineConsensusState};
+use crate::types::event::{
+    SolomachineConnectionInitEvent, SolomachineCreateClientEvent, SolomachineEvent,
+};
 use crate::types::header::{SolomachineHeader, SolomachineHeaderData, SolomachineSignHeaderData};
 use crate::types::message::SolomachineMessage;
 use crate::types::payloads::channel::{
@@ -155,9 +163,9 @@ where
 
     type TimeoutUnorderedPacketPayload = SolomachineTimeoutUnorderedPacketPayload;
 
-    type CreateClientEvent = ();
+    type CreateClientEvent = SolomachineCreateClientEvent;
 
-    type ConnectionOpenInitEvent = ();
+    type ConnectionOpenInitEvent = SolomachineConnectionInitEvent;
 
     type ConnectionOpenTryEvent = ();
 
@@ -189,7 +197,7 @@ where
     }
 
     fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry> {
-        todo!()
+        self.chain.get_telemetry()
     }
 
     fn log_event<'a>(event: &'a Self::Event) -> <Self::Logger as BaseLogger>::LogValue<'a> {
@@ -213,7 +221,7 @@ where
     }
 
     fn chain_status_height(status: &Self::ChainStatus) -> &Height {
-        todo!()
+        &status.height
     }
 
     fn chain_status_timestamp(status: &Self::ChainStatus) -> &Timestamp {
@@ -241,11 +249,14 @@ where
     }
 
     fn try_extract_create_client_event(event: Self::Event) -> Option<Self::CreateClientEvent> {
-        todo!()
+        match event {
+            SolomachineEvent::CreateClient(e) => Some(e),
+            _ => None,
+        }
     }
 
     fn create_client_event_client_id(event: &Self::CreateClientEvent) -> &ClientId {
-        todo!()
+        &event.client_id
     }
 
     fn client_state_latest_height(client_state: &SolomachineClientState) -> &Height {
@@ -255,13 +266,16 @@ where
     fn try_extract_connection_open_init_event(
         event: Self::Event,
     ) -> Option<Self::ConnectionOpenInitEvent> {
-        todo!()
+        match event {
+            SolomachineEvent::ConnectionInit(e) => Some(e),
+            _ => None,
+        }
     }
 
     fn connection_open_init_event_connection_id(
         event: &Self::ConnectionOpenInitEvent,
     ) -> &ConnectionId {
-        todo!()
+        &event.connection_id
     }
 
     fn try_extract_connection_open_try_event(
@@ -298,15 +312,64 @@ where
         &self,
         messages: Vec<SolomachineMessage>,
     ) -> Result<Vec<Vec<Self::Event>>, Chain::Error> {
-        todo!()
+        let mut res = vec![];
+        for message in messages.iter() {
+            match message {
+                SolomachineMessage::CosmosCreateClient(m) => {
+                    let client_id = self
+                        .chain
+                        .create_client(m.client_state.clone(), m.consensus_state.clone())
+                        .await
+                        .unwrap();
+                    let create_cient_event = SolomachineCreateClientEvent {
+                        client_id,
+                        client_state: m.client_state.clone(),
+                    };
+                    res.push(vec![SolomachineEvent::CreateClient(create_cient_event)]);
+                }
+                SolomachineMessage::CosmosConnectionOpenInit(m) => {
+                    let connection_id = ConnectionId::from_str("connection-1").unwrap();
+                    let counterparty_connection_id =
+                        ConnectionId::from_str("connection-0").unwrap();
+                    let client_id = ClientId::from_str("cosmos-client").unwrap();
+                    let counterparty_client_id = ClientId::from_str("06-solomachine-1").unwrap();
+                    let counterparty = Counterparty::new(
+                        counterparty_client_id,
+                        Some(counterparty_connection_id.clone()),
+                        Default::default(),
+                    );
+                    let connection_end = ConnectionEnd::new(
+                        ConnectionState::Init,
+                        client_id,
+                        counterparty,
+                        vec![Default::default()],
+                        ZERO_DURATION,
+                    );
+                    self.chain
+                        .update_connection(&connection_id, connection_end)
+                        .await;
+                    let connection_init_event = SolomachineConnectionInitEvent { connection_id };
+                    res.push(vec![SolomachineEvent::ConnectionInit(
+                        connection_init_event,
+                    )]);
+                }
+                _ => {}
+            }
+        }
+        Ok(res)
     }
 
     fn chain_id(&self) -> &Self::ChainId {
-        todo!()
+        self.chain.get_chain_id()
     }
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Chain::Error> {
-        todo!()
+        // TODO return correct chain status
+        let status = ChainStatus {
+            height: Height::new(0, 1).unwrap(),
+            timestamp: Timestamp::now(),
+        };
+        Ok(status)
     }
 
     fn event_subscription(&self) -> &Arc<dyn Subscription<Item = (Height, Self::Event)>> {
@@ -334,7 +397,7 @@ where
 
         let path = path.to_string();
 
-        let new_diversifier = self.chain.new_diversifier().await;
+        let new_diversifier = self.chain.current_diversifier();
 
         let secret_key = self.chain.secret_key();
 
@@ -379,18 +442,18 @@ where
         &self,
         create_client_options: &(),
     ) -> Result<SolomachineCreateClientPayload, Chain::Error> {
-        let public_key = *self.chain.public_key();
-        let diversifier = self.chain.new_diversifier().await;
+        let public_key = self.chain.public_key().clone();
+        let diversifier = self.chain.current_diversifier();
         let timestamp = self.chain.current_time();
 
         let consensus_state = SolomachineConsensusState {
-            public_key,
+            public_key: Some(public_key),
             diversifier,
             timestamp,
         };
 
         let client_state = SolomachineClientState {
-            sequence: 0,
+            sequence: 1,
             is_frozen: false,
             consensus_state,
         };
@@ -412,13 +475,13 @@ where
         let public_key = self.chain.public_key();
         let current_diversifier = &client_state.consensus_state.diversifier;
 
-        let next_diversifier = self.chain.next_diversifier(current_diversifier).await;
+        let next_diversifier = self.chain.current_diversifier();
 
         // TODO: check that current time is greater than or equal to the consensus state time.
         let timestamp = self.chain.current_time();
 
         let header_data = SolomachineHeaderData {
-            new_public_key: *public_key,
+            new_public_key: public_key.clone(),
             new_diversifier: next_diversifier,
         };
 
@@ -479,7 +542,12 @@ where
 
         let commitment_prefix = self.chain.commitment_prefix();
 
-        let connection_data = connection_proof_data(
+        let public_key = self.chain.public_key();
+        let secret_key = self.chain.secret_key();
+
+        let connection_proof = connection_proof_data(
+            public_key,
+            secret_key,
             solo_client_state,
             commitment_prefix,
             connection_id,
@@ -489,7 +557,9 @@ where
 
         let cosmos_client_state = self.chain.query_client_state(client_id).await?;
 
-        let client_state_data = client_state_proof_data(
+        let client_state_proof = client_state_proof_data(
+            public_key,
+            secret_key,
             solo_client_state,
             commitment_prefix,
             client_id,
@@ -507,14 +577,6 @@ where
             &cosmos_consensus_state,
         )
         .map_err(Chain::encode_error)?;
-
-        let secret_key = self.chain.secret_key();
-
-        let connection_proof =
-            sign_with_data(secret_key, &connection_data).map_err(Chain::encode_error)?;
-
-        let client_state_proof =
-            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
 
         let consensus_state_proof =
             sign_with_data(secret_key, &consensus_state_data).map_err(Chain::encode_error)?;
@@ -540,6 +602,8 @@ where
         client_id: &ClientId,
         connection_id: &ConnectionId,
     ) -> Result<SolomachineConnectionOpenAckPayload, Chain::Error> {
+        let public_key = self.chain.public_key();
+        let secret_key = self.chain.secret_key();
         let connection = self.chain.query_connection(connection_id).await?;
 
         if connection.state != ConnectionState::TryOpen {
@@ -560,7 +624,9 @@ where
 
         let cosmos_client_state = self.chain.query_client_state(client_id).await?;
 
-        let client_state_data = client_state_proof_data(
+        let client_state_proof = client_state_proof_data(
+            public_key,
+            secret_key,
             client_state,
             commitment_prefix,
             client_id,
@@ -568,9 +634,16 @@ where
         )
         .map_err(Chain::encode_error)?;
 
-        let connection_data =
-            connection_proof_data(client_state, commitment_prefix, connection_id, connection)
-                .map_err(Chain::encode_error)?;
+        let connection_proof: crate::types::sign_data::SolomachineTimestampedSignData =
+            connection_proof_data(
+                public_key,
+                secret_key,
+                client_state,
+                commitment_prefix,
+                connection_id,
+                connection,
+            )
+            .map_err(Chain::encode_error)?;
 
         let cosmos_consensus_state = self.chain.query_consensus_state(client_id, *height).await?;
 
@@ -582,14 +655,6 @@ where
             &cosmos_consensus_state,
         )
         .map_err(Chain::encode_error)?;
-
-        let secret_key = self.chain.secret_key();
-
-        let connection_proof =
-            sign_with_data(secret_key, &connection_data).map_err(Chain::encode_error)?;
-
-        let client_state_proof =
-            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
 
         let consensus_state_proof =
             sign_with_data(secret_key, &consensus_state_data).map_err(Chain::encode_error)?;
@@ -611,22 +676,33 @@ where
         client_state: &SolomachineClientState,
         height: &Height,
         client_id: &ClientId,
-        _connection_id: &ConnectionId,
+        connection_id: &ConnectionId,
     ) -> Result<SolomachineConnectionOpenConfirmPayload, Chain::Error> {
+        let public_key = self.chain.public_key();
         let secret_key = self.chain.secret_key();
         let commitment_prefix = self.chain.commitment_prefix();
         let cosmos_client_state = self.chain.query_client_state(client_id).await?;
 
-        let client_state_data = client_state_proof_data(
-            client_state,
-            commitment_prefix,
-            client_id,
-            &cosmos_client_state,
-        )
-        .map_err(Chain::encode_error)?;
+        let connection = self.chain.query_connection(connection_id).await?;
 
-        let connection_proof =
-            sign_with_data(secret_key, &client_state_data).map_err(Chain::encode_error)?;
+        // TODO confirm connection state
+        /*if connection.state != ConnectionState::TryOpen {
+            return Err(Chain::invalid_connection_state_error(
+                ConnectionState::TryOpen,
+                connection.state,
+            ));
+        }*/
+
+        let connection_proof: crate::types::sign_data::SolomachineTimestampedSignData =
+            connection_proof_data(
+                public_key,
+                secret_key,
+                client_state,
+                commitment_prefix,
+                connection_id,
+                connection,
+            )
+            .map_err(Chain::encode_error)?;
 
         let payload = SolomachineConnectionOpenConfirmPayload {
             update_height: *height,
@@ -1113,7 +1189,23 @@ where
         &self,
         client_id: &ClientId,
     ) -> Result<SolomachineClientState, CosmosError> {
-        todo!()
+        let data = ClientStatePath(client_id.clone());
+        let query_height = self.handle.query_latest_height().unwrap();
+
+        let response = abci_query(
+            &self.tx_context.tx_context.rpc_client,
+            &self.tx_context.tx_context.tx_config.rpc_address,
+            IBC_QUERY_PATH.to_string(),
+            data.to_string(),
+            query_height.into(),
+            true,
+        )
+        .await
+        .unwrap();
+
+        let client_state = decode_client_state(response.value.as_slice());
+
+        Ok(client_state)
     }
 
     async fn query_consensus_state(
@@ -1121,7 +1213,27 @@ where
         client_id: &ClientId,
         height: &Height,
     ) -> Result<SolomachineConsensusState, CosmosError> {
-        todo!()
+        let data = ClientConsensusStatePath {
+            client_id: client_id.clone(),
+            epoch: height.revision_number(),
+            height: height.revision_height(),
+        };
+        let _query_height = self.handle.query_latest_height().unwrap();
+
+        let response = abci_query(
+            &self.tx_context.tx_context.rpc_client,
+            &self.tx_context.tx_context.tx_config.rpc_address,
+            IBC_QUERY_PATH.to_string(),
+            data.to_string(),
+            (*height).into(),
+            false,
+        )
+        .await
+        .unwrap();
+
+        let client_consensus_state = decode_client_consensus_state(response.value.as_slice());
+
+        Ok(client_consensus_state)
     }
 
     async fn find_consensus_state_height_before(
@@ -1198,12 +1310,16 @@ where
         &self,
         counterparty_payload: SolomachineCreateClientPayload,
     ) -> Result<Arc<dyn CosmosMessage>, CosmosError> {
-        let client_state = encode_client_state(&counterparty_payload.client_state)
-            .map_err(CosmosBaseError::encode)?;
+        /*let client_state = encode_client_state(&counterparty_payload.client_state)
+        .map_err(CosmosBaseError::encode)?;*/
 
-        let consensus_state =
-            encode_consensus_state(&counterparty_payload.client_state.consensus_state)
-                .map_err(CosmosBaseError::encode)?;
+        let client_state = counterparty_payload.client_state.clone().to_any();
+
+        /*let consensus_state =
+        encode_consensus_state(&counterparty_payload.client_state.consensus_state)
+            .map_err(CosmosBaseError::encode)?;*/
+
+        let consensus_state = counterparty_payload.client_state.consensus_state.to_any();
 
         let message = CosmosCreateClientMessage {
             client_state,
@@ -1249,11 +1365,16 @@ where
             .try_into()
             .map_err(CosmosBaseError::ics23)?;
 
-        let proof_init = Vec::from(payload.proof_init.serialize_compact())
+        let proof_init: ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes = timestamped_sign_data_to_bytes(&payload.proof_init).unwrap()
             .try_into()
             .map_err(CosmosBaseError::proofs)?;
 
-        let proof_client: ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes = Vec::from(payload.proof_client.serialize_compact()).try_into()
+        tracing::warn!("proof_init");
+        tracing::warn!("{proof_init:x?}");
+
+        let proof_client = timestamped_sign_data_to_bytes(&payload.proof_client)
+            .unwrap()
+            .try_into()
             .map_err(CosmosBaseError::proofs)?;
 
         let consensus_signature = Vec::from(payload.proof_consensus.serialize_compact())

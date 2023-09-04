@@ -13,6 +13,7 @@ use crate::traits::message::CosmosMessage;
 
 const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenTry";
 
+#[derive(Debug)]
 pub struct CosmosChannelOpenTryMessage {
     pub port_id: PortId,
     pub channel: ChannelEnd,

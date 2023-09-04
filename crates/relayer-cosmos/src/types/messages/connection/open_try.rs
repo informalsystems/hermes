@@ -18,6 +18,7 @@ use crate::traits::message::CosmosMessage;
 
 const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
 
+#[derive(Debug)]
 pub struct CosmosConnectionOpenTryMessage {
     pub client_id: ClientId,
     pub counterparty_client_id: ClientId,

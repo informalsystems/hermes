@@ -40,6 +40,7 @@ tracing = "0.1.36"
 secp256k1 = "0.27.0"
 sha2 = "0.10.7"
 crypto-hash = "0.3.4"
+bytes = { version = "1.4.0" }
 
 [dependencies.tendermint]
 version = "=0.32.0"

@@ -1,6 +1,7 @@
 use crate::types::client_state::SolomachineClientState;
 use crate::types::header::SolomachineHeader;
 
+#[derive(Debug)]
 pub struct SolomachineCreateClientPayload {
     pub client_state: SolomachineClientState,
 }

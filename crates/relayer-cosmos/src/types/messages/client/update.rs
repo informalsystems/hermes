@@ -9,6 +9,7 @@ use crate::traits::message::CosmosMessage;
 
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 
+#[derive(Debug)]
 pub struct CosmosUpdateClientMessage {
     pub client_id: ClientId,
     pub header: Any,

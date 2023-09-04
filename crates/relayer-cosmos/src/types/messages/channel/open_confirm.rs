@@ -11,6 +11,7 @@ use crate::traits::message::CosmosMessage;
 
 const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenConfirm";
 
+#[derive(Debug)]
 pub struct CosmosChannelOpenConfirmMessage {
     pub port_id: PortId,
     pub channel_id: ChannelId,

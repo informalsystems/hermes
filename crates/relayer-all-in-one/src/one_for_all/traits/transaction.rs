@@ -24,7 +24,7 @@ pub trait OfaTxContext: Async {
        Corresponds to
        [`HasMessageType::Message`](ibc_relayer_components::chain::traits::types::message::HasMessageType::Message).
     */
-    type Message: Async;
+    type Message: Async + Debug;
 
     /**
        Corresponds to

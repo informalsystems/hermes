@@ -38,7 +38,6 @@ where
         src_connection_id: &SrcChain::ConnectionId,
     ) -> Result<DstChain::ConnectionId, Relay::Error> {
         let dst_connection_id = relay.relay_connection_open_try(src_connection_id).await?;
-
         relay
             .relay_connection_open_ack(src_connection_id, &dst_connection_id)
             .await?;

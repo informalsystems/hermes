@@ -4,8 +4,9 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer_cosmos::methods::encode::encode_to_any;
 use prost::{EncodeError, Message};
 
-use crate::methods::encode::public_key::encode_public_key;
 use crate::types::consensus_state::SolomachineConsensusState;
+
+use super::public_key::encode_public_key;
 
 const TYPE_URL: &str = "/ibc.lightclients.solomachine.v3.ConsensusState";
 
@@ -22,10 +23,13 @@ pub struct ProtoConsensusState {
 pub fn to_proto_consensus_state(
     consensus_state: &SolomachineConsensusState,
 ) -> ProtoConsensusState {
-    let proto_public_key = encode_public_key(&consensus_state.public_key);
+    let proto_public_key = consensus_state
+        .clone()
+        .public_key
+        .map(|key| encode_public_key(&key));
 
     ProtoConsensusState {
-        public_key: Some(proto_public_key),
+        public_key: proto_public_key,
         diversifier: consensus_state.diversifier.clone(),
         timestamp: consensus_state.timestamp,
     }

@@ -8,6 +8,7 @@ use crate::traits::message::CosmosMessage;
 
 const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
+#[derive(Debug)]
 pub struct CosmosCreateClientMessage {
     pub client_state: Any,
     pub consensus_state: Any,

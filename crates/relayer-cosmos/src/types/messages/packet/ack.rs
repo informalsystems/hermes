@@ -11,6 +11,7 @@ use crate::traits::message::CosmosMessage;
 
 const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 
+#[derive(Debug)]
 pub struct CosmosAckPacketMessage {
     pub packet: Packet,
     pub acknowledgement: Vec<u8>,

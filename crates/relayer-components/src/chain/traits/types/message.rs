@@ -2,6 +2,8 @@
    Trait definitions for [`HasMessageType`] and [`CanEstimateMessageSize`].
 */
 
+use core::fmt::Debug;
+
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
@@ -52,7 +54,7 @@ pub trait HasMessageType: Async {
        framework to know about specific message variants, such as
        `UpdateCientMesssage`.
     */
-    type Message: Async;
+    type Message: Async + Debug;
 }
 
 pub trait CanEstimateMessageSize: HasMessageType + HasErrorType {

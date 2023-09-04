@@ -1,5 +1,6 @@
 use secp256k1::ecdsa::Signature;
-use secp256k1::PublicKey;
+
+use crate::methods::encode::public_key::PublicKey;
 
 #[derive(Clone)]
 pub struct SolomachineHeaderData {

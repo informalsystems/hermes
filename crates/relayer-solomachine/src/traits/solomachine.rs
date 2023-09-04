@@ -2,20 +2,25 @@ use async_trait::async_trait;
 use core::fmt::{Debug, Display};
 use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaRuntime;
 use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
+use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
+use ibc_relayer_cosmos::types::telemetry::CosmosTelemetry;
 use ibc_relayer_cosmos::types::tendermint::{TendermintClientState, TendermintConsensusState};
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
 use ibc_relayer_types::core::ics04_channel::channel::ChannelEnd;
 use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc_relayer_types::Height;
 use prost::EncodeError;
-use secp256k1::{PublicKey, SecretKey};
+use secp256k1::SecretKey;
+
+use crate::methods::encode::public_key::PublicKey;
 
 #[async_trait]
 pub trait SolomachineChain: Async {
@@ -30,6 +35,10 @@ pub trait SolomachineChain: Async {
     /// comes to misbehavior detection of Solomachine clients. Every UpdateClient
     /// includes a new Diversifier for every IBC message sent.
     type Diversifier: Display + Async;
+
+    fn get_chain_id(&self) -> &ChainId;
+
+    fn get_telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry>;
 
     fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime>;
 
@@ -57,14 +66,13 @@ pub trait SolomachineChain: Async {
 
     fn current_time(&self) -> u64;
 
-    async fn new_client(&self) -> Result<ClientId, Self::Error>;
+    fn current_diversifier(&self) -> String;
 
-    async fn new_diversifier(&self) -> String;
-
-    /// Generate a new diversifier string to be used for the next UpdateClient.
-    /// We use a different diversifier for each IBC message, in order to
-    /// avoid misbehavior being triggered in case if the solomachine double signs.
-    async fn next_diversifier(&self, diversifier: &str) -> String;
+    async fn create_client(
+        &self,
+        client_state: TendermintClientState,
+        consensus_state: TendermintConsensusState,
+    ) -> Result<ClientId, Self::Error>;
 
     async fn query_client_state(
         &self,
@@ -76,6 +84,8 @@ pub trait SolomachineChain: Async {
         client_id: &ClientId,
         height: Height,
     ) -> Result<TendermintConsensusState, Self::Error>;
+
+    async fn update_connection(&self, connection_id: &ConnectionId, connection_end: ConnectionEnd);
 
     async fn query_connection(
         &self,

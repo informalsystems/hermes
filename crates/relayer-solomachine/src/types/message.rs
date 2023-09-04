@@ -8,6 +8,7 @@ use ibc_relayer_cosmos::types::payloads::connection::CosmosConnectionOpenConfirm
 use ibc_relayer_cosmos::types::payloads::connection::CosmosConnectionOpenInitPayload;
 use ibc_relayer_cosmos::types::payloads::connection::CosmosConnectionOpenTryPayload;
 
+#[derive(Debug)]
 pub enum SolomachineMessage {
     CosmosCreateClient(Box<CosmosCreateClientPayload>),
     CosmosUpdateClient(Box<CosmosUpdateClientPayload>),

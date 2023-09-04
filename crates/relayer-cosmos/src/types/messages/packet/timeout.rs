@@ -11,6 +11,7 @@ use crate::traits::message::CosmosMessage;
 
 const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 
+#[derive(Debug)]
 pub struct CosmosTimeoutPacketMessage {
     pub packet: Packet,
     pub next_sequence_recv: Sequence,

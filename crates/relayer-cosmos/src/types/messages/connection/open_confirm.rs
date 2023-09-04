@@ -11,6 +11,7 @@ use crate::traits::message::CosmosMessage;
 
 const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenConfirm";
 
+#[derive(Debug)]
 pub struct CosmosConnectionOpenConfirmMessage {
     pub connection_id: ConnectionId,
     pub update_height: Height,
