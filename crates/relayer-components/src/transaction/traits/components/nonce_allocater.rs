@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 use crate::transaction::traits::nonce::guard::HasNonceGuard;
@@ -45,14 +45,13 @@ pub trait CanAllocateNonce: HasNonceGuard + HasSignerType + HasErrorType {
 #[async_trait]
 impl<TxContext> CanAllocateNonce for TxContext
 where
-    TxContext:
-        HasNonceGuard + HasSignerType + HasErrorType + DelegateComponent<NonceAllocatorComponent>,
-    TxContext::Delegate: NonceAllocator<TxContext>,
+    TxContext: HasNonceGuard + HasSignerType + HasErrorType + HasComponents,
+    TxContext::Components: NonceAllocator<TxContext>,
 {
     async fn allocate_nonce<'a>(
         &'a self,
         signer: &'a TxContext::Signer,
     ) -> Result<TxContext::NonceGuard<'a>, TxContext::Error> {
-        TxContext::Delegate::allocate_nonce(self, signer).await
+        TxContext::Components::allocate_nonce(self, signer).await
     }
 }

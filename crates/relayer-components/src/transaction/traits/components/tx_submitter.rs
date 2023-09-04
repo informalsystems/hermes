@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::std_prelude::*;
 use crate::transaction::traits::types::HasTxTypes;
 
@@ -40,10 +40,10 @@ where
 #[async_trait]
 impl<TxContext> CanSubmitTx for TxContext
 where
-    TxContext: HasTxTypes + DelegateComponent<TxSubmitterComponent>,
-    TxContext::Delegate: TxSubmitter<TxContext>,
+    TxContext: HasTxTypes + HasComponents,
+    TxContext::Components: TxSubmitter<TxContext>,
 {
     async fn submit_tx(&self, tx: &Self::Transaction) -> Result<Self::TxHash, Self::Error> {
-        TxContext::Delegate::submit_tx(self, tx).await
+        TxContext::Components::submit_tx(self, tx).await
     }
 }

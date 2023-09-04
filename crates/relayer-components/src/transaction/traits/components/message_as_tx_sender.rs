@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::std_prelude::*;
 use crate::transaction::traits::types::HasTxTypes;
 
@@ -49,8 +49,8 @@ pub trait CanSendMessagesAsTx: HasTxTypes {
 #[async_trait]
 impl<TxContext> CanSendMessagesAsTx for TxContext
 where
-    TxContext: HasTxTypes + DelegateComponent<MessageAsTxSenderComponent>,
-    TxContext::Delegate: MessageAsTxSender<TxContext>,
+    TxContext: HasTxTypes + HasComponents,
+    TxContext::Components: MessageAsTxSender<TxContext>,
 {
     async fn send_messages_as_tx(
         &self,
@@ -58,6 +58,6 @@ where
         nonce: &Self::Nonce,
         messages: &[Self::Message],
     ) -> Result<Self::TxResponse, Self::Error> {
-        TxContext::Delegate::send_messages_as_tx(self, signer, nonce, messages).await
+        TxContext::Components::send_messages_as_tx(self, signer, nonce, messages).await
     }
 }

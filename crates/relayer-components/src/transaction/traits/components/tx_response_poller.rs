@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::std_prelude::*;
 use crate::transaction::traits::types::HasTxTypes;
 
@@ -43,13 +43,13 @@ pub trait CanPollTxResponse: HasTxTypes {
 #[async_trait]
 impl<TxContext> CanPollTxResponse for TxContext
 where
-    TxContext: HasTxTypes + DelegateComponent<TxResponsePollerComponent>,
-    TxContext::Delegate: TxResponsePoller<TxContext>,
+    TxContext: HasTxTypes + HasComponents,
+    TxContext::Components: TxResponsePoller<TxContext>,
 {
     async fn poll_tx_response(
         &self,
         tx_hash: &Self::TxHash,
     ) -> Result<Self::TxResponse, Self::Error> {
-        TxContext::Delegate::poll_tx_response(self, tx_hash).await
+        TxContext::Components::poll_tx_response(self, tx_hash).await
     }
 }

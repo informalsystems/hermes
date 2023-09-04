@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use ibc_relayer::chain::cosmos::query::account::query_account;
 use ibc_relayer::chain::cosmos::types::account::Account;
 use ibc_relayer::keyring::{Secp256k1KeyPair, SigningKeyPair};
-use ibc_relayer_components::transaction::traits::nonce::query::NonceQuerier;
+use ibc_relayer_components::transaction::traits::components::nonce_querier::NonceQuerier;
 
 use crate::contexts::transaction::CosmosTxContext;
 use crate::impls::transaction::component::CosmosTxComponents;

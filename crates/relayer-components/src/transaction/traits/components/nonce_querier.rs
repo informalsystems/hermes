@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::std_prelude::*;
 use crate::transaction::traits::types::HasTxTypes;
 
@@ -40,10 +40,10 @@ where
 #[async_trait]
 impl<TxContext> CanQueryNonce for TxContext
 where
-    TxContext: HasTxTypes + DelegateComponent<NonceQuerierComponent>,
-    TxContext::Delegate: NonceQuerier<TxContext>,
+    TxContext: HasTxTypes + HasComponents,
+    TxContext::Components: NonceQuerier<TxContext>,
 {
     async fn query_nonce(&self, signer: &Self::Signer) -> Result<Self::Nonce, Self::Error> {
-        TxContext::Delegate::query_nonce(self, signer).await
+        TxContext::Components::query_nonce(self, signer).await
     }
 }

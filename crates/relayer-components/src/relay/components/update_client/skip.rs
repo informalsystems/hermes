@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::chain::traits::queries::consensus_state::CanQueryConsensusState;
+use crate::chain::traits::components::consensus_state_querier::CanQueryConsensusState;
 use crate::chain::traits::types::consensus_state::HasConsensusStateType;
 use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::types::aliases::Height;

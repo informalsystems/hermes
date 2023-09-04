@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::std_prelude::*;
 use crate::transaction::traits::types::HasTxTypes;
 
@@ -43,13 +43,13 @@ where
 #[async_trait]
 impl<TxContext> CanQueryTxResponse for TxContext
 where
-    TxContext: HasTxTypes + DelegateComponent<TxResponseQuerierComponent>,
-    TxContext::Delegate: TxResponseQuerier<TxContext>,
+    TxContext: HasTxTypes + HasComponents,
+    TxContext::Components: TxResponseQuerier<TxContext>,
 {
     async fn query_tx_response(
         &self,
         tx_hash: &Self::TxHash,
     ) -> Result<Option<Self::TxResponse>, Self::Error> {
-        TxContext::Delegate::query_tx_response(self, tx_hash).await
+        TxContext::Components::query_tx_response(self, tx_hash).await
     }
 }

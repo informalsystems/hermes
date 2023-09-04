@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::status::HasChainStatusType;
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
@@ -59,11 +59,11 @@ pub trait CanQueryChainStatus: HasChainStatusType + HasErrorType {
 #[async_trait]
 impl<Chain> CanQueryChainStatus for Chain
 where
-    Chain: HasChainStatusType + HasErrorType + DelegateComponent<ChainStatusQuerierComponent>,
-    Chain::Delegate: ChainStatusQuerier<Chain>,
+    Chain: HasChainStatusType + HasErrorType + HasComponents,
+    Chain::Components: ChainStatusQuerier<Chain>,
 {
     async fn query_chain_status(&self) -> Result<Chain::ChainStatus, Chain::Error> {
-        Chain::Delegate::query_chain_status(self).await
+        Chain::Components::query_chain_status(self).await
     }
 }
 

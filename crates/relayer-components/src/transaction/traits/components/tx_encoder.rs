@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::std_prelude::*;
 use crate::transaction::traits::types::HasTxTypes;
 
@@ -52,8 +52,8 @@ where
 #[async_trait]
 impl<TxContext> CanEncodeTx for TxContext
 where
-    TxContext: HasTxTypes + DelegateComponent<TxEncoderComponent>,
-    TxContext::Delegate: TxEncoder<TxContext>,
+    TxContext: HasTxTypes + HasComponents,
+    TxContext::Components: TxEncoder<TxContext>,
 {
     async fn encode_tx(
         &self,
@@ -62,6 +62,6 @@ where
         fee: &Self::Fee,
         messages: &[Self::Message],
     ) -> Result<Self::Transaction, Self::Error> {
-        TxContext::Delegate::encode_tx(self, signer, nonce, fee, messages).await
+        TxContext::Components::encode_tx(self, signer, nonce, fee, messages).await
     }
 }

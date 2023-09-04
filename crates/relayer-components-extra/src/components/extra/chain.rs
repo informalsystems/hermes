@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
+use ibc_relayer_components::chain::traits::components::chain_status_querier::ChainStatusQuerierComponent;
+use ibc_relayer_components::chain::traits::components::consensus_state_querier::ConsensusStateQuerierComponent;
 use ibc_relayer_components::chain::traits::components::message_sender::MessageSenderComponent;
-use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerierComponent;
-use ibc_relayer_components::chain::traits::queries::status::ChainStatusQuerierComponent;
 use ibc_relayer_components::components::default::chain::DefaultChainComponents;
 
 use crate::telemetry::components::consensus_state::ConsensusStateTelemetryQuerier;

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::chain::traits::queries::status::CanQueryChainStatus;
+use crate::chain::traits::components::chain_status_querier::CanQueryChainStatus;
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::traits::types::status::HasChainStatusType;
 use crate::relay::traits::chains::HasRelayChains;

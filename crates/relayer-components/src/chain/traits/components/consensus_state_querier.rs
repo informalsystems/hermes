@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::chain::traits::types::consensus_state::HasConsensusStateType;
 use crate::chain::traits::types::height::HasHeightType;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
@@ -55,17 +55,15 @@ where
 #[async_trait]
 impl<Chain, Counterparty> CanQueryConsensusState<Counterparty> for Chain
 where
-    Chain: HasIbcChainTypes<Counterparty>
-        + HasErrorType
-        + DelegateComponent<ConsensusStateQuerierComponent>,
+    Chain: HasIbcChainTypes<Counterparty> + HasErrorType + HasComponents,
     Counterparty: HasConsensusStateType<Self> + HasHeightType,
-    Chain::Delegate: ConsensusStateQuerier<Chain, Counterparty>,
+    Chain::Components: ConsensusStateQuerier<Chain, Counterparty>,
 {
     async fn query_consensus_state(
         &self,
         client_id: &Self::ClientId,
         height: &Counterparty::Height,
     ) -> Result<Counterparty::ConsensusState, Self::Error> {
-        Chain::Delegate::query_consensus_state(self, client_id, height).await
+        Chain::Components::query_consensus_state(self, client_id, height).await
     }
 }

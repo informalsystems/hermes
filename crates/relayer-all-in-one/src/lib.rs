@@ -60,7 +60,7 @@
     [`HasChainTypes`](ibc_relayer_components::chain::traits::types::chain::HasChainTypes) and
     [`HasRelayChains`](ibc_relayer_components::relay::traits::chains::HasRelayChains).
     There are also simple components like
-    [`CanQueryChainStatus`](ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus)
+    [`CanQueryChainStatus`](ibc_relayer_components::chain::traits::components::chain_status_querier::CanQueryChainStatus)
     that can be understood as standalone pieces.
 
     The core logic of IBC relaying is encapsulated behind the

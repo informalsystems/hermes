@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::std_prelude::*;
 use crate::transaction::traits::types::HasTxTypes;
 
@@ -40,10 +40,10 @@ where
 #[async_trait]
 impl<TxContext> CanEstimateTxFee for TxContext
 where
-    TxContext: HasTxTypes + DelegateComponent<TxFeeEstimatorComponent>,
-    TxContext::Delegate: TxFeeEstimator<TxContext>,
+    TxContext: HasTxTypes + HasComponents,
+    TxContext::Components: TxFeeEstimator<TxContext>,
 {
     async fn estimate_tx_fee(&self, tx: &Self::Transaction) -> Result<Self::Fee, Self::Error> {
-        TxContext::Delegate::estimate_tx_fee(self, tx).await
+        TxContext::Components::estimate_tx_fee(self, tx).await
     }
 }
