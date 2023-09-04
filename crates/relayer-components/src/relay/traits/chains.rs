@@ -1,6 +1,7 @@
 use crate::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
 use crate::chain::types::aliases::ClientId;
 use crate::core::traits::error::HasErrorType;
+use crate::core::traits::sync::Async;
 
 /**
     This covers the minimal abstract types that are used inside a relay context.
@@ -31,11 +32,13 @@ use crate::core::traits::error::HasErrorType;
     only a single channel or connection.
 */
 pub trait HasRelayChains: HasErrorType {
+    type Packet: Async;
+
     /**
         A source chain context that has the IBC chain types that are correspond
         to the destination chain.
     */
-    type SrcChain: HasIbcPacketFields<Self::DstChain> + HasErrorType;
+    type SrcChain: HasIbcPacketFields<Self::DstChain, OutgoingPacket = Self::Packet> + HasErrorType;
 
     /**
         A destination chain context that has the IBC chain types that are correspond
@@ -43,7 +46,7 @@ pub trait HasRelayChains: HasErrorType {
     */
     type DstChain: HasIbcPacketFields<
             Self::SrcChain,
-            IncomingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::OutgoingPacket,
+            IncomingPacket = Self::Packet,
             OutgoingPacket = <Self::SrcChain as HasIbcPacketTypes<Self::DstChain>>::IncomingPacket,
         > + HasErrorType;
 

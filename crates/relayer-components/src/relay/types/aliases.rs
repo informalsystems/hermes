@@ -1,8 +1,7 @@
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::relay::traits::chains::HasRelayChains;
-use crate::relay::traits::packet::HasRelayPacket;
 
-pub type Packet<Relay> = <Relay as HasRelayPacket>::Packet;
+pub type Packet<Relay> = <Relay as HasRelayChains>::Packet;
 
 pub type SrcChain<Relay> = <Relay as HasRelayChains>::SrcChain;
 

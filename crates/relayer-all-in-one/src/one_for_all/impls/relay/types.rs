@@ -33,6 +33,8 @@ impl<Relay> HasRelayChains for OfaRelayWrapper<Relay>
 where
     Relay: OfaRelay,
 {
+    type Packet = <Relay::SrcChain as OfaChainTypes>::OutgoingPacket;
+
     type SrcChain = OfaChainWrapper<Relay::SrcChain>;
 
     type DstChain = OfaChainWrapper<Relay::DstChain>;

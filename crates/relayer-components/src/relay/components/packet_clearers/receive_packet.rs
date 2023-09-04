@@ -8,7 +8,6 @@ use crate::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketS
 use crate::chain::types::aliases::{ChannelId, PortId};
 use crate::relay::traits::components::packet_clearer::PacketClearer;
 use crate::relay::traits::components::packet_relayer::CanRelayPacket;
-use crate::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
 
 pub struct ClearReceivePackets;
@@ -16,7 +15,7 @@ pub struct ClearReceivePackets;
 #[async_trait]
 impl<Relay> PacketClearer<Relay> for ClearReceivePackets
 where
-    Relay: HasRelayPacket + CanRelayPacket,
+    Relay: CanRelayPacket,
     Relay::DstChain: CanQueryUnreceivedPacketSequences<Relay::SrcChain>,
     Relay::SrcChain: CanQueryPacketCommitments<Relay::DstChain>
         + CanQuerySendPacketsFromSequences<Relay::DstChain>,

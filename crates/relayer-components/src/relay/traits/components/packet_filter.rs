@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::sync::Async;
-use crate::relay::traits::packet::HasRelayPacket;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::std_prelude::*;
 
 pub struct PacketFilterComponent;
@@ -10,7 +10,7 @@ pub struct PacketFilterComponent;
 #[async_trait]
 pub trait PacketFilter<Relay>: Async
 where
-    Relay: HasRelayPacket,
+    Relay: HasRelayChains,
 {
     async fn should_relay_packet(
         relay: &Relay,
@@ -21,7 +21,7 @@ where
 #[async_trait]
 impl<Relay, Component> PacketFilter<Relay> for Component
 where
-    Relay: HasRelayPacket,
+    Relay: HasRelayChains,
     Component: DelegateComponent<PacketFilterComponent>,
     Component::Delegate: PacketFilter<Relay>,
 {
@@ -34,14 +34,14 @@ where
 }
 
 #[async_trait]
-pub trait CanFilterPackets: HasRelayPacket {
+pub trait CanFilterPackets: HasRelayChains {
     async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error>;
 }
 
 #[async_trait]
 impl<Relay> CanFilterPackets for Relay
 where
-    Relay: HasRelayPacket + HasComponents,
+    Relay: HasRelayChains + HasComponents,
     Relay::Components: PacketFilter<Relay>,
 {
     async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {

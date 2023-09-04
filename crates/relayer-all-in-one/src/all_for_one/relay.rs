@@ -18,7 +18,6 @@ use ibc_relayer_components::relay::traits::components::packet_relayers::timeout_
 use ibc_relayer_components::relay::traits::components::update_client_message_builder::CanBuildUpdateClientMessage;
 use ibc_relayer_components::relay::traits::connection::open_handshake::CanRelayConnectionOpenHandshake;
 use ibc_relayer_components::relay::traits::connection::open_init::CanInitConnection;
-use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_components_extra::relay::components::packet_relayers::retry::SupportsPacketRetry;
 
@@ -32,7 +31,6 @@ pub trait AfoRelay:
     + HasAfoRuntime
     + HasLoggerWithBaseLevels
     + HasRelayChains<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
-    + HasRelayPacket<SrcChainWithPacket = Self::AfoSrcChain, DstChainWithPacket = Self::AfoDstChain>
     + CanBuildUpdateClientMessage<SourceTarget>
     + CanBuildUpdateClientMessage<DestinationTarget>
     + CanSendIbcMessages<MainSink, SourceTarget>
@@ -71,7 +69,6 @@ where
         + HasAfoRuntime
         + HasLoggerWithBaseLevels
         + HasRelayChains<SrcChain = SrcChain, DstChain = DstChain>
-        + HasRelayPacket<SrcChainWithPacket = SrcChain, DstChainWithPacket = DstChain>
         + CanBuildUpdateClientMessage<SourceTarget>
         + CanBuildUpdateClientMessage<DestinationTarget>
         + CanSendIbcMessages<MainSink, SourceTarget>

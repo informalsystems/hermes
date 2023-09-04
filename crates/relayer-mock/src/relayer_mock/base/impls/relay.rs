@@ -56,6 +56,8 @@ impl HasLogger for MockRelayContext {
 }
 
 impl HasRelayChains for MockRelayContext {
+    type Packet = PacketKey;
+
     type SrcChain = MockChainContext;
 
     type DstChain = MockChainContext;

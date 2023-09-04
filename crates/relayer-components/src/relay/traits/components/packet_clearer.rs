@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use crate::chain::types::aliases::{ChannelId, PortId};
 use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::sync::Async;
-use crate::relay::traits::packet::HasRelayPacket;
 
+use crate::relay::traits::chains::HasRelayChains;
 use crate::std_prelude::*;
 
 pub struct PacketClearerComponent;
@@ -12,7 +12,7 @@ pub struct PacketClearerComponent;
 #[async_trait]
 pub trait PacketClearer<Relay>: Async
 where
-    Relay: HasRelayPacket,
+    Relay: HasRelayChains,
 {
     async fn clear_packets(
         relay: &Relay,
@@ -26,7 +26,7 @@ where
 #[async_trait]
 impl<Relay, Component> PacketClearer<Relay> for Component
 where
-    Relay: HasRelayPacket,
+    Relay: HasRelayChains,
     Component: DelegateComponent<PacketClearerComponent>,
     Component::Delegate: PacketClearer<Relay>,
 {
@@ -49,7 +49,7 @@ where
 }
 
 #[async_trait]
-pub trait CanClearPackets: HasRelayPacket {
+pub trait CanClearPackets: HasRelayChains {
     async fn clear_packets(
         &self,
         src_channel_id: &ChannelId<Self::SrcChain, Self::DstChain>,
@@ -62,7 +62,7 @@ pub trait CanClearPackets: HasRelayPacket {
 #[async_trait]
 impl<Relay> CanClearPackets for Relay
 where
-    Relay: HasRelayPacket + HasComponents,
+    Relay: HasRelayChains + HasComponents,
     Relay::Components: PacketClearer<Relay>,
 {
     async fn clear_packets(

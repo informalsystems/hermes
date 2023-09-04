@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::relay::traits::packet::HasRelayPacket;
+use crate::relay::traits::chains::HasRelayChains;
 use crate::std_prelude::*;
 
 /**
@@ -15,7 +15,7 @@ use crate::std_prelude::*;
    packet.
 */
 #[async_trait]
-pub trait HasPacketLock: HasRelayPacket {
+pub trait HasPacketLock: HasRelayChains {
     /**
        The mutex guard for a locked packet. This should be kept alive while
        the packet relayer is relaying a packet.
