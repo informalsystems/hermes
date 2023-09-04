@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::chain::traits::components::message_sender::CanSendMessages;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::relay::traits::chains::HasRelayChains;
-use crate::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::relay::traits::components::ibc_message_sender::IbcMessageSender;
 use crate::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 

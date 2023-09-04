@@ -1,23 +1,25 @@
 use ibc_relayer_components::chain::types::aliases::{IncomingPacket, OutgoingPacket};
 use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
-use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use ibc_relayer_components::relay::traits::channel::open_handshake::CanRelayChannelOpenHandshake;
 use ibc_relayer_components::relay::traits::channel::open_init::CanInitChannel;
-use ibc_relayer_components::relay::traits::clear_packet::CanClearPackets;
+use ibc_relayer_components::relay::traits::components::auto_relayer::CanAutoRelay;
+use ibc_relayer_components::relay::traits::components::client_creator::CanCreateClient;
+use ibc_relayer_components::relay::traits::components::event_relayer::CanRelayEvent;
+use ibc_relayer_components::relay::traits::components::ibc_message_sender::{
+    CanSendIbcMessages, MainSink,
+};
+use ibc_relayer_components::relay::traits::components::packet_clearer::CanClearPackets;
+use ibc_relayer_components::relay::traits::components::packet_filter::CanFilterPackets;
+use ibc_relayer_components::relay::traits::components::packet_relayer::CanRelayPacket;
+use ibc_relayer_components::relay::traits::components::packet_relayers::ack_packet::CanRelayAckPacket;
+use ibc_relayer_components::relay::traits::components::packet_relayers::receive_packet::CanRelayReceivePacket;
+use ibc_relayer_components::relay::traits::components::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
+use ibc_relayer_components::relay::traits::components::update_client_message_builder::CanBuildUpdateClientMessage;
 use ibc_relayer_components::relay::traits::connection::open_handshake::CanRelayConnectionOpenHandshake;
 use ibc_relayer_components::relay::traits::connection::open_init::CanInitConnection;
-use ibc_relayer_components::relay::traits::create_client::CanCreateClient;
-use ibc_relayer_components::relay::traits::event_relayer::CanRelayEvent;
-use ibc_relayer_components::relay::traits::ibc_message_sender::{CanSendIbcMessages, MainSink};
 use ibc_relayer_components::relay::traits::packet::HasRelayPacket;
-use ibc_relayer_components::relay::traits::packet_filter::CanFilterPackets;
-use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
-use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
-use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
-use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components::relay::traits::update_client::CanBuildUpdateClientMessage;
 use ibc_relayer_components_extra::relay::components::packet_relayers::retry::SupportsPacketRetry;
 
 use crate::all_for_one::chain::AfoChain;

@@ -6,9 +6,9 @@ use crate::chain::traits::queries::packet_commitments::CanQueryPacketCommitments
 use crate::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
 use crate::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
 use crate::chain::types::aliases::{ChannelId, PortId};
-use crate::relay::traits::clear_packet::PacketClearer;
+use crate::relay::traits::components::packet_clearer::PacketClearer;
+use crate::relay::traits::components::packet_relayer::CanRelayPacket;
 use crate::relay::traits::packet::HasRelayPacket;
-use crate::relay::traits::packet_relayer::CanRelayPacket;
 use crate::std_prelude::*;
 
 pub struct ClearReceivePackets;

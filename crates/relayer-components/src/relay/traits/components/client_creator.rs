@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::client::create::HasCreateClientOptions;
 use crate::chain::types::aliases::ClientId;
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
@@ -77,10 +77,10 @@ where
 #[async_trait]
 impl<Relay, Target> CanCreateClient<Target> for Relay
 where
-    Relay: HasRelayChains + DelegateComponent<ClientCreatorComponent>,
+    Relay: HasRelayChains + HasComponents,
     Target: ChainTarget<Relay>,
     Target::CounterpartyChain: HasCreateClientOptions<Target::TargetChain>,
-    Relay::Delegate: ClientCreator<Relay, Target>,
+    Relay::Components: ClientCreator<Relay, Target>,
 {
     async fn create_client(
         _target: Target,
@@ -90,7 +90,7 @@ where
             Target::TargetChain,
         >>::CreateClientPayloadOptions,
     ) -> Result<ClientId<Target::TargetChain, Target::CounterpartyChain>, Relay::Error> {
-        Relay::Delegate::create_client(target_chain, counterparty_chain, create_client_options)
+        Relay::Components::create_client(target_chain, counterparty_chain, create_client_options)
             .await
     }
 }

@@ -1,5 +1,5 @@
 use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
-use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
+use ibc_relayer_components::relay::traits::components::auto_relayer::CanAutoRelay;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 
 use crate::all_for_one::relay::AfoRelay;

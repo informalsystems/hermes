@@ -9,10 +9,10 @@ use crate::chain::traits::message_builders::connection::{
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::traits::types::ibc_events::connection::HasConnectionOpenTryEvent;
 use crate::relay::traits::chains::HasRelayChains;
+use crate::relay::traits::components::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
+use crate::relay::traits::components::update_client_message_builder::CanSendUpdateClientMessage;
 use crate::relay::traits::connection::open_try::ConnectionOpenTryRelayer;
-use crate::relay::traits::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::relay::traits::update_client::CanSendUpdateClientMessage;
 use crate::std_prelude::*;
 
 pub trait InjectMissingConnectionTryEventError: HasRelayChains {

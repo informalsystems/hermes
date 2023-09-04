@@ -3,10 +3,10 @@ use core::marker::PhantomData;
 use async_trait::async_trait;
 
 use crate::logger::traits::level::HasBaseLogLevels;
+use crate::relay::traits::components::packet_relayer::PacketRelayer;
 use crate::relay::traits::logs::logger::CanLogRelay;
 use crate::relay::traits::logs::packet::CanLogRelayPacket;
 use crate::relay::traits::packet::HasRelayPacket;
-use crate::relay::traits::packet_relayer::PacketRelayer;
 use crate::std_prelude::*;
 
 pub struct LoggerRelayer<InRelayer>(pub PhantomData<InRelayer>);

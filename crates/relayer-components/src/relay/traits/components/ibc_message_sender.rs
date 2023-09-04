@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::chain::traits::components::message_sender::InjectMismatchIbcEventsCountError;
 use crate::chain::traits::types::ibc::HasIbcChainTypes;
 use crate::chain::types::aliases::{Event, Message};
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
@@ -58,16 +58,16 @@ where
 #[async_trait]
 impl<Relay, Sink, Target> CanSendIbcMessages<Sink, Target> for Relay
 where
-    Relay: HasRelayChains + DelegateComponent<IbcMessageSenderComponent<Sink>>,
+    Relay: HasRelayChains + HasComponents,
     Target: ChainTarget<Relay>,
-    Relay::Delegate: IbcMessageSender<Relay, Sink, Target>,
+    Relay::Components: IbcMessageSender<Relay, Sink, Target>,
 {
     async fn send_messages(
         &self,
         _target: Target,
         messages: Vec<Message<Target::TargetChain>>,
     ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Self::Error> {
-        Relay::Delegate::send_messages(self, messages).await
+        Relay::Components::send_messages(self, messages).await
     }
 }
 

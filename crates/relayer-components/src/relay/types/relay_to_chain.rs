@@ -20,7 +20,7 @@ use crate::std_prelude::*;
    The main use case is to wrap the relay context to implement [`CanSendMessages`].
 
    The relay context on its own can implement
-   [`CanSendIbcMessages`](crate::relay::traits::ibc_message_sender::CanSendIbcMessages)
+   [`CanSendIbcMessages`](crate::relay::traits::components::ibc_message_sender::CanSendIbcMessages)
    but not [`CanSendMessages`], as the former is parameterized by a relay target.
    The two traits also have different charasteristics, as `CanSendIbcMessages` allows
    middleware components such as

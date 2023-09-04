@@ -10,7 +10,7 @@ use crate::builder::types::aliases::{
 use crate::chain::traits::client::create::HasCreateClientOptions;
 use crate::core::traits::error::HasErrorType;
 use crate::relay::traits::chains::HasRelayChains;
-use crate::relay::traits::create_client::CanCreateClient;
+use crate::relay::traits::components::client_creator::CanCreateClient;
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::relay::traits::two_way::HasTwoWayRelay;
 use crate::std_prelude::*;

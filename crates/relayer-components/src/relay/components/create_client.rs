@@ -6,7 +6,7 @@ use crate::chain::traits::client::create::{
 };
 use crate::chain::traits::components::message_sender::CanSendSingleMessage;
 use crate::relay::traits::chains::HasRelayChains;
-use crate::relay::traits::create_client::ClientCreator;
+use crate::relay::traits::components::client_creator::ClientCreator;
 use crate::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 

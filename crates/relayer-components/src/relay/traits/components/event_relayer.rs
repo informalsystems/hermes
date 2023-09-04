@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::types::aliases::{Event, Height};
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
@@ -16,7 +16,7 @@ pub struct EventRelayerComponent;
 
    The event relayer is a general abstraction over other relayer types that
    need to be reactive to chain events. This includes the
-   [packet relayer]( crate::relay::traits::packet_relayer::CanRelayPacket),
+   [packet relayer]( crate::relay::traits::components::packet_relayer::CanRelayPacket),
    but also future relayers such as connection and channel handshake relayers.
 */
 #[async_trait]
@@ -74,16 +74,16 @@ where
 #[async_trait]
 impl<Relay, Target> CanRelayEvent<Target> for Relay
 where
-    Relay: HasRelayChains + DelegateComponent<EventRelayerComponent>,
+    Relay: HasRelayChains + HasComponents,
     Target: ChainTarget<Relay>,
     Target::TargetChain: HasEventType,
-    Relay::Delegate: EventRelayer<Relay, Target>,
+    Relay::Components: EventRelayer<Relay, Target>,
 {
     async fn relay_chain_event(
         &self,
         height: &Height<Target::TargetChain>,
         event: &Event<Target::TargetChain>,
     ) -> Result<(), Self::Error> {
-        Relay::Delegate::relay_chain_event(self, height, event).await
+        Relay::Components::relay_chain_event(self, height, event).await
     }
 }

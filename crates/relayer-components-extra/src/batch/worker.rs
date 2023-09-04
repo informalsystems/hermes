@@ -1,6 +1,6 @@
 use alloc::collections::VecDeque;
 use core::mem;
-use ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages;
+use ibc_relayer_components::relay::traits::components::ibc_message_sender::CanSendIbcMessages;
 use ibc_relayer_components::relay::traits::logs::logger::CanLogRelayTarget;
 
 use async_trait::async_trait;

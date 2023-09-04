@@ -2,8 +2,8 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::relay::traits::packet_filter::CanFilterPackets;
-use crate::relay::traits::packet_relayer::PacketRelayer;
+use crate::relay::traits::components::packet_filter::CanFilterPackets;
+use crate::relay::traits::components::packet_relayer::PacketRelayer;
 use crate::std_prelude::*;
 
 pub struct FilterRelayer<InRelayer> {

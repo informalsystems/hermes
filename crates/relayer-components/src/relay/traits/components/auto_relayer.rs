@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
 use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
@@ -51,11 +51,11 @@ pub trait CanAutoRelay: HasErrorType {
 #[async_trait]
 impl<Relay> CanAutoRelay for Relay
 where
-    Relay: HasErrorType + DelegateComponent<AutoRelayerComponent>,
-    Relay::Delegate: AutoRelayer<Relay>,
+    Relay: HasErrorType + HasComponents,
+    Relay::Components: AutoRelayer<Relay>,
 {
     async fn auto_relay(&self) -> Result<(), Self::Error> {
-        Relay::Delegate::auto_relay(self).await
+        Relay::Components::auto_relay(self).await
     }
 }
 

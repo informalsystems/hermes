@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::types::aliases::{Height, WriteAcknowledgementEvent};
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::sync::Async;
 use crate::relay::traits::packet::HasRelayPacket;
 use crate::std_prelude::*;
@@ -57,9 +57,9 @@ where
 #[async_trait]
 impl<Relay> CanRelayAckPacket for Relay
 where
-    Relay: HasRelayPacket + DelegateComponent<AckPacketRelayerComponent>,
+    Relay: HasRelayPacket + HasComponents,
     Relay::DstChain: HasWriteAcknowledgementEvent<Relay::SrcChain>,
-    Relay::Delegate: AckPacketRelayer<Relay>,
+    Relay::Components: AckPacketRelayer<Relay>,
 {
     async fn relay_ack_packet(
         &self,
@@ -67,6 +67,6 @@ where
         packet: &Self::Packet,
         ack: &WriteAcknowledgementEvent<Self::DstChain, Self::SrcChain>,
     ) -> Result<(), Self::Error> {
-        Relay::Delegate::relay_ack_packet(self, destination_height, packet, ack).await
+        Relay::Components::relay_ack_packet(self, destination_height, packet, ack).await
     }
 }

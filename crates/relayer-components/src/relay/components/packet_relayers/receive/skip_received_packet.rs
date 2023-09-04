@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use crate::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::types::aliases::{Height, WriteAcknowledgementEvent};
+use crate::relay::traits::components::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::relay::traits::packet::{HasRelayPacket, HasRelayPacketFields};
-use crate::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::std_prelude::*;
 
 pub struct SkipReceivedPacketRelayer<Relayer> {

@@ -3,7 +3,7 @@ use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQuery
 use ibc_relayer_components::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
 use ibc_relayer_components::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
-use ibc_relayer_components::relay::traits::clear_packet::CanClearPackets;
+use ibc_relayer_components::relay::traits::components::packet_clearer::CanClearPackets;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::Height;

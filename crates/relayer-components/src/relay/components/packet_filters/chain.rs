@@ -2,8 +2,8 @@ use async_trait::async_trait;
 
 use crate::chain::traits::queries::channel::CanQueryCounterpartyChainIdFromChannel;
 use crate::chain::traits::types::chain_id::HasChainId;
+use crate::relay::traits::components::packet_filter::PacketFilter;
 use crate::relay::traits::packet::HasRelayPacketFields;
-use crate::relay::traits::packet_filter::PacketFilter;
 use crate::std_prelude::*;
 
 pub struct MatchPacketSourceChain;

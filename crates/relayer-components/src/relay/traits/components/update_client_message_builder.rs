@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::chain::traits::components::message_sender::CanSendMessages;
 use crate::chain::types::aliases::{Height, Message};
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
@@ -54,16 +54,16 @@ where
 #[async_trait]
 impl<Relay, Target> CanBuildUpdateClientMessage<Target> for Relay
 where
-    Relay: HasRelayChains + DelegateComponent<UpdateClientMessageBuilderComponent>,
+    Relay: HasRelayChains + HasComponents,
     Target: ChainTarget<Relay>,
-    Relay::Delegate: UpdateClientMessageBuilder<Relay, Target>,
+    Relay::Components: UpdateClientMessageBuilder<Relay, Target>,
 {
     async fn build_update_client_messages(
         &self,
         target: Target,
         height: &Height<Target::CounterpartyChain>,
     ) -> Result<Vec<Message<Target::TargetChain>>, Self::Error> {
-        Relay::Delegate::build_update_client_messages(self, target, height).await
+        Relay::Components::build_update_client_messages(self, target, height).await
     }
 }
 
