@@ -83,7 +83,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
