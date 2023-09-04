@@ -20,7 +20,7 @@ jobs:
     env:
       working-directory: docs/spec/tla
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: IBC Core
         run: apalache-mc typecheck IBCCore.tla | grep -F 'Type checker [OK]'
         working-directory: ${{env.working-directory}}/ibc-core
