@@ -16,6 +16,7 @@ use namada::tendermint_rpc::endpoint::broadcast::tx_sync::Response as AbciPlusRp
 use namada::tendermint_rpc::HttpClient;
 use namada::types::address::{Address, ImplicitAddress};
 use namada::types::chain::ChainId;
+use namada::types::error::Error as NamadaError;
 use namada::types::key::RefTo;
 use namada::types::transaction::{GasLimit, TxType};
 use namada_apps::cli::api::CliClient;
@@ -137,13 +138,16 @@ impl NamadaChain {
             ))
             .map_err(Error::namada_tx)?;
 
-        self.rt.block_on(signing::generate_test_vector(
-            &client,
-            &mut self.wallet,
-            &tx,
-        ));
+        self.rt
+            .block_on(signing::generate_test_vector(
+                &client,
+                &mut self.wallet,
+                &tx,
+            ))
+            .map_err(Error::namada_tx)?;
 
-        signing::sign_tx(&mut self.wallet, &args.tx, &mut tx, signing_data);
+        signing::sign_tx(&mut self.wallet, &args.tx, &mut tx, signing_data)
+            .map_err(Error::namada_tx)?;
 
         let wrapper_hash = tx.header_hash().to_string();
         let decrypted_hash = tx
@@ -213,11 +217,11 @@ impl NamadaChain {
         client: &HttpClient,
         args: &TxArgs,
         address: &Address,
-    ) -> Result<(), tx::Error> {
+    ) -> Result<(), NamadaError> {
         if let Address::Implicit(ImplicitAddress(pkh)) = address {
             let key = wallet
                 .find_key_by_pkh(pkh, args.clone().password)
-                .map_err(|e| tx::Error::Other(e.to_string()))?;
+                .map_err(|e| NamadaError::Other(e.to_string()))?;
             let public_key = key.ref_to();
 
             if tx::is_reveal_pk_needed(client, address, args.force).await? {
@@ -236,9 +240,9 @@ impl NamadaChain {
                 )
                 .await?;
 
-                signing::generate_test_vector(client, wallet, &tx).await;
+                signing::generate_test_vector(client, wallet, &tx).await?;
 
-                signing::sign_tx(wallet, args, &mut tx, signing_data);
+                signing::sign_tx(wallet, args, &mut tx, signing_data)?;
 
                 tx::process_tx(client, wallet, args, tx).await?;
             }

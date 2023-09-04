@@ -4635,7 +4635,7 @@ dependencies = [
 [[package]]
 name = "namada"
 version = "0.21.1"
-source = "git+https://github.com/anoma/namada?rev=8a131b588190ab4ff62dc5e86cf362e2a27044e3#8a131b588190ab4ff62dc5e86cf362e2a27044e3"
+source = "git+https://github.com/anoma/namada?rev=e31b7c2fd74ff32afc11380c9fedfb65fd58140b#e31b7c2fd74ff32afc11380c9fedfb65fd58140b"
 dependencies = [
  "async-trait",
  "bimap",
@@ -4694,7 +4694,7 @@ dependencies = [
 [[package]]
 name = "namada_apps"
 version = "0.21.1"
-source = "git+https://github.com/anoma/namada?rev=8a131b588190ab4ff62dc5e86cf362e2a27044e3#8a131b588190ab4ff62dc5e86cf362e2a27044e3"
+source = "git+https://github.com/anoma/namada?rev=e31b7c2fd74ff32afc11380c9fedfb65fd58140b#e31b7c2fd74ff32afc11380c9fedfb65fd58140b"
 dependencies = [
  "ark-serialize",
  "ark-std",
@@ -4779,7 +4779,7 @@ dependencies = [
 [[package]]
 name = "namada_core"
 version = "0.21.1"
-source = "git+https://github.com/anoma/namada?rev=8a131b588190ab4ff62dc5e86cf362e2a27044e3#8a131b588190ab4ff62dc5e86cf362e2a27044e3"
+source = "git+https://github.com/anoma/namada?rev=e31b7c2fd74ff32afc11380c9fedfb65fd58140b#e31b7c2fd74ff32afc11380c9fedfb65fd58140b"
 dependencies = [
  "ark-bls12-381",
  "ark-ec",
@@ -4832,7 +4832,7 @@ dependencies = [
 [[package]]
 name = "namada_ethereum_bridge"
 version = "0.21.1"
-source = "git+https://github.com/anoma/namada?rev=8a131b588190ab4ff62dc5e86cf362e2a27044e3#8a131b588190ab4ff62dc5e86cf362e2a27044e3"
+source = "git+https://github.com/anoma/namada?rev=e31b7c2fd74ff32afc11380c9fedfb65fd58140b#e31b7c2fd74ff32afc11380c9fedfb65fd58140b"
 dependencies = [
  "borsh 0.9.4",
  "ethers",
@@ -4853,7 +4853,7 @@ dependencies = [
 [[package]]
 name = "namada_macros"
 version = "0.21.1"
-source = "git+https://github.com/anoma/namada?rev=8a131b588190ab4ff62dc5e86cf362e2a27044e3#8a131b588190ab4ff62dc5e86cf362e2a27044e3"
+source = "git+https://github.com/anoma/namada?rev=e31b7c2fd74ff32afc11380c9fedfb65fd58140b#e31b7c2fd74ff32afc11380c9fedfb65fd58140b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4863,7 +4863,7 @@ dependencies = [
 [[package]]
 name = "namada_proof_of_stake"
 version = "0.21.1"
-source = "git+https://github.com/anoma/namada?rev=8a131b588190ab4ff62dc5e86cf362e2a27044e3#8a131b588190ab4ff62dc5e86cf362e2a27044e3"
+source = "git+https://github.com/anoma/namada?rev=e31b7c2fd74ff32afc11380c9fedfb65fd58140b#e31b7c2fd74ff32afc11380c9fedfb65fd58140b"
 dependencies = [
  "borsh 0.9.4",
  "data-encoding",
