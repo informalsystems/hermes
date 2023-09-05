@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use ibc_relayer_components::builder::traits::components::chain_builder::ChainBuilder;
-use ibc_relayer_components::builder::traits::target::chain::{ChainATarget, ChainBTarget};
+use ibc_relayer_components::build::traits::components::chain_builder::ChainBuilder;
+use ibc_relayer_components::build::traits::target::chain::{ChainATarget, ChainBTarget};
 
 use crate::one_for_all::traits::builder::{ChainA, ChainB, ChainIdA, ChainIdB, OfaBuilder};
 use crate::one_for_all::types::builder::OfaBuilderWrapper;

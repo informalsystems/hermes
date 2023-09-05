@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_components::builder::traits::components::birelay_from_relay_builder::BiRelayFromRelayBuilder;
+use ibc_relayer_components::build::traits::components::birelay_from_relay_builder::BiRelayFromRelayBuilder;
 
 use crate::one_for_all::traits::builder::{OfaBuilder, RelayAToB, RelayBToA};
 use crate::one_for_all::types::birelay::OfaBiRelayWrapper;

@@ -1,4 +1,4 @@
-use crate::builder::traits::components::birelay_builder::CanBuildBiRelay;
+use crate::build::traits::components::birelay_builder::CanBuildBiRelay;
 // use crate::builder::traits::birelay::HasBiRelayType;
 // use crate::components::default::build::DefaultBuildComponents;
 // use crate::core::traits::component::HasComponents;

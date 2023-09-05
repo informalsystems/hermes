@@ -2,7 +2,7 @@ use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::cosmos::client::Settings;
 use ibc_relayer::channel::version::Version;
 use ibc_relayer::config::PacketFilter;
-use ibc_relayer_components::builder::impls::bootstrap::birelay::CanBootstrapBiRelay;
+use ibc_relayer_components::build::impls::bootstrap::birelay::CanBootstrapBiRelay;
 use ibc_relayer_components::relay::impls::channel::bootstrap::CanBootstrapChannel;
 use ibc_relayer_components::relay::impls::connection::bootstrap::CanBootstrapConnection;
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
