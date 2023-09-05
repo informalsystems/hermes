@@ -40,6 +40,8 @@ use crate::relay::components::packet_relayers::retry::SupportsPacketRetry;
 use crate::runtime::traits::channel::CanUseChannels;
 use crate::runtime::traits::channel_once::{CanCreateChannelsOnce, CanUseChannelsOnce};
 
+pub trait CanUseExtraPacketRelayer: UseExtraPacketRelayer {}
+
 pub trait UseExtraPacketRelayer: CanRelayPacket {}
 
 impl<Relay, SrcChain, DstChain, BaseRelayComponents> UseExtraPacketRelayer for Relay

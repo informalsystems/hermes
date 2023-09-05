@@ -36,6 +36,8 @@ use crate::relay::traits::packet_lock::HasPacketLock;
 use crate::runtime::traits::runtime::HasRuntime;
 use crate::runtime::traits::sleep::CanSleep;
 
+pub trait CanUseDefaultPacketRelayer: UseDefaultPacketRelayer {}
+
 pub trait UseDefaultPacketRelayer: CanRelayPacket {}
 
 impl<Relay, SrcChain, DstChain, BaseRelayComponents> UseDefaultPacketRelayer for Relay
