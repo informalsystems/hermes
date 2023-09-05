@@ -6,6 +6,7 @@ use crate::chain::traits::client::update::{
 use crate::chain::traits::components::chain_status_querier::CanQueryChainStatus;
 use crate::chain::traits::components::consensus_state_querier::CanQueryConsensusState;
 use crate::chain::traits::components::message_sender::CanSendMessages;
+use crate::chain::traits::components::packet_fields_reader::CanReadPacketFields;
 use crate::chain::traits::message_builders::ack_packet::{
     CanBuildAckPacketMessage, CanBuildAckPacketPayload,
 };
@@ -15,7 +16,6 @@ use crate::chain::traits::types::consensus_state::HasConsensusStateType;
 use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::chain::traits::types::ibc::HasCounterpartyMessageHeight;
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
-use crate::chain::traits::types::packet::HasIbcPacketFields;
 use crate::components::default::relay::DefaultRelayComponents;
 use crate::core::traits::component::HasComponents;
 use crate::core::traits::error::HasErrorType;
@@ -49,7 +49,7 @@ where
         + CanSendMessages
         + HasConsensusStateType<DstChain>
         + HasCounterpartyMessageHeight<DstChain>
-        + HasIbcPacketFields<DstChain, OutgoingPacket = Relay::Packet>
+        + CanReadPacketFields<DstChain, OutgoingPacket = Relay::Packet>
         + CanQueryClientState<DstChain>
         + CanQueryConsensusState<DstChain>
         + CanFindConsensusStateHeight<DstChain>
@@ -62,7 +62,7 @@ where
         + CanQueryChainStatus
         + HasClientStateFields<SrcChain>
         + HasConsensusStateType<SrcChain>
-        + HasIbcPacketFields<SrcChain, IncomingPacket = Relay::Packet>
+        + CanReadPacketFields<SrcChain, IncomingPacket = Relay::Packet>
         + CanBuildAckPacketPayload<SrcChain>
         + CanBuildUpdateClientPayload<SrcChain>,
     SrcChain::Height: Clone,

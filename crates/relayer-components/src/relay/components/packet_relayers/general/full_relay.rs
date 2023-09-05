@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use crate::chain::traits::components::chain_status_querier::CanQueryChainStatus;
 use crate::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use crate::chain::traits::types::status::HasChainStatusType;
-use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::components::packet_relayer::PacketRelayer;
 use crate::relay::traits::components::packet_relayers::ack_packet::CanRelayAckPacket;
 use crate::relay::traits::components::packet_relayers::receive_packet::CanRelayReceivePacket;
@@ -19,12 +18,12 @@ pub struct FullCycleRelayer;
 #[async_trait]
 impl<Relay> PacketRelayer<Relay> for FullCycleRelayer
 where
-    Relay: HasRelayChains
-        + CanLogRelay
+    Relay: CanLogRelay
         + CanLogRelayPacket
         + CanRelayAckPacket
         + CanRelayReceivePacket
-        + CanRelayTimeoutUnorderedPacket,
+        + CanRelayTimeoutUnorderedPacket
+        + HasRelayPacketFields,
     Relay::SrcChain: CanQueryChainStatus,
     Relay::DstChain: CanQueryChainStatus + HasWriteAcknowledgementEvent<Relay::SrcChain>,
 {
