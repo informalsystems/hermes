@@ -3,6 +3,7 @@ use crate::chain::traits::queries::channel::CanQueryCounterpartyChainIdFromChann
 use crate::chain::traits::types::chain_id::HasChainId;
 use crate::chain::traits::types::ibc_events::send_packet::HasSendPacketEvent;
 use crate::chain::traits::types::ibc_events::write_ack::CanBuildPacketFromWriteAckEvent;
+use crate::components::default::closures::relay::ack_packet_relayer::UseDefaultAckPacketRelayer;
 use crate::components::default::closures::relay::packet_relayer::UseDefaultPacketRelayer;
 use crate::components::default::relay::DefaultRelayComponents;
 use crate::core::traits::component::HasComponents;
@@ -11,10 +12,11 @@ use crate::logger::traits::level::HasBaseLogLevels;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::components::event_relayer::CanRelayEvent;
 use crate::relay::traits::components::packet_filter::PacketFilter;
-use crate::relay::traits::components::packet_relayers::ack_packet::CanRelayAckPacket;
 use crate::relay::traits::packet::HasRelayPacketFields;
 use crate::relay::traits::packet_lock::HasPacketLock;
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
+
+pub trait CanUseDefaultEventRelayer: UseDefaultEventRelayer {}
 
 pub trait UseDefaultEventRelayer:
     CanRelayEvent<SourceTarget> + CanRelayEvent<DestinationTarget>
@@ -27,7 +29,7 @@ where
         + HasPacketLock
         + HasLogger
         + HasRelayPacketFields
-        + CanRelayAckPacket
+        + UseDefaultAckPacketRelayer
         + UseDefaultPacketRelayer
         + HasComponents<Components = DefaultRelayComponents<BaseRelayComponents>>,
     Relay::SrcChain: HasChainId
