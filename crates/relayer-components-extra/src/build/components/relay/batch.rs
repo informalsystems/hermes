@@ -39,9 +39,9 @@ where
         CanBuildBatchChannel<Target::SrcChainTarget> + CanBuildBatchChannel<Target::DstChainTarget>,
     Target: RelayBuildTarget<Build, TargetRelay = Relay>,
     Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain, Error = RelayError<Build>>,
-    Relay: CanSpawnBatchMessageWorker<SourceTarget>
-        + CanSpawnBatchMessageWorker<DestinationTarget>
-        + Clone,
+    Relay: Clone
+        + CanSpawnBatchMessageWorker<SourceTarget>
+        + CanSpawnBatchMessageWorker<DestinationTarget>,
     SrcChain: HasIbcChainTypes<DstChain>,
     DstChain: HasIbcChainTypes<SrcChain>,
     SrcChain: HasRuntime<Runtime = SrcRuntime> + HasChainId,

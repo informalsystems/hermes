@@ -16,7 +16,7 @@ pub struct RelayWithBatchBuilderComponent;
 #[async_trait]
 pub trait RelayWithBatchBuilder<Build, Target>
 where
-    Build: HasBiRelayType + HasRuntimeWithMutex + HasErrorType,
+    Build: HasBiRelayType + HasErrorType,
     Target: RelayBuildTarget<Build>,
     Target::TargetRelay: HasMessageBatchSenderTypes,
 {
@@ -34,7 +34,7 @@ where
 #[async_trait]
 impl<Build, Target, Component> RelayWithBatchBuilder<Build, Target> for Component
 where
-    Build: HasBiRelayType + HasRuntimeWithMutex + HasErrorType,
+    Build: HasBiRelayType + HasErrorType,
     Target: RelayBuildTarget<Build>,
     Target::TargetRelay: HasMessageBatchSenderTypes,
     Component: DelegateComponent<RelayWithBatchBuilderComponent>,
