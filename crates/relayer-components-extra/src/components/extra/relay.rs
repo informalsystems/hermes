@@ -7,19 +7,19 @@ use ibc_relayer_components::relay::components::packet_relayers::general::filter_
 use ibc_relayer_components::relay::components::packet_relayers::general::full_relay::FullCycleRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::lock::LockPacketRelayer;
 use ibc_relayer_components::relay::components::packet_relayers::general::log::LoggerRelayer;
-use ibc_relayer_components::relay::traits::auto_relayer::AutoRelayerComponent;
-use ibc_relayer_components::relay::traits::clear_packet::PacketClearerComponent;
-use ibc_relayer_components::relay::traits::create_client::ClientCreatorComponent;
-use ibc_relayer_components::relay::traits::event_relayer::EventRelayerComponent;
-use ibc_relayer_components::relay::traits::ibc_message_sender::{
+use ibc_relayer_components::relay::traits::components::auto_relayer::AutoRelayerComponent;
+use ibc_relayer_components::relay::traits::components::client_creator::ClientCreatorComponent;
+use ibc_relayer_components::relay::traits::components::event_relayer::EventRelayerComponent;
+use ibc_relayer_components::relay::traits::components::ibc_message_sender::{
     IbcMessageSenderComponent, MainSink,
 };
-use ibc_relayer_components::relay::traits::packet_filter::PacketFilterComponent;
-use ibc_relayer_components::relay::traits::packet_relayer::PacketRelayerComponent;
-use ibc_relayer_components::relay::traits::packet_relayers::ack_packet::AckPacketRelayerComponent;
-use ibc_relayer_components::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayerComponnent;
-use ibc_relayer_components::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayerComponent;
-use ibc_relayer_components::relay::traits::update_client::UpdateClientMessageBuilderComponent;
+use ibc_relayer_components::relay::traits::components::packet_clearer::PacketClearerComponent;
+use ibc_relayer_components::relay::traits::components::packet_filter::PacketFilterComponent;
+use ibc_relayer_components::relay::traits::components::packet_relayer::PacketRelayerComponent;
+use ibc_relayer_components::relay::traits::components::packet_relayers::ack_packet::AckPacketRelayerComponent;
+use ibc_relayer_components::relay::traits::components::packet_relayers::receive_packet::ReceivePacketRelayerComponnent;
+use ibc_relayer_components::relay::traits::components::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayerComponent;
+use ibc_relayer_components::relay::traits::components::update_client_message_builder::UpdateClientMessageBuilderComponent;
 
 use crate::batch::components::message_sender::SendMessagesToBatchWorker;
 use crate::batch::types::sink::BatchWorkerSink;

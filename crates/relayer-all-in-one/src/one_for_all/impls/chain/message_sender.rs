@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_components::chain::traits::message_sender::MessageSender;
+use ibc_relayer_components::chain::traits::components::message_sender::MessageSender;
 
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::one_for_all::types::chain::OfaChainWrapper;

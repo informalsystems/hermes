@@ -7,8 +7,8 @@ use crate::chain::traits::client::update::{
 };
 use crate::chain::traits::types::client_state::HasClientStateFields;
 use crate::relay::traits::chains::HasRelayChains;
+use crate::relay::traits::components::update_client_message_builder::UpdateClientMessageBuilder;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::update_client::UpdateClientMessageBuilder;
 use crate::std_prelude::*;
 
 pub struct BuildUpdateClientMessages;

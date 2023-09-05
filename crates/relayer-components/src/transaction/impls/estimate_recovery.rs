@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
-use crate::transaction::traits::estimate::TxFeeEstimator;
+use crate::transaction::traits::components::tx_fee_estimater::TxFeeEstimator;
 use crate::transaction::traits::types::HasTxTypes;
 
 pub trait CanRecoverEstimateError: HasTxTypes {

@@ -2,14 +2,14 @@ use async_trait::async_trait;
 
 use crate::logger::traits::level::HasBaseLogLevels;
 use crate::std_prelude::*;
-use crate::transaction::traits::encode::CanEncodeTx;
-use crate::transaction::traits::estimate::CanEstimateTxFee;
+use crate::transaction::traits::components::message_as_tx_sender::MessageAsTxSender;
+use crate::transaction::traits::components::tx_encoder::CanEncodeTx;
+use crate::transaction::traits::components::tx_fee_estimater::CanEstimateTxFee;
+use crate::transaction::traits::components::tx_response_poller::CanPollTxResponse;
+use crate::transaction::traits::components::tx_submitter::CanSubmitTx;
 use crate::transaction::traits::fee::HasFeeForSimulation;
 use crate::transaction::traits::logs::logger::CanLogTx;
 use crate::transaction::traits::logs::nonce::CanLogNonce;
-use crate::transaction::traits::message_as_tx::MessageAsTxSender;
-use crate::transaction::traits::response::poll::CanPollTxResponse;
-use crate::transaction::traits::submit::CanSubmitTx;
 use crate::transaction::traits::types::HasTxTypes;
 
 pub struct EstimateFeesAndSendTx;

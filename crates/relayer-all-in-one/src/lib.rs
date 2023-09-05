@@ -60,11 +60,11 @@
     [`HasChainTypes`](ibc_relayer_components::chain::traits::types::chain::HasChainTypes) and
     [`HasRelayChains`](ibc_relayer_components::relay::traits::chains::HasRelayChains).
     There are also simple components like
-    [`CanQueryChainStatus`](ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus)
+    [`CanQueryChainStatus`](ibc_relayer_components::chain::traits::components::chain_status_querier::CanQueryChainStatus)
     that can be understood as standalone pieces.
 
     The core logic of IBC relaying is encapsulated behind the
-    [`CanRelayPacket`](ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket) trait.
+    [`CanRelayPacket`](ibc_relayer_components::relay::traits::components::packet_relayer::CanRelayPacket) trait.
     The [`FullCycleRelayer`](ibc_relayer_components::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer)
     component is one of the top-level components that performs the full cycle of
     relaying an IBC packet from a source chain to a destination chain.
@@ -74,7 +74,7 @@
     submitted to the chain. The
     [`CanSendMessages`](ibc_relayer_components::chain::traits::message_sender::CanSendMessages)
     trait provides the interface for sending messages to a chain. In contrast,
-    the [`CanSendIbcMessages`](ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages)
+    the [`CanSendIbcMessages`](ibc_relayer_components::relay::traits::components::ibc_message_sender::CanSendIbcMessages)
     trait provides the interface for sending messages from a _relay_ context. The
     [`SendIbcMessagesWithUpdateClient`](ibc_relayer_components::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
     component is one example of an IBC message sender _middleware_ that attaches

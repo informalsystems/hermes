@@ -1,30 +1,8 @@
-use crate::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
+use crate::chain::traits::types::packet::HasIbcPacketFields;
 use crate::chain::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
-use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
 
-pub trait HasRelayPacket:
-    HasRelayChains<SrcChain = Self::SrcChainWithPacket, DstChain = Self::DstChainWithPacket>
-{
-    type Packet: Async;
-
-    type SrcChainWithPacket: HasIbcPacketFields<Self::DstChain, OutgoingPacket = Self::Packet>;
-
-    type DstChainWithPacket: HasIbcPacketFields<Self::SrcChain, IncomingPacket = Self::Packet>;
-}
-
-impl<Relay> HasRelayPacket for Relay
-where
-    Relay: HasRelayChains,
-{
-    type Packet = <Relay::SrcChain as HasIbcPacketTypes<Relay::DstChain>>::OutgoingPacket;
-
-    type SrcChainWithPacket = Relay::SrcChain;
-
-    type DstChainWithPacket = Relay::DstChain;
-}
-
-pub trait HasRelayPacketFields: HasRelayPacket {
+pub trait HasRelayPacketFields: HasRelayChains {
     /**
         The source port of a packet, which is a port ID on the source chain
         that corresponds to the destination chain.

@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_components::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
+use ibc_relayer_components::relay::traits::components::auto_relayer::{AutoRelayer, CanAutoRelay};
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 

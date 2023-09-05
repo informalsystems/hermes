@@ -2,10 +2,10 @@ use async_trait::async_trait;
 use core::iter::Iterator;
 
 use crate::chain::traits::client::client_state::CanQueryClientState;
+use crate::chain::traits::components::message_sender::CanSendSingleMessage;
 use crate::chain::traits::message_builders::connection::{
     CanBuildConnectionHandshakeMessages, CanBuildConnectionHandshakePayloads,
 };
-use crate::chain::traits::message_sender::CanSendSingleMessage;
 use crate::chain::traits::types::connection::HasInitConnectionOptionsType;
 use crate::chain::traits::types::ibc_events::connection::HasConnectionOpenInitEvent;
 use crate::relay::traits::chains::HasRelayChains;

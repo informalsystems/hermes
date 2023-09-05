@@ -5,10 +5,10 @@ use async_trait::async_trait;
 use crate::chain::traits::types::height::CanIncrementHeight;
 use crate::chain::traits::types::ibc::{HasCounterpartyMessageHeight, HasIbcChainTypes};
 use crate::logger::traits::level::HasBaseLogLevels;
-use crate::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::relay::traits::components::ibc_message_sender::IbcMessageSender;
+use crate::relay::traits::components::update_client_message_builder::CanBuildUpdateClientMessage;
 use crate::relay::traits::logs::logger::CanLogRelayTarget;
 use crate::relay::traits::target::ChainTarget;
-use crate::relay::traits::update_client::CanBuildUpdateClientMessage;
 use crate::std_prelude::*;
 
 pub struct SendIbcMessagesWithUpdateClient<Sender>(pub Sender);

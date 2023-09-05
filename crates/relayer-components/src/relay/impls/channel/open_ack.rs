@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 
 use crate::chain::traits::client::client_state::CanQueryClientState;
+use crate::chain::traits::components::chain_status_querier::CanQueryChainHeight;
 use crate::chain::traits::message_builders::channel::{
     CanBuildChannelHandshakeMessages, CanBuildChannelHandshakePayloads,
 };
-use crate::chain::traits::queries::status::CanQueryChainHeight;
 use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::channel::open_ack::ChannelOpenAckRelayer;
-use crate::relay::traits::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
+use crate::relay::traits::components::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
 use crate::relay::traits::target::SourceTarget;
 use crate::relay::types::aliases::{DstChannelId, DstPortId, SrcChannelId, SrcPortId};
 use crate::std_prelude::*;

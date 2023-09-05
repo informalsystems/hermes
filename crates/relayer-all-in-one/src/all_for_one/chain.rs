@@ -1,9 +1,9 @@
 use ibc_relayer_components::chain::traits::client::create::HasCreateClientOptions;
-use ibc_relayer_components::chain::traits::queries::consensus_state::CanQueryConsensusState;
+use ibc_relayer_components::chain::traits::components::chain_status_querier::CanQueryChainStatus;
+use ibc_relayer_components::chain::traits::components::consensus_state_querier::CanQueryConsensusState;
 use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
 use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use ibc_relayer_components::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
-use ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus;
 use ibc_relayer_components::chain::traits::queries::unreceived_packets::CanQueryUnreceivedPacketSequences;
 use ibc_relayer_components::chain::traits::types::chain::HasChainTypes;
 use ibc_relayer_components::chain::traits::types::channel::{

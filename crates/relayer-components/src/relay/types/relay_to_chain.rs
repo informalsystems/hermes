@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::chain::traits::message_sender::CanSendMessages;
+use crate::chain::traits::components::message_sender::CanSendMessages;
 use crate::chain::traits::types::chain_id::HasChainIdType;
 use crate::chain::traits::types::event::HasEventType;
 use crate::chain::traits::types::height::HasHeightType;
@@ -20,7 +20,7 @@ use crate::std_prelude::*;
    The main use case is to wrap the relay context to implement [`CanSendMessages`].
 
    The relay context on its own can implement
-   [`CanSendIbcMessages`](crate::relay::traits::ibc_message_sender::CanSendIbcMessages)
+   [`CanSendIbcMessages`](crate::relay::traits::components::ibc_message_sender::CanSendIbcMessages)
    but not [`CanSendMessages`], as the former is parameterized by a relay target.
    The two traits also have different charasteristics, as `CanSendIbcMessages` allows
    middleware components such as

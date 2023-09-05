@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use crate::chain::traits::message_sender::MessageSender;
+use crate::chain::traits::components::message_sender::MessageSender;
 use crate::std_prelude::*;
+use crate::transaction::traits::components::message_as_tx_sender::CanSendMessagesAsTx;
+use crate::transaction::traits::components::nonce_allocater::CanAllocateNonce;
 use crate::transaction::traits::event::CanParseTxResponseAsEvents;
-use crate::transaction::traits::message_as_tx::CanSendMessagesAsTx;
-use crate::transaction::traits::nonce::allocate::CanAllocateNonce;
 use crate::transaction::traits::signer::HasSigner;
 use crate::transaction::traits::types::HasTxTypes;
 

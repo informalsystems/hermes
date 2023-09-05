@@ -3,7 +3,7 @@ use ibc_relayer_components::chain::traits::queries::write_ack::CanQueryWriteAckn
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
 use std::time::Duration;
 
-use ibc_relayer_components::relay::traits::packet_relayer::CanRelayPacket;
+use ibc_relayer_components::relay::traits::components::packet_relayer::CanRelayPacket;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 use tracing::info;
 
