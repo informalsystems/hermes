@@ -7,29 +7,21 @@ use ibc_relayer_components::build::traits::target::chain::{ChainATarget, ChainBT
 use ibc_relayer_components::build::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
 use ibc_relayer_components::chain::traits::types::chain_id::HasChainId;
 use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
-use ibc_relayer_components::chain::traits::types::message::CanEstimateMessageSize;
 use ibc_relayer_components::core::traits::component::HasComponents;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::core::traits::sync::Async;
-use ibc_relayer_components::logger::traits::has_logger::HasLogger;
-use ibc_relayer_components::logger::traits::level::HasBaseLogLevels;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
-use ibc_relayer_components::relay::traits::components::ibc_message_sender::CanSendIbcMessages;
-use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_components::relay::traits::two_way::HasTwoWayRelay;
 use ibc_relayer_components::runtime::traits::mutex::HasMutex;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
-use ibc_relayer_components::runtime::traits::sleep::CanSleep;
-use ibc_relayer_components::runtime::traits::time::HasTime;
 
 use crate::batch::traits::config::HasBatchConfig;
-use crate::batch::types::sink::BatchWorkerSink;
 use crate::build::traits::cache::HasBatchSenderCache;
 use crate::build::traits::components::relay_with_batch_builder::RelayWithBatchBuilder;
 use crate::components::extra::build::ExtraBuildComponents;
-use crate::runtime::traits::channel::{CanCloneSender, CanCreateChannels, CanUseChannels};
+use crate::components::extra::closures::batch::UseBatchMessageWorkerSpawner;
+use crate::runtime::traits::channel::{CanCloneSender, CanCreateChannels};
 use crate::runtime::traits::channel_once::CanUseChannelsOnce;
-use crate::runtime::traits::spawn::HasSpawner;
 
 pub trait CanUseExtraBuilderComponents: UseExtraBuilderComponents {}
 
@@ -51,42 +43,22 @@ where
         + HasComponents<Components = ExtraBuildComponents<BaseComponents>>,
     BiRelay: HasTwoWayRelay<RelayAToB = RelayAToB, RelayBToA = RelayBToA>,
     RelayAToB: Clone
-        + HasLogger
         + HasErrorType<Error = Error>
         + HasRelayChains<SrcChain = ChainA, DstChain = ChainB>
-        + CanSendIbcMessages<BatchWorkerSink, SourceTarget>
-        + CanSendIbcMessages<BatchWorkerSink, DestinationTarget>,
+        + UseBatchMessageWorkerSpawner,
     RelayBToA: Clone
-        + HasLogger
         + HasErrorType<Error = Error>
         + HasRelayChains<SrcChain = ChainB, DstChain = ChainA>
-        + CanSendIbcMessages<BatchWorkerSink, SourceTarget>
-        + CanSendIbcMessages<BatchWorkerSink, DestinationTarget>,
-    ChainA: Clone + HasRuntime + HasChainId + CanEstimateMessageSize + HasIbcChainTypes<ChainB>,
-    ChainB: Clone + HasRuntime + HasChainId + CanEstimateMessageSize + HasIbcChainTypes<ChainA>,
-    Error: Async + Clone,
+        + UseBatchMessageWorkerSpawner,
+    ChainA: Clone + HasRuntime + HasChainId + HasIbcChainTypes<ChainB>,
+    ChainB: Clone + HasRuntime + HasChainId + HasIbcChainTypes<ChainA>,
+    Error: Async,
     ChainA::ChainId: Ord + Clone,
     ChainB::ChainId: Ord + Clone,
     ChainA::ClientId: Ord + Clone,
     ChainB::ClientId: Ord + Clone,
-    ChainA::Runtime: HasTime
-        + HasMutex
-        + CanSleep
-        + HasSpawner
-        + CanCreateChannels
-        + CanUseChannels
-        + CanUseChannelsOnce
-        + CanCloneSender,
-    ChainB::Runtime: HasTime
-        + HasMutex
-        + CanSleep
-        + HasSpawner
-        + CanCreateChannels
-        + CanUseChannels
-        + CanUseChannelsOnce
-        + CanCloneSender,
-    RelayAToB::Logger: HasBaseLogLevels,
-    RelayBToA::Logger: HasBaseLogLevels,
+    ChainA::Runtime: CanCreateChannels + CanUseChannelsOnce + CanCloneSender,
+    ChainB::Runtime: CanCreateChannels + CanUseChannelsOnce + CanCloneSender,
     Build::Runtime: HasMutex,
     BaseComponents: BiRelayFromRelayBuilder<Build>
         + RelayWithBatchBuilder<Build, RelayAToBTarget>
