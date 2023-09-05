@@ -4,12 +4,13 @@ use crate::build::traits::birelay::HasBiRelayType;
 use crate::build::types::aliases::{RelayAToB, RelayBToA};
 use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
+use crate::core::traits::sync::Async;
 use crate::std_prelude::*;
 
 pub struct BiRelayFromRelayBuilderComponent;
 
 #[async_trait]
-pub trait BiRelayFromRelayBuilder<Build>
+pub trait BiRelayFromRelayBuilder<Build>: Async
 where
     Build: HasBiRelayType + HasErrorType,
 {
