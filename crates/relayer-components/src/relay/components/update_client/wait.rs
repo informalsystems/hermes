@@ -9,7 +9,6 @@ use crate::relay::traits::chains::HasRelayChains;
 use crate::relay::traits::components::update_client_message_builder::UpdateClientMessageBuilder;
 use crate::relay::traits::logs::logger::CanLogRelayTarget;
 use crate::relay::traits::target::ChainTarget;
-use crate::runtime::traits::runtime::HasRuntime;
 use crate::std_prelude::*;
 
 /**
@@ -22,7 +21,7 @@ pub struct WaitUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);
 impl<Relay, Target, InUpdateClient, TargetChain, CounterpartyChain>
     UpdateClientMessageBuilder<Relay, Target> for WaitUpdateClient<InUpdateClient>
 where
-    Relay: HasRelayChains + HasRuntime + CanLogRelayTarget<Target>,
+    Relay: HasRelayChains + CanLogRelayTarget<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
     TargetChain: HasIbcChainTypes<CounterpartyChain>,
