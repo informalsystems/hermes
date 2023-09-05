@@ -4,13 +4,12 @@ use eyre::eyre;
 use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes};
 use ibc_relayer_all_in_one::one_for_all::traits::relay::OfaRelay;
-use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaRuntime;
 use ibc_relayer_all_in_one::one_for_all::types::batch::aliases::MessageBatchSender;
 use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_cosmos::contexts::chain::CosmosChain;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
+use ibc_relayer_runtime::types::error::Error as TokioError;
+use ibc_relayer_runtime::types::log::logger::TracingLogger;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
 use crate::context::chain::MockSolomachineChainContext;
@@ -35,7 +34,7 @@ impl OfaRelay for SolomachineRelay {
 
     type PacketLock<'a> = ();
 
-    fn runtime_error(_e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error {
+    fn runtime_error(_e: TokioError) -> Self::Error {
         todo!()
     }
 
@@ -94,7 +93,7 @@ impl OfaRelay for SolomachineRelay {
         todo!()
     }
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
+    fn runtime(&self) -> &Self::Runtime {
         todo!()
     }
 

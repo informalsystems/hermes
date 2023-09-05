@@ -6,8 +6,6 @@ use ibc_relayer::config::PacketFilter;
 use ibc_relayer_all_in_one::one_for_all::traits::builder::OfaBuilder;
 use ibc_relayer_all_in_one::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_all_in_one::one_for_all::types::relay::OfaRelayWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_components::relay::traits::connection::open_handshake::CanRelayConnectionOpenHandshake;
 use ibc_relayer_components::relay::traits::connection::open_init::CanInitConnection;
 use ibc_relayer_components::relay::traits::create_client::CanCreateClient;
@@ -15,7 +13,7 @@ use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTar
 use ibc_relayer_components_extra::batch::worker::CanSpawnBatchMessageWorker;
 use ibc_relayer_cosmos::types::error::Error as CosmosError;
 use ibc_relayer_cosmos::types::telemetry::CosmosTelemetry;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_solomachine::context::chain::MockSolomachineChainContext;
 use ibc_relayer_solomachine::context::relay::SolomachineRelay;
 use ibc_relayer_solomachine::types::batch::{CosmosBatchPayload, SolomachineBatchPayload};
@@ -53,9 +51,8 @@ impl BinaryChainTest for SolomachineToCosmosTest {
 
         let chain_id_a = chains.chain_id_a().cloned_value();
 
-        let solomachine_runtime = OfaRuntimeWrapper::new(TokioRuntimeContext::new(
-            chains.node_b.value().chain_driver.runtime.clone(),
-        ));
+        let solomachine_runtime =
+            TokioRuntimeContext::new(chains.node_b.value().chain_driver.runtime.clone());
 
         let solomachine_chain = solomachine_chain_context(solomachine_runtime, Default::default());
 
@@ -140,18 +137,13 @@ impl BinaryChainTest for SolomachineToCosmosTest {
 }
 
 pub fn solomachine_chain_context(
-    runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
+    runtime: TokioRuntimeContext,
     telemetry: CosmosTelemetry,
 ) -> SolomachineChainWrapper<MockSolomachineChainContext> {
-    let wrapped_telemetry = OfaTelemetryWrapper::new(telemetry);
     let commitment_prefix = "solomachine".to_owned();
 
-    let chain = MockSolomachineChainContext::new(
-        "solomachine1",
-        commitment_prefix,
-        runtime,
-        wrapped_telemetry,
-    );
+    let chain =
+        MockSolomachineChainContext::new("solomachine1", commitment_prefix, runtime, telemetry);
 
     SolomachineChainWrapper::new(chain)
 }

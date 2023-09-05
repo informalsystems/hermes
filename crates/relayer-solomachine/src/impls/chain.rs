@@ -2,14 +2,12 @@ use std::str::FromStr;
 
 use alloc::sync::Arc;
 use async_trait::async_trait;
+use ibc_proto::ibc::lightclients::solomachine::v2::PacketCommitmentData;
 use ibc_relayer::chain::cosmos::query::abci_query;
-use ibc_proto::ibc::lightclients::solomachine::v3::PacketCommitmentData;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_all_in_one::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
-use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaRuntime;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
-use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::logger::BaseLogger;
 use ibc_relayer_components::runtime::traits::subscription::Subscription;
 use ibc_relayer_cosmos::contexts::chain::CosmosChain;
@@ -60,8 +58,6 @@ use ibc_relayer_types::timestamp::{Timestamp, ZERO_DURATION};
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
-use crate::methods::encode::client_state::encode_client_state;
-use crate::methods::encode::consensus_state::encode_consensus_state;
 use crate::methods::encode::header::encode_header;
 use crate::methods::encode::header_data::sign_header_data;
 use crate::methods::encode::sign_data::{sign_with_data, timestamped_sign_data_to_bytes};
@@ -73,6 +69,7 @@ use crate::traits::solomachine::SolomachineChain;
 use crate::types::chain::SolomachineChainWrapper;
 use crate::types::client_state::{decode_client_state, SolomachineClientState};
 use crate::types::consensus_state::{decode_client_consensus_state, SolomachineConsensusState};
+use crate::types::error::BaseError;
 use crate::types::event::{
     SolomachineConnectionInitEvent, SolomachineCreateClientEvent, SolomachineEvent,
 };
@@ -188,11 +185,11 @@ impl<Chain> OfaChain for SolomachineChainWrapper<Chain>
 where
     Chain: SolomachineChain,
 {
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
+    fn runtime(&self) -> &Self::Runtime {
         Chain::runtime(&self.chain)
     }
 
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Chain::Error {
+    fn runtime_error(e: <Self::Runtime as HasErrorType>::Error) -> Chain::Error {
         Chain::runtime_error(e)
     }
 
@@ -200,7 +197,7 @@ where
         Chain::logger(&self.chain)
     }
 
-    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry> {
+    fn telemetry(&self) -> &Self::Telemetry {
         self.chain.get_telemetry()
     }
 
@@ -404,14 +401,15 @@ where
         let commitment_path = commitment_path.to_string();
 
         let packet_commitment_data = PacketCommitmentData {
-            path: commitment_path.as_bytes(),
+            path: commitment_path.as_bytes().to_vec(),
             commitment: commitment_bytes,
         };
 
         let packet_commitment_data_bytes = encode_protobuf(&packet_commitment_data)
-            .map_err(CosmosBaseError::protobuf_encoding_error)?;
+            .map_err(BaseError::encode)
+            .unwrap();
 
-        let new_diversifier = self.chain.new_diversifier().await;
+        let new_diversifier = self.chain.current_diversifier();
         let secret_key = self.chain.secret_key();
         let consensus_timestamp = client_state.consensus_state.timestamp;
 
@@ -420,7 +418,7 @@ where
             timestamp: consensus_timestamp,
             diversifier: new_diversifier,
             data: packet_commitment_data_bytes,
-            path: path.as_bytes().to_vec(),
+            path: commitment_path.into_bytes(),
         };
 
         let proof = sign_with_data(secret_key, &sign_data).map_err(Chain::encode_error)?;
@@ -460,14 +458,15 @@ where
         let commitment_path = commitment_path.to_string();
 
         let packet_commitment_data = PacketCommitmentData {
-            path: commitment_path.as_bytes(),
+            path: commitment_path.as_bytes().to_vec(),
             commitment: commitment_bytes,
         };
 
         let packet_commitment_data_bytes = encode_protobuf(&packet_commitment_data)
-            .map_err(CosmosBaseError::protobuf_encoding_error)?;
+            .map_err(BaseError::encode)
+            .unwrap();
 
-        let new_diversifier = self.chain.new_diversifier().await;
+        let new_diversifier = self.chain.current_diversifier();
         let secret_key = self.chain.secret_key();
         let consensus_timestamp = client_state.consensus_state.timestamp;
 
@@ -476,7 +475,7 @@ where
             timestamp: consensus_timestamp,
             diversifier: new_diversifier,
             data: packet_commitment_data_bytes,
-            path: path.as_bytes().to_vec(),
+            path: commitment_path.into_bytes(),
         };
 
         let proof = sign_with_data(secret_key, &sign_data).map_err(Chain::encode_error)?;
@@ -1244,8 +1243,8 @@ where
         let query_height = self.handle.query_latest_height().unwrap();
 
         let response = abci_query(
-            &self.tx_context.tx_context.rpc_client,
-            &self.tx_context.tx_context.tx_config.rpc_address,
+            &self.tx_context.rpc_client,
+            &self.tx_context.tx_config.rpc_address,
             IBC_QUERY_PATH.to_string(),
             data.to_string(),
             query_height.into(),
@@ -1272,8 +1271,8 @@ where
         let _query_height = self.handle.query_latest_height().unwrap();
 
         let response = abci_query(
-            &self.tx_context.tx_context.rpc_client,
-            &self.tx_context.tx_context.tx_config.rpc_address,
+            &self.tx_context.rpc_client,
+            &self.tx_context.tx_config.rpc_address,
             IBC_QUERY_PATH.to_string(),
             data.to_string(),
             (*height).into(),

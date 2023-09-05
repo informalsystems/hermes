@@ -6,19 +6,17 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 use async_trait::async_trait;
-use ibc_relayer_all_in_one::one_for_all::types::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_cosmos::types::telemetry::CosmosTelemetry;
+use ibc_relayer_runtime::types::error::Error as TokioError;
+use ibc_relayer_runtime::types::log::logger::TracingLogger;
+use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use prost::EncodeError;
 use secp256k1::rand::rngs::OsRng;
 use secp256k1::Secp256k1;
 use secp256k1::SecretKey;
 
-use ibc_relayer_all_in_one::one_for_all::traits::runtime::OfaRuntime;
-use ibc_relayer_all_in_one::one_for_all::types::runtime::OfaRuntimeWrapper;
 use ibc_relayer_cosmos::types::tendermint::{TendermintClientState, TendermintConsensusState};
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-use ibc_relayer_runtime::tokio::logger::tracing::TracingLogger;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
 use ibc_relayer_types::core::ics04_channel::channel::ChannelEnd;
@@ -44,8 +42,8 @@ pub struct MockSolomachineChainContext {
     secret_key: SecretKey,
     client_states: Arc<Mutex<HashMap<ClientId, TendermintClientState>>>,
     client_consensus_states: Arc<Mutex<HashMap<ClientId, TendermintConsensusState>>>,
-    pub runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
-    pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
+    pub runtime: TokioRuntimeContext,
+    pub telemetry: CosmosTelemetry,
     pub connections: Arc<Mutex<HashMap<ConnectionId, ConnectionEnd>>>,
 }
 
@@ -53,8 +51,8 @@ impl MockSolomachineChainContext {
     pub fn new(
         chain_id: &str,
         commitment_prefix: String,
-        runtime: OfaRuntimeWrapper<TokioRuntimeContext>,
-        telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
+        runtime: TokioRuntimeContext,
+        telemetry: CosmosTelemetry,
     ) -> Self {
         let secp = Secp256k1::new();
         let (secret_key, secp_public_key) = secp.generate_keypair(&mut OsRng);
@@ -87,15 +85,15 @@ impl SolomachineChain for MockSolomachineChainContext {
         &self.chain_id
     }
 
-    fn get_telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry> {
+    fn get_telemetry(&self) -> &CosmosTelemetry {
         &self.telemetry
     }
 
-    fn runtime(&self) -> &OfaRuntimeWrapper<Self::Runtime> {
+    fn runtime(&self) -> &TokioRuntimeContext {
         &self.runtime
     }
 
-    fn runtime_error(e: <Self::Runtime as OfaRuntime>::Error) -> Self::Error {
+    fn runtime_error(e: TokioError) -> Self::Error {
         BaseError::tokio(e).into()
     }
 

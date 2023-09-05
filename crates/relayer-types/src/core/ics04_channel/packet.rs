@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use std::sync::Arc;
 
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
