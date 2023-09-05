@@ -60,6 +60,6 @@ mod tests {
 
         // NOTE(new): Add tests here
 
-        assert!(matches!(parse("hello-world"), Err(_)));
+        assert!(parse("hello-world").is_err());
     }
 }
