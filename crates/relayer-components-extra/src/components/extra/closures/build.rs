@@ -31,6 +31,8 @@ use crate::runtime::traits::channel::{CanCloneSender, CanCreateChannels, CanUseC
 use crate::runtime::traits::channel_once::CanUseChannelsOnce;
 use crate::runtime::traits::spawn::HasSpawner;
 
+pub trait CanUseExtraBuilderComponents: UseExtraBuilderComponents {}
+
 pub trait UseExtraBuilderComponents: CanBuildBiRelay {}
 
 impl<Build, BiRelay, RelayAToB, RelayBToA, ChainA, ChainB, Error, BaseComponents>
