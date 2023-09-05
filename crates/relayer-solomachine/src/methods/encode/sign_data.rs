@@ -2,7 +2,6 @@
 
 use ibc_proto::cosmos::tx::signing::v1beta1::signature_descriptor::data::{Single, Sum};
 use ibc_proto::cosmos::tx::signing::v1beta1::signature_descriptor::Data;
-use ibc_proto::cosmos::tx::signing::v1beta1::SignatureDescriptor as ProtoSignatureDescriptor;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_cosmos::methods::encode::{encode_any_to_bytes, encode_protobuf, encode_to_any};
 use prost::{EncodeError, Message};
@@ -10,9 +9,7 @@ use secp256k1::ecdsa::Signature;
 use secp256k1::SecretKey;
 
 use crate::methods::encode::sign::sign_sha256;
-use crate::types::sign_data::{
-    SignatureDescriptor, SolomachineSignData, SolomachineTimestampedSignData,
-};
+use crate::types::sign_data::{SolomachineSignData, SolomachineTimestampedSignData};
 
 use super::public_key::PublicKey;
 
@@ -68,7 +65,7 @@ pub fn sign_with_data(
 
 pub fn timestamped_sign_with_data(
     sign_data: &SolomachineSignData,
-    public_key: PublicKey,
+    _public_key: PublicKey,
 ) -> Result<SolomachineTimestampedSignData, EncodeError> {
     let signature = sign_data_to_bytes(sign_data)?;
 
@@ -76,19 +73,15 @@ pub fn timestamped_sign_with_data(
         sum: Some(Sum::Single(Single {
             /// SIGN_MODE_DIRECT specifies a signing mode which uses SignDoc and is
             /// verified with raw bytes from Tx.
-            mode: 1,
+            mode: 0,
             signature,
         })),
     };
 
-    let signature_descriptor = SignatureDescriptor {
-        public_key,
-        data: Some(data),
-        sequence: sign_data.sequence,
-    };
+    let bytes_data = encode_protobuf(&data).unwrap();
 
     Ok(SolomachineTimestampedSignData {
-        signature_data: signature_descriptor,
+        signature_data: bytes_data,
         timestamp: sign_data.timestamp,
     })
 }
@@ -106,12 +99,8 @@ pub struct ProtoTimestampedSignatureData {
 pub fn to_proto_timestamped_sign_bytes(
     sign_data: &SolomachineTimestampedSignData,
 ) -> ProtoTimestampedSignatureData {
-    let proto_signature_data: ProtoSignatureDescriptor = sign_data.signature_data.clone().into();
-
-    let signature_data = encode_protobuf(&proto_signature_data).unwrap();
-
     ProtoTimestampedSignatureData {
-        signature_data,
+        signature_data: sign_data.signature_data.clone(),
         timestamp: sign_data.timestamp,
     }
 }

@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ibc_relayer_cosmos::methods::encode::{encode_protobuf, encode_to_any};
+use ibc_relayer_cosmos::methods::encode::encode_to_any;
 use prost::Message;
 use secp256k1::PublicKey as SecpPublicKey;
 
@@ -49,25 +49,7 @@ const TYPE_URL: &str = "/cosmos.crypto.secp256k1.PubKey";
 pub fn encode_public_key(public_key: &PublicKey) -> Any {
     let key = PubKey::from(public_key);
 
-    // TODO: When encoded to bytes, this start with: [a, 1f, 2f, ...]
-    // ibc-go gets the data '0a1f2f63...' but is expecting the byte array to start with
-    // 08.... see https://github.com/cosmos/cosmos-sdk/blob/v0.47.3/types/tx/signing/signing.pb.go#L1178
-    // By adding the value of dAtA with %x in this error message we see that that dAtA starts with hex: 0x0a...
-    //
-    // Code for debugging:
-    let proto_bytes = encode_protobuf(&key).unwrap();
-    tracing::warn!("proto public key to bytes");
-    tracing::warn!("{proto_bytes:x?}");
-    let any_public_key = encode_to_any(TYPE_URL, &key).unwrap();
-
-    let any_public_key_to_bytes = encode_protobuf(&any_public_key).unwrap();
-
-    tracing::warn!("any public key to bytes");
-    tracing::warn!("{any_public_key_to_bytes:x?}");
-
-    any_public_key
-
-    //encode_to_any(TYPE_URL, &key).unwrap()
+    encode_to_any(TYPE_URL, &key).unwrap()
 }
 
 impl Protobuf<PubKey> for PublicKey {}

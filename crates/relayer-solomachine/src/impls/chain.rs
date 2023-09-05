@@ -619,7 +619,8 @@ where
 
         let cosmos_consensus_state = self.chain.query_consensus_state(client_id, *height).await?;
 
-        let consensus_state_data = consensus_state_proof_data(
+        let consensus_state_proof = consensus_state_proof_data(
+            secret_key,
             solo_client_state,
             commitment_prefix,
             client_id,
@@ -627,9 +628,6 @@ where
             &cosmos_consensus_state,
         )
         .map_err(Chain::encode_error)?;
-
-        let consensus_state_proof =
-            sign_with_data(secret_key, &consensus_state_data).map_err(Chain::encode_error)?;
 
         let payload = SolomachineConnectionOpenTryPayload {
             commitment_prefix: commitment_prefix.to_string(),
@@ -697,7 +695,8 @@ where
 
         let cosmos_consensus_state = self.chain.query_consensus_state(client_id, *height).await?;
 
-        let consensus_state_data = consensus_state_proof_data(
+        let consensus_state_proof = consensus_state_proof_data(
+            secret_key,
             client_state,
             commitment_prefix,
             client_id,
@@ -705,9 +704,6 @@ where
             &cosmos_consensus_state,
         )
         .map_err(Chain::encode_error)?;
-
-        let consensus_state_proof =
-            sign_with_data(secret_key, &consensus_state_data).map_err(Chain::encode_error)?;
 
         let payload = SolomachineConnectionOpenAckPayload {
             client_state: cosmos_client_state,
@@ -1419,15 +1415,13 @@ where
             .try_into()
             .map_err(CosmosBaseError::proofs)?;
 
-        tracing::warn!("proof_init");
-        tracing::warn!("{proof_init:x?}");
-
         let proof_client = timestamped_sign_data_to_bytes(&payload.proof_client)
             .unwrap()
             .try_into()
             .map_err(CosmosBaseError::proofs)?;
 
-        let consensus_signature = Vec::from(payload.proof_consensus.serialize_compact())
+        let consensus_signature = timestamped_sign_data_to_bytes(&payload.proof_consensus)
+            .unwrap()
             .try_into()
             .map_err(CosmosBaseError::proofs)?;
 

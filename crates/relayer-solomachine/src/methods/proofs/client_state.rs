@@ -10,14 +10,12 @@ use secp256k1::SecretKey;
 use crate::methods::encode::public_key::PublicKey;
 use crate::methods::encode::sign_data::sign_with_data;
 use crate::types::client_state::SolomachineClientState;
-use crate::types::sign_data::{
-    SignatureDescriptor, SolomachineSignData, SolomachineTimestampedSignData,
-};
+use crate::types::sign_data::{SolomachineSignData, SolomachineTimestampedSignData};
 
 // Create a sign data for the client state proof that the solomachine has
 // the Tendermint client state of the counterparty Cosmos chain
 pub fn client_state_proof_data(
-    public_key: &PublicKey,
+    _public_key: &PublicKey,
     secret_key: &SecretKey,
     solo_client_state: &SolomachineClientState,
     commitment_prefix: &str,
@@ -44,20 +42,16 @@ pub fn client_state_proof_data(
 
     let data = Data {
         sum: Some(Sum::Single(Single {
-            mode: 2,
+            mode: 0,
             signature: signed_data.serialize_compact().to_vec(),
         })),
     };
 
-    let signature_data = SignatureDescriptor {
-        public_key: public_key.clone(),
-        data: Some(data),
-        sequence: solo_client_state.sequence,
-    };
+    let bytes_data = encode_protobuf(&data).unwrap();
 
     // Create Timestamped signed data
     let timestamped_signed_data = SolomachineTimestampedSignData {
-        signature_data,
+        signature_data: bytes_data,
         timestamp: solo_client_state.consensus_state.timestamp,
     };
 

@@ -3,7 +3,6 @@ use core::time::Duration;
 use ibc_relayer_cosmos::types::tendermint::TendermintClientState;
 use ibc_relayer_types::core::ics03_connection::version::Version;
 use ibc_relayer_types::Height;
-use secp256k1::ecdsa::Signature;
 
 use crate::types::sign_data::SolomachineTimestampedSignData;
 
@@ -19,7 +18,7 @@ pub struct SolomachineConnectionOpenTryPayload {
     pub update_height: Height,
     pub proof_init: SolomachineTimestampedSignData,
     pub proof_client: SolomachineTimestampedSignData,
-    pub proof_consensus: Signature,
+    pub proof_consensus: SolomachineTimestampedSignData,
 }
 
 pub struct SolomachineConnectionOpenAckPayload {
@@ -28,7 +27,7 @@ pub struct SolomachineConnectionOpenAckPayload {
     pub update_height: Height,
     pub proof_try: SolomachineTimestampedSignData,
     pub proof_client: SolomachineTimestampedSignData,
-    pub proof_consensus: Signature,
+    pub proof_consensus: SolomachineTimestampedSignData,
 }
 
 pub struct SolomachineConnectionOpenConfirmPayload {
