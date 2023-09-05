@@ -3,9 +3,6 @@ use ibc_relayer_components::chain::traits::client::consensus_state::CanFindConse
 use ibc_relayer_components::chain::traits::client::update::{
     CanBuildUpdateClientMessage, CanBuildUpdateClientPayload,
 };
-use ibc_relayer_components::chain::traits::components::chain_status_querier::CanQueryChainStatus;
-use ibc_relayer_components::chain::traits::components::consensus_state_querier::CanQueryConsensusState;
-use ibc_relayer_components::chain::traits::components::message_sender::CanSendMessages;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::chain::traits::message_builders::ack_packet::{
     CanBuildAckPacketMessage, CanBuildAckPacketPayload,
@@ -37,6 +34,7 @@ use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_components::runtime::traits::sleep::CanSleep;
 
 use crate::batch::traits::channel::HasMessageBatchSender;
+use crate::components::extra::closures::chain::UseExtraChainComponents;
 use crate::components::extra::relay::ExtraRelayComponents;
 use crate::relay::components::packet_relayers::retry::SupportsPacketRetry;
 use crate::runtime::traits::channel::CanUseChannels;
@@ -56,9 +54,7 @@ where
     SrcChain: HasErrorType
         + HasRuntime
         + HasChainId
-        + CanSendMessages
         + CanIncrementHeight
-        + CanQueryChainStatus
         + HasLoggerType<Logger = Relay::Logger>
         + HasClientStateFields<DstChain>
         + HasConsensusStateType<DstChain>
@@ -66,19 +62,17 @@ where
         + HasIbcPacketFields<DstChain, OutgoingPacket = Relay::Packet>
         + CanLogChainPacket<DstChain>
         + CanQueryClientState<DstChain>
-        + CanQueryConsensusState<DstChain>
         + CanFindConsensusStateHeight<DstChain>
         + CanBuildReceivePacketPayload<DstChain>
         + CanBuildUpdateClientPayload<DstChain>
         + CanBuildAckPacketMessage<DstChain>
         + CanBuildUpdateClientMessage<DstChain>
-        + CanBuildTimeoutUnorderedPacketMessage<DstChain>,
+        + CanBuildTimeoutUnorderedPacketMessage<DstChain>
+        + UseExtraChainComponents<DstChain>,
     DstChain: HasErrorType
         + HasRuntime
         + HasChainId
-        + CanSendMessages
         + CanIncrementHeight
-        + CanQueryChainStatus
         + HasClientStateFields<SrcChain>
         + HasConsensusStateType<SrcChain>
         + HasCounterpartyMessageHeight<SrcChain>
@@ -86,13 +80,13 @@ where
         + HasIbcPacketFields<SrcChain, IncomingPacket = Relay::Packet>
         + CanQueryClientState<SrcChain>
         + CanQueryReceivedPacket<SrcChain>
-        + CanQueryConsensusState<SrcChain>
         + CanFindConsensusStateHeight<SrcChain>
         + CanBuildAckPacketPayload<SrcChain>
         + CanBuildUpdateClientPayload<SrcChain>
         + CanBuildTimeoutUnorderedPacketPayload<SrcChain>
         + CanBuildUpdateClientMessage<SrcChain>
-        + CanBuildReceivePacketMessage<SrcChain>,
+        + CanBuildReceivePacketMessage<SrcChain>
+        + UseExtraChainComponents<SrcChain>,
     SrcChain::Height: Clone,
     DstChain::Height: Clone,
     SrcChain::Runtime: CanSleep + CanCreateChannelsOnce + CanUseChannels + CanUseChannelsOnce,
