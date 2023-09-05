@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::builder::traits::birelay::types::HasBiRelayType;
+use crate::builder::traits::birelay::HasBiRelayType;
 use crate::builder::traits::target::chain::ChainBuildTarget;
 use crate::builder::types::aliases::{TargetChain, TargetChainId};
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
@@ -52,15 +52,15 @@ where
 #[async_trait]
 impl<Build, Target> CanBuildChain<Target> for Build
 where
-    Build: HasBiRelayType + HasErrorType + DelegateComponent<ChainBuilderComponent>,
+    Build: HasBiRelayType + HasErrorType + HasComponents,
     Target: ChainBuildTarget<Build>,
-    Build::Delegate: ChainBuilder<Build, Target>,
+    Build::Components: ChainBuilder<Build, Target>,
 {
     async fn build_chain(
         &self,
         _target: Target,
         chain_id: &TargetChainId<Self, Target>,
     ) -> Result<TargetChain<Self, Target>, Self::Error> {
-        Build::Delegate::build_chain(self, chain_id).await
+        Build::Components::build_chain(self, chain_id).await
     }
 }

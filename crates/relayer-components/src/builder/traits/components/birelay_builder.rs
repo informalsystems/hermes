@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::builder::traits::birelay::types::HasBiRelayType;
+use crate::builder::traits::birelay::HasBiRelayType;
 use crate::builder::types::aliases::{ChainIdA, ChainIdB, ClientIdA, ClientIdB};
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
@@ -55,8 +55,8 @@ pub trait CanBuildBiRelay: HasBiRelayType + HasErrorType {
 #[async_trait]
 impl<Build> CanBuildBiRelay for Build
 where
-    Build: HasBiRelayType + HasErrorType + DelegateComponent<BiRelayBuilderComponent>,
-    Build::Delegate: BiRelayBuilder<Build>,
+    Build: HasBiRelayType + HasErrorType + HasComponents,
+    Build::Components: BiRelayBuilder<Build>,
 {
     async fn build_birelay(
         &self,
@@ -65,6 +65,7 @@ where
         client_id_a: &ClientIdA<Self>,
         client_id_b: &ClientIdB<Self>,
     ) -> Result<Self::BiRelay, Self::Error> {
-        Build::Delegate::build_birelay(self, chain_id_a, chain_id_b, client_id_a, client_id_b).await
+        Build::Components::build_birelay(self, chain_id_a, chain_id_b, client_id_a, client_id_b)
+            .await
     }
 }

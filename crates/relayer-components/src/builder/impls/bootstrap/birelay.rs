@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
 use crate::builder::impls::bootstrap::relay::CanBootstrapRelay;
-use crate::builder::traits::birelay::build::CanBuildBiRelay;
-use crate::builder::traits::birelay::types::HasBiRelayType;
+use crate::builder::traits::birelay::HasBiRelayType;
+use crate::builder::traits::components::birelay_builder::CanBuildBiRelay;
 use crate::builder::traits::target::relay::RelayAToBTarget;
 use crate::builder::types::aliases::{ChainA, ChainB, ChainIdA, ChainIdB};
 use crate::chain::traits::client::create::HasCreateClientOptions;

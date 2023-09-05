@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
-use crate::builder::traits::birelay::types::HasBiRelayType;
+use crate::builder::traits::birelay::HasBiRelayType;
 use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::builder::types::aliases::{
     TargetDstChainId, TargetDstClientId, TargetRelay, TargetSrcChainId, TargetSrcClientId,
 };
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
@@ -73,9 +73,9 @@ where
 #[async_trait]
 impl<Build, Target> CanBuildRelay<Target> for Build
 where
-    Build: HasBiRelayType + HasErrorType + DelegateComponent<RelayBuilderComponent>,
+    Build: HasBiRelayType + HasErrorType + HasComponents,
     Target: RelayBuildTarget<Build>,
-    Build::Delegate: RelayBuilder<Build, Target>,
+    Build::Components: RelayBuilder<Build, Target>,
 {
     async fn build_relay(
         &self,
@@ -85,7 +85,7 @@ where
         src_client_id: &TargetSrcClientId<Self, Target>,
         dst_client_id: &TargetDstClientId<Self, Target>,
     ) -> Result<TargetRelay<Self, Target>, Self::Error> {
-        Build::Delegate::build_relay(
+        Build::Components::build_relay(
             self,
             target,
             src_chain_id,

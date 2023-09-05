@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::builder::traits::birelay::types::HasBiRelayType;
-use crate::builder::traits::chain::CanBuildChain;
-use crate::builder::traits::relay::build::CanBuildRelay;
+use crate::builder::traits::birelay::HasBiRelayType;
+use crate::builder::traits::components::chain_builder::CanBuildChain;
+use crate::builder::traits::components::relay_builder::CanBuildRelay;
 use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::builder::types::aliases::{
     RelayError, TargetDstChain, TargetDstChainId, TargetRelay, TargetSrcChain, TargetSrcChainId,

@@ -1,6 +1,6 @@
 use alloc::collections::BTreeMap;
 
-use ibc_relayer_components::builder::traits::birelay::types::HasBiRelayType;
+use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
 use ibc_relayer_components::builder::traits::target::chain::ChainBuildTarget;
 use ibc_relayer_components::builder::types::aliases::{
     CounterpartyChainId, CounterpartyClientId, TargetChain, TargetChainId, TargetClientId,

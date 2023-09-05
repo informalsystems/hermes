@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::builder::traits::chain::CanBuildChain;
-use crate::builder::traits::relay::build::RelayBuilder;
-use crate::builder::traits::relay::from_chains::CanBuildRelayFromChains;
+use crate::builder::traits::components::chain_builder::CanBuildChain;
+use crate::builder::traits::components::relay_builder::RelayBuilder;
+use crate::builder::traits::components::relay_from_chains_builder::CanBuildRelayFromChains;
 use crate::builder::traits::target::relay::RelayBuildTarget;
 use crate::builder::types::aliases::{DstChainTarget, SrcChainTarget};
 use crate::builder::types::aliases::{

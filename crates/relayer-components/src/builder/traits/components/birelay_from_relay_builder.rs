@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::builder::traits::birelay::types::HasBiRelayType;
+use crate::builder::traits::birelay::HasBiRelayType;
 use crate::builder::types::aliases::{RelayAToB, RelayBToA};
-use crate::core::traits::component::DelegateComponent;
+use crate::core::traits::component::{DelegateComponent, HasComponents};
 use crate::core::traits::error::HasErrorType;
 use crate::std_prelude::*;
 
@@ -48,14 +48,14 @@ pub trait CanBuildBiRelayFromRelays: HasBiRelayType + HasErrorType {
 #[async_trait]
 impl<Build> CanBuildBiRelayFromRelays for Build
 where
-    Build: HasBiRelayType + HasErrorType + DelegateComponent<BiRelayFromRelayBuilderComponent>,
-    Build::Delegate: BiRelayFromRelayBuilder<Build>,
+    Build: HasBiRelayType + HasErrorType + HasComponents,
+    Build::Components: BiRelayFromRelayBuilder<Build>,
 {
     async fn build_birelay_from_relays(
         &self,
         relay_a_to_b: RelayAToB<Self>,
         relay_b_to_a: RelayBToA<Self>,
     ) -> Result<Self::BiRelay, Self::Error> {
-        Build::Delegate::build_birelay_from_relays(self, relay_a_to_b, relay_b_to_a).await
+        Build::Components::build_birelay_from_relays(self, relay_a_to_b, relay_b_to_a).await
     }
 }

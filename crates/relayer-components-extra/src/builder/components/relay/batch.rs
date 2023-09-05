@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use ibc_relayer_components::builder::traits::birelay::types::HasBiRelayType;
-use ibc_relayer_components::builder::traits::relay::from_chains::RelayFromChainsBuilder;
+use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
+use ibc_relayer_components::builder::traits::components::relay_from_chains_builder::RelayFromChainsBuilder;
 use ibc_relayer_components::builder::traits::target::chain::ChainBuildTarget;
 use ibc_relayer_components::builder::traits::target::relay::RelayBuildTarget;
 use ibc_relayer_components::builder::types::aliases::{
@@ -19,7 +19,7 @@ use crate::batch::traits::config::HasBatchConfig;
 use crate::batch::types::aliases::{MessageBatchReceiver, MessageBatchSender};
 use crate::batch::worker::CanSpawnBatchMessageWorker;
 use crate::builder::traits::cache::HasBatchSenderCache;
-use crate::builder::traits::relay::CanBuildRelayWithBatch;
+use crate::builder::traits::components::relay_with_batch_builder::CanBuildRelayWithBatch;
 use crate::runtime::traits::channel::{CanCloneSender, CanCreateChannels, HasChannelTypes};
 use crate::runtime::traits::channel_once::HasChannelOnceTypes;
 use crate::std_prelude::*;

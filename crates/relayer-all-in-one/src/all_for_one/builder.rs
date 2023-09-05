@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use ibc_relayer_components::builder::traits::birelay::build::CanBuildBiRelay;
-use ibc_relayer_components::builder::traits::birelay::types::HasBiRelayType;
+use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
+use ibc_relayer_components::builder::traits::components::birelay_builder::CanBuildBiRelay;
 use ibc_relayer_components::builder::types::aliases::{ChainIdA, ChainIdB, ClientIdA, ClientIdB};
 use ibc_relayer_components::core::traits::error::HasErrorType;
 

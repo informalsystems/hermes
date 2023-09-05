@@ -1,10 +1,10 @@
 use async_trait::async_trait;
-use ibc_relayer_components::builder::traits::birelay::types::HasBiRelayType;
+use ibc_relayer_components::builder::traits::birelay::HasBiRelayType;
 use ibc_relayer_components::builder::traits::target::relay::RelayBuildTarget;
 use ibc_relayer_components::builder::types::aliases::{
     TargetDstChain, TargetDstClientId, TargetRelay, TargetSrcChain, TargetSrcClientId,
 };
-use ibc_relayer_components::core::traits::component::DelegateComponent;
+use ibc_relayer_components::core::traits::component::{DelegateComponent, HasComponents};
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::runtime::traits::mutex::HasRuntimeWithMutex;
 
@@ -84,13 +84,10 @@ where
 #[async_trait]
 impl<Build, Target> CanBuildRelayWithBatch<Target> for Build
 where
-    Build: HasBiRelayType
-        + HasRuntimeWithMutex
-        + HasErrorType
-        + DelegateComponent<RelayWithBatchBuilderComponent>,
+    Build: HasBiRelayType + HasRuntimeWithMutex + HasErrorType + HasComponents,
     Target: RelayBuildTarget<Build>,
     Target::TargetRelay: HasMessageBatchSenderTypes,
-    Build::Delegate: RelayWithBatchBuilder<Build, Target>,
+    Build::Components: RelayWithBatchBuilder<Build, Target>,
 {
     async fn build_relay_with_batch(
         &self,
@@ -102,7 +99,7 @@ where
         src_batch_sender: <Target::TargetRelay as HasMessageBatchSenderTypes>::SrcMessageBatchSender,
         dst_batch_sender: <Target::TargetRelay as HasMessageBatchSenderTypes>::DstMessageBatchSender,
     ) -> Result<TargetRelay<Self, Target>, Self::Error> {
-        Build::Delegate::build_relay_with_batch(
+        Build::Components::build_relay_with_batch(
             self,
             src_client_id,
             dst_client_id,
