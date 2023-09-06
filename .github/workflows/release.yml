@@ -15,7 +15,7 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: taiki-e/create-gh-release-action@v1
         env:
           # (required)
@@ -34,7 +34,7 @@ jobs:
           - { os: macos-latest, target: aarch64-apple-darwin }
     runs-on: ${{ matrix.config.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required)
@@ -73,7 +73,7 @@ jobs:
           - linux/arm64
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Docker meta
         id: meta

@@ -392,5 +392,5 @@ max_tx_size = 2097152
 clock_drift = '5s'
 max_block_time = '30s'
 trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+trust_threshold = { numerator = '2', denominator = '3' }
 address_type = { derivation = 'cosmos' }

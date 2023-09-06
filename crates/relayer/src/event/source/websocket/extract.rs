@@ -129,7 +129,9 @@ pub fn extract_events(
     let events = events.ok_or("missing events")?;
 
     match data {
-        RpcEventData::NewBlock { block, .. } if query == queries::new_block().to_string() => {
+        RpcEventData::NewBlock { block, .. } | RpcEventData::LegacyNewBlock { block, .. }
+            if query == queries::new_block().to_string() =>
+        {
             let height = Height::new(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
