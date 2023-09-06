@@ -256,12 +256,12 @@ fn handle_duplicate_vote(
 fn handle_light_client_attack(
     rt: Arc<TokioRuntime>,
     chain: &CosmosSdkChain,
-    lc: LightClientAttackEvidence,
+    evidence: LightClientAttackEvidence,
 ) -> eyre::Result<()> {
     let config = app_config();
 
     // Build the two headers to submit as part of the `MsgSubmitMisbehaviour` message.
-    let (header1, header2) = build_evidence_headers(rt.clone(), chain, lc.clone())?;
+    let (header1, header2) = build_evidence_headers(rt.clone(), chain, evidence.clone())?;
 
     // Fetch all the counterparty clients of this chain.
     let counterparty_clients = fetch_all_counterparty_clients(chain)?;
@@ -303,77 +303,109 @@ fn handle_light_client_attack(
             chain_handle.clone(),
         );
 
-        // Build client update for the common header
-        let common_height = Height::from_tm(lc.common_height, chain.id());
-        let mut msgs = counterparty_client.wait_and_build_update_client(common_height)?;
+        let result = submit_light_client_attack_evidence(
+            &evidence,
+            chain,
+            counterparty_client,
+            counterparty_client_id,
+            counterparty_chain_handle,
+            misbehaviour,
+        );
 
-        let signer = counterparty_chain_handle.get_signer()?;
-
-        // If the misbehaving chain is a CCV consumer chain,
-        // then try fetch the consumer chains of the counterparty chains.
-        // If that fails, then that chain is not a provider chain.
-        // Otherwise, check if the misbehaving chain is a consumer of the counterparty chain,
-        // which is definitely a provider.
-        let counterparty_is_provider = if chain.config().ccv_consumer_chain {
-            let consumer_chains = counterparty_chain_handle
-                .query_consumer_chains()
-                .unwrap_or_default(); // If the query fails, use an empty list of consumers
-
-            // FIXME: Do do we need to check if the client id also matches?
-            // ie. is it okay to submit a `MsgSubmitIcsConsumerMisbehaviour` to all clients
-            // of the provider chain, or should we only do this for the CCV client, and
-            // use the standard message for other clients?
-            consumer_chains
-                .iter()
-                .any(|(chain_id, _)| chain_id == chain.id())
-        } else {
-            false
-        };
-
-        let submit_msg = if counterparty_is_provider {
-            info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
-
-            let msg = MsgSubmitIcsConsumerMisbehaviour {
-                submitter: signer.clone(),
-                misbehaviour: misbehaviour.clone(),
-            }
-            .to_any();
-
-            Some(msg)
-        } else {
-            None
-        };
-
-        if let Some(msg) = submit_msg {
-            msgs.push(msg);
-        }
-
-        info!("submitting sovereign misbehaviour to chain {counterparty_chain_id}");
-
-        let msg = MsgSubmitMisbehaviour {
-            client_id: counterparty_client_id,
-            misbehaviour: misbehaviour.to_any(),
-            signer,
-        }
-        .to_any();
-
-        msgs.push(msg);
-
-        let tracked_msgs = TrackedMsgs::new_static(msgs, "submit_misbehaviour");
-        let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
-
-        for response in responses {
-            if response.code.is_ok() {
-                info!("successfully submitted misbehaviour to chain {counterparty_chain_id}, tx hash: {}", response.hash);
-            } else {
-                error!(
-                    "failed to submit misbehaviour to chain {counterparty_chain_id}: {response:?}"
-                );
-            }
+        if let Err(error) = result {
+            error!("{error}");
         }
     }
 
     Ok(())
+}
+
+fn submit_light_client_attack_evidence(
+    evidence: &LightClientAttackEvidence,
+    chain: &CosmosSdkChain,
+    counterparty_client: ForeignClient<BaseChainHandle, BaseChainHandle>,
+    counterparty_client_id: ClientId,
+    counterparty: &BaseChainHandle,
+    misbehaviour: TendermintMisbehaviour,
+) -> Result<(), eyre::Error> {
+    let signer = counterparty.get_signer()?;
+
+    let common_height = Height::from_tm(evidence.common_height, chain.id());
+    let mut msgs = counterparty_client.wait_and_build_update_client(common_height)?;
+
+    if is_counterparty_provider(chain, counterparty) {
+        info!(
+            "submitting CCV misbehaviour to provider chain {}",
+            counterparty.id()
+        );
+
+        let msg = MsgSubmitIcsConsumerMisbehaviour {
+            submitter: signer.clone(),
+            misbehaviour: misbehaviour.clone(),
+        }
+        .to_any();
+
+        msgs.push(msg);
+    };
+
+    info!(
+        "submitting sovereign misbehaviour to chain {}",
+        counterparty.id()
+    );
+
+    let msg = MsgSubmitMisbehaviour {
+        client_id: counterparty_client_id,
+        misbehaviour: misbehaviour.to_any(),
+        signer,
+    }
+    .to_any();
+
+    msgs.push(msg);
+
+    let tracked_msgs = TrackedMsgs::new_static(msgs, "submit_misbehaviour");
+    let responses = counterparty.send_messages_and_wait_check_tx(tracked_msgs)?;
+
+    match responses.first() {
+        Some(response) if response.code.is_ok() => {
+            info!(
+                "successfully submitted misbehaviour to chain {}, tx hash: {}",
+                counterparty.id(),
+                response.hash
+            );
+
+            Ok(())
+        }
+        Some(response) => Err(eyre::eyre!(
+            "failed to submit misbehaviour to chain {}: {response:?}",
+            counterparty.id()
+        )),
+
+        None => Err(eyre::eyre!(
+            "failed to submit misbehaviour to chain {}: no response from chain",
+            counterparty.id()
+        )),
+    }
+}
+
+fn is_counterparty_provider(
+    chain: &CosmosSdkChain,
+    counterparty_chain_handle: &BaseChainHandle,
+) -> bool {
+    if chain.config().ccv_consumer_chain {
+        let consumer_chains = counterparty_chain_handle
+            .query_consumer_chains()
+            .unwrap_or_default(); // If the query fails, use an empty list of consumers
+
+        // FIXME: Do do we need to check if the client id also matches?
+        // ie. is it okay to submit a `MsgSubmitIcsConsumerMisbehaviour` to all clients
+        // of the provider chain, or should we only do this for the CCV client, and
+        // use the standard message for other clients?
+        consumer_chains
+            .iter()
+            .any(|(chain_id, _)| chain_id == chain.id())
+    } else {
+        false
+    }
 }
 
 /// Fetch all the counterparty clients of the given chain.
