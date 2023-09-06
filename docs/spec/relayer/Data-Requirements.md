@@ -15,6 +15,7 @@
   * [`/broadcast_tx_sync`](#broadcast_tx_sync)
   * [`/broadcast_evidence`](#broadcast_evidence)
 - [CometBFT WebSocket](#cometbft-websocket)
+- [CometBFT gRPC](#cometbft-grpc)
 
 ## CometBFT RPC
 
@@ -169,6 +170,17 @@ The following are the gRPC endpoints that Hermes makes use of, listed in rough p
 ### `ibc.core.channel.v1.QueryClient`
 
 Queries for channel-associated data, such as packet commitments, unreceived packets, all channels associated with a given connection, etc.
+
+The requests that Hermes makes to this endpoint are:
+
+- QueryChannelClientStateRequest
+- QueryChannelsRequest
+- QueryConnectionChannelsRequest
+- QueryNextSequenceReceiveRequest
+- QueryPacketAcknowledgementsRequest
+- QueryPacketCommitmentsRequest
+- QueryUnreceivedAcksRequest
+- QueryUnreceivedPacketsRequest
 
 ### `ibc.core.client.v1.QueryClient`
 

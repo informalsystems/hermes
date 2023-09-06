@@ -1518,6 +1518,8 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
+    /// Performs a `QueryConnectionChannelsRequest` gRPC query in order to 
+    /// fetch all channels associated with a given connection.
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,

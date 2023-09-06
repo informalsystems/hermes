@@ -228,8 +228,10 @@ pub struct QueryConnectionRequest {
     pub height: QueryHeight,
 }
 
+/// gRPC query to fetch all channels associated with the specified connection.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryConnectionChannelsRequest {
+    /// Identifier of the connection to query.
     pub connection_id: ConnectionId,
     pub pagination: Option<PageRequest>,
 }
