@@ -76,7 +76,7 @@ fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> ey
     let mut height = latest_height;
 
     for _block in 0..num_blocks - 1 {
-        debug!("trying to check for evidence at height {height}");
+        debug!("checking for evidence at height {height}");
 
         let result = check_misbehaviour_at(rt.clone(), &chain, height);
         if let Err(e) = result {

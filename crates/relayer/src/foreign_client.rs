@@ -1476,10 +1476,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         name = "foreign_client.detect_misbehaviour",
         level = "error",
         skip_all,
-        fields(
-            client = %self,
-            update_height = ?update.as_ref().map(|ev| ev.consensus_height())
-        )
+        fields(client = %self)
     )]
     pub fn detect_misbehaviour(
         &self,
@@ -1635,7 +1632,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     #[instrument(
         name = "foreign_client.submit_evidence",
         level = "error",
-        skip(self),
+        skip_all,
         fields(client = %self)
     )]
     fn submit_evidence(
@@ -1730,7 +1727,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     #[instrument(
         name = "foreign_client.detect_misbehaviour_and_submit_evidence",
         level = "error",
-        skip(self),
+        skip_all,
         fields(client = %self)
     )]
     pub fn detect_misbehaviour_and_submit_evidence(
