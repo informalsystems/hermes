@@ -173,14 +173,14 @@ Queries for channel-associated data, such as packet commitments, unreceived pack
 
 The requests that Hermes makes to this endpoint are:
 
-- QueryChannelClientStateRequest
-- QueryChannelsRequest
-- QueryConnectionChannelsRequest
-- QueryNextSequenceReceiveRequest
-- QueryPacketAcknowledgementsRequest
-- QueryPacketCommitmentsRequest
-- QueryUnreceivedAcksRequest
-- QueryUnreceivedPacketsRequest
+- QueryChannelClientStateRequest: Requests the client state associated with a specified channel.
+- QueryChannelsRequest: Requests all of the channels associated with the chain.
+- QueryConnectionChannelsRequest: Requests all of the channels associated with a specified connection.
+- QueryNextSequenceReceiveRequest: Requests the sequence number of the next receive packet for a specified channel.
+- QueryPacketAcknowledgementsRequest: Requests the packet acknowledgments associated with a specified channel.
+- QueryPacketCommitmentsRequest: Requests the packet commitments associated with a specified channel.
+- QueryUnreceivedAcksRequest: Requests the unreceived acknowledgments associated with a specified channel.
+- QueryUnreceivedPacketsRequest: Requests the unreceived packet sequences associated with a specified channel.
 
 ### `ibc.core.client.v1.QueryClient`
 

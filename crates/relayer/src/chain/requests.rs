@@ -245,6 +245,7 @@ impl From<QueryConnectionChannelsRequest> for RawQueryConnectionChannelsRequest 
     }
 }
 
+/// gRPC query to fetch all channels of the chain.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryChannelsRequest {
     pub pagination: Option<PageRequest>,
@@ -265,6 +266,7 @@ pub struct QueryChannelRequest {
     pub height: QueryHeight,
 }
 
+/// gRPC request to fetch the client state associated with a specified channel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryChannelClientStateRequest {
     pub port_id: PortId,
@@ -288,6 +290,7 @@ pub struct QueryPacketCommitmentRequest {
     pub height: QueryHeight,
 }
 
+/// gRPC query to fetch the packet commitment hashes associated with the specified channel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryPacketCommitmentsRequest {
     pub port_id: PortId,
@@ -313,6 +316,7 @@ pub struct QueryPacketReceiptRequest {
     pub height: QueryHeight,
 }
 
+/// gRPC query to fetch all unreceived packet sequences associated with the specified channel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUnreceivedPacketsRequest {
     pub port_id: PortId,
@@ -342,6 +346,7 @@ pub struct QueryPacketAcknowledgementRequest {
     pub height: QueryHeight,
 }
 
+/// gRPC query to fetch all packet acknowledgements associated with the specified channel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryPacketAcknowledgementsRequest {
     pub port_id: PortId,
@@ -365,6 +370,8 @@ impl From<QueryPacketAcknowledgementsRequest> for RawQueryPacketAcknowledgements
     }
 }
 
+/// gRPC query to fetch the unreceived acknowledgements sequences associated with 
+/// the specified channel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUnreceivedAcksRequest {
     pub port_id: PortId,
@@ -386,6 +393,8 @@ impl From<QueryUnreceivedAcksRequest> for RawQueryUnreceivedAcksRequest {
     }
 }
 
+/// gRPC query to fetch the sequence number of the next packet to be
+/// received at the given height by the specified channel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryNextSequenceReceiveRequest {
     pub port_id: PortId,
