@@ -1,44 +1,43 @@
-use ibc_relayer::config::TracingServerConfig;
+use std::io;
+
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
+use tokio::net::TcpStream;
 use tracing_subscriber::filter;
 use tracing_subscriber::reload::Handle;
-use zmq::Context;
-use zmq::Message;
 
-pub fn spawn_reload_handler(
+use ibc_relayer::config::TracingServerConfig;
+
+pub async fn spawn_reload_handler(
     reload_handle: Handle<filter::EnvFilter, impl Sized>,
-    tracing_server_config: TracingServerConfig,
-) {
-    if !tracing_server_config.enabled {
-        return;
+    config: TracingServerConfig,
+) -> io::Result<()> {
+    if !config.enabled {
+        return Ok(());
     }
-    let context = Context::new();
-    let responder = context.socket(zmq::REP).unwrap();
 
-    assert!(responder
-        .bind(&format!("tcp://*:{}", tracing_server_config.port))
-        .is_ok());
+    let listener = TcpListener::bind(("0.0.0.0", config.port)).await?;
 
-    let mut msg = Message::new();
     loop {
-        responder.recv(&mut msg, 0).unwrap();
-        let cmd = msg.as_str().unwrap();
+        let (mut socket, _) = listener.accept().await?;
+
+        let mut buffer = String::new();
+        socket.read_to_string(&mut buffer).await?;
+
+        let cmd = buffer.trim_end();
         let _ = reload_handle.reload(filter::EnvFilter::new(cmd));
-        let success_msg = format!("Successfully set tracing filter to `{cmd}`");
-        responder.send(success_msg.as_str(), 0).unwrap();
+        let success_msg = format!("Successfully set tracing filter to `{}`\n", cmd);
+        socket.write_all(success_msg.as_bytes()).await?;
     }
 }
 
-pub fn send_command(cmd: String, port: u16) {
-    let context = Context::new();
-    let requester = context.socket(zmq::REQ).unwrap();
+pub async fn send_command(cmd: &str, port: u16) -> io::Result<String> {
+    let mut stream = TcpStream::connect(("127.0.0.1", port)).await?;
 
-    assert!(requester
-        .connect(&format!("tcp://localhost:{}", port))
-        .is_ok());
+    stream.write_all(cmd.as_bytes()).await?;
 
-    let mut msg = Message::new();
+    let mut buffer = String::new();
+    stream.read_to_string(&mut buffer).await?;
 
-    requester.send(&cmd, 0).unwrap();
-
-    requester.recv(&mut msg, 0).unwrap();
+    Ok(buffer)
 }

@@ -123,15 +123,14 @@ port = 3001
 # [1000, 3900, 6800, 9700, 12600, 15500, 18400, 21300, 24200, 27100, 30000]
 # latency_confirmed = { start = 1000, end = 30000, buckets = 10 }
 
-# The tracing server section defines parameters for Hermes' server allowing updates to the tracing
-# directives.
+# The tracing server section defines parameters for Hermes' server allowing updates to the tracing directives.
+#
 # https://hermes.informal.systems/advanced/troubleshooting/log-level.html#overriding-the-tracing-filter-during-runtime
 [tracing_server]
-
 # Whether or not to enable the tracing server. Default: false
 enabled = false
 
-# Specify the port over which the built-in ZMQ server will serve the directives. Default: 5555
+# Specify the port over which the built-in TCP server will serve the directives. Default: 5555
 port = 5555
 
 # A chains section includes parameters related to a chain and the full node to which

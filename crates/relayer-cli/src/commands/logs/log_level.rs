@@ -1,6 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::Command;
 use abscissa_core::Runnable;
+use tracing::info;
 use tracing::Level;
 
 use crate::prelude::app_config;
@@ -27,16 +28,33 @@ pub struct SetLogLevelCmd {
 
 impl Runnable for SetLogLevelCmd {
     fn run(&self) {
-        let config = app_config();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
 
-        let port = config.tracing_server.port;
+        rt.block_on(run(&self.log_level, self.log_filter.as_ref()));
+    }
+}
 
-        let str_log = self.log_level.clone().to_string();
-        if let Some(log_filter) = self.log_filter.clone() {
-            let log_cmd = format!("{log_filter}={str_log}");
-            send_command(log_cmd, port)
-        } else {
-            send_command(str_log, port)
-        }
+async fn run(log_level: &Level, log_filter: Option<&String>) {
+    let config = app_config();
+
+    let port = config.tracing_server.port;
+
+    let str_log = log_level.to_string();
+
+    let result = if let Some(log_filter) = log_filter {
+        let log_cmd = format!("{log_filter}={str_log}");
+        info!("Setting log level to: {log_cmd}");
+        send_command(&log_cmd, port).await
+    } else {
+        info!("Setting log level to: {str_log}");
+        send_command(&str_log, port).await
+    };
+
+    match result {
+        Ok(_) => info!("Successfully set log level"),
+        Err(e) => info!("Failed to set log level: {e}"),
     }
 }
