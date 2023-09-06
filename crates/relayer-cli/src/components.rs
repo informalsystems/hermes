@@ -1,9 +1,7 @@
 //! Various components for internal use by the Abscissa subsystem.
 
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
-use tracing_subscriber::{
-    filter::EnvFilter, reload::Handle, util::SubscriberInitExt, FmtSubscriber,
-};
+use tracing_subscriber::{filter::EnvFilter, util::SubscriberInitExt, FmtSubscriber};
 
 use ibc_relayer::{
     config::{GlobalConfig, LogLevel},
@@ -11,6 +9,7 @@ use ibc_relayer::{
 };
 
 use crate::config::Error;
+use crate::tracing_handle::ReloadHandle;
 
 /// The name of the environment variable through which one can override
 /// the tracing filter built in [`build_tracing_filter`].
@@ -80,7 +79,7 @@ impl PrettyTracing {
     pub fn new_with_reload_handle(
         cfg: GlobalConfig,
         debug_sections: &[DebugSection],
-    ) -> Result<(Self, Handle<EnvFilter, impl Sized>), FrameworkError> {
+    ) -> Result<(Self, ReloadHandle<impl tracing::Subscriber + 'static>), FrameworkError> {
         let filter = build_tracing_filter(cfg.log_level, debug_sections)?;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.

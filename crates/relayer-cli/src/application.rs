@@ -10,13 +10,16 @@ use abscissa_core::{
     terminal::ColorChoice,
     Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
 };
-use ibc_relayer::{config::Config, util::debug_section::DebugSection};
+use ibc_relayer::{
+    config::{Config, TracingServerConfig},
+    util::debug_section::DebugSection,
+};
 
 use crate::{
     components::{JsonTracing, PrettyTracing},
     config::validate_config,
     entry::EntryPoint,
-    tracing_handle::spawn_reload_handler,
+    tracing_handle::{spawn_reload_handler, ReloadHandle},
 };
 
 /// Application state
@@ -202,12 +205,11 @@ impl Application for CliApp {
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
             // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
-            //let tracing = PrettyTracing::new(config.global, &self.debug_sections)?;
             let (tracing, reload_handle) =
                 PrettyTracing::new_with_reload_handle(config.global, &self.debug_sections)?;
-            thread::spawn(move || {
-                spawn_reload_handler(reload_handle, config.tracing_server.clone())
-            });
+
+            spawn_tracing_reload_server(reload_handle, config.tracing_server.clone());
+
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
     }
@@ -217,4 +219,22 @@ impl Application for CliApp {
     fn term_colors(&self, _command: &Self::Cmd) -> ColorChoice {
         ColorChoice::Never
     }
+}
+
+fn spawn_tracing_reload_server<S: 'static>(
+    reload_handle: ReloadHandle<S>,
+    config: TracingServerConfig,
+) {
+    thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
+        let result = rt.block_on(spawn_reload_handler(reload_handle, config));
+
+        if let Err(e) = result {
+            eprintln!("ERROR: failed to spawn tracing reload handler: {e}");
+        }
+    });
 }

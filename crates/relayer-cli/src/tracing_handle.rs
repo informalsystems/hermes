@@ -8,8 +8,10 @@ use tracing_subscriber::reload::Handle;
 
 use ibc_relayer::config::TracingServerConfig;
 
-pub async fn spawn_reload_handler(
-    reload_handle: Handle<filter::EnvFilter, impl Sized>,
+pub type ReloadHandle<S> = Handle<filter::EnvFilter, S>;
+
+pub async fn spawn_reload_handler<S>(
+    reload_handle: ReloadHandle<S>,
     config: TracingServerConfig,
 ) -> io::Result<()> {
     if !config.enabled {

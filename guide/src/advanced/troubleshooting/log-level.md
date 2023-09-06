@@ -160,21 +160,3 @@ The following command will only display logs which have a field `channel=channel
   {{#template ../../templates/commands/hermes/logs/reset_1.md}}
   ```
 
-  ### Any ZMQ REQ socket
-
-  The tracing server can interact with other ZMQ scripts. For example if the `tracing_server` port has been configured to `5555`, you could set the log level to debug by using the following python scripts:
-
-  ```python
-  import zmq
-
-def main() -> None:
-	ctx = zmq.Context()
-	req = ctx.socket(zmq.REQ)
-	req.connect("tcp://localhost:5555")
-	req.send_string("ibc=debug")
-	resp = req.recv_string()
-	print(f"{resp}")
-
-if __name__ == "__main__":
-	main()
-```
