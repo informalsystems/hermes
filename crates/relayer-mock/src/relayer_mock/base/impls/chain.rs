@@ -11,9 +11,10 @@
 use async_trait::async_trait;
 use eyre::eyre;
 use ibc_relayer_components::chain::traits::client::client_state::CanQueryClientState;
-use ibc_relayer_components::chain::traits::components::chain_status_querier::CanQueryChainStatus;
-use ibc_relayer_components::chain::traits::components::consensus_state_querier::CanQueryConsensusState;
-use ibc_relayer_components::chain::traits::components::message_sender::CanSendMessages;
+use ibc_relayer_components::chain::traits::components::chain_status_querier::ChainStatusQuerier;
+use ibc_relayer_components::chain::traits::components::consensus_state_querier::ConsensusStateQuerier;
+use ibc_relayer_components::chain::traits::components::message_sender::MessageSender;
+use ibc_relayer_components::chain::traits::components::packet_fields_reader::PacketFieldsReader;
 use ibc_relayer_components::chain::traits::logs::event::CanLogChainEvent;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::chain::traits::message_builders::ack_packet::{
@@ -40,12 +41,13 @@ use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWrit
 use ibc_relayer_components::chain::traits::types::message::{
     CanEstimateMessageSize, HasMessageType,
 };
-use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
+use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
 use ibc_relayer_components::chain::traits::types::packets::ack::HasAckPacketPayload;
 use ibc_relayer_components::chain::traits::types::packets::receive::HasReceivePacketPayload;
 use ibc_relayer_components::chain::traits::types::packets::timeout::HasTimeoutUnorderedPacketPayload;
 use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
+use ibc_relayer_components::core::traits::component::HasComponents;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
@@ -63,7 +65,12 @@ use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::packet::PacketKey;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
+use crate::relayer_mock::components::MockComponents;
 use crate::relayer_mock::contexts::chain::MockChainContext;
+
+impl HasComponents for MockChainContext {
+    type Components = MockComponents;
+}
 
 impl HasErrorType for MockChainContext {
     type Error = Error;
@@ -123,7 +130,7 @@ impl HasIbcPacketTypes<MockChainContext> for MockChainContext {
     type OutgoingPacket = PacketKey;
 }
 
-impl HasIbcPacketFields<MockChainContext> for MockChainContext {
+impl PacketFieldsReader<MockChainContext, MockChainContext> for MockComponents {
     fn incoming_packet_src_channel_id(packet: &PacketKey) -> &ChannelId {
         &packet.src_channel_id
     }
@@ -264,24 +271,24 @@ impl HasChainId for MockChainContext {
 }
 
 #[async_trait]
-impl CanSendMessages for MockChainContext {
+impl MessageSender<MockChainContext> for MockComponents {
     async fn send_messages(
-        &self,
-        messages: Vec<Self::Message>,
-    ) -> Result<Vec<Vec<Self::Event>>, Error> {
-        self.process_messages(messages)
+        chain: &MockChainContext,
+        messages: Vec<MockMessage>,
+    ) -> Result<Vec<Vec<Event>>, Error> {
+        chain.process_messages(messages)
     }
 }
 
 #[async_trait]
-impl CanQueryChainStatus for MockChainContext {
-    async fn query_chain_status(&self) -> Result<ChainStatus, Self::Error> {
-        let height = self.get_current_height();
-        let state = self.get_current_state();
+impl ChainStatusQuerier<MockChainContext> for MockComponents {
+    async fn query_chain_status(chain: &MockChainContext) -> Result<ChainStatus, Error> {
+        let height = chain.get_current_height();
+        let state = chain.get_current_state();
         // Since the MockChain only updates manually, the Height is increased by
         // 1 everytime the chain status is queried, without changing its state.
-        self.new_block()?;
-        let time = self.runtime.get_time();
+        chain.new_block()?;
+        let time = chain.runtime.get_time();
         Ok(MockChainStatus::from((height, time, state)))
     }
 }
@@ -308,14 +315,14 @@ impl HasCounterpartyMessageHeight<MockChainContext> for MockChainContext {
 }
 
 #[async_trait]
-impl CanQueryConsensusState<MockChainContext> for MockChainContext {
+impl ConsensusStateQuerier<MockChainContext, MockChainContext> for MockComponents {
     async fn query_consensus_state(
-        &self,
+        chain: &MockChainContext,
         client_id: &ClientId,
         height: &MockHeight,
-    ) -> Result<ConsensusState, Self::Error> {
+    ) -> Result<ConsensusState, Error> {
         let client_consensus =
-            self.query_consensus_state_at_height(client_id.to_string(), *height)?;
+            chain.query_consensus_state_at_height(client_id.to_string(), *height)?;
         Ok(client_consensus)
     }
 }

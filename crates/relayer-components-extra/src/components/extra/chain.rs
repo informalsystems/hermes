@@ -2,6 +2,7 @@ use core::marker::PhantomData;
 use ibc_relayer_components::chain::traits::components::chain_status_querier::ChainStatusQuerierComponent;
 use ibc_relayer_components::chain::traits::components::consensus_state_querier::ConsensusStateQuerierComponent;
 use ibc_relayer_components::chain::traits::components::message_sender::MessageSenderComponent;
+use ibc_relayer_components::chain::traits::components::packet_fields_reader::PacketFieldsReaderComponent;
 use ibc_relayer_components::components::default::chain::DefaultChainComponents;
 
 use crate::telemetry::components::consensus_state::ConsensusStateTelemetryQuerier;
@@ -22,7 +23,7 @@ ibc_relayer_components::delegate_component!(
 );
 
 ibc_relayer_components::delegate_components!(
-    [MessageSenderComponent,],
+    [MessageSenderComponent, PacketFieldsReaderComponent,],
     ExtraChainComponents<BaseComponents>,
     DefaultChainComponents<BaseComponents>,
 );

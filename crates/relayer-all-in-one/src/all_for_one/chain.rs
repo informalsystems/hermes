@@ -1,6 +1,7 @@
 use ibc_relayer_components::chain::traits::client::create::HasCreateClientOptions;
 use ibc_relayer_components::chain::traits::components::chain_status_querier::CanQueryChainStatus;
 use ibc_relayer_components::chain::traits::components::consensus_state_querier::CanQueryConsensusState;
+use ibc_relayer_components::chain::traits::components::packet_fields_reader::CanReadPacketFields;
 use ibc_relayer_components::chain::traits::queries::packet_commitments::CanQueryPacketCommitments;
 use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use ibc_relayer_components::chain::traits::queries::send_packet::CanQuerySendPacketsFromSequences;
@@ -15,7 +16,7 @@ use ibc_relayer_components::chain::traits::types::connection::{
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
 use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
 use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
-use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
+use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
 use ibc_relayer_components::logger::traits::level::HasLoggerWithBaseLevels;
 use ibc_relayer_components_extra::telemetry::traits::telemetry::HasTelemetry;
 
@@ -29,7 +30,7 @@ pub trait AfoChain<Counterparty>:
     + HasChainTypes
     + CanQueryChainStatus
     + HasIbcChainTypes<Counterparty>
-    + HasIbcPacketFields<Counterparty>
+    + CanReadPacketFields<Counterparty>
     + HasWriteAcknowledgementEvent<Counterparty>
     + HasConsensusStateType<Counterparty>
     + CanQueryConsensusState<Counterparty>
@@ -56,7 +57,7 @@ pub trait AfoCounterpartyChain<Chain>:
         OutgoingPacket = Chain::IncomingPacket,
     >
 where
-    Chain: HasIbcPacketFields<Self>,
+    Chain: CanReadPacketFields<Self>,
 {
 }
 
@@ -69,7 +70,7 @@ where
         + HasTelemetry
         + HasChainTypes
         + CanQueryChainStatus
-        + HasIbcPacketFields<Counterparty>
+        + CanReadPacketFields<Counterparty>
         + HasWriteAcknowledgementEvent<Counterparty>
         + HasConsensusStateType<Counterparty>
         + CanQueryConsensusState<Counterparty>
@@ -87,9 +88,9 @@ where
 
 impl<Chain, Counterparty> AfoCounterpartyChain<Chain> for Counterparty
 where
-    Chain: HasIbcPacketFields<Counterparty>,
+    Chain: CanReadPacketFields<Counterparty>,
     Counterparty: HasConsensusStateType<Chain>
-        + HasIbcPacketFields<
+        + CanReadPacketFields<
             Chain,
             IncomingPacket = Chain::OutgoingPacket,
             OutgoingPacket = Chain::IncomingPacket,

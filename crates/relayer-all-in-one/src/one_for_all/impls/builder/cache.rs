@@ -1,11 +1,11 @@
 use async_trait::async_trait;
-use ibc_relayer_components::builder::traits::cache::{HasChainCache, HasRelayCache};
-use ibc_relayer_components::builder::traits::target::chain::{ChainATarget, ChainBTarget};
-use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
-use ibc_relayer_components::builder::types::aliases::{
+use ibc_relayer_components::build::traits::cache::{HasChainCache, HasRelayCache};
+use ibc_relayer_components::build::traits::target::chain::{ChainATarget, ChainBTarget};
+use ibc_relayer_components::build::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
+use ibc_relayer_components::build::types::aliases::{
     ChainACache, ChainBCache, RelayAToBCache, RelayBToACache,
 };
-use ibc_relayer_components_extra::builder::traits::cache::HasBatchSenderCache;
+use ibc_relayer_components_extra::build::traits::cache::HasBatchSenderCache;
 
 use crate::one_for_all::traits::builder::{
     BatchSenderCacheA, BatchSenderCacheB, OfaBuilder, RelayError,

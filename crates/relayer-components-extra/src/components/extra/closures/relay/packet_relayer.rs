@@ -3,6 +3,7 @@ use ibc_relayer_components::chain::traits::client::consensus_state::CanFindConse
 use ibc_relayer_components::chain::traits::client::update::{
     CanBuildUpdateClientMessage, CanBuildUpdateClientPayload,
 };
+use ibc_relayer_components::chain::traits::components::packet_fields_reader::CanReadPacketFields;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::chain::traits::message_builders::ack_packet::{
     CanBuildAckPacketMessage, CanBuildAckPacketPayload,
@@ -20,7 +21,6 @@ use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusS
 use ibc_relayer_components::chain::traits::types::height::CanIncrementHeight;
 use ibc_relayer_components::chain::traits::types::ibc::HasCounterpartyMessageHeight;
 use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
-use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketFields;
 use ibc_relayer_components::core::traits::component::HasComponents;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::has_logger::{HasLogger, HasLoggerType};
@@ -61,7 +61,7 @@ where
         + HasClientStateFields<DstChain>
         + HasConsensusStateType<DstChain>
         + HasCounterpartyMessageHeight<DstChain>
-        + HasIbcPacketFields<DstChain, OutgoingPacket = Relay::Packet>
+        + CanReadPacketFields<DstChain, OutgoingPacket = Relay::Packet>
         + CanLogChainPacket<DstChain>
         + CanQueryClientState<DstChain>
         + CanFindConsensusStateHeight<DstChain>
@@ -79,7 +79,7 @@ where
         + HasConsensusStateType<SrcChain>
         + HasCounterpartyMessageHeight<SrcChain>
         + HasWriteAcknowledgementEvent<SrcChain>
-        + HasIbcPacketFields<SrcChain, IncomingPacket = Relay::Packet>
+        + CanReadPacketFields<SrcChain, IncomingPacket = Relay::Packet>
         + CanQueryClientState<SrcChain>
         + CanQueryReceivedPacket<SrcChain>
         + CanFindConsensusStateHeight<SrcChain>

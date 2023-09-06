@@ -6,6 +6,7 @@ use ibc_relayer_components::chain::traits::client::update::{
 use ibc_relayer_components::chain::traits::components::chain_status_querier::CanQueryChainStatus;
 use ibc_relayer_components::chain::traits::components::consensus_state_querier::CanQueryConsensusState;
 use ibc_relayer_components::chain::traits::components::message_sender::CanSendMessages;
+use ibc_relayer_components::chain::traits::components::packet_fields_reader::CanReadPacketFields;
 use ibc_relayer_components::chain::traits::message_builders::ack_packet::{
     CanBuildAckPacketMessage, CanBuildAckPacketPayload,
 };
@@ -15,7 +16,6 @@ use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusS
 use ibc_relayer_components::chain::traits::types::height::CanIncrementHeight;
 use ibc_relayer_components::chain::traits::types::ibc::HasCounterpartyMessageHeight;
 use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
-use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketFields;
 use ibc_relayer_components::core::traits::component::HasComponents;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::core::traits::sync::Async;
@@ -56,7 +56,7 @@ where
         + CanSendMessages
         + HasConsensusStateType<DstChain>
         + HasCounterpartyMessageHeight<DstChain>
-        + HasIbcPacketFields<DstChain, OutgoingPacket = Relay::Packet>
+        + CanReadPacketFields<DstChain, OutgoingPacket = Relay::Packet>
         + CanQueryClientState<DstChain>
         + CanQueryConsensusState<DstChain>
         + CanFindConsensusStateHeight<DstChain>
@@ -69,7 +69,7 @@ where
         + CanQueryChainStatus
         + HasClientStateFields<SrcChain>
         + HasConsensusStateType<SrcChain>
-        + HasIbcPacketFields<SrcChain, IncomingPacket = Relay::Packet>
+        + CanReadPacketFields<SrcChain, IncomingPacket = Relay::Packet>
         + CanBuildAckPacketPayload<SrcChain>
         + CanBuildUpdateClientPayload<SrcChain>,
     SrcChain::Height: Clone,
