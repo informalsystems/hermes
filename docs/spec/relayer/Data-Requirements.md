@@ -186,6 +186,12 @@ The requests that Hermes makes to this endpoint are:
 
 Queries the client in order to fetch client and consensus states.
 
+The requests that Hermes makes to this endpoint are:
+
+- QueryClientStatesRequest: Requests all client states associated with the chain.
+- QueryConsensusStateHeightsRequest: Requests all the consensus state heights associated with a specified client.
+- QueryConsensusStatesRequest: Requests all the consensus states associated with a specified client.
+
 ### `ibc.core.connection.v1.QueryClient`
 
 Queries the connection in order to fetch connection data and connected clients.

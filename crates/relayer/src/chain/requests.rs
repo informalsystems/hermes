@@ -134,6 +134,7 @@ pub struct QueryClientStateRequest {
     pub height: QueryHeight,
 }
 
+/// gRPC query to fetch all client states associated with the chain.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryClientStatesRequest {
     pub pagination: Option<PageRequest>,
@@ -162,10 +163,11 @@ pub struct QueryUpgradedClientStateRequest {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUpgradedConsensusStateRequest {
-    /// Height at which the chain is scheduled to halt for upgrade
+    /// Height at which the chain is scheduled to halt for upgrade.
     pub upgrade_height: Height,
 }
 
+/// gRPC query to fetch all consensus states associated with the specified client.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryConsensusStatesRequest {
     pub client_id: ClientId,

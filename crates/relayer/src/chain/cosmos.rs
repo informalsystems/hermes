@@ -1148,6 +1148,8 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(ChainStatus { height, timestamp })
     }
 
+    /// Performs a `QueryClientStatesRequest` gRPC query to fetch all the client states
+    /// associated with the chain.
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
@@ -1971,7 +1973,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 let seq: Sequence = Bytes::from(res.value).get_u64().into();
 
                 let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
-                
+
                 Ok((seq, Some(proof)))
             }
             IncludeProof::No => {
