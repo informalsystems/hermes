@@ -328,6 +328,12 @@ fn submit_light_client_attack_evidence(
     counterparty: &BaseChainHandle,
     misbehaviour: TendermintMisbehaviour,
 ) -> Result<(), eyre::Error> {
+    info!(
+        "building CCV misbehaviour evidence for provider chain `{}` for client `{}`",
+        counterparty.id(),
+        counterparty_client_id,
+    );
+
     let signer = counterparty.get_signer()?;
 
     let common_height = Height::from_tm(evidence.common_height, chain.id());
@@ -335,8 +341,9 @@ fn submit_light_client_attack_evidence(
 
     if is_counterparty_provider(chain, counterparty) {
         info!(
-            "submitting CCV misbehaviour to provider chain {}",
-            counterparty.id()
+            "submitting CCV misbehaviour to provider chain `{}` for client `{}`",
+            counterparty.id(),
+            counterparty_client_id,
         );
 
         let msg = MsgSubmitIcsConsumerMisbehaviour {
@@ -349,8 +356,9 @@ fn submit_light_client_attack_evidence(
     };
 
     info!(
-        "submitting sovereign misbehaviour to chain {}",
-        counterparty.id()
+        "submitting sovereign misbehaviour to chain `{}` for client `{}`",
+        counterparty.id(),
+        counterparty_client_id,
     );
 
     let msg = MsgSubmitMisbehaviour {
