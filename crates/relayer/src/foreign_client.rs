@@ -13,6 +13,7 @@ use itertools::Itertools;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use flex_error::define_error;
+use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
@@ -38,7 +39,7 @@ use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
-use crate::misbehaviour::MisbehaviourEvidence;
+use crate::misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence};
 use crate::telemetry;
 use crate::util::collate::CollatedIterExt;
 use crate::util::pretty::{PrettyDuration, PrettySlice};
@@ -248,6 +249,14 @@ define_error! {
                 description: String,
             }
             [ RelayerError ]
+            |e| {
+                format_args!("error raised while checking for misbehaviour evidence: {0}", e.description)
+            },
+
+        MisbehaviourDesc
+            {
+                description: String,
+            }
             |e| {
                 format_args!("error raised while checking for misbehaviour evidence: {0}", e.description)
             },
@@ -1643,6 +1652,17 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
+        let is_ccv_consumer_chain = self
+            .src_chain()
+            .config()
+            .map_err(|e| {
+                ForeignClientError::misbehaviour(
+                    format!("failed querying configuration of src chain {}", self.id),
+                    e,
+                )
+            })?
+            .ccv_consumer_chain;
+
         let mut msgs = vec![];
 
         for header in evidence.supporting_headers {
@@ -1651,6 +1671,30 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     header: header.into(),
                     client_id: self.id.clone(),
                     signer: signer.clone(),
+                }
+                .to_any(),
+            );
+        }
+
+        let tm_misbehaviour = match &evidence.misbehaviour {
+            AnyMisbehaviour::Tendermint(tm_misbehaviour) => Some(tm_misbehaviour.clone()),
+            #[cfg(test)]
+            _ => None,
+        }
+        .ok_or_else(|| {
+            ForeignClientError::misbehaviour_desc(format!(
+                "underlying evidence is not a Tendermint misbehaviour: {:?}",
+                evidence.misbehaviour
+            ))
+        })?;
+
+        // If the misbehaving chain is a CCV consumer chain, we need to add
+        // the corresponding CCV message for the provider.
+        if is_ccv_consumer_chain {
+            msgs.push(
+                MsgSubmitIcsConsumerMisbehaviour {
+                    submitter: signer.clone(),
+                    misbehaviour: tm_misbehaviour,
                 }
                 .to_any(),
             );
