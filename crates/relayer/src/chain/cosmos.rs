@@ -1339,6 +1339,8 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
+    /// Performs a `QueryClientConnectionsRequest` gRPC query to fetch all the connection 
+    /// identifiers associated with a given client.
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
@@ -1383,6 +1385,8 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(ids)
     }
 
+    /// Performs a `QueryConnectionsRequest` gRPC query to fetch all connections
+    /// associated with the chain.
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,

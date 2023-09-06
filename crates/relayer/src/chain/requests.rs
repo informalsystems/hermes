@@ -211,6 +211,7 @@ impl From<QueryConnectionsRequest> for RawQueryConnectionsRequest {
     }
 }
 
+/// gRPC query to fetch all the connections associated with the specified client.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryClientConnectionsRequest {
     pub client_id: ClientId,
