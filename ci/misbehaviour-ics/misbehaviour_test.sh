@@ -31,10 +31,15 @@ CONS_FORK_NODE_DIR=${HOME_DIR}/consumer-fork-${MONIKER}
 # Coordinator key
 PROV_KEY=${MONIKER}-key
 
-
 # Clean start
 pkill -f interchain-security-pd &> /dev/null || true
 rm -rf ${PROV_NODE_DIR}
+
+pkill -f interchain-security-cd &> /dev/null || true
+rm -rf ${CONS_NODE_DIR}
+rm -rf ${CONS_FORK_NODE_DIR}
+
+pkill -f hermes 2> /dev/null || true
 
 # Build genesis file and node directory structure
 interchain-security-pd init $MONIKER --chain-id provider --home ${PROV_NODE_DIR}
@@ -113,11 +118,6 @@ sleep 3
 
 ## CONSUMER CHAIN ##
 
-# Clean start
-pkill -f interchain-security-cd &> /dev/null || true
-rm -rf ${CONS_NODE_DIR}
-rm -rf ${CONS_FORK_NODE_DIR}
-
 # Build genesis file and node directory structure
 interchain-security-cd init $MONIKER --chain-id consumer  --home  ${CONS_NODE_DIR}
 sleep 1
@@ -156,9 +156,6 @@ interchain-security-cd start --home  ${CONS_NODE_DIR} \
 
 sleep 3
 
-# Setup Hermes in packet relayer mode
-pkill -f hermes 2> /dev/null || true
-
 tee $HOME_DIR/config.toml <<EOF
 [global]
 log_level = "debug"
@@ -189,7 +186,7 @@ grpc_addr = "tcp://${NODE_IP}:9081"
 key_name = "relayer"
 max_gas = 2000000
 rpc_addr = "http://${NODE_IP}:26648"
-rpc_timeout = "10s"
+rpc_timeout = "30s"
 store_prefix = "ibc"
 trusting_period = "2days"
 event_source = { mode = "push", url = "ws://${NODE_IP}:26648/websocket" }
@@ -211,7 +208,7 @@ grpc_addr = "tcp://${NODE_IP}:9091"
 key_name = "relayer"
 max_gas = 2000000
 rpc_addr = "http://${NODE_IP}:26658"
-rpc_timeout = "10s"
+rpc_timeout = "30s"
 store_prefix = "ibc"
 trusting_period = "2days"
 event_source = { mode = "push", url = "ws://${NODE_IP}:26658/websocket" }
@@ -253,7 +250,7 @@ $HERMES --config $HOME_DIR/config.toml \
 
 sleep 5
 
-$HERMES --config $HOME_DIR/config.toml --json start &> $HOME_DIR/hermes-logs &
+$HERMES --config $HOME_DIR/config.toml start &> $HOME_DIR/hermes-logs &
 
 interchain-security-pd q tendermint-validator-set --home ${PROV_NODE_DIR}
 interchain-security-cd q tendermint-validator-set --home ${CONS_NODE_DIR}
@@ -376,16 +373,23 @@ sleep 10
 diag "Updating client on forked chain using trusted height $TRUSTED_HEIGHT"
 $HERMES --config $HOME_DIR/config_fork.toml update client --client 07-tendermint-0 --host-chain provider --trusted-height $TRUSTED_HEIGHT
 
-sleep 10
 
-# Check the client state on provider and verify it is frozen
-FROZEN_HEIGHT=$($HERMES --config $HOME_DIR/config.toml --json query client state --chain provider --client 07-tendermint-0 | tail -n 1 | jq '.result.frozen_height.revision_height')
+for ((i = 0; i < 10; i++)); do
+    # Check the client state on provider and verify it is frozen
+    FROZEN_HEIGHT=$($HERMES --config $HOME_DIR/config.toml --json query client state --chain provider --client 07-tendermint-0 | tail -n 1 | jq '.result.frozen_height.revision_height')
 
-diag "Frozen height: $FROZEN_HEIGHT"
+    diag "Frozen height: $FROZEN_HEIGHT"
 
-if [ "$FROZEN_HEIGHT" != "null" ]; then
-    diag "Client is frozen, success!"
-else
-    diag "Client is not frozen, aborting."
-    exit 1
-fi
+    if [ "$FROZEN_HEIGHT" != "null" ]; then
+        diag "Client is frozen, success!"
+        exit 0
+    else
+        diag "Client is not frozen, waiting 5 seconds..."
+        sleep 5
+    fi
+done
+
+diag "Client is not frozen, aborting."
+diag "Hermes logs:"
+cat $HOME_DIR/hermes-logs
+exit 1
