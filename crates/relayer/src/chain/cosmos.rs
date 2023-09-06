@@ -1649,7 +1649,7 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
-    /// Performs a QueryChannelClientStateRequest gRPC query in order to fetch the client state
+    /// Performs a `QueryChannelClientStateRequest` gRPC query in order to fetch the client state
     /// associated with a given channel, if it exists. 
     fn query_channel_client_state(
         &self,
@@ -1850,7 +1850,7 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
-    /// Performs a `QueryPacketAcknowledgementsRequest` to fetch the packet acknowledgment 
+    /// Performs a `QueryPacketAcknowledgementsRequest` gRPC query to fetch the packet acknowledgment 
     /// hashes associated with a channel.
     fn query_packet_acknowledgements(
         &self,
@@ -1900,7 +1900,7 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((acks_sequences, height))
     }
 
-    /// Performs a `QueryUnreceivedAcksRequest` gRPC request to fetch the unreceived acknowledgements
+    /// Performs a `QueryUnreceivedAcksRequest` gRPC query to fetch the unreceived acknowledgements
     /// sequences associated with a channel.
     fn query_unreceived_acknowledgements(
         &self,
@@ -1940,7 +1940,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect())
     }
 
-    /// Performs a `QueryNextSequenceReceiveRequest` to fetch the sequence number of the next
+    /// Performs a `QueryNextSequenceReceiveRequest` gRPC query to fetch the sequence number of the next
     /// packet to be received at a specified height.
     fn query_next_sequence_receive(
         &self,
@@ -1971,6 +1971,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 let seq: Sequence = Bytes::from(res.value).get_u64().into();
 
                 let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                
                 Ok((seq, Some(proof)))
             }
             IncludeProof::No => {
