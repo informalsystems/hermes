@@ -17,7 +17,10 @@ pub async fn get_or_fetch_account<'a>(
     m_account: &'a mut Option<Account>,
 ) -> Result<&'a mut Account, Error> {
     match m_account {
-        Some(account) => Ok(account),
+        Some(account) => {
+            refresh_account(grpc_address, account_address, account).await?;
+            Ok(account)
+        }
         None => {
             let account = query_account(grpc_address, account_address).await?;
             *m_account = Some(account.into());
