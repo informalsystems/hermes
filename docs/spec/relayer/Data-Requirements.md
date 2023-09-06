@@ -201,20 +201,14 @@ The requests that Hermes makes to this endpoint are:
 - QueryClientConnectionsRequest: Requests all connections associated with a specified client.
 - QueryConnectionsRequest: Requests all connections associated with the chain.
 
-### `interchain_security.ccv.consumer.v1.QueryParams`
+### `interchain_security.ccv.consumer.v1.QueryClient`
 
 Queries a CCV Consumer chain to fetch its staking parameters, notably its unbonding period and the number of historical entries that the chain keeps.
-
-The requests that Hermes makes to this endpoint are:
 
 ### `cosmos.staking.v1beta1.QueryParams`
 
 Queries a Cosmos chain to fetch its staking parameters, most notably the chain's unbonding period.
 
-The requests that Hermes makes to this endpoint are:
-
 ### `cosmos.base.node.v1beta1.ServiceClient`
 
 Queries a Cosmos full node in order to fetch its configuration parameters.
-
-The requests that Hermes makes to this endpoint are:

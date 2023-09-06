@@ -342,7 +342,7 @@ impl CosmosSdkChain {
         Ok(monitor_tx)
     }
 
-    /// Query for CCV Consumer chain staking parameters
+    /// Performs a gRPC query to fetch CCV Consumer chain staking parameters.
     pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
         crate::time!(
             "query_ccv_consumer_chain_params",
@@ -379,7 +379,7 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    /// Query for Cosmos chain staking parameters
+    /// Performs a gRPC query for Cosmos chain staking parameters.
     pub fn query_staking_params(&self) -> Result<StakingParams, Error> {
         crate::time!(
             "query_staking_params",
@@ -415,7 +415,7 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    /// Query the node for its configuration parameters.
+    /// Performs a gRPC query to fetch the configuration parameters of the node.
     ///
     /// ### Note: This query endpoint was introduced in SDK v0.46.3/v0.45.10. Not available before that.
     ///
