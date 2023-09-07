@@ -16,6 +16,7 @@ use ibc_relayer::{
 };
 
 use crate::{
+    commands::CliCmd,
     components::{JsonTracing, PrettyTracing},
     config::validate_config,
     entry::EntryPoint,
@@ -199,6 +200,11 @@ impl Application for CliApp {
         let enable_json = self.debug_enabled(DebugSection::ProfilingJson);
         ibc_relayer::util::profiling::enable(enable_console, enable_json);
 
+        let is_start_cmd = command
+            .command
+            .as_ref()
+            .map_or(false, |cmd| matches!(cmd, CliCmd::Start(_)));
+
         if command.json {
             // Enable JSON by using the crate-level `Tracing`
             let tracing = JsonTracing::new(config.global, &self.debug_sections)?;
@@ -208,7 +214,9 @@ impl Application for CliApp {
             let (tracing, reload_handle) =
                 PrettyTracing::new_with_reload_handle(config.global, &self.debug_sections)?;
 
-            spawn_tracing_reload_server(reload_handle, config.tracing_server.clone());
+            if is_start_cmd {
+                spawn_tracing_reload_server(reload_handle, config.tracing_server.clone());
+            }
 
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
