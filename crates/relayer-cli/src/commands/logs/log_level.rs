@@ -54,7 +54,7 @@ async fn run(log_level: &Level, log_filter: Option<&String>) {
     };
 
     match result {
-        Ok(_) => info!("Successfully set log level"),
+        Ok(msg) => info!("{msg}"),
         Err(e) => info!("Failed to set log level: {e}"),
     }
 }
