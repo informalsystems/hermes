@@ -6,9 +6,11 @@ use async_trait::async_trait;
 use basecoin_app::modules::ibc::AnyConsensusState;
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
+use ibc::clients::ics07_tendermint::header::Header;
 use ibc::core::events::IbcEvent;
 use ibc::core::ics02_client::events::CreateClient;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
+use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc::core::ics04_channel::msgs::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout};
 use ibc::core::ics04_channel::packet::Packet;
@@ -21,11 +23,20 @@ use ibc::core::{Msg, ValidationContext};
 use ibc::Any;
 use ibc::Height;
 
+use ibc_relayer_components::chain::traits::client::client_state::CanQueryClientState;
+use ibc_relayer_components::chain::traits::client::consensus_state::CanFindConsensusStateHeight;
 use ibc_relayer_components::chain::traits::client::create::CanBuildCreateClientMessage;
 use ibc_relayer_components::chain::traits::client::create::CanBuildCreateClientPayload;
 use ibc_relayer_components::chain::traits::client::create::HasCreateClientEvent;
 use ibc_relayer_components::chain::traits::client::create::HasCreateClientOptions;
 use ibc_relayer_components::chain::traits::client::create::HasCreateClientPayload;
+use ibc_relayer_components::chain::traits::client::update::{
+    CanBuildUpdateClientMessage, CanBuildUpdateClientPayload, HasUpdateClientPayload,
+};
+use ibc_relayer_components::chain::traits::components::chain_status_querier::CanQueryChainStatus;
+use ibc_relayer_components::chain::traits::components::consensus_state_querier::CanQueryConsensusState;
+use ibc_relayer_components::chain::traits::components::message_sender::CanSendMessages;
+use ibc_relayer_components::chain::traits::components::packet_fields_reader::CanReadPacketFields;
 use ibc_relayer_components::chain::traits::logs::event::CanLogChainEvent;
 use ibc_relayer_components::chain::traits::logs::packet::CanLogChainPacket;
 use ibc_relayer_components::chain::traits::message_builders::ack_packet::CanBuildAckPacketMessage;
@@ -34,14 +45,13 @@ use ibc_relayer_components::chain::traits::message_builders::receive_packet::Can
 use ibc_relayer_components::chain::traits::message_builders::receive_packet::CanBuildReceivePacketPayload;
 use ibc_relayer_components::chain::traits::message_builders::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
 use ibc_relayer_components::chain::traits::message_builders::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketPayload;
-use ibc_relayer_components::chain::traits::message_sender::CanSendMessages;
-use ibc_relayer_components::chain::traits::queries::consensus_state::CanQueryConsensusState;
 use ibc_relayer_components::chain::traits::queries::received_packet::CanQueryReceivedPacket;
-use ibc_relayer_components::chain::traits::queries::status::CanQueryChainStatus;
 use ibc_relayer_components::chain::traits::queries::write_ack::CanQueryWriteAcknowledgement;
 use ibc_relayer_components::chain::traits::types::chain_id::HasChainId;
 use ibc_relayer_components::chain::traits::types::chain_id::HasChainIdType;
-use ibc_relayer_components::chain::traits::types::client_state::HasClientStateType;
+use ibc_relayer_components::chain::traits::types::client_state::{
+    HasClientStateFields, HasClientStateType,
+};
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
 use ibc_relayer_components::chain::traits::types::event::HasEventType;
 use ibc_relayer_components::chain::traits::types::height::CanIncrementHeight;
@@ -52,7 +62,6 @@ use ibc_relayer_components::chain::traits::types::ibc_events::send_packet::HasSe
 use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::HasWriteAcknowledgementEvent;
 use ibc_relayer_components::chain::traits::types::message::CanEstimateMessageSize;
 use ibc_relayer_components::chain::traits::types::message::HasMessageType;
-use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketFields;
 use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
 use ibc_relayer_components::chain::traits::types::packets::ack::HasAckPacketPayload;
 use ibc_relayer_components::chain::traits::types::packets::receive::HasReceivePacketPayload;
@@ -161,6 +170,75 @@ where
     type OutgoingPacket = Packet;
 }
 
+impl<SrcChain, DstChain> CanReadPacketFields<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
+    fn incoming_packet_src_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.chan_id_on_a
+    }
+
+    fn incoming_packet_src_port(packet: &Packet) -> &PortId {
+        &packet.port_id_on_a
+    }
+
+    fn incoming_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.chan_id_on_b
+    }
+
+    fn incoming_packet_dst_port(packet: &Packet) -> &PortId {
+        &packet.port_id_on_b
+    }
+
+    fn incoming_packet_sequence(packet: &Packet) -> &Sequence {
+        &packet.seq_on_a
+    }
+
+    fn incoming_packet_timeout_height(packet: &Packet) -> Option<&Height> {
+        match &packet.timeout_height_on_b {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(height) => Some(height),
+        }
+    }
+
+    fn incoming_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
+        &packet.timeout_timestamp_on_b
+    }
+
+    fn outgoing_packet_src_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.chan_id_on_a
+    }
+
+    fn outgoing_packet_src_port(packet: &Packet) -> &PortId {
+        &packet.port_id_on_a
+    }
+
+    fn outgoing_packet_dst_port(packet: &Packet) -> &PortId {
+        &packet.port_id_on_b
+    }
+
+    fn outgoing_packet_dst_channel_id(packet: &Packet) -> &ChannelId {
+        &packet.chan_id_on_b
+    }
+
+    fn outgoing_packet_sequence(packet: &Packet) -> &Sequence {
+        &packet.seq_on_a
+    }
+
+    fn outgoing_packet_timeout_height(packet: &Packet) -> Option<&Height> {
+        match &packet.timeout_height_on_b {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(height) => Some(height),
+        }
+    }
+
+    fn outgoing_packet_timeout_timestamp(packet: &Packet) -> &Timestamp {
+        &packet.timeout_timestamp_on_b
+    }
+}
+
 impl<SrcChain, DstChain> CanLogChainPacket<MockCosmosContext<DstChain>>
     for MockCosmosContext<SrcChain>
 where
@@ -176,72 +254,37 @@ where
     }
 }
 
-impl<SrcChain, DstChain> HasIbcPacketFields<MockCosmosContext<DstChain>>
+impl<SrcChain, DstChain> HasClientStateType<MockCosmosContext<DstChain>>
     for MockCosmosContext<SrcChain>
 where
     SrcChain: BasecoinEndpoint,
     DstChain: BasecoinEndpoint,
 {
-    fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId {
-        &packet.chan_id_on_a
-    }
+    type ClientState = TmClientState;
+}
 
-    fn incoming_packet_src_port(packet: &Self::IncomingPacket) -> &Self::PortId {
-        &packet.port_id_on_a
+impl<SrcChain, DstChain> HasClientStateFields<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
+    fn client_state_latest_height(client_state: &TmClientState) -> &Self::Height {
+        &client_state.latest_height
     }
+}
 
-    fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId {
-        &packet.chan_id_on_b
-    }
-
-    fn incoming_packet_dst_port(packet: &Self::IncomingPacket) -> &Self::PortId {
-        &packet.port_id_on_b
-    }
-
-    fn incoming_packet_sequence(packet: &Self::IncomingPacket) -> &Self::Sequence {
-        &packet.seq_on_a
-    }
-
-    fn incoming_packet_timeout_height(packet: &Self::IncomingPacket) -> Option<&Self::Height> {
-        match &packet.timeout_height_on_b {
-            TimeoutHeight::Never => None,
-            TimeoutHeight::At(height) => Some(height),
-        }
-    }
-
-    fn incoming_packet_timeout_timestamp(packet: &Self::IncomingPacket) -> &Self::Timestamp {
-        &packet.timeout_timestamp_on_b
-    }
-
-    fn outgoing_packet_src_channel_id(packet: &Self::OutgoingPacket) -> &Self::ChannelId {
-        &packet.chan_id_on_a
-    }
-
-    fn outgoing_packet_src_port(packet: &Self::OutgoingPacket) -> &Self::PortId {
-        &packet.port_id_on_a
-    }
-
-    fn outgoing_packet_dst_port(packet: &Self::OutgoingPacket) -> &Self::PortId {
-        &packet.port_id_on_b
-    }
-
-    fn outgoing_packet_dst_channel_id(packet: &Self::OutgoingPacket) -> &Self::ChannelId {
-        &packet.chan_id_on_b
-    }
-
-    fn outgoing_packet_sequence(packet: &Self::OutgoingPacket) -> &Self::Sequence {
-        &packet.seq_on_a
-    }
-
-    fn outgoing_packet_timeout_height(packet: &Self::OutgoingPacket) -> Option<&Self::Height> {
-        match &packet.timeout_height_on_b {
-            TimeoutHeight::Never => None,
-            TimeoutHeight::At(height) => Some(height),
-        }
-    }
-
-    fn outgoing_packet_timeout_timestamp(packet: &Self::OutgoingPacket) -> &Self::Timestamp {
-        &packet.timeout_timestamp_on_b
+#[async_trait]
+impl<SrcChain, DstChain> CanQueryClientState<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
+    async fn query_client_state(&self, client_id: &ClientId) -> Result<TmClientState, Error> {
+        self.ibc_context()
+            .client_state(client_id)
+            .map_err(Error::source)
     }
 }
 
@@ -254,13 +297,20 @@ where
     type ConsensusState = TmConsensusState;
 }
 
-impl<SrcChain, DstChain> HasClientStateType<MockCosmosContext<DstChain>>
+#[async_trait]
+impl<SrcChain, DstChain> CanFindConsensusStateHeight<MockCosmosContext<DstChain>>
     for MockCosmosContext<SrcChain>
 where
     SrcChain: BasecoinEndpoint,
     DstChain: BasecoinEndpoint,
 {
-    type ClientState = TmClientState;
+    async fn find_consensus_state_height_before(
+        &self,
+        _client_id: &ClientId,
+        target_height: &Height,
+    ) -> Result<Height, Self::Error> {
+        target_height.decrement().map_err(Error::source)
+    }
 }
 
 impl<Chain: BasecoinEndpoint> HasChainStatusType for MockCosmosContext<Chain> {
@@ -377,6 +427,68 @@ where
         counterparty_payload: Any,
     ) -> Result<Any, Self::Error> {
         Ok(counterparty_payload)
+    }
+}
+
+impl<SrcChain, DstChain> HasUpdateClientPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
+    type UpdateClientPayload = MsgUpdateClient;
+}
+
+#[async_trait]
+impl<SrcChain, DstChain> CanBuildUpdateClientPayload<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
+    async fn build_update_client_payload(
+        &self,
+        trusted_height: &Height,
+        target_height: &Height,
+        _client_state: TmClientState,
+    ) -> Result<MsgUpdateClient, Self::Error> {
+        let light_block = self.get_light_block(target_height)?;
+
+        let header = Header {
+            signed_header: light_block.signed_header,
+            validator_set: light_block.validators,
+            trusted_height: *trusted_height,
+            trusted_next_validator_set: light_block.next_validators,
+        };
+
+        let default_client_id = ClientId::default();
+
+        let msg_update_client = MsgUpdateClient {
+            client_id: default_client_id,
+            client_message: header.into(),
+            signer: dummy_signer(),
+        };
+
+        Ok(msg_update_client)
+    }
+}
+
+#[async_trait]
+impl<SrcChain, DstChain> CanBuildUpdateClientMessage<MockCosmosContext<DstChain>>
+    for MockCosmosContext<SrcChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
+    async fn build_update_client_message(
+        &self,
+        client_id: &ClientId,
+        payload: MsgUpdateClient,
+    ) -> Result<Vec<Any>, Self::Error> {
+        let mut message = payload;
+        message.client_id = client_id.clone();
+
+        Ok(vec![message.to_any()])
     }
 }
 

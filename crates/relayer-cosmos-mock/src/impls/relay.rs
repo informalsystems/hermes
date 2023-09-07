@@ -10,14 +10,16 @@ use ibc::core::ics24_host::identifier::ClientId;
 use ibc::core::{Msg, ValidationContext};
 use ibc::{Any, Height};
 
-use ibc_relayer_components::core::traits::component::DelegateComponent;
+use ibc_relayer_components::components::default::closures::relay::packet_relayer::CanUseDefaultPacketRelayer;
+use ibc_relayer_components::components::default::relay::DefaultRelayComponents;
+use ibc_relayer_components::core::traits::component::{DelegateComponent, HasComponents};
 use ibc_relayer_components::core::traits::error::HasErrorType;
 use ibc_relayer_components::logger::traits::has_logger::HasLogger;
 use ibc_relayer_components::logger::traits::has_logger::HasLoggerType;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
-use ibc_relayer_components::relay::traits::packet_relayers::lock::HasPacketLock;
+use ibc_relayer_components::relay::traits::components::update_client_message_builder::UpdateClientMessageBuilder;
+use ibc_relayer_components::relay::traits::packet_lock::HasPacketLock;
 use ibc_relayer_components::relay::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_components::relay::traits::update_client::UpdateClientMessageBuilder;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
 use ibc_relayer_runtime::types::error::Error as TokioError;
 use ibc_relayer_runtime::types::log::logger::TracingLogger;
@@ -35,7 +37,22 @@ where
     SrcChain: BasecoinEndpoint,
     DstChain: BasecoinEndpoint,
 {
-    type Delegate = MockCosmosComponents;
+    type Delegate = DefaultRelayComponents<MockCosmosComponents>;
+}
+
+impl<SrcChain, DstChain> HasComponents for MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
+    type Components = DefaultRelayComponents<MockCosmosComponents>;
+}
+
+impl<SrcChain, DstChain> CanUseDefaultPacketRelayer for MockCosmosRelay<SrcChain, DstChain>
+where
+    SrcChain: BasecoinEndpoint,
+    DstChain: BasecoinEndpoint,
+{
 }
 
 impl<SrcChain, DstChain> HasErrorType for MockCosmosRelay<SrcChain, DstChain>
@@ -85,6 +102,8 @@ where
     SrcChain: BasecoinEndpoint,
     DstChain: BasecoinEndpoint,
 {
+    type Packet = Packet;
+
     type SrcChain = MockCosmosContext<SrcChain>;
 
     type DstChain = MockCosmosContext<DstChain>;

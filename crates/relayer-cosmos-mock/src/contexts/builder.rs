@@ -1,7 +1,8 @@
 use alloc::sync::Arc;
-use basecoin_store::impls::InMemoryStore;
+use basecoin_store::context::ProvableStore;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
+use std::fmt::Debug;
 use tendermint_testgen::Validator;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -21,16 +22,20 @@ impl MockCosmosBuilder {
         }
     }
 
-    pub fn build_chain(
+    pub fn build_chain<S>(
         &mut self,
         chain_id: ChainId,
         validators: Vec<Validator>,
-    ) -> Arc<MockBasecoin<InMemoryStore>> {
+        store: S,
+    ) -> Arc<MockBasecoin<S>>
+    where
+        S: ProvableStore + Debug + Default,
+    {
         let chain = Arc::new(MockBasecoin::new(
             self.runtime.clone(),
             chain_id,
             validators,
-            InMemoryStore::default(),
+            store,
         ));
 
         chain.run();

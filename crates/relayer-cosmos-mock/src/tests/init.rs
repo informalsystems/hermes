@@ -21,7 +21,7 @@ pub async fn binary_setup(
         Validator::new("2").voting_power(30),
         Validator::new("3").voting_power(30),
     ];
-    let src_chain = builder.build_chain(src_chain_id, src_validators);
+    let src_chain = builder.build_chain(src_chain_id, src_validators, InMemoryStore::default());
 
     // Setup and run the destination chain
     let dst_chain_id = ChainId::from_str("mock-cosmos-chain-1").expect("never fails");
@@ -29,7 +29,7 @@ pub async fn binary_setup(
         Validator::new("1").voting_power(50),
         Validator::new("2").voting_power(50),
     ];
-    let dst_chain = builder.build_chain(dst_chain_id, dst_validators);
+    let dst_chain = builder.build_chain(dst_chain_id, dst_validators, InMemoryStore::default());
 
     // Setup relayer
     let relayer = builder.build_relay(src_chain, dst_chain);
