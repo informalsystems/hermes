@@ -1,30 +1,8 @@
-use crate::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
+use crate::chain::traits::components::packet_fields_reader::CanReadPacketFields;
 use crate::chain::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
-use crate::core::traits::sync::Async;
 use crate::relay::traits::chains::HasRelayChains;
 
-pub trait HasRelayPacket:
-    HasRelayChains<SrcChain = Self::SrcChainWithPacket, DstChain = Self::DstChainWithPacket>
-{
-    type Packet: Async;
-
-    type SrcChainWithPacket: HasIbcPacketFields<Self::DstChain, OutgoingPacket = Self::Packet>;
-
-    type DstChainWithPacket: HasIbcPacketFields<Self::SrcChain, IncomingPacket = Self::Packet>;
-}
-
-impl<Relay> HasRelayPacket for Relay
-where
-    Relay: HasRelayChains,
-{
-    type Packet = <Relay::SrcChain as HasIbcPacketTypes<Relay::DstChain>>::OutgoingPacket;
-
-    type SrcChainWithPacket = Relay::SrcChain;
-
-    type DstChainWithPacket = Relay::DstChain;
-}
-
-pub trait HasRelayPacketFields: HasRelayPacket {
+pub trait HasRelayPacketFields: HasRelayChains {
     /**
         The source port of a packet, which is a port ID on the source chain
         that corresponds to the destination chain.
@@ -66,35 +44,37 @@ pub trait HasRelayPacketFields: HasRelayPacket {
     fn packet_timeout_timestamp(packet: &Self::Packet) -> &Timestamp<Self::DstChain>;
 }
 
-impl<Relay> HasRelayPacketFields for Relay
+impl<Relay, SrcChain, DstChain, Packet> HasRelayPacketFields for Relay
 where
-    Relay: HasRelayChains,
+    Relay: HasRelayChains<SrcChain = SrcChain, DstChain = DstChain, Packet = Packet>,
+    SrcChain: CanReadPacketFields<DstChain, OutgoingPacket = Packet>,
+    DstChain: CanReadPacketFields<SrcChain, IncomingPacket = Packet>,
 {
-    fn packet_src_port(packet: &Self::Packet) -> &PortId<Self::SrcChain, Self::DstChain> {
-        Self::SrcChain::outgoing_packet_src_port(packet)
+    fn packet_src_port(packet: &Self::Packet) -> &PortId<SrcChain, DstChain> {
+        SrcChain::outgoing_packet_src_port(packet)
     }
 
-    fn packet_src_channel_id(packet: &Self::Packet) -> &ChannelId<Self::SrcChain, Self::DstChain> {
-        Self::SrcChain::outgoing_packet_src_channel_id(packet)
+    fn packet_src_channel_id(packet: &Self::Packet) -> &ChannelId<SrcChain, DstChain> {
+        SrcChain::outgoing_packet_src_channel_id(packet)
     }
 
-    fn packet_dst_port(packet: &Self::Packet) -> &PortId<Self::DstChain, Self::SrcChain> {
-        Self::SrcChain::outgoing_packet_dst_port(packet)
+    fn packet_dst_port(packet: &Self::Packet) -> &PortId<DstChain, SrcChain> {
+        SrcChain::outgoing_packet_dst_port(packet)
     }
 
-    fn packet_dst_channel_id(packet: &Self::Packet) -> &ChannelId<Self::DstChain, Self::SrcChain> {
-        Self::SrcChain::outgoing_packet_dst_channel_id(packet)
+    fn packet_dst_channel_id(packet: &Self::Packet) -> &ChannelId<DstChain, SrcChain> {
+        SrcChain::outgoing_packet_dst_channel_id(packet)
     }
 
-    fn packet_sequence(packet: &Self::Packet) -> &Sequence<Self::SrcChain, Self::DstChain> {
-        Self::SrcChain::outgoing_packet_sequence(packet)
+    fn packet_sequence(packet: &Self::Packet) -> &Sequence<SrcChain, DstChain> {
+        SrcChain::outgoing_packet_sequence(packet)
     }
 
-    fn packet_timeout_height(packet: &Self::Packet) -> Option<&Height<Self::DstChain>> {
-        Self::SrcChain::outgoing_packet_timeout_height(packet)
+    fn packet_timeout_height(packet: &Self::Packet) -> Option<&Height<DstChain>> {
+        SrcChain::outgoing_packet_timeout_height(packet)
     }
 
-    fn packet_timeout_timestamp(packet: &Self::Packet) -> &Timestamp<Self::DstChain> {
-        Self::SrcChain::outgoing_packet_timeout_timestamp(packet)
+    fn packet_timeout_timestamp(packet: &Self::Packet) -> &Timestamp<DstChain> {
+        SrcChain::outgoing_packet_timeout_timestamp(packet)
     }
 }

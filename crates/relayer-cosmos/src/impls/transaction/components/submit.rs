@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use ibc_proto::cosmos::tx::v1beta1::TxRaw;
 use ibc_relayer::chain::cosmos::tx::broadcast_tx_sync;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
-use ibc_relayer_components::transaction::traits::submit::TxSubmitter;
+use ibc_relayer_components::transaction::traits::components::tx_submitter::TxSubmitter;
 use tendermint::Hash as TxHash;
 
 use crate::contexts::transaction::CosmosTxContext;

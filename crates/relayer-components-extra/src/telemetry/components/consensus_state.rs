@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_components::chain::traits::queries::consensus_state::ConsensusStateQuerier;
+use ibc_relayer_components::chain::traits::components::consensus_state_querier::ConsensusStateQuerier;
 use ibc_relayer_components::chain::traits::types::consensus_state::HasConsensusStateType;
 use ibc_relayer_components::chain::traits::types::height::HasHeightType;
 use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;

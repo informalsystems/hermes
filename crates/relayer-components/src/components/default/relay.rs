@@ -6,6 +6,7 @@ use crate::relay::components::create_client::CreateClientWithChains;
 use crate::relay::components::event_relayers::packet_event::PacketEventRelayer;
 use crate::relay::components::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::relay::components::message_senders::update_client::SendIbcMessagesWithUpdateClient;
+use crate::relay::components::packet_clearers::receive_packet::ClearReceivePackets;
 use crate::relay::components::packet_relayers::ack::base_ack_packet::BaseAckPacketRelayer;
 use crate::relay::components::packet_relayers::general::filter_relayer::FilterRelayer;
 use crate::relay::components::packet_relayers::general::full_relay::FullCycleRelayer;
@@ -17,18 +18,17 @@ use crate::relay::components::packet_relayers::timeout_unordered::timeout_unorde
 use crate::relay::components::update_client::build::BuildUpdateClientMessages;
 use crate::relay::components::update_client::skip::SkipUpdateClient;
 use crate::relay::components::update_client::wait::WaitUpdateClient;
-use crate::relay::impls::clear_packet::receive_packet::ClearReceivePackets;
-use crate::relay::traits::auto_relayer::AutoRelayerComponent;
-use crate::relay::traits::clear_packet::PacketClearerComponent;
-use crate::relay::traits::create_client::ClientCreatorComponent;
-use crate::relay::traits::event_relayer::EventRelayerComponent;
-use crate::relay::traits::ibc_message_sender::{IbcMessageSenderComponent, MainSink};
-use crate::relay::traits::packet_filter::PacketFilterComponent;
-use crate::relay::traits::packet_relayer::PacketRelayerComponent;
-use crate::relay::traits::packet_relayers::ack_packet::AckPacketRelayerComponent;
-use crate::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayerComponnent;
-use crate::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayerComponent;
-use crate::relay::traits::update_client::UpdateClientMessageBuilderComponent;
+use crate::relay::traits::components::auto_relayer::AutoRelayerComponent;
+use crate::relay::traits::components::client_creator::ClientCreatorComponent;
+use crate::relay::traits::components::event_relayer::EventRelayerComponent;
+use crate::relay::traits::components::ibc_message_sender::{IbcMessageSenderComponent, MainSink};
+use crate::relay::traits::components::packet_clearer::PacketClearerComponent;
+use crate::relay::traits::components::packet_filter::PacketFilterComponent;
+use crate::relay::traits::components::packet_relayer::PacketRelayerComponent;
+use crate::relay::traits::components::packet_relayers::ack_packet::AckPacketRelayerComponent;
+use crate::relay::traits::components::packet_relayers::receive_packet::ReceivePacketRelayerComponnent;
+use crate::relay::traits::components::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayerComponent;
+use crate::relay::traits::components::update_client_message_builder::UpdateClientMessageBuilderComponent;
 
 pub struct DefaultRelayComponents<BaseComponents>(pub PhantomData<BaseComponents>);
 

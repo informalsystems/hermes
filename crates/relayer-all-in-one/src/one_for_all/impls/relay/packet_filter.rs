@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_components::relay::traits::packet_filter::PacketFilter;
+use ibc_relayer_components::relay::traits::components::packet_filter::PacketFilter;
 
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::types::component::OfaComponents;

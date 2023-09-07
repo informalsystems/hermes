@@ -8,7 +8,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer_all_in_one::one_for_all::traits::birelay::OfaBiRelay;
 use ibc_relayer_all_in_one::one_for_all::types::birelay::OfaBiRelayWrapper;
-use ibc_relayer_components::relay::traits::auto_relayer::CanAutoRelay;
+use ibc_relayer_components::relay::traits::components::auto_relayer::CanAutoRelay;
 use ibc_relayer_cosmos::contexts::birelay::CosmosBiRelay;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
 use tokio::task::JoinHandle;

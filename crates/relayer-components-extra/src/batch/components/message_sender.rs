@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer_components::chain::traits::types::ibc::HasIbcChainTypes;
 use ibc_relayer_components::relay::traits::chains::HasRelayChains;
-use ibc_relayer_components::relay::traits::ibc_message_sender::{
+use ibc_relayer_components::relay::traits::components::ibc_message_sender::{
     CanSendIbcMessages, IbcMessageSender,
 };
 use ibc_relayer_components::relay::traits::target::ChainTarget;

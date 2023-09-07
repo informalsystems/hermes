@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use ibc_relayer_components::builder::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
-use ibc_relayer_components_extra::builder::traits::relay::RelayWithBatchBuilder;
+use ibc_relayer_components::build::traits::target::relay::{RelayAToBTarget, RelayBToATarget};
+use ibc_relayer_components_extra::build::traits::components::relay_with_batch_builder::RelayWithBatchBuilder;
 
 use crate::one_for_all::traits::builder::{
     ChainA, ChainB, ClientIdA, ClientIdB, OfaBuilder, RelayAToB, RelayBToA, RelayError,

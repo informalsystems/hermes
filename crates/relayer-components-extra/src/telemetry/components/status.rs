@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use ibc_relayer_components::chain::traits::queries::status::*;
+use ibc_relayer_components::chain::traits::components::chain_status_querier::*;
 use ibc_relayer_components::chain::traits::types::status::HasChainStatusType;
 use ibc_relayer_components::core::traits::error::HasErrorType;
 

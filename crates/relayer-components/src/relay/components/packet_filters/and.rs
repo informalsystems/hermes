@@ -2,8 +2,8 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::relay::traits::packet::HasRelayPacket;
-use crate::relay::traits::packet_filter::PacketFilter;
+use crate::relay::traits::chains::HasRelayChains;
+use crate::relay::traits::components::packet_filter::PacketFilter;
 use crate::std_prelude::*;
 
 pub struct And<FilterA, FilterB>(pub PhantomData<(FilterA, FilterB)>);
@@ -11,7 +11,7 @@ pub struct And<FilterA, FilterB>(pub PhantomData<(FilterA, FilterB)>);
 #[async_trait]
 impl<Relay, FilterA, FilterB> PacketFilter<Relay> for And<FilterA, FilterB>
 where
-    Relay: HasRelayPacket,
+    Relay: HasRelayChains,
     FilterA: PacketFilter<Relay>,
     FilterB: PacketFilter<Relay>,
 {

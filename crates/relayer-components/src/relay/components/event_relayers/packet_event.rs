@@ -9,13 +9,13 @@ use crate::logger::traits::level::HasBaseLogLevels;
 use crate::relay::components::packet_filters::chain::{
     MatchPacketDestinationChain, MatchPacketSourceChain,
 };
-use crate::relay::traits::event_relayer::EventRelayer;
+use crate::relay::traits::components::event_relayer::EventRelayer;
+use crate::relay::traits::components::packet_filter::{CanFilterPackets, PacketFilter};
+use crate::relay::traits::components::packet_relayer::CanRelayPacket;
+use crate::relay::traits::components::packet_relayers::ack_packet::CanRelayAckPacket;
 use crate::relay::traits::logs::logger::CanLogRelay;
 use crate::relay::traits::logs::packet::CanLogRelayPacket;
-use crate::relay::traits::packet_filter::{CanFilterPackets, PacketFilter};
-use crate::relay::traits::packet_relayer::CanRelayPacket;
-use crate::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
-use crate::relay::traits::packet_relayers::lock::HasPacketLock;
+use crate::relay::traits::packet_lock::HasPacketLock;
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
