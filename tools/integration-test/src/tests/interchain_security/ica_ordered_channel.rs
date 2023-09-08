@@ -44,6 +44,12 @@ impl TestOverrides for IcaOrderedChannelTest {
 
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
+
+        // Disable packet clearing so that packets sent without the supervisor 
+        // enabled enter a pending state.
+        config.mode.packets.enabled = true;
+        config.mode.packets.clear_on_start = false;
+        config.mode.packets.clear_interval = 0;
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -55,7 +61,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        _relayer: RelayerDriver,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -75,6 +81,10 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
         let channel_end = query_channel_end(chains.handle_b(), &channel_id.as_ref(), &port_id.as_ref())?;
 
         assert_eq!(channel_end.value().ordering(), ChannelOrder::Ordered);
+
+        relayer.with_supervisor(|| {
+
+        });
 
         Ok(())
     }
