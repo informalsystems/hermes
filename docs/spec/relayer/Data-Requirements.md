@@ -177,10 +177,12 @@ The requests that Hermes makes to this endpoint are:
 - QueryChannelsRequest: Requests all of the channels associated with the chain.
 - QueryConnectionChannelsRequest: Requests all of the channels associated with a specified connection.
 - QueryNextSequenceReceiveRequest: Requests the sequence number of the next receive packet for a specified channel.
-- QueryPacketAcknowledgementsRequest: Requests the packet acknowledgments associated with a specified channel.
 - QueryPacketCommitmentsRequest: Requests the packet commitments associated with a specified channel.
+- QueryPacketAcknowledgementsRequest: Requests the packet acknowledgments associated with a specified channel.
 - QueryUnreceivedAcksRequest: Requests the unreceived acknowledgments associated with a specified channel.
 - QueryUnreceivedPacketsRequest: Requests the unreceived packet sequences associated with a specified channel.
+
+> _*Note:*_ The `QueryPacketAcknowledgementsRequest`, `QueryUnreceivedAcksRequest`, and `QueryUnreceivedPacketsRequest` types each accept a Vector of `sequence`s in order to specify which packet commitments to fetch acknowledgements for. In the case where no `sequence`s are passed, the requests will simply return all acknowledgements for all outstanding packet commitments. 
 
 ### `ibc.core.client.v1.QueryClient`
 
