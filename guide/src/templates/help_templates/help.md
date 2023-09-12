@@ -22,6 +22,7 @@ SUBCOMMANDS:
     help            Print this message or the help of the given subcommand(s)
     keys            Manage keys in the relayer for each chain
     listen          Listen to and display IBC events emitted by a chain
+    logs            Update tracing log directives
     misbehaviour    Listen to client update IBC events and handles misbehaviour
     query           Query objects from the chain
     start           Start the relayer in multi-chain mode
