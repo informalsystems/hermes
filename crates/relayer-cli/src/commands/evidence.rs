@@ -127,10 +127,18 @@ fn monitor_misbehaviours(
     // target_height: 0
     // iterations: 200
 
-    debug!("checking past {check_past_blocks} blocks for misbehaviour evidence: {latest_height}..{target_height}");
+    debug!(
+        "checking past {check_past_blocks} blocks for misbehaviour evidence: {}..{}",
+        latest_height,
+        target_height.increment()
+    );
 
     let mut height = latest_height;
     while height > target_height {
+        if height.revision_height() == 0 {
+            break;
+        }
+
         debug!("checking for evidence at height {height}");
 
         if let Err(e) = check_misbehaviour_at(rt.clone(), &chain, key_name, height) {
@@ -140,13 +148,24 @@ fn monitor_misbehaviours(
         height = height.decrement().unwrap();
     }
 
+    info!("waiting for new blocks...");
+
     // process new block events
     while let Ok(event_batch) = subscription.recv() {
         match event_batch.deref() {
             Ok(event_batch) => {
                 for event_with_height in &event_batch.events {
                     if let IbcEvent::NewBlock(new_block) = &event_with_height.event {
-                        check_misbehaviour_at(rt.clone(), &chain, key_name, new_block.height)?;
+                        info!("checking for evidence at height {}", new_block.height);
+
+                        if let Err(e) =
+                            check_misbehaviour_at(rt.clone(), &chain, key_name, new_block.height)
+                        {
+                            error!(
+                                "error while checking for misbehaviour at height {}: {e}",
+                                new_block.height
+                            );
+                        }
                     }
                 }
             }
