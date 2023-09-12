@@ -4114,7 +4114,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.33.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#a5cddcad6bb4cc6e2f9de28a0273489e383cd269"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#c62142685e4583db4d09c89c20bb1ddc95c920ac"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -4238,7 +4238,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.33.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#a5cddcad6bb4cc6e2f9de28a0273489e383cd269"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#c62142685e4583db4d09c89c20bb1ddc95c920ac"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4291,7 +4291,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.33.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#a5cddcad6bb4cc6e2f9de28a0273489e383cd269"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=farhad/testgen-app-hash#c62142685e4583db4d09c89c20bb1ddc95c920ac"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
