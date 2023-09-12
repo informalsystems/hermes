@@ -1,7 +1,4 @@
 use alloc::sync::Arc;
-use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
-use ibc_relayer::spawn::spawn_chain_runtime;
-use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
 use std::collections::HashMap;
 use std::ops::Deref;
 
@@ -12,12 +9,17 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tendermint::block::Height as TendermintHeight;
 use tendermint::evidence::{DuplicateVoteEvidence, LightClientAttackEvidence};
 use tendermint::validator;
+use tendermint_rpc::{Client, Paging};
 
 use ibc_relayer::chain::cosmos::CosmosSdkChain;
 use ibc_relayer::chain::endpoint::ChainEndpoint;
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{IncludeProof, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::chain::ChainType;
+use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::spawn::spawn_chain_runtime_with_modified_config;
+use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TendermintHeader;
 use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TendermintMisbehaviour;
@@ -40,20 +42,45 @@ pub struct EvidenceCmd {
         help = "Identifier of the chain where blocks are monitored for misbehaviour"
     )]
     chain_id: ChainId,
+
+    #[clap(
+        long = "check-past-blocks",
+        value_name = "NUM_BLOCKS",
+        help = "Check the last NUM_BLOCKS blocks for misbehaviour (default: 100)",
+        default_value = "100"
+    )]
+    check_past_blocks: u64,
+
+    #[clap(
+        long = "key-name",
+        value_name = "KEY_NAME",
+        help = "Use the given signing key name for sending the misbehaviour evidence detected (default: `key_name` config)"
+    )]
+    key_name: Option<String>,
 }
 
 impl Runnable for EvidenceCmd {
     fn run(&self) {
         let config = app_config();
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain_config = config.find_chain(&self.chain_id).cloned().unwrap();
+        let mut chain_config = config.find_chain(&self.chain_id).cloned().unwrap();
 
         if chain_config.r#type != ChainType::CosmosSdk {
             Output::error(format!("Chain {} is not a Cosmos SDK chain", self.chain_id)).exit();
         }
 
+        if let Some(ref key_name) = self.key_name {
+            chain_config.key_name = key_name.to_string();
+        }
+
+        let rt = Arc::new(
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap(),
+        );
+
         let chain = CosmosSdkChain::bootstrap(chain_config, rt.clone()).unwrap();
-        let res = monitor_misbehaviours(rt, chain);
+        let res = monitor_misbehaviours(rt, chain, self.key_name.as_ref(), self.check_past_blocks);
 
         match res {
             Ok(()) => Output::success(()).exit(),
@@ -62,7 +89,12 @@ impl Runnable for EvidenceCmd {
     }
 }
 
-fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> eyre::Result<()> {
+fn monitor_misbehaviours(
+    rt: Arc<TokioRuntime>,
+    mut chain: CosmosSdkChain,
+    key_name: Option<&String>,
+    check_past_blocks: u64,
+) -> eyre::Result<()> {
     let subscription = chain.subscribe()?;
 
     // Check previous blocks for equivocation that may have been missed
@@ -72,14 +104,36 @@ fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> ey
         .latest_block_height;
 
     let latest_height = Height::new(chain.id().version(), tm_latest_height.value()).unwrap();
-    let num_blocks = std::cmp::min(tm_latest_height.value(), 100);
-    let mut height = latest_height;
+    let target_height = {
+        let height = tm_latest_height.value().saturating_sub(check_past_blocks);
+        Height::new(chain.id().version(), height).unwrap()
+    };
 
-    for _block in 0..num_blocks - 1 {
+    // latest_height: 200
+    //
+    // check_past_blocks: 0
+    // target_height: 200
+    // iterations: 0
+    //
+    // check_past_blocks: 1
+    // target_height: 199
+    // iterations: 1
+    //
+    // check_past_blocks: 200
+    // target_height: 0
+    // iterations: 200
+    //
+    // check_past_blocks: 201
+    // target_height: 0
+    // iterations: 200
+
+    debug!("checking past {check_past_blocks} blocks for misbehaviour evidence: {latest_height}..{target_height}");
+
+    let mut height = latest_height;
+    while height > target_height {
         debug!("checking for evidence at height {height}");
 
-        let result = check_misbehaviour_at(rt.clone(), &chain, height);
-        if let Err(e) = result {
+        if let Err(e) = check_misbehaviour_at(rt.clone(), &chain, key_name, height) {
             warn!("error while checking for misbehaviour at height {height}: {e}");
         }
 
@@ -92,14 +146,12 @@ fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> ey
             Ok(event_batch) => {
                 for event_with_height in &event_batch.events {
                     if let IbcEvent::NewBlock(new_block) = &event_with_height.event {
-                        debug!("{new_block:?}");
-
-                        check_misbehaviour_at(rt.clone(), &chain, new_block.height)?;
+                        check_misbehaviour_at(rt.clone(), &chain, key_name, new_block.height)?;
                     }
                 }
             }
             Err(e) => {
-                dbg!(e);
+                error!("error while receiving event batch: {e}");
             }
         }
     }
@@ -107,15 +159,13 @@ fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> ey
     Ok(())
 }
 
-use ibc_relayer::foreign_client::ForeignClient;
-use tendermint_rpc::{Client, Paging};
-
 /// Check for misbehaviour evidence in the block at the given height.
 /// If such evidence is found, handle it by submitting it to all counterparty
 /// clients of the chain, freezing them.
 fn check_misbehaviour_at(
     rt: Arc<TokioRuntime>,
     chain: &CosmosSdkChain,
+    key_name: Option<&String>,
     height: Height,
 ) -> eyre::Result<()> {
     let block = rt
@@ -127,12 +177,12 @@ fn check_misbehaviour_at(
             tendermint::evidence::Evidence::DuplicateVote(dv) => {
                 warn!("found duplicate vote evidence {dv:?}");
 
-                handle_duplicate_vote(rt.clone(), chain, *dv)?;
+                handle_duplicate_vote(rt.clone(), chain, key_name, *dv)?;
             }
             tendermint::evidence::Evidence::LightClientAttack(lc) => {
                 warn!("found light client attack evidence {lc:?}");
 
-                handle_light_client_attack(rt.clone(), chain, *lc)?;
+                handle_light_client_attack(rt.clone(), chain, key_name, *lc)?;
             }
         }
     }
@@ -143,6 +193,7 @@ fn check_misbehaviour_at(
 fn handle_duplicate_vote(
     rt: Arc<TokioRuntime>,
     chain: &CosmosSdkChain,
+    key_name: Option<&String>,
     dv: DuplicateVoteEvidence,
 ) -> eyre::Result<()> {
     let config = app_config();
@@ -156,10 +207,15 @@ fn handle_duplicate_vote(
     // freezing that client.
     for (counterparty_chain_id, _counterparty_client_id) in counterparty_clients {
         if !chains.contains_key(&counterparty_chain_id) {
-            let chain_handle = spawn_chain_runtime::<BaseChainHandle>(
+            let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
                 &config,
                 &counterparty_chain_id,
-                Arc::clone(&rt),
+                rt.clone(),
+                |chain_config| {
+                    if let Some(key_name) = key_name {
+                        chain_config.key_name = key_name.to_string();
+                    }
+                },
             )?;
 
             chains.insert(counterparty_chain_id.clone(), chain_handle);
@@ -256,6 +312,7 @@ fn handle_duplicate_vote(
 fn handle_light_client_attack(
     rt: Arc<TokioRuntime>,
     chain: &CosmosSdkChain,
+    key_name: Option<&String>,
     evidence: LightClientAttackEvidence,
 ) -> eyre::Result<()> {
     let config = app_config();
@@ -278,17 +335,30 @@ fn handle_light_client_attack(
         };
 
         if !chains.contains_key(chain.id()) {
-            let chain_handle =
-                spawn_chain_runtime::<BaseChainHandle>(&config, chain.id(), Arc::clone(&rt))?;
+            let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
+                &config,
+                chain.id(),
+                rt.clone(),
+                |chain_config| {
+                    if let Some(key_name) = key_name {
+                        chain_config.key_name = key_name.to_string();
+                    }
+                },
+            )?;
 
             chains.insert(chain.id().clone(), chain_handle);
         }
 
         if !chains.contains_key(&counterparty_chain_id) {
-            let chain_handle = spawn_chain_runtime::<BaseChainHandle>(
+            let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
                 &config,
                 &counterparty_chain_id,
-                Arc::clone(&rt),
+                rt.clone(),
+                |chain_config| {
+                    if let Some(key_name) = key_name {
+                        chain_config.key_name = key_name.to_string();
+                    }
+                },
             )?;
 
             chains.insert(counterparty_chain_id.clone(), chain_handle);
@@ -524,6 +594,8 @@ mod tests {
         assert_eq!(
             EvidenceCmd {
                 chain_id: ChainId::from_string("chain_id"),
+                check_past_blocks: 100,
+                key_name: None,
             },
             EvidenceCmd::parse_from(["test", "--chain", "chain_id"])
         )
