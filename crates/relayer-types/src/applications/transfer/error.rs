@@ -135,7 +135,7 @@ define_error! {
 
         InvalidCoin
             { coin: String }
-            | e | { format_args!("invalid coin string: {}", e.coin) },
+            | e | { format_args!("invalid coin: {}", e.coin) },
 
         Utf8Decode
             [ TraceError<Utf8Error> ]

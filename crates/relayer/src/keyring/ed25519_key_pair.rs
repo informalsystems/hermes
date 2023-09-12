@@ -83,6 +83,7 @@ impl Ed25519KeyPair {
 
 impl SigningKeyPair for Ed25519KeyPair {
     const KEY_TYPE: KeyType = KeyType::Ed25519;
+    type KeyFile = KeyFile;
 
     fn from_key_file(key_file: KeyFile, hd_path: &StandardHDPath) -> Result<Self, Error> {
         use ed25519_dalek::PUBLIC_KEY_LENGTH;

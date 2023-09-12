@@ -1,1 +1,10 @@
-target/
+/.changelog/
+/.git/
+/.gitignore
+/.github
+/ci/
+/docs/
+/e2e/
+/guide/
+/scripts/
+/target/
