@@ -1,16 +1,20 @@
 use core::time::Duration;
 
-use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
-use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
-#[cfg(test)]
-use ibc_proto::ibc::mock::ClientState as RawMockClientState;
-use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
+use ibc_proto::ibc::lightclients::localhost::v1::ClientState as RawLocalhostClientState;
+use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientState;
+#[cfg(test)]
+use ibc_proto::ibc::mock::ClientState as RawMockClientState;
+use ibc_proto::protobuf::Protobuf;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     ClientState as TmClientState, UpgradeOptions as TmUpgradeOptions,
     TENDERMINT_CLIENT_STATE_TYPE_URL,
+};
+use ibc_relayer_types::clients::ics09_localhost::v1::client_state::{
+    ClientState as LocalhostClientState, LOCALHOST_CLIENT_STATE_TYPE_URL,
 };
 use ibc_relayer_types::core::ics02_client::client_state::{
     downcast_client_state, ClientState, UpgradeOptions,
@@ -31,6 +35,7 @@ use ibc_relayer_types::Height;
 #[serde(tag = "type")]
 pub enum AnyUpgradeOptions {
     Tendermint(TmUpgradeOptions),
+    Localhost(()),
 
     #[cfg(test)]
     Mock(()),
@@ -40,8 +45,7 @@ impl AnyUpgradeOptions {
     fn as_tm_upgrade_options(&self) -> Option<&TmUpgradeOptions> {
         match self {
             AnyUpgradeOptions::Tendermint(tm) => Some(tm),
-            #[cfg(test)]
-            AnyUpgradeOptions::Mock(_) => None,
+            _ => None,
         }
     }
 }
@@ -52,15 +56,27 @@ impl UpgradeOptions for AnyUpgradeOptions {}
 #[serde(tag = "type")]
 pub enum AnyClientState {
     Tendermint(TmClientState),
+    Localhost(LocalhostClientState),
 
     #[cfg(test)]
     Mock(MockClientState),
 }
 
 impl AnyClientState {
+    pub fn chain_id(&self) -> ChainId {
+        match self {
+            Self::Tendermint(tm_state) => tm_state.chain_id(),
+            Self::Localhost(local_state) => local_state.chain_id(),
+
+            #[cfg(test)]
+            Self::Mock(mock_state) => mock_state.chain_id(),
+        }
+    }
+
     pub fn latest_height(&self) -> Height {
         match self {
             Self::Tendermint(tm_state) => tm_state.latest_height(),
+            Self::Localhost(local_state) => local_state.latest_height(),
 
             #[cfg(test)]
             Self::Mock(mock_state) => mock_state.latest_height(),
@@ -70,6 +86,7 @@ impl AnyClientState {
     pub fn frozen_height(&self) -> Option<Height> {
         match self {
             Self::Tendermint(tm_state) => tm_state.frozen_height(),
+            Self::Localhost(local_state) => local_state.frozen_height(),
 
             #[cfg(test)]
             Self::Mock(mock_state) => mock_state.frozen_height(),
@@ -78,25 +95,28 @@ impl AnyClientState {
 
     pub fn trust_threshold(&self) -> Option<TrustThreshold> {
         match self {
-            AnyClientState::Tendermint(state) => Some(state.trust_threshold),
+            Self::Tendermint(state) => Some(state.trust_threshold),
+            Self::Localhost(_) => None,
 
             #[cfg(test)]
-            AnyClientState::Mock(_) => None,
+            Self::Mock(_) => None,
         }
     }
 
     pub fn max_clock_drift(&self) -> Duration {
         match self {
-            AnyClientState::Tendermint(state) => state.max_clock_drift,
+            Self::Tendermint(state) => state.max_clock_drift,
+            Self::Localhost(_) => Duration::new(0, 0),
 
             #[cfg(test)]
-            AnyClientState::Mock(_) => Duration::new(0, 0),
+            Self::Mock(_) => Duration::new(0, 0),
         }
     }
 
     pub fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(state) => state.client_type(),
+            Self::Localhost(state) => state.client_type(),
 
             #[cfg(test)]
             Self::Mock(state) => state.client_type(),
@@ -106,6 +126,7 @@ impl AnyClientState {
     pub fn refresh_period(&self) -> Option<Duration> {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.refresh_time(),
+            AnyClientState::Localhost(_) => None,
 
             #[cfg(test)]
             AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
@@ -123,7 +144,12 @@ impl TryFrom<Any> for AnyClientState {
             "" => Err(Error::empty_client_state_response()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                Protobuf::<RawClientState>::decode_vec(&raw.value)
+                Protobuf::<RawTmClientState>::decode_vec(&raw.value)
+                    .map_err(Error::decode_raw_client_state)?,
+            )),
+
+            LOCALHOST_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Localhost(
+                Protobuf::<RawLocalhostClientState>::decode_vec(&raw.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
@@ -143,8 +169,14 @@ impl From<AnyClientState> for Any {
         match value {
             AnyClientState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: Protobuf::<RawClientState>::encode_vec(&value),
+                value: Protobuf::<RawTmClientState>::encode_vec(&value),
             },
+
+            AnyClientState::Localhost(value) => Any {
+                type_url: LOCALHOST_CLIENT_STATE_TYPE_URL.to_string(),
+                value: Protobuf::<RawLocalhostClientState>::encode_vec(&value),
+            },
+
             #[cfg(test)]
             AnyClientState::Mock(value) => Any {
                 type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
@@ -157,10 +189,11 @@ impl From<AnyClientState> for Any {
 impl ClientState for AnyClientState {
     fn chain_id(&self) -> ChainId {
         match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
+            AnyClientState::Tendermint(state) => state.chain_id(),
+            AnyClientState::Localhost(state) => state.chain_id(),
 
             #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.chain_id(),
+            AnyClientState::Mock(state) => state.chain_id(),
         }
     }
 
@@ -190,9 +223,13 @@ impl ClientState for AnyClientState {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.upgrade(
                 upgrade_height,
-                upgrade_options.as_tm_upgrade_options().unwrap(),
+                upgrade_options.as_tm_upgrade_options().unwrap(), // FIXME: This is very brittle
                 chain_id,
             ),
+
+            AnyClientState::Localhost(local_state) => {
+                local_state.upgrade(upgrade_height, upgrade_options, chain_id)
+            }
 
             #[cfg(test)]
             AnyClientState::Mock(mock_state) => {
@@ -204,6 +241,7 @@ impl ClientState for AnyClientState {
     fn expired(&self, elapsed_since_latest: Duration) -> bool {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
+            AnyClientState::Localhost(local_state) => local_state.expired(elapsed_since_latest),
 
             #[cfg(test)]
             AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
@@ -214,6 +252,12 @@ impl ClientState for AnyClientState {
 impl From<TmClientState> for AnyClientState {
     fn from(cs: TmClientState) -> Self {
         Self::Tendermint(cs)
+    }
+}
+
+impl From<LocalhostClientState> for AnyClientState {
+    fn from(cs: LocalhostClientState) -> Self {
+        Self::Localhost(cs)
     }
 }
 
