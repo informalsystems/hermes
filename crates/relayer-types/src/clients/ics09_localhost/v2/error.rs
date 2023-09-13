@@ -14,8 +14,8 @@ define_error! {
             [ ValidationError ]
             |_| { "invalid chain identifier" },
 
-        MissingHeight
-            |_| { "missing height" },
+        MissingLatestHeight
+            |_| { "missing latest height" },
 
         InvalidChainId
             { raw_value: String }

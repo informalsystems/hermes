@@ -16,7 +16,7 @@ use crate::Height;
 
 use super::error::Error;
 
-pub const LOCALHOST_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.localhost.v1.ClientState";
+pub const LOCALHOST_V1_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.localhost.v1.ClientState";
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
@@ -98,11 +98,11 @@ impl TryFrom<Any> for ClientState {
         }
 
         match raw.type_url.as_str() {
-            LOCALHOST_CLIENT_STATE_TYPE_URL => {
+            LOCALHOST_V1_CLIENT_STATE_TYPE_URL => {
                 decode_client_state(raw.value.deref()).map_err(Into::into)
             }
             _ => Err(Ics02Error::unexpected_client_state_type(
-                LOCALHOST_CLIENT_STATE_TYPE_URL.to_string(),
+                LOCALHOST_V1_CLIENT_STATE_TYPE_URL.to_string(),
                 raw.type_url,
             )),
         }
@@ -112,7 +112,7 @@ impl TryFrom<Any> for ClientState {
 impl From<ClientState> for Any {
     fn from(client_state: ClientState) -> Self {
         Any {
-            type_url: LOCALHOST_CLIENT_STATE_TYPE_URL.to_string(),
+            type_url: LOCALHOST_V1_CLIENT_STATE_TYPE_URL.to_string(),
             value: Protobuf::<RawClientState>::encode_vec(&client_state),
         }
     }
