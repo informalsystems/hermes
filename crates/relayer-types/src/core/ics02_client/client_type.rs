@@ -16,7 +16,7 @@ pub enum ClientType {
 
 impl ClientType {
     const TENDERMINT_STR: &'static str = "07-tendermint";
-    const LOCALHOST_STR: &'static str = "09-tendermint";
+    const LOCALHOST_STR: &'static str = "09-localhost";
 
     #[cfg_attr(not(test), allow(dead_code))]
     const MOCK_STR: &'static str = "9999-mock";
@@ -35,7 +35,7 @@ impl ClientType {
 
 impl Display for ClientType {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        write!(f, "ClientType({})", self.as_str())
+        write!(f, "{}", self.as_str())
     }
 }
 
