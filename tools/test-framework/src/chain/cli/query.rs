@@ -1,8 +1,10 @@
 use core::str::FromStr;
 use eyre::eyre;
-use ibc_relayer_types::applications::transfer::amount::Amount;
+use serde::Deserialize;
 use serde_json as json;
 use serde_yaml as yaml;
+
+use ibc_relayer_types::applications::transfer::amount::Amount;
 
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
@@ -24,23 +26,38 @@ pub fn query_balance(
             "bank",
             "balances",
             wallet_id,
-            "--denom",
-            denom,
             "--output",
             "json",
         ],
     )?
     .stdout;
 
-    let amount_str = json::from_str::<json::Value>(&res)
-        .map_err(handle_generic_error)?
-        .get("amount")
-        .ok_or_else(|| eyre!("expected amount field"))?
-        .as_str()
-        .ok_or_else(|| eyre!("expected string field"))?
-        .to_string();
+    #[derive(Deserialize)]
+    struct Balance {
+        denom: String,
+        amount: String,
+    }
 
-    let amount = Amount::from_str(&amount_str).map_err(handle_generic_error)?;
+    #[derive(Deserialize)]
+    struct Balances {
+        balances: Vec<Balance>,
+    }
+
+    let balances = json::from_str::<Balances>(&res).map_err(handle_generic_error)?;
+
+    let balance = balances
+        .balances
+        .iter()
+        .find(|b| b.denom == denom)
+        .ok_or_else(|| {
+            Error::generic(eyre!(
+                "no balance found for denom {} in response: {}",
+                denom,
+                res
+            ))
+        })?;
+
+    let amount = Amount::from_str(&balance.amount).map_err(handle_generic_error)?;
 
     Ok(amount)
 }

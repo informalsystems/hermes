@@ -65,17 +65,32 @@ pub fn add_genesis_account(
 ) -> Result<(), Error> {
     let amounts_str = itertools::join(amounts, ",");
 
-    simple_exec(
-        chain_id,
-        command_path,
-        &[
-            "--home",
-            home_path,
-            "add-genesis-account",
-            wallet_address,
-            &amounts_str,
-        ],
-    )?;
+    if let Some(prefix) = get_genesis_prefix(chain_id, command_path)? {
+        simple_exec(
+            chain_id,
+            command_path,
+            &[
+                "--home",
+                home_path,
+                prefix,
+                "add-genesis-account",
+                wallet_address,
+                &amounts_str,
+            ],
+        )?;
+    } else {
+        simple_exec(
+            chain_id,
+            command_path,
+            &[
+                "--home",
+                home_path,
+                "add-genesis-account",
+                wallet_address,
+                &amounts_str,
+            ],
+        )?;
+    }
 
     Ok(())
 }
@@ -87,33 +102,69 @@ pub fn add_genesis_validator(
     wallet_id: &str,
     amount: &str,
 ) -> Result<(), Error> {
-    simple_exec(
-        chain_id,
-        command_path,
-        &[
-            "--home",
-            home_path,
-            "gentx",
-            wallet_id,
-            "--keyring-backend",
-            "test",
-            "--chain-id",
+    if let Some(prefix) = get_genesis_prefix(chain_id, command_path)? {
+        simple_exec(
             chain_id,
-            amount,
-        ],
-    )?;
+            command_path,
+            &[
+                "--home",
+                home_path,
+                prefix,
+                "gentx",
+                wallet_id,
+                "--keyring-backend",
+                "test",
+                "--chain-id",
+                chain_id,
+                amount,
+            ],
+        )?;
+    } else {
+        simple_exec(
+            chain_id,
+            command_path,
+            &[
+                "--home",
+                home_path,
+                "gentx",
+                wallet_id,
+                "--keyring-backend",
+                "test",
+                "--chain-id",
+                chain_id,
+                amount,
+            ],
+        )?;
+    }
 
     Ok(())
 }
 
 pub fn collect_gen_txs(chain_id: &str, command_path: &str, home_path: &str) -> Result<(), Error> {
-    simple_exec(
-        chain_id,
-        command_path,
-        &["--home", home_path, "collect-gentxs"],
-    )?;
+    if let Some(prefix) = get_genesis_prefix(chain_id, command_path)? {
+        simple_exec(
+            chain_id,
+            command_path,
+            &["--home", home_path, prefix, "collect-gentxs"],
+        )?;
+    } else {
+        simple_exec(
+            chain_id,
+            command_path,
+            &["--home", home_path, "collect-gentxs"],
+        )?;
+    };
 
     Ok(())
+}
+
+fn get_genesis_prefix(chain_id: &str, command_path: &str) -> Result<Option<&'static str>, Error> {
+    let result = simple_exec(chain_id, command_path, &["--help"])?;
+    if result.stdout.contains("gentx") || result.stderr.contains("gentx") {
+        Ok(None)
+    } else {
+        Ok(Some("genesis"))
+    }
 }
 
 pub fn start_chain(
