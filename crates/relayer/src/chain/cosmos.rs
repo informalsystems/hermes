@@ -13,7 +13,7 @@ use std::{cmp::Ordering, thread};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{error, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
@@ -569,7 +569,6 @@ impl CosmosSdkChain {
         ))?;
 
         // TODO - Verify response proof, if requested.
-        if prove {}
 
         Ok(response)
     }
@@ -1185,11 +1184,9 @@ impl ChainEndpoint for CosmosSdkChain {
             .filter_map(|cs| {
                 IdentifiedAnyClientState::try_from(cs.clone())
                     .map_err(|e| {
-                        warn!(
-                            "failed to parse client state {}. Error: {}",
-                            PrettyIdentifiedClientState(&cs),
-                            e
-                        )
+                        let (client_type, client_id) = (if let Some(client_state) = &cs.client_state { client_state.type_url.clone() } else { "None".to_string() }, &cs.client_id);
+                        warn!("encountered unsupported client type `{}` while scanning client `{}`, skipping the client", client_type, client_id);
+                        debug!("failed to parse client state {}. Error: {}", PrettyIdentifiedClientState(&cs), e)
                     })
                     .ok()
             })

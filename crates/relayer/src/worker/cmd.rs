@@ -56,7 +56,7 @@ impl Display for WorkerCmd {
             WorkerCmd::NewBlock { height, new_block } => {
                 write!(f, "NewBlock({height}, {new_block})")
             }
-            WorkerCmd::ClearPendingPackets => write!(f, "CleaPendingPackets"),
+            WorkerCmd::ClearPendingPackets => write!(f, "ClearPendingPackets"),
         }
     }
 }

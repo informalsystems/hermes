@@ -1166,7 +1166,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             unreceived_acknowledgements(self.dst_chain(), self.src_chain(), &self.path_id)
                 .map_err(LinkError::supervisor)?;
 
-        let Some((sequences, src_response_height)) = sequences_and_height else { return Ok(()) };
+        let Some((sequences, src_response_height)) = sequences_and_height else {
+            return Ok(());
+        };
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
