@@ -20,13 +20,9 @@ mod version;
 
 use self::{
     clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
-<<<<<<< HEAD
     evidence::EvidenceCmd, fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd,
-=======
-    fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd, logs::LogsCmd,
->>>>>>> master
-    misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
-    upgrade::UpgradeCmds, version::VersionCmd,
+    logs::LogsCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
+    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
 };
 
 use core::time::Duration;
