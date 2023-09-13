@@ -121,6 +121,17 @@ impl AnyClientState {
             AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
         }
     }
+
+    pub fn expired(&self, elapsed_since_latest: Duration) -> bool {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
+            AnyClientState::LocalhostV1(local_state) => local_state.expired(elapsed_since_latest),
+            AnyClientState::LocalhostV2(local_state) => local_state.expired(elapsed_since_latest),
+
+            #[cfg(test)]
+            AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
+        }
+    }
 }
 
 impl Protobuf<Any> for AnyClientState {}
@@ -187,14 +198,7 @@ impl From<AnyClientState> for Any {
 
 impl ClientState for AnyClientState {
     fn chain_id(&self) -> ChainId {
-        match self {
-            AnyClientState::Tendermint(state) => state.chain_id(),
-            AnyClientState::LocalhostV1(state) => state.chain_id(),
-            AnyClientState::LocalhostV2(state) => state.chain_id(),
-
-            #[cfg(test)]
-            AnyClientState::Mock(state) => state.chain_id(),
-        }
+        self.chain_id()
     }
 
     fn client_type(&self) -> ClientType {
@@ -210,14 +214,7 @@ impl ClientState for AnyClientState {
     }
 
     fn expired(&self, elapsed_since_latest: Duration) -> bool {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
-            AnyClientState::LocalhostV1(local_state) => local_state.expired(elapsed_since_latest),
-            AnyClientState::LocalhostV2(local_state) => local_state.expired(elapsed_since_latest),
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
-        }
+        self.expired(elapsed_since_latest)
     }
 }
 
