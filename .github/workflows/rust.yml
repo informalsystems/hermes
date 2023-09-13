@@ -37,7 +37,7 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -50,7 +50,7 @@ jobs:
   clippy-all-features:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -66,7 +66,7 @@ jobs:
   clippy-no-default-features:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -83,25 +83,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - uses: actions-rs/cargo@v1
         with:
           command: test
           args: --all-features --no-fail-fast --no-run
       - uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --all-features --no-fail-fast --workspace --exclude ibc-integration-test -- --nocapture
+          command: nextest
+          args: run --all-features --no-fail-fast --workspace --exclude ibc-integration-test --no-capture
 
   # test-coverage:
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
   #       with:
   #         fetch-depth: 0
   #     - uses: actions-rs/toolchain@v1

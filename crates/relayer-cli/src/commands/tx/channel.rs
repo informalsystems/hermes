@@ -40,6 +40,7 @@ macro_rules! tx_chan_cmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
+        #[allow(clippy::redundant_closure_call)]
         let channel = $chan(chains, dst_connection);
 
         info!("message {}: {}", $dbg_string, channel);
