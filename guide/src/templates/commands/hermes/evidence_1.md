@@ -1,1 +1,1 @@
-[[#BINARY hermes]][[#GLOBALOPTIONS]] evidence --chain [[#CHAIN_ID]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] evidence[[#OPTIONS]] --chain [[#CHAIN_ID]]
