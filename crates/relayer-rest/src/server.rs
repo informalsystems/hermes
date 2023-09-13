@@ -3,17 +3,22 @@ use std::{
     net::{SocketAddr, ToSocketAddrs},
 };
 
-use axum::{extract::Path, response::IntoResponse, routing::get, Extension, Json, Router, Server};
+use axum::{
+    extract::{Path, Query},
+    response::IntoResponse,
+    routing::{get, post},
+    Extension, Json, Router, Server,
+};
 use crossbeam_channel as channel;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use serde::{Deserialize, Serialize};
 use tokio::task::JoinHandle;
 
-use ibc_relayer::{
-    rest::{request::Request, RestApiError},
-    supervisor::dump_state::SupervisorState,
-};
+use ibc_relayer::rest::{request::Request, RestApiError};
 
-use crate::handle::{all_chain_ids, assemble_version_info, chain_config, supervisor_state};
+use crate::handle::{
+    all_chain_ids, assemble_version_info, chain_config, supervisor_state, trigger_clear_packets,
+};
 
 pub type BoxError = Box<dyn Error + Send + Sync>;
 
@@ -61,11 +66,22 @@ async fn get_chain(
     Json(JsonResult::from(chain))
 }
 
-async fn get_state(
-    Extension(sender): Extension<Sender>,
-) -> Json<JsonResult<SupervisorState, RestApiError>> {
+async fn get_state(Extension(sender): Extension<Sender>) -> impl IntoResponse {
     let state = supervisor_state(&sender);
     Json(JsonResult::from(state))
+}
+
+#[derive(Debug, Deserialize)]
+struct ClearPacketParams {
+    chain: Option<ChainId>,
+}
+
+async fn clear_packets(
+    Extension(sender): Extension<Sender>,
+    Query(params): Query<ClearPacketParams>,
+) -> impl IntoResponse {
+    let result = trigger_clear_packets(&sender, params.chain);
+    Json(JsonResult::from(result))
 }
 
 type Sender = channel::Sender<Request>;
@@ -76,6 +92,7 @@ async fn run(addr: SocketAddr, sender: Sender) {
         .route("/chains", get(get_chains))
         .route("/chain/:id", get(get_chain))
         .route("/state", get(get_state))
+        .route("/clear_packets", post(clear_packets))
         .layer(Extension(sender));
 
     Server::bind(&addr)

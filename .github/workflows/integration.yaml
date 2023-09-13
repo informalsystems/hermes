@@ -80,7 +80,7 @@ jobs:
             account_prefix: juno
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -161,7 +161,7 @@ jobs:
             command: simd
             account_prefix: cosmos
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -213,7 +213,7 @@ jobs:
             command: migalood
             account_prefix: migaloo
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -262,7 +262,7 @@ jobs:
             command: junod
             account_prefix: juno
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -305,7 +305,7 @@ jobs:
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -350,7 +350,7 @@ jobs:
             command: evmosd
             account_prefix: evmos
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -392,7 +392,7 @@ jobs:
             command: gaiad
             account_prefix: cosmos
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -435,7 +435,7 @@ jobs:
             command: neutrond
             account_prefix: neutron
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -478,7 +478,7 @@ jobs:
             command: strided
             account_prefix: stride
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -521,7 +521,7 @@ jobs:
             command: strided
             account_prefix: stride
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -561,7 +561,7 @@ jobs:
         gaiad:
           - gaia6
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install

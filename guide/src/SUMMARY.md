@@ -87,6 +87,7 @@
     - [Register Counterparty Payee](./documentation/commands/fee/register-counterparty-payee.md)
     - [Register Payee](./documentation/commands/fee/register-payee.md)
     - [Transfer](./documentation/commands/fee/transfer.md)
+  - [Logs](./documentation/commands/logs/index.md)
 
 - [Glossary](./glossary.md)
 ---

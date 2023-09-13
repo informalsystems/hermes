@@ -105,3 +105,58 @@ use the `info` log level.
 
 The two DEBUG log lines above were emitted by the `tendermint-rpc` crate.
 
+
+## Overriding the tracing filter during Runtime
+
+If you have the `tracing_server` enabled:
+
+```toml
+[tracing_server]
+enabled = true
+port = 5555
+```
+
+You can update the tracing filter without restarting your instance. There are two commands allowing you to do so, the first is safer but more limited while the second is more complete it is harder to use.
+
+### Limited command
+
+If possible use the [log-level](../../../documentation/commands/logs/index.md#log-level) command as the results are guaranteed.
+
+__Examples__
+
+The following command is equivalent to running the Hermes instance with `RUST_LOG=ibc=debug hermes start`:
+
+  ```shell
+  {{#template ../../templates/commands/hermes/logs/set-log-level_1.md LOG_LEVEL=debug OPTIONS= --log-filter ibc}}
+  ```
+
+  It is also possible to only change the `tendermint_rpc` log level:
+
+  ```shell
+  {{#template ../../templates/commands/hermes/logs/set-log-level_1.md LOG_LEVEL=debug OPTIONS= --log-filter tendermint_rpc}}
+  ```
+
+  If the `--log-filter` is not specified, the log level will be set for all targets.
+
+  ### Raw command
+
+  The raw command is much more powerful but harder to use. This will send the directive you want to tracing, allowing you to specify more precise filters.
+
+> __NOTE__: Use with caution as this might end up hiding important logs.
+
+__Example__
+
+The following command will only display logs which have a field `channel=channel-1` by setting the `<RAW_FILTER>` to `"[{channel=channel-1}]"`:
+
+  ```shell
+  {{#template ../../templates/commands/hermes/logs/set-raw-filter_1.md RAW_FILTER=<RAW_FILTER>}}
+  ```
+
+  ### Reset command
+
+  This command allows you to easily restore the log level using the level configured in `config.toml`. This would be equivalent to starting the Hermes instance with `hermes start`.
+
+  ```shell
+  {{#template ../../templates/commands/hermes/logs/reset_1.md}}
+  ```
+
