@@ -207,6 +207,10 @@ The requests that Hermes makes to this endpoint are:
 
 Queries a CCV Consumer chain to fetch its staking parameters, notably its unbonding period and the number of historical entries that the chain keeps.
 
+Hermes makes the following requests to this endpoint:
+
+- `CcvConsumerParams`: 
+
 ### `cosmos.staking.v1beta1.QueryClient`
 
 Queries a Cosmos chain to fetch its staking parameters, most notably the chain's unbonding period.
