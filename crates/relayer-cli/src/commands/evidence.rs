@@ -535,19 +535,28 @@ fn fetch_all_counterparty_clients(
 
         let client_id = connection.connection_end.client_id();
 
-        let (client_state, _) = chain.query_client_state(
+        let client_state = chain.query_client_state(
             QueryClientStateRequest {
                 client_id: client_id.clone(),
                 height: QueryHeight::Latest,
             },
             IncludeProof::No,
-        )?;
+        );
+
+        let client_state = match client_state {
+            Ok((client_state, _)) => client_state,
+            Err(e) => {
+                warn!(
+                    "failed to fetch client state for counterparty client {client_id}, skipping..."
+                );
+                warn!("reason: {e}");
+
+                continue;
+            }
+        };
 
         let counterparty_chain_id = client_state.chain_id();
-
-        debug!(
-            "found counterparty client with id {client_id} on counterparty chain {counterparty_chain_id}"
-        );
+        debug!("found counterparty client with id {client_id} on counterparty chain {counterparty_chain_id}");
 
         counterparty_clients.push((counterparty_chain_id, client_id.clone()));
     }
