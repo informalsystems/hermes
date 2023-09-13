@@ -1,7 +1,4 @@
 use alloc::sync::Arc;
-use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
-use ibc_relayer::spawn::spawn_chain_runtime;
-use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
 use std::collections::HashMap;
 use std::ops::Deref;
 
@@ -12,12 +9,17 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tendermint::block::Height as TendermintHeight;
 use tendermint::evidence::{DuplicateVoteEvidence, LightClientAttackEvidence};
 use tendermint::validator;
+use tendermint_rpc::{Client, Paging};
 
 use ibc_relayer::chain::cosmos::CosmosSdkChain;
 use ibc_relayer::chain::endpoint::ChainEndpoint;
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{IncludeProof, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::chain::ChainType;
+use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::spawn::spawn_chain_runtime_with_modified_config;
+use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TendermintHeader;
 use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TendermintMisbehaviour;
@@ -40,20 +42,45 @@ pub struct EvidenceCmd {
         help = "Identifier of the chain where blocks are monitored for misbehaviour"
     )]
     chain_id: ChainId,
+
+    #[clap(
+        long = "check-past-blocks",
+        value_name = "NUM_BLOCKS",
+        help = "Check the last NUM_BLOCKS blocks for misbehaviour (default: 100)",
+        default_value = "100"
+    )]
+    check_past_blocks: u64,
+
+    #[clap(
+        long = "key-name",
+        value_name = "KEY_NAME",
+        help = "Use the given signing key name for sending the misbehaviour evidence detected (default: `key_name` config)"
+    )]
+    key_name: Option<String>,
 }
 
 impl Runnable for EvidenceCmd {
     fn run(&self) {
         let config = app_config();
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain_config = config.find_chain(&self.chain_id).cloned().unwrap();
+        let mut chain_config = config.find_chain(&self.chain_id).cloned().unwrap();
 
         if chain_config.r#type != ChainType::CosmosSdk {
             Output::error(format!("Chain {} is not a Cosmos SDK chain", self.chain_id)).exit();
         }
 
+        if let Some(ref key_name) = self.key_name {
+            chain_config.key_name = key_name.to_string();
+        }
+
+        let rt = Arc::new(
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap(),
+        );
+
         let chain = CosmosSdkChain::bootstrap(chain_config, rt.clone()).unwrap();
-        let res = monitor_misbehaviours(rt, chain);
+        let res = monitor_misbehaviours(rt, chain, self.key_name.as_ref(), self.check_past_blocks);
 
         match res {
             Ok(()) => Output::success(()).exit(),
@@ -62,7 +89,12 @@ impl Runnable for EvidenceCmd {
     }
 }
 
-fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> eyre::Result<()> {
+fn monitor_misbehaviours(
+    rt: Arc<TokioRuntime>,
+    mut chain: CosmosSdkChain,
+    key_name: Option<&String>,
+    check_past_blocks: u64,
+) -> eyre::Result<()> {
     let subscription = chain.subscribe()?;
 
     // Check previous blocks for equivocation that may have been missed
@@ -72,19 +104,51 @@ fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> ey
         .latest_block_height;
 
     let latest_height = Height::new(chain.id().version(), tm_latest_height.value()).unwrap();
-    let num_blocks = std::cmp::min(tm_latest_height.value(), 100);
+    let target_height = {
+        let target = tm_latest_height.value().saturating_sub(check_past_blocks);
+        let height = std::cmp::max(1, target);
+        Height::new(chain.id().version(), height).unwrap()
+    };
+
+    // latest_height: 200
+    //
+    // check_past_blocks: 0
+    // target_height: 200
+    // iterations: 0
+    //
+    // check_past_blocks: 1
+    // target_height: 199
+    // iterations: 1
+    //
+    // check_past_blocks: 200
+    // target_height: 1
+    // iterations: 200
+    //
+    // check_past_blocks: 201
+    // target_height: 1
+    // iterations: 200
+
+    debug!(
+        "checking past {check_past_blocks} blocks for misbehaviour evidence: {}..{}",
+        latest_height, target_height
+    );
+
     let mut height = latest_height;
+    while height >= target_height {
+        debug!("checking for evidence at height {height}");
 
-    for _block in 0..num_blocks - 1 {
-        debug!("trying to check for evidence at height {height}");
-
-        let result = check_misbehaviour_at(rt.clone(), &chain, height);
-        if let Err(e) = result {
+        if let Err(e) = check_misbehaviour_at(rt.clone(), &chain, key_name, height) {
             warn!("error while checking for misbehaviour at height {height}: {e}");
+        }
+
+        if height.revision_height() == 1 {
+            break;
         }
 
         height = height.decrement().unwrap();
     }
+
+    info!("waiting for new blocks...");
 
     // process new block events
     while let Ok(event_batch) = subscription.recv() {
@@ -92,14 +156,21 @@ fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> ey
             Ok(event_batch) => {
                 for event_with_height in &event_batch.events {
                     if let IbcEvent::NewBlock(new_block) = &event_with_height.event {
-                        debug!("{new_block:?}");
+                        info!("checking for evidence at height {}", new_block.height);
 
-                        check_misbehaviour_at(rt.clone(), &chain, new_block.height)?;
+                        if let Err(e) =
+                            check_misbehaviour_at(rt.clone(), &chain, key_name, new_block.height)
+                        {
+                            error!(
+                                "error while checking for misbehaviour at height {}: {e}",
+                                new_block.height
+                            );
+                        }
                     }
                 }
             }
             Err(e) => {
-                dbg!(e);
+                error!("error while receiving event batch: {e}");
             }
         }
     }
@@ -107,15 +178,13 @@ fn monitor_misbehaviours(rt: Arc<TokioRuntime>, mut chain: CosmosSdkChain) -> ey
     Ok(())
 }
 
-use ibc_relayer::foreign_client::ForeignClient;
-use tendermint_rpc::{Client, Paging};
-
 /// Check for misbehaviour evidence in the block at the given height.
 /// If such evidence is found, handle it by submitting it to all counterparty
 /// clients of the chain, freezing them.
 fn check_misbehaviour_at(
     rt: Arc<TokioRuntime>,
     chain: &CosmosSdkChain,
+    key_name: Option<&String>,
     height: Height,
 ) -> eyre::Result<()> {
     let block = rt
@@ -127,12 +196,12 @@ fn check_misbehaviour_at(
             tendermint::evidence::Evidence::DuplicateVote(dv) => {
                 warn!("found duplicate vote evidence {dv:?}");
 
-                handle_duplicate_vote(rt.clone(), chain, *dv)?;
+                handle_duplicate_vote(rt.clone(), chain, key_name, *dv)?;
             }
             tendermint::evidence::Evidence::LightClientAttack(lc) => {
                 warn!("found light client attack evidence {lc:?}");
 
-                handle_light_client_attack(rt.clone(), chain, *lc)?;
+                handle_light_client_attack(rt.clone(), chain, key_name, *lc)?;
             }
         }
     }
@@ -143,6 +212,7 @@ fn check_misbehaviour_at(
 fn handle_duplicate_vote(
     rt: Arc<TokioRuntime>,
     chain: &CosmosSdkChain,
+    key_name: Option<&String>,
     dv: DuplicateVoteEvidence,
 ) -> eyre::Result<()> {
     let config = app_config();
@@ -156,10 +226,15 @@ fn handle_duplicate_vote(
     // freezing that client.
     for (counterparty_chain_id, _counterparty_client_id) in counterparty_clients {
         if !chains.contains_key(&counterparty_chain_id) {
-            let chain_handle = spawn_chain_runtime::<BaseChainHandle>(
+            let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
                 &config,
                 &counterparty_chain_id,
-                Arc::clone(&rt),
+                rt.clone(),
+                |chain_config| {
+                    if let Some(key_name) = key_name {
+                        chain_config.key_name = key_name.to_string();
+                    }
+                },
             )?;
 
             chains.insert(counterparty_chain_id.clone(), chain_handle);
@@ -197,14 +272,41 @@ fn handle_duplicate_vote(
 
         info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
 
+        // Construct the light client block header for the consumer chain at the infraction height
+        let infraction_block_header = {
+            let infraction_height = dv.vote_a.height;
+
+            let trusted_validator_set = rt
+                .block_on(chain.rpc_client.validators(infraction_height, Paging::All))?
+                .validators;
+
+            let signed_header = rt
+                .block_on(chain.rpc_client.commit(infraction_height))?
+                .signed_header;
+
+            let validators = rt
+                .block_on(chain.rpc_client.validators(infraction_height, Paging::All))?
+                .validators;
+
+            let validator_set =
+                validator::Set::with_proposer(validators, signed_header.header.proposer_address)?;
+
+            TendermintHeader {
+                signed_header,
+                validator_set,
+                trusted_height: Height::from_tm(infraction_height, chain.id()),
+                trusted_validator_set: validator::Set::new(trusted_validator_set, None),
+            }
+        };
+
         let submit_msg = MsgSubmitIcsConsumerDoubleVoting {
             submitter: signer.clone(),
             duplicate_vote_evidence: dv.clone(),
-            infraction_block_header: None,
+            infraction_block_header,
         }
         .to_any();
 
-        let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "submit_double_vting");
+        let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "submit_double_voting");
         let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
 
         for response in responses {
@@ -216,6 +318,11 @@ fn handle_duplicate_vote(
                 );
             }
         }
+
+        // We have submitted the evidence to the provider, and because there can only be a single
+        // provider for a consumer chain, we can stop now. No need to check all the other
+        // counteparties.
+        break;
     }
 
     Ok(())
@@ -224,12 +331,13 @@ fn handle_duplicate_vote(
 fn handle_light_client_attack(
     rt: Arc<TokioRuntime>,
     chain: &CosmosSdkChain,
-    lc: LightClientAttackEvidence,
+    key_name: Option<&String>,
+    evidence: LightClientAttackEvidence,
 ) -> eyre::Result<()> {
     let config = app_config();
 
     // Build the two headers to submit as part of the `MsgSubmitMisbehaviour` message.
-    let (header1, header2) = build_evidence_headers(rt.clone(), chain, lc.clone())?;
+    let (header1, header2) = build_evidence_headers(rt.clone(), chain, evidence.clone())?;
 
     // Fetch all the counterparty clients of this chain.
     let counterparty_clients = fetch_all_counterparty_clients(chain)?;
@@ -246,17 +354,30 @@ fn handle_light_client_attack(
         };
 
         if !chains.contains_key(chain.id()) {
-            let chain_handle =
-                spawn_chain_runtime::<BaseChainHandle>(&config, chain.id(), Arc::clone(&rt))?;
+            let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
+                &config,
+                chain.id(),
+                rt.clone(),
+                |chain_config| {
+                    if let Some(key_name) = key_name {
+                        chain_config.key_name = key_name.to_string();
+                    }
+                },
+            )?;
 
             chains.insert(chain.id().clone(), chain_handle);
         }
 
         if !chains.contains_key(&counterparty_chain_id) {
-            let chain_handle = spawn_chain_runtime::<BaseChainHandle>(
+            let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
                 &config,
                 &counterparty_chain_id,
-                Arc::clone(&rt),
+                rt.clone(),
+                |chain_config| {
+                    if let Some(key_name) = key_name {
+                        chain_config.key_name = key_name.to_string();
+                    }
+                },
             )?;
 
             chains.insert(counterparty_chain_id.clone(), chain_handle);
@@ -271,77 +392,117 @@ fn handle_light_client_attack(
             chain_handle.clone(),
         );
 
-        // Build client update for the common header
-        let common_height = Height::from_tm(lc.common_height, chain.id());
-        let mut msgs = counterparty_client.wait_and_build_update_client(common_height)?;
+        let result = submit_light_client_attack_evidence(
+            &evidence,
+            chain,
+            counterparty_client,
+            counterparty_client_id,
+            counterparty_chain_handle,
+            misbehaviour,
+        );
 
-        let signer = counterparty_chain_handle.get_signer()?;
-
-        // If the misbehaving chain is a CCV consumer chain,
-        // then try fetch the consumer chains of the counterparty chains.
-        // If that fails, then that chain is not a provider chain.
-        // Otherwise, check if the misbehaving chain is a consumer of the counterparty chain,
-        // which is definitely a provider.
-        let counterparty_is_provider = if chain.config().ccv_consumer_chain {
-            let consumer_chains = counterparty_chain_handle
-                .query_consumer_chains()
-                .unwrap_or_default(); // If the query fails, use an empty list of consumers
-
-            // FIXME: Do do we need to check if the client id also matches?
-            // ie. is it okay to submit a `MsgSubmitIcsConsumerMisbehaviour` to all clients
-            // of the provider chain, or should we only do this for the CCV client, and
-            // use the standard message for other clients?
-            consumer_chains
-                .iter()
-                .any(|(chain_id, _)| chain_id == chain.id())
-        } else {
-            false
-        };
-
-        let submit_msg = if counterparty_is_provider {
-            info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
-
-            let msg = MsgSubmitIcsConsumerMisbehaviour {
-                submitter: signer.clone(),
-                misbehaviour: misbehaviour.clone(),
-            }
-            .to_any();
-
-            Some(msg)
-        } else {
-            None
-        };
-
-        if let Some(msg) = submit_msg {
-            msgs.push(msg);
-        }
-
-        info!("submitting sovereign misbehaviour to chain {counterparty_chain_id}");
-
-        let msg = MsgSubmitMisbehaviour {
-            client_id: counterparty_client_id,
-            misbehaviour: misbehaviour.to_any(),
-            signer,
-        }
-        .to_any();
-
-        msgs.push(msg);
-
-        let tracked_msgs = TrackedMsgs::new_static(msgs, "submit_misbehaviour");
-        let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
-
-        for response in responses {
-            if response.code.is_ok() {
-                info!("successfully submitted misbehaviour to chain {counterparty_chain_id}, tx hash: {}", response.hash);
-            } else {
-                error!(
-                    "failed to submit misbehaviour to chain {counterparty_chain_id}: {response:?}"
-                );
-            }
+        if let Err(error) = result {
+            error!("{error}");
         }
     }
 
     Ok(())
+}
+
+fn submit_light_client_attack_evidence(
+    evidence: &LightClientAttackEvidence,
+    chain: &CosmosSdkChain,
+    counterparty_client: ForeignClient<BaseChainHandle, BaseChainHandle>,
+    counterparty_client_id: ClientId,
+    counterparty: &BaseChainHandle,
+    misbehaviour: TendermintMisbehaviour,
+) -> Result<(), eyre::Error> {
+    info!(
+        "building CCV misbehaviour evidence for provider chain `{}` for client `{}`",
+        counterparty.id(),
+        counterparty_client_id,
+    );
+
+    let signer = counterparty.get_signer()?;
+
+    let common_height = Height::from_tm(evidence.common_height, chain.id());
+    let mut msgs = counterparty_client.wait_and_build_update_client(common_height)?;
+
+    if is_counterparty_provider(chain, counterparty) {
+        info!(
+            "submitting CCV misbehaviour to provider chain `{}` for client `{}`",
+            counterparty.id(),
+            counterparty_client_id,
+        );
+
+        let msg = MsgSubmitIcsConsumerMisbehaviour {
+            submitter: signer.clone(),
+            misbehaviour: misbehaviour.clone(),
+        }
+        .to_any();
+
+        msgs.push(msg);
+    };
+
+    info!(
+        "submitting sovereign misbehaviour to chain `{}` for client `{}`",
+        counterparty.id(),
+        counterparty_client_id,
+    );
+
+    let msg = MsgSubmitMisbehaviour {
+        client_id: counterparty_client_id,
+        misbehaviour: misbehaviour.to_any(),
+        signer,
+    }
+    .to_any();
+
+    msgs.push(msg);
+
+    let tracked_msgs = TrackedMsgs::new_static(msgs, "submit_misbehaviour");
+    let responses = counterparty.send_messages_and_wait_check_tx(tracked_msgs)?;
+
+    match responses.first() {
+        Some(response) if response.code.is_ok() => {
+            info!(
+                "successfully submitted misbehaviour to chain {}, tx hash: {}",
+                counterparty.id(),
+                response.hash
+            );
+
+            Ok(())
+        }
+        Some(response) => Err(eyre::eyre!(
+            "failed to submit misbehaviour to chain {}: {response:?}",
+            counterparty.id()
+        )),
+
+        None => Err(eyre::eyre!(
+            "failed to submit misbehaviour to chain {}: no response from chain",
+            counterparty.id()
+        )),
+    }
+}
+
+fn is_counterparty_provider(
+    chain: &CosmosSdkChain,
+    counterparty_chain_handle: &BaseChainHandle,
+) -> bool {
+    if chain.config().ccv_consumer_chain {
+        let consumer_chains = counterparty_chain_handle
+            .query_consumer_chains()
+            .unwrap_or_default(); // If the query fails, use an empty list of consumers
+
+        // FIXME: Do do we need to check if the client id also matches?
+        // ie. is it okay to submit a `MsgSubmitIcsConsumerMisbehaviour` to all clients
+        // of the provider chain, or should we only do this for the CCV client, and
+        // use the standard message for other clients?
+        consumer_chains
+            .iter()
+            .any(|(chain_id, _)| chain_id == chain.id())
+    } else {
+        false
+    }
 }
 
 /// Fetch all the counterparty clients of the given chain.
@@ -452,6 +613,8 @@ mod tests {
         assert_eq!(
             EvidenceCmd {
                 chain_id: ChainId::from_string("chain_id"),
+                check_past_blocks: 100,
+                key_name: None,
             },
             EvidenceCmd::parse_from(["test", "--chain", "chain_id"])
         )
