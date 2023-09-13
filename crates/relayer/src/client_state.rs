@@ -10,15 +10,12 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientStat
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::protobuf::Protobuf;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
-    ClientState as TmClientState, UpgradeOptions as TmUpgradeOptions,
-    TENDERMINT_CLIENT_STATE_TYPE_URL,
+    ClientState as TmClientState, TENDERMINT_CLIENT_STATE_TYPE_URL,
 };
 use ibc_relayer_types::clients::ics09_localhost::v1::client_state::{
     ClientState as LocalhostClientState, LOCALHOST_CLIENT_STATE_TYPE_URL,
 };
-use ibc_relayer_types::core::ics02_client::client_state::{
-    downcast_client_state, ClientState, UpgradeOptions,
-};
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error;
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
@@ -30,27 +27,6 @@ use ibc_relayer_types::mock::client_state::MockClientState;
 #[cfg(test)]
 use ibc_relayer_types::mock::client_state::MOCK_CLIENT_STATE_TYPE_URL;
 use ibc_relayer_types::Height;
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum AnyUpgradeOptions {
-    Tendermint(TmUpgradeOptions),
-    Localhost(()),
-
-    #[cfg(test)]
-    Mock(()),
-}
-
-impl AnyUpgradeOptions {
-    fn as_tm_upgrade_options(&self) -> Option<&TmUpgradeOptions> {
-        match self {
-            AnyUpgradeOptions::Tendermint(tm) => Some(tm),
-            _ => None,
-        }
-    }
-}
-
-impl UpgradeOptions for AnyUpgradeOptions {}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -209,35 +185,6 @@ impl ClientState for AnyClientState {
         self.frozen_height()
     }
 
-    fn upgrade(
-        &mut self,
-        upgrade_height: Height,
-        upgrade_options: &dyn UpgradeOptions,
-        chain_id: ChainId,
-    ) {
-        let upgrade_options = upgrade_options
-            .as_any()
-            .downcast_ref::<AnyUpgradeOptions>()
-            .expect("UpgradeOptions not of type AnyUpgradeOptions");
-
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.upgrade(
-                upgrade_height,
-                upgrade_options.as_tm_upgrade_options().unwrap(), // FIXME: This is very brittle
-                chain_id,
-            ),
-
-            AnyClientState::Localhost(local_state) => {
-                local_state.upgrade(upgrade_height, upgrade_options, chain_id)
-            }
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => {
-                mock_state.upgrade(upgrade_height, upgrade_options, chain_id)
-            }
-        }
-    }
-
     fn expired(&self, elapsed_since_latest: Duration) -> bool {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
@@ -265,21 +212,6 @@ impl From<LocalhostClientState> for AnyClientState {
 impl From<MockClientState> for AnyClientState {
     fn from(cs: MockClientState) -> Self {
         Self::Mock(cs)
-    }
-}
-
-impl From<&dyn ClientState> for AnyClientState {
-    fn from(client_state: &dyn ClientState) -> Self {
-        #[cfg(test)]
-        if let Some(cs) = downcast_client_state::<MockClientState>(client_state) {
-            return AnyClientState::from(*cs);
-        }
-
-        if let Some(cs) = downcast_client_state::<TmClientState>(client_state) {
-            AnyClientState::from(cs.clone())
-        } else {
-            unreachable!()
-        }
     }
 }
 
