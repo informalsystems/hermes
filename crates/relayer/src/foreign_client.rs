@@ -1774,23 +1774,28 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
             Err(e) => match e.detail() {
                 ForeignClientErrorDetail::MisbehaviourExit(s) => {
-                    error!("misbehaviour checking is being disabled, reason: {}", s);
+                    error!("misbehaviour checking is being disabled, reason: {s}");
 
                     MisbehaviourResults::CannotExecute
                 }
 
                 ForeignClientErrorDetail::ExpiredOrFrozen(_) => {
-                    error!("cannot check misbehavior on frozen or expired client",);
+                    error!("cannot check misbehavior on frozen or expired client");
 
                     MisbehaviourResults::CannotExecute
                 }
 
                 // FIXME: This is fishy
-                _ if update_event.is_some() => MisbehaviourResults::CannotExecute,
+                e if update_event.is_some() => {
+                    error!("encountered unexpected error while checking misbehaviour: {e}");
+                    debug!("update event: {}", update_event.unwrap());
+
+                    MisbehaviourResults::CannotExecute
+                }
 
                 // FIXME: This is fishy
                 _ => {
-                    warn!("misbehaviour checking result: {}", e);
+                    warn!("misbehaviour checking result: {e}");
 
                     MisbehaviourResults::ValidClient
                 }
