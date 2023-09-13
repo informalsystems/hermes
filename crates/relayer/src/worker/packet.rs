@@ -5,13 +5,14 @@ use {
 };
 
 use core::time::Duration;
-use itertools::Itertools;
-use moka::sync::Cache;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
-use tracing::{debug, warn};
 
 use crossbeam_channel::Receiver;
+use itertools::Itertools;
+use moka::sync::Cache;
+use tracing::{debug, error, error_span, info, trace, warn};
+
 use ibc_proto::ibc::apps::fee::v1::{IdentifiedPacketFees, QueryIncentivizedPacketRequest};
 use ibc_proto::ibc::core::channel::v1::PacketId;
 use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
@@ -19,8 +20,6 @@ use ibc_relayer_types::applications::transfer::{Amount, Coin, RawCoin};
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
-use tracing::{error, error_span, trace};
-
 use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
@@ -227,11 +226,14 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     if do_clear {
+        info!("clearing packets");
+
         // Reset the `clear_on_start` flag and attempt packet clearing once now.
         // More clearing will be done at clear interval.
         if *should_clear_on_start {
             *should_clear_on_start = false;
         }
+
         handle_clear_packet(link, clear_interval, path, maybe_height)?;
     }
 
