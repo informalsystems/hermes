@@ -14,7 +14,6 @@ use ibc_relayer_types::applications::transfer::{Amount, Coin};
 use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
-use ibc_relayer_types::tx_msg::Msg;
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
