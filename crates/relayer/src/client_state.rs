@@ -1,13 +1,13 @@
 use core::time::Duration;
 
-use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
-use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
-#[cfg(test)]
-use ibc_proto::ibc::mock::ClientState as RawMockClientState;
-use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
+use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientState;
+#[cfg(test)]
+use ibc_proto::ibc::mock::ClientState as RawMockClientState;
+use ibc_proto::protobuf::Protobuf;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     ClientState as TmClientState, UpgradeOptions as TmUpgradeOptions,
     TENDERMINT_CLIENT_STATE_TYPE_URL,
@@ -132,7 +132,7 @@ impl TryFrom<Any> for AnyClientState {
             "" => Err(Error::empty_client_state_response()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                Protobuf::<RawClientState>::decode_vec(&raw.value)
+                Protobuf::<RawTmClientState>::decode_vec(&raw.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
@@ -152,7 +152,7 @@ impl From<AnyClientState> for Any {
         match value {
             AnyClientState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: Protobuf::<RawClientState>::encode_vec(&value),
+                value: Protobuf::<RawTmClientState>::encode_vec(&value),
             },
             #[cfg(test)]
             AnyClientState::Mock(value) => Any {
