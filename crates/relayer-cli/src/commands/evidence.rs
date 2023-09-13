@@ -105,7 +105,8 @@ fn monitor_misbehaviours(
 
     let latest_height = Height::new(chain.id().version(), tm_latest_height.value()).unwrap();
     let target_height = {
-        let height = tm_latest_height.value().saturating_sub(check_past_blocks);
+        let target = tm_latest_height.value().saturating_sub(check_past_blocks);
+        let height = std::cmp::max(1, target);
         Height::new(chain.id().version(), height).unwrap()
     };
 
@@ -120,29 +121,28 @@ fn monitor_misbehaviours(
     // iterations: 1
     //
     // check_past_blocks: 200
-    // target_height: 0
+    // target_height: 1
     // iterations: 200
     //
     // check_past_blocks: 201
-    // target_height: 0
+    // target_height: 1
     // iterations: 200
 
     debug!(
         "checking past {check_past_blocks} blocks for misbehaviour evidence: {}..{}",
-        latest_height,
-        target_height.increment()
+        latest_height, target_height
     );
 
     let mut height = latest_height;
-    while height > target_height {
-        if height.revision_height() == 0 {
-            break;
-        }
-
+    while height >= target_height {
         debug!("checking for evidence at height {height}");
 
         if let Err(e) = check_misbehaviour_at(rt.clone(), &chain, key_name, height) {
             warn!("error while checking for misbehaviour at height {height}: {e}");
+        }
+
+        if height.revision_height() == 1 {
+            break;
         }
 
         height = height.decrement().unwrap();
