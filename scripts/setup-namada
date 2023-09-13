@@ -6,13 +6,17 @@
 
 set -e
 
-NAMADA_DIR=$1
+
+# Get absolute path to Namada directory
+SCRIPT_DIR=$(cd $(dirname $0) && pwd)
+NAMADA_DIR=$(cd $1 && pwd)
+cd $SCRIPT_DIR
 if [ -z "${NAMADA_DIR}" ]
 then
   echo "ERROR: Namada directory should be given"
   exit 1
 fi
-cd $(dirname $0)
+
 HERMES_DIR=${PWD%/scripts*}
 
 # edit for your environment
