@@ -534,18 +534,18 @@ $HERMES_BIN start &> $HOME_DIR/hermes-start-logs.txt &
 
 $HERMES_BIN evidence --chain consumer --key-name evidence &> $HOME_DIR/hermes-evidence-logs.txt &
 
-sleep 30
+for _ in $(seq 1 10)
+do
+    sleep 5
 
-pkill -f hermes &> /dev/null || true
+    MSG="successfully submitted double voting evidence to chain provider"
+    
+    if grep -c "$MSG" $HOME_DIR/hermes-evidence-logs.txt; then
+        echo "Successfully submitted double voting evidence to chain provider"
+        exit 0
+    fi
+done
 
-# grep logs for `successfully submitted double voting evidence to chain provider` or abort the test if not found
-grep -c "successfully submitted double voting evidence to chain provider" $HOME_DIR/hermes-evidence-logs.txt
-SUCCESS=$?
-
-if [ $SUCCESS -eq 0 ]; then
-    echo "Successfully submitted double voting evidence to chain provider"
-else
-    echo "Failed to submit double voting evidence to chain provider"
-    exit 1
-fi
+echo "Failed to submit double voting evidence to chain provider"
+exit 1
 
