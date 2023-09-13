@@ -173,16 +173,16 @@ Queries for channel-associated data, such as packet commitments, unreceived pack
 
 The requests that Hermes makes to this endpoint are:
 
-- QueryChannelClientStateRequest: Requests the client state associated with a specified channel.
-- QueryChannelsRequest: Requests all of the channels associated with the chain.
-- QueryConnectionChannelsRequest: Requests all of the channels associated with a specified connection.
-- QueryNextSequenceReceiveRequest: Requests the sequence number of the next receive packet for a specified channel.
-- QueryPacketCommitmentsRequest: Requests the packet commitments associated with a specified channel.
-- QueryPacketAcknowledgementsRequest: Requests the packet acknowledgments associated with a specified channel.
-- QueryUnreceivedAcksRequest: Requests the unreceived acknowledgments associated with a specified channel.
-- QueryUnreceivedPacketsRequest: Requests the unreceived packet sequences associated with a specified channel.
+- `ChannelClientState`: Requests the client state associated with a specified channel.
+- `Channels`: Requests all of the channels associated with the chain.
+- `ConnectionChannels`: Requests all of the channels associated with a specified connection.
+- `NextSequenceReceive`: Requests the sequence number of the next receive packet for a specified channel.
+- `PacketCommitments`: Requests the packet commitments associated with a specified channel.
+- `PacketAcknowledgements`: Requests the packet acknowledgments associated with a specified channel.
+- `UnreceivedAcks`: Requests the unreceived acknowledgments associated with a specified channel.
+- `UnreceivedPackets`: Requests the unreceived packet sequences associated with a specified channel.
 
-> _*Note:*_ The `QueryPacketAcknowledgementsRequest`, `QueryUnreceivedAcksRequest`, and `QueryUnreceivedPacketsRequest` types each accept a Vector of `sequence`s in order to specify which packet commitments to fetch acknowledgements for. In the case where no `sequence`s are passed, the requests will simply return all acknowledgements for all outstanding packet commitments. 
+> _*Note:*_ The `PacketAcknowledgements`, `UnreceivedAcks`, and `UnreceivedPackets` queries each accept a vector of `sequences` in order to specify which packet commitments to fetch acknowledgements for. In the case where an empty vector is passed, the queries will simply return all acknowledgements for all outstanding packet commitments. 
 
 ### `ibc.core.client.v1.QueryClient`
 
