@@ -1,14 +1,14 @@
 //! Verifies the behaviour of ordered channels with Interchain Accounts.
-//! 
+//!
 //! In order to ensure that ordered channels correctly clear packets on ICA
 //! channels, this test sends some sequential packets with the supervisor enabled,
 //! sends the next packet without the supervisor enabled, then sends additional
 //! packets with the supervisor enabled again. The pending packet that was sent
-//! without the supervisor enabled should be relayed in order along with the 
-//! other packets, as expected of ordered channel behaviour. 
+//! without the supervisor enabled should be relayed in order along with the
+//! other packets, as expected of ordered channel behaviour.
 
-use ibc_test_framework::prelude::*;
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
+use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::query_channel_end;
 
 #[test]
@@ -45,7 +45,7 @@ impl TestOverrides for IcaOrderedChannelTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
 
-        // Disable packet clearing so that packets sent without the supervisor 
+        // Disable packet clearing so that packets sent without the supervisor
         // enabled enter a pending state.
         config.mode.packets.enabled = true;
         config.mode.packets.clear_on_start = false;
@@ -78,13 +78,104 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
         )?;
 
         // Assert that the channel returned by `register_interchain_account` is an ordered channel
-        let channel_end = query_channel_end(chains.handle_b(), &channel_id.as_ref(), &port_id.as_ref())?;
+        let channel_end =
+            query_channel_end(chains.handle_b(), &channel_id.as_ref(), &port_id.as_ref())?;
 
         assert_eq!(channel_end.value().ordering(), ChannelOrder::Ordered);
 
-        relayer.with_supervisor(|| {
+        // Query the controller chain for the address of the ICA wallet on the host chain.
+        let ica_address = chains.node_b.chain_driver().query_interchain_account(
+            &wallet.address(),
+            &channel.connection.connection_id_b.as_ref(),
+        )?;
 
+        let stake_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base("stake"));
+
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(0u64).as_ref(),
+        )?;
+
+        // Send funds to the interchain account.
+        let ica_fund = 42000u64;
+
+        chains.node_a.chain_driver().local_transfer_token(
+            &chains.node_a.wallets().user1(),
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(ica_fund).as_ref(),
+        )?;
+
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(ica_fund).as_ref(),
+        )?;
+
+        let amount = 1200;
+
+        let msg = MsgSend {
+            from_address: ica_address.to_string(),
+            to_address: chains.node_a.wallets().user2().address().to_string(),
+            amount: vec![Coin {
+                denom: stake_denom.to_string(),
+                amount: Amount(U256::from(amount)),
+            }],
+        };
+
+        let raw_msg = msg.to_any();
+
+        let cosmos_tx = CosmosTx {
+            messages: vec![raw_msg],
+        };
+
+        let raw_cosmos_tx = cosmos_tx.to_any();
+
+        let interchain_account_packet_data = InterchainAccountPacketData::new(raw_cosmos_tx.value);
+
+        let signer = Signer::from_str(&wallet.address().to_string()).unwrap();
+
+        relayer.with_supervisor(|| {
+            let ica_events = interchain_send_tx(
+                chains.handle_b(),
+                &signer,
+                &channel.connection.connection_id_b.0,
+                interchain_account_packet_data,
+                Timestamp::from_nanoseconds(120000000000).unwrap(),
+            )?;
+    
+            info!("First ICA transfer made with supervisor: {ica_events:#?}");
+
+            Ok(())
         });
+
+        let ica_events = interchain_send_tx(
+            chains.handle_b(),
+            &signer,
+            &channel.connection.connection_id_b.0,
+            interchain_account_packet_data,
+            Timestamp::from_nanoseconds(120000000000).unwrap(),
+        )?;
+
+        info!("Second ICA transfer made without supervisor: {ica_events:#?}");
+
+        relayer.with_supervisor(|| {
+            let ica_events = interchain_send_tx(
+                chains.handle_b(),
+                &signer,
+                &channel.connection.connection_id_b.0,
+                interchain_account_packet_data,
+                Timestamp::from_nanoseconds(120000000000).unwrap(),
+            )?;
+    
+            info!("Third ICA transfer made with supervisor: {ica_events:#?}");
+
+            Ok(())
+        });
+
+        // Check that the ICA account's balance has been debited the sent amount.
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(ica_fund - 3 * amount).as_ref(),
+        )?;
 
         Ok(())
     }

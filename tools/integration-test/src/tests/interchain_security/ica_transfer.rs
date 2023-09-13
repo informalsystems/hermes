@@ -1,6 +1,7 @@
 //! The following tests are for the Interchain Security.
 //! These tests require the first chain to be a Provider chain and
 //! the second chain a Consumer chain.
+use crate::utils::interchain_send_tx;
 use std::str::FromStr;
 
 use ibc_relayer::chain::tracking::TrackedMsgs;
@@ -151,29 +152,7 @@ impl BinaryChannelTest for InterchainSecurityIcaTransferTest {
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund - amount).as_ref(),
         )?;
+
         Ok(())
     }
-}
-
-fn interchain_send_tx<ChainA: ChainHandle>(
-    chain: &ChainA,
-    from: &Signer,
-    connection: &ConnectionId,
-    msg: InterchainAccountPacketData,
-    relative_timeout: Timestamp,
-) -> Result<Vec<IbcEventWithHeight>, Error> {
-    let msg = MsgSendTx {
-        owner: from.clone(),
-        connection_id: connection.clone(),
-        packet_data: msg,
-        relative_timeout,
-    };
-
-    let msg_any = msg.to_any();
-
-    let tm = TrackedMsgs::new_static(vec![msg_any], "SendTx");
-
-    chain
-        .send_messages_and_wait_commit(tm)
-        .map_err(Error::relayer)
 }

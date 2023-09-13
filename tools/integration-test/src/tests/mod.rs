@@ -25,6 +25,8 @@ pub mod tendermint;
 pub mod ternary_transfer;
 pub mod transfer;
 
+mod utils;
+
 #[cfg(any(doc, feature = "ics29-fee"))]
 pub mod fee;
 
