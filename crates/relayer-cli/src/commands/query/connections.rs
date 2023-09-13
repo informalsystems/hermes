@@ -60,19 +60,27 @@ impl Runnable for QueryConnectionsCmd {
             connections.retain(|connection| {
                 let client_id = connection.end().client_id().to_owned();
                 let chain_height = chain.query_latest_height();
-                let (client_state, _) = chain
-                    .query_client_state(
-                        QueryClientStateRequest {
-                            client_id,
-                            height: QueryHeight::Specific(chain_height.unwrap()),
-                        },
-                        IncludeProof::No,
-                    )
-                    .unwrap();
 
-                let counterparty_chain_id = client_state.chain_id();
+                let client_state = chain.query_client_state(
+                    QueryClientStateRequest {
+                        client_id: client_id.clone(),
+                        height: QueryHeight::Specific(chain_height.unwrap()),
+                    },
+                    IncludeProof::No,
+                );
 
-                counterparty_chain_id == counterparty_filter_id
+                match client_state {
+                    Ok((client_state, _)) => {
+                        let counterparty_chain_id = client_state.chain_id();
+                        counterparty_chain_id == counterparty_filter_id
+                    }
+                    Err(e) => {
+                        warn!("failed to query client state for client {client_id}, skipping...");
+                        warn!("reason: {e}");
+
+                        false
+                    }
+                }
             });
         }
 
