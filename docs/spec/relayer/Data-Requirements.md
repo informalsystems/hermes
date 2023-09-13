@@ -200,7 +200,7 @@ Queries the connection in order to fetch connection data and connected clients.
 
 The requests that Hermes makes to this endpoint are:
 
-- QueryClientConnectionsRequest: Requests all connections associated with a specified client.
+- `ClientConnections`: Requests all connections associated with a specified client.
 - QueryConnectionsRequest: Requests all connections associated with the chain.
 
 ### `interchain_security.ccv.consumer.v1.QueryClient`
