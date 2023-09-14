@@ -17,7 +17,7 @@ use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{IncludeProof, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::chain::ChainType;
-use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::foreign_client::{ForeignClient, ForeignClientErrorDetail};
 use ibc_relayer::spawn::spawn_chain_runtime_with_modified_config;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
@@ -426,25 +426,31 @@ fn submit_light_client_attack_evidence(
     );
 
     let signer = counterparty.get_signer()?;
-
     let common_height = Height::from_tm(evidence.common_height, chain.id());
+
     let mut msgs = match counterparty_client.wait_and_build_update_client(common_height) {
         Ok(msgs) => msgs,
+
+        Err(e) if matches!(e.detail(), ForeignClientErrorDetail::ExpiredOrFrozen(_)) => {
+            info!("client is already frozen, skipping reporting of evidence to the node");
+            return Ok(());
+        }
+
         Err(e) => {
+            warn!("skipping update client message");
             warn!(
-                "failed to build update client message for client `{}` on chain `{}`: {e}",
+                "reason: failed to build update client message for client `{}` on chain `{}`: {e}",
                 counterparty_client_id,
                 counterparty.id()
             );
 
-            warn!("skipping update client message");
             vec![]
         }
     };
 
     if is_counterparty_provider(chain, counterparty) {
         info!(
-            "submitting CCV misbehaviour for client `{}` on provider chain `{}`",
+            "will submit CCV misbehaviour for client `{}` on provider chain `{}`",
             counterparty_client_id,
             counterparty.id(),
         );
@@ -459,7 +465,7 @@ fn submit_light_client_attack_evidence(
     };
 
     info!(
-        "submitting IBC misbehaviour for client `{}` on chain `{}`",
+        "will submit IBC misbehaviour for client `{}` on chain `{}`",
         counterparty_client_id,
         counterparty.id(),
     );
