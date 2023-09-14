@@ -23,10 +23,17 @@ overflow-checks = true
 
 [patch.crates-io]
 ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs.git", branch = "ccv-protos" }
-# tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
-# tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
-# tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
-# tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
-# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
-# tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
-# tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
+# tendermint                       = { path = "../tendermint-rs/tendermint" }
+# tendermint-rpc                   = { path = "../tendermint-rs/rpc" }
+# tendermint-proto                 = { path = "../tendermint-rs/proto" }
+# tendermint-light-client          = { path = "../tendermint-rs/light-client" }
+# tendermint-light-client-verifier = { path = "../tendermint-rs/light-client-verifier" }
+# tendermint-light-client-detector = { path = "../tendermint-rs/light-client-detector" }
+# tendermint-testgen               = { path = "../tendermint-rs/testgen" }
+tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "fix-evidence" }
+tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "fix-evidence" }
+tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "fix-evidence" }
+tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "fix-evidence" }
+tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "fix-evidence" }
+tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "fix-evidence" }
+tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "fix-evidence" }

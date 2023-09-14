@@ -1,7 +1,13 @@
 #!/bin/bash
 # shellcheck disable=2086
-set -eux 
 
+set -eu
+
+DEBUG=${DEBUG:-false}
+
+if [ "$DEBUG" = true ]; then
+    set -x
+fi
 
 diag() {
   echo ">>
@@ -22,12 +28,19 @@ NODE_IP="127.0.0.1"
 # Home directory
 HOME_DIR="/tmp/hermes-ics-misbehaviour"
 
+# Hermes debug
+if [ "$DEBUG" = true ]; then
+    HERMES_DEBUG="--debug=rpc"
+else
+    HERMES_DEBUG=""
+fi
+
 # Hermes config
 HERMES_CONFIG="$HOME_DIR/hermes.toml"
 HERMES_CONFIG_FORK="$HOME_DIR/hermes-fork.toml"
 # Hermes binary
-HERMES_BIN="cargo run -q --bin hermes -- --config $HERMES_CONFIG"
-HERMES_BIN_FORK="cargo run -q --bin hermes -- --config $HERMES_CONFIG_FORK"
+HERMES_BIN="cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG"
+HERMES_BIN_FORK="cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG_FORK"
 
 # Validator moniker
 MONIKER="coordinator"

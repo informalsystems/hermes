@@ -207,13 +207,18 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 challenging_block,
             })) => {
                 warn!("misbehavior detected, reporting evidence to RPC witness node and primary chain");
+                debug!("evidence: {evidence:#?}");
+                debug!("challenging block: {challenging_block:#?}");
+
+                warn!("waiting 5 seconds before reporting evidence to RPC witness node");
+                std::thread::sleep(Duration::from_secs(5));
 
                 match detector::report_evidence(
                     self.io.rpc_client().clone(),
                     evidence.against_primary,
                 ) {
                     Ok(hash) => warn!("evidence reported to RPC witness node with hash: {hash}"),
-                    Err(e) => error!("failed to report evidence to RPC witness node: {}", e),
+                    Err(e) => error!("failed to report evidence to RPC witness node: {e}"),
                 }
 
                 let target_block = self.fetch(update_header.height())?;
