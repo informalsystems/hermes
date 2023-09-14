@@ -48,6 +48,21 @@ const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
 const MAX_RETRIES: usize = 5;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ExpiredOrFrozen {
+    Expired,
+    Frozen,
+}
+
+impl fmt::Display for ExpiredOrFrozen {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ExpiredOrFrozen::Expired => write!(f, "expired"),
+            ExpiredOrFrozen::Frozen => write!(f, "frozen"),
+        }
+    }
+}
+
 define_error! {
     ForeignClientError {
         ClientCreate
@@ -225,13 +240,14 @@ define_error! {
 
         ExpiredOrFrozen
             {
+                status: ExpiredOrFrozen,
                 client_id: ClientId,
                 chain_id: ChainId,
                 description: String,
             }
             |e| {
-                format_args!("client {0} on chain id {1} is expired or frozen: {2}",
-                    e.client_id, e.chain_id, e.description)
+                format_args!("client {0} on chain id {1} is {2}: {3}",
+                    e.client_id, e.chain_id, e.status, e.description)
             },
 
         ConsensusStateNotTrusted
@@ -295,18 +311,39 @@ define_error! {
 }
 
 pub trait HasExpiredOrFrozenError {
-    fn is_expired_or_frozen_error(&self) -> bool;
+    fn is_expired_error(&self) -> bool;
+    fn is_frozen_error(&self) -> bool;
+
+    fn is_expired_or_frozen_error(&self) -> bool {
+        self.is_expired_error() || self.is_frozen_error()
+    }
 }
 
 impl HasExpiredOrFrozenError for ForeignClientErrorDetail {
-    fn is_expired_or_frozen_error(&self) -> bool {
-        matches!(self, Self::ExpiredOrFrozen(_))
+    fn is_expired_error(&self) -> bool {
+        if let Self::ExpiredOrFrozen(e) = self {
+            e.status == ExpiredOrFrozen::Expired
+        } else {
+            false
+        }
+    }
+
+    fn is_frozen_error(&self) -> bool {
+        if let Self::ExpiredOrFrozen(e) = self {
+            e.status == ExpiredOrFrozen::Frozen
+        } else {
+            false
+        }
     }
 }
 
 impl HasExpiredOrFrozenError for ForeignClientError {
-    fn is_expired_or_frozen_error(&self) -> bool {
-        self.detail().is_expired_or_frozen_error()
+    fn is_expired_error(&self) -> bool {
+        self.detail().is_expired_error()
+    }
+
+    fn is_frozen_error(&self) -> bool {
+        self.detail().is_frozen_error()
     }
 }
 
@@ -715,6 +752,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         if client_state.is_frozen() {
             return Err(ForeignClientError::expired_or_frozen(
+                ExpiredOrFrozen::Frozen,
                 self.id().clone(),
                 self.dst_chain.id(),
                 "client state reports that client is frozen".into(),
@@ -737,9 +775,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     "client state is not valid: latest height is outside of trusting period!",
                 );
                 return Err(ForeignClientError::expired_or_frozen(
+                    ExpiredOrFrozen::Expired,
                     self.id().clone(),
                     self.dst_chain.id(),
-                    format!("expired: time elapsed since last client update: {elapsed:?}"),
+                    format!("time elapsed since last client update: {elapsed:?}"),
                 ));
             }
             ConsensusStateTrusted::Trusted { elapsed } => Ok((client_state, Some(elapsed))),
@@ -792,6 +831,20 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })
         } else {
             Ok(ConsensusStateTrusted::Trusted { elapsed })
+        }
+    }
+
+    pub fn is_frozen(&self) -> bool {
+        match self.validated_client_state() {
+            Ok(_) => false,
+            Err(e) => e.is_frozen_error(),
+        }
+    }
+
+    pub fn is_expired(&self) -> bool {
+        match self.validated_client_state() {
+            Ok(_) => false,
+            Err(e) => e.is_expired_error(),
         }
     }
 
