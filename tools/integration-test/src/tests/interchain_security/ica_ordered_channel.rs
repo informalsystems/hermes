@@ -7,9 +7,19 @@
 //! without the supervisor enabled should be relayed in order along with the
 //! other packets, as expected of ordered channel behaviour.
 
+use ibc_relayer_types::applications::ics27_ica::cosmos_tx::CosmosTx;
+use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::applications::transfer::{Amount, Coin};
+use ibc_relayer_types::applications::transfer::msgs::send::MsgSend;
+use ibc_relayer_types::bigint::U256;
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::query_channel_end;
+use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
+use ibc_test_framework::util::interchain_security::update_genesis_for_consumer_chain;
+use ibc_test_framework::relayer::channel::assert_eventually_channel_established;
 
 #[test]
 fn test_ica_ordered_channel() -> Result<(), Error> {
@@ -81,7 +91,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
         let channel_end =
             query_channel_end(chains.handle_b(), &channel_id.as_ref(), &port_id.as_ref())?;
 
-        assert_eq!(channel_end.value().ordering(), ChannelOrder::Ordered);
+        assert_eq!(channel_end.value().ordering(), Ordering::Ordered);
 
         // Query the controller chain for the address of the ICA wallet on the host chain.
         let ica_address = chains.node_b.chain_driver().query_interchain_account(

@@ -1,13 +1,11 @@
 //! The following tests are for the Interchain Security.
 //! These tests require the first chain to be a Provider chain and
 //! the second chain a Consumer chain.
-use crate::utils::interchain_send_tx;
 use std::str::FromStr;
 
-use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer::event::IbcEventWithHeight;
+use crate::utils::interchain_send_tx;
+
 use ibc_relayer_types::applications::ics27_ica::cosmos_tx::CosmosTx;
-use ibc_relayer_types::applications::ics27_ica::msgs::send_tx::MsgSendTx;
 use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
 use ibc_relayer_types::applications::transfer::msgs::send::MsgSend;
 use ibc_relayer_types::applications::transfer::{Amount, Coin};

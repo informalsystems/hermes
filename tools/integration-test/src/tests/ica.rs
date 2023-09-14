@@ -1,15 +1,13 @@
-use crate::utils::interchain_send_tx;
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use crate::utils::interchain_send_tx;
+
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::{
     filter::{ChannelFilters, ChannelPolicy, FilterPattern},
     PacketFilter,
 };
-use ibc_relayer::event::IbcEventWithHeight;
-use ibc_relayer_types::applications::ics27_ica::msgs::send_tx::MsgSendTx;
 use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
 use ibc_relayer_types::applications::{
     ics27_ica::cosmos_tx::CosmosTx,
