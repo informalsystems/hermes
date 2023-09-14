@@ -209,12 +209,16 @@ Queries a CCV Consumer chain to fetch its staking parameters, notably its unbond
 
 Hermes makes the following requests to this endpoint:
 
-- `CcvConsumerParams`: 
+- `QueryParams`: Queries the CCV consumer module parameters.
 
 ### `cosmos.staking.v1beta1.QueryClient`
 
 Queries a Cosmos chain to fetch its staking parameters, most notably the chain's unbonding period.
 
+- `Params`: Queries the staking parameters.
+
 ### `cosmos.base.node.v1beta1.ServiceClient`
 
 Queries a Cosmos full node in order to fetch its configuration parameters.
+
+- `Config`: Queries for the operator configuration.
