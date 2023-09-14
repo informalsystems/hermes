@@ -194,12 +194,14 @@ fn check_misbehaviour_at(
     for evidence in block.evidence.into_vec() {
         match evidence {
             tendermint::evidence::Evidence::DuplicateVote(dv) => {
-                warn!("found duplicate vote evidence {dv:?}");
+                warn!("found duplicate vote evidence");
+                debug!("{dv:#?}");
 
                 handle_duplicate_vote(rt.clone(), chain, key_name, *dv)?;
             }
             tendermint::evidence::Evidence::LightClientAttack(lc) => {
-                warn!("found light client attack evidence {lc:?}");
+                warn!("found light client attack evidence");
+                debug!("{lc:#?}");
 
                 handle_light_client_attack(rt.clone(), chain, key_name, *lc)?;
             }
@@ -418,21 +420,33 @@ fn submit_light_client_attack_evidence(
     misbehaviour: TendermintMisbehaviour,
 ) -> Result<(), eyre::Error> {
     info!(
-        "building CCV misbehaviour evidence for provider chain `{}` for client `{}`",
-        counterparty.id(),
+        "building misbehaviour evidence for client `{}` on chain `{}`",
         counterparty_client_id,
+        counterparty.id(),
     );
 
     let signer = counterparty.get_signer()?;
 
     let common_height = Height::from_tm(evidence.common_height, chain.id());
-    let mut msgs = counterparty_client.wait_and_build_update_client(common_height)?;
+    let mut msgs = match counterparty_client.wait_and_build_update_client(common_height) {
+        Ok(msgs) => msgs,
+        Err(e) => {
+            warn!(
+                "failed to build update client message for client `{}` on chain `{}`: {e}",
+                counterparty_client_id,
+                counterparty.id()
+            );
+
+            warn!("skipping update client message");
+            vec![]
+        }
+    };
 
     if is_counterparty_provider(chain, counterparty) {
         info!(
-            "submitting CCV misbehaviour to provider chain `{}` for client `{}`",
-            counterparty.id(),
+            "submitting CCV misbehaviour for client `{}` on provider chain `{}`",
             counterparty_client_id,
+            counterparty.id(),
         );
 
         let msg = MsgSubmitIcsConsumerMisbehaviour {
@@ -445,13 +459,13 @@ fn submit_light_client_attack_evidence(
     };
 
     info!(
-        "submitting sovereign misbehaviour to chain `{}` for client `{}`",
-        counterparty.id(),
+        "submitting IBC misbehaviour for client `{}` on chain `{}`",
         counterparty_client_id,
+        counterparty.id(),
     );
 
     let msg = MsgSubmitMisbehaviour {
-        client_id: counterparty_client_id,
+        client_id: counterparty_client_id.clone(),
         misbehaviour: misbehaviour.to_any(),
         signer,
     }
@@ -465,7 +479,8 @@ fn submit_light_client_attack_evidence(
     match responses.first() {
         Some(response) if response.code.is_ok() => {
             info!(
-                "successfully submitted misbehaviour to chain {}, tx hash: {}",
+                "successfully submitted misbehaviour for client `{}` to chain `{}`, tx hash: {}",
+                counterparty_client_id,
                 counterparty.id(),
                 response.hash
             );
