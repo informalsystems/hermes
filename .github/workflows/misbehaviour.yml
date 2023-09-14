@@ -36,7 +36,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  misbehaviour:
+  light-client-attack:
     runs-on: ubuntu-20.04
     timeout-minutes: 20
     strategy:
@@ -94,7 +94,7 @@ jobs:
         run: |
           nix shell .#${{ matrix.chain.package }} -c bash misbehaviour_test.sh
 
-  misbehaviour-ics:
+  ics-light-client-attack:
     runs-on: ubuntu-20.04
     timeout-minutes: 20
     strategy:
@@ -146,9 +146,9 @@ jobs:
       - name: Run test
         working-directory: ci/misbehaviour-ics
         run: |
-          nix shell .#${{ matrix.chain.package }} -c bash misbehaviour_test.sh
+          nix shell .#${{ matrix.chain.package }} -c bash light_client_attack_test.sh
 
-  double-sign-ics:
+  ics-double-sign:
     runs-on: ubuntu-20.04
     timeout-minutes: 20
     strategy:
