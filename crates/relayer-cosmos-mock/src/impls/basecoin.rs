@@ -61,6 +61,10 @@ where
     }
 
     async fn begin_block(&self) {
+        self.grow_blocks();
+
+        self.update_status();
+
         let last_block = self.blocks.acquire_mutex().last().unwrap().clone();
 
         let mut events = Vec::new();
@@ -91,9 +95,6 @@ where
         }
 
         state.commit().expect("failed to commit to state");
-
-        self.grow_blocks();
-        self.update_status();
     }
 }
 

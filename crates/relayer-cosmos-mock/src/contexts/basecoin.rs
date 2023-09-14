@@ -16,6 +16,7 @@ use ibc::Height;
 use ibc_relayer_components_extra::runtime::traits::spawn::Spawner;
 use ibc_relayer_components_extra::runtime::traits::spawn::TaskHandle;
 use ibc_relayer_runtime::types::runtime::TokioRuntimeContext;
+use tendermint::AppHash;
 use tendermint::Time;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::Generator;
@@ -25,7 +26,6 @@ use tendermint_testgen::Validator;
 
 use crate::traits::runner::BasecoinRunner;
 use crate::types::status::ChainStatus;
-use crate::util::dummy::generate_rand_app_hash;
 use crate::util::mutex::MutexUtil;
 
 /// A mock ABCI application that includes simplified store, application,
@@ -97,6 +97,7 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
             genesis_height.revision_height(),
             genesis_time,
             &validators,
+            AppHash::default(),
         );
 
         let genesis_status = Arc::new(Mutex::new(ChainStatus::new(
@@ -148,13 +149,14 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
         height: u64,
         time: Time,
         validators: &[Validator],
+        app_hash: AppHash,
     ) -> TmLightBlock {
         let header = Header::new(validators)
             .chain_id(&chain_id.to_string())
             .height(height)
             .time(time)
             .next_validators(validators)
-            .app_hash(generate_rand_app_hash());
+            .app_hash(app_hash);
 
         LightBlock::new_default_with_header(header)
             .generate()
@@ -162,6 +164,10 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
     }
 
     pub fn grow_blocks(&self) {
+        let root_hash = self.app.store.root_hash();
+
+        let app_hash = AppHash::try_from(root_hash).expect("invalid app hash");
+
         let mut blocks = self.blocks.acquire_mutex();
 
         let validators = self.validators.acquire_mutex();
@@ -171,6 +177,7 @@ impl<S: ProvableStore + Default + Debug> MockBasecoin<S> {
             blocks.len() as u64 + 1,
             Time::now(),
             &validators,
+            app_hash,
         );
 
         blocks.push(new_tm_light_block);

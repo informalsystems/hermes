@@ -1,8 +1,4 @@
 use ibc::Signer;
-use rand::RngCore;
-use sha2::Digest;
-use sha2::Sha256;
-use tendermint::AppHash;
 
 pub fn genesis_app_state() -> serde_json::Value {
     serde_json::json!({
@@ -41,16 +37,4 @@ pub fn genesis_app_state() -> serde_json::Value {
 
 pub fn dummy_signer() -> Signer {
     Signer::from("cosmos000000000000000000000000000000000000000".to_string())
-}
-
-pub fn generate_rand_app_hash() -> AppHash {
-    let mut rng = rand::thread_rng();
-
-    let mut data = vec![0u8; 32];
-
-    rng.fill_bytes(&mut data);
-
-    let value = Sha256::digest(&data).to_vec();
-
-    AppHash::try_from(value).expect("invalid app hash")
 }
