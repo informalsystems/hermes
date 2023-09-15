@@ -64,6 +64,18 @@ pub fn supervisor_state(
     submit_request(sender, |reply_to| Request::State { reply_to })
 }
 
+/// Submit a request to clear all packets for the chain with the
+/// specified `chain_id`.
+pub fn trigger_clear_packets(
+    sender: &channel::Sender<Request>,
+    chain_id: Option<ChainId>,
+) -> Result<(), RestApiError> {
+    submit_request(sender, |reply_to| Request::ClearPackets {
+        chain_id,
+        reply_to,
+    })
+}
+
 pub fn assemble_version_info(sender: &channel::Sender<Request>) -> Vec<VersionInfo> {
     // Fetch the relayer library version
     let lib_version = submit_request(sender, |reply_to| Request::Version { reply_to })

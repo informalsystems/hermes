@@ -8,6 +8,7 @@ mod fee;
 mod health;
 mod keys;
 mod listen;
+mod logs;
 mod misbehaviour;
 mod query;
 mod start;
@@ -18,7 +19,7 @@ mod version;
 
 use self::{
     clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
-    fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd,
+    fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd, logs::LogsCmd,
     misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
     upgrade::UpgradeCmds, version::VersionCmd,
 };
@@ -84,6 +85,10 @@ pub enum CliCmd {
 
     /// Listen to and display IBC events emitted by a chain
     Listen(ListenCmd),
+
+    /// Update tracing log directives
+    #[clap(subcommand)]
+    Logs(LogsCmd),
 
     /// Listen to client update IBC events and handles misbehaviour
     Misbehaviour(MisbehaviourCmd),
