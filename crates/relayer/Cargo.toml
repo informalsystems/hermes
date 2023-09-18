@@ -64,7 +64,7 @@ digest = "0.10.6"
 ed25519 = "2.2.2"
 ed25519-dalek = { version = "2.0.0", features = ["serde"] }
 ed25519-dalek-bip32 = "0.3.0"
-generic-array = "0.14.7"
+generic-array = "1.0.0"
 secp256k1 = { version = "0.27.0", features = ["rand-std"] }
 strum = { version = "0.25", features = ["derive"] }
 tokio-stream = "0.1.14"
