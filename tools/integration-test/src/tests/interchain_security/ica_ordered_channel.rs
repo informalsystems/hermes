@@ -143,7 +143,12 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
 
         let signer = Signer::from_str(&wallet.address().to_string()).unwrap();
 
+        sleep(Duration::from_secs(1));
+
         relayer.with_supervisor(|| {
+
+            sleep(Duration::from_secs(1));
+
             let ica_events = interchain_send_tx(
                 chains.handle_b(),
                 &signer,
@@ -154,8 +159,12 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
     
             info!("First ICA transfer made with supervisor: {ica_events:#?}");
 
+            sleep(Duration::from_secs(1));
+
             Ok(())
         });
+
+        sleep(Duration::from_secs(1));
 
         let ica_events = interchain_send_tx(
             chains.handle_b(),
@@ -167,7 +176,12 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
 
         info!("Second ICA transfer made without supervisor: {ica_events:#?}");
 
+        sleep(Duration::from_secs(1));
+
         relayer.with_supervisor(|| {
+
+            sleep(Duration::from_secs(1));
+
             let ica_events = interchain_send_tx(
                 chains.handle_b(),
                 &signer,
@@ -177,6 +191,8 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
             )?;
     
             info!("Third ICA transfer made with supervisor: {ica_events:#?}");
+
+            sleep(Duration::from_secs(1));
 
             Ok(())
         });
