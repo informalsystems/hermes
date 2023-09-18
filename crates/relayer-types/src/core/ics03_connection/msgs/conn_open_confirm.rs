@@ -54,6 +54,7 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
                 None,
                 None,
                 None,
+                None,
                 proof_height,
             )
             .map_err(Error::invalid_proof)?,

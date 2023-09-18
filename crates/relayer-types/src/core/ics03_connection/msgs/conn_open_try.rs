@@ -90,6 +90,10 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
         let client_proof =
             CommitmentProofBytes::try_from(msg.proof_client).map_err(Error::invalid_proof)?;
 
+        // Host consensus state proof can be missing for IBC-Go < 7.2.0
+        let host_consensus_state_proof =
+            CommitmentProofBytes::try_from(msg.host_consensus_state_proof).ok();
+
         let counterparty_versions = msg
             .counterparty_versions
             .into_iter()
@@ -113,6 +117,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 msg.proof_init.try_into().map_err(Error::invalid_proof)?,
                 Some(client_proof),
                 Some(consensus_proof_obj),
+                host_consensus_state_proof,
                 None,
                 proof_height,
             )
@@ -144,12 +149,15 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
             proof_client: ics_msg
                 .proofs
                 .client_proof()
-                .clone()
-                .map_or_else(Vec::new, |v| v.into()),
+                .map_or_else(Vec::new, |v| v.to_bytes()),
             proof_consensus: ics_msg
                 .proofs
                 .consensus_proof()
-                .map_or_else(Vec::new, |v| v.proof().clone().into()),
+                .map_or_else(Vec::new, |v| v.proof().to_bytes()),
+            host_consensus_state_proof: ics_msg
+                .proofs
+                .host_consensus_state_proof()
+                .map_or_else(Vec::new, |v| v.to_bytes()),
             consensus_height: ics_msg
                 .proofs
                 .consensus_proof()
@@ -215,6 +223,7 @@ pub mod test_util {
                 revision_height: proof_height,
             }),
             proof_consensus: get_dummy_proof(),
+            host_consensus_state_proof: get_dummy_proof(),
             consensus_height: Some(Height {
                 revision_number: 0,
                 revision_height: consensus_height,

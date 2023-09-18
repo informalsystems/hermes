@@ -55,7 +55,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             .consensus_height
             .and_then(|raw_height| raw_height.try_into().ok())
             .ok_or_else(Error::missing_consensus_height)?;
-        let consensus_proof_obj = ConsensusProof::new(
+
+        let consensus_proof = ConsensusProof::new(
             msg.proof_consensus
                 .try_into()
                 .map_err(Error::invalid_proof)?,
@@ -71,6 +72,10 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
         let client_proof =
             CommitmentProofBytes::try_from(msg.proof_client).map_err(Error::invalid_proof)?;
 
+        // Host consensus state proof can be missing for IBC-Go < 7.2.0
+        let consensus_state_proof =
+            CommitmentProofBytes::try_from(msg.host_consensus_state_proof).ok();
+
         Ok(Self {
             connection_id: msg
                 .connection_id
@@ -85,7 +90,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             proofs: Proofs::new(
                 msg.proof_try.try_into().map_err(Error::invalid_proof)?,
                 Some(client_proof),
-                Option::from(consensus_proof_obj),
+                Some(consensus_proof),
+                consensus_state_proof,
                 None,
                 proof_height,
             )
@@ -106,16 +112,19 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
             proof_client: ics_msg
                 .proofs
                 .client_proof()
-                .clone()
-                .map_or_else(Vec::new, |v| v.into()),
+                .map_or_else(Vec::new, |v| v.to_bytes()),
             proof_consensus: ics_msg
                 .proofs
                 .consensus_proof()
-                .map_or_else(Vec::new, |v| v.proof().clone().into()),
+                .map_or_else(Vec::new, |v| v.proof().to_bytes()),
             consensus_height: ics_msg
                 .proofs
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
+            host_consensus_state_proof: ics_msg
+                .proofs
+                .host_consensus_state_proof()
+                .map_or_else(Vec::new, |v| v.to_bytes()),
             version: Some(ics_msg.version.into()),
             signer: ics_msg.signer.to_string(),
         }
@@ -145,6 +154,7 @@ pub mod test_util {
                 revision_height: proof_height,
             }),
             proof_consensus: get_dummy_proof(),
+            host_consensus_state_proof: get_dummy_proof(),
             consensus_height: Some(Height {
                 revision_number: 0,
                 revision_height: consensus_height,
