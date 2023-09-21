@@ -284,7 +284,7 @@ Set `ccv_consumer_chain = true` in `config.toml`.
 
 If Hermes is set to query CometBFT's `/block_results` RPC endpoint (which is the case when Hermes is set to use the [pull-based event source][pull-based-event-source]), you may encounter an `Internal error: node is not persisting abci responses (code: -32603)` when clearing packets. 
 
-This is likely cause because the underlying CometBFT node is configured to discard ABCI responses via the `discard_abci_responses` configuration paramter being set to `true` in the Comet config. When this option is set to `true`, Hermes will not be able to clear any packets that were sent in either a `begin_block` or an `end_block`; transactions sent using `/tx_search` should still be cleared though. In addition, Hermes will not be able to relay in pull mode if ABCI responses are being discarded. 
+This is likely due to the underlying CometBFT node being configured to discard ABCI responses via the `discard_abci_responses` configuration paramter being set to `true` in the Comet config. When this option is set to `true`, Hermes will not be able to clear any packets that were sent in either a `begin_block` or an `end_block`; transactions sent using `/tx_search` should still be cleared though. In addition, Hermes will not be able to relay using the pull-based event source if ABCI responses are being discarded. 
 
 ### Fix
 Set the Comet node's `discard_abci_resonses = false` in the Comet configuration file. 
