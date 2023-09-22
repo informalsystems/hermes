@@ -43,10 +43,10 @@ tonic = { version = "0.9", features = ["tls", "tls-roots"] }
 moka = { version = "0.10", features = ["future"] }
 
 [dependencies.tendermint]
-version = "=0.33.0"
+version = "0.33.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.33.0"
+version = "0.33.0"
 features = ["http-client", "websocket-client"]
 

@@ -18,8 +18,8 @@ description  = """
 async-trait = "0.1.56"
 basecoin-app = { git = "https://github.com/informalsystems/basecoin-rs.git" }
 basecoin-store = { git = "https://github.com/informalsystems/basecoin-rs.git" }
-ibc = { git = "https://github.com/cosmos/ibc-rs.git", rev= "6ffe8ce", features = ["mocks"] }
-ibc-proto = "0.34.0"
+ibc = { version = "0.45", features = ["mocks"] }
+ibc-proto = "0.35.0"
 ibc-relayer-components = { version = "0.1.0", path = "../relayer-components" }
 ibc-relayer-components-extra = { version = "0.1.0", path = "../relayer-components-extra" }
 ibc-relayer-runtime = { version = "0.1.0", path = "../relayer-runtime" }
@@ -30,9 +30,9 @@ serde_json = "1.0"
 sha2 = { version = "0.10", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 rand = "0.8.5"
-tendermint = { version = "0.33.0", features = ["rust-crypto"] }
-tendermint-testgen = "0.33.0"
+tendermint = { version = "0.33.2", features = ["rust-crypto"] }
+tendermint-testgen = "0.33.2"
 tracing = "0.1.36"
 tokio = { version = "1.0", features = ["full"] }
-tower-abci = "0.9"
+tower-abci = "0.10"
 tower = { version = "0.4", features = ["full"] }
