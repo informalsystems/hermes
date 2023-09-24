@@ -1,12 +1,13 @@
 use serde::Serialize;
 
-use super::{Ed25519KeyPair, KeyType, Secp256k1KeyPair, SigningKeyPair};
+use super::{Ed25519KeyPair, KeyType, NearKeyPair, Secp256k1KeyPair, SigningKeyPair};
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]
 pub enum AnySigningKeyPair {
     Secp256k1(Secp256k1KeyPair),
     Ed25519(Ed25519KeyPair),
+    Near(NearKeyPair),
 }
 
 impl AnySigningKeyPair {
@@ -14,6 +15,7 @@ impl AnySigningKeyPair {
         match self {
             Self::Secp256k1(key_pair) => key_pair.account(),
             Self::Ed25519(key_pair) => key_pair.account(),
+            Self::Near(key_pair) => key_pair.account(),
         }
     }
 
@@ -21,6 +23,7 @@ impl AnySigningKeyPair {
         match self {
             Self::Secp256k1(_) => Secp256k1KeyPair::KEY_TYPE,
             Self::Ed25519(_) => Ed25519KeyPair::KEY_TYPE,
+            Self::Near(_) => NearKeyPair::KEY_TYPE,
         }
     }
 
@@ -28,6 +31,7 @@ impl AnySigningKeyPair {
         match self {
             Self::Secp256k1(key_pair) => key_pair.as_any(),
             Self::Ed25519(key_pair) => key_pair.as_any(),
+            Self::Near(key_pair) => key_pair.as_any(),
         }
         .downcast_ref::<T>()
         .map(T::clone)
@@ -43,5 +47,11 @@ impl From<Secp256k1KeyPair> for AnySigningKeyPair {
 impl From<Ed25519KeyPair> for AnySigningKeyPair {
     fn from(key_pair: Ed25519KeyPair) -> Self {
         Self::Ed25519(key_pair)
+    }
+}
+
+impl From<NearKeyPair> for AnySigningKeyPair {
+    fn from(key_pair: NearKeyPair) -> Self {
+        Self::Near(key_pair)
     }
 }

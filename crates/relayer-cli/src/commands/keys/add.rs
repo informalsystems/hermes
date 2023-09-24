@@ -13,7 +13,8 @@ use ibc_relayer::{
     chain::ChainType,
     config::{ChainConfig, Config},
     keyring::{
-        AnySigningKeyPair, KeyRing, Secp256k1KeyPair, SigningKeyPair, SigningKeyPairSized, Store,
+        AnySigningKeyPair, KeyRing, NearKeyPair, Secp256k1KeyPair, SigningKeyPair,
+        SigningKeyPairSized, Store,
     },
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -216,6 +217,24 @@ pub fn add_key(
             keyring.add_key(key_name, key_pair.clone())?;
             key_pair.into()
         }
+        ChainType::Near => {
+            let mut keyring = KeyRing::new_near_keypair(
+                Store::Test,
+                &config.account_prefix,
+                &config.id,
+                &config.key_store_folder,
+            )?;
+
+            check_key_exists(&keyring, key_name, overwrite);
+
+            let key_contents =
+                fs::read_to_string(file).map_err(|_| eyre!("error reading the key file"))?;
+
+            let key_pair = NearKeyPair::from_seed_file(&key_contents, hd_path)?;
+
+            keyring.add_key(key_name, key_pair.clone())?;
+            key_pair.into()
+        }
     };
 
     Ok(key_pair)
@@ -243,6 +262,26 @@ pub fn restore_key(
             check_key_exists(&keyring, key_name, overwrite);
 
             let key_pair = Secp256k1KeyPair::from_mnemonic(
+                &mnemonic_content,
+                hdpath,
+                &config.address_type,
+                keyring.account_prefix(),
+            )?;
+
+            keyring.add_key(key_name, key_pair.clone())?;
+            key_pair.into()
+        }
+        ChainType::Near => {
+            let mut keyring = KeyRing::new_near_keypair(
+                Store::Test,
+                &config.account_prefix,
+                &config.id,
+                &config.key_store_folder,
+            )?;
+
+            check_key_exists(&keyring, key_name, overwrite);
+
+            let key_pair = NearKeyPair::from_mnemonic(
                 &mnemonic_content,
                 hdpath,
                 &config.address_type,

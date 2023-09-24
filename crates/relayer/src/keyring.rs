@@ -2,6 +2,7 @@ pub mod errors;
 pub use any_signing_key_pair::AnySigningKeyPair;
 pub use ed25519_key_pair::Ed25519KeyPair;
 pub use key_type::KeyType;
+pub use near_keyring::NearKeyPair;
 pub use secp256k1_key_pair::Secp256k1KeyPair;
 pub use signing_key_pair::{SigningKeyPair, SigningKeyPairSized};
 
@@ -9,6 +10,7 @@ mod any_signing_key_pair;
 mod ed25519_key_pair;
 mod key_type;
 mod key_utils;
+mod near_keyring;
 mod pub_key;
 mod secp256k1_key_pair;
 mod signing_key_pair;
@@ -287,10 +289,34 @@ impl KeyRing<Ed25519KeyPair> {
     }
 }
 
+impl KeyRing<NearKeyPair> {
+    pub fn new_near_keypair(
+        store: Store,
+        account_prefix: &str,
+        chain_id: &ChainId,
+        ks_folder: &Option<PathBuf>,
+    ) -> Result<Self, Error> {
+        Self::new(store, account_prefix, chain_id, ks_folder)
+    }
+}
+
 pub fn list_keys(config: &ChainConfig) -> Result<Vec<(String, AnySigningKeyPair)>, Error> {
     let keys = match config.r#type {
         ChainType::CosmosSdk => {
             let keyring = KeyRing::new_secp256k1(
+                Store::Test,
+                &config.account_prefix,
+                &config.id,
+                &config.key_store_folder,
+            )?;
+            keyring
+                .keys()?
+                .into_iter()
+                .map(|(key_name, keys)| (key_name, keys.into()))
+                .collect()
+        }
+        ChainType::Near => {
+            let keyring = KeyRing::new_near_keypair(
                 Store::Test,
                 &config.account_prefix,
                 &config.id,

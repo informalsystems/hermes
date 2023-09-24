@@ -1,7 +1,7 @@
 # This is an example configuration for Hermes. It is meant to be
-# used as a reference, _NOT_ for configuring a production relayer. 
-# If you're looking to configure a production relayer for some chains, 
-# try using the `hermes config auto` command to generate a config 
+# used as a reference, _NOT_ for configuring a production relayer.
+# If you're looking to configure a production relayer for some chains,
+# try using the `hermes config auto` command to generate a config
 # file that serves as the starting point for configuring Hermes.
 
 # The global section has parameters that apply globally to the relayer operation.
@@ -140,6 +140,14 @@ port = 5555
 # Specify the chain ID. Required
 id = 'ibc-0'
 
+canister_id = "rrkah-fqaaa-aaaaa-aaaaq-cai"
+
+canister_pem = "$HOME/.config/dfx/identity/default/identity.pem"
+
+near_ibc_address = "v3.near-ibc.near"
+
+type = "near"
+
 # Whether or not this is a CCV consumer chain. Default: false
 # Only specifiy true for CCV consumer chain, but NOT for sovereign chains.
 ccv_consumer_chain = false
@@ -153,7 +161,7 @@ grpc_addr = 'http://127.0.0.1:9090'
 # The type of event source to use for getting events from the chain.
 #
 # This setting can take two types of values, as an inline table:
-# 
+#
 # a) Push: for receiving IBC events over WebSocket
 #
 #      `{ mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }`
@@ -227,22 +235,22 @@ address_type = { derivation = 'cosmos' }
 store_prefix = 'ibc'
 
 # Gas Parameters
-# 
+#
 # The term 'gas' is used to denote the amount of computation needed to execute
-# and validate a transaction on-chain. It can be thought of as fuel that gets 
+# and validate a transaction on-chain. It can be thought of as fuel that gets
 # spent in order to power the on-chain execution of a transaction.
 #
-# Hermes attempts to simulate how much gas a transaction will expend on its 
+# Hermes attempts to simulate how much gas a transaction will expend on its
 # target chain. From that, it calculates the cost of that gas by multiplying the
 # amount of estimated gas by the `gas_multiplier` and the `gas_price`
-# (estimated gas * `gas_multiplier` * `gas_price`) in order to compute the 
+# (estimated gas * `gas_multiplier` * `gas_price`) in order to compute the
 # total fee to be deducted from the relayer's wallet.
-# 
+#
 # The `simulate_tx` operation does not always correctly estimate the appropriate
-# amount of gas that a transaction requires. In those cases when the operation 
-# fails, Hermes will attempt to submit the transaction using the specified 
-# `default_gas` and `max_gas` parameters. In the case that a transaction would 
-# require more than `max_gas`, it doesn't get submitted and a 
+# amount of gas that a transaction requires. In those cases when the operation
+# fails, Hermes will attempt to submit the transaction using the specified
+# `default_gas` and `max_gas` parameters. In the case that a transaction would
+# require more than `max_gas`, it doesn't get submitted and a
 # `TxSimulateGasEstimateExceeded` error is returned.
 
 # Specify the default amount of gas to be used in case the tx simulation fails,
@@ -256,12 +264,12 @@ default_gas = 100000
 max_gas = 400000
 
 # Specify the price per gas used of the fee to submit a transaction and
-# the denomination of the fee. 
-# 
+# the denomination of the fee.
+#
 # The specified gas price should always be greater or equal to the `min-gas-price`
-# configured on the chain. This is to ensure that at least some minimal price is 
+# configured on the chain. This is to ensure that at least some minimal price is
 # paid for each unit of gas per transaction.
-# 
+#
 # Required
 gas_price = { price = 0.001, denom = 'stake' }
 
@@ -270,8 +278,8 @@ gas_price = { price = 0.001, denom = 'stake' }
 #
 # The purpose of multiplying by `gas_multiplier` is to provide a bit of a buffer
 # to catch some of the cases when the gas estimation calculation is on the low
-# end. 
-# 
+# end.
+#
 # Example: With this setting set to 1.1, then if the estimated gas
 # is 80_000, then gas used to compute the fee will be adjusted to
 # 80_000 * 1.1 = 88_000.
@@ -374,6 +382,8 @@ memo_prefix = ''
 
 [[chains]]
 id = 'ibc-1'
+canister_id = 'bkyz2-fmaaa-aaaaa-qaaaq-cai'
+canister_pem = "$HOME/.config/dfx/identity/default/identity.pem"
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }

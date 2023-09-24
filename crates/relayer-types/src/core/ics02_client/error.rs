@@ -140,6 +140,9 @@ define_error! {
         MissingRawHeader
             | _ | { "missing raw header" },
 
+        MissingClientMessage
+            | _ | { "missing client message" },
+
         DecodeRawMisbehaviour
             [ TraceError<TendermintProtoError> ]
             | _ | { "invalid raw misbehaviour" },
@@ -273,5 +276,10 @@ define_error! {
         ClientSpecific
             { description: String }
             | e | { format_args!("client specific error: {0}", e.description) },
+
+        CustomError
+            { reason: String }
+            | e | { format_args!("custom error: {0}", e.reason) },
+
     }
 }

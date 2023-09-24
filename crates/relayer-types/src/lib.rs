@@ -12,6 +12,8 @@
     rust_2018_idioms
 )]
 #![forbid(unsafe_code)]
+// TODO: remove this once we have a better solution for the `deprecated` lint
+#![allow(deprecated)]
 
 //! This library implements the InterBlockchain Communication (IBC) protocol in Rust. IBC is
 //! a distributed protocol that enables communication between distinct sovereign blockchains.

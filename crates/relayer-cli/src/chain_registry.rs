@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::marker::Send;
+use std::path::PathBuf;
 
 use futures::future::join_all;
 use http::Uri;
@@ -19,6 +20,7 @@ use ibc_chain_registry::querier::*;
 use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use ibc_relayer::config::CanisterIdConfig;
 use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
 use ibc_relayer::keyring::Store;
 
@@ -122,6 +124,10 @@ where
 
     Ok(ChainConfig {
         id: chain_data.chain_id,
+        ic_endpoint: String::new(),
+        canister_id: CanisterIdConfig::default(),
+        canister_pem: PathBuf::new(),
+        near_ibc_address: ibc_relayer::config::NearIbcContractAddress::default(),
         r#type: default::chain_type(),
         rpc_addr: rpc_data.rpc_address,
         grpc_addr: grpc_address,

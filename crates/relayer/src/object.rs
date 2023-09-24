@@ -203,6 +203,12 @@ define_error! {
                 format!("connection_id missing from connection handshake event '{:?}'",
                     e.event)
             },
+
+        CustomError
+            { reason: String}
+            | e | {
+                format!("custom error: {}", e.reason)
+            },
     }
 }
 

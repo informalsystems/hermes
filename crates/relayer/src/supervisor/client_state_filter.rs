@@ -66,6 +66,9 @@ define_error! {
             [ ChannelError ]
             | _ | { "channel error" },
 
+        CustomError
+            { reason: String }
+            | e | { format!("custom error: {}", e.reason) }
     }
 }
 

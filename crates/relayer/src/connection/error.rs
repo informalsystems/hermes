@@ -183,6 +183,12 @@ define_error! {
                     e.tries, e.total_delay.as_secs(), e.description)
             },
 
+        CustomError
+            { reason: String }
+            | e | {
+                format_args!("custom error: {}", e.reason)
+            },
+
     }
 }
 

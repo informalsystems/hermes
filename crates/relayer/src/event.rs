@@ -29,6 +29,7 @@ use crate::light_client::decode_header;
 
 pub mod bus;
 pub mod error;
+pub mod near_event_monitor;
 pub mod source;
 
 #[derive(Clone, Debug, Serialize)]
