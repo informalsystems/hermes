@@ -19,7 +19,7 @@ use ibc_proto::cosmos::{
     base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
 };
 
-use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvConsumerParams;
+use ibc_proto::interchain_security::ccv::v1::Params as CcvConsumerParams;
 
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
