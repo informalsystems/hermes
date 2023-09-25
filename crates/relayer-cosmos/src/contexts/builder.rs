@@ -164,7 +164,9 @@ pub fn get_keypair(
     let keypair = handle.get_key().map_err(BaseError::relayer)?;
 
     let AnySigningKeyPair::Secp256k1(key) = keypair else {
-        return Err(BaseError::generic(eyre!("no Secp256k1 key pair for chain {}", chain_id)).into());
+        return Err(
+            BaseError::generic(eyre!("no Secp256k1 key pair for chain {}", chain_id)).into(),
+        );
     };
 
     Ok(key)

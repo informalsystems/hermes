@@ -1,6 +1,6 @@
 use alloc::collections::VecDeque;
 use core::mem;
-use ibc_relayer_components::relay::traits::ibc_message_sender::CanSendIbcMessages;
+use ibc_relayer_components::relay::traits::components::ibc_message_sender::CanSendIbcMessages;
 use ibc_relayer_components::relay::traits::logs::logger::CanLogRelayTarget;
 
 use async_trait::async_trait;
@@ -145,7 +145,7 @@ where
 }
 
 #[async_trait]
-trait CanProcessMessageBatches<Target>: HasRelayChains
+pub trait CanProcessMessageBatches<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasRuntime,
@@ -204,7 +204,7 @@ where
     }
 }
 
-trait CanPartitionMessageBatches<Error>: HasChainTypes + HasRuntime
+pub trait CanPartitionMessageBatches<Error>: HasChainTypes + HasRuntime
 where
     Error: Async,
     Self::Runtime: HasChannelTypes + HasChannelOnceTypes,
@@ -271,7 +271,7 @@ where
 }
 
 #[async_trait]
-trait CanSendReadyBatches<Target>: HasRelayChains
+pub trait CanSendReadyBatches<Target>: HasRelayChains
 where
     Target: ChainTarget<Self>,
     Target::TargetChain: HasRuntime,

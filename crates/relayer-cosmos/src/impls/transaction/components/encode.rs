@@ -6,7 +6,7 @@ use ibc_relayer::chain::cosmos::types::account::Account;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::types::Memo;
 use ibc_relayer::keyring::Secp256k1KeyPair;
-use ibc_relayer_components::transaction::traits::encode::TxEncoder;
+use ibc_relayer_components::transaction::traits::components::tx_encoder::TxEncoder;
 
 use crate::contexts::transaction::CosmosTxContext;
 use crate::impls::transaction::component::CosmosTxComponents;

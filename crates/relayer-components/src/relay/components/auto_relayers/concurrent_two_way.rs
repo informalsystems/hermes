@@ -4,7 +4,7 @@ use core::pin::Pin;
 use async_trait::async_trait;
 use futures_util::stream::{self, StreamExt};
 
-use crate::relay::traits::auto_relayer::{AutoRelayer, CanAutoRelay};
+use crate::relay::traits::components::auto_relayer::{AutoRelayer, CanAutoRelay};
 use crate::relay::traits::two_way::HasTwoWayRelay;
 use crate::std_prelude::*;
 

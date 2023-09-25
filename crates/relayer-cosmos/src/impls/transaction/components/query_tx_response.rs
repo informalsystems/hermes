@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use ibc_relayer::chain::cosmos::query::tx::query_tx_response;
-use ibc_relayer_components::transaction::traits::response::query::TxResponseQuerier;
+use ibc_relayer_components::transaction::traits::components::tx_response_querier::TxResponseQuerier;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 

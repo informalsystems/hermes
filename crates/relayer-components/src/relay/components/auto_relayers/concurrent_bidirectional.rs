@@ -5,8 +5,8 @@ use core::pin::Pin;
 use async_trait::async_trait;
 use futures_util::stream::{self, StreamExt};
 
-use crate::relay::traits::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
 use crate::relay::traits::chains::HasRelayChains;
+use crate::relay::traits::components::auto_relayer::{AutoRelayer, AutoRelayerWithTarget};
 use crate::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 

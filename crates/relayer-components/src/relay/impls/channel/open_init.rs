@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
+use crate::chain::traits::components::message_sender::CanSendSingleMessage;
 use crate::chain::traits::message_builders::channel::{
     CanBuildChannelHandshakeMessages, CanBuildChannelHandshakePayloads,
 };
-use crate::chain::traits::message_sender::CanSendSingleMessage;
 use crate::chain::traits::types::channel::HasInitChannelOptionsType;
 use crate::chain::traits::types::ibc_events::channel::HasChannelOpenInitEvent;
 use crate::relay::traits::chains::HasRelayChains;

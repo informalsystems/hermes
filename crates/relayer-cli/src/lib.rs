@@ -33,6 +33,7 @@ pub mod config;
 pub mod entry;
 pub mod error;
 pub mod prelude;
+pub mod tracing_handle;
 
 #[cfg(feature = "experimental")]
 pub mod next;

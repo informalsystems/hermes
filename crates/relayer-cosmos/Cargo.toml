@@ -19,7 +19,7 @@ all-features = true
 default   = ["flex-error/std", "flex-error/eyre_tracer"]
 
 [dependencies]
-ibc-proto         = { version = "0.32.1" }
+ibc-proto         = { version = "0.34.0" }
 ibc-relayer       = { version = "0.25.0", path = "../relayer" }
 ibc-relayer-types = { version = "0.25.0", path = "../relayer-types" }
 ibc-telemetry     = { version = "0.25.0", path = "../telemetry" }
@@ -43,10 +43,10 @@ tonic = { version = "0.9", features = ["tls", "tls-roots"] }
 moka = { version = "0.10", features = ["future"] }
 
 [dependencies.tendermint]
-version = "=0.32.0"
+version = "=0.33.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.32.0"
+version = "=0.33.0"
 features = ["http-client", "websocket-client"]
 

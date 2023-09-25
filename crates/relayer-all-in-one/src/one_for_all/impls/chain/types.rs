@@ -1,3 +1,4 @@
+use ibc_relayer_components::chain::traits::components::packet_fields_reader::PacketFieldsReader;
 use ibc_relayer_components::chain::traits::types::chain_id::{HasChainId, HasChainIdType};
 use ibc_relayer_components::chain::traits::types::event::HasEventType;
 use ibc_relayer_components::chain::traits::types::height::{CanIncrementHeight, HasHeightType};
@@ -11,25 +12,15 @@ use ibc_relayer_components::chain::traits::types::ibc_events::write_ack::{
 use ibc_relayer_components::chain::traits::types::message::{
     CanEstimateMessageSize, HasMessageType,
 };
-use ibc_relayer_components::chain::traits::types::packet::{HasIbcPacketFields, HasIbcPacketTypes};
+use ibc_relayer_components::chain::traits::types::packet::HasIbcPacketTypes;
 use ibc_relayer_components::chain::traits::types::timestamp::HasTimestampType;
-use ibc_relayer_components::core::traits::component::DelegateComponent;
 use ibc_relayer_components::core::traits::error::HasErrorType;
-use ibc_relayer_components::core::traits::sync::Async;
 use ibc_relayer_components::runtime::traits::runtime::HasRuntime;
-use ibc_relayer_components_extra::components::extra::chain::ExtraChainComponents;
 
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use crate::one_for_all::types::chain::OfaChainWrapper;
 use crate::one_for_all::types::component::OfaComponents;
 use crate::std_prelude::*;
-
-impl<Chain, Name> DelegateComponent<Name> for OfaChainWrapper<Chain>
-where
-    Chain: Async,
-{
-    type Delegate = ExtraChainComponents<OfaComponents>;
-}
 
 impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
     type Runtime = Chain::Runtime;
@@ -121,68 +112,68 @@ where
     type OutgoingPacket = Chain::OutgoingPacket;
 }
 
-impl<Chain, Counterparty> HasIbcPacketFields<OfaChainWrapper<Counterparty>>
-    for OfaChainWrapper<Chain>
+impl<Chain, Counterparty> PacketFieldsReader<OfaChainWrapper<Chain>, OfaChainWrapper<Counterparty>>
+    for OfaComponents
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaChainTypes,
 {
-    fn incoming_packet_src_channel_id(packet: &Self::IncomingPacket) -> &Counterparty::ChannelId {
+    fn incoming_packet_src_channel_id(packet: &Chain::IncomingPacket) -> &Counterparty::ChannelId {
         Chain::incoming_packet_src_channel_id(packet)
     }
 
-    fn incoming_packet_dst_channel_id(packet: &Self::IncomingPacket) -> &Self::ChannelId {
+    fn incoming_packet_dst_channel_id(packet: &Chain::IncomingPacket) -> &Chain::ChannelId {
         Chain::incoming_packet_dst_channel_id(packet)
     }
 
-    fn incoming_packet_src_port(packet: &Self::IncomingPacket) -> &Counterparty::PortId {
+    fn incoming_packet_src_port(packet: &Chain::IncomingPacket) -> &Counterparty::PortId {
         Chain::incoming_packet_src_port(packet)
     }
 
-    fn incoming_packet_dst_port(packet: &Self::IncomingPacket) -> &Self::PortId {
+    fn incoming_packet_dst_port(packet: &Chain::IncomingPacket) -> &Chain::PortId {
         Chain::incoming_packet_dst_port(packet)
     }
 
-    fn incoming_packet_sequence(packet: &Self::IncomingPacket) -> &Counterparty::Sequence {
+    fn incoming_packet_sequence(packet: &Chain::IncomingPacket) -> &Counterparty::Sequence {
         Chain::incoming_packet_sequence(packet)
     }
 
-    fn incoming_packet_timeout_height(packet: &Self::IncomingPacket) -> Option<&Self::Height> {
+    fn incoming_packet_timeout_height(packet: &Chain::IncomingPacket) -> Option<&Chain::Height> {
         Chain::incoming_packet_timeout_height(packet)
     }
 
-    fn incoming_packet_timeout_timestamp(packet: &Self::IncomingPacket) -> &Self::Timestamp {
+    fn incoming_packet_timeout_timestamp(packet: &Chain::IncomingPacket) -> &Chain::Timestamp {
         Chain::incoming_packet_timeout_timestamp(packet)
     }
 
-    fn outgoing_packet_src_channel_id(packet: &Self::OutgoingPacket) -> &Self::ChannelId {
+    fn outgoing_packet_src_channel_id(packet: &Chain::OutgoingPacket) -> &Chain::ChannelId {
         Chain::outgoing_packet_src_channel_id(packet)
     }
 
-    fn outgoing_packet_dst_channel_id(packet: &Self::OutgoingPacket) -> &Counterparty::ChannelId {
+    fn outgoing_packet_dst_channel_id(packet: &Chain::OutgoingPacket) -> &Counterparty::ChannelId {
         Chain::outgoing_packet_dst_channel_id(packet)
     }
 
-    fn outgoing_packet_src_port(packet: &Self::OutgoingPacket) -> &Self::PortId {
+    fn outgoing_packet_src_port(packet: &Chain::OutgoingPacket) -> &Chain::PortId {
         Chain::outgoing_packet_src_port(packet)
     }
 
-    fn outgoing_packet_dst_port(packet: &Self::OutgoingPacket) -> &Counterparty::PortId {
+    fn outgoing_packet_dst_port(packet: &Chain::OutgoingPacket) -> &Counterparty::PortId {
         Chain::outgoing_packet_dst_port(packet)
     }
 
-    fn outgoing_packet_sequence(packet: &Self::OutgoingPacket) -> &Self::Sequence {
+    fn outgoing_packet_sequence(packet: &Chain::OutgoingPacket) -> &Chain::Sequence {
         Chain::outgoing_packet_sequence(packet)
     }
 
     fn outgoing_packet_timeout_height(
-        packet: &Self::OutgoingPacket,
+        packet: &Chain::OutgoingPacket,
     ) -> Option<&Counterparty::Height> {
         Chain::outgoing_packet_timeout_height(packet)
     }
 
     fn outgoing_packet_timeout_timestamp(
-        packet: &Self::OutgoingPacket,
+        packet: &Chain::OutgoingPacket,
     ) -> &Counterparty::Timestamp {
         Chain::outgoing_packet_timeout_timestamp(packet)
     }

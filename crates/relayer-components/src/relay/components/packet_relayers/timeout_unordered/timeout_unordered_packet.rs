@@ -6,8 +6,8 @@ use crate::chain::traits::message_builders::timeout_unordered_packet::{
 };
 use crate::chain::types::aliases::Height;
 use crate::relay::traits::chains::HasRelayChains;
-use crate::relay::traits::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
-use crate::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
+use crate::relay::traits::components::ibc_message_sender::{CanSendSingleIbcMessage, MainSink};
+use crate::relay::traits::components::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use crate::relay::traits::target::SourceTarget;
 use crate::relay::types::aliases::Packet;
 use crate::std_prelude::*;

@@ -17,7 +17,7 @@ all-features = true
 default   = ["flex-error/std", "flex-error/eyre_tracer"]
 
 [dependencies]
-ibc-proto         = { version = "0.32.1" }
+ibc-proto         = { version = "0.34.0" }
 ibc-relayer       = { version = "0.25.0", path = "../relayer" }
 ibc-relayer-types = { version = "0.25.0", path = "../relayer-types" }
 ibc-relayer-cosmos = { version = "0.25.0", path = "../relayer-cosmos" }
@@ -43,9 +43,9 @@ crypto-hash = "0.3.4"
 bytes = { version = "1.4.0" }
 
 [dependencies.tendermint]
-version = "=0.32.0"
+version = "=0.33.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.32.0"
+version = "=0.33.0"
 features = ["http-client", "websocket-client"]

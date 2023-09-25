@@ -20,8 +20,8 @@ ibc-relayer-cosmos = { version = "=0.25.0",      path = "../../crates/relayer-co
 ibc-relayer-cli   = { version = "=1.6.0",      path = "../../crates/relayer-cli" }
 ibc-relayer-all-in-one   = { version = "=0.1.0",      path = "../../crates/relayer-all-in-one" }
 ibc-relayer-components = { version = "=0.1.0",      path = "../../crates/relayer-components" }
-ibc-proto         = { version = "0.32.1" }
-tendermint-rpc    = { version = "0.32.0", features = ["http-client", "websocket-client"] }
+ibc-proto         = { version = "0.34.0", features = ["serde"] }
+tendermint-rpc    = { version = "0.33.0", features = ["http-client", "websocket-client"] }
 
 http = "0.2.9"
 tokio = { version = "1.0", features = ["full"] }

@@ -11,7 +11,7 @@ use async_trait::async_trait;
 
 use crate::core::traits::error::InjectError;
 use crate::std_prelude::*;
-use crate::transaction::traits::encode::TxEncoder;
+use crate::transaction::traits::components::tx_encoder::TxEncoder;
 use crate::transaction::traits::types::HasTxTypes;
 
 pub struct MaxTxSizeExceededError {

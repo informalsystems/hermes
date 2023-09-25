@@ -3,7 +3,7 @@ use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx};
 use ibc_relayer::chain::cosmos::gas::gas_amount_to_fee;
 use ibc_relayer::chain::cosmos::simulate::send_tx_simulate;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
-use ibc_relayer_components::transaction::traits::estimate::TxFeeEstimator;
+use ibc_relayer_components::transaction::traits::components::tx_fee_estimater::TxFeeEstimator;
 
 use crate::contexts::transaction::CosmosTxContext;
 use crate::impls::transaction::component::CosmosTxComponents;

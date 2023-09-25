@@ -65,6 +65,7 @@ impl CosmosMessage for CosmosConnectionOpenTryMessage {
             consensus_height: Some(self.proof_consensus.height().into()),
             signer: signer.to_string(),
             previous_connection_id: "".to_string(),
+            host_consensus_state_proof: Vec::new(),
         };
 
         encode_to_any(TYPE_URL, &proto_message)

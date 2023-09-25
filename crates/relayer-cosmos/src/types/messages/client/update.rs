@@ -19,7 +19,7 @@ impl CosmosMessage for CosmosUpdateClientMessage {
     fn encode_protobuf(&self, signer: &Signer) -> Result<Any, EncodeError> {
         let proto_message = ProtoMsgUpdateClient {
             client_id: self.client_id.to_string(),
-            header: Some(self.header.clone()),
+            client_message: Some(self.header.clone()),
             signer: signer.to_string(),
         };
 

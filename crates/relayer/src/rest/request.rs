@@ -36,4 +36,9 @@ pub enum Request {
         chain_id: ChainId,
         reply_to: ReplySender<ChainConfig>,
     },
+
+    ClearPackets {
+        chain_id: Option<ChainId>,
+        reply_to: ReplySender<()>,
+    },
 }

@@ -2,7 +2,7 @@ use core::time::Duration;
 
 use async_trait::async_trait;
 
-use crate::chain::traits::queries::status::CanQueryChainHeight;
+use crate::chain::traits::components::chain_status_querier::CanQueryChainHeight;
 use crate::chain::traits::types::height::HasHeightType;
 use crate::core::traits::error::HasErrorType;
 use crate::runtime::traits::runtime::HasRuntime;

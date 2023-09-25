@@ -1,6 +1,6 @@
 //! Definition of the application, based on the Abscissa framework
 
-use std::path::PathBuf;
+use std::{path::PathBuf, thread};
 
 use abscissa_core::{
     application::{self, AppCell},
@@ -10,12 +10,17 @@ use abscissa_core::{
     terminal::ColorChoice,
     Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
 };
-use ibc_relayer::{config::Config, util::debug_section::DebugSection};
+use ibc_relayer::{
+    config::{Config, TracingServerConfig},
+    util::debug_section::DebugSection,
+};
 
 use crate::{
+    commands::CliCmd,
     components::{JsonTracing, PrettyTracing},
     config::validate_config,
     entry::EntryPoint,
+    tracing_handle::{spawn_reload_handler, ReloadHandle},
 };
 
 /// Application state
@@ -195,13 +200,24 @@ impl Application for CliApp {
         let enable_json = self.debug_enabled(DebugSection::ProfilingJson);
         ibc_relayer::util::profiling::enable(enable_console, enable_json);
 
+        let is_start_cmd = command
+            .command
+            .as_ref()
+            .map_or(false, |cmd| matches!(cmd, CliCmd::Start(_)));
+
         if command.json {
             // Enable JSON by using the crate-level `Tracing`
             let tracing = JsonTracing::new(config.global, &self.debug_sections)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
             // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
-            let tracing = PrettyTracing::new(config.global, &self.debug_sections)?;
+            let (tracing, reload_handle) =
+                PrettyTracing::new_with_reload_handle(config.global, &self.debug_sections)?;
+
+            if is_start_cmd {
+                spawn_tracing_reload_server(reload_handle, config.tracing_server.clone());
+            }
+
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
     }
@@ -211,4 +227,22 @@ impl Application for CliApp {
     fn term_colors(&self, _command: &Self::Cmd) -> ColorChoice {
         ColorChoice::Never
     }
+}
+
+fn spawn_tracing_reload_server<S: 'static>(
+    reload_handle: ReloadHandle<S>,
+    config: TracingServerConfig,
+) {
+    thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
+        let result = rt.block_on(spawn_reload_handler(reload_handle, config));
+
+        if let Err(e) = result {
+            eprintln!("ERROR: failed to spawn tracing reload handler: {e}");
+        }
+    });
 }
