@@ -83,7 +83,6 @@ pub async fn build_connection_open_try_payload<Chain: ChainHandle>(
 
             let proof_client = proofs
                 .client_proof()
-                .clone()
                 .ok_or_else(|| BaseError::generic(eyre!("expect non empty client proof")))?
                 .clone();
 
@@ -156,7 +155,6 @@ pub async fn build_connection_open_ack_payload<Chain: ChainHandle>(
 
             let proof_client = proofs
                 .client_proof()
-                .clone()
                 .ok_or_else(|| BaseError::generic(eyre!("expect non empty client proof")))?
                 .clone();
 
