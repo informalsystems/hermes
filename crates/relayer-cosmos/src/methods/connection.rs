@@ -84,11 +84,13 @@ pub async fn build_connection_open_try_payload<Chain: ChainHandle>(
             let proof_client = proofs
                 .client_proof()
                 .clone()
-                .ok_or_else(|| BaseError::generic(eyre!("expect non empty client proof")))?;
+                .ok_or_else(|| BaseError::generic(eyre!("expect non empty client proof")))?
+                .clone();
 
             let proof_consensus = proofs
                 .consensus_proof()
-                .ok_or_else(|| BaseError::generic(eyre!("expect non empty consensus proof")))?;
+                .ok_or_else(|| BaseError::generic(eyre!("expect non empty consensus proof")))?
+                .clone();
 
             let payload = CosmosConnectionOpenTryPayload {
                 commitment_prefix,
@@ -155,11 +157,13 @@ pub async fn build_connection_open_ack_payload<Chain: ChainHandle>(
             let proof_client = proofs
                 .client_proof()
                 .clone()
-                .ok_or_else(|| BaseError::generic(eyre!("expect non empty client proof")))?;
+                .ok_or_else(|| BaseError::generic(eyre!("expect non empty client proof")))?
+                .clone();
 
             let proof_consensus = proofs
                 .consensus_proof()
-                .ok_or_else(|| BaseError::generic(eyre!("expect non empty consensus proof")))?;
+                .ok_or_else(|| BaseError::generic(eyre!("expect non empty consensus proof")))?
+                .clone();
 
             let payload = CosmosConnectionOpenAckPayload {
                 client_state,

@@ -1545,7 +1545,7 @@ dependencies = [
  "flex-error",
  "futures",
  "http",
- "ibc-proto 0.34.0",
+ "ibc-proto",
  "ibc-relayer-types",
  "itertools",
  "reqwest",
@@ -1576,23 +1576,6 @@ dependencies = [
  "time 0.3.24",
  "tokio",
  "toml 0.7.6",
- "tonic",
-]
-
-[[package]]
-name = "ibc-proto"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59d0bc49ee5fc8e5d0e668765d470cb201fd0cdee4166f49c6cbcf3100466137"
-dependencies = [
- "base64 0.21.2",
- "bytes",
- "flex-error",
- "ics23",
- "prost",
- "serde",
- "subtle-encoding",
- "tendermint-proto",
  "tonic",
 ]
 
@@ -1639,7 +1622,7 @@ dependencies = [
  "http",
  "humantime",
  "humantime-serde",
- "ibc-proto 0.34.0",
+ "ibc-proto",
  "ibc-relayer-types",
  "ibc-telemetry",
  "itertools",
@@ -1765,7 +1748,7 @@ dependencies = [
  "eyre",
  "flex-error",
  "futures",
- "ibc-proto 0.33.0",
+ "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-all-in-one",
  "ibc-relayer-components",
@@ -1839,7 +1822,7 @@ dependencies = [
  "env_logger",
  "erased-serde",
  "flex-error",
- "ibc-proto 0.34.0",
+ "ibc-proto",
  "ics23",
  "itertools",
  "num-rational",
@@ -1893,7 +1876,7 @@ dependencies = [
  "hdpath",
  "hex",
  "http",
- "ibc-proto 0.34.0",
+ "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-all-in-one",
  "ibc-relayer-cli",
