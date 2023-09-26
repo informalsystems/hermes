@@ -26,7 +26,6 @@ impl ClientSettings {
     ) -> Self {
         match src_chain_config.r#type {
             ChainType::CosmosSdk => {
-                // Self::for_create_command_cosmos(options, src_chain_config, dst_chain_config)
                 // Currently, only Tendermint chain pairs are supported by
                 // ForeignClient::build_create_client_and_send. Support for
                 // heterogeneous chains is left for future revisions.
