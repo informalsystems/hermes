@@ -2264,7 +2264,10 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
         settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
-        let ClientSettings::Tendermint(settings) = settings;
+        let settings = settings.cosmos_setting().ok_or(Error::report_error(
+            "cosmos client setting is empty".to_string(),
+        ))?;
+
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = settings
             .trusting_period

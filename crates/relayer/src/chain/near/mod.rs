@@ -106,6 +106,7 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{debug, info, trace, warn};
 
+pub mod client;
 pub mod constants;
 pub mod contract;
 pub mod error;
@@ -1141,16 +1142,19 @@ impl ChainEndpoint for NearChain {
     fn build_client_state(
         &self,
         height: ICSHeight,
-        dst_config: ClientSettings,
+        settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
         trace!(
             "height: {:?} dst_config: {:?} \n{}",
             height,
-            dst_config,
+            settings,
             std::panic::Location::caller()
         );
 
-        let ClientSettings::Tendermint(settings) = dst_config;
+        let settings = settings.near_setting().ok_or(Error::report_error(
+            "cosmos client setting is empty".to_string(),
+        ))?;
+
         let trusting_period = settings
             .trusting_period
             .unwrap_or(std::time::Duration::from_secs(14 * 24 * 60 * 60));
