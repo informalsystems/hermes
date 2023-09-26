@@ -1,7 +1,13 @@
 #!/bin/bash
 # shellcheck disable=2086,2004
 
-set -eux 
+set -eu
+
+DEBUG=${DEBUG:-false}
+
+if [ "$DEBUG" = true ]; then
+    set -x
+fi
 
 # User balance of stake tokens 
 USER_COINS="100000000000stake"
@@ -13,10 +19,16 @@ NODE_IP="127.0.0.1"
 # Home directory
 HOME_DIR="/tmp/hermes-ics-double-sign"
 
+# Hermes debug
+if [ "$DEBUG" = true ]; then
+    HERMES_DEBUG="--debug=rpc"
+else
+    HERMES_DEBUG=""
+fi
 # Hermes config
 HERMES_CONFIG="$HOME_DIR/hermes.toml"
 # Hermes binary
-HERMES_BIN="cargo run -q --bin hermes -- --config $HERMES_CONFIG"
+HERMES_BIN="cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG"
 
 # Validator moniker
 MONIKERS=("coordinator" "alice" "bob")

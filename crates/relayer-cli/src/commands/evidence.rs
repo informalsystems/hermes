@@ -23,6 +23,7 @@ use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubm
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TendermintHeader;
 use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TendermintMisbehaviour;
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
@@ -128,7 +129,7 @@ fn monitor_misbehaviours(
     // target_height: 1
     // iterations: 200
 
-    debug!(
+    info!(
         "checking past {check_past_blocks} blocks for misbehaviour evidence: {}..{}",
         latest_height, target_height
     );
@@ -195,13 +196,13 @@ fn check_misbehaviour_at(
         match evidence {
             tendermint::evidence::Evidence::DuplicateVote(dv) => {
                 warn!("found duplicate vote evidence");
-                debug!("{dv:#?}");
+                trace!("{dv:#?}");
 
                 handle_duplicate_vote(rt.clone(), chain, key_name, *dv)?;
             }
             tendermint::evidence::Evidence::LightClientAttack(lc) => {
                 warn!("found light client attack evidence");
-                debug!("{lc:#?}");
+                trace!("{lc:#?}");
 
                 handle_light_client_attack(rt.clone(), chain, key_name, *lc)?;
             }
@@ -426,25 +427,36 @@ fn submit_light_client_attack_evidence(
     );
 
     let signer = counterparty.get_signer()?;
-
     let common_height = Height::from_tm(evidence.common_height, chain.id());
+
+    if counterparty_client.is_frozen() {
+        warn!(
+            "skipping client `{}` on chain `{}` as it is already frozen",
+            counterparty_client_id,
+            counterparty.id()
+        );
+
+        return Ok(());
+    }
+
     let mut msgs = match counterparty_client.wait_and_build_update_client(common_height) {
         Ok(msgs) => msgs,
+
         Err(e) => {
             warn!(
-                "failed to build update client message for client `{}` on chain `{}`: {e}",
+                "skipping update client message for client `{}` on chain `{}`",
                 counterparty_client_id,
                 counterparty.id()
             );
+            warn!("reason: failed to build update client message: {e}");
 
-            warn!("skipping update client message");
             vec![]
         }
     };
 
     if is_counterparty_provider(chain, counterparty) {
         info!(
-            "submitting CCV misbehaviour for client `{}` on provider chain `{}`",
+            "will submit CCV misbehaviour for client `{}` on provider chain `{}`",
             counterparty_client_id,
             counterparty.id(),
         );
@@ -459,7 +471,7 @@ fn submit_light_client_attack_evidence(
     };
 
     info!(
-        "submitting IBC misbehaviour for client `{}` on chain `{}`",
+        "will submit IBC misbehaviour for client `{}` on chain `{}`",
         counterparty_client_id,
         counterparty.id(),
     );
@@ -561,17 +573,22 @@ fn fetch_all_counterparty_clients(
         let client_state = match client_state {
             Ok((client_state, _)) => client_state,
             Err(e) => {
-                warn!(
+                error!(
                     "failed to fetch client state for counterparty client {client_id}, skipping..."
                 );
-                warn!("reason: {e}");
+                error!("reason: {e}");
 
                 continue;
             }
         };
 
         let counterparty_chain_id = client_state.chain_id();
-        debug!("found counterparty client with id {client_id} on counterparty chain {counterparty_chain_id}");
+        info!("found counterparty client with id {client_id} on counterparty chain {counterparty_chain_id}");
+
+        if client_state.is_frozen() {
+            info!("counterparty client {client_id} is already frozen, skipping...");
+            continue;
+        }
 
         counterparty_clients.push((counterparty_chain_id, client_id.clone()));
     }
