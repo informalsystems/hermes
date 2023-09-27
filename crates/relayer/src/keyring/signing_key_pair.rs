@@ -3,13 +3,14 @@ use core::any::Any;
 use hdpath::StandardHDPath;
 use serde::{de::DeserializeOwned, Serialize};
 
-use super::{errors::Error, KeyFile, KeyType};
+use super::{errors::Error, KeyType};
 use crate::config::AddressType;
 
 pub trait SigningKeyPair {
     const KEY_TYPE: KeyType;
+    type KeyFile: DeserializeOwned;
 
-    fn from_key_file(key_file: KeyFile, hd_path: &StandardHDPath) -> Result<Self, Error>
+    fn from_key_file(key_file: Self::KeyFile, hd_path: &StandardHDPath) -> Result<Self, Error>
     where
         Self: Sized;
 

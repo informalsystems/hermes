@@ -28,6 +28,7 @@ pub struct Proofs {
     object_proof: CommitmentProofBytes,
     client_proof: Option<CommitmentProofBytes>,
     consensus_proof: Option<ConsensusProof>,
+    host_consensus_state_proof: Option<CommitmentProofBytes>,
     /// Currently used for proof_close for MsgTimeoutOnCLose where object_proof is proof_unreceived
     other_proof: Option<CommitmentProofBytes>,
     /// Height for the commitment root for proving the proofs above.
@@ -40,6 +41,7 @@ impl Proofs {
         object_proof: CommitmentProofBytes,
         client_proof: Option<CommitmentProofBytes>,
         consensus_proof: Option<ConsensusProof>,
+        host_consensus_state_proof: Option<CommitmentProofBytes>,
         other_proof: Option<CommitmentProofBytes>,
         height: Height,
     ) -> Result<Self, ProofError> {
@@ -47,6 +49,7 @@ impl Proofs {
             object_proof,
             client_proof,
             consensus_proof,
+            host_consensus_state_proof,
             other_proof,
             height,
         })
@@ -54,8 +57,14 @@ impl Proofs {
 
     /// Getter for the consensus_proof field of this proof. Intuitively, this is a proof that a
     /// client on the source chain stores a consensus state for the destination chain.
-    pub fn consensus_proof(&self) -> Option<ConsensusProof> {
-        self.consensus_proof.clone()
+    pub fn consensus_proof(&self) -> Option<&ConsensusProof> {
+        self.consensus_proof.as_ref()
+    }
+
+    /// Getter for the host_consensus_state_proof field of this proof.
+    /// This is an optional proof data for host state machines that are unable to introspect their own consensus state.
+    pub fn host_consensus_state_proof(&self) -> Option<&CommitmentProofBytes> {
+        self.host_consensus_state_proof.as_ref()
     }
 
     /// Getter for the height field of this proof (i.e., the consensus height where this proof was
@@ -70,13 +79,13 @@ impl Proofs {
     }
 
     /// Getter for the client_proof.
-    pub fn client_proof(&self) -> &Option<CommitmentProofBytes> {
-        &self.client_proof
+    pub fn client_proof(&self) -> Option<&CommitmentProofBytes> {
+        self.client_proof.as_ref()
     }
 
     /// Getter for the other_proof.
-    pub fn other_proof(&self) -> &Option<CommitmentProofBytes> {
-        &self.other_proof
+    pub fn other_proof(&self) -> Option<&CommitmentProofBytes> {
+        self.other_proof.as_ref()
     }
 }
 

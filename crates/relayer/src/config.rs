@@ -252,6 +252,8 @@ pub struct Config {
     pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
+    #[serde(default)]
+    pub tracing_server: TracingServerConfig,
 }
 
 impl Config {
@@ -708,6 +710,21 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
     writeln!(writer, "{toml_config}").map_err(Error::io)?;
 
     Ok(())
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct TracingServerConfig {
+    pub enabled: bool,
+    pub port: u16,
+}
+
+impl Default for TracingServerConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            port: 5555,
+        }
+    }
 }
 
 #[cfg(test)]

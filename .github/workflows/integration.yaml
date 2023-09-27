@@ -45,10 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia8
-            command: gaiad
-            account_prefix: cosmos
-          - package: gaia9
+          - package: gaia11
             command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v4-simapp
@@ -80,7 +77,7 @@ jobs:
             account_prefix: juno
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -117,7 +114,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -161,7 +158,7 @@ jobs:
             command: simd
             account_prefix: cosmos
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -213,7 +210,7 @@ jobs:
             command: migalood
             account_prefix: migaloo
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -252,17 +249,14 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia8
-            command: gaiad
-            account_prefix: cosmos
-          - package: gaia9
+          - package: gaia11
             command: gaiad
             account_prefix: cosmos
           - package: juno
             command: junod
             account_prefix: juno
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -301,11 +295,11 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia8 .#stride-no-admin
+          - package: .#gaia11 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -350,7 +344,7 @@ jobs:
             command: evmosd
             account_prefix: evmos
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -388,11 +382,11 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia9
+          - package: gaia11
             command: gaiad
             account_prefix: cosmos
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -435,7 +429,7 @@ jobs:
             command: neutrond
             account_prefix: neutron
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -457,14 +451,14 @@ jobs:
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
-          RUST_LOG: info
+          RUST_LOG: trace
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#gaia9 .#${{ matrix.chain.package }} -c \
+          nix shell .#gaia11 .#${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security interchain_security::
 
@@ -478,7 +472,7 @@ jobs:
             command: strided
             account_prefix: stride
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -507,7 +501,7 @@ jobs:
           CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#gaia9 .#${{ matrix.chain.package }} -c \
+          nix shell .#gaia11 .#${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security,ica interchain_security::
 
@@ -521,7 +515,7 @@ jobs:
             command: strided
             account_prefix: stride
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
@@ -549,7 +543,7 @@ jobs:
           CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#gaia9 .#${{ matrix.chain.package }} -c \
+          nix shell .#gaia11 .#${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security,ics31 interchain_security::
 
@@ -561,7 +555,7 @@ jobs:
         gaiad:
           - gaia6
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install

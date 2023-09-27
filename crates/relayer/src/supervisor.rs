@@ -714,14 +714,35 @@ fn handle_rest_requests<Chain: ChainHandle>(
 fn handle_rest_cmd<Chain: ChainHandle>(
     registry: &Registry<Chain>,
     workers: &WorkerMap,
-    m: rest::Command,
+    cmd: rest::Command,
 ) {
-    match m {
+    match cmd {
         rest::Command::DumpState(reply) => {
             let state = state(registry, workers);
             reply
                 .send(Ok(state))
-                .unwrap_or_else(|e| error!("error replying to a REST request {}", e));
+                .unwrap_or_else(|e| error!("error replying to a REST request {e}"));
+        }
+
+        rest::Command::ClearPackets(chain_id, reply) => {
+            if let Some(chain_id) = chain_id {
+                info!("clearing packets for chain {chain_id} after REST request");
+
+                clear_pending_packets(workers, &chain_id)
+                    .unwrap_or_else(|e| error!("error clearing packets for chain {chain_id}: {e}"));
+            } else {
+                for chain_id in registry.chains().map(|c| c.id()) {
+                    info!("clearing packets for chain {chain_id} after REST request");
+
+                    clear_pending_packets(workers, &chain_id).unwrap_or_else(|e| {
+                        error!("error clearing packets for chain {chain_id}: {e}")
+                    });
+                }
+            }
+
+            reply
+                .send(Ok(()))
+                .unwrap_or_else(|e| error!("error replying to a REST request {e}"));
         }
     }
 }
@@ -732,7 +753,7 @@ fn handle_rest_cmd<Chain: ChainHandle>(
     skip_all,
     fields(chain = %chain_id)
 )]
-fn clear_pending_packets(workers: &mut WorkerMap, chain_id: &ChainId) -> Result<(), Error> {
+fn clear_pending_packets(workers: &WorkerMap, chain_id: &ChainId) -> Result<(), Error> {
     for worker in workers.workers_for_chain(chain_id) {
         worker.clear_pending_packets();
     }

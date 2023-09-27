@@ -62,6 +62,7 @@ impl TryFrom<RawMsgTimeoutOnClose> for MsgTimeoutOnClose {
                 .map_err(Error::invalid_proof)?,
             None,
             None,
+            None,
             Some(
                 raw_msg
                     .proof_close
@@ -97,8 +98,7 @@ impl From<MsgTimeoutOnClose> for RawMsgTimeoutOnClose {
             proof_close: domain_msg
                 .proofs
                 .other_proof()
-                .clone()
-                .map_or_else(Vec::new, |v| v.into()),
+                .map_or_else(Vec::new, |v| v.to_bytes()),
             proof_height: Some(domain_msg.proofs.height().into()),
             next_sequence_recv: domain_msg.next_sequence_recv.into(),
             signer: domain_msg.signer.to_string(),
