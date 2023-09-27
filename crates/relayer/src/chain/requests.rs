@@ -372,7 +372,7 @@ impl From<QueryPacketAcknowledgementsRequest> for RawQueryPacketAcknowledgements
     }
 }
 
-/// gRPC query to fetch the unreceived acknowledgements sequences associated with 
+/// gRPC query to fetch the unreceived acknowledgements sequences associated with
 /// the specified channel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUnreceivedAcksRequest {
