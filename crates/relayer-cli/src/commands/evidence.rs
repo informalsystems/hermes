@@ -303,29 +303,8 @@ fn handle_duplicate_vote(
         };
 
         // Construct the light client block header for the consumer chain at the infraction height
-        let infraction_block_header = {
-            let trusted_validator_set = rt
-                .block_on(chain.rpc_client.validators(trusted_height, Paging::All))?
-                .validators;
-
-            let signed_header = rt
-                .block_on(chain.rpc_client.commit(infraction_height))?
-                .signed_header;
-
-            let validators = rt
-                .block_on(chain.rpc_client.validators(infraction_height, Paging::All))?
-                .validators;
-
-            let validator_set =
-                validator::Set::with_proposer(validators, signed_header.header.proposer_address)?;
-
-            TendermintHeader {
-                signed_header,
-                validator_set,
-                trusted_height,
-                trusted_validator_set: validator::Set::new(trusted_validator_set, None),
-            }
-        };
+        let infraction_block_header =
+            fetch_infraction_block_header(&rt, chain, infraction_height, trusted_height)?;
 
         let submit_msg = MsgSubmitIcsConsumerDoubleVoting {
             submitter: signer.clone(),
@@ -356,6 +335,42 @@ fn handle_duplicate_vote(
     }
 
     Ok(())
+}
+
+fn fetch_infraction_block_header(
+    rt: &Arc<TokioRuntime>,
+    chain: &CosmosSdkChain,
+    infraction_height: TendermintHeight,
+    trusted_height: Height,
+) -> Result<TendermintHeader, eyre::Error> {
+    let signed_header = rt
+        .block_on(chain.rpc_client.commit(infraction_height))?
+        .signed_header;
+
+    let validators = rt
+        .block_on(chain.rpc_client.validators(infraction_height, Paging::All))?
+        .validators;
+
+    let validator_set =
+        validator::Set::with_proposer(validators, signed_header.header.proposer_address)?;
+
+    let trusted_header = rt
+        .block_on(chain.rpc_client.commit(trusted_height))?
+        .signed_header;
+
+    let trusted_validators = rt
+        .block_on(chain.rpc_client.validators(trusted_height, Paging::All))?
+        .validators;
+
+    let trusted_validator_set =
+        validator::Set::with_proposer(trusted_validators, trusted_header.header.proposer_address)?;
+
+    Ok(TendermintHeader {
+        signed_header,
+        validator_set,
+        trusted_height,
+        trusted_validator_set,
+    })
 }
 
 fn handle_light_client_attack(
