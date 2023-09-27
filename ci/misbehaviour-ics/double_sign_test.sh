@@ -444,9 +444,6 @@ interchain-security-cd start \
     --p2p.laddr tcp://${NODE_IP}:29189 \
     --grpc-web.enable=false &> $CONS_NODES_ROOT_DIR/consumer-bob-sybil/logs &
 
-sleep 6
-
-
 # Setup Hermes config file
 
 tee $HERMES_CONFIG<<EOF
@@ -525,8 +522,6 @@ $HERMES_BIN keys add --key-name evidence --key-file ${HERMES_PROV_NODE_DIR}/${HE
 $HERMES_BIN keys add --key-name relayer  --key-file ${HERMES_CONS_NODE_DIR}/${HERMES_KEY}.json  --chain consumer
 $HERMES_BIN keys add --key-name evidence --key-file ${HERMES_CONS_NODE_DIR}/${HERMES_KEY2}.json --chain consumer
 
-sleep 5
-
 $HERMES_BIN create connection \
      --a-chain consumer \
     --a-client 07-tendermint-0 \
@@ -539,8 +534,6 @@ $HERMES_BIN create channel \
     --order ordered \
     --channel-version 1 \
     --a-connection connection-0
-
-sleep 5
 
 $HERMES_BIN start &> $HOME_DIR/hermes-start-logs.txt &
 
