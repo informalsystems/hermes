@@ -1,6 +1,6 @@
-use alloc::sync::Arc;
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
@@ -14,7 +14,7 @@ use tendermint_rpc::{Client, Paging};
 use ibc_relayer::chain::cosmos::CosmosSdkChain;
 use ibc_relayer::chain::endpoint::ChainEndpoint;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
-use ibc_relayer::chain::requests::{IncludeProof, QueryHeight};
+use ibc_relayer::chain::requests::{IncludeProof, PageRequest, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::chain::ChainType;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -218,6 +218,8 @@ fn handle_duplicate_vote(
     key_name: Option<&String>,
     dv: DuplicateVoteEvidence,
 ) -> eyre::Result<()> {
+    use ibc_relayer::chain::requests::QueryConsensusStateHeightsRequest;
+
     let config = app_config();
 
     // Fetch all the counterparty clients of this chain.
@@ -227,7 +229,7 @@ fn handle_duplicate_vote(
 
     // For each counterparty client, build the double voting evidence and submit it to the chain,
     // freezing that client.
-    for (counterparty_chain_id, _counterparty_client_id) in counterparty_clients {
+    for (counterparty_chain_id, counterparty_client_id) in counterparty_clients {
         if !chains.contains_key(&counterparty_chain_id) {
             let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
                 &config,
@@ -273,14 +275,37 @@ fn handle_duplicate_vote(
             continue;
         }
 
-        info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
+        let infraction_height = dv.vote_a.height;
+
+        // Get the trusted height in the same way we do for client updates,
+        // ie. retrieve the consensus state at the highest height smaller than the infraction height.
+        //
+        // Note: The consensus state heights are sorted in increasing order.
+        let consensus_state_heights =
+            chain.query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+                client_id: counterparty_client_id.clone(),
+                pagination: Some(PageRequest::all()),
+            })?;
+
+        // Retrieve the consensus state at the highest height smaller than the infraction height.
+        let consensus_state_height_before_infraction_height = consensus_state_heights
+            .into_iter()
+            .filter(|height| height.revision_height() < infraction_height.value())
+            .last();
+
+        let Some(trusted_height) = consensus_state_height_before_infraction_height else {
+            error!(
+                "cannot build infraction block header for client {counterparty_client_id} on chain {counterparty_chain_id},\
+                reason: could not find consensus state at highest height smaller than infraction height {infraction_height}"
+            );
+
+            continue;
+        };
 
         // Construct the light client block header for the consumer chain at the infraction height
         let infraction_block_header = {
-            let infraction_height = dv.vote_a.height;
-
             let trusted_validator_set = rt
-                .block_on(chain.rpc_client.validators(infraction_height, Paging::All))?
+                .block_on(chain.rpc_client.validators(trusted_height, Paging::All))?
                 .validators;
 
             let signed_header = rt
@@ -297,7 +322,7 @@ fn handle_duplicate_vote(
             TendermintHeader {
                 signed_header,
                 validator_set,
-                trusted_height: Height::from_tm(infraction_height, chain.id()),
+                trusted_height,
                 trusted_validator_set: validator::Set::new(trusted_validator_set, None),
             }
         };
@@ -308,6 +333,8 @@ fn handle_duplicate_vote(
             infraction_block_header,
         }
         .to_any();
+
+        info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
 
         let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "submit_double_voting");
         let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
@@ -543,7 +570,6 @@ fn is_counterparty_provider(
 fn fetch_all_counterparty_clients(
     chain: &CosmosSdkChain,
 ) -> eyre::Result<Vec<(ChainId, ClientId)>> {
-    use ibc_relayer::chain::requests::PageRequest;
     use ibc_relayer::chain::requests::{QueryClientStateRequest, QueryConnectionsRequest};
 
     let connections = chain.query_connections(QueryConnectionsRequest {
