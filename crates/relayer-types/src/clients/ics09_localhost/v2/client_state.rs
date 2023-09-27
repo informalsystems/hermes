@@ -5,7 +5,6 @@ use prost::Message;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics02_client::client_state::ClientState as Ics02ClientState;
@@ -16,17 +15,7 @@ use crate::Height;
 
 use super::error::Error;
 
-// use ibc_proto::ibc::lightclients::localhost::v2::ClientState as RawClientState;
-
-/// ClientState defines the 09-localhost client state
-#[derive(Serialize, Deserialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RawClientState {
-    /// the latest block height
-    #[prost(message, optional, tag = "1")]
-    pub latest_height: ::core::option::Option<RawHeight>,
-}
+pub use ibc_proto::ibc::lightclients::localhost::v2::ClientState as RawClientState;
 
 pub const LOCALHOST_V2_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.localhost.v2.ClientState";
 
