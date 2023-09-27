@@ -57,6 +57,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
             None,
             None,
             None,
+            None,
             raw_msg
                 .proof_height
                 .and_then(|raw_height| raw_height.try_into().ok())

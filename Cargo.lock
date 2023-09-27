@@ -1446,8 +1446,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.33.0"
-source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=ccv-protos#e2886f39fc28923584a9e408eb0d355f1f1b9f22"
+version = "0.34.1"
 dependencies = [
  "base64 0.21.4",
  "bytes",

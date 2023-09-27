@@ -43,10 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia8
-            command: gaiad
-            account_prefix: cosmos
-          - package: gaia9
+          - package: gaia11
             command: gaiad
             account_prefix: cosmos
     steps:

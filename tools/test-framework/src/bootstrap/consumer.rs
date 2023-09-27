@@ -54,7 +54,7 @@ pub fn bootstrap_consumer_node(
     chain_driver.add_genesis_account(&user2.address, &[&initial_stake, &initial_coin])?;
 
     // Wait for the consumer chain to be initialized before querying the genesis
-    thread::sleep(Duration::from_secs(15));
+    thread::sleep(Duration::from_secs(30));
 
     node_a
         .chain_driver
