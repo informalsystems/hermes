@@ -29,28 +29,55 @@ port = 3001
 id = 'ibc-0'
 rpc_addr = 'http://localhost:27030'
 grpc_addr = 'http://localhost:27032'
-event_source = { mode = 'push', url = 'ws://localhost:27030/websocket', batch_delay = '500ms' }
+event_source = { mode = 'push', url = 'ws://localhost:27030/websocket', batch_delay = '200ms' }
 rpc_timeout = '15s'
+trusted_node = true
 account_prefix = 'cosmos'
 key_name = 'wallet'
 store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
+gas_price = { price = 0.001, denom = 'stake' }
+gas_multiplier = 1.1
+default_gas = 1000000
 max_gas = 10000000
+max_msg_num = 30
+max_tx_size = 2097152
 clock_drift = '5s'
+max_block_time = '30s'
 trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+trust_threshold = { numerator = '2', denominator = '3' }
+
+# [chains.packet_filter]
+# policy = 'allow'
+# list = [
+#   ['ica*', '*'],
+#   ['transfer', 'channel-0'],
+# ]
 
 [[chains]]
 id = 'ibc-1'
 rpc_addr = 'http://localhost:27040'
 grpc_addr = 'http://localhost:27042'
-event_source = { mode = 'push', url = 'ws://localhost:27040/websocket', batch_delay = '500ms' }
+event_source = { mode = 'push', url = 'ws://localhost:27040/websocket', batch_delay = '200ms' }
 rpc_timeout = '15s'
+trusted_node = true
 account_prefix = 'cosmos'
 key_name = 'wallet'
 store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
+gas_price = { price = 0.001, denom = 'stake' }
+gas_multiplier = 1.1
+default_gas = 1000000
 max_gas = 10000000
+max_msg_num = 30
+max_tx_size = 2097152
 clock_drift = '5s'
+max_block_time = '30s'
 trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+trust_threshold = { numerator = '2', denominator = '3' }
+
+# [chains.packet_filter]
+# policy = 'allow'
+# list = [
+#   ['ica*', '*'],
+#   ['transfer', 'channel-0'],
+# ]
+
