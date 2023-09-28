@@ -63,7 +63,17 @@ pub struct EvidenceCmd {
 impl Runnable for EvidenceCmd {
     fn run(&self) {
         let config = app_config();
-        let mut chain_config = config.find_chain(&self.chain_id).cloned().unwrap();
+
+        let mut chain_config = config
+            .find_chain(&self.chain_id)
+            .cloned()
+            .unwrap_or_else(|| {
+                Output::error(format!(
+                    "chain '{}' not found in configuration",
+                    self.chain_id
+                ))
+                .exit()
+            });
 
         if chain_config.r#type != ChainType::CosmosSdk {
             Output::error(format!("Chain {} is not a Cosmos SDK chain", self.chain_id)).exit();
