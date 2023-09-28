@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
+use std::thread::sleep;
+use std::time::Duration;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
@@ -145,6 +147,7 @@ fn monitor_misbehaviours(
     );
 
     let mut height = latest_height;
+
     while height >= target_height {
         debug!("checking for evidence at height {height}");
 
@@ -157,6 +160,8 @@ fn monitor_misbehaviours(
         }
 
         height = height.decrement().unwrap();
+
+        sleep(Duration::from_millis(100));
     }
 
     info!("waiting for new blocks...");
