@@ -302,14 +302,14 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     }
 
     pub fn scan_chain(&mut self, chain_config: &ChainConfig) -> Result<ChainScan, Error> {
-        let span = error_span!("scan.chain", chain = %chain_config.id);
+        let span = error_span!("scan.chain", chain = %chain_config.id());
         let _guard = span.enter();
 
         info!("scanning chain...");
 
-        telemetry!(init_per_chain, &chain_config.id);
+        telemetry!(init_per_chain, &chain_config.id());
 
-        let chain = match self.registry.get_or_spawn(&chain_config.id) {
+        let chain = match self.registry.get_or_spawn(&chain_config.id()) {
             Ok(chain_handle) => chain_handle,
             Err(e) => {
                 error!(
@@ -321,7 +321,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
             }
         };
 
-        let mut scan = ChainScan::new(chain_config.id.clone());
+        let mut scan = ChainScan::new(chain_config.id().clone());
 
         match self.use_allow_list(chain_config) {
             Some(spec) if self.scan_mode == ScanMode::Auto => {
@@ -589,7 +589,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
             return None;
         }
 
-        match chain_config.packet_filter.channel_policy {
+        match chain_config.packet_filter().channel_policy {
             ChannelPolicy::Allow(ref filters) if filters.is_exact() => Some(filters),
             _ => None,
         }

@@ -132,12 +132,14 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     let link = Arc::new(Mutex::new(link));
                     let resubmit = Resubmit::from_clear_interval(packets_config.clear_interval);
 
-                    let src_chain_config =
-                        config.chains.iter().find(|chain| chain.id == chains.a.id());
+                    let src_chain_config = config
+                        .chains
+                        .iter()
+                        .find(|chain| *chain.id() == chains.a.id());
 
                     let fee_filter = match src_chain_config {
                         Some(chain_config) => chain_config
-                            .packet_filter
+                            .packet_filter()
                             .min_fees
                             .iter()
                             .find(|(channel, _)| channel.matches(&path.src_channel_id))

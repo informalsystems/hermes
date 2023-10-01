@@ -294,7 +294,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .src_chain()
             .config()
             .map_err(LinkError::relayer)?
-            .max_block_time)
+            .max_block_time())
     }
 
     pub(crate) fn dst_max_block_time(&self) -> Result<Duration, LinkError> {
@@ -302,7 +302,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .config()
             .map_err(LinkError::relayer)?
-            .max_block_time)
+            .max_block_time())
     }
 
     fn unordered_channel(&self) -> bool {

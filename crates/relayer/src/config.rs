@@ -31,7 +31,7 @@ use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
-use crate::chain::ChainType;
+//use crate::chain::ChainType;
 use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error as RelayerError;
@@ -150,9 +150,11 @@ impl Display for ExtensionOption {
 pub mod default {
     use super::*;
 
+    /*
     pub fn chain_type() -> ChainType {
         ChainType::CosmosSdk
     }
+     */
 
     pub fn ccv_consumer_chain() -> bool {
         false
@@ -246,15 +248,15 @@ pub struct Config {
 
 impl Config {
     pub fn has_chain(&self, id: &ChainId) -> bool {
-        self.chains.iter().any(|c| c.id == *id)
+        self.chains.iter().any(|c| c.id() == id)
     }
 
     pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
-        self.chains.iter().find(|c| c.id == *id)
+        self.chains.iter().find(|c| c.id() == id)
     }
 
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
-        self.chains.iter_mut().find(|c| c.id == *id)
+        self.chains.iter_mut().find(|c| c.id() == id)
     }
 
     /// Returns true if filtering is disabled or if packets are allowed on
@@ -268,7 +270,7 @@ impl Config {
     ) -> bool {
         match self.find_chain(chain_id) {
             Some(chain_config) => chain_config
-                .packet_filter
+                .packet_filter()
                 .channel_policy
                 .is_allowed(port_id, channel_id),
             None => false,
@@ -276,7 +278,7 @@ impl Config {
     }
 
     pub fn chains_map(&self) -> BTreeMap<&ChainId, &ChainConfig> {
-        self.chains.iter().map(|c| (&c.id, c)).collect()
+        self.chains.iter().map(|c| (c.id(), c)).collect()
     }
 }
 
@@ -556,13 +558,36 @@ pub enum EventSourceMode {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct ChainConfig {
+#[serde(tag = "type")]
+pub enum ChainConfig {
+    CosmosSdk(CosmosSdkConfig),
+}
+
+impl ChainConfig {
+    pub fn id(&self) -> &ChainId {
+        match self {
+            Self::CosmosSdk(config) => &config.id,
+        }
+    }
+
+    pub fn packet_filter(&self) -> &PacketFilter {
+        match self {
+            Self::CosmosSdk(config) => &config.packet_filter,
+        }
+    }
+
+    pub fn max_block_time(&self) -> Duration {
+        match self {
+            Self::CosmosSdk(config) => config.max_block_time,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CosmosSdkConfig {
     /// The chain's network identifier
     pub id: ChainId,
-
-    /// The chain type
-    #[serde(default = "default::chain_type")]
-    pub r#type: ChainType,
 
     /// The RPC URL to connect to
     pub rpc_addr: Url,
