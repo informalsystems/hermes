@@ -1386,7 +1386,7 @@ dependencies = [
  "futures-util",
  "http",
  "hyper",
- "rustls 0.21.5",
+ "rustls 0.21.7",
  "tokio",
  "tokio-rustls 0.24.1",
 ]
@@ -1430,13 +1430,13 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-types",
  "ibc-test-framework",
- "prost",
+ "prost 0.11.9",
  "serde",
  "serde_json",
  "tempfile",
  "time",
  "toml 0.7.6",
- "tonic",
+ "tonic 0.10.2",
 ]
 
 [[package]]
@@ -1449,11 +1449,11 @@ dependencies = [
  "bytes",
  "flex-error",
  "ics23",
- "prost",
+ "prost 0.11.9",
  "serde",
  "subtle-encoding",
  "tendermint-proto",
- "tonic",
+ "tonic 0.9.2",
 ]
 
 [[package]]
@@ -1490,7 +1490,7 @@ dependencies = [
  "num-bigint",
  "num-rational",
  "once_cell",
- "prost",
+ "prost 0.11.9",
  "regex",
  "retry",
  "ripemd",
@@ -1516,7 +1516,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "toml 0.7.6",
- "tonic",
+ "tonic 0.10.2",
  "tracing",
  "tracing-subscriber",
  "uuid 1.4.0",
@@ -1593,7 +1593,7 @@ dependencies = [
  "itertools",
  "num-rational",
  "primitive-types",
- "prost",
+ "prost 0.11.9",
  "regex",
  "serde",
  "serde_derive",
@@ -1647,7 +1647,7 @@ dependencies = [
  "ibc-relayer-types",
  "itertools",
  "once_cell",
- "prost",
+ "prost 0.11.9",
  "rand",
  "semver",
  "serde",
@@ -1658,7 +1658,7 @@ dependencies = [
  "tendermint-rpc",
  "tokio",
  "toml 0.7.6",
- "tonic",
+ "tonic 0.10.2",
  "tracing",
  "tracing-subscriber",
 ]
@@ -1673,7 +1673,7 @@ dependencies = [
  "bytes",
  "hex",
  "informalsystems-pbjson",
- "prost",
+ "prost 0.11.9",
  "ripemd",
  "serde",
  "sha2 0.10.7",
@@ -2337,6 +2337,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4fdd22f3b9c31b53c060df4a0613a1c7f062d4115a2b984dd15b1858f7e340d"
+dependencies = [
+ "bytes",
+]
+
+[[package]]
 name = "prost-derive"
 version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2355,7 +2364,7 @@ version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
 dependencies = [
- "prost",
+ "prost 0.11.9",
 ]
 
 [[package]]
@@ -2535,7 +2544,7 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
- "rustls 0.21.5",
+ "rustls 0.21.7",
  "rustls-pemfile",
  "serde",
  "serde_json",
@@ -2666,9 +2675,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.21.5"
+version = "0.21.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79ea77c539259495ce8ca47f53e66ae0330a8819f67e23ac96ca02f50e7b7d36"
+checksum = "cd8d6c9f025a446bc4d18ad9632e69aec8f287aa84499ee335599fabd20c3fd8"
 dependencies = [
  "log",
  "ring",
@@ -3272,7 +3281,7 @@ dependencies = [
  "k256",
  "num-traits",
  "once_cell",
- "prost",
+ "prost 0.11.9",
  "prost-types",
  "ripemd",
  "serde",
@@ -3374,7 +3383,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost",
+ "prost 0.11.9",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -3628,7 +3637,7 @@ version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c28327cf380ac148141087fbfb9de9d7bd4e84ab5d2c28fbc911d753de8a7081"
 dependencies = [
- "rustls 0.21.5",
+ "rustls 0.21.7",
  "tokio",
 ]
 
@@ -3706,7 +3715,6 @@ version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3082666a3a6433f7f511c7192923fa1fe07c69332d3c6a2e6bb040b569199d5a"
 dependencies = [
- "async-stream",
  "async-trait",
  "axum",
  "base64 0.21.2",
@@ -3720,7 +3728,35 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
- "prost",
+ "prost 0.11.9",
+ "tokio",
+ "tokio-stream",
+ "tower",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tonic"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d560933a0de61cf715926b9cac824d4c883c2c43142f787595e48280c40a1d0e"
+dependencies = [
+ "async-stream",
+ "async-trait",
+ "axum",
+ "base64 0.21.2",
+ "bytes",
+ "h2",
+ "http",
+ "http-body",
+ "hyper",
+ "hyper-timeout",
+ "percent-encoding",
+ "pin-project",
+ "prost 0.12.1",
+ "rustls 0.21.7",
  "rustls-native-certs 0.6.3",
  "rustls-pemfile",
  "tokio",
