@@ -14,18 +14,18 @@ You can add a private key using one of two different ways:
 
 - If you have a [key-seed file](../../documentation/commands/keys/index.md#key-seed-file-private-key), use the commands :
     ```shell
-    {{#template ../../templates/commands/hermes/keys/add_1.md CHAIN_ID=cosmoshub-4 KEY_FILE=key_file_hub.json}}
-    {{#template ../../templates/commands/hermes/keys/add_1.md CHAIN_ID=osmosis-1 KEY_FILE=key_file_osmosis.json}}
+    {{#template ../../templates/commands/hermes/keys/add_4.md CHAIN_ID=cosmoshub-4 KEY_FILE=key_file_hub.json}}
+    {{#template ../../templates/commands/hermes/keys/add_4.md CHAIN_ID=osmosis-1 KEY_FILE=key_file_osmosis.json}}
     ```
 >__NOTE__: Do not confuse the `chain-name` and the `chain-id` which follows the format `chain_name-version`.
 
 - If you have a `mnemonic`, you can restore a private key from a [mnemonic-file](../../documentation/commands/keys/index.md#restore-a-private-key-to-A_CHAIN_ID-from-a-mnemonic). The following steps create a `mnemonic-file` and restore its key for each chain under names `keyhub` and `keyosmosis` :
     ```shell
     echo word1 ... word12or24 > mnemonic_file_hub
-    {{#template ../../templates/commands/hermes/keys/add_2.md CHAIN_ID=cosmoshub-4 MNEMONIC_FILE=mnemonic_file_hub.json OPTIONS= --key-name keyhub}}
+    {{#template ../../templates/commands/hermes/keys/add_4.md CHAIN_ID=cosmoshub-4 MNEMONIC_FILE=mnemonic_file_hub.json OPTIONS= --key-name keyhub}}
     rm mnemonic_file_hub
     echo word1 ... word12or24 > mnemonic_file_osmosis
-    {{#template ../../templates/commands/hermes/keys/add_2.md CHAIN_ID=osmosis-1 MNEMONIC_FILE=mnemonic_file_osmosis.json OPTIONS= --key-name keyosmosis}}
+    {{#template ../../templates/commands/hermes/keys/add_4.md CHAIN_ID=osmosis-1 MNEMONIC_FILE=mnemonic_file_osmosis.json OPTIONS= --key-name keyosmosis}}
     rm mnemonic_file_osmosis
     ``` 
 
