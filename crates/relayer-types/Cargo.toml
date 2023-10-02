@@ -48,7 +48,7 @@ version = "0.33.0"
 features = ["clock"]
 
 [dependencies.tendermint-proto]
-version = "0.33.0"
+version = "0.34.0"
 
 [dependencies.tendermint-light-client-verifier]
 version = "0.33.0"

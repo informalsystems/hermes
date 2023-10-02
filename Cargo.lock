@@ -1430,7 +1430,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-types",
  "ibc-test-framework",
- "prost",
+ "prost 0.11.9",
  "serde",
  "serde_json",
  "tempfile",
@@ -1449,10 +1449,10 @@ dependencies = [
  "bytes",
  "flex-error",
  "ics23",
- "prost",
+ "prost 0.11.9",
  "serde",
  "subtle-encoding",
- "tendermint-proto",
+ "tendermint-proto 0.33.2",
  "tonic",
 ]
 
@@ -1490,7 +1490,7 @@ dependencies = [
  "num-bigint",
  "num-rational",
  "once_cell",
- "prost",
+ "prost 0.11.9",
  "regex",
  "retry",
  "ripemd",
@@ -1593,7 +1593,7 @@ dependencies = [
  "itertools",
  "num-rational",
  "primitive-types",
- "prost",
+ "prost 0.11.9",
  "regex",
  "serde",
  "serde_derive",
@@ -1601,7 +1601,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
- "tendermint-proto",
+ "tendermint-proto 0.34.0",
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
@@ -1647,7 +1647,7 @@ dependencies = [
  "ibc-relayer-types",
  "itertools",
  "once_cell",
- "prost",
+ "prost 0.11.9",
  "rand",
  "semver",
  "serde",
@@ -1673,7 +1673,7 @@ dependencies = [
  "bytes",
  "hex",
  "informalsystems-pbjson",
- "prost",
+ "prost 0.11.9",
  "ripemd",
  "serde",
  "sha2 0.10.7",
@@ -2333,7 +2333,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b82eaa1d779e9a4bc1c3217db8ffbeabaae1dca241bf70183242128d48681cd"
 dependencies = [
  "bytes",
- "prost-derive",
+ "prost-derive 0.11.9",
+]
+
+[[package]]
+name = "prost"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4fdd22f3b9c31b53c060df4a0613a1c7f062d4115a2b984dd15b1858f7e340d"
+dependencies = [
+ "bytes",
+ "prost-derive 0.12.1",
 ]
 
 [[package]]
@@ -2350,12 +2360,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost-derive"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "265baba7fabd416cf5078179f7d2cbeca4ce7a9041111900675ea7c4cb8a4c32"
+dependencies = [
+ "anyhow",
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.25",
+]
+
+[[package]]
 name = "prost-types"
 version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
 dependencies = [
- "prost",
+ "prost 0.11.9",
+]
+
+[[package]]
+name = "prost-types"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e081b29f63d83a4bc75cfc9f3fe424f9156cf92d8a4f0c9407cce9a1b67327cf"
+dependencies = [
+ "prost 0.12.1",
 ]
 
 [[package]]
@@ -3272,8 +3304,8 @@ dependencies = [
  "k256",
  "num-traits",
  "once_cell",
- "prost",
- "prost-types",
+ "prost 0.11.9",
+ "prost-types 0.11.9",
  "ripemd",
  "serde",
  "serde_bytes",
@@ -3283,7 +3315,7 @@ dependencies = [
  "signature",
  "subtle",
  "subtle-encoding",
- "tendermint-proto",
+ "tendermint-proto 0.33.2",
  "time",
  "zeroize",
 ]
@@ -3345,7 +3377,7 @@ dependencies = [
  "static_assertions",
  "tendermint",
  "tendermint-light-client",
- "tendermint-proto",
+ "tendermint-proto 0.33.2",
  "tendermint-rpc",
  "time",
  "tracing",
@@ -3366,16 +3398,34 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.33.0"
+version = "0.33.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1834fa2eb884ba69b9c0eea55f0178270bed421217596ca4e54c19ef75dcb660"
+checksum = "639e5adffd77220d238a800a72c74c98d7e869290a6e4494c10b6b4e8f702f02"
 dependencies = [
  "bytes",
  "flex-error",
  "num-derive",
  "num-traits",
- "prost",
- "prost-types",
+ "prost 0.11.9",
+ "prost-types 0.11.9",
+ "serde",
+ "serde_bytes",
+ "subtle-encoding",
+ "time",
+]
+
+[[package]]
+name = "tendermint-proto"
+version = "0.34.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2cc728a4f9e891d71adf66af6ecaece146f9c7a11312288a3107b3e1d6979aaf"
+dependencies = [
+ "bytes",
+ "flex-error",
+ "num-derive",
+ "num-traits",
+ "prost 0.12.1",
+ "prost-types 0.12.1",
  "serde",
  "serde_bytes",
  "subtle-encoding",
@@ -3408,7 +3458,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-config",
- "tendermint-proto",
+ "tendermint-proto 0.33.2",
  "thiserror",
  "time",
  "tokio",
@@ -3720,7 +3770,7 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
- "prost",
+ "prost 0.11.9",
  "rustls-native-certs 0.6.3",
  "rustls-pemfile",
  "tokio",
