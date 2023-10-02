@@ -546,11 +546,20 @@ do
     MSG="successfully submitted double voting evidence to chain provider"
     
     if grep -c "$MSG" $HOME_DIR/hermes-evidence-logs.txt; then
-        echo "Successfully submitted double voting evidence to chain provider"
+        echo "[SUCCESS] Successfully submitted double voting evidence to chain provider"
         exit 0
     fi
 done
 
-echo "Failed to submit double voting evidence to chain provider"
+echo "[ERROR] Failed to submit double voting evidence to chain provider"
+echo ""
+echo "---------------------------------------------------------------"
+echo "Hermes start logs:"
+cat $HOME_DIR/hermes-start-logs.txt
+echo "---------------------------------------------------------------"
+echo "Hermes evidence logs:"
+cat $HOME_DIR/hermes-evidence-logs.txt
+echo "---------------------------------------------------------------"
+
 exit 1
 
