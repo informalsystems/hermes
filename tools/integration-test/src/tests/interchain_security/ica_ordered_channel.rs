@@ -9,17 +9,17 @@
 
 use ibc_relayer_types::applications::ics27_ica::cosmos_tx::CosmosTx;
 use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
+use ibc_relayer_types::applications::transfer::msgs::send::MsgSend;
+use ibc_relayer_types::applications::transfer::{Amount, Coin};
+use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
-use ibc_relayer_types::applications::transfer::{Amount, Coin};
-use ibc_relayer_types::applications::transfer::msgs::send::MsgSend;
-use ibc_relayer_types::bigint::U256;
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::channel::query_channel_end;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
-use ibc_test_framework::util::interchain_security::update_genesis_for_consumer_chain;
+use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::assert_eventually_channel_established;
+use ibc_test_framework::relayer::channel::query_channel_end;
+use ibc_test_framework::util::interchain_security::update_genesis_for_consumer_chain;
 
 #[test]
 fn test_ica_ordered_channel() -> Result<(), Error> {
@@ -146,7 +146,6 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
         sleep(Duration::from_secs(1));
 
         relayer.with_supervisor(|| {
-
             sleep(Duration::from_secs(1));
 
             let ica_events = interchain_send_tx(
@@ -156,7 +155,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
                 interchain_account_packet_data,
                 Timestamp::from_nanoseconds(120000000000).unwrap(),
             )?;
-    
+
             info!("First ICA transfer made with supervisor: {ica_events:#?}");
 
             sleep(Duration::from_secs(1));
@@ -179,7 +178,6 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
         sleep(Duration::from_secs(1));
 
         relayer.with_supervisor(|| {
-
             sleep(Duration::from_secs(1));
 
             let ica_events = interchain_send_tx(
@@ -189,7 +187,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
                 interchain_account_packet_data,
                 Timestamp::from_nanoseconds(120000000000).unwrap(),
             )?;
-    
+
             info!("Third ICA transfer made with supervisor: {ica_events:#?}");
 
             sleep(Duration::from_secs(1));
