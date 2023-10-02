@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use crate::utils::interchain_send_tx;
-
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::{
     filter::{ChannelFilters, ChannelPolicy, FilterPattern},
@@ -25,6 +23,8 @@ use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, query_channel_end,
 };
+
+use crate::tests::utils::interchain_send_tx;
 
 #[test]
 fn test_ica_filter_default() -> Result<(), Error> {

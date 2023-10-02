@@ -7,6 +7,8 @@
 //! without the supervisor enabled should be relayed in order along with the
 //! other packets, as expected of ordered channel behaviour.
 
+use std::str::FromStr;
+
 use ibc_relayer_types::applications::ics27_ica::cosmos_tx::CosmosTx;
 use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
 use ibc_relayer_types::applications::transfer::msgs::send::MsgSend;
@@ -14,12 +16,15 @@ use ibc_relayer_types::applications::transfer::{Amount, Coin};
 use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::tx_msg::Msg;
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::assert_eventually_channel_established;
 use ibc_test_framework::relayer::channel::query_channel_end;
 use ibc_test_framework::util::interchain_security::update_genesis_for_consumer_chain;
+
+use crate::tests::utils::interchain_send_tx;
 
 #[test]
 fn test_ica_ordered_channel() -> Result<(), Error> {
@@ -91,7 +96,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
         let channel_end =
             query_channel_end(chains.handle_b(), &channel_id.as_ref(), &port_id.as_ref())?;
 
-        assert_eq!(channel_end.value().ordering(), Ordering::Ordered);
+        assert_eq!(channel_end.value().ordering(), &Ordering::Ordered);
 
         // Query the controller chain for the address of the ICA wallet on the host chain.
         let ica_address = chains.node_b.chain_driver().query_interchain_account(
@@ -143,7 +148,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
 
         let signer = Signer::from_str(&wallet.address().to_string()).unwrap();
 
-        sleep(Duration::from_secs(1));
+        sleep(Duration::from_secs(5));
 
         relayer.with_supervisor(|| {
             sleep(Duration::from_secs(1));
@@ -152,16 +157,16 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
                 chains.handle_b(),
                 &signer,
                 &channel.connection.connection_id_b.0,
-                interchain_account_packet_data,
+                interchain_account_packet_data.clone(),
                 Timestamp::from_nanoseconds(120000000000).unwrap(),
             )?;
 
             info!("First ICA transfer made with supervisor: {ica_events:#?}");
 
-            sleep(Duration::from_secs(1));
+            sleep(Duration::from_secs(5));
 
             Ok(())
-        });
+        })?;
 
         sleep(Duration::from_secs(1));
 
@@ -169,13 +174,13 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
             chains.handle_b(),
             &signer,
             &channel.connection.connection_id_b.0,
-            interchain_account_packet_data,
+            interchain_account_packet_data.clone(),
             Timestamp::from_nanoseconds(120000000000).unwrap(),
         )?;
 
         info!("Second ICA transfer made without supervisor: {ica_events:#?}");
 
-        sleep(Duration::from_secs(1));
+        sleep(Duration::from_secs(5));
 
         relayer.with_supervisor(|| {
             sleep(Duration::from_secs(1));
@@ -190,10 +195,10 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
 
             info!("Third ICA transfer made with supervisor: {ica_events:#?}");
 
-            sleep(Duration::from_secs(1));
+            sleep(Duration::from_secs(5));
 
             Ok(())
-        });
+        })?;
 
         // Check that the ICA account's balance has been debited the sent amount.
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
