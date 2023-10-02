@@ -14,8 +14,8 @@ You can add a private key using one of two different ways:
 
 - If you have a [key-seed file](../../documentation/commands/keys/index.md#key-seed-file-private-key), use the commands :
     ```shell
-    {{#template ../../templates/commands/hermes/keys/add_4.md CHAIN_ID=cosmoshub-4 KEY_FILE=key_file_hub.json}}
-    {{#template ../../templates/commands/hermes/keys/add_4.md CHAIN_ID=osmosis-1 KEY_FILE=key_file_osmosis.json}}
+    {{#template ../../templates/commands/hermes/keys/add_2.md CHAIN_ID=cosmoshub-4 KEY_FILE=key_file_hub.json}}
+    {{#template ../../templates/commands/hermes/keys/add_2.md CHAIN_ID=osmosis-1 KEY_FILE=key_file_osmosis.json}}
     ```
 >__NOTE__: Do not confuse the `chain-name` and the `chain-id` which follows the format `chain_name-version`.
 
