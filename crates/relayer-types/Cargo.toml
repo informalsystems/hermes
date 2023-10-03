@@ -24,14 +24,14 @@ mocks = ["tendermint-testgen", "clock"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.34.0" }
+ibc-proto = { version = "0.36.0" }
 ics23 = { version = "0.10.2", features = ["std", "host-functions"] }
 time = { version = "0.3" }
 serde_derive = { version = "1.0.104" }
 serde = { version = "1.0" }
 serde_json = { version = "1" }
 erased-serde = { version = "0.3" }
-prost = { version = "0.11" }
+prost = { version = "0.12" }
 bytes = { version = "1.4.0" }
 subtle-encoding = { version = "0.5" }
 flex-error = { version = "0.4.4" }
@@ -44,18 +44,18 @@ num-rational = "0.4.1"
 regex = "1"
 
 [dependencies.tendermint]
-version = "0.33.0"
+version = "0.34.0"
 features = ["clock"]
 
 [dependencies.tendermint-proto]
-version = "0.33.0"
+version = "0.34.0"
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.33.0"
+version = "0.34.0"
 features = ["rust-crypto"]
 
 [dependencies.tendermint-testgen]
-version = "0.33.0"
+version = "0.34.0"
 optional = true
 
 [dev-dependencies]
@@ -63,5 +63,5 @@ env_logger = "0.10.0"
 tracing = { version = "0.1.36", default-features = false }
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
 test-log = { version = "0.2.10", features = ["trace"] }
-tendermint-rpc = { version = "0.33.0", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "0.33.0" } # Needed for generating (synthetic) light blocks.
+tendermint-rpc = { version = "0.34.0", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "0.34.0" } # Needed for generating (synthetic) light blocks.

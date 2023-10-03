@@ -22,7 +22,8 @@ exclude = [
 overflow-checks = true
 
 [patch.crates-io]
-# ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "main" }
+ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs.git",       branch = "romac/prost-0.12" }
+ics23                            = { git = "https://github.com/cosmos/ics23",                  branch = "romac/prost-0.12" }
 # tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
