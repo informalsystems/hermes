@@ -3,7 +3,6 @@ use abscissa_core::{Command, Runnable};
 
 use eyre::eyre;
 use ibc_relayer::{
-    chain::ChainType,
     config::{ChainConfig, Config},
     keyring::{KeyRing, Store},
 };
@@ -103,7 +102,8 @@ impl Runnable for KeysDeleteCmd {
             KeysDeleteId::Named(key_name) => match delete_key(&opts.config, key_name) {
                 Ok(_) => Output::success_msg(format!(
                     "Removed key ({}) on chain {}",
-                    key_name, opts.config.id
+                    key_name,
+                    opts.config.id(),
                 ))
                 .exit(),
                 Err(e) => Output::error(e).exit(),
@@ -113,8 +113,8 @@ impl Runnable for KeysDeleteCmd {
 }
 
 pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
-    match config.r#type {
-        ChainType::CosmosSdk => {
+    match config {
+        ChainConfig::CosmosSdk(config) => {
             let mut keyring = KeyRing::new_secp256k1(
                 Store::Test,
                 &config.account_prefix,
@@ -128,8 +128,8 @@ pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
 }
 
 pub fn delete_all_keys(config: &ChainConfig) -> eyre::Result<()> {
-    match config.r#type {
-        ChainType::CosmosSdk => {
+    match config {
+        ChainConfig::CosmosSdk(config) => {
             let mut keyring = KeyRing::new_secp256k1(
                 Store::Test,
                 &config.account_prefix,

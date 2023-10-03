@@ -75,6 +75,11 @@ impl Override<Config> for ClearPacketsCmd {
         })?;
 
         if let Some(ref key_name) = self.key_name {
+            // Q: should the key name be required across chain types, meaning that
+            // key management is common to all chain types, or should key management
+            // be the responsibility of the backend? If key management is common
+            // across backends, how should it be agnostic to the key type? Can it
+            // just be an opaque byte string handled by the backend?
             chain_config.key_name = key_name.to_string();
         }
 

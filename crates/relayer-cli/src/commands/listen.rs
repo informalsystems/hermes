@@ -102,7 +102,7 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
-#[instrument(skip_all, level = "error", fields(chain = %config.id))]
+#[instrument(skip_all, level = "error", fields(chain = %config.id()))]
 pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()> {
     let rt = Arc::new(TokioRuntime::new()?);
     let compat_mode = detect_compatibility_mode(config, rt.clone())?;
@@ -144,6 +144,8 @@ fn subscribe(
     compat_mode: CompatMode,
     rt: Arc<TokioRuntime>,
 ) -> eyre::Result<Subscription> {
+    // Q: Should this be restricted only to backends that support it,
+    // or are all backends expected to support subscriptions?
     let (event_source, monitor_tx) = match &chain_config.event_source {
         EventSourceMode::Push { url, batch_delay } => EventSource::websocket(
             chain_config.id.clone(),
@@ -166,6 +168,7 @@ fn subscribe(
     Ok(subscription)
 }
 
+// Q: why isn't this part of the CosmosSDK chain endpoint impl?
 fn detect_compatibility_mode(
     config: &ChainConfig,
     rt: Arc<TokioRuntime>,

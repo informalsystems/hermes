@@ -19,7 +19,9 @@ use ibc_chain_registry::querier::*;
 use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
+use ibc_relayer::config::{
+    default, AddressType, ChainConfig, CosmosSdkConfig, EventSourceMode, GasPrice,
+};
 use ibc_relayer::keyring::Store;
 
 use tendermint_light_client_verifier::types::TrustThreshold;
@@ -120,9 +122,8 @@ where
         0.1
     };
 
-    Ok(ChainConfig {
+    Ok(ChainConfig::CosmosSdk(CosmosSdkConfig {
         id: chain_data.chain_id,
-        r#type: default::chain_type(),
         rpc_addr: rpc_data.rpc_address,
         grpc_addr: grpc_address,
         event_source: EventSourceMode::Push {
@@ -160,7 +161,7 @@ where
         address_type: AddressType::default(),
         sequential_batch_tx: false,
         extension_options: Vec::new(),
-    })
+    }))
 }
 
 /// Concurrent `query_healthy` might fail, this is a helper function which will retry a failed query a fixed
@@ -341,7 +342,10 @@ mod tests {
         for config in configs {
             match config {
                 Ok(config) => {
-                    assert_eq!(config.packet_filter.channel_policy, ChannelPolicy::AllowAll);
+                    assert_eq!(
+                        config.packet_filter().channel_policy,
+                        ChannelPolicy::AllowAll
+                    );
                 }
                 Err(e) => panic!(
                     "Encountered an unexpected error in chain registry test: {}",
@@ -367,9 +371,9 @@ mod tests {
 
         for config in configs {
             match config {
-                Ok(config) => match config.packet_filter.channel_policy {
+                Ok(config) => match config.packet_filter().channel_policy {
                     ChannelPolicy::Allow(channel_filter) => {
-                        if config.id.as_str().contains("cosmoshub") {
+                        if config.id().as_str().contains("cosmoshub") {
                             assert!(channel_filter.is_exact());
 
                             let cosmoshub_juno = (
@@ -385,7 +389,7 @@ mod tests {
                             assert!(channel_filter.matches(cosmoshub_juno));
                             assert!(channel_filter.matches(cosmoshub_osmosis));
                             assert!(channel_filter.len() == 2);
-                        } else if config.id.as_str().contains("juno") {
+                        } else if config.id().as_str().contains("juno") {
                             assert!(channel_filter.is_exact());
 
                             let juno_cosmoshub = (
@@ -407,7 +411,7 @@ mod tests {
                             assert!(channel_filter.matches(juno_osmosis_1));
                             assert!(channel_filter.matches(juno_osmosis_2));
                             assert!(channel_filter.len() == 3);
-                        } else if config.id.as_str().contains("osmosis") {
+                        } else if config.id().as_str().contains("osmosis") {
                             assert!(channel_filter.is_exact());
 
                             let osmosis_cosmoshub = (

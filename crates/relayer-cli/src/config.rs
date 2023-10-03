@@ -8,7 +8,7 @@ use alloc::collections::BTreeSet;
 use std::path::PathBuf;
 
 use flex_error::{define_error, TraceError};
-use ibc_relayer::config::{ChainConfig, Config, ModeConfig};
+use ibc_relayer::config::{ChainConfig, Config, CosmosSdkConfig, ModeConfig};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tracing_subscriber::filter::ParseError;
@@ -87,15 +87,18 @@ pub fn validate_config(config: &Config) -> Result<(), Diagnostic<Error>> {
     // Check for duplicate chain configuration and invalid trust thresholds
     let mut unique_chain_ids = BTreeSet::new();
     for c in config.chains.iter() {
-        let already_present = !unique_chain_ids.insert(c.id.clone());
+        let already_present = !unique_chain_ids.insert(c.id().clone());
         if already_present {
-            return Err(Diagnostic::Error(Error::duplicate_chains(c.id.clone())));
+            return Err(Diagnostic::Error(Error::duplicate_chains(c.id().clone())));
         }
 
-        validate_trust_threshold(&c.id, c.trust_threshold)?;
-
-        // Validate gas-related settings
-        validate_gas_settings(&c.id, c)?;
+        // TODO: why are these not methods on the config object?
+        // why are they defined only in the relayer-cli crate?
+        if let ChainConfig::CosmosSdk(cosmos_c) = c {
+            validate_trust_threshold(&cosmos_c.id, cosmos_c.trust_threshold)?;
+            // Validate gas-related settings
+            validate_gas_settings(&cosmos_c.id, cosmos_c)?;
+        }
     }
 
     // Check for invalid mode config
@@ -156,7 +159,7 @@ fn validate_trust_threshold(
     Ok(())
 }
 
-fn validate_gas_settings(id: &ChainId, config: &ChainConfig) -> Result<(), Diagnostic<Error>> {
+fn validate_gas_settings(id: &ChainId, config: &CosmosSdkConfig) -> Result<(), Diagnostic<Error>> {
     // Check that the gas_adjustment option is not set
     if let Some(gas_adjustment) = config.gas_adjustment {
         let gas_multiplier = gas_adjustment + 1.0;

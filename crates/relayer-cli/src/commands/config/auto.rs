@@ -128,11 +128,11 @@ impl Runnable for AutoCmd {
         for (chain_config, key_option) in configs_and_keys {
             // If a key is provided, use it
             if let Some(key_name) = key_option {
-                info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
+                info!("{}: uses key \"{}\"", &chain_config.id(), &key_name);
                 chain_config.key_name = key_name;
             } else {
                 // Otherwise, find the key in the keystore
-                let chain_id = &chain_config.id;
+                let chain_id = &chain_config.id();
                 let key = find_key(chain_config);
                 if let Some(key) = key {
                     info!("{}: uses key '{}'", &chain_id, &key);
