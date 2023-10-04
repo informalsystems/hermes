@@ -1376,8 +1376,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.36.1"
-source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=romac/prost-0.12#debcc2dac687f1da9ac68d78a9d1dcf4392e46d6"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "725fd83c94e9859fd967cd706996679799171eba940740f071f0046fb6f6e031"
 dependencies = [
  "base64 0.21.2",
  "bytes",
@@ -1599,8 +1600,9 @@ dependencies = [
 
 [[package]]
 name = "ics23"
-version = "0.10.2"
-source = "git+https://github.com/cosmos/ics23?branch=romac/prost-0.12#004bb8243e385ddf38391d567a1e2d1f84468125"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "661e2d6f79952a65bc92b1c81f639ebd37228dae6ff412a5aba7d474bdc4b957"
 dependencies = [
  "anyhow",
  "bytes",
