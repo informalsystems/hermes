@@ -15,12 +15,9 @@ use tonic::codegen::http::Uri;
 use tonic::metadata::AsciiMetadataValue;
 use tracing::{debug, error, info, instrument, trace, warn};
 
-use ibc_proto::cosmos::{
-    base::node::v1beta1::ConfigResponse, staking::v1beta1::Params as StakingParams,
-};
-
-use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvConsumerParams;
-
+use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
+use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+use ibc_proto::interchain_security::ccv::v1::Params as CcvParams;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
@@ -343,7 +340,7 @@ impl CosmosSdkChain {
     }
 
     /// Performs a gRPC query to fetch CCV Consumer chain staking parameters.
-    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
+    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvParams, Error> {
         crate::time!(
             "query_ccv_consumer_chain_params",
             {
