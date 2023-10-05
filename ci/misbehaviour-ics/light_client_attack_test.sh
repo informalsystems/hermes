@@ -483,10 +483,24 @@ fi
 
 sleep 10
 
-if grep -q "successfully submitted light client attack evidence" ${HOME_DIR}/hermes-evidence-logs.txt; then
-    diag "Evidence found, success!"
+if grep -q "found light client attack evidence" ${HOME_DIR}/hermes-evidence-logs.txt; then
+    diag "Evidence found, proceeding!"
 else
     diag "Evidence not found, aborting."
     exit 1
+fi
+
+sleep 10
+
+if grep -q "successfully submitted light client attack evidence" ${HOME_DIR}/hermes-evidence-logs.txt; then
+    diag "Evidence successfully submitted, success!"
+else
+    if grep -q "as it is already frozen" ${HOME_DIR}/hermes-evidence-logs.txt; then
+        diag "Client already frozen, success!"
+        exit 0
+    else
+        diag "Evidence not submitted, failed."
+        exit 1
+    fi
 fi
 
