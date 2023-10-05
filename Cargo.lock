@@ -1382,9 +1382,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.37.0"
+version = "0.38.0-pre.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "725fd83c94e9859fd967cd706996679799171eba940740f071f0046fb6f6e031"
+checksum = "cf94cb1311bf2c44d160ed59e681a27108a9a041edce1f2fdb7eb80f66923c0e"
 dependencies = [
  "base64 0.21.4",
  "bytes",

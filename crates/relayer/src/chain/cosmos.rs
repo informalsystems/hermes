@@ -17,10 +17,10 @@ use tracing::{debug, error, info, instrument, trace, warn};
 
 use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
-use ibc_proto::interchain_security::ccv::v1::Params as CcvParams;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
+use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
 use ibc_proto::protobuf::Protobuf;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
@@ -340,7 +340,7 @@ impl CosmosSdkChain {
     }
 
     /// Performs a gRPC query to fetch CCV Consumer chain staking parameters.
-    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvParams, Error> {
+    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
         crate::time!(
             "query_ccv_consumer_chain_params",
             {
