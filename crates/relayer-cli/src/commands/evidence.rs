@@ -328,9 +328,11 @@ fn handle_duplicate_vote(
         }
         .to_any();
 
-        info!("submitting CCV misbehaviour to provider chain {counterparty_chain_id}");
+        info!(
+            "submitting consumer double voting evidence to provider chain {counterparty_chain_id}"
+        );
 
-        let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "submit_double_voting");
+        let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "double_voting_evidence");
         let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
 
         for response in responses {
@@ -513,7 +515,7 @@ fn submit_light_client_attack_evidence(
 
     if is_counterparty_provider(chain, counterparty) {
         info!(
-            "will submit CCV misbehaviour for client `{}` on provider chain `{}`",
+            "will submit consumer light client attack evidence to client `{}` on provider chain `{}`",
             counterparty_client_id,
             counterparty.id(),
         );
@@ -528,7 +530,7 @@ fn submit_light_client_attack_evidence(
     };
 
     info!(
-        "will submit IBC misbehaviour for client `{}` on chain `{}`",
+        "will submit light client attack evidence to client `{}` on chain `{}`",
         counterparty_client_id,
         counterparty.id(),
     );
@@ -542,13 +544,19 @@ fn submit_light_client_attack_evidence(
 
     msgs.push(msg);
 
-    let tracked_msgs = TrackedMsgs::new_static(msgs, "submit_misbehaviour");
+    info!(
+        "submitting light client attack evidence to client `{}` to chain `{}`",
+        counterparty_client_id,
+        counterparty.id(),
+    );
+
+    let tracked_msgs = TrackedMsgs::new_static(msgs, "light_client_attack_evidence");
     let responses = counterparty.send_messages_and_wait_check_tx(tracked_msgs)?;
 
     match responses.first() {
         Some(response) if response.code.is_ok() => {
             info!(
-                "successfully submitted misbehaviour for client `{}` to chain `{}`, tx hash: {}",
+                "successfully submitted light client attack for client `{}` to chain `{}`, tx hash: {}",
                 counterparty_client_id,
                 counterparty.id(),
                 response.hash
@@ -557,12 +565,12 @@ fn submit_light_client_attack_evidence(
             Ok(())
         }
         Some(response) => Err(eyre::eyre!(
-            "failed to submit misbehaviour to chain {}: {response:?}",
+            "failed to submit light client attack evidence to chain {}: {response:?}",
             counterparty.id()
         )),
 
         None => Err(eyre::eyre!(
-            "failed to submit misbehaviour to chain {}: no response from chain",
+            "failed to submit light client attack evidence to chain {}: no response from chain",
             counterparty.id()
         )),
     }
