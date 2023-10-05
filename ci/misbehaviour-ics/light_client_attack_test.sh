@@ -483,7 +483,7 @@ fi
 
 sleep 10
 
-if grep -q "found light client attack evidence" ${HOME_DIR}/hermes-evidence-logs.txt; then
+if grep -q "successfully submitted light client attack evidence" ${HOME_DIR}/hermes-evidence-logs.txt; then
     diag "Evidence found, success!"
 else
     diag "Evidence not found, aborting."

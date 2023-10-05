@@ -556,7 +556,7 @@ fn submit_light_client_attack_evidence(
     match responses.first() {
         Some(response) if response.code.is_ok() => {
             info!(
-                "successfully submitted light client attack for client `{}` to chain `{}`, tx hash: {}",
+                "successfully submitted light client attack evidence for client `{}` to chain `{}`, tx hash: {}",
                 counterparty_client_id,
                 counterparty.id(),
                 response.hash
