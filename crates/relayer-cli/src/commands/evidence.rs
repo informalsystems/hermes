@@ -25,7 +25,6 @@ use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubm
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TendermintHeader;
 use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TendermintMisbehaviour;
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
@@ -488,16 +487,6 @@ fn submit_light_client_attack_evidence(
     let signer = counterparty.get_signer()?;
     let common_height = Height::from_tm(evidence.common_height, chain.id());
 
-    if counterparty_client.is_frozen() {
-        warn!(
-            "skipping client `{}` on chain `{}` as it is already frozen",
-            counterparty_client_id,
-            counterparty.id()
-        );
-
-        return Ok(());
-    }
-
     let mut msgs = match counterparty_client.wait_and_build_update_client(common_height) {
         Ok(msgs) => msgs,
 
@@ -529,26 +518,27 @@ fn submit_light_client_attack_evidence(
         msgs.push(msg);
     };
 
-    info!(
-        "will submit light client attack evidence to client `{}` on chain `{}`",
+    if counterparty_client.is_frozen() {
+        info!(
+        "will NOT submit light client attack evidence to client `{}` on chain `{}` because it is already frozen",
         counterparty_client_id,
         counterparty.id(),
-    );
+        );
+    } else {
+        info!(
+            "will submit light client attack evidence to client `{}` on chain `{}`",
+            counterparty_client_id,
+            counterparty.id(),
+        );
+        let msg = MsgSubmitMisbehaviour {
+            client_id: counterparty_client_id.clone(),
+            misbehaviour: misbehaviour.to_any(),
+            signer,
+        }
+        .to_any();
 
-    let msg = MsgSubmitMisbehaviour {
-        client_id: counterparty_client_id.clone(),
-        misbehaviour: misbehaviour.to_any(),
-        signer,
+        msgs.push(msg);
     }
-    .to_any();
-
-    msgs.push(msg);
-
-    info!(
-        "submitting light client attack evidence to client `{}` to chain `{}`",
-        counterparty_client_id,
-        counterparty.id(),
-    );
 
     let tracked_msgs = TrackedMsgs::new_static(msgs, "light_client_attack_evidence");
     let responses = counterparty.send_messages_and_wait_check_tx(tracked_msgs)?;
@@ -648,11 +638,6 @@ fn fetch_all_counterparty_clients(
 
         let counterparty_chain_id = client_state.chain_id();
         info!("found counterparty client with id {client_id} on counterparty chain {counterparty_chain_id}");
-
-        if client_state.is_frozen() {
-            info!("counterparty client {client_id} is already frozen, skipping...");
-            continue;
-        }
 
         counterparty_clients.push((counterparty_chain_id, client_id.clone()));
     }
