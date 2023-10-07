@@ -484,6 +484,10 @@ fn submit_light_client_attack_evidence(
         counterparty.id(),
     );
 
+    if !is_counterparty_provider(chain, counterparty) && counterparty_client.is_frozen() {
+        return Ok(());
+    }
+
     let signer = counterparty.get_signer()?;
     let common_height = Height::from_tm(evidence.common_height, chain.id());
 
@@ -518,27 +522,19 @@ fn submit_light_client_attack_evidence(
         msgs.push(msg);
     };
 
-    if counterparty_client.is_frozen() {
-        info!(
-        "will NOT submit light client attack evidence to client `{}` on chain `{}` because it is already frozen",
+    info!(
+        "will submit light client attack evidence to client `{}` on chain `{}`",
         counterparty_client_id,
         counterparty.id(),
-        );
-    } else {
-        info!(
-            "will submit light client attack evidence to client `{}` on chain `{}`",
-            counterparty_client_id,
-            counterparty.id(),
-        );
-        let msg = MsgSubmitMisbehaviour {
-            client_id: counterparty_client_id.clone(),
-            misbehaviour: misbehaviour.to_any(),
-            signer,
-        }
-        .to_any();
-
-        msgs.push(msg);
+    );
+    let msg = MsgSubmitMisbehaviour {
+        client_id: counterparty_client_id.clone(),
+        misbehaviour: misbehaviour.to_any(),
+        signer,
     }
+    .to_any();
+
+    msgs.push(msg);
 
     let tracked_msgs = TrackedMsgs::new_static(msgs, "light_client_attack_evidence");
     let responses = counterparty.send_messages_and_wait_check_tx(tracked_msgs)?;
