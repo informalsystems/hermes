@@ -435,9 +435,9 @@ impl Runnable for TxUpgradeClientsCmd {
             .chains
             .iter()
             .filter(|&chain| {
-                (self.reference_chain_id != chain.id
+                self.reference_chain_id != chain.id
                     && (self.host_chain_id.is_none()
-                        || self.host_chain_id == Some(chain.id.clone())))
+                        || self.host_chain_id == Some(chain.id.clone()))
             })
             .map(|chain| {
                 self.upgrade_clients_for_chain(

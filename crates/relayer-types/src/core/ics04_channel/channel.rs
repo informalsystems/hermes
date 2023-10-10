@@ -7,12 +7,12 @@ use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::{
-    Channel as RawChannel, Counterparty as RawCounterparty, FlushStatus as RawFlushStatus,
+    Channel as RawChannel, Counterparty as RawCounterparty,
     IdentifiedChannel as RawIdentifiedChannel,
 };
 
 use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics04_channel::{error::Error, flush_status::FlushStatus, version::Version};
+use crate::core::ics04_channel::{error::Error, version::Version};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -45,7 +45,6 @@ impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
             connection_hops: value.connection_hops,
             version: value.version,
             upgrade_sequence: 0, // FIXME: proto IdentifiedChannel does not have this field, should we default to 0 ?
-            flush_status: 0,
         };
 
         Ok(IdentifiedChannelEnd {
@@ -83,7 +82,6 @@ pub struct ChannelEnd {
     pub connection_hops: Vec<ConnectionId>,
     pub version: Version,
     pub upgraded_sequence: Sequence,
-    pub flush_status: FlushStatus,
 }
 
 impl Display for ChannelEnd {
@@ -105,7 +103,6 @@ impl Default for ChannelEnd {
             connection_hops: Vec::new(),
             version: Version::default(),
             upgraded_sequence: Sequence::from(0), // The value of 0 indicates the channel has never been upgraded
-            flush_status: FlushStatus::NotinflushUnspecified,
         }
     }
 }
@@ -140,8 +137,6 @@ impl TryFrom<RawChannel> for ChannelEnd {
 
         let version = value.version.into();
 
-        let flush_status = FlushStatus::try_from(value.flush_status)?;
-
         Ok(ChannelEnd::new(
             chan_state,
             chan_ordering,
@@ -149,7 +144,6 @@ impl TryFrom<RawChannel> for ChannelEnd {
             connection_hops,
             version,
             Sequence::from(value.upgrade_sequence),
-            flush_status,
         ))
     }
 }
@@ -167,7 +161,6 @@ impl From<ChannelEnd> for RawChannel {
                 .collect(),
             version: value.version.to_string(),
             upgrade_sequence: value.upgraded_sequence.into(),
-            flush_status: RawFlushStatus::from(value.flush_status).into(),
         }
     }
 }
@@ -181,7 +174,6 @@ impl ChannelEnd {
         connection_hops: Vec<ConnectionId>,
         version: Version,
         upgraded_sequence: Sequence,
-        flush_status: FlushStatus,
     ) -> Self {
         Self {
             state,
@@ -190,7 +182,6 @@ impl ChannelEnd {
             connection_hops,
             version,
             upgraded_sequence,
-            flush_status,
         }
     }
 
@@ -216,10 +207,6 @@ impl ChannelEnd {
 
     pub fn state(&self) -> &State {
         &self.state
-    }
-
-    pub fn flush_status(&self) -> &FlushStatus {
-        &self.flush_status
     }
 
     pub fn ordering(&self) -> &Ordering {
@@ -251,11 +238,6 @@ impl ChannelEnd {
     /// Helper function to compare the state of this end with another state.
     pub fn state_matches(&self, other: &State) -> bool {
         self.state() == other
-    }
-
-    /// Helper function to compare the flush status of this end with another flush status.
-    pub fn flush_status_matches(&self, other: &FlushStatus) -> bool {
-        self.flush_status() == other
     }
 
     /// Helper function to compare the order of this end with another order.
@@ -568,7 +550,6 @@ pub mod test_util {
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
             upgrade_sequence: 0, // The value of 0 indicates the channel has never been upgraded
-            flush_status: 0,
         }
     }
 }

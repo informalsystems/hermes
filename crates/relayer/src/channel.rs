@@ -1,6 +1,5 @@
 pub use error::ChannelError;
 use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
-use ibc_relayer_types::core::ics04_channel::flush_status::FlushStatus;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_ack::MsgChannelUpgradeAck;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_confirm::MsgChannelUpgradeConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_open::MsgChannelUpgradeOpen;
@@ -898,7 +897,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             vec![self.dst_connection_id().clone()],
             version,
             Sequence::from(0),
-            FlushStatus::NotinflushUnspecified,
         );
 
         // Build the domain type message
@@ -979,7 +977,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             vec![self.dst_connection_id().clone()],
             Version::empty(),
             Sequence::from(0),
-            FlushStatus::NotinflushUnspecified, // UPGRADE TODO check
         );
 
         // Retrieve existing channel
@@ -1072,7 +1069,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             vec![self.dst_connection_id().clone()],
             version,
             Sequence::from(0),
-            FlushStatus::NotinflushUnspecified, // UPGRADE TODO check
         );
 
         // Get signer
