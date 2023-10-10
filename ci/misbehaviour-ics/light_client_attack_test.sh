@@ -490,7 +490,7 @@ else
     exit 1
 fi
 
-sleep 10
+sleep 20
 
 if grep -q "successfully submitted light client attack evidence" ${HOME_DIR}/hermes-evidence-logs.txt; then
     diag "Evidence successfully submitted, success!"
@@ -500,6 +500,11 @@ else
         exit 0
     else
         diag "Evidence not submitted, failed."
+        echo ""
+
+        diag "Hermes evidence logs:"
+        cat ${HOME_DIR}/hermes-evidence-logs.txt
+
         exit 1
     fi
 fi

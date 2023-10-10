@@ -479,7 +479,7 @@ fn submit_light_client_attack_evidence(
     misbehaviour: TendermintMisbehaviour,
 ) -> Result<(), eyre::Error> {
     info!(
-        "building misbehaviour evidence for client `{}` on chain `{}`",
+        "building light client attack evidence for client `{}` on chain `{}`",
         counterparty_client_id,
         counterparty.id(),
     );
@@ -527,6 +527,7 @@ fn submit_light_client_attack_evidence(
         counterparty_client_id,
         counterparty.id(),
     );
+
     let msg = MsgSubmitMisbehaviour {
         client_id: counterparty_client_id.clone(),
         misbehaviour: misbehaviour.to_any(),
@@ -647,16 +648,24 @@ fn build_evidence_headers(
     chain: &CosmosSdkChain,
     lc: LightClientAttackEvidence,
 ) -> eyre::Result<(TendermintHeader, TendermintHeader)> {
-    let trusted_validator_set = rt
+    let trusted_validators = rt
         .block_on(chain.rpc_client.validators(lc.common_height, Paging::All))?
         .validators;
+
+    let common_header = rt
+        .block_on(chain.rpc_client.commit(lc.common_height))?
+        .signed_header;
+
+    let common_proposer = common_header.header.proposer_address;
+
+    let trusted_validator_set = validator::Set::with_proposer(trusted_validators, common_proposer)?;
 
     let header1 = {
         TendermintHeader {
             signed_header: lc.conflicting_block.signed_header,
             validator_set: lc.conflicting_block.validator_set,
             trusted_height: Height::from_tm(lc.common_height, chain.id()),
-            trusted_validator_set: validator::Set::new(trusted_validator_set.clone(), None),
+            trusted_validator_set: trusted_validator_set.clone(),
         }
     };
 
@@ -680,7 +689,7 @@ fn build_evidence_headers(
             signed_header,
             validator_set,
             trusted_height: Height::from_tm(lc.common_height, chain.id()),
-            trusted_validator_set: validator::Set::new(trusted_validator_set, None),
+            trusted_validator_set,
         }
     };
 
