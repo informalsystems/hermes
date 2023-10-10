@@ -48,6 +48,7 @@ impl TryFrom<RawMisbehaviour> for Misbehaviour {
 
 impl From<Misbehaviour> for RawMisbehaviour {
     fn from(value: Misbehaviour) -> Self {
+        #[allow(deprecated)]
         RawMisbehaviour {
             client_id: value.client_id.to_string(),
             header_1: Some(value.header1.into()),

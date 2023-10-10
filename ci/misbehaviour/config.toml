@@ -206,7 +206,7 @@ gas_price = { price = 0.001, denom = 'stake' }
 #
 # Default: 1.1, ie. the gas is increased by 10%
 # Minimum value: 1.0
-gas_multiplier = 1.1
+gas_multiplier = 1.3
 
 # Specify how many IBC messages at most to include in a single transaction.
 # Default: 30
@@ -309,7 +309,7 @@ store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 400000
 gas_price = { price = 0.001, denom = 'stake' }
-gas_multiplier = 1.1
+gas_multiplier = 1.3
 max_msg_num = 30
 max_tx_size = 2097152
 clock_drift = '5s'

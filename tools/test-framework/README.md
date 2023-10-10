@@ -9,7 +9,7 @@ The `ibc-test-framework` crate provides the infrastructure and framework for wri
 Other than Rust, the test suite assumes the `gaiad` binary is present in `$PATH`. You can install Gaia by either [building from source](https://github.com/cosmos/gaia), or load it using [Cosmos.nix](https://github.com/informalsystems/cosmos.nix/):
 
 ```text
-nix shell github:informalsystems/cosmos.nix#gaia7
+nix shell github:informalsystems/cosmos.nix#gaia11
 ```
 
 Alternatively, you can use `$CHAIN_COMMAND_PATH` to override with a different executable that is compatible with `gaiad`.
