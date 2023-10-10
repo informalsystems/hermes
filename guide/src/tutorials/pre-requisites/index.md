@@ -9,5 +9,5 @@ In order to follow the tutorials using local chains, please make sure that [Gaia
 * **[Gaia](./gaia.md)**
     * Install `Gaia`, the first implementation of the CosmosHub. 
     
-* **[Gaiad Manager](./gaia.md)**
+* **[Gaiad Manager](./gaiad-manager.md)**
     * Install Gaiad Manager, a command-line tool (CLI) that helps manage local `gaiad` networks.

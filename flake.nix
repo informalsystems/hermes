@@ -7,8 +7,7 @@
     cosmos-nix.url = github:informalsystems/cosmos.nix/ibc-go-channel-upgrade;
   };
 
-  outputs = inputs:
-    let
+  outputs = inputs: let
       utils = inputs.flake-utils.lib;
     in
     utils.eachSystem
@@ -18,25 +17,20 @@
         "x86_64-darwin"
         "x86_64-linux"
       ]
-      (system:
-        let
+    (system: let
           nixpkgs = import inputs.nixpkgs {
             inherit system;
           };
 
           cosmos-nix = inputs.cosmos-nix.packages.${system};
-        in
-        {
+    in {
           packages = {
-            inherit (cosmos-nix)
-              gaia5
-              gaia6
-              gaia7
-              gaia8
-              gaia9
+        inherit
+          (cosmos-nix)
+          gaia6-ordered
+          gaia11
               osmosis
               wasmd
-              gaia6-ordered
               ibc-go-v2-simapp
               ibc-go-v3-simapp
               ibc-go-v4-simapp

@@ -74,7 +74,7 @@ where
             .chain_driver
             .submit_consumer_chain_proposal(chain_id.as_str(), "2023-05-31T12:09:47.048227Z")?;
 
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(2));
 
         vote_proposal(
             node_a.chain_driver.chain_id.as_str(),
@@ -84,7 +84,7 @@ where
             "1200stake",
         )?;
 
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(30));
 
         let node_b = bootstrap_consumer_node(
             builder,

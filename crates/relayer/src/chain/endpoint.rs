@@ -495,6 +495,7 @@ pub trait ChainEndpoint: Sized {
                 CommitmentProofBytes::try_from(connection_proof).map_err(Error::malformed_proof)?,
                 client_proof,
                 consensus_proof,
+                None, // TODO: Retrieve host consensus proof when available
                 None,
                 height.increment(),
             )
@@ -526,8 +527,15 @@ pub trait ChainEndpoint: Sized {
         let channel_proof_bytes =
             CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?;
 
-        Proofs::new(channel_proof_bytes, None, None, None, height.increment())
-            .map_err(Error::malformed_proof)
+        Proofs::new(
+            channel_proof_bytes,
+            None,
+            None,
+            None,
+            None,
+            height.increment(),
+        )
+        .map_err(Error::malformed_proof)
     }
 
     /// Builds the proof for packet messages.
@@ -663,6 +671,7 @@ pub trait ChainEndpoint: Sized {
 
         let proofs = Proofs::new(
             CommitmentProofBytes::try_from(packet_proof).map_err(Error::malformed_proof)?,
+            None,
             None,
             None,
             channel_proof,
