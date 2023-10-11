@@ -6,9 +6,9 @@ use core::str::FromStr;
 use core::time::Duration;
 use eyre::eyre;
 use eyre::Report as Error;
-use ibc_relayer::chain::ChainType;
 use ibc_relayer::config;
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
+use ibc_relayer::config::CosmosSdkConfig;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use std::sync::{Arc, RwLock};
@@ -134,9 +134,8 @@ impl FullNode {
             .display()
             .to_string();
 
-        Ok(config::ChainConfig {
+        Ok(config::ChainConfig::CosmosSdk(CosmosSdkConfig {
             id: self.chain_driver.chain_id.clone(),
-            r#type: ChainType::CosmosSdk,
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
             event_source: config::EventSourceMode::Push {
@@ -171,7 +170,7 @@ impl FullNode {
             proof_specs: Default::default(),
             extension_options: Default::default(),
             sequential_batch_tx: false,
-        })
+        }))
     }
 
     /**
