@@ -58,7 +58,7 @@ impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
 impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
     fn from(value: IdentifiedChannelEnd) -> Self {
         RawIdentifiedChannel {
-            state: value.channel_end.state.into_i32(),
+            state: value.channel_end.state.as_i32(),
             ordering: value.channel_end.ordering as i32,
             counterparty: Some(value.channel_end.counterparty().clone().into()),
             connection_hops: value
@@ -151,7 +151,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
 impl From<ChannelEnd> for RawChannel {
     fn from(value: ChannelEnd) -> Self {
         RawChannel {
-            state: value.state.into_i32(),
+            state: value.state.as_i32(),
             ordering: value.ordering as i32,
             counterparty: Some(value.counterparty().clone().into()),
             connection_hops: value
@@ -450,7 +450,7 @@ impl State {
     }
 
     // Parses the State out from a i32.
-    pub fn into_i32(&self) -> i32 {
+    pub fn as_i32(&self) -> i32 {
         match self {
             State::Uninitialized => 0,
             State::Init => 1,

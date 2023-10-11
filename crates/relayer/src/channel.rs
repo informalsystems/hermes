@@ -2132,7 +2132,7 @@ fn check_destination_channel_state(
 
     // TODO: Refactor into a method
     let good_state =
-        existing_channel.state().into_i32() as u32 <= expected_channel.state().into_i32() as u32;
+        existing_channel.state().as_i32() as u32 <= expected_channel.state().as_i32() as u32;
     let good_channel_port_ids = existing_channel.counterparty().channel_id().is_none()
         || existing_channel.counterparty().channel_id()
             == expected_channel.counterparty().channel_id()
