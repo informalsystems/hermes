@@ -1,7 +1,6 @@
 use crate::chain_registry::get_configs;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc_chain_registry::chain;
 
 use crate::conclude::Output;
 

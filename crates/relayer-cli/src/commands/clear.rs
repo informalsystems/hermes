@@ -3,12 +3,11 @@ use abscissa_core::config::Override;
 use abscissa_core::{Command, FrameworkErrorKind, Runnable};
 
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
-use ibc_relayer::config::{ChainConfig, Config};
+use ibc_relayer::config::Config;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::events::IbcEvent;
-use itertools::chain;
 
 use crate::application::app_config;
 use crate::cli_utils::spawn_chain_counterparty;

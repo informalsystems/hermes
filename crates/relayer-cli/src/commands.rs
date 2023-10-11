@@ -145,6 +145,7 @@ impl Configurable<Config> for CliCmd {
         let web = "https://hermes.informal.systems";
         let suffix = format!("{} {} ({})", CliCmd::name(), clap::crate_version!(), web);
         for ccfg in config.chains.iter_mut() {
+            #[allow(irrefutable_let_patterns)]
             if let ChainConfig::CosmosSdk(ref mut cosmos_ccfg) = ccfg {
                 cosmos_ccfg.memo_prefix.apply_suffix(&suffix);
             }
@@ -154,6 +155,7 @@ impl Configurable<Config> for CliCmd {
         // for a prolonged period of time.
         if !matches!(self, CliCmd::Start(_)) {
             for c in config.chains.iter_mut() {
+                #[allow(irrefutable_let_patterns)]
                 if let ChainConfig::CosmosSdk(ref mut cosmos_ccfg) = c {
                     cosmos_ccfg.rpc_timeout = Duration::from_secs(120);
                 }

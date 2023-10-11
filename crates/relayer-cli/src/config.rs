@@ -94,6 +94,7 @@ pub fn validate_config(config: &Config) -> Result<(), Diagnostic<Error>> {
 
         // TODO: why are these not methods on the config object?
         // why are they defined only in the relayer-cli crate?
+        #[allow(irrefutable_let_patterns)]
         if let ChainConfig::CosmosSdk(cosmos_c) = c {
             validate_trust_threshold(&cosmos_c.id, cosmos_c.trust_threshold)?;
             // Validate gas-related settings
