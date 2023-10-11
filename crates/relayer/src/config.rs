@@ -581,6 +581,18 @@ impl ChainConfig {
             Self::CosmosSdk(config) => config.max_block_time,
         }
     }
+
+    pub fn key_name(&self) -> &String {
+        match self {
+            Self::CosmosSdk(config) => &config.key_name,
+        }
+    }
+
+    pub fn set_key_name(&mut self, key_name: String) {
+        match self {
+            Self::CosmosSdk(config) => config.key_name = key_name,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
