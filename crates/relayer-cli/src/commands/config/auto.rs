@@ -1,6 +1,7 @@
 use crate::chain_registry::get_configs;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use ibc_chain_registry::chain;
 
 use crate::conclude::Output;
 
@@ -117,7 +118,7 @@ impl Runnable for AutoCmd {
             .collect();
 
         // Determine which chains were not fetched
-        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id.name()));
+        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id().name()));
         let missing_chains_set: HashSet<_> =
             sorted_names_set.difference(&fetched_chains_set).collect();
 
@@ -129,14 +130,14 @@ impl Runnable for AutoCmd {
             // If a key is provided, use it
             if let Some(key_name) = key_option {
                 info!("{}: uses key \"{}\"", &chain_config.id(), &key_name);
-                chain_config.key_name = key_name;
+                chain_config.set_key_name(key_name);
             } else {
                 // Otherwise, find the key in the keystore
                 let chain_id = &chain_config.id();
                 let key = find_key(chain_config);
-                if let Some(key) = key {
-                    info!("{}: uses key '{}'", &chain_id, &key);
-                    chain_config.key_name = key;
+                if let Some(key_name) = key {
+                    info!("{}: uses key '{}'", &chain_id, &key_name);
+                    chain_config.set_key_name(key_name);
                 } else {
                     // If no key is found, warn the user and continue
                     warn!("No key found for chain: {}", chain_id);

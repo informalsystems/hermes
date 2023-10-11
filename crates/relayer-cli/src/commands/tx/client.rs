@@ -7,13 +7,16 @@ use std::thread;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use ibc_relayer::chain::requests::{
-    IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryHeight,
-};
 use ibc_relayer::config::Config;
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use ibc_relayer::{chain::handle::ChainHandle, config::GenesisRestart};
+use ibc_relayer::{
+    chain::requests::{
+        IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryHeight,
+    },
+    config::ChainConfig,
+};
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer_types::events::IbcEvent;
@@ -202,10 +205,19 @@ impl Runnable for TxUpdateClientCmd {
         };
 
         if let Some(restart_params) = self.genesis_restart_params() {
-            if let Some(c) = config.find_chain_mut(&reference_chain_id) {
-                // Q: How should this be handled? Should the cli command only
-                // work on supported chain types?
-                c.genesis_restart = Some(restart_params);
+            match config.find_chain_mut(&reference_chain_id) {
+                Some(chain_config) => match chain_config {
+                    ChainConfig::CosmosSdk(chain_config) => {
+                        chain_config.genesis_restart = Some(restart_params)
+                    }
+                },
+                None => {
+                    Output::error(format!(
+                        "Chain '{}' is unsupported, or not found in the configuration",
+                        reference_chain_id
+                    ))
+                    .exit();
+                }
             }
         }
 

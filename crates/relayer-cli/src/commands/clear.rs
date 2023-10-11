@@ -3,11 +3,12 @@ use abscissa_core::config::Override;
 use abscissa_core::{Command, FrameworkErrorKind, Runnable};
 
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
-use ibc_relayer::config::Config;
+use ibc_relayer::config::{ChainConfig, Config};
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::events::IbcEvent;
+use itertools::chain;
 
 use crate::application::app_config;
 use crate::cli_utils::spawn_chain_counterparty;
@@ -80,7 +81,7 @@ impl Override<Config> for ClearPacketsCmd {
             // be the responsibility of the backend? If key management is common
             // across backends, how should it be agnostic to the key type? Can it
             // just be an opaque byte string handled by the backend?
-            chain_config.key_name = key_name.to_string();
+            chain_config.set_key_name(key_name.to_string());
         }
 
         Ok(config)
@@ -106,7 +107,7 @@ impl Runnable for ClearPacketsCmd {
         if let Some(ref counterparty_key_name) = self.counterparty_key_name {
             match chains.dst.config() {
                 Ok(mut dst_chain_cfg) => {
-                    dst_chain_cfg.key_name = counterparty_key_name.to_string();
+                    dst_chain_cfg.set_key_name(counterparty_key_name.to_string());
                 }
                 Err(e) => Output::error(e).exit(),
             }

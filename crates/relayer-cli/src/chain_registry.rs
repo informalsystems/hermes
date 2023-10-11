@@ -371,7 +371,7 @@ mod tests {
 
         for config in configs {
             match config {
-                Ok(config) => match config.packet_filter().channel_policy {
+                Ok(config) => match &config.packet_filter().channel_policy {
                     ChannelPolicy::Allow(channel_filter) => {
                         if config.id().as_str().contains("cosmoshub") {
                             assert!(channel_filter.is_exact());

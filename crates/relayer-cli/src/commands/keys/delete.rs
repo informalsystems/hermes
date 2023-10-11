@@ -94,7 +94,7 @@ impl Runnable for KeysDeleteCmd {
         match opts.id {
             KeysDeleteId::All => match delete_all_keys(&opts.config) {
                 Ok(_) => {
-                    Output::success_msg(format!("Removed all keys on chain {}", opts.config.id))
+                    Output::success_msg(format!("Removed all keys on chain {}", opts.config.id()))
                         .exit()
                 }
                 Err(e) => Output::error(e).exit(),

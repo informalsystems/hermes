@@ -4,6 +4,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::ChainConfig;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::application::app_config;
@@ -75,7 +76,9 @@ fn get_balance(chain: impl ChainHandle, key_name: Option<String>, denom: Option<
             // Retrieve the key name string to output.
             let key_name = key_name.unwrap_or_else(|| {
                 let chain_config = chain.config().unwrap_or_else(exit_with_unrecoverable_error);
-                chain_config.key_name
+                match chain_config {
+                    ChainConfig::CosmosSdk(chain_config) => chain_config.key_name,
+                }
             });
 
             Output::success_msg(format!(
@@ -95,7 +98,9 @@ fn get_balances(chain: impl ChainHandle, key_name: Option<String>) {
             // Retrieve the key name string to output.
             let key_name = key_name.unwrap_or_else(|| {
                 let chain_config = chain.config().unwrap_or_else(exit_with_unrecoverable_error);
-                chain_config.key_name
+                match chain_config {
+                    ChainConfig::CosmosSdk(chain_config) => chain_config.key_name,
+                }
             });
 
             let mut pretty_output = format!("Balances for key `{key_name}`:");
