@@ -334,8 +334,7 @@ mod tests {
         let chain_id = ChainId::from_string("chain_A");
 
         #[allow(irrefutable_let_patterns)]
-        let config::ChainConfig::CosmosSdk(chain_config) = config.find_chain(&chain_id).unwrap()
-        else {
+        let config::ChainConfig::CosmosSdk(chain_config) = config.find_chain(&chain_id).unwrap() else {
             panic!("should be a cosmos sdk chain config");
         };
 
