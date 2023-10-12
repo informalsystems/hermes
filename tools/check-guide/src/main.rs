@@ -12,6 +12,7 @@ use regex::Regex;
 use std::{
     collections::HashSet,
     ffi::OsStr,
+    fmt,
     fs::File,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
@@ -21,6 +22,14 @@ use walkdir::WalkDir;
 #[derive(Debug)]
 enum ParseError {
     IncorrectHermesCommand(clap::Error),
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseError::IncorrectHermesCommand(e) => write!(f, "{}", e),
+        }
+    }
 }
 
 impl From<clap::Error> for ParseError {
@@ -66,7 +75,7 @@ fn verify_line(line: &str, path: &Path, line_number: i32) -> i32 {
         let template = m.as_str();
         let template_replaced = replace_template(template, &*FILEREADER, parent, "", 0);
         if let Err(e) = check_correctness(template_replaced.split_whitespace()) {
-            eprintln!("{}:{}: {:?}", path.display(), line_number, e);
+            eprintln!("{}:{}: {}", path.display(), line_number, e);
             errors_found += 1;
         }
     });
@@ -84,7 +93,7 @@ fn verify_file(path: &Path) -> i32 {
 
     for line in reader.lines() {
         let line = line
-            .unwrap_or_else(|_| panic!("{} : Failed to read line {}", path.display(), line_number));
+            .unwrap_or_else(|_| panic!("{}: Failed to read line {}", path.display(), line_number));
         errors_found += verify_line(&line, path, line_number);
         line_number += 1;
     }
