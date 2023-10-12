@@ -91,7 +91,7 @@ impl BinaryChannelTest for FeeGrantTest {
             .chains
             .iter_mut()
             .map(|c| {
-                if c.id == chains.node_a.chain_id().0.clone() {
+                if c.id() == chains.node_a.chain_id().0.clone() {
                     c.fee_granter = Some("user2".to_owned());
                 }
                 c.clone()
