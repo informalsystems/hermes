@@ -28,7 +28,7 @@
         inherit
           (cosmos-nix)
           gaia6-ordered
-          gaia11
+          gaia12
               osmosis
               wasmd
               ibc-go-v2-simapp

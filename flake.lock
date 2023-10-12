@@ -82,6 +82,7 @@
         "gaia-main-src": "gaia-main-src",
         "gaia10-src": "gaia10-src",
         "gaia11-src": "gaia11-src",
+        "gaia12-src": "gaia12-src",
         "gaia5-src": "gaia5-src",
         "gaia6-ordered-src": "gaia6-ordered-src",
         "gaia6-src": "gaia6-src",
@@ -135,11 +136,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1697010618,
-        "narHash": "sha256-lktcpUUape/qh0kDDrT3sLKUOP5o1rCSWW/o6otWtFY=",
+        "lastModified": 1697035289,
+        "narHash": "sha256-2yPPi/n4IrKZ0Y0BwPSmHGP5UJoY5u5XY6BnKxsuGnc=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "7a42d2ad91fcc33a9fd4871a5b7ca82ff1850a0a",
+        "rev": "e26774d7889a508ad3ac021a886bc6b8cf11cf7e",
         "type": "github"
       },
       "original": {
@@ -347,6 +348,23 @@
       "original": {
         "owner": "cosmos",
         "ref": "v11.0.0",
+        "repo": "gaia",
+        "type": "github"
+      }
+    },
+    "gaia12-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1692870038,
+        "narHash": "sha256-KqpkazhGGQWzvHiiwCiE7ciA8+L2t2HgxN8270zuGd0=",
+        "owner": "cosmos",
+        "repo": "gaia",
+        "rev": "6f8067d76ce30996f83645862153ccfaf5f13dd1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "ref": "v12.0.0",
         "repo": "gaia",
         "type": "github"
       }
@@ -878,11 +896,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1696757521,
-        "narHash": "sha256-cfgtLNCBLFx2qOzRLI6DHfqTdfWI+UbvsKYa3b3fvaA=",
+        "lastModified": 1697009197,
+        "narHash": "sha256-viVRhBTFT8fPJTb1N3brQIpFZnttmwo3JVKNuWRVc3s=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "2646b294a146df2781b1ca49092450e8a32814e1",
+        "rev": "01441e14af5e29c9d27ace398e6dd0b293e25a54",
         "type": "github"
       },
       "original": {
