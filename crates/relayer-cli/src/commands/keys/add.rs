@@ -30,18 +30,23 @@ use crate::conclude::Output;
 ///
 /// `keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>`
 ///
-/// The command to restore a key from a file containing mnemonic:
+/// The command to restore a key from a file containing its mnemonic:
 ///
 /// `keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>`
 ///
-/// The key-file and mnemonic-file flags can't be given at the same time, this will cause a terminating error.
+/// On *nix platforms, both flags also accept `/dev/stdin` as a value, which will read the key or the mnemonic from stdin.
+///
+/// The `--key-file` and `--mnemonic-file` flags cannot both be provided at the same time, this will cause a terminating error.
+///
 /// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
-#[clap(
-    override_usage = "hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
-
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>"
-)]
+#[clap(override_usage = "Add a key from a Comet keyring file:
+        hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
+    
+    Add a key from a file containing its mnemonic:
+        hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>
+    
+    On *nix platforms, both flags also accept `/dev/stdin` as a value, which will read the key or the mnemonic from stdin.")]
 pub struct KeysAddCmd {
     #[clap(
         long = "chain",
@@ -56,7 +61,7 @@ pub struct KeysAddCmd {
         required = true,
         value_name = "KEY_FILE",
         help_heading = "FLAGS",
-        help = "Path to the key file",
+        help = "Path to the key file, or /dev/stdin to read the content from stdin",
         group = "add-restore"
     )]
     key_file: Option<PathBuf>,
@@ -66,7 +71,7 @@ pub struct KeysAddCmd {
         required = true,
         value_name = "MNEMONIC_FILE",
         help_heading = "FLAGS",
-        help = "Path to file containing mnemonic to restore the key from",
+        help = "Path to file containing the mnemonic to restore the key from, or /dev/stdin to read the mnemonic from stdin",
         group = "add-restore"
     )]
     mnemonic_file: Option<PathBuf>,

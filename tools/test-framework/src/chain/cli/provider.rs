@@ -1,6 +1,7 @@
+use std::collections::HashMap;
 use std::str;
 
-use crate::chain::exec::simple_exec;
+use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::error::Error;
 
 pub fn submit_consumer_chain_proposal(
@@ -11,6 +12,7 @@ pub fn submit_consumer_chain_proposal(
 ) -> Result<(), Error> {
     let proposal_file = format!("{}/consumer_proposal.json", home_path);
 
+    // The submission might fail silently if there is not enough gas
     simple_exec(
         chain_id,
         command_path,
@@ -30,11 +32,37 @@ pub fn submit_consumer_chain_proposal(
             rpc_listen_address,
             "--keyring-backend",
             "test",
+            "--gas",
+            "2000000",
             "--yes",
         ],
     )?;
 
     Ok(())
+}
+
+pub fn query_consumer_proposal(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+) -> Result<ExecOutput, Error> {
+    simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "--node",
+            rpc_listen_address,
+            "query",
+            "gov",
+            "proposal",
+            "1",
+            "--output",
+            "json",
+        ],
+    )
 }
 
 pub fn query_consumer_genesis(
@@ -43,6 +71,7 @@ pub fn query_consumer_genesis(
     home_path: &str,
     rpc_listen_address: &str,
     consumer_chain_id: &str,
+    consumer_command_path: &str,
 ) -> Result<String, Error> {
     let exec_output = simple_exec(
         chain_id,
@@ -61,7 +90,19 @@ pub fn query_consumer_genesis(
         ],
     )?;
 
-    Ok(exec_output.stdout)
+    // Neutron does not have the `PreCCV` configuration in its genesis file,
+    // and will panic due to an unknown configuration if it is set
+    let consumer_genesis = if consumer_command_path == "neutrond" {
+        let mut queried_genesis: HashMap<String, serde_json::Value> =
+            serde_json::from_str(&exec_output.stdout).expect("failed to read file");
+
+        queried_genesis.remove("preCCV");
+        serde_json::to_string(&queried_genesis).unwrap()
+    } else {
+        exec_output.stdout
+    };
+
+    Ok(consumer_genesis)
 }
 
 pub fn replace_genesis_state(chain_id: &str, home_path: &str) -> Result<String, Error> {
