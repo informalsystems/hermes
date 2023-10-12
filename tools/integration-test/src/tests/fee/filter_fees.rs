@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ibc_relayer::config::filter::{ChannelPolicy, FeePolicy, FilterPattern, MinFee};
-use ibc_relayer::config::PacketFilter;
+use ibc_relayer::config::{ChainConfig, PacketFilter};
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
@@ -27,7 +27,11 @@ impl TestOverrides for FilterIncentivizedFeesRelayerTest {
             HashMap::from([(FilterPattern::Wildcard("*".parse().unwrap()), fees_filters)]);
         let packet_filter = PacketFilter::new(ChannelPolicy::default(), min_fees);
         for chain_config in config.chains.iter_mut() {
-            chain_config.packet_filter = packet_filter.clone();
+            match chain_config {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.packet_filter = packet_filter.clone();
+                }
+            }
         }
     }
 
@@ -175,7 +179,11 @@ impl TestOverrides for FilterByChannelIncentivizedFeesRelayerTest {
         )]);
         let packet_filter = PacketFilter::new(ChannelPolicy::default(), min_fees);
         for chain_config in config.chains.iter_mut() {
-            chain_config.packet_filter = packet_filter.clone();
+            match chain_config {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.packet_filter = packet_filter.clone();
+                }
+            }
         }
     }
 
