@@ -2131,8 +2131,9 @@ fn check_destination_channel_state(
         existing_channel.connection_hops() == expected_channel.connection_hops();
 
     // TODO: Refactor into a method
-    let good_state =
-        existing_channel.state().as_i32() as u32 <= expected_channel.state().as_i32() as u32;
+    let good_state = existing_channel
+        .state()
+        .less_or_equal_progress(*expected_channel.state());
     let good_channel_port_ids = existing_channel.counterparty().channel_id().is_none()
         || existing_channel.counterparty().channel_id()
             == expected_channel.counterparty().channel_id()
