@@ -50,7 +50,7 @@ The command outputs a JSON similar to the one below.
 }
 ```
 
-You can save this to a file (e.g. `key_seed.json`) and use it to add to Hermes with `{{#template ../../../templates/commands/hermes/keys/add_1.md CHAIN_ID=<CHAIN_ID> KEY_FILE=key_seed.json}}`. See the `Adding Keys` section for more details.
+You can save this to a file (e.g. `key_seed.json`) and use it to add to Hermes with `{{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> KEY_FILE=key_seed.json}}`. See the `Adding Keys` section for more details.
 
 ### Adding and restoring Keys
 
@@ -64,7 +64,7 @@ If a key with the same `key_name` already exists, the flag `--overwrite` must be
 #### Add a private key to a chain from a key file
 
 ```shell
-{{#template ../../../templates/commands/hermes/keys/add_1.md CHAIN_ID=<CHAIN_ID> KEY_FILE=<PRIVATE_KEY_FILE>}}
+{{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> KEY_FILE=<PRIVATE_KEY_FILE>}}
 ```
 
 The content of the file key should have the same format as the output of the `gaiad keys add` command:
@@ -90,13 +90,13 @@ Success: Added key testkey (<ADDRESS>) on <CHAIN_ID> chain
 > To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
-> {{#template ../../../templates/commands/hermes/keys/add_1.md CHAIN_ID=<CHAIN_ID> KEY_FILE=<PRIVATE_KEY_FILE> OPTIONS= --key-name [KEY_NAME]}}
+> {{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> KEY_FILE=<PRIVATE_KEY_FILE> OPTIONS= --key-name [KEY_NAME]}}
 > ```
 
 #### Restore a private key to a chain from a mnemonic
 
 ```shell
-{{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE>}}
+{{#template ../../../templates/commands/hermes/keys/add_4.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE>}}
 ```
 
 or using an explicit [derivation path](https://github.com/satoshilabs/slips/blob/master/slip-0044.md), for example
@@ -104,7 +104,7 @@ an Ethereum coin type (used for Evmos, Injective, Umee, Cronos, and
 possibly other networks):
 
 ```shell
-{{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS= --hd-path "m/44'/60'/0'/0/0"}}
+{{#template ../../../templates/commands/hermes/keys/add_4.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS= --hd-path "m/44'/60'/0'/0/0"}}
 ```
 
 The mnemonic file needs to have the 24 mnemonic words on the same line, separated by a white space. So the content should have the following format:
@@ -123,7 +123,7 @@ Success: Restore key testkey (<ADDRESS>) on <CHAIN_ID> chain
 > To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
-> {{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS= --key-name <KEY_NAME>}}
+> {{#template ../../../templates/commands/hermes/keys/add_4.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS= --key-name <KEY_NAME>}}
 > ```
 
 ### Delete keys

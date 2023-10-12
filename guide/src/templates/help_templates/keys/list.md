@@ -1,5 +1,5 @@
 DESCRIPTION:
-List keys configured on a chain
+List keys configured for a chain
 
 USAGE:
     hermes keys list --chain <CHAIN_ID>
