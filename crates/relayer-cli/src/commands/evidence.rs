@@ -485,11 +485,38 @@ fn submit_light_client_attack_evidence(
     );
 
     if !is_counterparty_provider(chain, counterparty) && counterparty_client.is_frozen() {
+        warn!(
+            "cannot submit light client attack evidence to client `{}` on chain `{}`",
+            counterparty_client_id,
+            counterparty.id()
+        );
+        warn!("reason: client is frozen and chain is not a CCV provider chain");
+
         return Ok(());
     }
 
     let signer = counterparty.get_signer()?;
     let common_height = Height::from_tm(evidence.common_height, chain.id());
+
+    let counterparty_is_provider = is_counterparty_provider(chain, counterparty);
+    let provider_has_common_consensus_state = counterparty_is_provider
+        && has_consensus_state(counterparty, &counterparty_client_id, common_height);
+    dbg!(counterparty_is_provider);
+    dbg!(provider_has_common_consensus_state);
+
+    if counterparty_is_provider
+        && counterparty_client.is_frozen()
+        && !provider_has_common_consensus_state
+    {
+        warn!(
+            "cannot submit light client attack evidence to client `{}` on provider chain `{}`",
+            counterparty_client_id,
+            counterparty.id()
+        );
+        warn!("reason: client is frozen and does not have a consensus state at height {common_height}");
+
+        return Ok(());
+    }
 
     let mut msgs = match counterparty_client.wait_and_build_update_client(common_height) {
         Ok(msgs) => msgs,
@@ -502,11 +529,11 @@ fn submit_light_client_attack_evidence(
             );
             warn!("reason: failed to build update client message: {e}");
 
-            vec![]
+            Vec::new()
         }
     };
 
-    if is_counterparty_provider(chain, counterparty) {
+    if counterparty_is_provider {
         info!(
             "will submit consumer light client attack evidence to client `{}` on provider chain `{}`",
             counterparty_client_id,
@@ -561,6 +588,25 @@ fn submit_light_client_attack_evidence(
             counterparty.id()
         )),
     }
+}
+
+fn has_consensus_state(
+    chain: &BaseChainHandle,
+    client_id: &ClientId,
+    consensus_height: Height,
+) -> bool {
+    use ibc_relayer::chain::requests::QueryConsensusStateRequest;
+
+    let res = chain.query_consensus_state(
+        QueryConsensusStateRequest {
+            client_id: client_id.clone(),
+            consensus_height,
+            query_height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    );
+
+    res.is_ok()
 }
 
 fn is_counterparty_provider(

@@ -495,8 +495,11 @@ sleep 20
 if grep -q "successfully submitted light client attack evidence" ${HOME_DIR}/hermes-evidence-logs.txt; then
     diag "Evidence successfully submitted, success!"
 else
-    if grep -q "as it is already frozen" ${HOME_DIR}/hermes-evidence-logs.txt; then
-        diag "Client already frozen, success!"
+    if grep -q "provider is frozen" ${HOME_DIR}/hermes-evidence-logs.txt; then
+        diag "Client on provider is already frozen, cannot do anything."
+        exit 0
+    elif grep -q "client is frozen and does not have a consensus state at height" ${HOME_DIR}/hermes-evidence-logs.txt; then
+        diag "Client already frozen and does not have a consensus state at common height, cannot do anything."
         exit 0
     else
         diag "Evidence not submitted, failed."
