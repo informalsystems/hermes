@@ -2,9 +2,8 @@ use std::io::Write;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 
 use ibc_relayer::config::{
-    ChainConfig,
-    Channels as ConfigChannels, Clients as ConfigClients, Connections as ConfigConnections,
-    ModeConfig, Packets as ConfigPackets,
+    ChainConfig, Channels as ConfigChannels, Clients as ConfigClients,
+    Connections as ConfigConnections, ModeConfig, Packets as ConfigPackets,
 };
 
 use ibc_test_framework::prelude::*;
