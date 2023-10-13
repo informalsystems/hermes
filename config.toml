@@ -140,6 +140,9 @@ port = 5555
 # Specify the chain ID. Required
 id = 'ibc-0'
 
+# Specify the chain type, currently only `"CosmosSdk"` is supported.
+type = "CosmosSdk"
+
 # Whether or not this is a CCV consumer chain. Default: false
 # Only specifiy true for CCV consumer chain, but NOT for sovereign chains.
 ccv_consumer_chain = false
