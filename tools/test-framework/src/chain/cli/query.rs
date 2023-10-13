@@ -14,7 +14,9 @@ pub fn query_balance(
     wallet_id: &str,
     denom: &str,
 ) -> Result<Amount, Error> {
-    let res = simple_exec(
+    // SDK v0.50 has removed the `--denom` flag from the `query bank balances` CLI.
+    // It also changed the JSON output.
+    match simple_exec(
         chain_id,
         command_path,
         &[
@@ -29,20 +31,64 @@ pub fn query_balance(
             "--output",
             "json",
         ],
-    )?
-    .stdout;
+    ) {
+        Ok(output) => {
+            let amount_str = json::from_str::<json::Value>(&output.stdout)
+                .map_err(handle_generic_error)?
+                .get("amount")
+                .ok_or_else(|| eyre!("expected amount field"))?
+                .as_str()
+                .ok_or_else(|| eyre!("expected string field"))?
+                .to_string();
 
-    let amount_str = json::from_str::<json::Value>(&res)
-        .map_err(handle_generic_error)?
-        .get("amount")
-        .ok_or_else(|| eyre!("expected amount field"))?
-        .as_str()
-        .ok_or_else(|| eyre!("expected string field"))?
-        .to_string();
+            let amount = Amount::from_str(&amount_str).map_err(handle_generic_error)?;
 
-    let amount = Amount::from_str(&amount_str).map_err(handle_generic_error)?;
+            Ok(amount)
+        }
+        Err(_) => {
+            let res = simple_exec(
+                chain_id,
+                command_path,
+                &[
+                    "--node",
+                    rpc_listen_address,
+                    "query",
+                    "bank",
+                    "balances",
+                    wallet_id,
+                    "--output",
+                    "json",
+                ],
+            )?
+            .stdout;
+            let amounts_array =
+                json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
 
-    Ok(amount)
+            let balances = amounts_array
+                .get("balances")
+                .ok_or_else(|| eyre!("expected balances field"))?
+                .as_array()
+                .ok_or_else(|| eyre!("expected array field"))?;
+
+            let amount_str = balances
+                .iter()
+                .find(|a| {
+                    a.get("denom")
+                        .ok_or_else(|| eyre!("expected denom field"))
+                        .unwrap()
+                        == denom
+                })
+                .ok_or_else(|| eyre!("no entry with denom `{denom}` found"))?
+                .get("amount")
+                .ok_or_else(|| eyre!("expected amount field"))?
+                .as_str()
+                .ok_or_else(|| eyre!("expected amount to be in string format"))?;
+
+            let amount = Amount::from_str(amount_str).map_err(handle_generic_error)?;
+
+            Ok(amount)
+        }
+    }
 }
 
 /**

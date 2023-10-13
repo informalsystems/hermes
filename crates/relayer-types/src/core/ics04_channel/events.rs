@@ -7,7 +7,6 @@ use tendermint::abci;
 
 use crate::core::ics04_channel::channel::Ordering;
 use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::flush_status::FlushStatus;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics04_channel::version::Version;
@@ -146,10 +145,16 @@ pub struct UpgradeAttributes {
     pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
     pub upgrade_ordering: Ordering,
-    pub channel_flush_status: FlushStatus,
 }
 
-impl UpgradeAttributes {}
+impl UpgradeAttributes {
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+}
 
 impl Display for UpgradeAttributes {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
@@ -573,7 +578,6 @@ pub struct UpgradeInit {
     pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
     pub upgrade_ordering: Ordering,
-    pub channel_flush_status: FlushStatus,
 }
 
 impl Display for UpgradeInit {
@@ -588,8 +592,8 @@ impl Display for UpgradeInit {
         }
         write!(
             f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {}, channel_flush_status: {}  }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering, self.channel_flush_status
+            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
+            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
         )
     }
 }
@@ -605,7 +609,6 @@ impl From<UpgradeInit> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            channel_flush_status: ev.channel_flush_status,
         }
     }
 }
@@ -651,7 +654,6 @@ impl TryFrom<UpgradeAttributes> for UpgradeInit {
             upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
             upgrade_ordering: attrs.upgrade_ordering,
-            channel_flush_status: attrs.channel_flush_status,
         })
     }
 }
@@ -678,7 +680,6 @@ pub struct UpgradeTry {
     pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
     pub upgrade_ordering: Ordering,
-    pub channel_flush_status: FlushStatus,
 }
 
 impl Display for UpgradeTry {
@@ -693,8 +694,8 @@ impl Display for UpgradeTry {
         }
         write!(
             f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {}, channel_flush_status: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering, self.channel_flush_status
+            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
+            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
         )
     }
 }
@@ -710,7 +711,6 @@ impl From<UpgradeTry> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            channel_flush_status: ev.channel_flush_status,
         }
     }
 }
@@ -756,7 +756,6 @@ impl TryFrom<UpgradeAttributes> for UpgradeTry {
             upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
             upgrade_ordering: attrs.upgrade_ordering,
-            channel_flush_status: attrs.channel_flush_status,
         })
     }
 }
@@ -783,7 +782,6 @@ pub struct UpgradeAck {
     pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
     pub upgrade_ordering: Ordering,
-    pub channel_flush_status: FlushStatus,
 }
 
 impl Display for UpgradeAck {
@@ -798,8 +796,8 @@ impl Display for UpgradeAck {
         }
         write!(
             f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {}, channel_flush_status: {}  }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering, self.channel_flush_status
+            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
+            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
         )
     }
 }
@@ -815,7 +813,6 @@ impl From<UpgradeAck> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            channel_flush_status: ev.channel_flush_status,
         }
     }
 }
@@ -861,7 +858,6 @@ impl TryFrom<UpgradeAttributes> for UpgradeAck {
             upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
             upgrade_ordering: attrs.upgrade_ordering,
-            channel_flush_status: attrs.channel_flush_status,
         })
     }
 }
@@ -888,7 +884,6 @@ pub struct UpgradeConfirm {
     pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
     pub upgrade_ordering: Ordering,
-    pub channel_flush_status: FlushStatus,
 }
 
 impl Display for UpgradeConfirm {
@@ -903,8 +898,8 @@ impl Display for UpgradeConfirm {
         }
         write!(
             f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {}, channel_flush_status: {}  }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering, self.channel_flush_status
+            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
+            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
         )
     }
 }
@@ -920,7 +915,6 @@ impl From<UpgradeConfirm> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            channel_flush_status: ev.channel_flush_status,
         }
     }
 }
@@ -966,7 +960,6 @@ impl TryFrom<UpgradeAttributes> for UpgradeConfirm {
             upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
             upgrade_ordering: attrs.upgrade_ordering,
-            channel_flush_status: attrs.channel_flush_status,
         })
     }
 }
@@ -993,7 +986,6 @@ pub struct UpgradeOpen {
     pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
     pub upgrade_ordering: Ordering,
-    pub channel_flush_status: FlushStatus,
 }
 
 impl Display for UpgradeOpen {
@@ -1008,8 +1000,8 @@ impl Display for UpgradeOpen {
         }
         write!(
             f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {}, channel_flush_status: {}  }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering, self.channel_flush_status
+            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
+            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
         )
     }
 }
@@ -1025,7 +1017,6 @@ impl From<UpgradeOpen> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            channel_flush_status: ev.channel_flush_status,
         }
     }
 }
@@ -1071,7 +1062,6 @@ impl TryFrom<UpgradeAttributes> for UpgradeOpen {
             upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
             upgrade_ordering: attrs.upgrade_ordering,
-            channel_flush_status: attrs.channel_flush_status,
         })
     }
 }

@@ -90,7 +90,7 @@ impl From<MsgChannelUpgradeOpen> for RawMsgChannelUpgradeOpen {
         RawMsgChannelUpgradeOpen {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
-            counterparty_channel_state: domain_msg.counterparty_channel_state as i32,
+            counterparty_channel_state: domain_msg.counterparty_channel_state.as_i32(),
             proof_channel: domain_msg.proof_channel.into(),
             proof_height: Some(domain_msg.proof_height.into()),
             signer: domain_msg.signer.to_string(),
@@ -111,7 +111,7 @@ pub mod test_util {
         RawMsgChannelUpgradeOpen {
             port_id: PortId::default().to_string(),
             channel_id: ChannelId::default().to_string(),
-            counterparty_channel_state: 7, // AckUpgrade
+            counterparty_channel_state: 6, // Flushcomplete
             proof_channel: get_dummy_proof(),
             proof_height: Some(RawHeight {
                 revision_number: 1,

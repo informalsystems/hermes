@@ -5,6 +5,10 @@ use tendermint::abci::Event as AbciEvent;
 use ibc_relayer_types::{
     applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
     applications::ics31_icq::events::CrossChainQueryPacket,
+    core::ics03_connection::{
+        error::Error as ConnectionError,
+        events::{self as connection_events, Attributes as ConnectionAttributes},
+    },
     core::ics04_channel::{
         error::Error as ChannelError,
         events::{
@@ -23,13 +27,6 @@ use ibc_relayer_types::{
         },
         ics04_channel::{channel::Ordering, packet::Sequence, version::Version},
         ics24_host::identifier::ConnectionId,
-    },
-    core::{
-        ics03_connection::{
-            error::Error as ConnectionError,
-            events::{self as connection_events, Attributes as ConnectionAttributes},
-        },
-        ics04_channel::flush_status::FlushStatus,
     },
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
     Height,
@@ -515,9 +512,6 @@ fn channel_upgrade_extract_attributes_from_tx(
             }
             channel_events::UPGRADE_ORDERING => {
                 attr.upgrade_ordering = Ordering::from_str(value)?;
-            }
-            channel_events::CHANNEL_FLUSH_STATUS => {
-                attr.channel_flush_status = FlushStatus::from_str(value)?;
             }
             _ => {}
         }

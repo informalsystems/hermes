@@ -295,7 +295,11 @@ pub fn channel_on_destination(
                     channel_id: remote_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
-                IncludeProof::No,
+                // IncludeProof::Yes forces a new query when the CachingChainHandle
+                // is used.
+                // TODO: Pass the BaseChainHandle instead of the CachingChainHandle
+                // to the channel worker to avoid querying for a Proof .
+                IncludeProof::Yes,
             )
             .map(|(c, _)| IdentifiedChannelEnd {
                 port_id: channel.channel_end.counterparty().port_id().clone(),

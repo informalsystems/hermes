@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use flex_error::define_error;
+use ibc_relayer_types::core::ics04_channel::events::UpgradeAttributes;
 use serde::{Deserialize, Serialize};
 
 use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
@@ -434,6 +435,38 @@ impl Object {
         let channel_id = attributes
             .channel_id()
             .ok_or_else(|| ObjectError::missing_channel_id(attributes.clone()))?;
+
+        let port_id = attributes.port_id();
+
+        let dst_chain_id = if allow_non_open_connection {
+            // Get the destination chain allowing for the possibility that the connection is not yet open.
+            // This is to support the optimistic channel handshake by allowing the channel worker to get
+            // the channel events while the connection is being established.
+            // The channel worker will eventually finish the channel handshake via the retry mechanism.
+            channel_connection_client_no_checks(src_chain, port_id, channel_id)
+                .map(|c| c.client.client_state.chain_id())
+                .map_err(ObjectError::supervisor)?
+        } else {
+            channel_connection_client(src_chain, port_id, channel_id)
+                .map(|c| c.client.client_state.chain_id())
+                .map_err(ObjectError::supervisor)?
+        };
+
+        Ok(Channel {
+            dst_chain_id,
+            src_chain_id: src_chain.id(),
+            src_channel_id: channel_id.clone(),
+            src_port_id: port_id.clone(),
+        }
+        .into())
+    }
+
+    pub fn channel_from_chan_upgrade_events(
+        attributes: &UpgradeAttributes,
+        src_chain: &impl ChainHandle,
+        allow_non_open_connection: bool,
+    ) -> Result<Self, ObjectError> {
+        let channel_id = attributes.channel_id();
 
         let port_id = attributes.port_id();
 

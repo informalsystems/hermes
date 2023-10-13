@@ -4,9 +4,8 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 use ibc_relayer_types::core::ics04_channel::channel::{
-    ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState,
+    ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState, UpgradeState,
 };
-use ibc_relayer_types::core::ics04_channel::flush_status::FlushStatus;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 
@@ -240,7 +239,10 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
         || {
             let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
 
-            if !channel_end_a.value().state_matches(&ChannelState::Open) {
+            if !channel_end_a
+                .value()
+                .state_matches(&ChannelState::Open(UpgradeState::NotUpgrading))
+            {
                 return Err(Error::generic(eyre!(
                     "expected channel end A to be in open state"
                 )));
@@ -257,7 +259,10 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
             let channel_end_b =
                 query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
 
-            if !channel_end_b.value().state_matches(&ChannelState::Open) {
+            if !channel_end_b
+                .value()
+                .state_matches(&ChannelState::Open(UpgradeState::NotUpgrading))
+            {
                 return Err(Error::generic(eyre!(
                     "expected channel end B to be in open state"
                 )));
@@ -286,10 +291,8 @@ pub fn assert_eventually_channel_upgrade_init<ChainA: ChainHandle, ChainB: Chain
                 Duration::from_secs(1),
                 || {
                     assert_channel_upgrade_state(
-                        ChannelState::Open,
-                        ChannelState::Open,
-                        FlushStatus::NotinflushUnspecified,
-                        FlushStatus::NotinflushUnspecified,
+                        ChannelState::Open(UpgradeState::NotUpgrading),
+                        ChannelState::Open(UpgradeState::NotUpgrading),
                         handle_a,
                         handle_b,
                         channel_id_a,
@@ -316,9 +319,7 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
         || {
             assert_channel_upgrade_state(
                 ChannelState::Flushing,
-                ChannelState::Open,
-                FlushStatus::NotinflushUnspecified,
-                FlushStatus::NotinflushUnspecified,
+                ChannelState::Open(UpgradeState::NotUpgrading),
                 handle_a,
                 handle_b,
                 channel_id_a,
@@ -344,8 +345,6 @@ pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainH
             assert_channel_upgrade_state(
                 ChannelState::Flushcomplete,
                 ChannelState::Flushing,
-                FlushStatus::NotinflushUnspecified,
-                FlushStatus::NotinflushUnspecified,
                 handle_a,
                 handle_b,
                 channel_id_a,
@@ -369,10 +368,8 @@ pub fn assert_eventually_channel_upgrade_confirm<ChainA: ChainHandle, ChainB: Ch
         Duration::from_secs(1),
         || {
             assert_channel_upgrade_state(
-                ChannelState::Open,
+                ChannelState::Open(UpgradeState::NotUpgrading),
                 ChannelState::Flushcomplete,
-                FlushStatus::NotinflushUnspecified,
-                FlushStatus::NotinflushUnspecified,
                 handle_a,
                 handle_b,
                 channel_id_a,
@@ -396,10 +393,8 @@ pub fn assert_eventually_channel_upgrade_open<ChainA: ChainHandle, ChainB: Chain
         Duration::from_secs(1),
         || {
             assert_channel_upgrade_state(
-                ChannelState::Open,
-                ChannelState::Open,
-                FlushStatus::NotinflushUnspecified,
-                FlushStatus::NotinflushUnspecified,
+                ChannelState::Open(UpgradeState::NotUpgrading),
+                ChannelState::Open(UpgradeState::NotUpgrading),
                 handle_a,
                 handle_b,
                 channel_id_a,
@@ -415,8 +410,6 @@ pub fn assert_eventually_channel_upgrade_open<ChainA: ChainHandle, ChainB: Chain
 fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     a_side_state: ChannelState,
     b_side_state: ChannelState,
-    a_side_flush_status: FlushStatus,
-    b_side_flush_status: FlushStatus,
     handle_a: &ChainA,
     handle_b: &ChainB,
     channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
@@ -430,17 +423,6 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
             "expected channel end A state to be `{}`, but is instead `{}`",
             a_side_state,
             channel_end_a.value().state()
-        )));
-    }
-
-    if !channel_end_a
-        .value()
-        .flush_status_matches(&a_side_flush_status)
-    {
-        return Err(Error::generic(eyre!(
-            "expected channel end A flush status to be `{}`, but is instead `{}`",
-            a_side_flush_status,
-            channel_end_a.value().flush_status()
         )));
     }
 
@@ -490,17 +472,6 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
             "expected channel end B state to be `{}`, but is instead `{}`",
             b_side_state,
             channel_end_b.value().state()
-        )));
-    }
-
-    if !channel_end_b
-        .value()
-        .flush_status_matches(&b_side_flush_status)
-    {
-        return Err(Error::generic(eyre!(
-            "expected channel end B flush status to be `{}`, but is instead `{}`",
-            b_side_flush_status,
-            channel_end_b.value().flush_status()
         )));
     }
 

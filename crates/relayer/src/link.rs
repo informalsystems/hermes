@@ -1,6 +1,6 @@
 use ibc_relayer_types::core::{
     ics03_connection::connection::State as ConnectionState,
-    ics04_channel::channel::State as ChannelState,
+    ics04_channel::channel::{State as ChannelState, UpgradeState},
     ics24_host::identifier::{ChannelId, PortChannelId, PortId},
 };
 use tracing::info;
@@ -77,7 +77,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 )
             })?;
 
-        if !a_channel.state_matches(&ChannelState::Open)
+        if !a_channel.state_matches(&ChannelState::Open(UpgradeState::NotUpgrading))
             && !a_channel.state_matches(&ChannelState::Closed)
         {
             return Err(LinkError::invalid_channel_state(

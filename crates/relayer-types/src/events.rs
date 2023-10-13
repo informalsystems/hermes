@@ -19,8 +19,8 @@ use crate::core::ics03_connection::error as connection_error;
 use crate::core::ics03_connection::events as ConnectionEvents;
 use crate::core::ics03_connection::events::Attributes as ConnectionAttributes;
 use crate::core::ics04_channel::error as channel_error;
-use crate::core::ics04_channel::events as ChannelEvents;
 use crate::core::ics04_channel::events::Attributes as ChannelAttributes;
+use crate::core::ics04_channel::events::{self as ChannelEvents, UpgradeAttributes};
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::error::ValidationError;
 use crate::timestamp::ParseTimestampError;
@@ -446,6 +446,17 @@ impl IbcEvent {
             IbcEvent::OpenTryChannel(ev) => Some(ev.into()),
             IbcEvent::OpenAckChannel(ev) => Some(ev.into()),
             IbcEvent::OpenConfirmChannel(ev) => Some(ev.into()),
+            _ => None,
+        }
+    }
+
+    pub fn channel_upgrade_attributes(self) -> Option<UpgradeAttributes> {
+        match self {
+            IbcEvent::UpgradeInitChannel(ev) => Some(ev.into()),
+            IbcEvent::UpgradeTryChannel(ev) => Some(ev.into()),
+            IbcEvent::UpgradeAckChannel(ev) => Some(ev.into()),
+            IbcEvent::UpgradeConfirmChannel(ev) => Some(ev.into()),
+            IbcEvent::UpgradeOpenChannel(ev) => Some(ev.into()),
             _ => None,
         }
     }
