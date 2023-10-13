@@ -2,6 +2,7 @@ use std::io::Write;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 
 use ibc_relayer::config::{
+    ChainConfig,
     Channels as ConfigChannels, Clients as ConfigClients, Connections as ConfigConnections,
     ModeConfig, Packets as ConfigPackets,
 };
@@ -158,7 +159,11 @@ impl TestOverrides for IbcTransferMBT {
         };
 
         for chain_config in config.chains.iter_mut() {
-            chain_config.trusting_period = Some(CLIENT_EXPIRY);
+            match chain_config {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.trusting_period = Some(CLIENT_EXPIRY);
+                }
+            }
         }
     }
 
