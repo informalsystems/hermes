@@ -410,7 +410,7 @@ pub enum State {
     /// During some steps of channel upgrades, the state is still in Open. The
     /// `UpgradeState` is used to differentiate these states during the upgrade
     /// handshake.
-    /// https://github.com/cosmos/ibc/blob/main/spec/core/ics-004-channel-and-packet-semantics/UPGRADES.md#upgrade-handshake
+    /// <https://github.com/cosmos/ibc/blob/main/spec/core/ics-004-channel-and-packet-semantics/UPGRADES.md#upgrade-handshake>
     Open(UpgradeState),
     /// A channel has been closed and can no longer be used to send or receive
     /// packets.
