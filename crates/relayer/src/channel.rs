@@ -793,7 +793,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             (State::Flushcomplete, State::Flushing) => {
                 Some(self.build_chan_upgrade_confirm_and_send()?)
             }
-            (State::Open(UpgradeState::Upgrading), State::Flushcomplete) => {
+            (State::Open(_), State::Flushcomplete) => {
                 Some(self.build_chan_upgrade_open_and_send()?)
             }
 

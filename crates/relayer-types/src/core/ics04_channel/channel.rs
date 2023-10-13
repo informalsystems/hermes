@@ -474,6 +474,7 @@ impl State {
 
     /// Returns whether or not the channel with this state
     /// has progressed less or the same than the argument.
+    /// This only takes into account the open channel handshake.
     ///
     /// # Example
     /// ```rust,ignore
@@ -490,30 +491,22 @@ impl State {
             Init => !matches!(other, Uninitialized),
             TryOpen => !matches!(other, Uninitialized | Init),
             Open(UpgradeState::NotUpgrading) => !matches!(other, Uninitialized | Init | TryOpen),
-            Open(UpgradeState::Upgrading) => !matches!(
-                other,
-                Uninitialized | Init | TryOpen | Open(UpgradeState::NotUpgrading)
-            ),
+            _ => false,
+        }
+    }
 
-            Flushing => !matches!(
-                other,
-                Uninitialized
-                    | Init
-                    | TryOpen
-                    | Open(UpgradeState::NotUpgrading)
-                    | Open(UpgradeState::Upgrading)
-            ),
-            Flushcomplete => !matches!(
-                other,
-                Uninitialized
-                    | Init
-                    | TryOpen
-                    | Open(UpgradeState::NotUpgrading)
-                    | Open(UpgradeState::Upgrading)
-                    | Flushing
-            ),
+    /// Returns whether or not the channel with this state is
+    /// being upgraded.
+    pub fn is_upgrading(self, other: Self) -> bool {
+        use State::*;
 
-            Closed => false,
+        match self {
+            Open(UpgradeState::NotUpgrading) => matches!(
+                other,
+                Open(UpgradeState::Upgrading) | Flushing | Flushcomplete
+            ),
+            Open(UpgradeState::Upgrading) | Flushing | Flushcomplete => true,
+            _ => false,
         }
     }
 }
@@ -687,6 +680,121 @@ mod tests {
             match Ordering::from_str(test.ordering) {
                 Ok(res) => assert_eq!(test.want_res, Some(res)),
                 Err(_) => assert!(test.want_res.is_none(), "parse failed"),
+            }
+        }
+    }
+
+    #[test]
+    fn less_or_equal_progress_uninitialized() {
+        use crate::core::ics04_channel::channel::State;
+        use crate::core::ics04_channel::channel::UpgradeState;
+
+        let higher_or_equal_states = vec![
+            State::Uninitialized,
+            State::Init,
+            State::TryOpen,
+            State::Open(UpgradeState::NotUpgrading),
+            State::Open(UpgradeState::Upgrading),
+            State::Closed,
+            State::Flushing,
+            State::Flushcomplete,
+        ];
+        for state in higher_or_equal_states {
+            assert!(State::Uninitialized.less_or_equal_progress(state))
+        }
+    }
+
+    #[test]
+    fn less_or_equal_progress_init() {
+        use crate::core::ics04_channel::channel::State;
+        use crate::core::ics04_channel::channel::UpgradeState;
+
+        let lower_states = vec![State::Uninitialized];
+        let higher_or_equal_states = vec![
+            State::Init,
+            State::TryOpen,
+            State::Open(UpgradeState::NotUpgrading),
+            State::Open(UpgradeState::Upgrading),
+            State::Closed,
+            State::Flushing,
+            State::Flushcomplete,
+        ];
+        for state in lower_states {
+            assert!(!State::Init.less_or_equal_progress(state));
+        }
+        for state in higher_or_equal_states {
+            assert!(State::Init.less_or_equal_progress(state))
+        }
+    }
+
+    #[test]
+    fn less_or_equal_progress_tryopen() {
+        use crate::core::ics04_channel::channel::State;
+        use crate::core::ics04_channel::channel::UpgradeState;
+
+        let lower_states = vec![State::Uninitialized, State::Init];
+        let higher_or_equal_states = vec![
+            State::TryOpen,
+            State::Open(UpgradeState::NotUpgrading),
+            State::Open(UpgradeState::Upgrading),
+            State::Closed,
+            State::Flushing,
+            State::Flushcomplete,
+        ];
+        for state in lower_states {
+            assert!(!State::TryOpen.less_or_equal_progress(state));
+        }
+        for state in higher_or_equal_states {
+            assert!(State::TryOpen.less_or_equal_progress(state))
+        }
+    }
+
+    #[test]
+    fn less_or_equal_progress_open_not_upgrading() {
+        use crate::core::ics04_channel::channel::State;
+        use crate::core::ics04_channel::channel::UpgradeState;
+
+        let lower_states = vec![State::Uninitialized, State::Init, State::TryOpen];
+        let higher_or_equal_states = vec![
+            State::Open(UpgradeState::NotUpgrading),
+            State::Open(UpgradeState::Upgrading),
+            State::Closed,
+            State::Flushing,
+            State::Flushcomplete,
+        ];
+        for state in lower_states {
+            assert!(!State::Open(UpgradeState::NotUpgrading).less_or_equal_progress(state));
+        }
+        for state in higher_or_equal_states {
+            assert!(State::Open(UpgradeState::NotUpgrading).less_or_equal_progress(state))
+        }
+    }
+
+    #[test]
+    fn less_or_equal_progress_upgrading_states() {
+        use crate::core::ics04_channel::channel::State;
+        use crate::core::ics04_channel::channel::UpgradeState;
+
+        let states = [
+            State::Uninitialized,
+            State::Init,
+            State::TryOpen,
+            State::Open(UpgradeState::NotUpgrading),
+            State::Open(UpgradeState::Upgrading),
+            State::Closed,
+            State::Flushing,
+            State::Flushcomplete,
+        ];
+
+        let upgrading_states = vec![
+            State::Open(UpgradeState::Upgrading),
+            State::Closed,
+            State::Flushing,
+            State::Flushcomplete,
+        ];
+        for upgrade_state in upgrading_states {
+            for state in states.iter() {
+                assert!(!upgrade_state.less_or_equal_progress(*state));
             }
         }
     }
