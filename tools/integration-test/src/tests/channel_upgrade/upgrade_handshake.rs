@@ -100,6 +100,9 @@ impl BinaryChannelTest for ChannelUpgradeHandshake {
 
         info!("Check that the channel upgrade successfully upgraded the version...");
 
+        // This will assert that both channel ends are eventually
+        // in Open state, and that the fields targeted by the upgrade
+        // have been correctly updated.
         assert_eventually_channel_upgrade_open(
             &chains.handle_a,
             &chains.handle_b,

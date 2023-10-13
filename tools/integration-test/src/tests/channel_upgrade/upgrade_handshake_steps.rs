@@ -198,6 +198,9 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
 
         info!("Check that the ChanUpgradeOpen steps were correctly executed...");
 
+        // This will assert that both channel ends are eventually
+        // in Open state, and that the fields targeted by the upgrade
+        // have been correctly updated.
         assert_eventually_channel_upgrade_open(
             &chains.handle_a,
             &chains.handle_b,
@@ -321,6 +324,9 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromTry {
         info!("Check that the channel upgrade successfully upgraded the version...");
 
         relayer.with_supervisor(|| {
+            // This will assert that both channel ends are eventually
+            // in Open state, and that the fields targeted by the upgrade
+            // have been correctly updated.
             assert_eventually_channel_upgrade_open(
                 &chains.handle_a,
                 &chains.handle_b,
@@ -459,6 +465,9 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromAck {
         info!("Check that the channel upgrade successfully upgraded the version...");
 
         relayer.with_supervisor(|| {
+            // This will assert that both channel ends are eventually
+            // in Open state, and that the fields targeted by the upgrade
+            // have been correctly updated.
             assert_eventually_channel_upgrade_open(
                 &chains.handle_a,
                 &chains.handle_b,
@@ -618,6 +627,9 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromConfirm {
         info!("Check that the channel upgrade successfully upgraded the version...");
 
         relayer.with_supervisor(|| {
+            // This will assert that both channel ends are eventually
+            // in Open state, and that the fields targeted by the upgrade
+            // have been correctly updated.
             assert_eventually_channel_upgrade_open(
                 &chains.handle_a,
                 &chains.handle_b,
