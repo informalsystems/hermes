@@ -15,6 +15,19 @@ diag() {
 >>" 1>&2
 }
 
+waiting() {
+    secs=$1
+    shift
+    msg="$*"
+    while [ $secs -gt 0 ]
+    do
+        echo -ne "|| Waiting $msg (${secs}s)\033[0K\r"
+        sleep 1
+        : $((secs--))
+    done
+    echo "|| Waiting $msg (done)"
+}
+
 
 # User balance of stake tokens 
 USER_COINS="100000000000stake"
@@ -76,21 +89,15 @@ jq ".app_state.gov.voting_params.voting_period = \"3s\" | .app_state.staking.par
    ${PROV_NODE_DIR}/config/genesis.json > \
    ${PROV_NODE_DIR}/edited_genesis.json && mv ${PROV_NODE_DIR}/edited_genesis.json ${PROV_NODE_DIR}/config/genesis.json
 
-sleep 1
-
 # Create account keypair
 interchain-security-pd keys add $PROV_KEY --home ${PROV_NODE_DIR} --keyring-backend test --output json > ${PROV_NODE_DIR}/${PROV_KEY}.json 2>&1
-sleep 1
 
 # Add stake to user
 PROV_ACCOUNT_ADDR=$(jq -r '.address' ${PROV_NODE_DIR}/${PROV_KEY}.json)
 interchain-security-pd add-genesis-account "$PROV_ACCOUNT_ADDR" $USER_COINS --home ${PROV_NODE_DIR} --keyring-backend test
-sleep 1
-
 
 # Stake 1/1000 user's coins
 interchain-security-pd gentx $PROV_KEY $STAKE --chain-id provider --home ${PROV_NODE_DIR} --keyring-backend test --moniker $MONIKER
-sleep 1
 
 ## config second node
 
@@ -99,19 +106,18 @@ rm -rf ${PROV_NODE_SUB_DIR}
 # Build genesis file and node directory structure
 interchain-security-pd init $MONIKER_SUB --chain-id provider --home ${PROV_NODE_SUB_DIR}
 
-
-sleep 1
+waiting 1 ""
 
 # Create account keypair
 interchain-security-pd keys add $PROV_KEY_SUB --home ${PROV_NODE_SUB_DIR} --keyring-backend test --output json > ${PROV_NODE_SUB_DIR}/${PROV_KEY_SUB}.json 2>&1
-sleep 1
+waiting 1 ""
 
 cp ${PROV_NODE_DIR}/config/genesis.json  ${PROV_NODE_SUB_DIR}/config/genesis.json
 
 # Add stake to user
 PROV_ACCOUNT_ADDR=$(jq -r '.address' ${PROV_NODE_SUB_DIR}/${PROV_KEY_SUB}.json)
 interchain-security-pd add-genesis-account "$PROV_ACCOUNT_ADDR" $USER_COINS --home ${PROV_NODE_SUB_DIR} --keyring-backend test
-sleep 1
+waiting 1 ""
 
 
 
@@ -119,7 +125,7 @@ cp -r ${PROV_NODE_DIR}/config/gentx/ ${PROV_NODE_SUB_DIR}/config/gentx/
 
 # # Stake 1/1000 user's coins
 interchain-security-pd gentx $PROV_KEY_SUB $STAKE2 --chain-id provider --home ${PROV_NODE_SUB_DIR} --keyring-backend test --moniker $MONIKER_SUB
-sleep 1
+waiting 1 ""
 
 
 interchain-security-pd collect-gentxs --home ${PROV_NODE_SUB_DIR} --gentx-dir ${PROV_NODE_SUB_DIR}/config/gentx/
@@ -146,7 +152,7 @@ interchain-security-pd start \
     --p2p.laddr tcp://${NODE_IP}:26656 \
     --grpc-web.enable=false &> ${PROV_NODE_DIR}/logs &
 
-sleep 5
+waiting 5 "for provider node to start"
 
 sed -i -r "/node =/ s/= .*/= \"tcp:\/\/${NODE_IP}:26628\"/" ${PROV_NODE_SUB_DIR}/config/client.toml
 sed -i -r 's/timeout_commit = "5s"/timeout_commit = "3s"/g' ${PROV_NODE_SUB_DIR}/config/config.toml
@@ -164,7 +170,7 @@ interchain-security-pd start \
     --p2p.laddr tcp://${NODE_IP}:26626 \
     --grpc-web.enable=false &> ${PROV_NODE_SUB_DIR}/logs &
 
-sleep 5
+waiting 5 "for provider sub-node to start"
 
 # Build consumer chain proposal file
 tee ${PROV_NODE_DIR}/consumer-proposal.json<<EOF
@@ -193,18 +199,18 @@ interchain-security-pd keys show $PROV_KEY --keyring-backend test --home ${PROV_
 # Submit consumer chain proposal
 interchain-security-pd tx gov submit-proposal consumer-addition ${PROV_NODE_DIR}/consumer-proposal.json --chain-id provider --from $PROV_KEY --home ${PROV_NODE_DIR} --node tcp://${NODE_IP}:26658  --keyring-backend test -b block -y
 
-sleep 1
+waiting 1 "for proposal to be submitted"
 
 # Vote yes to proposal
 interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} -b block -y --keyring-backend test
 
-sleep 3
+waiting 3 "for proposal to be voted on"
 
 # CONSUMER CHAIN ##
 
 # Build genesis file and node directory structure
 interchain-security-cd init $MONIKER --chain-id consumer  --home  ${CONS_NODE_DIR}
-sleep 1
+waiting 1 ""
 
 # Create user account keypair
 interchain-security-cd keys add $PROV_KEY --home  ${CONS_NODE_DIR} --keyring-backend test --output json > ${CONS_NODE_DIR}/${PROV_KEY}.json 2>&1
@@ -240,7 +246,7 @@ interchain-security-cd start --home ${CONS_NODE_DIR} \
         --grpc-web.enable=false \
         &> ${CONS_NODE_DIR}/logs &
 
-sleep 20
+waiting 20 "for consumer node to start"
 
 tee ${HERMES_CONFIG}<<EOF
 [global]
@@ -322,7 +328,7 @@ read -r CD_TRUSTED_HEIGHT CD_TRUSTED_HASH < <(
 		| jq -r '(.result//.).signed_header.header.height + " " + (.result//.).signed_header.commit.block_id.hash')
 diag "Consumer Trusted Height: ${CD_TRUSTED_HEIGHT}, Hash: ${CD_TRUSTED_HASH}"
 
-sleep 5
+waiting 5 "for a block"
 
 $HERMES_BIN create connection \
      --a-chain consumer \
@@ -337,7 +343,7 @@ $HERMES_BIN create channel \
     --channel-version 1 \
     --a-connection connection-0
 
-sleep 5
+waiting 5 "for a block"
 
 # interchain-security-pd q tendermint-validator-set --home ${PROV_NODE_DIR}
 # interchain-security-cd q tendermint-validator-set --home ${CONS_NODE_DIR}
@@ -358,7 +364,7 @@ sleep 5
 interchain-security-pd q tendermint-validator-set --home ${PROV_NODE_DIR}
 interchain-security-cd q tendermint-validator-set --home ${CONS_NODE_DIR}
 
-sleep 5
+waiting 5 "for a block"
 
 ##### Fork consumer
 
@@ -433,7 +439,8 @@ read -r height hash < <(
 		| jq -r '(.result//.).signed_header.header.height + " " + (.result//.).signed_header.commit.block_id.hash')
 diag "Fork => Height: ${height}, Hash: ${hash}"
 
-sleep 10
+waiting 10 "for a couple blocks"
+
 cp -r ${CONS_NODE_DIR} ${CONS_FORK_NODE_DIR}
 # Set default client port
 sed -i -r "/node =/ s/= .*/= \"tcp:\/\/${NODE_IP}:26638\"/" ${CONS_FORK_NODE_DIR}/config/client.toml
@@ -449,50 +456,54 @@ interchain-security-cd start --home  ${CONS_FORK_NODE_DIR} \
         --grpc-web.enable=false \
         &> ${CONS_FORK_NODE_DIR}/logs &
 
-sleep 5
+waiting 5 "for forked consumer node to start"
 
 diag "Start Hermes relayer multi-chain mode"
 
-
 $HERMES_BIN start &> ${HOME_DIR}/hermes-start-logs.txt &
 
-sleep 5
+waiting 5 "for Hermes relayer to start"
 
 diag "Running Hermes relayer evidence command"
 
 # Run hermes in evidence mode
 $HERMES_BIN evidence --chain consumer &> ${HOME_DIR}/hermes-evidence-logs.txt &
 
-sleep 5
+waiting 5 "for Hermes evidence monitor to start"
 
 read -r CD_HEIGHT < <(
 	curl -s "localhost:26638"/commit \
 		| jq -r '(.result//.).signed_header.header.height')
 
 diag "Running light client between primary and fork as witness using trusted height $CD_TRUSTED_HEIGHT and hash $CD_TRUSTED_HASH at height $CD_HEIGHT"
-/Users/romac/.cargo/target/debug/tendermint-light-client-cli \
-    --chain-id consumer \
+
+# Rust light client
+# tendermint-light-client-cli \
+#     --chain-id consumer \
+#     --primary "http://$NODE_IP:26638" \
+#     --witnesses "http://$NODE_IP:26648" \
+#     --trusted-height $CD_TRUSTED_HEIGHT \
+#     --trusted-hash $CD_TRUSTED_HASH \
+#     --height $CD_HEIGHT
+
+# Go light client
+rm -rf $HOME/.cometbft-light/
+cometbft light consumer \
     --primary "http://$NODE_IP:26638" \
     --witnesses "http://$NODE_IP:26648" \
-    --trusted-height $CD_TRUSTED_HEIGHT \
-    --trusted-hash $CD_TRUSTED_HASH \
-    --height $CD_HEIGHT
+    --height $CD_TRUSTED_HEIGHT \
+    --hash $CD_TRUSTED_HASH > ${HOME_DIR}/light-client-logs.txt 2>&1 &
 
-sleep 10
+echo $! > ${HOME_DIR}/light-client.pid
 
-# Check the client state on provider and verify it is frozen
-FROZEN_HEIGHT=$($HERMES_BIN --json query client state --chain provider --client 07-tendermint-0 | tail -n 1 | jq '.result.frozen_height.revision_height')
+waiting 5 "for light client to start"
+BLOCK="$(curl -s "localhost:8888/block?height=$CD_HEIGHT" | jq)"
+echo $BLOCK
+waiting 1 "before killing light client"
 
-diag "Frozen height: $FROZEN_HEIGHT"
+kill -9 "$(cat ${HOME_DIR}/light-client.pid)"
 
-if [ "$FROZEN_HEIGHT" != "null" ]; then
-    diag "Client is frozen, success!"
-else
-    diag "Client is not frozen, aborting."
-    exit 1
-fi
-
-sleep 10
+waiting 20 "for Hermes to detect evidence"
 
 if grep -q "found light client attack evidence" ${HOME_DIR}/hermes-evidence-logs.txt; then
     diag "Evidence found, proceeding!"
@@ -501,7 +512,7 @@ else
     exit 1
 fi
 
-sleep 20
+waiting 20 "for Hermes to submit evidence and freeze client"
 
 if grep -q "successfully submitted light client attack evidence" ${HOME_DIR}/hermes-evidence-logs.txt; then
     diag "Evidence successfully submitted, success!"
