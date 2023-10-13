@@ -457,7 +457,7 @@ impl Runnable for TxUpgradeClientsCmd {
                 self.upgrade_clients_for_chain(
                     &config,
                     reference_chain.clone(),
-                    &chain.id(),
+                    chain.id(),
                     reference_upgrade_height,
                 )
             })

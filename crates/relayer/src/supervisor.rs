@@ -651,7 +651,7 @@ fn init_subscriptions<Chain: ChainHandle>(
     let mut subscriptions = Vec::with_capacity(chains.len());
 
     for chain_config in chains {
-        let chain = match registry.get_or_spawn(&chain_config.id()) {
+        let chain = match registry.get_or_spawn(chain_config.id()) {
             Ok(chain) => chain,
             Err(e) => {
                 error!(

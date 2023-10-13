@@ -307,9 +307,9 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         info!("scanning chain...");
 
-        telemetry!(init_per_chain, &chain_config.id());
+        telemetry!(init_per_chain, chain_config.id());
 
-        let chain = match self.registry.get_or_spawn(&chain_config.id()) {
+        let chain = match self.registry.get_or_spawn(chain_config.id()) {
             Ok(chain_handle) => chain_handle,
             Err(e) => {
                 error!(

@@ -20,8 +20,8 @@ impl Runnable for HealthCheckCmd {
 
             info!("performing health check...");
 
-            let chain = spawn_chain_runtime(&config, &ch.id())
-                .unwrap_or_else(exit_with_unrecoverable_error);
+            let chain =
+                spawn_chain_runtime(&config, ch.id()).unwrap_or_else(exit_with_unrecoverable_error);
 
             match chain.health_check() {
                 Ok(Healthy) => info!("chain is healthy"),
