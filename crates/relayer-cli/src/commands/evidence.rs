@@ -501,8 +501,6 @@ fn submit_light_client_attack_evidence(
     let counterparty_is_provider = is_counterparty_provider(chain, counterparty);
     let provider_has_common_consensus_state = counterparty_is_provider
         && has_consensus_state(counterparty, &counterparty_client_id, common_height);
-    dbg!(counterparty_is_provider);
-    dbg!(provider_has_common_consensus_state);
 
     if counterparty_is_provider
         && counterparty_client.is_frozen()
@@ -694,23 +692,36 @@ fn build_evidence_headers(
     chain: &CosmosSdkChain,
     lc: LightClientAttackEvidence,
 ) -> eyre::Result<(TendermintHeader, TendermintHeader)> {
+    if lc.conflicting_block.signed_header.header.height == lc.common_height {
+        return Err(eyre::eyre!(
+            "invalid evidence: header height ({}) is equal to common height ({})! cannot submit evidence",
+            lc.conflicting_block.signed_header.header.height,
+            lc.common_height
+        ));
+    }
+
+    let trusted_height = lc.common_height;
+
     let trusted_validators = rt
-        .block_on(chain.rpc_client.validators(lc.common_height, Paging::All))?
+        .block_on(chain.rpc_client.validators(trusted_height, Paging::All))?
         .validators;
 
-    let common_header = rt
-        .block_on(chain.rpc_client.commit(lc.common_height))?
+    let trusted_header = rt
+        .block_on(chain.rpc_client.commit(trusted_height))?
         .signed_header;
 
-    let common_proposer = common_header.header.proposer_address;
+    let trusted_proposer = trusted_header.header.proposer_address;
 
-    let trusted_validator_set = validator::Set::with_proposer(trusted_validators, common_proposer)?;
+    let trusted_validator_set =
+        validator::Set::with_proposer(trusted_validators, trusted_proposer)?;
+
+    let trusted_height = Height::from_tm(trusted_height, chain.id());
 
     let header1 = {
         TendermintHeader {
             signed_header: lc.conflicting_block.signed_header,
             validator_set: lc.conflicting_block.validator_set,
-            trusted_height: Height::from_tm(lc.common_height, chain.id()),
+            trusted_height,
             trusted_validator_set: trusted_validator_set.clone(),
         }
     };
@@ -734,7 +745,7 @@ fn build_evidence_headers(
         TendermintHeader {
             signed_header,
             validator_set,
-            trusted_height: Height::from_tm(lc.common_height, chain.id()),
+            trusted_height,
             trusted_validator_set,
         }
     };
