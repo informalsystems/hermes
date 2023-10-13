@@ -68,12 +68,30 @@
         "type": "github"
       }
     },
+    "cometbft-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1694550324,
+        "narHash": "sha256-G5gchJMn/BFzwYx8/ikPDL5fS/TuFIBF4DKJbkalp/M=",
+        "owner": "cometbft",
+        "repo": "cometbft",
+        "rev": "66a5a9da9f7a3306f382eb9142ccb9c9f7997d3f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cometbft",
+        "ref": "v0.38.0",
+        "repo": "cometbft",
+        "type": "github"
+      }
+    },
     "cosmos-nix": {
       "inputs": {
         "akash-src": "akash-src",
         "apalache-src": "apalache-src",
         "beaker-src": "beaker-src",
         "centauri-src": "centauri-src",
+        "cometbft-src": "cometbft-src",
         "cosmos-sdk-src": "cosmos-sdk-src",
         "cosmwasm-src": "cosmwasm-src",
         "crescent-src": "crescent-src",
@@ -136,11 +154,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1697198947,
-        "narHash": "sha256-lYwI8HfnvaxFXzCf2zjNWaZMC7rzKrgo0o6RERDqY9E=",
+        "lastModified": 1697211608,
+        "narHash": "sha256-YlzCO80psDkP3hGNaXHMq3K8LfTldUZt3K/hALV8j+g=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "074eb53efba20e100ffa7e123e128dc07497ea32",
+        "rev": "07651f41e38276acd7e8c4f20519f6c4cbf00f7b",
         "type": "github"
       },
       "original": {

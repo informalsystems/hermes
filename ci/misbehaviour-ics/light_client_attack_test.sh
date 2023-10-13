@@ -434,12 +434,12 @@ event_source = { mode = 'push', url = 'ws://${NODE_IP}:26658/websocket' , batch_
        numerator = "1"
 EOF
 
+waiting 10 "for a couple blocks"
+
 read -r height hash < <(
 	curl -s "localhost:26648"/commit \
 		| jq -r '(.result//.).signed_header.header.height + " " + (.result//.).signed_header.commit.block_id.hash')
 diag "Fork => Height: ${height}, Hash: ${hash}"
-
-waiting 10 "for a couple blocks"
 
 cp -r ${CONS_NODE_DIR} ${CONS_FORK_NODE_DIR}
 # Set default client port
@@ -462,14 +462,16 @@ diag "Start Hermes relayer multi-chain mode"
 
 $HERMES_BIN start &> ${HOME_DIR}/hermes-start-logs.txt &
 
-waiting 5 "for Hermes relayer to start"
+# If we sleep 5 here and below, we end up on the forked block later
+waiting 10 "for Hermes relayer to start"
 
 diag "Running Hermes relayer evidence command"
 
 # Run hermes in evidence mode
 $HERMES_BIN evidence --chain consumer &> ${HOME_DIR}/hermes-evidence-logs.txt &
 
-waiting 5 "for Hermes evidence monitor to start"
+# If we sleep 5 here and above, we end up on the forked block later
+waiting 10 "for Hermes evidence monitor to start"
 
 read -r CD_HEIGHT < <(
 	curl -s "localhost:26638"/commit \

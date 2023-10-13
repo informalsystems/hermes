@@ -27,6 +27,7 @@
       packages = {
         inherit
           (cosmos-nix)
+          cometbft
           gaia6-ordered
           gaia12
           osmosis

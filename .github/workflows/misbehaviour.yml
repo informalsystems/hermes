@@ -143,7 +143,7 @@ jobs:
       - name: Run test
         working-directory: ci/misbehaviour-ics
         run: |
-          nix shell .#${{ matrix.chain.package }} -c bash light_client_attack_test.sh
+          nix shell .#cometbft .#${{ matrix.chain.package }} -c bash light_client_attack_test.sh
 
   ics-double-sign:
     runs-on: ubuntu-20.04
