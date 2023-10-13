@@ -240,7 +240,7 @@ interchain-security-cd start --home ${CONS_NODE_DIR} \
         --grpc-web.enable=false \
         &> ${CONS_NODE_DIR}/logs &
 
-sleep 3
+sleep 20
 
 tee ${HERMES_CONFIG}<<EOF
 [global]
@@ -308,7 +308,7 @@ event_source = { mode = 'push', url = 'ws://${NODE_IP}:26658/websocket' , batch_
        numerator = "1"
 EOF
 
-# Delet_e all previous keys in relayer
+# Delete all previous keys in relayer
 $HERMES_BIN keys delete --chain consumer --all
 $HERMES_BIN keys delete --chain provider --all
 
@@ -316,6 +316,11 @@ $HERMES_BIN keys delete --chain provider --all
 $HERMES_BIN keys add --key-file  ${CONS_NODE_DIR}/${PROV_KEY}.json --chain consumer
 $HERMES_BIN keys add --key-file  ${PROV_NODE_DIR}/${PROV_KEY}.json --chain provider
 
+# Find trusted height before fork
+read -r CD_TRUSTED_HEIGHT CD_TRUSTED_HASH < <(
+	curl -s "${NODE_IP}:26648"/commit \
+		| jq -r '(.result//.).signed_header.header.height + " " + (.result//.).signed_header.commit.block_id.hash')
+diag "Consumer Trusted Height: ${CD_TRUSTED_HEIGHT}, Hash: ${CD_TRUSTED_HASH}"
 
 sleep 5
 
@@ -352,6 +357,8 @@ sleep 5
 
 interchain-security-pd q tendermint-validator-set --home ${PROV_NODE_DIR}
 interchain-security-cd q tendermint-validator-set --home ${CONS_NODE_DIR}
+
+sleep 5
 
 ##### Fork consumer
 
@@ -421,21 +428,16 @@ event_source = { mode = 'push', url = 'ws://${NODE_IP}:26658/websocket' , batch_
        numerator = "1"
 EOF
 
-rm -rf ~/.cometbft-light/
 read -r height hash < <(
 	curl -s "localhost:26648"/commit \
 		| jq -r '(.result//.).signed_header.header.height + " " + (.result//.).signed_header.commit.block_id.hash')
-diag "Height: ${height}, Hash: ${hash}"
+diag "Fork => Height: ${height}, Hash: ${hash}"
 
 sleep 10
 cp -r ${CONS_NODE_DIR} ${CONS_FORK_NODE_DIR}
 # Set default client port
 sed -i -r "/node =/ s/= .*/= \"tcp:\/\/${NODE_IP}:26638\"/" ${CONS_FORK_NODE_DIR}/config/client.toml
 sed -i -r 's/fast_sync = true/fast_sync = false/g' ${CONS_FORK_NODE_DIR}/config/config.toml
-
-
-# Find trusted state before fork
-TRUSTED_HEIGHT=$($HERMES_BIN --json query client consensus --chain provider --client 07-tendermint-0 | tail -n 1 | jq '.result[2].revision_height')
 
 
 # Start gaia
@@ -463,9 +465,18 @@ $HERMES_BIN evidence --chain consumer &> ${HOME_DIR}/hermes-evidence-logs.txt &
 
 sleep 5
 
+read -r CD_HEIGHT < <(
+	curl -s "localhost:26638"/commit \
+		| jq -r '(.result//.).signed_header.header.height')
 
-diag "Updating client on forked chain using trusted height $TRUSTED_HEIGHT"
-$HERMES_BIN_FORK update client --client 07-tendermint-0 --host-chain provider --trusted-height "$TRUSTED_HEIGHT"
+diag "Running light client between primary and fork as witness using trusted height $CD_TRUSTED_HEIGHT and hash $CD_TRUSTED_HASH at height $CD_HEIGHT"
+/Users/romac/.cargo/target/debug/tendermint-light-client-cli \
+    --chain-id consumer \
+    --primary "http://$NODE_IP:26638" \
+    --witnesses "http://$NODE_IP:26648" \
+    --trusted-height $CD_TRUSTED_HEIGHT \
+    --trusted-hash $CD_TRUSTED_HASH \
+    --height $CD_HEIGHT
 
 sleep 10
 
