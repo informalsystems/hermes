@@ -5,6 +5,7 @@ use serde_json as json;
 use std::fs;
 use std::path::PathBuf;
 use std::str;
+use std::time::Duration;
 use toml;
 use tracing::debug;
 
@@ -15,13 +16,14 @@ use crate::chain::cli::bootstrap::{
     start_chain,
 };
 use crate::chain::cli::provider::{
-    copy_validator_key_pair, query_consumer_genesis, replace_genesis_state,
-    submit_consumer_chain_proposal,
+    copy_validator_key_pair, query_consumer_genesis, query_consumer_proposal,
+    replace_genesis_state, submit_consumer_chain_proposal,
 };
 use crate::chain::driver::ChainDriver;
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::token::Token;
+use crate::prelude::assert_eventually_succeed;
 use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 
@@ -105,6 +107,28 @@ pub trait ChainBootstrapMethodsExt {
         &self,
         consumer_chain_id: &str,
         spawn_time: &str,
+    ) -> Result<(), Error>;
+
+    /**
+       Assert that the consumer chain proposal is eventually submitted.
+    */
+    fn assert_consumer_chain_proposal_submitted(
+        &self,
+        chain_id: &str,
+        command_path: &str,
+        home_path: &str,
+        rpc_listen_address: &str,
+    ) -> Result<(), Error>;
+
+    /**
+       Assert that the consumer chain proposal eventually passes.
+    */
+    fn assert_consumer_chain_proposal_passed(
+        &self,
+        chain_id: &str,
+        command_path: &str,
+        home_path: &str,
+        rpc_listen_address: &str,
     ) -> Result<(), Error>;
 
     /**
@@ -277,17 +301,19 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             "description": "First consumer chain",
             "chain_id": "{consumer_chain_id}",
             "initial_height": {
+                "revision_number": 1,
                 "revision_height": 1
             },
             "genesis_hash": "Z2VuX2hhc2g=",
             "binary_hash": "YmluX2hhc2g=",
             "spawn_time": "{spawn_time}",
-            "unbonding_period": 100000000000,
-            "ccv_timeout_period": 100000000000,
-            "transfer_timeout_period": 100000000000,
-            "consumer_redistribution_fraction": "0.75",
             "blocks_per_distribution_transmission": 10,
+            "consumer_redistribution_fraction": "0.75",
+            "distribution_transmission_channel": "",
             "historical_entries": 10000,
+            "transfer_timeout_period": 100000000000,
+            "ccv_timeout_period": 100000000000,
+            "unbonding_period": 100000000000,
             "deposit": "10000001stake"
         }"#;
 
@@ -304,6 +330,71 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         )
     }
 
+    fn assert_consumer_chain_proposal_submitted(
+        &self,
+        chain_id: &str,
+        command_path: &str,
+        home_path: &str,
+        rpc_listen_address: &str,
+    ) -> Result<(), Error> {
+        assert_eventually_succeed(
+            "consumer chain proposal submitted",
+            10,
+            Duration::from_secs(1),
+            || {
+                match query_consumer_proposal(chain_id, command_path, home_path, rpc_listen_address) {
+                    Ok(exec_output) => {
+                        let json_res = json::from_str::<json::Value>(&exec_output.stdout).map_err(handle_generic_error)?;
+                        let proposal_status = json_res.get("status")
+                            .ok_or_else(|| eyre!("expected `status` field"))?
+                            .as_str()
+                            .ok_or_else(|| eyre!("expected string field"))?;
+                        if proposal_status == "PROPOSAL_STATUS_VOTING_PERIOD" {
+                            Ok(())
+                        } else {
+                            Err(Error::generic(eyre!("consumer chain proposal is not in voting period. Proposal status: {proposal_status}")))
+                        }
+                    },
+                    Err(e) => Err(Error::generic(eyre!("Error querying the consumer chain proposal. Potential issues could be due to not using enough gas or the proposal submitted is invalid. Error: {e}"))),
+                }
+            },
+        )?;
+        Ok(())
+    }
+
+    fn assert_consumer_chain_proposal_passed(
+        &self,
+        chain_id: &str,
+        command_path: &str,
+        home_path: &str,
+        rpc_listen_address: &str,
+    ) -> Result<(), Error> {
+        assert_eventually_succeed(
+            "consumer chain proposal passed",
+            10,
+            Duration::from_secs(5),
+            || {
+                match query_consumer_proposal(chain_id, command_path, home_path, rpc_listen_address) {
+                        Ok(exec_output) => {
+                            let json_res = json::from_str::<json::Value>(&exec_output.stdout).map_err(handle_generic_error)?;
+                            let proposal_status = json_res.get("status")
+                                .ok_or_else(|| eyre!("expected `status` field"))?
+                                .as_str()
+                                .ok_or_else(|| eyre!("expected string field"))?;
+
+                            if proposal_status == "PROPOSAL_STATUS_PASSED" {
+                                Ok(())
+                            } else {
+                                Err(Error::generic(eyre!("consumer chain proposal has not passed. Proposal status: {proposal_status}")))
+                            }
+                        },
+                        Err(e) => Err(Error::generic(eyre!("Error querying the consumer chain proposal. Potential issues could be due to not using enough gas or the proposal submitted is invalid. Error: {e}"))),
+                    }
+            },
+        )?;
+        Ok(())
+    }
+
     fn query_consumer_genesis(
         &self,
         consumer_chain_driver: &ChainDriver,
@@ -315,6 +406,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             &self.home_path,
             &self.rpc_listen_address(),
             consumer_chain_id,
+            &consumer_chain_driver.command_path,
         )?;
         consumer_chain_driver.write_file("config/consumer_genesis.json", &consumer_genesis)?;
 
