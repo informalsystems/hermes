@@ -12,7 +12,7 @@
 */
 
 use core::time::Duration;
-use ibc_relayer::config::{types::MaxMsgNum, Config};
+use ibc_relayer::config::{types::MaxMsgNum, ChainConfig, Config};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 use ibc_relayer_types::events::IbcEvent;
 use ibc_test_framework::prelude::*;
@@ -29,7 +29,11 @@ pub struct SimulationTest;
 impl TestOverrides for SimulationTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         for chain in config.chains.iter_mut() {
-            chain.max_msg_num = MaxMsgNum::new(MAX_MSGS).unwrap();
+            match chain {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.max_msg_num = MaxMsgNum::new(MAX_MSGS).unwrap();
+                }
+            }
         }
     }
 }
