@@ -5,14 +5,13 @@ use abscissa_core::{Command, Runnable};
 use crate::conclude::Output;
 
 use ibc_relayer::config::{store, ChainConfig, Config};
-use ibc_relayer::keyring::list_keys;
 
 use std::collections::HashSet;
 use std::path::PathBuf;
 use tracing::{info, warn};
 
 fn find_key(chain_config: &ChainConfig) -> Option<String> {
-    let keys = list_keys(chain_config).ok()?;
+    let keys = chain_config.list_keys().ok()?;
     keys.into_iter().next().map(|(name, _)| name)
 }
 

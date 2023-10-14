@@ -31,11 +31,17 @@ use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
-use crate::config::gas_multiplier::GasMultiplier;
-use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
 use crate::keyring::Store;
+use crate::{
+    config::gas_multiplier::GasMultiplier,
+    keyring::{AnySigningKeyPair, KeyRing},
+};
+use crate::{
+    config::types::{MaxMsgNum, MaxTxSize, Memo},
+    keyring,
+};
 
 pub use crate::config::Error as ConfigError;
 pub use error::Error;
@@ -585,6 +591,25 @@ impl ChainConfig {
         match self {
             Self::CosmosSdk(config) => config.key_name = key_name,
         }
+    }
+
+    pub fn list_keys(&self) -> Result<Vec<(String, AnySigningKeyPair)>, keyring::errors::Error> {
+        let keys = match self {
+            ChainConfig::CosmosSdk(config) => {
+                let keyring = KeyRing::new_secp256k1(
+                    Store::Test,
+                    &config.account_prefix,
+                    &config.id,
+                    &config.key_store_folder,
+                )?;
+                keyring
+                    .keys()?
+                    .into_iter()
+                    .map(|(key_name, keys)| (key_name, keys.into()))
+                    .collect()
+            }
+        };
+        Ok(keys)
     }
 }
 

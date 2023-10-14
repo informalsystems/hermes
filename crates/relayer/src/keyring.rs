@@ -21,7 +21,6 @@ use std::path::PathBuf;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use serde::{Deserialize, Serialize};
 
-use crate::config::ChainConfig;
 use errors::Error;
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
@@ -288,24 +287,6 @@ impl KeyRing<Ed25519KeyPair> {
 }
 
 // Why is this not a method on `ChainConfig`?
-pub fn list_keys(config: &ChainConfig) -> Result<Vec<(String, AnySigningKeyPair)>, Error> {
-    let keys = match config {
-        ChainConfig::CosmosSdk(config) => {
-            let keyring = KeyRing::new_secp256k1(
-                Store::Test,
-                &config.account_prefix,
-                &config.id,
-                &config.key_store_folder,
-            )?;
-            keyring
-                .keys()?
-                .into_iter()
-                .map(|(key_name, keys)| (key_name, keys.into()))
-                .collect()
-        }
-    };
-    Ok(keys)
-}
 
 fn disk_store_path(folder_name: &str, keystore_folder: &Option<PathBuf>) -> Result<PathBuf, Error> {
     let ks_folder = match keystore_folder {
