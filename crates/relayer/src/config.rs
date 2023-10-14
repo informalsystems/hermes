@@ -279,6 +279,32 @@ impl Config {
     pub fn chains_map(&self) -> BTreeMap<&ChainId, &ChainConfig> {
         self.chains.iter().map(|c| (c.id(), c)).collect()
     }
+
+    /// Method for syntactic validation of the input configuration file.
+    pub fn validate_config(&self) -> Result<(), Diagnostic<Error>> {
+        // Check for duplicate chain configuration and invalid trust thresholds
+        let mut unique_chain_ids = BTreeSet::new();
+        for chain_config in self.chains.iter() {
+            let already_present = !unique_chain_ids.insert(chain_config.id().clone());
+            if already_present {
+                return Err(Diagnostic::Error(Error::duplicate_chains(
+                    chain_config.id().clone(),
+                )));
+            }
+
+            #[allow(irrefutable_let_patterns)]
+            if let ChainConfig::CosmosSdk(cosmos_c) = chain_config {
+                validate_trust_threshold(&cosmos_c.id, cosmos_c.trust_threshold)?;
+                // Validate gas-related settings
+                validate_gas_settings(&cosmos_c.id, cosmos_c)?;
+            }
+        }
+
+        // Check for invalid mode config
+        self.mode.validate()?;
+
+        Ok(())
+    }
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
@@ -296,6 +322,22 @@ impl ModeConfig {
             && !self.connections.enabled
             && !self.channels.enabled
             && !self.packets.enabled
+    }
+
+    fn validate(&self) -> Result<(), Diagnostic<Error>> {
+        if self.all_disabled() {
+            return Err(Diagnostic::Warning(Error::invalid_mode(
+                "all operation modes of Hermes are disabled, relayer won't perform any action aside from subscribing to events".to_string(),
+            )));
+        }
+
+        if self.clients.enabled && !self.clients.refresh && !self.clients.misbehaviour {
+            return Err(Diagnostic::Error(Error::invalid_mode(
+                "either `refresh` or `misbehaviour` must be set to true if `clients.enabled` is set to true".to_string(),
+            )));
+        }
+
+        Ok(())
     }
 }
 
@@ -613,6 +655,69 @@ impl ChainConfig {
     }
 }
 
+/* config validation */
+
+use alloc::collections::BTreeSet;
+
+#[derive(Clone, Debug)]
+pub enum Diagnostic<E> {
+    Warning(E),
+    Error(E),
+}
+
+/// Check that the trust threshold is:
+///
+/// a) non-zero
+/// b) greater or equal to 1/3
+/// c) strictly less than 1
+fn validate_trust_threshold(
+    id: &ChainId,
+    trust_threshold: TrustThreshold,
+) -> Result<(), Diagnostic<Error>> {
+    if trust_threshold.denominator() == 0 {
+        return Err(Diagnostic::Error(Error::invalid_trust_threshold(
+            trust_threshold,
+            id.clone(),
+            "trust threshold denominator cannot be zero".to_string(),
+        )));
+    }
+
+    if trust_threshold.numerator() * 3 < trust_threshold.denominator() {
+        return Err(Diagnostic::Error(Error::invalid_trust_threshold(
+            trust_threshold,
+            id.clone(),
+            "trust threshold cannot be < 1/3".to_string(),
+        )));
+    }
+
+    if trust_threshold.numerator() >= trust_threshold.denominator() {
+        return Err(Diagnostic::Error(Error::invalid_trust_threshold(
+            trust_threshold,
+            id.clone(),
+            "trust threshold cannot be >= 1".to_string(),
+        )));
+    }
+
+    Ok(())
+}
+
+fn validate_gas_settings(id: &ChainId, config: &CosmosSdkConfig) -> Result<(), Diagnostic<Error>> {
+    // Check that the gas_adjustment option is not set
+    if let Some(gas_adjustment) = config.gas_adjustment {
+        let gas_multiplier = gas_adjustment + 1.0;
+
+        return Err(Diagnostic::Error(Error::deprecated_gas_adjustment(
+            gas_adjustment,
+            gas_multiplier,
+            id.clone(),
+        )));
+    }
+
+    Ok(())
+}
+
+/* cosmos sdk */
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct CosmosSdkConfig {
@@ -719,6 +824,8 @@ pub struct CosmosSdkConfig {
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub extension_options: Vec<ExtensionOption>,
 }
+
+/* general config handling code */
 
 /// Attempt to load and parse the TOML config file as a `Config`.
 pub fn load(path: impl AsRef<Path>) -> Result<Config, Error> {

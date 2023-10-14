@@ -40,7 +40,7 @@ impl Runnable for ValidateCmd {
 
         // No need to output the underlying error, this is done already when the application boots.
         // See `application::CliApp::after_config`.
-        match config::validate_config(&config) {
+        match config.validate_config() {
             Ok(_) => Output::success("configuration is valid").exit(),
             Err(_) => Output::error("configuration is invalid").exit(),
         }
