@@ -31,7 +31,6 @@ use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
-//use crate::chain::ChainType;
 use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error as RelayerError;
@@ -149,12 +148,6 @@ impl Display for ExtensionOption {
 /// Defaults for various fields
 pub mod default {
     use super::*;
-
-    /*
-    pub fn chain_type() -> ChainType {
-        ChainType::CosmosSdk
-    }
-     */
 
     pub fn ccv_consumer_chain() -> bool {
         false
