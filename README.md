@@ -10,7 +10,7 @@
 
 Rust implementation of an Inter-Blockchain Communication (IBC) relayer.
 
-This project comprises primarily of 5 crates:
+This project comprises primarily of 6 crates:
 
 - [`ibc-relayer`][relayer-crate-link] provides an implementation of an IBC relayer, as a _library_.
 - [`ibc-relayer-cli`][relayer-cli-crate-link] is a CLI (a wrapper over the `ibc-relayer` library),

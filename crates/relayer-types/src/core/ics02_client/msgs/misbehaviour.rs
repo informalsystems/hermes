@@ -38,6 +38,9 @@ impl Protobuf<RawMsgSubmitMisbehaviour> for MsgSubmitMisbehaviour {}
 impl TryFrom<RawMsgSubmitMisbehaviour> for MsgSubmitMisbehaviour {
     type Error = Error;
 
+    // NOTE: The `MsgSubmitMisbehaviour` message is has been deprecated in IBC-Go v7 in favor of a
+    // regular `MsgUpdateClient`, but will keep working for the foreseeable future.
+    #[allow(deprecated)]
     fn try_from(raw: RawMsgSubmitMisbehaviour) -> Result<Self, Self::Error> {
         let raw_misbehaviour = raw
             .misbehaviour
@@ -55,6 +58,9 @@ impl TryFrom<RawMsgSubmitMisbehaviour> for MsgSubmitMisbehaviour {
 }
 
 impl From<MsgSubmitMisbehaviour> for RawMsgSubmitMisbehaviour {
+    // NOTE: The `MsgSubmitMisbehaviour` message is has been deprecated in IBC-Go v7 in favor of a
+    // regular `MsgUpdateClient`, but will keep working for the foreseeable future.
+    #[allow(deprecated)]
     fn from(ics_msg: MsgSubmitMisbehaviour) -> Self {
         RawMsgSubmitMisbehaviour {
             client_id: ics_msg.client_id.to_string(),

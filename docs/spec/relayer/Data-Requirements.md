@@ -3,18 +3,19 @@
 ## Table of Contents
 
 - [CometBFT RPC](#cometbft-rpc)
-  * [`/health`](#--health-)
-  * [`/consensus_params`](#--consensus-params-)
-  * [`/status`](#--status-)
-  * [`/header`](#--header-)
-  * [`/latest_commit`, `/commit`, `/validators`](#--latest-commit-----commit-----validators-)
-  * [`/abci_query`](#--abci-query-)
-  * [`/tx_search`](#--tx-search-)
-  * [`/block_search`](#--block-search-)
-  * [`/block_results`](#--block-results-)
-  * [`/broadcast_tx_sync`](#--broadcast-tx-sync-)
-  * [`/broadcast_evidence`](#--broadcast-evidence-)
+  * [`/health`](#health)
+  * [`/consensus_params`](#consensus_params)
+  * [`/status`](#status)
+  * [`/header`](#header)
+  * [`/latest_commit`, `/commit`, `/validators`](#latest_commit-commit-validators)
+  * [`/abci_query`](#abci_query)
+  * [`/tx_search`](#tx_search)
+  * [`/block_search`](#block_search)
+  * [`/block_results`](#block_results)
+  * [`/broadcast_tx_sync`](#broadcast_tx_sync)
+  * [`/broadcast_evidence`](#broadcast_evidence)
 - [CometBFT WebSocket](#cometbft-websocket)
+- [CometBFT gRPC](#cometbft-grpc)
 
 ## CometBFT RPC
 
@@ -162,3 +163,62 @@ The relayer connects to the node's CometBFT websocket interface and subscribes t
     - `EXISTS acknowledge_packet`
     - `EXISTS timeout_packet`
 
+## CometBFT gRPC
+
+The following are the gRPC endpoints that Hermes makes use of, listed in rough priority from most used to least used. 
+
+### `ibc.core.channel.v1.QueryClient`
+
+Queries for channel-associated data, such as packet commitments, unreceived packets, all channels associated with a given connection, etc.
+
+The requests that Hermes makes to this endpoint are:
+
+- `ChannelClientState`: Requests the client state associated with a specified channel.
+- `Channels`: Requests all of the channels associated with the chain.
+- `ConnectionChannels`: Requests all of the channels associated with a specified connection.
+- `NextSequenceReceive`: Requests the sequence number of the next receive packet for a specified channel.
+- `PacketCommitments`: Requests the packet commitments associated with a specified channel.
+- `PacketAcknowledgements`: Requests the packet acknowledgments associated with a specified channel.
+- `UnreceivedAcks`: Requests the unreceived acknowledgments associated with a specified channel.
+- `UnreceivedPackets`: Requests the unreceived packet sequences associated with a specified channel.
+
+> _*Note:*_ The `PacketAcknowledgements`, `UnreceivedAcks`, and `UnreceivedPackets` queries each accept a vector of `sequences` in order to specify which packet commitments to fetch acknowledgements for. In the case where an empty vector is passed, the queries will simply return all acknowledgements for all outstanding packet commitments. 
+
+### `ibc.core.client.v1.QueryClient`
+
+Queries the client in order to fetch client and consensus states.
+
+The requests that Hermes makes to this endpoint are:
+
+- `ClientStates`: Requests all client states associated with the chain.
+- `ConsensusStateHeights`: Requests all the consensus state heights associated with a specified client.
+- `ConsensusStates`: Requests all the consensus states associated with a specified client.
+
+### `ibc.core.connection.v1.QueryClient`
+
+Queries the connection in order to fetch connection data and connected clients.
+
+The requests that Hermes makes to this endpoint are:
+
+- `ClientConnections`: Requests all connections associated with a specified client.
+- `Connections`: Requests all connections associated with the chain.
+
+### `interchain_security.ccv.consumer.v1.QueryClient`
+
+Queries a CCV Consumer chain to fetch its staking parameters, notably its unbonding period and the number of historical entries that the chain keeps.
+
+Hermes makes the following requests to this endpoint:
+
+- `QueryParams`: Queries the CCV consumer module parameters.
+
+### `cosmos.staking.v1beta1.QueryClient`
+
+Queries a Cosmos chain to fetch its staking parameters, most notably the chain's unbonding period.
+
+- `Params`: Queries the staking parameters.
+
+### `cosmos.base.node.v1beta1.ServiceClient`
+
+Queries a Cosmos full node in order to fetch its configuration parameters.
+
+- `Config`: Queries for the operator configuration.
