@@ -582,6 +582,18 @@ fn submit_light_client_attack_evidence(
         msgs.push(msg);
     }
 
+    if msgs.is_empty() {
+        warn!(
+            "skipping light client attack evidence for client `{}` on chain `{}`",
+            counterparty_client_id,
+            counterparty.id()
+        );
+
+        warn!("reason: no messages to submit");
+
+        return Ok(());
+    }
+
     let tracked_msgs = TrackedMsgs::new_static(msgs, "light_client_attack_evidence");
     let responses = counterparty.send_messages_and_wait_check_tx(tracked_msgs)?;
 
