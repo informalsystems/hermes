@@ -17,7 +17,7 @@ use tracing::{debug, error, info, instrument, trace, warn};
 
 use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
-use ibc_proto::interchain_security::ccv::v1::Params as CcvParams;
+use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvConsumerParams;
 
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
@@ -340,8 +340,8 @@ impl CosmosSdkChain {
         Ok(monitor_tx)
     }
 
-    /// Query the chain staking parameters
-    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvParams, Error> {
+    /// Performs a gRPC query to fetch CCV Consumer chain staking parameters.
+    pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
         crate::time!(
             "query_ccv_consumer_chain_params",
             {
@@ -377,7 +377,7 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    /// Query the chain staking parameters
+    /// Performs a gRPC query for Cosmos chain staking parameters.
     pub fn query_staking_params(&self) -> Result<StakingParams, Error> {
         crate::time!(
             "query_staking_params",
@@ -413,7 +413,7 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    /// Query the node for its configuration parameters.
+    /// Performs a gRPC query to fetch the configuration parameters of the node.
     ///
     /// ### Note: This query endpoint was introduced in SDK v0.46.3/v0.45.10. Not available before that.
     ///
@@ -1146,6 +1146,8 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(ChainStatus { height, timestamp })
     }
 
+    /// Performs a `QueryClientStatesRequest` gRPC query to fetch all the client states
+    /// associated with the chain.
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
@@ -1335,6 +1337,8 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
+    /// Performs a `QueryClientConnectionsRequest` gRPC query to fetch all the connection
+    /// identifiers associated with a given client.
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
@@ -1379,6 +1383,8 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(ids)
     }
 
+    /// Performs a `QueryConnectionsRequest` gRPC query to fetch all connections
+    /// associated with the chain.
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
@@ -1516,6 +1522,8 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
+    /// Performs a `QueryConnectionChannelsRequest` gRPC query in order to
+    /// fetch all channels associated with a given connection.
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
@@ -1564,6 +1572,8 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(channels)
     }
 
+    /// Performs a `QueryChannelsRequest` gRPC query in order to fetch all channels
+    /// associated with the chain.
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
@@ -1643,6 +1653,8 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
+    /// Performs a `QueryChannelClientStateRequest` gRPC query in order to fetch the client state
+    /// associated with a given channel, if it exists.
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
@@ -1705,7 +1717,8 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
-    /// Queries the packet commitment hashes associated with a channel.
+    /// Performs a `QueryPacketCommitmentsRequest` gRPC query to fetch the packet commitment
+    /// hashes associated with a channel.
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
@@ -1776,7 +1789,8 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
-    /// Queries the unreceived packet sequences associated with a channel.
+    /// Performs a `QueryUnreceivedPacketsRequest` gRPC query to fetch the unreceived packet sequences
+    /// associated with a channel.
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
@@ -1840,7 +1854,8 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
-    /// Queries the packet acknowledgment hashes associated with a channel.
+    /// Performs a `QueryPacketAcknowledgementsRequest` gRPC query to fetch the packet acknowledgment
+    /// hashes associated with a channel.
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
@@ -1889,7 +1904,8 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((acks_sequences, height))
     }
 
-    /// Queries the unreceived acknowledgements sequences associated with a channel.
+    /// Performs a `QueryUnreceivedAcksRequest` gRPC query to fetch the unreceived acknowledgements
+    /// sequences associated with a channel.
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
@@ -1928,6 +1944,8 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect())
     }
 
+    /// Performs a `QueryNextSequenceReceiveRequest` gRPC query to fetch the sequence number of the next
+    /// packet to be received at a specified height.
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,

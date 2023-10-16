@@ -9,6 +9,8 @@ use crate::consensus_state::AnyConsensusStateWithHeight;
 use crate::error::Error;
 use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyHeight};
 
+/// Performs a `QueryConsensusStateHeightsRequest` gRPC query to fetch all the consensus state
+/// heights associated with a given client.
 pub async fn query_consensus_state_heights(
     chain_id: &ChainId,
     grpc_addr: &Uri,
@@ -87,6 +89,8 @@ pub async fn query_consensus_state_heights(
     Ok(heights)
 }
 
+/// Performs a `QueryConsensusStatesRequest` gRPC query to fetch all the consensus states
+/// associated with a given client.
 pub async fn query_consensus_states(
     chain_id: &ChainId,
     grpc_addr: &Uri,

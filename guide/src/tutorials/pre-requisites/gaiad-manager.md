@@ -43,28 +43,14 @@ Follow the instructions below to install and configure `gm`.
     Alternatively, you can create the folder `$HOME/.gm/bin` and copy the files from `gm/bin` in there.
 
 3. Activate `gm`
-* Add `source $HOME/.gm/bin/shell-support` to a file that executes when a new terminal window comes up
-  (`$HOME/.bash_profile` or `$HOME/.bashrc` or `$HOME/.zprofile`)
-* (Optional) Enable auto-completion
-
-    - On macOS:
-
-        ```bash
-        # Note: zsh is the default shell on MacOS, so no need to run this unless you explicitly use bash
-        brew install bash-completion
-        ```
-
-    - On Linux:
-
-        ```
-        apt install bash-completion || yum install bash-completion
-        ```
+> **NOTE**: The `shell-support` script allows bash-completion as well as creating a `gm` alias, so you don't need to add more entries to your PATH environment variable.
+> You can optionally enable bash-completion with `gm` by doing the following:
+> * Add `source $HOME/.gm/bin/shell-support` to a file that executes when a new terminal window comes up (`$HOME/.bash_profile` or `$HOME/.bashrc` or `$HOME/.zprofile`)
+> * You may need to install `bash-completion` if adding `shell-support` raises a `command not found: complete` error message. You can do so by executing `brew install bash-completion` on macOS, or `apt install bash-completion || yum install bash-completion` on Linux.
+> * If you don't want to use this, you can always just add `$HOME/.gm/bin` to
+your path.
 
 * Restart your terminal
-
-Note: The `shell-support` script allows bash-completion as well as creating a `gm` alias, so you don't need to add more
-entries to your PATH environment variable. If you don't want to use this, you can always just add `$HOME/.gm/bin` to
-your path.
 
 ### The configuration: `gm.toml`
 **Where**: `$HOME/.gm/gm.toml`.

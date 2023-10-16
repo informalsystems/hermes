@@ -12,12 +12,9 @@ description  = """
 """
 
 [dependencies]
-ibc-proto         = { version = "0.35.0", features = ["serde"] }
 ibc-relayer-types = { version = "0.26.0", path = "../relayer-types" }
-tendermint-rpc = { version = "0.33.2", features = [
-    "http-client",
-    "websocket-client",
-] }
+ibc-proto         = { version = "0.37.0", features = ["serde"] }
+tendermint-rpc    = { version = "0.34.0", features = ["http-client", "websocket-client"] }
 
 async-trait = "0.1.72"
 flex-error  = { version = "0.4.4", default-features = false }

@@ -20,7 +20,7 @@ default   = ["flex-error/std", "flex-error/eyre_tracer"]
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc-proto         = { version = "0.35.0", features = ["serde"] }
+ibc-proto         = { version = "0.37.0", features = ["serde"] }
 ibc-telemetry     = { version = "0.26.0", path = "../telemetry", optional = true }
 ibc-relayer-types = { version = "0.26.0", path = "../relayer-types", features = ["mocks"] }
 
@@ -34,8 +34,8 @@ tracing = "0.1.36"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
 bytes = "1.4.0"
-prost = { version = "0.11" }
-tonic = { version = "0.9", features = ["tls", "tls-roots"] }
+prost = { version = "0.12" }
+tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 futures = "0.3.27"
 crossbeam-channel = "0.5.8"
 hex = "0.4"
@@ -84,20 +84,20 @@ version = "0.4.1"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "0.33.2"
+version = "0.34.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "0.33.2"
+version = "0.34.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "0.33.2"
+version = "0.34.0"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-detector]
-version = "0.33.2"
+version = "0.34.0"
 default-features = false
 
 [dev-dependencies]
@@ -108,4 +108,4 @@ tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "jso
 test-log = { version = "0.2.10", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "0.33.2" }
+tendermint-testgen = { version = "0.34.0" }
