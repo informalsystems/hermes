@@ -501,10 +501,9 @@ fn submit_light_client_attack_evidence(
     let counterparty_is_provider = is_counterparty_provider(chain, counterparty);
     let provider_has_common_consensus_state = counterparty_is_provider
         && has_consensus_state(counterparty, &counterparty_client_id, common_height);
+    let provider_client_is_frozen = counterparty_is_provider && counterparty_client.is_frozen();
 
-    if counterparty_is_provider
-        && counterparty_client.is_frozen()
-        && !provider_has_common_consensus_state
+    if counterparty_is_provider && provider_client_is_frozen && !provider_has_common_consensus_state
     {
         warn!(
             "cannot submit light client attack evidence to client `{}` on provider chain `{}`",
@@ -547,20 +546,25 @@ fn submit_light_client_attack_evidence(
         msgs.push(msg);
     };
 
-    info!(
-        "will submit light client attack evidence to client `{}` on chain `{}`",
-        counterparty_client_id,
-        counterparty.id(),
-    );
+    // Only send the regular IBC message if the counterparty is not a provider,
+    // or if the counterparty is a provider but its client is not frozen already,
+    // and has a consensus state at the common height (implicity because of the check above).
+    if !(counterparty_is_provider && provider_client_is_frozen) {
+        info!(
+            "will submit light client attack evidence to client `{}` on chain `{}`",
+            counterparty_client_id,
+            counterparty.id(),
+        );
 
-    let msg = MsgSubmitMisbehaviour {
-        client_id: counterparty_client_id.clone(),
-        misbehaviour: misbehaviour.to_any(),
-        signer,
+        let msg = MsgSubmitMisbehaviour {
+            client_id: counterparty_client_id.clone(),
+            misbehaviour: misbehaviour.to_any(),
+            signer,
+        }
+        .to_any();
+
+        msgs.push(msg);
     }
-    .to_any();
-
-    msgs.push(msg);
 
     let tracked_msgs = TrackedMsgs::new_static(msgs, "light_client_attack_evidence");
     let responses = counterparty.send_messages_and_wait_check_tx(tracked_msgs)?;
