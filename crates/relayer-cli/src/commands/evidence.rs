@@ -518,18 +518,31 @@ fn submit_light_client_attack_evidence(
         return Ok(());
     }
 
-    let mut msgs = match counterparty_client.wait_and_build_update_client(common_height) {
-        Ok(msgs) => msgs,
+    let mut msgs = if provider_has_common_consensus_state {
+        info!(
+            "skip building update client message for client `{}` on chain `{}`",
+            counterparty_client_id,
+            counterparty.id()
+        );
+        info!(
+            "reason: provider chain already has consensus state at common height {common_height}"
+        );
 
-        Err(e) => {
-            warn!(
-                "skipping update client message for client `{}` on chain `{}`",
-                counterparty_client_id,
-                counterparty.id()
-            );
-            warn!("reason: failed to build update client message: {e}");
+        Vec::new()
+    } else {
+        match counterparty_client.wait_and_build_update_client(common_height) {
+            Ok(msgs) => msgs,
 
-            Vec::new()
+            Err(e) => {
+                warn!(
+                    "skipping update client message for client `{}` on chain `{}`",
+                    counterparty_client_id,
+                    counterparty.id()
+                );
+                warn!("reason: failed to build update client message: {e}");
+
+                Vec::new()
+            }
         }
     };
 
