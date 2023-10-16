@@ -552,7 +552,7 @@ fn submit_light_client_attack_evidence(
     // Only send the regular IBC message if the counterparty is not a provider,
     // or if the counterparty is a provider but its client is not frozen already,
     // and has a consensus state at the common height (implicity because of the check above).
-    if !counterparty_is_provider || !counterparty_client_is_frozen {
+    if !counterparty_client_is_frozen {
         info!(
             "will submit light client attack evidence to client `{}` on chain `{}`",
             counterparty_client_id,
