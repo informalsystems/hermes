@@ -145,6 +145,61 @@ jobs:
         run: |
           nix shell .#cometbft .#${{ matrix.chain.package }} -c bash light_client_attack_test.sh
 
+  ics-light-client-attack-freeze:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: interchain-security
+            account_prefix: cosmos
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Nix
+        uses: cachix/install-nix-action@v22
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Use cachix cache
+        uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - name: Install sconfig
+        uses: jaxxstorm/action-install-gh-release@v1.10.0
+        with:
+          repo: freshautomations/sconfig
+          platform: linux
+          arch: amd64
+          extension-matching: disable
+          rename-to: sconfig
+          chmod: 0755
+      - name: Install stoml
+        uses: jaxxstorm/action-install-gh-release@v1.10.0
+        with:
+          repo: freshautomations/stoml
+          platform: linux
+          arch: amd64
+          extension-matching: disable
+          rename-to: stoml
+          chmod: 0755
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Use Rust cache
+        uses: Swatinem/rust-cache@v1
+      - name: Build Hermes
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Run test
+        working-directory: ci/misbehaviour-ics
+        run: |
+          nix shell .#${{ matrix.chain.package }} -c bash light_client_attack_freeze_test.sh
+
+
   ics-double-sign:
     runs-on: ubuntu-20.04
     timeout-minutes: 20
