@@ -16,12 +16,11 @@ use ibc_chain_registry::fetchable::Fetchable;
 use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
 use ibc_chain_registry::paths::IBCPath;
 use ibc_chain_registry::querier::*;
+use ibc_relayer::chain::cosmos::config::CosmosSdkConfig;
 use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use ibc_relayer::config::{
-    default, AddressType, ChainConfig, CosmosSdkConfig, EventSourceMode, GasPrice,
-};
+use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
 use ibc_relayer::keyring::Store;
 
 use tendermint_light_client_verifier::types::TrustThreshold;
