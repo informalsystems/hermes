@@ -2,7 +2,7 @@
 //!
 //! In order to ensure that ordered channels correctly clear packets on ICA
 //! channels, this test sends some sequential packets with the supervisor enabled,
-//! sends the next packet without the supervisor enabled, then sends additional
+//! sends the next packet *without* the supervisor enabled, then sends additional
 //! packets with the supervisor enabled again. The pending packet that was sent
 //! without the supervisor enabled should be relayed in order along with the
 //! other packets, as expected of ordered channel behaviour.
