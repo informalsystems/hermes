@@ -249,8 +249,8 @@ fn handle_duplicate_vote(
 
         let signer = counterparty_chain_handle.get_signer()?;
 
-        if !is_counterparty_provider(chain, counterparty_chain_handle) {
-            debug!("counterparty chain `{counterparty_chain_id}` is not a CCV provider chain, skipping...");
+        if !is_counterparty_provider(chain, counterparty_chain_handle, &counterparty_client_id) {
+            debug!("counterparty client `{counterparty_client_id}` on chain `{counterparty_chain_id}` is not a CCV client, skipping...");
             continue;
         }
 
@@ -449,7 +449,9 @@ fn submit_light_client_attack_evidence(
         counterparty.id(),
     );
 
-    let counterparty_is_provider = is_counterparty_provider(chain, counterparty);
+    let counterparty_is_provider =
+        is_counterparty_provider(chain, counterparty, &counterparty_client_id);
+
     let counterparty_client_is_frozen = counterparty_client.is_frozen();
 
     if !counterparty_is_provider && counterparty_client_is_frozen {
@@ -610,15 +612,16 @@ fn has_consensus_state(
 fn is_counterparty_provider(
     chain: &CosmosSdkChain,
     counterparty_chain_handle: &BaseChainHandle,
+    counterparty_client_id: &ClientId,
 ) -> bool {
     if chain.config().ccv_consumer_chain {
         let consumer_chains = counterparty_chain_handle
             .query_consumer_chains()
             .unwrap_or_default(); // If the query fails, use an empty list of consumers
 
-        consumer_chains
-            .iter()
-            .any(|(chain_id, _)| chain_id == chain.id())
+        consumer_chains.iter().any(|(chain_id, client_id)| {
+            chain_id == chain.id() && client_id == counterparty_client_id
+        })
     } else {
         false
     }
