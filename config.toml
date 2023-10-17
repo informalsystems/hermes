@@ -182,9 +182,6 @@ grpc_addr = 'http://127.0.0.1:9090'
 #    the `message` attribute. Without this attribute, the WebSocket is not able to catch these
 #    events, so the `/block_results` RPC must be used instead.
 #
-#    Note that this mode can also be specified with the just the alias `'poll'`, which sets
-#    Hermes into 'pull' mode with a 1 second polling interval.
-#
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
 
 # Specify the maximum amount of time (duration) that the RPC requests should

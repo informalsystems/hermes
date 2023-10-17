@@ -162,17 +162,15 @@ event_source = { mode = 'push', url = 'wss://hello:world@mydomain.com:26657/webs
 
 As of version 1.6.0, Hermes supports the relaying of wasm messages natively. This is facilitated by configuring
 Hermes to use pull-based relaying by polling for IBC events via the `/block_results` RPC endpoint. Set
-the `event_source` parameter to pull mode in `config.toml`, which can be done with either an inline table
-with the `mode` set to `'pull'`, along with the desired polling interval, or instead short-handed by just 
-specifying `'poll'`. 
+the `event_source` parameter to pull mode in `config.toml` like so:
 
 ```toml
-# The `'poll'` option is an alias for `{ mode = 'pull', interval = '1s' }`
-event_source = 'poll'
+# When specified like this, Hermes defaults to a poll interval of 1 second
+event_source = { mode = 'pull' }
 ```
 
 The default interval at which Hermes polls the RPC endpoint is 1 second. If you need to change the interval,
-you can do so like this:
+you can specify it like so:
 
 ```toml
 event_source = { mode = 'pull', interval = '2s' }
