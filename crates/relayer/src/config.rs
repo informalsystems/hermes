@@ -15,33 +15,21 @@ use core::{
     time::Duration,
 };
 use serde_derive::{Deserialize, Serialize};
-use std::{
-    fs,
-    fs::File,
-    io::Write,
-    ops::Range,
-    path::{Path, PathBuf},
-};
+use std::{fs, fs::File, io::Write, ops::Range, path::Path};
 use tendermint::block::Height as BlockHeight;
 use tendermint_light_client::verifier::types::TrustThreshold;
 use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
-use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
 use crate::keyring::Store;
-use crate::{
-    config::gas_multiplier::GasMultiplier,
-    keyring::{AnySigningKeyPair, KeyRing},
-};
-use crate::{
-    config::types::{MaxMsgNum, MaxTxSize, Memo},
-    keyring,
-};
+use crate::keyring::{AnySigningKeyPair, KeyRing};
+use crate::{chain::cosmos::config::CosmosSdkConfig, error::Error as RelayerError};
+
+use crate::keyring;
 
 pub use crate::config::Error as ConfigError;
 pub use error::Error;
@@ -665,6 +653,7 @@ pub enum Diagnostic<E> {
     Error(E),
 }
 
+/* tm/cosmos sdk specific config validation */
 /// Check that the trust threshold is:
 ///
 /// a) non-zero
@@ -717,113 +706,6 @@ fn validate_gas_settings(id: &ChainId, config: &CosmosSdkConfig) -> Result<(), D
 }
 
 /* cosmos sdk */
-
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct CosmosSdkConfig {
-    /// The chain's network identifier
-    pub id: ChainId,
-
-    /// The RPC URL to connect to
-    pub rpc_addr: Url,
-
-    /// The gRPC URL to connect to
-    pub grpc_addr: Url,
-
-    /// The type of event source and associated settings
-    pub event_source: EventSourceMode,
-
-    /// Timeout used when issuing RPC queries
-    #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
-    pub rpc_timeout: Duration,
-
-    /// Whether or not the full node Hermes connects to is trusted
-    #[serde(default = "default::trusted_node")]
-    pub trusted_node: bool,
-
-    pub account_prefix: String,
-    pub key_name: String,
-    #[serde(default)]
-    pub key_store_type: Store,
-    pub key_store_folder: Option<PathBuf>,
-    pub store_prefix: String,
-    pub default_gas: Option<u64>,
-    pub max_gas: Option<u64>,
-
-    // This field is only meant to be set via the `update client` command,
-    // for when we need to ugprade a client across a genesis restart and
-    // therefore need and archive node to fetch blocks from.
-    pub genesis_restart: Option<GenesisRestart>,
-
-    // This field is deprecated, use `gas_multiplier` instead
-    pub gas_adjustment: Option<f64>,
-    pub gas_multiplier: Option<GasMultiplier>,
-
-    pub fee_granter: Option<String>,
-    #[serde(default)]
-    pub max_msg_num: MaxMsgNum,
-    #[serde(default)]
-    pub max_tx_size: MaxTxSize,
-    #[serde(default = "default::max_grpc_decoding_size")]
-    pub max_grpc_decoding_size: Byte,
-
-    /// A correction parameter that helps deal with clocks that are only approximately synchronized
-    /// between the source and destination chains for a client.
-    /// This parameter is used when deciding to accept or reject a new header
-    /// (originating from the source chain) for any client with the destination chain
-    /// that uses this configuration, unless it is overridden by the client-specific
-    /// clock drift option.
-    #[serde(default = "default::clock_drift", with = "humantime_serde")]
-    pub clock_drift: Duration,
-
-    #[serde(default = "default::max_block_time", with = "humantime_serde")]
-    pub max_block_time: Duration,
-
-    /// The trusting period specifies how long a validator set is trusted for
-    /// (must be shorter than the chain's unbonding period).
-    #[serde(default, with = "humantime_serde")]
-    pub trusting_period: Option<Duration>,
-
-    /// CCV consumer chain
-    #[serde(default = "default::ccv_consumer_chain")]
-    pub ccv_consumer_chain: bool,
-
-    #[serde(default)]
-    pub memo_prefix: Memo,
-
-    // This is an undocumented and hidden config to make the relayer wait for
-    // DeliverTX before sending the next transaction when sending messages in
-    // multiple batches. We will instruct relayer operators to turn this on
-    // in case relaying failed in a chain with priority mempool enabled.
-    // Warning: turning this on may cause degradation in performance.
-    #[serde(default)]
-    pub sequential_batch_tx: bool,
-
-    // Note: These last few need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML.
-    //       That's because these are all tables and have to come last when serializing.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "self::proof_specs"
-    )]
-    pub proof_specs: Option<ProofSpecs>,
-
-    // These last few need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
-    /// The trust threshold defines what fraction of the total voting power of a known
-    /// and trusted validator set is sufficient for a commit to be accepted going forward.
-    #[serde(default)]
-    pub trust_threshold: TrustThreshold,
-
-    pub gas_price: GasPrice,
-
-    #[serde(default)]
-    pub packet_filter: PacketFilter,
-
-    #[serde(default)]
-    pub address_type: AddressType,
-    #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
-    pub extension_options: Vec<ExtensionOption>,
-}
 
 /* general config handling code */
 

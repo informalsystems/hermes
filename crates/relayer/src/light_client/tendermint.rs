@@ -32,9 +32,9 @@ use ibc_relayer_types::{
 };
 
 use crate::{
+    chain::cosmos::config::CosmosSdkConfig,
     chain::cosmos::CosmosSdkChain,
     client_state::AnyClientState,
-    config::CosmosSdkConfig,
     error::Error,
     light_client::AnyHeader,
     misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},

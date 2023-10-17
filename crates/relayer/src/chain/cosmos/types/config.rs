@@ -5,9 +5,10 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_rpc::Url;
 
+use crate::chain::cosmos::config::CosmosSdkConfig;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::{MaxMsgNum, MaxTxSize};
-use crate::config::{AddressType, CosmosSdkConfig};
+use crate::config::AddressType;
 use crate::error::Error;
 
 #[derive(Debug, Clone)]

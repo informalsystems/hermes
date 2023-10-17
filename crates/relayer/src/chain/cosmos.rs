@@ -63,6 +63,7 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::endpoint::status;
 use tendermint_rpc::{Client, HttpClient, Order};
 
+use crate::account::Balance;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
     sequential_send_batched_messages_and_wait_commit,
@@ -104,7 +105,6 @@ use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
-use crate::{account::Balance, config::CosmosSdkConfig};
 use crate::{chain::client::ClientSettings, config::Error as ConfigError};
 
 use self::types::app_state::GenesisAppState;
@@ -112,6 +112,7 @@ use self::types::app_state::GenesisAppState;
 pub mod batch;
 pub mod client;
 pub mod compatibility;
+pub mod config;
 pub mod encode;
 pub mod estimate;
 pub mod fee;
@@ -140,7 +141,7 @@ pub mod wait;
 /// [tm-37-max]: https://github.com/tendermint/tendermint/blob/v0.37.0-rc1/types/params.go#L79
 pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 pub struct CosmosSdkChain {
-    config: CosmosSdkConfig,
+    config: config::CosmosSdkConfig,
     tx_config: TxConfig,
     rpc_client: HttpClient,
     compat_mode: CompatMode,
@@ -157,7 +158,7 @@ pub struct CosmosSdkChain {
 
 impl CosmosSdkChain {
     /// Get a reference to the configuration for this chain.
-    pub fn config(&self) -> &CosmosSdkConfig {
+    pub fn config(&self) -> &config::CosmosSdkConfig {
         &self.config
     }
 
@@ -2287,7 +2288,7 @@ fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
 
 async fn fetch_node_info(
     rpc_client: &HttpClient,
-    config: &CosmosSdkConfig,
+    config: &config::CosmosSdkConfig,
 ) -> Result<node::Info, Error> {
     crate::time!("fetch_node_info",
     {
