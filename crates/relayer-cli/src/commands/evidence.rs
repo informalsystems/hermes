@@ -501,12 +501,12 @@ fn submit_light_client_attack_evidence(
     let signer = counterparty.get_signer()?;
     let common_height = Height::from_tm(evidence.common_height, chain.id());
 
-    let provider_has_common_consensus_state = counterparty_is_provider
-        && has_consensus_state(counterparty, &counterparty_client_id, common_height);
+    let counterparty_has_common_consensus_state =
+        has_consensus_state(counterparty, &counterparty_client_id, common_height);
 
     if counterparty_is_provider
         && counterparty_client_is_frozen
-        && !provider_has_common_consensus_state
+        && !counterparty_has_common_consensus_state
     {
         warn!(
             "cannot submit light client attack evidence to client `{}` on provider chain `{}`",
@@ -518,14 +518,14 @@ fn submit_light_client_attack_evidence(
         return Ok(());
     }
 
-    let mut msgs = if provider_has_common_consensus_state {
+    let mut msgs = if counterparty_has_common_consensus_state {
         info!(
-            "skip building update client message for client `{}` on chain `{}`",
+            "skip building update client message for client `{}` on counterparty chain `{}`",
             counterparty_client_id,
             counterparty.id()
         );
         info!(
-            "reason: provider chain already has consensus state at common height {common_height}"
+            "reason: counterparty chain already has consensus state at common height {common_height}"
         );
 
         Vec::new()
