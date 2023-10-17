@@ -70,14 +70,18 @@ impl Runnable for EvidenceCmd {
             .cloned()
             .unwrap_or_else(|| {
                 Output::error(format!(
-                    "chain '{}' not found in configuration",
+                    "chain `{}` not found in configuration",
                     self.chain_id
                 ))
                 .exit()
             });
 
         if chain_config.r#type != ChainType::CosmosSdk {
-            Output::error(format!("Chain {} is not a Cosmos SDK chain", self.chain_id)).exit();
+            Output::error(format!(
+                "chain `{}` is not a Cosmos SDK chain",
+                self.chain_id
+            ))
+            .exit();
         }
 
         if let Some(ref key_name) = self.key_name {
@@ -121,24 +125,6 @@ fn monitor_misbehaviours(
         let height = std::cmp::max(1, target);
         Height::new(chain.id().version(), height).unwrap()
     };
-
-    // latest_height: 200
-    //
-    // check_past_blocks: 0
-    // target_height: 200
-    // iterations: 0
-    //
-    // check_past_blocks: 1
-    // target_height: 199
-    // iterations: 1
-    //
-    // check_past_blocks: 200
-    // target_height: 1
-    // iterations: 200
-    //
-    // check_past_blocks: 201
-    // target_height: 1
-    // iterations: 200
 
     info!(
         "checking past {check_past_blocks} blocks for misbehaviour evidence: {}..{}",
@@ -285,7 +271,7 @@ fn handle_duplicate_vote(
         };
 
         if !counterparty_is_provider {
-            debug!("counterparty chain {counterparty_chain_id} is not a CCV provider chain, skipping...");
+            debug!("counterparty chain `{counterparty_chain_id}` is not a CCV provider chain, skipping...");
             continue;
         }
 
@@ -309,7 +295,7 @@ fn handle_duplicate_vote(
 
         let Some(trusted_height) = consensus_state_height_before_infraction_height else {
             error!(
-                "cannot build infraction block header for client {counterparty_client_id} on chain {counterparty_chain_id},\
+                "cannot build infraction block header for client `{counterparty_client_id}` on chain `{counterparty_chain_id}`,\
                 reason: could not find consensus state at highest height smaller than infraction height {infraction_height}"
             );
 
@@ -328,7 +314,7 @@ fn handle_duplicate_vote(
         .to_any();
 
         info!(
-            "submitting consumer double voting evidence to provider chain {counterparty_chain_id}"
+            "submitting consumer double voting evidence to provider chain `{counterparty_chain_id}`"
         );
 
         let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "double_voting_evidence");
@@ -336,10 +322,10 @@ fn handle_duplicate_vote(
 
         for response in responses {
             if response.code.is_ok() {
-                info!("successfully submitted double voting evidence to chain {counterparty_chain_id}, tx hash: {}", response.hash);
+                info!("successfully submitted double voting evidence to chain `{counterparty_chain_id}`, tx hash: {}", response.hash);
             } else {
                 error!(
-                    "failed to submit double voting evidence to chain {counterparty_chain_id}: {response:?}"
+                    "failed to submit double voting evidence to chain `{counterparty_chain_id}`: {response:?}"
                 );
             }
         }
@@ -479,7 +465,7 @@ fn submit_light_client_attack_evidence(
     misbehaviour: TendermintMisbehaviour,
 ) -> Result<(), eyre::Error> {
     info!(
-        "building light client attack evidence for client `{}` on chain `{}`",
+        "building light client attack evidence for client `{}` on counterparty chain `{}`",
         counterparty_client_id,
         counterparty.id(),
     );
@@ -489,7 +475,7 @@ fn submit_light_client_attack_evidence(
 
     if !counterparty_is_provider && counterparty_client_is_frozen {
         warn!(
-            "cannot submit light client attack evidence to client `{}` on chain `{}`",
+            "cannot submit light client attack evidence to client `{}` on counterparty chain `{}`",
             counterparty_client_id,
             counterparty.id()
         );
@@ -535,11 +521,11 @@ fn submit_light_client_attack_evidence(
 
             Err(e) => {
                 warn!(
-                    "skipping update client message for client `{}` on chain `{}`",
+                    "skipping UpdateClient message for client `{}` on counterparty chain `{}`",
                     counterparty_client_id,
                     counterparty.id()
                 );
-                warn!("reason: failed to build update client message: {e}");
+                warn!("reason: failed to build UpdateClient message: {e}");
 
                 Vec::new()
             }
@@ -565,7 +551,7 @@ fn submit_light_client_attack_evidence(
     // We do not need to submit the misbehaviour if the client is already frozen.
     if !counterparty_client_is_frozen {
         info!(
-            "will submit light client attack evidence to client `{}` on chain `{}`",
+            "will submit light client attack evidence to client `{}` on counterparty chain `{}`",
             counterparty_client_id,
             counterparty.id(),
         );
@@ -582,7 +568,7 @@ fn submit_light_client_attack_evidence(
 
     if msgs.is_empty() {
         warn!(
-            "skipping light client attack evidence for client `{}` on chain `{}`",
+            "skipping light client attack evidence for client `{}` on counterparty chain `{}`",
             counterparty_client_id,
             counterparty.id()
         );
@@ -598,7 +584,7 @@ fn submit_light_client_attack_evidence(
     match responses.first() {
         Some(response) if response.code.is_ok() => {
             info!(
-                "successfully submitted light client attack evidence for client `{}` to chain `{}`, tx hash: {}",
+                "successfully submitted light client attack evidence for client `{}` to counterparty chain `{}`, tx hash: {}",
                 counterparty_client_id,
                 counterparty.id(),
                 response.hash
@@ -607,12 +593,12 @@ fn submit_light_client_attack_evidence(
             Ok(())
         }
         Some(response) => Err(eyre::eyre!(
-            "failed to submit light client attack evidence to chain {}: {response:?}",
+            "failed to submit light client attack evidence to counterparty chain `{}`: {response:?}",
             counterparty.id()
         )),
 
         None => Err(eyre::eyre!(
-            "failed to submit light client attack evidence to chain {}: no response from chain",
+            "failed to submit light client attack evidence to counterparty chain `{}`: no response from chain",
             counterparty.id()
         )),
     }
@@ -681,7 +667,7 @@ fn fetch_all_counterparty_clients(
 
     for connection in connections {
         debug!(
-            "fetching counterparty client state for connection {}",
+            "fetching counterparty client state for connection `{}`",
             connection.connection_id
         );
 
@@ -699,7 +685,7 @@ fn fetch_all_counterparty_clients(
             Ok((client_state, _)) => client_state,
             Err(e) => {
                 error!(
-                    "failed to fetch client state for counterparty client {client_id}, skipping..."
+                    "failed to fetch client state for counterparty client `{client_id}`, skipping..."
                 );
                 error!("reason: {e}");
 
@@ -708,7 +694,7 @@ fn fetch_all_counterparty_clients(
         };
 
         let counterparty_chain_id = client_state.chain_id();
-        info!("found counterparty client with id {client_id} on counterparty chain {counterparty_chain_id}");
+        info!("found counterparty client with id `{client_id}` on counterparty chain `{counterparty_chain_id}`");
 
         counterparty_clients.push((counterparty_chain_id, client_id.clone()));
     }
