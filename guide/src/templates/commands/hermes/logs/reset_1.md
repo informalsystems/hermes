@@ -1,1 +1,1 @@
--n [[#BINARY hermes]][[#GLOBALOPTIONS]] logs reset
+[[#BINARY hermes]][[#GLOBALOPTIONS]] logs reset

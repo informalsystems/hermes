@@ -1,1 +1,1 @@
--n [[#BINARY hermes]][[#GLOBALOPTIONS]] logs [[#SUBCOMMAND]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] logs [[#SUBCOMMAND]]

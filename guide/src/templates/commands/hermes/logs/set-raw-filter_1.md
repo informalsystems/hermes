@@ -1,1 +1,1 @@
--n [[#BINARY hermes]][[#GLOBALOPTIONS]] logs set-raw-filter --raw-filter [[#RAW_FILTER]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] logs set-raw-filter --raw-filter [[#RAW_FILTER]]

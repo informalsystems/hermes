@@ -1,1 +1,1 @@
--n [[#BINARY hermes]][[#GLOBALOPTIONS]] health-check
+[[#BINARY hermes]][[#GLOBALOPTIONS]] health-check

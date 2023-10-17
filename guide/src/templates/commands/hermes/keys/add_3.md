@@ -1,1 +1,1 @@
--n Add a key from a file containing its mnemonic:
+Add a key from a file containing its mnemonic:

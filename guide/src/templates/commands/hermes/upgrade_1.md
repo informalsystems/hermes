@@ -1,1 +1,1 @@
--n [[#BINARY hermes]][[#GLOBALOPTIONS]] upgrade [[#SUBCOMMAND]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] upgrade [[#SUBCOMMAND]]

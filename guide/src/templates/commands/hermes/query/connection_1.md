@@ -1,1 +1,1 @@
--n [[#BINARY hermes]][[#GLOBALOPTIONS]] query connection [[#SUBCOMMAND]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] query connection [[#SUBCOMMAND]]
