@@ -1,1 +1,1 @@
-Add a key from a Comet keyring file:
+-n Add a key from a Comet keyring file:

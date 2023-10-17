@@ -1,1 +1,1 @@
-[[#BINARY hermes]][[#GLOBALOPTIONS]] query clients[[#OPTIONS]] --host-chain [[#HOST_CHAIN_ID]]
+-n [[#BINARY hermes]][[#GLOBALOPTIONS]] query clients[[#OPTIONS]] --host-chain [[#HOST_CHAIN_ID]]
