@@ -543,15 +543,15 @@ for _ in $(seq 1 10)
 do
     sleep 5
 
-    MSG="successfully submitted double voting evidence to chain provider"
+    MSG="successfully submitted double voting evidence to chain"
     
     if grep -c "$MSG" $HOME_DIR/hermes-evidence-logs.txt; then
-        echo "[SUCCESS] Successfully submitted double voting evidence to chain provider"
+        echo "[SUCCESS] Successfully submitted double voting evidence to provider chain"
         exit 0
     fi
 done
 
-echo "[ERROR] Failed to submit double voting evidence to chain provider"
+echo "[ERROR] Failed to submit double voting evidence to provider chain"
 echo ""
 echo "---------------------------------------------------------------"
 echo "Hermes start logs:"
