@@ -330,11 +330,29 @@ diag "Consumer Trusted Height: ${CD_TRUSTED_HEIGHT}, Hash: ${CD_TRUSTED_HASH}"
 
 waiting 5 "for a block"
 
+# CCV connection
 $HERMES_BIN create connection \
-     --a-chain consumer \
+    --a-chain consumer \
     --a-client 07-tendermint-0 \
     --b-client 07-tendermint-0
 
+# Dummy client and connection for the test
+$HERMES_BIN create client \
+    --host-chain provider \
+    --reference-chain consumer \
+    --trusting-period 57600s
+
+$HERMES_BIN create client \
+    --host-chain consumer \
+    --reference-chain provider \
+    --trusting-period 57600s
+
+$HERMES_BIN create connection \
+    --a-chain consumer \
+    --a-client 07-tendermint-1 \
+    --b-client 07-tendermint-1
+
+# CCV channel
 $HERMES_BIN create channel \
     --a-chain consumer \
     --a-port consumer \
