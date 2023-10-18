@@ -204,12 +204,13 @@ impl TestOverrides for ClearPacketNoScanTest {
 impl BinaryChannelTest for ClearPacketNoScanTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
+        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -272,6 +273,7 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
                 &channel.port_a.0,
                 &channel.channel_id_a.0,
                 &denom_a.with_amount(amount1).as_ref(),
+                &fee_denom_a.with_amount(1200u64).as_ref(),
                 &dst_height,
             )?;
 

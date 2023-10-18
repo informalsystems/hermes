@@ -39,6 +39,7 @@ ics31 = []
 clean-workers = []
 fee-grant = []
 interchain-security = []
+celestia = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"

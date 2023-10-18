@@ -59,8 +59,8 @@ pub fn boostrap_chains_with_any_nodes(
 ) -> Result<(RelayerDriver, DynamicConnectedChains<impl ChainHandle>), Error> {
     let mut config = Config::default();
 
-    for node in full_nodes.iter() {
-        add_chain_config(&mut config, node, test_config)?;
+    for (i, node) in full_nodes.iter().enumerate() {
+        add_chain_config(&mut config, node, test_config, i)?;
     }
 
     config_modifier(&mut config);

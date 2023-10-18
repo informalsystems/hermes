@@ -10,6 +10,10 @@ define_error! {
             [ TraceError<toml::de::Error> ]
             |_| { "invalid configuration" },
 
+        InvalidCompatMode
+            { compat_mode: String }
+            |e| { format!("invalid compat mode: {}", e.compat_mode) },
+
         Encode
             [ TraceError<toml::ser::Error> ]
             |_| { "invalid configuration" },

@@ -24,7 +24,9 @@ use std::{
 };
 use tendermint::block::Height as BlockHeight;
 use tendermint_light_client::verifier::types::TrustThreshold;
-use tendermint_rpc::{Url, WebSocketClientUrl};
+use tendermint_rpc::client::CompatMode as TmCompatMode;
+use tendermint_rpc::Url;
+use tendermint_rpc::WebSocketClientUrl;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
@@ -142,6 +144,62 @@ impl Display for ExtensionOption {
                     "EthermintDynamicFee(max_priority_price: {max_priority_price})"
                 )
             }
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum CompatMode {
+    /// Use version 0.34 of the protocol.
+    V0_34,
+    /// Use version 0.37 of the protocol.
+    V0_37,
+}
+
+impl Display for CompatMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match self {
+            Self::V0_34 => write!(f, "v0.34"),
+            Self::V0_37 => write!(f, "v0.37"),
+        }
+    }
+}
+
+impl FromStr for CompatMode {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "V0_34" => Ok(Self::V0_34),
+            "V0_37" => Ok(Self::V0_37),
+            _ => Err(Error::invalid_compat_mode(s.to_owned())),
+        }
+    }
+}
+
+impl From<TmCompatMode> for CompatMode {
+    fn from(value: TmCompatMode) -> Self {
+        match value {
+            TmCompatMode::V0_34 => Self::V0_34,
+            TmCompatMode::V0_37 => Self::V0_37,
+        }
+    }
+}
+
+impl From<CompatMode> for TmCompatMode {
+    fn from(value: CompatMode) -> Self {
+        match value {
+            CompatMode::V0_34 => Self::V0_34,
+            CompatMode::V0_37 => Self::V0_37,
+        }
+    }
+}
+
+impl CompatMode {
+    pub fn equal_to_tm_compat_mode(&self, tm_compat_mode: TmCompatMode) -> bool {
+        match self {
+            Self::V0_34 => tm_compat_mode == TmCompatMode::V0_34,
+            Self::V0_37 => tm_compat_mode == TmCompatMode::V0_37,
         }
     }
 }
@@ -663,6 +721,7 @@ pub struct ChainConfig {
     pub address_type: AddressType,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub extension_options: Vec<ExtensionOption>,
+    pub compat_mode: Option<CompatMode>,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
