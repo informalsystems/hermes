@@ -691,6 +691,7 @@ impl GrpcStatusSubdetail {
 fn parse_sequences_in_mismatch_error_message(message: &str) -> Option<(u64, u64)> {
     let re = Regex::new(r"account sequence mismatch, expected (?P<expected>\d+), got (?P<got>\d+)")
         .unwrap();
+
     match re.captures(message) {
         None => None,
         Some(captures) => match (captures["expected"].parse(), captures["got"].parse()) {

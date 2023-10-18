@@ -510,4 +510,8 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<QueryIncentivizedPacketResponse, Error> {
         self.inner.query_incentivized_packet(request)
     }
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+        self.inner.query_consumer_chains()
+    }
 }
