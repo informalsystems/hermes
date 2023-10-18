@@ -21,7 +21,7 @@ use ibc_relayer_types::{
             packet::{PacketMsgType, Sequence},
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
     proofs::Proofs,
     signer::Signer,
@@ -348,6 +348,10 @@ where
 
                         ChainRequest::QueryIncentivizedPacket { request, reply_to } => {
                             self.query_incentivized_packet(request, reply_to)?
+                        },
+
+                        ChainRequest::QueryConsumerChains { reply_to } => {
+                            self.query_consumer_chains(reply_to)?
                         },
                     }
                 },
@@ -846,6 +850,16 @@ where
         reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
     ) -> Result<(), Error> {
         let result = self.chain.query_incentivized_packet(request);
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_consumer_chains(
+        &self,
+        reply_to: ReplyTo<Vec<(ChainId, ClientId)>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_consumer_chains();
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())

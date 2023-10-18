@@ -1,5 +1,5 @@
 DESCRIPTION:
-Listen to client update IBC events and handles misbehaviour
+Listen to client update IBC events and handle misbehaviour
 
 USAGE:
     hermes misbehaviour --chain <CHAIN_ID> --client <CLIENT_ID>
