@@ -879,8 +879,8 @@ impl ChainEndpoint for CosmosSdkChain {
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
 
         let compat_mode = CompatMode::from_version(node_info.version).unwrap_or_else(|e| {
-            warn!("Unsupported tendermint version, will use v0.37 compatibility mode but relaying might not work as desired: {e}");
-            CompatMode::V0_37
+            warn!("Unsupported tendermint version, will use v0.34 compatibility mode but relaying might not work as desired: {e}");
+            CompatMode::V0_34
         });
         rpc_client.set_compat_mode(compat_mode);
 
