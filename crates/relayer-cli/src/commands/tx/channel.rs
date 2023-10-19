@@ -1,3 +1,5 @@
+#![allow(clippy::redundant_closure_call)]
+
 use abscissa_core::clap::Parser;
 use abscissa_core::Command;
 use abscissa_core::Runnable;

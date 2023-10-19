@@ -520,6 +520,10 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryIncentivizedPacket { request, reply_to })
     }
 
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+        self.send(|reply_to| ChainRequest::QueryConsumerChains { reply_to })
+    }
+
     fn query_upgrade(
         &self,
         request: QueryUpgradeRequest,

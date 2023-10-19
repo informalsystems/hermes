@@ -513,6 +513,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner.query_incentivized_packet(request)
     }
 
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+        self.inner.query_consumer_chains()
+    }
+
     fn query_upgrade(
         &self,
         request: QueryUpgradeRequest,

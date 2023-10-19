@@ -506,6 +506,11 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner.query_incentivized_packet(request)
     }
 
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+        self.inc_metric("query_consumer_chains");
+        self.inner.query_consumer_chains()
+    }
+
     fn query_upgrade(
         &self,
         request: QueryUpgradeRequest,

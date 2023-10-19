@@ -370,6 +370,10 @@ pub enum ChainRequest {
         reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
     },
 
+    QueryConsumerChains {
+        reply_to: ReplyTo<Vec<(ChainId, ClientId)>>,
+    },
+
     QueryUpgrade {
         request: QueryUpgradeRequest,
         height: Height,
@@ -686,6 +690,8 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         &self,
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
 
     fn query_upgrade(
         &self,

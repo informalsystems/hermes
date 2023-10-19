@@ -433,6 +433,10 @@ where
         self.value().query_incentivized_packet(request)
     }
 
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+        self.value().query_consumer_chains()
+    }
+
     fn query_upgrade(
         &self,
         request: QueryUpgradeRequest,

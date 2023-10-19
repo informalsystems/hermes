@@ -699,6 +699,8 @@ pub trait ChainEndpoint: Sized {
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
 
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
+
     fn query_upgrade(
         &self,
         request: QueryUpgradeRequest,
