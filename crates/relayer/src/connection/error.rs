@@ -187,16 +187,27 @@ define_error! {
 }
 
 impl HasExpiredOrFrozenError for ConnectionErrorDetail {
-    fn is_expired_or_frozen_error(&self) -> bool {
+    fn is_frozen_error(&self) -> bool {
         match self {
-            Self::ClientOperation(e) => e.source.is_expired_or_frozen_error(),
+            Self::ClientOperation(e) => e.source.is_frozen_error(),
+            _ => false,
+        }
+    }
+
+    fn is_expired_error(&self) -> bool {
+        match self {
+            Self::ClientOperation(e) => e.source.is_expired_error(),
             _ => false,
         }
     }
 }
 
 impl HasExpiredOrFrozenError for ConnectionError {
-    fn is_expired_or_frozen_error(&self) -> bool {
-        self.detail().is_expired_or_frozen_error()
+    fn is_frozen_error(&self) -> bool {
+        self.detail().is_frozen_error()
+    }
+
+    fn is_expired_error(&self) -> bool {
+        self.detail().is_expired_error()
     }
 }

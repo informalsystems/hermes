@@ -27,6 +27,7 @@
       packages = {
         inherit
           (cosmos-nix)
+          cometbft
           gaia6-ordered
           gaia12
           osmosis
@@ -37,6 +38,7 @@
           ibc-go-v5-simapp
           ibc-go-v6-simapp
           ibc-go-v7-simapp
+          interchain-security
           apalache
           evmos
           juno
