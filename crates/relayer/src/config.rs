@@ -14,6 +14,7 @@ use core::{
     str::FromStr,
     time::Duration,
 };
+use serde::{Deserialize as IDeserialize, Deserializer, Serialize as ISerialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use std::{
     fs,
@@ -152,7 +153,7 @@ impl Display for ExtensionOption {
 ///
 /// Can be removed in favor of the one in tendermint-rs, once
 /// <https://github.com/informalsystems/tendermint-rs/pull/1367> is merged.
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CompatMode {
     /// Use version 0.34 of the protocol.
     V0_34,
@@ -173,11 +174,38 @@ impl FromStr for CompatMode {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "V0_34" => Ok(Self::V0_34),
-            "V0_37" => Ok(Self::V0_37),
-            _ => Err(Error::invalid_compat_mode(s.to_owned())),
+        const VALID_COMPAT_MODES: &str = "0.34, 0.37";
+
+        // Trim leading 'v', if present
+        match s.trim_start_matches('v') {
+            "0.34" => Ok(CompatMode::V0_34),
+            "0.37" => Ok(CompatMode::V0_37),
+            _ => Err(Error::invalid_compat_mode(
+                s.to_string(),
+                VALID_COMPAT_MODES,
+            )),
         }
+    }
+}
+
+impl<'de> IDeserialize<'de> for CompatMode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de;
+
+        let s = String::deserialize(deserializer)?;
+        FromStr::from_str(&s).map_err(de::Error::custom)
+    }
+}
+
+impl ISerialize for CompatMode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.to_string().serialize(serializer)
     }
 }
 

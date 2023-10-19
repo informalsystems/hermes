@@ -583,7 +583,7 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          COMPAT_MODES: V0_34
+          COMPAT_MODES: 0.34
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }},gaiad
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }},cosmos
           NATIVE_TOKENS: ${{ matrix.chain.native_token }},stake

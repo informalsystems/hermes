@@ -378,8 +378,8 @@ memo_prefix = ''
 #   * compat_mode is specified but the version queried from /status differs: The CompatMode configured is used, but a warning log is outputted
 #   * compat_mode is not specified but /status returns a correct version: The CompatMode retrieved from the endpoint is used
 #   * compat_mode is not specified and /status does not return a valid version: Hermes stops and outputs an error informing the user a compat_mode needs to be configured
-# Possible values: [`V0_34`, `V0_37`]
-# compat_mode = 'V0_34'
+# Possible values: [`0.34`, `0.37`]
+# compat_mode = '0.34'
 
 [[chains]]
 id = 'ibc-1'

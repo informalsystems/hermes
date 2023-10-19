@@ -6,12 +6,12 @@ There are two different compatibility modes for CometBFT, one for version v0.34 
 
 ## Configuration
 
-The configuration is set per chain and can take two values `V0_34` and `V0_37`, other values will be invalid:
+The configuration is set per chain and can take two values `0.34` and `0.37`, other values will be invalid:
 
 ```toml
 [[chains]]
 ...
-compat_mode = 'V0_34'
+compat_mode = '0.34'
 ```
 
 Hermes will act in the following way whether or not the configuration is set:
