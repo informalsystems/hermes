@@ -101,7 +101,7 @@ jobs:
           - package: interchain-security
             account_prefix: cosmos
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Nix
         uses: cachix/install-nix-action@v22
         with:
@@ -135,7 +135,7 @@ jobs:
           toolchain: stable
           override: true
       - name: Use Rust cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:
@@ -155,7 +155,7 @@ jobs:
           - package: interchain-security
             account_prefix: cosmos
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Nix
         uses: cachix/install-nix-action@v22
         with:
@@ -189,7 +189,7 @@ jobs:
           toolchain: stable
           override: true
       - name: Use Rust cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:
@@ -210,7 +210,7 @@ jobs:
           - package: interchain-security
             account_prefix: cosmos
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Nix
         uses: cachix/install-nix-action@v22
         with:
@@ -244,7 +244,7 @@ jobs:
           toolchain: stable
           override: true
       - name: Use Rust cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:
