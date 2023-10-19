@@ -146,7 +146,7 @@ fi
 
 # Start gaia
 echo "Start gaia on grpc port: $GRPC_PORT..."
-$BINARY --home $CHAIN_DIR/$CHAIN_ID start --pruning=nothing --grpc.address="0.0.0.0:$GRPC_PORT" --log_level error > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
+$BINARY --home $CHAIN_DIR/$CHAIN_ID start --pruning=nothing --grpc.address="0.0.0.0:$GRPC_PORT" --log_level info > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
 
 # Show validator's and user's balance
 sleep 3

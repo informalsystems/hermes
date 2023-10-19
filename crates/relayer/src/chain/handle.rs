@@ -367,6 +367,10 @@ pub enum ChainRequest {
         request: QueryIncentivizedPacketRequest,
         reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
     },
+
+    QueryConsumerChains {
+        reply_to: ReplyTo<Vec<(ChainId, ClientId)>>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -678,4 +682,6 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         &self,
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
 }

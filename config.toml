@@ -263,7 +263,8 @@ max_gas = 400000
 # paid for each unit of gas per transaction.
 # 
 # Required
-gas_price = { price = 0.001, denom = 'stake' }
+#gas_price = { price = 0.025, denom = 'stake' }
+gas_price = { price = 0, denom = 'stake' }
 
 # Multiply this amount with the gas estimate, used to compute the fee
 # and account for potential estimation error.
@@ -384,7 +385,7 @@ key_name = 'testkey'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 400000
-gas_price = { price = 0.001, denom = 'stake' }
+gas_price = { price = 0.025, denom = 'stake' }
 gas_multiplier = 1.1
 max_msg_num = 30
 max_tx_size = 2097152

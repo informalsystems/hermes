@@ -351,7 +351,10 @@ impl TryFrom<Any> for ClientState {
             TENDERMINT_CLIENT_STATE_TYPE_URL => {
                 decode_client_state(raw.value.deref()).map_err(Into::into)
             }
-            _ => Err(Ics02Error::unknown_client_state_type(raw.type_url)),
+            _ => Err(Ics02Error::unexpected_client_state_type(
+                TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
+                raw.type_url,
+            )),
         }
     }
 }
