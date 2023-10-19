@@ -148,6 +148,10 @@ impl Display for ExtensionOption {
     }
 }
 
+/// CometBFT RPC compatibility mode
+///
+/// Can be removed in favor of the one in tendermint-rs, once
+/// <https://github.com/informalsystems/tendermint-rs/pull/1367> is merged.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum CompatMode {
     /// Use version 0.34 of the protocol.
