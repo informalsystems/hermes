@@ -9,7 +9,7 @@ This v1.7 release introduces new features and improvements to Hermes.
 One of the key highlights is the addition of new misbehavior detection features.
 
 - Hermes now includes a new command called `evidence`, which monitors the blocks emitted by a chain for any presence of misbehavior evidence.
-- If misbehavior is detected, the CLI will report that evidence to all counterpart clients of that chain.
+- If misbehavior is detected, the CLI will report that evidence to all counterparty clients of that chain.
 On top of that, misbehavior evidence detected on a chain that is a CCV (Cross-Chain Validation) consumer 
 is now sent to its provider chain, alerting it directly of the misbehaving consumer chain.
 - Furthermore, when misbehavior is detected from an on-chain client, such as a light client attack or a double-sign,
