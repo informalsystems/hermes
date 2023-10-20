@@ -1,15 +1,13 @@
-use std::collections::HashMap;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 
-use crate::core::ics02_client::client_state::{ClientState, UpgradeOptions};
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
 
 use crate::core::ics24_host::identifier::ChainId;
@@ -20,20 +18,6 @@ use crate::mock::header::MockHeader;
 use crate::Height;
 
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
-
-/// A mock of an IBC client record as it is stored in a mock context.
-/// For testing ICS02 handlers mostly, cf. `MockClientContext`.
-#[derive(Clone, Debug)]
-pub struct MockClientRecord {
-    /// The type of this client.
-    pub client_type: ClientType,
-
-    /// The client state (representing only the latest height at the moment).
-    pub client_state: Option<Box<dyn ClientState>>,
-
-    /// Mapping of heights to consensus states for this client.
-    pub consensus_states: HashMap<Height, Box<dyn ConsensusState>>,
-}
 
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
@@ -113,12 +97,14 @@ impl From<MockClientState> for Any {
     fn from(client_state: MockClientState) -> Self {
         Any {
             type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawMockClientState>::encode_vec(&client_state),
+            value: Protobuf::<RawMockClientState>::encode_vec(client_state),
         }
     }
 }
 
 impl ClientState for MockClientState {
+    type UpgradeOptions = ();
+
     fn chain_id(&self) -> ChainId {
         unimplemented!()
     }
@@ -135,12 +121,7 @@ impl ClientState for MockClientState {
         self.frozen_height
     }
 
-    fn upgrade(
-        &mut self,
-        _upgrade_height: Height,
-        _upgrade_options: &dyn UpgradeOptions,
-        _chain_id: ChainId,
-    ) {
+    fn upgrade(&mut self, _upgrade_height: Height, _upgrade_options: (), _chain_id: ChainId) {
         unimplemented!()
     }
 

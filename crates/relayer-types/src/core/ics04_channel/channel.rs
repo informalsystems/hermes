@@ -3,7 +3,7 @@ use crate::utils::pretty::PrettySlice;
 use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str::FromStr;
 
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::{

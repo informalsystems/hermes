@@ -21,7 +21,7 @@ use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,

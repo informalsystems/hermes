@@ -1,5 +1,5 @@
 use flex_error::{define_error, TraceError};
-use ibc_proto::protobuf::Error as TendermintProtoError;
+use tendermint_proto::Error as TendermintProtoError;
 
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::height::HeightError;

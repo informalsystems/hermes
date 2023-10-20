@@ -17,7 +17,7 @@ use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmi
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics02_client::header::Header;
+use ibc_relayer_types::core::ics02_client::header::{AnyHeader, Header};
 use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc_relayer_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
@@ -38,7 +38,6 @@ use crate::client_state::AnyClientState;
 use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
-use crate::light_client::AnyHeader;
 use crate::misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence};
 use crate::telemetry;
 use crate::util::collate::CollatedIterExt;

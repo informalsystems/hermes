@@ -3,8 +3,9 @@
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
 use tendermint::abci;
+use tendermint_proto::Protobuf;
 
-use super::header::Header;
+use super::header::AnyHeader;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::ClientId;
@@ -135,7 +136,7 @@ impl From<CreateClient> for abci::Event {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct UpdateClient {
     pub common: Attributes,
-    pub header: Option<Box<dyn Header>>,
+    pub header: Option<AnyHeader>,
 }
 
 impl UpdateClient {
@@ -154,12 +155,7 @@ impl UpdateClient {
 
 impl Display for UpdateClient {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        // TODO Display: Check for a solution for Box<dyn Header>
-        write!(
-            f,
-            "UpdateClient {{ common: {}, header: None }}",
-            self.common
-        )
+        write!(f, "UpdateClient {{ {} }}", self.common)
     }
 }
 
@@ -178,13 +174,21 @@ impl From<UpdateClient> for IbcEvent {
     }
 }
 
+fn encode_to_hex_string(header: AnyHeader) -> String {
+    let buf = header.encode_vec();
+    let encoded = subtle_encoding::hex::encode(buf);
+    String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8")
+}
+
 impl From<UpdateClient> for abci::Event {
     fn from(v: UpdateClient) -> Self {
         let mut attributes: Vec<_> = v.common.into();
+
         if let Some(h) = v.header {
-            let header = (HEADER_ATTRIBUTE_KEY, h.encode_to_hex_string()).into();
+            let header = (HEADER_ATTRIBUTE_KEY, encode_to_hex_string(h)).into();
             attributes.push(header);
         }
+
         Self {
             kind: IbcEventType::UpdateClient.as_str().to_string(),
             attributes,

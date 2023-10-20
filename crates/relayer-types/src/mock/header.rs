@@ -2,7 +2,7 @@ use std::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::mock::Header as RawMockHeader;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::core::ics02_client::client_type::ClientType;
@@ -114,7 +114,7 @@ impl From<MockHeader> for Any {
     fn from(header: MockHeader) -> Self {
         Any {
             type_url: MOCK_HEADER_TYPE_URL.to_string(),
-            value: Protobuf::<RawMockHeader>::encode_vec(&header),
+            value: Protobuf::<RawMockHeader>::encode_vec(header),
         }
     }
 }
@@ -122,12 +122,12 @@ impl From<MockHeader> for Any {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ibc_proto::protobuf::Protobuf;
+    use ibc_proto::Protobuf;
 
     #[test]
     fn encode_any() {
         let header = MockHeader::new(Height::new(1, 10).unwrap()).with_timestamp(Timestamp::none());
-        let bytes = <MockHeader as Protobuf<Any>>::encode_vec(&header);
+        let bytes = <MockHeader as Protobuf<Any>>::encode_vec(header);
 
         assert_eq!(
             &bytes,
