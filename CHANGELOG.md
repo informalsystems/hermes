@@ -1,5 +1,81 @@
 # CHANGELOG
 
+## v1.7.0
+
+*October 20th, 2023*
+
+This v1.7 release introduces new features and improvements to Hermes.
+
+One of the key highlights is the addition of new misbehavior detection features.
+
+- Hermes now includes a new command called `evidence`, which monitors the blocks emitted by a chain for any presence of misbehavior evidence.
+- If misbehavior is detected, the CLI will report that evidence to all counterpart clients of that chain.
+On top of that, misbehavior evidence detected on a chain that is a CCV (Cross-Chain Validation) consumer 
+is now sent to its provider chain, alerting it directly of the misbehaving consumer chain.
+- Furthermore, when misbehavior is detected from an on-chain client, such as a light client attack or a double-sign,
+the evidence is now submitted to all counterparty clients of the misbehaving chain, rather than just the 
+counterparty client of the misbehaving client.
+
+In addition, the REST server of Hermes now has a `/clear_packets` endpoint which allows triggering 
+packet clearing for a specific chain or all chains if no specific chain is provided.
+
+Another notable improvement is the ability to change `tracing` directives at runtime.
+This feature lets users adjust tracing settings dynamically as needed, providing a more 
+customizable and efficient debugging experience.
+
+Overall, the new misbehavior detection features in Hermes contribute to a more robust and secure environment,
+enabling timely identification and response to potential misbehaving actors.
+
+### FEATURES
+
+- [Relayer CLI](relayer-cli)
+  - Add a new `evidence` command for monitoring the blocks emitted
+    by a chain for the presence of a misbehaviour evidence, and
+    report that evidence to all counteparty clients of that chain.
+    ([\#3456](https://github.com/informalsystems/hermes/pull/3456))
+  - Add a `/clear_packets?chain=CHAIN_ID` endpoint to the built-in
+    REST server to trigger packet clear for the chain specified in the
+    chain query param or for all chains if the query param is omitted.
+    ([\#3398](https://github.com/informalsystems/hermes/issues/3398))
+  - Add support for changing `tracing` directives at runtime.
+    Please see the [corresponding page in the Hermes guide][tracing-guide] for more information.
+    ([\#3564](https://github.com/informalsystems/hermes/issues/3564))
+    
+    [tracing-guide]: https://hermes.informal.systems/advanced/troubleshooting/log-level.html
+
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - When Hermes detects a misbehaviour on a chain that is CCV
+    consumer, it will now send the misbehaviour evidence to the
+    provider chain using the new `IcsConsumerMisbehaviour` message.
+    ([\#3219](https://github.com/informalsystems/hermes/issues/3219))
+  - When Hermes detects a misbehaviour from a on-chain client, eg. a light
+    client attack or a double-sign, it will now submit the misbehaviour
+    evidence to all counterparty clients of the misbehaving chain
+    instead of to the counterparty client of the misbehaving client only.
+    ([\#3223](https://github.com/informalsystems/hermes/issues/3223))
+  - Improve error message when scanning unsupported client
+    ([\#3531](https://github.com/informalsystems/hermes/issues/3531))
+  - Regard the `finalize_block_events` field of the `block_results` RPC endpoint, added in CometBFT 0.38
+    ([\#3548](https://github.com/informalsystems/hermes/issues/3548))
+  - Change fallback compatibility version for CometBFT from v0.37 to v0.34
+    ([\#3666](https://github.com/informalsystems/hermes/issues/3666))
+- [Relayer CLI](relayer-cli)
+  - The `listen` command now works with both `push` and `pull` event sources
+    ([\#3501](https://github.com/informalsystems/hermes/issues/3501))
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Revert Docker image to Ubuntu LTS and set the UID and GID explicitly
+    ([\#3580](https://github.com/informalsystems/hermes/issues/3580))
+- [IBC Data structures](relayer-types)
+  - Fix build of `ibc-relayer-types` documentation on docs.rs
+    ([\#3549](https://github.com/informalsystems/hermes/issues/3549))
+
+
 ## v1.6.0
 
 *July 19th, 2023*
