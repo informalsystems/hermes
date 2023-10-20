@@ -7,15 +7,13 @@ use serde::{Deserialize, Serialize};
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientState;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 
 use tendermint_light_client_verifier::options::Options;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header as TmHeader;
-use crate::core::ics02_client::client_state::{
-    ClientState as Ics2ClientState, UpgradeOptions as CoreUpgradeOptions,
-};
+use crate::core::ics02_client::client_state::ClientState as Ics2ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -199,9 +197,9 @@ pub struct UpgradeOptions {
     pub unbonding_period: Duration,
 }
 
-impl CoreUpgradeOptions for UpgradeOptions {}
-
 impl Ics2ClientState for ClientState {
+    type UpgradeOptions = UpgradeOptions;
+
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -221,14 +219,9 @@ impl Ics2ClientState for ClientState {
     fn upgrade(
         &mut self,
         upgrade_height: Height,
-        upgrade_options: &dyn CoreUpgradeOptions,
+        upgrade_options: UpgradeOptions,
         chain_id: ChainId,
     ) {
-        let upgrade_options = upgrade_options
-            .as_any()
-            .downcast_ref::<UpgradeOptions>()
-            .expect("UpgradeOptions not of type Tendermint");
-
         // Reset custom fields to zero values
         self.trusting_period = ZERO_DURATION;
         self.trust_threshold = TrustThreshold::CLIENT_STATE_RESET;
@@ -363,7 +356,7 @@ impl From<ClientState> for Any {
     fn from(client_state: ClientState) -> Self {
         Any {
             type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawTmClientState>::encode_vec(&client_state),
+            value: Protobuf::<RawTmClientState>::encode_vec(client_state),
         }
     }
 }
