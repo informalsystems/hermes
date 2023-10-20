@@ -1,6 +1,6 @@
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::interchain_accounts::v1::CosmosTx as RawCosmosTx;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 

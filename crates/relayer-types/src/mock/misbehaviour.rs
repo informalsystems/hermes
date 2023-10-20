@@ -1,5 +1,5 @@
 use ibc_proto::ibc::mock::Misbehaviour as RawMisbehaviour;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use crate::core::ics02_client::error::Error;

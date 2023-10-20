@@ -1,6 +1,6 @@
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use crate::core::ics02_client::client_type::ClientType;
@@ -86,7 +86,7 @@ impl From<MockConsensusState> for Any {
     fn from(consensus_state: MockConsensusState) -> Self {
         Any {
             type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawMockConsensusState>::encode_vec(&consensus_state),
+            value: Protobuf::<RawMockConsensusState>::encode_vec(consensus_state),
         }
     }
 }
