@@ -76,8 +76,7 @@ impl Runnable for EvidenceCmd {
                 .exit()
             });
 
-        #[allow(irrefutable_let_patterns)]
-        if let ChainConfig::CosmosSdk(_) = chain_config {
+        if !matches!(chain_config, ChainConfig::CosmosSdk(_)) {
             Output::error(format!(
                 "chain `{}` is not a Cosmos SDK chain",
                 self.chain_id
