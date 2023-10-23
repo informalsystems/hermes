@@ -256,6 +256,7 @@ enabled = true
 
 [[chains]]
 id = "consumer"
+type = "CosmosSdk"
 ccv_consumer_chain = true
 account_prefix = "cosmos"
 clock_drift = "5s"
@@ -279,6 +280,7 @@ event_source = { mode = 'push', url = 'ws://${NODE_IP}:26648/websocket' , batch_
 
 [[chains]]
 id = "provider"
+type = "CosmosSdk"
 account_prefix = "cosmos"
 clock_drift = "5s"
 gas_multiplier = 1.1
@@ -377,6 +379,7 @@ enabled = true
 
 [[chains]]
 id = "consumer"
+type = "CosmosSdk"
 ccv_consumer_chain = true
 account_prefix = "cosmos"
 clock_drift = "5s"
@@ -400,6 +403,7 @@ event_source = { mode = 'push', url = 'ws://${NODE_IP}:26638/websocket' , batch_
 
 [[chains]]
 id = "provider"
+type = "CosmosSdk"
 account_prefix = "cosmos"
 clock_drift = "5s"
 gas_multiplier = 1.1
