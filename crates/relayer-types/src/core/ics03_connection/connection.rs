@@ -5,7 +5,7 @@ use std::{
     u64,
 };
 
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::connection::v1::{
@@ -241,9 +241,9 @@ impl ConnectionEnd {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
-    client_id: ClientId,
+    pub client_id: ClientId,
     pub connection_id: Option<ConnectionId>,
-    prefix: CommitmentPrefix,
+    pub prefix: CommitmentPrefix,
 }
 
 impl Protobuf<RawCounterparty> for Counterparty {}

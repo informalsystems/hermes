@@ -157,7 +157,7 @@ grpc_addr = 'http://127.0.0.1:9090'
 #
 # This setting can take two types of values, as an inline table:
 # 
-# a) Push: for receiving IBC events over WebSocket
+# a) Push: for receiving IBC events over WebSocket.
 #
 #      `{ mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }`
 #
@@ -172,13 +172,18 @@ grpc_addr = 'http://127.0.0.1:9090'
 #      processing, increasing the latency of Hermes, but are more likely to batch events together.
 #      The default value provides good latency while minimizing the number of client updates needed.
 
-# b) Pull: for polling for IBC events via the `/block_results` RPC endpoint
+# b) Pull: for polling for IBC events via the `/block_results` RPC endpoint.
 #
 #     `{ mode = 'pull', interval = '1s' }`
 #
 #    where
 #
 #    - `interval` is the interval at which to poll for blocks. Default: 1s
+#
+#    This mode should only be used in situations where Hermes misses events that it should be
+#    receiving, such as when relaying for CosmWasm-enabled chains which emit IBC events without
+#    the `message` attribute. Without this attribute, the WebSocket is not able to catch these
+#    events, so the `/block_results` RPC must be used instead.
 #
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
 
@@ -266,7 +271,7 @@ max_gas = 400000
 # paid for each unit of gas per transaction.
 # 
 # Required
-gas_price = { price = 0.001, denom = 'stake' }
+gas_price = { price = 0.025, denom = 'stake' }
 
 # Multiply this amount with the gas estimate, used to compute the fee
 # and account for potential estimation error.
@@ -388,7 +393,7 @@ key_name = 'testkey'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 400000
-gas_price = { price = 0.001, denom = 'stake' }
+gas_price = { price = 0.025, denom = 'stake' }
 gas_multiplier = 1.1
 max_msg_num = 30
 max_tx_size = 2097152

@@ -10,7 +10,7 @@ use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryRespons
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics02_client::header::Header;
+use ibc_relayer_types::core::ics02_client::header::{AnyHeader, Header};
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd, State,
 };
@@ -44,7 +44,6 @@ use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{AnySigningKeyPair, KeyRing, SigningKeyPairSized};
-use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 
 /// The result of a health check.
@@ -685,4 +684,6 @@ pub trait ChainEndpoint: Sized {
         &self,
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
 }

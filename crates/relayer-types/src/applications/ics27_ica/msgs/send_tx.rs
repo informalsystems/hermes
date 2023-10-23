@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::applications::interchain_accounts::controller::v1::MsgSendTx as RawMsgSendTx;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 
 use crate::applications::ics27_ica::error::Error;
 use crate::applications::ics27_ica::packet_data::InterchainAccountPacketData;

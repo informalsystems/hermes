@@ -4,6 +4,7 @@ mod clear;
 mod completions;
 mod config;
 mod create;
+mod evidence;
 mod fee;
 mod health;
 mod keys;
@@ -19,9 +20,9 @@ mod version;
 
 use self::{
     clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
-    fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd, logs::LogsCmd,
-    misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
-    upgrade::UpgradeCmds, version::VersionCmd,
+    evidence::EvidenceCmd, fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd,
+    logs::LogsCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
+    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
 };
 
 use core::time::Duration;
@@ -86,12 +87,15 @@ pub enum CliCmd {
     /// Listen to and display IBC events emitted by a chain
     Listen(ListenCmd),
 
+    /// Listen to client update IBC events and handle misbehaviour
+    Misbehaviour(MisbehaviourCmd),
+
     /// Update tracing log directives
     #[clap(subcommand)]
     Logs(LogsCmd),
 
-    /// Listen to client update IBC events and handles misbehaviour
-    Misbehaviour(MisbehaviourCmd),
+    /// Listen to block events and handles evidence
+    Evidence(EvidenceCmd),
 
     /// The `version` subcommand, retained for backward compatibility.
     Version(VersionCmd),

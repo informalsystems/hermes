@@ -52,10 +52,36 @@ pub fn spawn_chain_runtime<Handle: ChainHandle>(
         .cloned()
         .ok_or_else(|| SpawnError::missing_chain_config(chain_id.clone()))?;
 
-    let handle = match chain_config {
-        ChainConfig::CosmosSdk(_) => {
-            ChainRuntime::<CosmosSdkChain>::spawn::<Handle>(chain_config, rt)
-        }
+    spawn_chain_runtime_with_config(chain_config, rt)
+}
+
+/// Spawns a chain runtime from the configuration and given a chain identifier,
+/// allowing the caller to modify the chain config.
+/// Returns the corresponding handle if successful.
+pub fn spawn_chain_runtime_with_modified_config<Handle: ChainHandle>(
+    config: &Config,
+    chain_id: &ChainId,
+    rt: Arc<TokioRuntime>,
+    modify: impl FnOnce(&mut ChainConfig),
+) -> Result<Handle, SpawnError> {
+    let mut chain_config = config
+        .find_chain(chain_id)
+        .cloned()
+        .ok_or_else(|| SpawnError::missing_chain_config(chain_id.clone()))?;
+
+    modify(&mut chain_config);
+
+    spawn_chain_runtime_with_config(chain_config, rt)
+}
+
+/// Spawns a chain runtime from the given chain configuration
+/// Returns the corresponding handle if successful.
+pub fn spawn_chain_runtime_with_config<Handle: ChainHandle>(
+    config: ChainConfig,
+    rt: Arc<TokioRuntime>,
+) -> Result<Handle, SpawnError> {
+    let handle = match config {
+        ChainConfig::CosmosSdk(_) => ChainRuntime::<CosmosSdkChain>::spawn(config, rt),
     }
     .map_err(SpawnError::relayer)?;
 
