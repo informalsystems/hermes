@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Timeout as RawUpgradeTimeout;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 
 use crate::core::ics02_client::{error::Error as ICS2Error, height::Height};
 use crate::core::ics04_channel::error::Error as ChannelError;

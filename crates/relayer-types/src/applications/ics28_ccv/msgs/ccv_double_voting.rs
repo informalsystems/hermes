@@ -1,7 +1,7 @@
 use core::fmt;
 
 use ibc_proto::interchain_security::ccv::provider::v1::MsgSubmitConsumerDoubleVoting as RawIcsDoubleVoting;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use tendermint::evidence::DuplicateVoteEvidence;
 
 use crate::clients::ics07_tendermint::header::Header;

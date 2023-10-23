@@ -109,7 +109,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
 
     client_state.upgrade(
         upgraded_client_latest_height,
-        &upgrade_options,
+        upgrade_options,
         opts.upgraded_chain_id.clone(),
     );
 

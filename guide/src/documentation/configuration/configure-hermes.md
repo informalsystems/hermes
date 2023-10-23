@@ -160,7 +160,7 @@ event_source = { mode = 'push', url = 'wss://hello:world@mydomain.com:26657/webs
 
 ## Configuring Support for Wasm Relaying
 
-As of version 1.6.0, Hermes supports the relaying of wasm messages natively. This is facilitated by configuring
+As of version 1.7.0, Hermes supports the relaying of wasm messages natively. This is facilitated by configuring
 Hermes to use pull-based relaying by polling for IBC events via the `/block_results` RPC endpoint. Set
 the `event_source` parameter to pull mode in `config.toml` like so:
 

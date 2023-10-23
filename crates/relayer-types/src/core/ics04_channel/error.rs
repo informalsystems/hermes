@@ -12,8 +12,8 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 
 use flex_error::{define_error, TraceError};
-use ibc_proto::protobuf::Error as TendermintError;
 use itertools::Itertools;
+use tendermint_proto::Error as TendermintError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -81,10 +81,9 @@ define_error! {
         MissingNextRecvSeq
             { port_id: PortId, channel_id: ChannelId }
         | e | {
-                format_args!(
-                    "Missing sequence number for receiving packets on port {0} and channel {1}",
-                    e.port_id, e.channel_id
-                )
+                format_args!("Missing sequence number for receiving packets on port {0} and channel {1}",
+                             e.port_id,
+                             e.channel_id)
             },
 
         ZeroPacketSequence
@@ -94,7 +93,7 @@ define_error! {
             | _ | { "packet data bytes cannot be empty" },
 
         InvalidTimeoutHeight
-            | _ | { "invalid timeout height" },
+            | _ | { "invalid timeout height for the packet" },
 
         InvalidTimeoutTimestamp
             [ crate::timestamp::ParseTimestampError ]

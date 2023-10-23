@@ -21,9 +21,9 @@ use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
 use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
-use ibc_proto::interchain_security::ccv::consumer::v1::Params as CcvConsumerParams;
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
@@ -49,12 +49,9 @@ use ibc_relayer_types::core::ics24_host::path::{
 use ibc_relayer_types::core::ics24_host::{
     ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
 };
+use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::upgrade::Upgrade};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
-use ibc_relayer_types::{
-    applications::ics31_icq::response::CrossChainQueryResponse,
-    core::{ics02_client::height::Height, ics04_channel::upgrade::Upgrade},
-};
 
 use tendermint::block::Height as TmHeight;
 use tendermint::node::{self, info::TxIndexStatus};
@@ -1963,48 +1960,32 @@ impl ChainEndpoint for CosmosSdkChain {
         );
         crate::telemetry!(query, self.id(), "query_next_sequence_receive");
 
-        match include_proof {
-            IncludeProof::Yes => {
-                let res = self.query(
-                    SeqRecvsPath(request.port_id, request.channel_id),
-                    request.height,
-                    true,
-                )?;
+        let prove = include_proof.to_bool();
 
-                // Note: We expect the return to be a u64 encoded in big-endian. Refer to ibc-go:
-                // https://github.com/cosmos/ibc-go/blob/25767f6bdb5bab2c2a116b41d92d753c93e18121/modules/core/04-channel/client/utils/utils.go#L191
-                if res.value.len() != 8 {
-                    return Err(Error::query("next_sequence_receive".into()));
-                }
-                let seq: Sequence = Bytes::from(res.value).get_u64().into();
+        let res = self.query(
+            SeqRecvsPath(request.port_id, request.channel_id),
+            request.height,
+            true,
+        )?;
 
-                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
-
-                Ok((seq, Some(proof)))
-            }
-            IncludeProof::No => {
-                let mut client = self
-                    .block_on(
-                        ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
-                            self.grpc_addr.clone(),
-                        ),
-                    )
-                    .map_err(Error::grpc_transport)?;
-
-                client = client.max_decoding_message_size(
-                    self.config().max_grpc_decoding_size.get_bytes() as usize,
-                );
-
-                let request = tonic::Request::new(request.into());
-
-                let response = self
-                    .block_on(client.next_sequence_receive(request))
-                    .map_err(|e| Error::grpc_status(e, "query_next_sequence_receive".to_owned()))?
-                    .into_inner();
-
-                Ok((Sequence::from(response.next_sequence_receive), None))
-            }
+        // Note: We expect the return to be a u64 encoded in big-endian. Refer to ibc-go:
+        // https://github.com/cosmos/ibc-go/blob/25767f6bdb5bab2c2a116b41d92d753c93e18121/modules/core/04-channel/client/utils/utils.go#L191
+        if res.value.len() != 8 {
+            return Err(Error::query(format!(
+                "next_sequence_receive: expected a u64 but got {} bytes of data",
+                res.value.len()
+            )));
         }
+
+        let seq: Sequence = Bytes::from(res.value).get_u64().into();
+
+        let proof = if prove {
+            Some(res.proof.ok_or_else(Error::empty_response_proof)?)
+        } else {
+            None
+        };
+
+        Ok((seq, proof))
     }
 
     /// This function queries transactions for events matching certain criteria.

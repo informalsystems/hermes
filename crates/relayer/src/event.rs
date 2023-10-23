@@ -1,5 +1,6 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde::Serialize;
+use std::str::FromStr;
 use tendermint::abci::Event as AbciEvent;
 
 use ibc_relayer_types::{
@@ -22,7 +23,7 @@ use ibc_relayer_types::{
         ics02_client::{
             error::Error as ClientError,
             events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
-            header::Header,
+            header::{decode_header, AnyHeader},
             height::HeightErrorDetail,
         },
         ics04_channel::{channel::Ordering, packet::Sequence, version::Version},
@@ -31,9 +32,6 @@ use ibc_relayer_types::{
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
     Height,
 };
-use std::str::FromStr;
-
-use crate::light_client::decode_header;
 
 pub mod bus;
 pub mod error;
@@ -401,7 +399,7 @@ fn client_extract_attributes_from_tx(event: &AbciEvent) -> Result<ClientAttribut
     Ok(attr)
 }
 
-pub fn extract_header_from_tx(event: &AbciEvent) -> Result<Box<dyn Header>, ClientError> {
+pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, ClientError> {
     for tag in &event.attributes {
         if tag.key == HEADER_ATTRIBUTE_KEY {
             let header_bytes =
@@ -409,6 +407,7 @@ pub fn extract_header_from_tx(event: &AbciEvent) -> Result<Box<dyn Header>, Clie
             return decode_header(&header_bytes);
         }
     }
+
     Err(ClientError::missing_raw_header())
 }
 
@@ -585,10 +584,9 @@ mod tests {
     use super::*;
 
     use ibc_proto::google::protobuf::Any;
-    use ibc_proto::protobuf::Protobuf;
+    use ibc_proto::Protobuf;
     use ibc_relayer_types::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
-    use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
-    use ibc_relayer_types::core::ics02_client::header::downcast_header;
+    use ibc_relayer_types::core::ics02_client::header::{decode_header, AnyHeader};
     use ibc_relayer_types::core::ics04_channel::packet::Sequence;
     use ibc_relayer_types::timestamp::Timestamp;
 
@@ -596,12 +594,12 @@ mod tests {
     fn extract_header() {
         let header = get_dummy_ics07_header();
         let mut header_bytes = Vec::new();
-        Protobuf::<Any>::encode(&header, &mut header_bytes).unwrap();
+        Protobuf::<Any>::encode(header.clone(), &mut header_bytes).unwrap();
 
         let decoded_dyn_header = decode_header(&header_bytes).unwrap();
-        let decoded_tm_header: &TmHeader = downcast_header(decoded_dyn_header.as_ref()).unwrap();
+        let AnyHeader::Tendermint(decoded_tm_header) = decoded_dyn_header;
 
-        assert_eq!(&header, decoded_tm_header);
+        assert_eq!(header, decoded_tm_header);
     }
 
     #[test]

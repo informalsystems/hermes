@@ -29,7 +29,7 @@ define_error! {
             | e | { format_args!("unknown type URL {0}", e.url) },
 
         MalformedMessageBytes
-            [ TraceError<ibc_proto::protobuf::Error> ]
+            [ TraceError<tendermint_proto::Error> ]
             | _ | { "the message is malformed and cannot be decoded" },
     }
 }

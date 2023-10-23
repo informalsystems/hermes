@@ -1,7 +1,7 @@
 use core::str::FromStr;
 
 use ibc_proto::ibc::core::channel::v1::UpgradeFields as RawUpgradeFields;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use itertools::Itertools;
 use std::string::ToString;
 use std::vec::Vec;

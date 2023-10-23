@@ -12,7 +12,7 @@ use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
-        ics02_client::events::UpdateClient,
+        ics02_client::{events::UpdateClient, header::AnyHeader},
         ics03_connection::{
             connection::{ConnectionEnd, IdentifiedConnectionEnd},
             version::Version,
@@ -42,7 +42,6 @@ use crate::{
         IbcEventWithHeight,
     },
     keyring::AnySigningKeyPair,
-    light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
 
