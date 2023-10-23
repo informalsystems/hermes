@@ -17,7 +17,6 @@ use core::{
 use serde_derive::{Deserialize, Serialize};
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
 use tendermint::block::Height as BlockHeight;
-use tendermint_light_client::verifier::types::TrustThreshold;
 use tendermint_rpc::{Url, WebSocketClientUrl};
 
 use ibc_proto::google::protobuf::Any;
@@ -270,6 +269,7 @@ impl Config {
 
     /// Method for syntactic validation of the input configuration file.
     pub fn validate_config(&self) -> Result<(), Diagnostic<Error>> {
+        use alloc::collections::BTreeSet;
         // Check for duplicate chain configuration and invalid trust thresholds
         let mut unique_chain_ids = BTreeSet::new();
         for chain_config in self.chains.iter() {
@@ -280,11 +280,12 @@ impl Config {
                 )));
             }
 
-            #[allow(irrefutable_let_patterns)]
-            if let ChainConfig::CosmosSdk(cosmos_c) = chain_config {
-                validate_trust_threshold(&cosmos_c.id, cosmos_c.trust_threshold)?;
-                // Validate gas-related settings
-                validate_gas_settings(&cosmos_c.id, cosmos_c)?;
+            match chain_config {
+                ChainConfig::CosmosSdk(cosmos_config) => {
+                    cosmos_config
+                        .validate()
+                        .map_err(Into::<Diagnostic<Error>>::into)?;
+                }
             }
         }
 
@@ -643,72 +644,6 @@ impl ChainConfig {
     }
 }
 
-/* config validation */
-
-use alloc::collections::BTreeSet;
-
-#[derive(Clone, Debug)]
-pub enum Diagnostic<E> {
-    Warning(E),
-    Error(E),
-}
-
-/* tm/cosmos sdk specific config validation */
-/// Check that the trust threshold is:
-///
-/// a) non-zero
-/// b) greater or equal to 1/3
-/// c) strictly less than 1
-fn validate_trust_threshold(
-    id: &ChainId,
-    trust_threshold: TrustThreshold,
-) -> Result<(), Diagnostic<Error>> {
-    if trust_threshold.denominator() == 0 {
-        return Err(Diagnostic::Error(Error::invalid_trust_threshold(
-            trust_threshold,
-            id.clone(),
-            "trust threshold denominator cannot be zero".to_string(),
-        )));
-    }
-
-    if trust_threshold.numerator() * 3 < trust_threshold.denominator() {
-        return Err(Diagnostic::Error(Error::invalid_trust_threshold(
-            trust_threshold,
-            id.clone(),
-            "trust threshold cannot be < 1/3".to_string(),
-        )));
-    }
-
-    if trust_threshold.numerator() >= trust_threshold.denominator() {
-        return Err(Diagnostic::Error(Error::invalid_trust_threshold(
-            trust_threshold,
-            id.clone(),
-            "trust threshold cannot be >= 1".to_string(),
-        )));
-    }
-
-    Ok(())
-}
-
-fn validate_gas_settings(id: &ChainId, config: &CosmosSdkConfig) -> Result<(), Diagnostic<Error>> {
-    // Check that the gas_adjustment option is not set
-    if let Some(gas_adjustment) = config.gas_adjustment {
-        let gas_multiplier = gas_adjustment + 1.0;
-
-        return Err(Diagnostic::Error(Error::deprecated_gas_adjustment(
-            gas_adjustment,
-            gas_multiplier,
-            id.clone(),
-        )));
-    }
-
-    Ok(())
-}
-
-/* cosmos sdk */
-
-/* general config handling code */
-
 /// Attempt to load and parse the TOML config file as a `Config`.
 pub fn load(path: impl AsRef<Path>) -> Result<Config, Error> {
     let config_toml = std::fs::read_to_string(&path).map_err(Error::io)?;
@@ -751,6 +686,29 @@ impl Default for TracingServerConfig {
             enabled: false,
             port: 5555,
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum Diagnostic<E> {
+    Warning(E),
+    Error(E),
+}
+
+use crate::chain::cosmos::config::Diagnostic as CosmosConfigDiagnostic;
+impl<E: Into<Error>> From<CosmosConfigDiagnostic<E>> for Diagnostic<Error> {
+    fn from(value: CosmosConfigDiagnostic<E>) -> Self {
+        match value {
+            CosmosConfigDiagnostic::Warning(e) => Diagnostic::Warning(e.into()),
+            CosmosConfigDiagnostic::Error(e) => Diagnostic::Error(e.into()),
+        }
+    }
+}
+
+use crate::chain::cosmos::config::error::Error as CosmosConfigError;
+impl From<CosmosConfigError> for Error {
+    fn from(error: CosmosConfigError) -> Error {
+        Error::cosmos_config_error(error.to_string())
     }
 }
 

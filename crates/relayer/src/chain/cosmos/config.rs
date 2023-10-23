@@ -1,3 +1,4 @@
+use crate::chain::cosmos::config::error::Error as ConfigError;
 use crate::config::default;
 use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
@@ -14,6 +15,8 @@ use tendermint_light_client::verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
 
 use crate::keyring::Store;
+
+pub mod error;
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -120,4 +123,71 @@ pub struct CosmosSdkConfig {
     pub address_type: AddressType,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub extension_options: Vec<ExtensionOption>,
+}
+
+impl CosmosSdkConfig {
+    pub fn validate(&self) -> Result<(), Diagnostic<ConfigError>> {
+        validate_trust_threshold(&self.id, self.trust_threshold)?;
+        validate_gas_settings(&self.id, self.gas_adjustment)?;
+        Ok(())
+    }
+}
+
+/// Check that the trust threshold is:
+///
+/// a) non-zero
+/// b) greater or equal to 1/3
+/// c) strictly less than 1
+fn validate_trust_threshold(
+    id: &ChainId,
+    trust_threshold: TrustThreshold,
+) -> Result<(), Diagnostic<ConfigError>> {
+    if trust_threshold.denominator() == 0 {
+        return Err(Diagnostic::Error(ConfigError::invalid_trust_threshold(
+            trust_threshold,
+            id.clone(),
+            "trust threshold denominator cannot be zero".to_string(),
+        )));
+    }
+
+    if trust_threshold.numerator() * 3 < trust_threshold.denominator() {
+        return Err(Diagnostic::Error(ConfigError::invalid_trust_threshold(
+            trust_threshold,
+            id.clone(),
+            "trust threshold cannot be < 1/3".to_string(),
+        )));
+    }
+
+    if trust_threshold.numerator() >= trust_threshold.denominator() {
+        return Err(Diagnostic::Error(ConfigError::invalid_trust_threshold(
+            trust_threshold,
+            id.clone(),
+            "trust threshold cannot be >= 1".to_string(),
+        )));
+    }
+
+    Ok(())
+}
+
+fn validate_gas_settings(
+    id: &ChainId,
+    gas_adjustment: Option<f64>,
+) -> Result<(), Diagnostic<ConfigError>> {
+    // Check that the gas_adjustment option is not set
+    if let Some(gas_adjustment) = gas_adjustment {
+        let gas_multiplier = gas_adjustment + 1.0;
+
+        return Err(Diagnostic::Error(ConfigError::deprecated_gas_adjustment(
+            gas_adjustment,
+            gas_multiplier,
+            id.clone(),
+        )));
+    }
+
+    Ok(())
+}
+#[derive(Clone, Debug)]
+pub enum Diagnostic<E> {
+    Warning(E),
+    Error(E),
 }
