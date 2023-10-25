@@ -468,6 +468,7 @@ enabled = true
 
 [[chains]]
 id = "consumer"
+type = "CosmosSdk"
 rpc_addr = "http://${NODE_IP}:${CRPC_LADDR_PORT}"
 event_source = { mode = 'push', url = 'ws://${NODE_IP}:${CRPC_LADDR_PORT}/websocket' , batch_delay = '50ms' }
 grpc_addr = "tcp://${NODE_IP}:${CGRPC_LADDR_PORT}"
@@ -491,6 +492,7 @@ ccv_consumer_chain = true
 
 [[chains]]
 id = "provider"
+type = "CosmosSdk"
 rpc_addr = "http://${NODE_IP}:${PRPC_LADDR_PORT}"
 event_source = { mode = 'push', url = 'ws://${NODE_IP}:${PRPC_LADDR_PORT}/websocket' , batch_delay = '50ms' }
 grpc_addr = "tcp://${NODE_IP}:${PGRPC_LADDR_PORT}"

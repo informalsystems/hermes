@@ -1,4 +1,4 @@
-use ibc_relayer::config::types::MaxMsgNum;
+use ibc_relayer::config::{types::MaxMsgNum, ChainConfig};
 use ibc_relayer::link::{Link, LinkParameters};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 use ibc_relayer_types::events::IbcEvent;
@@ -48,8 +48,21 @@ impl OrderedChannelClearTest {
 impl TestOverrides for OrderedChannelClearTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.tx_confirmation = self.tx_confirmation;
-        config.chains[0].sequential_batch_tx = self.sequential_batch_tx;
-        config.chains[1].sequential_batch_tx = self.sequential_batch_tx;
+        {
+            let chain_a = &mut config.chains[0];
+            match chain_a {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.sequential_batch_tx = self.sequential_batch_tx;
+                }
+            }
+        }
+
+        let chain_b = &mut config.chains[1];
+        match chain_b {
+            ChainConfig::CosmosSdk(chain_config) => {
+                chain_config.sequential_batch_tx = self.sequential_batch_tx;
+            }
+        }
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -171,12 +184,23 @@ pub struct OrderedChannelClearEqualCLITest;
 impl TestOverrides for OrderedChannelClearEqualCLITest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.tx_confirmation = true;
+        {
+            let chain_a = &mut config.chains[0];
+            match chain_a {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.sequential_batch_tx = true;
+                    chain_config.max_msg_num = MaxMsgNum::new(3).unwrap();
+                }
+            }
+        }
 
-        config.chains[0].sequential_batch_tx = true;
-        config.chains[0].max_msg_num = MaxMsgNum::new(3).unwrap();
-
-        config.chains[1].sequential_batch_tx = true;
-        config.chains[1].max_msg_num = MaxMsgNum::new(3).unwrap();
+        let chain_b = &mut config.chains[1];
+        match chain_b {
+            ChainConfig::CosmosSdk(chain_config) => {
+                chain_config.sequential_batch_tx = true;
+                chain_config.max_msg_num = MaxMsgNum::new(3).unwrap();
+            }
+        }
     }
 
     fn should_spawn_supervisor(&self) -> bool {

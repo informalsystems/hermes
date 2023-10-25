@@ -1425,6 +1425,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client",
  "tendermint-light-client-detector",
+ "tendermint-light-client-verifier",
  "tendermint-proto",
  "tendermint-rpc",
  "tendermint-testgen",

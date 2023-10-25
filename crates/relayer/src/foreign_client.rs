@@ -35,6 +35,7 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::AnyClientState;
+use crate::config::ChainConfig;
 use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
@@ -1701,16 +1702,16 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let is_ccv_consumer_chain = self
-            .src_chain()
-            .config()
-            .map_err(|e| {
-                ForeignClientError::misbehaviour(
-                    format!("failed querying configuration of src chain {}", self.id),
-                    e,
-                )
-            })?
-            .ccv_consumer_chain;
+        let chain_config = self.src_chain().config().map_err(|e| {
+            ForeignClientError::misbehaviour(
+                format!("failed querying configuration of src chain {}", self.id),
+                e,
+            )
+        })?;
+
+        let is_ccv_consumer_chain = match chain_config {
+            ChainConfig::CosmosSdk(config) => config.ccv_consumer_chain,
+        };
 
         let mut msgs = vec![];
 
