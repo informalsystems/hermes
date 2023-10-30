@@ -3,7 +3,7 @@ use std::fmt::{Display, Error as FmtError, Formatter};
 use bytes::Buf;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
@@ -127,7 +127,7 @@ impl From<Header> for Any {
     fn from(header: Header) -> Self {
         Any {
             type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-            value: Protobuf::<RawHeader>::encode_vec(&header),
+            value: Protobuf::<RawHeader>::encode_vec(header),
         }
     }
 }

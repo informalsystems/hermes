@@ -1,25 +1,25 @@
+use serde::{Deserialize, Serialize};
+
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
-#[cfg(test)]
-use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::{
     ConsensusState as TmConsensusState, TENDERMINT_CONSENSUS_STATE_TYPE_URL,
 };
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
-use ibc_relayer_types::core::ics02_client::consensus_state::{
-    downcast_consensus_state, ConsensusState,
-};
+use ibc_relayer_types::core::ics02_client::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics02_client::error::Error;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentRoot;
+use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::Height;
+
+#[cfg(test)]
+use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 #[cfg(test)]
 use ibc_relayer_types::mock::consensus_state::MockConsensusState;
 #[cfg(test)]
 use ibc_relayer_types::mock::consensus_state::MOCK_CONSENSUS_STATE_TYPE_URL;
-use ibc_relayer_types::timestamp::Timestamp;
-use ibc_relayer_types::Height;
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -81,12 +81,12 @@ impl From<AnyConsensusState> for Any {
         match value {
             AnyConsensusState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: Protobuf::<RawConsensusState>::encode_vec(&value),
+                value: Protobuf::<RawConsensusState>::encode_vec(value),
             },
             #[cfg(test)]
             AnyConsensusState::Mock(value) => Any {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: Protobuf::<RawMockConsensusState>::encode_vec(&value),
+                value: Protobuf::<RawMockConsensusState>::encode_vec(value),
             },
         }
     }
@@ -102,21 +102,6 @@ impl From<MockConsensusState> for AnyConsensusState {
 impl From<TmConsensusState> for AnyConsensusState {
     fn from(cs: TmConsensusState) -> Self {
         Self::Tendermint(cs)
-    }
-}
-
-impl From<&dyn ConsensusState> for AnyConsensusState {
-    fn from(cs: &dyn ConsensusState) -> Self {
-        #[cfg(test)]
-        if let Some(cs) = downcast_consensus_state::<MockConsensusState>(cs) {
-            return AnyConsensusState::from(cs.clone());
-        }
-
-        if let Some(cs) = downcast_consensus_state::<TmConsensusState>(cs) {
-            AnyConsensusState::from(cs.clone())
-        } else {
-            unreachable!()
-        }
     }
 }
 

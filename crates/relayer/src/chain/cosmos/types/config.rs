@@ -5,9 +5,10 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_rpc::Url;
 
+use crate::chain::cosmos::config::CosmosSdkConfig;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::{MaxMsgNum, MaxTxSize};
-use crate::config::{AddressType, ChainConfig};
+use crate::config::AddressType;
 use crate::error::Error;
 
 #[derive(Debug, Clone)]
@@ -23,10 +24,10 @@ pub struct TxConfig {
     pub extension_options: Vec<Any>,
 }
 
-impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
+impl<'a> TryFrom<&'a CosmosSdkConfig> for TxConfig {
     type Error = Error;
 
-    fn try_from(config: &'a ChainConfig) -> Result<Self, Error> {
+    fn try_from(config: &'a CosmosSdkConfig) -> Result<Self, Error> {
         let grpc_address = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
 

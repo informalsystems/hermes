@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 
 use crate::core::ics03_connection::connection::Counterparty;
 use crate::core::ics03_connection::error::Error;

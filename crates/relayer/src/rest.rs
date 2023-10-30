@@ -62,7 +62,7 @@ pub fn process_incoming_requests(config: &Config, channel: &Receiver) -> Option<
                 trace!("GetChains");
 
                 reply_to
-                    .send(Ok(config.chains.iter().map(|c| c.id.clone()).collect()))
+                    .send(Ok(config.chains.iter().map(|c| c.id().clone()).collect()))
                     .unwrap_or_else(|e| error!("error replying to a REST request {}", e));
             }
 

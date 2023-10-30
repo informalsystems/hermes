@@ -9,7 +9,7 @@ use ibc_proto::ibc::apps::fee::v1::{
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
-        ics02_client::events::UpdateClient,
+        ics02_client::{events::UpdateClient, header::AnyHeader},
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics03_connection::version::Version,
         ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
@@ -35,7 +35,6 @@ use crate::{
     error::Error,
     event::IbcEventWithHeight,
     keyring::AnySigningKeyPair,
-    light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
 
@@ -514,5 +513,9 @@ impl ChainHandle for BaseChainHandle {
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error> {
         self.send(|reply_to| ChainRequest::QueryIncentivizedPacket { request, reply_to })
+    }
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+        self.send(|reply_to| ChainRequest::QueryConsumerChains { reply_to })
     }
 }

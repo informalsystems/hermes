@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
     flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix;
+    cosmos-nix.url = github:informalsystems/cosmos.nix/update-ics;
   };
 
   outputs = inputs: let
@@ -27,6 +27,7 @@
       packages = {
         inherit
           (cosmos-nix)
+          cometbft
           gaia6-ordered
           gaia12
           osmosis
@@ -37,6 +38,7 @@
           ibc-go-v5-simapp
           ibc-go-v6-simapp
           ibc-go-v7-simapp
+          interchain-security
           apalache
           evmos
           juno

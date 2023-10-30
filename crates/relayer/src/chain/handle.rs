@@ -10,7 +10,7 @@ use ibc_proto::ibc::apps::fee::v1::{
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
-        ics02_client::events::UpdateClient,
+        ics02_client::{events::UpdateClient, header::AnyHeader},
         ics03_connection::{
             connection::{ConnectionEnd, IdentifiedConnectionEnd},
             version::Version,
@@ -40,7 +40,6 @@ use crate::{
         IbcEventWithHeight,
     },
     keyring::AnySigningKeyPair,
-    light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
 
@@ -367,6 +366,10 @@ pub enum ChainRequest {
         request: QueryIncentivizedPacketRequest,
         reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
     },
+
+    QueryConsumerChains {
+        reply_to: ReplyTo<Vec<(ChainId, ClientId)>>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -678,4 +681,6 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         &self,
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
 }

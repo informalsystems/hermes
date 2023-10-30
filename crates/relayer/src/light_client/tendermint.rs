@@ -20,23 +20,21 @@ use tendermint_light_client::{
 use tendermint_light_client_detector::Divergence;
 use tendermint_rpc as rpc;
 
-use ibc_relayer_types::{
-    clients::ics07_tendermint::{
-        header::Header as TmHeader, misbehaviour::Misbehaviour as TmMisbehaviour,
-    },
-    core::{
-        ics02_client::{client_type::ClientType, events::UpdateClient, header::downcast_header},
-        ics24_host::identifier::ChainId,
-    },
-    downcast, Height as ICSHeight,
-};
+use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
+use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics02_client::header::AnyHeader;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::Height as ICSHeight;
+
+#[cfg(test)]
+use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 
 use crate::{
+    chain::cosmos::config::CosmosSdkConfig,
     chain::cosmos::CosmosSdkChain,
     client_state::AnyClientState,
-    config::ChainConfig,
     error::Error,
-    light_client::AnyHeader,
     misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
 };
 
@@ -139,28 +137,26 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             }
         );
 
-        let update_header = update.header.as_ref().ok_or_else(|| {
+        let any_header = update.header.as_ref().ok_or_else(|| {
             Error::misbehaviour(format!(
                 "missing header in update client event {}",
                 self.chain_id
             ))
         })?;
 
-        let update_header: &TmHeader =
-            downcast_header(update_header.as_ref()).ok_or_else(|| {
-                Error::misbehaviour(format!(
-                    "header type incompatible for chain {}",
-                    self.chain_id
-                ))
-            })?;
+        let update_header: &TmHeader = match any_header {
+            AnyHeader::Tendermint(header) => Ok(header),
+        }?;
 
-        let client_state =
-            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
-                Error::misbehaviour(format!(
-                    "client type incompatible for chain {}",
-                    self.chain_id
-                ))
-            })?;
+        let client_state = match client_state {
+            AnyClientState::Tendermint(client_state) => Ok(client_state),
+
+            #[cfg(test)]
+            _ => Err(Error::misbehaviour(format!(
+                "client type incompatible for chain {}",
+                self.chain_id
+            ))),
+        }?;
 
         let next_validators = self
             .io
@@ -207,13 +203,18 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 challenging_block,
             })) => {
                 warn!("misbehavior detected, reporting evidence to RPC witness node and primary chain");
+                debug!("evidence: {evidence:#?}");
+                debug!("challenging block: {challenging_block:#?}");
+
+                warn!("waiting 5 seconds before reporting evidence to RPC witness node");
+                std::thread::sleep(Duration::from_secs(5));
 
                 match detector::report_evidence(
                     self.io.rpc_client().clone(),
                     evidence.against_primary,
                 ) {
                     Ok(hash) => warn!("evidence reported to RPC witness node with hash: {hash}"),
-                    Err(e) => error!("failed to report evidence to RPC witness node: {}", e),
+                    Err(e) => error!("failed to report evidence to RPC witness node: {e}"),
                 }
 
                 let target_block = self.fetch(update_header.height())?;
@@ -267,7 +268,10 @@ fn io_for_addr(
 }
 
 impl LightClient {
-    pub fn from_config(config: &ChainConfig, peer_id: PeerId) -> Result<Self, Error> {
+    pub fn from_cosmos_sdk_config(
+        config: &CosmosSdkConfig,
+        peer_id: PeerId,
+    ) -> Result<Self, Error> {
         let live_io = io_for_addr(&config.rpc_addr, peer_id, Some(config.rpc_timeout))?;
 
         let io = match &config.genesis_restart {
@@ -310,10 +314,15 @@ impl LightClient {
         let verifier = ProdVerifier::default();
         let scheduler = components::scheduler::basic_bisecting_schedule;
 
-        let client_state =
-            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
-                Error::client_type_mismatch(ClientType::Tendermint, client_state.client_type())
-            })?;
+        let client_state = match client_state {
+            AnyClientState::Tendermint(client_state) => Ok(client_state),
+
+            #[cfg(test)]
+            _ => Err(Error::client_type_mismatch(
+                ClientType::Tendermint,
+                client_state.client_type(),
+            )),
+        }?;
 
         Ok(TmLightClient::new(
             self.peer_id,

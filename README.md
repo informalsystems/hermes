@@ -3,7 +3,7 @@
 [![Cosmos ecosystem][cosmos-shield]][cosmos-link]
 
 [![Build Status][build-image]][build-link]
-[![End to End testing][e2e-image]][e2e-link]
+[![Integration tests][test-image]][test-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
 ![Rust 1.70+][rustc-version]
@@ -116,8 +116,8 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 [build-image]: https://github.com/informalsystems/hermes/workflows/Rust/badge.svg
 [build-link]: https://github.com/informalsystems/hermes/actions?query=workflow%3ARust
-[e2e-image]: https://github.com/informalsystems/hermes/workflows/End%20to%20End%20testing/badge.svg
-[e2e-link]: https://github.com/informalsystems/hermes/actions?query=workflow%3A%22End+to+End+testing%22
+[test-image]: https://github.com/informalsystems/hermes/workflows/Integration/badge.svg
+[test-link]: https://github.com/informalsystems/hermes/actions?query=workflow%3A%22Integration%22
 [license-image]: https://img.shields.io/badge/license-Apache_2.0-blue.svg
 [license-link]: https://github.com/informalsystems/hermes/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg

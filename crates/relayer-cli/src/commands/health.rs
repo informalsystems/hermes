@@ -16,12 +16,12 @@ impl Runnable for HealthCheckCmd {
         let config = app_config();
 
         for ch in &config.chains {
-            let _span = tracing::error_span!("health_check", chain = %ch.id).entered();
+            let _span = tracing::error_span!("health_check", chain = %ch.id()).entered();
 
             info!("performing health check...");
 
             let chain =
-                spawn_chain_runtime(&config, &ch.id).unwrap_or_else(exit_with_unrecoverable_error);
+                spawn_chain_runtime(&config, ch.id()).unwrap_or_else(exit_with_unrecoverable_error);
 
             match chain.health_check() {
                 Ok(Healthy) => info!("chain is healthy"),
