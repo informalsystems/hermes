@@ -242,7 +242,10 @@ pub fn set_crisis_denom(genesis: &mut serde_json::Value, crisis_denom: &str) -> 
     Ok(())
 }
 
-pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Result<(), Error> {
+pub fn set_voting_period(genesis: &mut serde_json::Value, period: u64) -> Result<(), Error> {
+    // Expedited voting period must be strictly less that the regular voting period
+    let regular_period = format!("{period}s");
+    let expedited_period = format!("{}s", period - 1);
     let voting_period = genesis
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
@@ -253,9 +256,23 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
     voting_period
         .insert(
             "voting_period".to_owned(),
-            serde_json::Value::String(period.to_string()),
+            serde_json::Value::String(regular_period),
         )
         .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
+
+    let expedited_voting_period = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("gov"))
+        .and_then(|gov| get_mut_with_fallback(gov, "params", "expedited_voting_period"))
+        .and_then(|voting_params| voting_params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get voting_params in genesis file"))?;
+
+    expedited_voting_period
+        .insert(
+            "expedited_voting_period".to_owned(),
+            serde_json::Value::String(expedited_period),
+        )
+        .ok_or_else(|| eyre!("failed to update expedited_voting_period in genesis file"))?;
 
     Ok(())
 }

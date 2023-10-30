@@ -16,8 +16,8 @@ use crate::chain::cli::bootstrap::{
     start_chain,
 };
 use crate::chain::cli::provider::{
-    copy_validator_key_pair, query_consumer_genesis, query_consumer_proposal,
-    replace_genesis_state, submit_consumer_chain_proposal,
+    copy_validator_key_pair, query_consumer_genesis, query_gov_proposal, replace_genesis_state,
+    submit_consumer_chain_proposal,
 };
 use crate::chain::driver::ChainDriver;
 use crate::chain::exec::simple_exec;
@@ -118,6 +118,16 @@ pub trait ChainBootstrapMethodsExt {
         command_path: &str,
         home_path: &str,
         rpc_listen_address: &str,
+    ) -> Result<(), Error>;
+
+    fn assert_proposal_status(
+        &self,
+        chain_id: &str,
+        command_path: &str,
+        home_path: &str,
+        rpc_listen_address: &str,
+        status: &str,
+        proposal_id: &str,
     ) -> Result<(), Error>;
 
     /**
@@ -342,7 +352,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             10,
             Duration::from_secs(1),
             || {
-                match query_consumer_proposal(chain_id, command_path, home_path, rpc_listen_address) {
+                match query_gov_proposal(chain_id, command_path, home_path, rpc_listen_address, "1") {
                     Ok(exec_output) => {
                         let json_res = json::from_str::<json::Value>(&exec_output.stdout).map_err(handle_generic_error)?;
                         let proposal_status = json_res.get("status")
@@ -362,6 +372,53 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         Ok(())
     }
 
+    fn assert_proposal_status(
+        &self,
+        chain_id: &str,
+        command_path: &str,
+        home_path: &str,
+        rpc_listen_address: &str,
+        status: &str,
+        proposal_id: &str,
+    ) -> Result<(), Error> {
+        assert_eventually_succeed(
+            &format!("proposal `{}` status: {}", proposal_id, status),
+            10,
+            Duration::from_secs(1),
+            || match query_gov_proposal(
+                chain_id,
+                command_path,
+                home_path,
+                rpc_listen_address,
+                proposal_id,
+            ) {
+                Ok(exec_output) => {
+                    let json_res = json::from_str::<json::Value>(&exec_output.stdout)
+                        .map_err(handle_generic_error)?;
+                    let proposal_status = json_res
+                        .get("status")
+                        .ok_or_else(|| eyre!("expected `status` field"))?
+                        .as_str()
+                        .ok_or_else(|| eyre!("expected string field"))?;
+                    if proposal_status == status {
+                        Ok(())
+                    } else {
+                        Err(Error::generic(eyre!("consumer chain proposal is not in voting period. Proposal status: {proposal_status}")))
+                    }
+                }
+                Err(e) => {
+                    let msg = e.to_string();
+                    if msg.contains(&format!("status:{}", status)) {
+                        Ok(())
+                    } else {
+                        Err(Error::generic(eyre!("Error querying the consumer chain proposal. Potential issues could be due to not using enough gas or the proposal submitted is invalid. Error: {e}")))
+                    }
+                }
+            },
+        )?;
+        Ok(())
+    }
+
     fn assert_consumer_chain_proposal_passed(
         &self,
         chain_id: &str,
@@ -374,7 +431,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             10,
             Duration::from_secs(5),
             || {
-                match query_consumer_proposal(chain_id, command_path, home_path, rpc_listen_address) {
+                match query_gov_proposal(chain_id, command_path, home_path, rpc_listen_address, "1") {
                         Ok(exec_output) => {
                             let json_res = json::from_str::<json::Value>(&exec_output.stdout).map_err(handle_generic_error)?;
                             let proposal_status = json_res.get("status")

@@ -3,6 +3,7 @@ use eyre::eyre;
 use ibc_relayer_types::applications::transfer::amount::Amount;
 use serde_json as json;
 use serde_yaml as yaml;
+use std::collections::HashMap;
 
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
@@ -163,6 +164,46 @@ pub fn query_cross_chain_query(
         ],
     )?
     .stdout;
+
+    Ok(res)
+}
+
+pub fn query_auth_module(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    module_name: &str,
+) -> Result<String, Error> {
+    let output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "--node",
+            rpc_listen_address,
+            "query",
+            "auth",
+            "module-account",
+            module_name,
+            "--output",
+            "json",
+        ],
+    )?
+    .stdout;
+
+    let json_res: HashMap<String, serde_json::Value> =
+        serde_json::from_str(&output).map_err(handle_generic_error)?;
+
+    let res = json_res
+        .get("account")
+        .ok_or_else(|| eyre!("expect account string field to be present in json result"))?
+        .get("base_account")
+        .ok_or_else(|| eyre!("expect base_account string field to be present in json result"))?
+        .get("address")
+        .ok_or_else(|| eyre!("expect address string field to be present in json result"))?
+        .to_string();
 
     Ok(res)
 }

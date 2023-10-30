@@ -319,6 +319,11 @@ fn extract_block_events(
         extract_events(height, block_events, "channel_open_confirm", "channel_id"),
         height,
     );
+    append_events::<ChannelEvents::UpgradeInit>(
+        &mut events,
+        extract_events(height, block_events, "channel_upgrade_init", "channel_id"),
+        height,
+    );
     append_events::<ChannelEvents::SendPacket>(
         &mut events,
         extract_events(height, block_events, "send_packet", "packet_data"),

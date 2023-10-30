@@ -6,6 +6,7 @@
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_open,
@@ -18,6 +19,9 @@ fn test_channel_upgrade_ics29() -> Result<(), Error> {
     run_binary_channel_test(&ChannelUpgradeICS29)
 }
 
+const MAX_DEPOSIT_PERIOD: &str = "10s";
+const VOTING_PERIOD: u64 = 10;
+
 pub struct ChannelUpgradeICS29;
 
 impl TestOverrides for ChannelUpgradeICS29 {
@@ -28,6 +32,12 @@ impl TestOverrides for ChannelUpgradeICS29 {
         config.mode.packets.clear_on_start = false;
 
         config.mode.clients.misbehaviour = false;
+    }
+
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
+        set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
+        set_voting_period(genesis, VOTING_PERIOD)?;
+        Ok(())
     }
 }
 
@@ -123,28 +133,24 @@ impl BinaryChannelTest for ChannelUpgradeICS29 {
 
         let channel = channels.channel;
         let new_version = Version::ics20_with_fee();
-        let new_ordering = None;
-        let new_connection_hops = None;
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
             new_version.clone(),
             new_version.clone(),
             old_ordering,
-            old_connection_hops_a,
+            old_connection_hops_a.clone(),
             old_connection_hops_b,
         );
 
-        info!("Will initialise upgrade handshake by sending the ChanUpgradeInit step...");
+        info!("Will initialise upgrade handshake with governance proposal...");
 
-        // Note: Initialising a channel upgrade this way, without requiring a
-        // signature or proof of authority to perform the channel upgrade, will
-        // eventually be removed.
-        // Only authority (gov module or other) will be able to trigger a channel upgrade.
-        // See: https://github.com/cosmos/ibc-go/issues/4186
-        channel.flipped().build_chan_upgrade_init_and_send(
-            Some(new_version),
-            new_ordering,
-            new_connection_hops,
+        chains.node_a.chain_driver().initialise_channel_upgrade(
+            channel.src_port_id().as_str(),
+            channel.src_channel_id().unwrap().as_str(),
+            old_ordering.as_str(),
+            old_connection_hops_a.first().unwrap().as_str(),
+            &serde_json::to_string(&new_version.0).unwrap(),
+            chains.handle_a().get_signer().unwrap().as_ref(),
         )?;
 
         info!("Check that the channel upgrade successfully upgraded the version...");

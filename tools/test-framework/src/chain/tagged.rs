@@ -9,6 +9,7 @@ use ibc_relayer::event::IbcEventWithHeight;
 use serde_json as json;
 use tendermint_rpc::client::{Client, CompatMode, HttpClient};
 
+use crate::chain::cli::query::query_auth_module;
 use crate::chain::cli::query::query_recipient_transactions;
 use crate::chain::driver::ChainDriver;
 use crate::error::{handle_generic_error, Error};
@@ -79,6 +80,8 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error>;
+
+    fn query_auth_module(&self, module_name: &str) -> Result<String, Error>;
 }
 
 impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
@@ -152,6 +155,17 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
             &driver.command_path,
             &driver.rpc_listen_address(),
             &recipient_address.value().0,
+        )
+    }
+
+    fn query_auth_module(&self, module_name: &str) -> Result<String, Error> {
+        let driver = *self.value();
+        query_auth_module(
+            driver.chain_id.as_str(),
+            &driver.command_path,
+            &driver.home_path,
+            &driver.rpc_listen_address(),
+            module_name,
         )
     }
 }

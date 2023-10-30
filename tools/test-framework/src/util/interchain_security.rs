@@ -8,7 +8,7 @@ pub fn update_genesis_for_consumer_chain(genesis: &mut serde_json::Value) -> Res
         .and_then(|app_state| app_state.get("gov"))
         .is_some()
     {
-        set_voting_period(genesis, "10s")?;
+        set_voting_period(genesis, 10)?;
     }
     Ok(())
 }
