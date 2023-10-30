@@ -32,6 +32,9 @@ impl TrackingId {
     pub fn new_cleared_uuid() -> Self {
         Self::ClearedUuid(Uuid::new_v4())
     }
+
+    /// Indicates whether a packet clearing process is currently in-progress.
+    pub fn is_clearing(&self) -> bool {}
 }
 
 impl Display for TrackingId {

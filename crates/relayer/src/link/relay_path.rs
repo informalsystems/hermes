@@ -673,10 +673,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
                 Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
                     // This error means we could retry
-                    error!("error {}", e.event);
+                    error!("error {}", e.event); // TODO: better error message here
+
+                    // if on an ordered channel, perform a packet clearing, but only if we
+                    // are not in the middle of another packet clearing process
+                    if self.ordered_channel() && i == 0 && !odata.tracking_id.is_clearing() {
+                        // Do we need to specify the height for the packet clearing?
+                        // Probably not, since no progress will have been made on the clearing process
+                        self.relay_pending_packets(None)?;
+                    }
+
                     if i + 1 == MAX_RETRIES {
-                        error!("{}/{} retries exhausted. giving up", i + 1, MAX_RETRIES)
+                        error!("{}/{} retries exhausted. Giving up", i + 1, MAX_RETRIES)
                     } else {
+                        debug!("{}/{} retries exhausted. Retrying with newly-generated operational data", i + 1, MAX_RETRIES);
+
                         // If we haven't exhausted all retries, regenerate the op. data & retry
                         match self.regenerate_operational_data(odata.clone()) {
                             None => return Ok(S::Reply::empty()), // Nothing to retry
