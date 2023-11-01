@@ -39,7 +39,7 @@ STAKE2="4000000stake"
 NODE_IP="127.0.0.1"
 
 # Home directory
-HOME_DIR="/tmp/hermes-ics-misbehaviour"
+HOME_DIR=$HOME
 
 # Hermes debug
 if [ "$DEBUG" = true ]; then
@@ -52,8 +52,8 @@ fi
 HERMES_CONFIG="$HOME_DIR/hermes.toml"
 HERMES_CONFIG_FORK="$HOME_DIR/hermes-fork.toml"
 # Hermes binary
-HERMES_BIN="cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG"
-HERMES_BIN_FORK="cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG_FORK"
+HERMES_BIN=“cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG”
+HERMES_BIN_FORK=“cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG_FORK”
 
 # Validator moniker
 MONIKER="coordinator"
@@ -85,7 +85,7 @@ rm -rf "${CONS_FORK_NODE_DIR}"
 
 # Build genesis file and node directory structure
 interchain-security-pd init $MONIKER --chain-id provider --home ${PROV_NODE_DIR}
-jq ".app_state.gov.voting_params.voting_period = \"3s\" | .app_state.staking.params.unbonding_time = \"86400s\"" \
+jq ".app_state.gov.params.voting_period = \"5s\" | .app_state.staking.params.unbonding_time = \"86400s\"" \
    ${PROV_NODE_DIR}/config/genesis.json > \
    ${PROV_NODE_DIR}/edited_genesis.json && mv ${PROV_NODE_DIR}/edited_genesis.json ${PROV_NODE_DIR}/config/genesis.json
 
@@ -94,10 +94,10 @@ interchain-security-pd keys add $PROV_KEY --home ${PROV_NODE_DIR} --keyring-back
 
 # Add stake to user
 PROV_ACCOUNT_ADDR=$(jq -r '.address' ${PROV_NODE_DIR}/${PROV_KEY}.json)
-interchain-security-pd add-genesis-account "$PROV_ACCOUNT_ADDR" $USER_COINS --home ${PROV_NODE_DIR} --keyring-backend test
+interchain-security-pd genesis add-genesis-account "$PROV_ACCOUNT_ADDR" $USER_COINS --home ${PROV_NODE_DIR} --keyring-backend test
 
 # Stake 1/1000 user's coins
-interchain-security-pd gentx $PROV_KEY $STAKE --chain-id provider --home ${PROV_NODE_DIR} --keyring-backend test --moniker $MONIKER
+interchain-security-pd genesis gentx $PROV_KEY $STAKE --chain-id provider --home ${PROV_NODE_DIR} --keyring-backend test --moniker $MONIKER
 
 ## config second node
 
@@ -113,14 +113,14 @@ cp ${PROV_NODE_DIR}/config/genesis.json  ${PROV_NODE_SUB_DIR}/config/genesis.jso
 
 # Add stake to user
 PROV_ACCOUNT_ADDR=$(jq -r '.address' ${PROV_NODE_SUB_DIR}/${PROV_KEY_SUB}.json)
-interchain-security-pd add-genesis-account "$PROV_ACCOUNT_ADDR" $USER_COINS --home ${PROV_NODE_SUB_DIR} --keyring-backend test
+interchain-security-pd genesis add-genesis-account "$PROV_ACCOUNT_ADDR" $USER_COINS --home ${PROV_NODE_SUB_DIR} --keyring-backend test
 
 cp -r ${PROV_NODE_DIR}/config/gentx/ ${PROV_NODE_SUB_DIR}/config/gentx/
 
 # # Stake 1/1000 user's coins
-interchain-security-pd gentx $PROV_KEY_SUB $STAKE2 --chain-id provider --home ${PROV_NODE_SUB_DIR} --keyring-backend test --moniker $MONIKER_SUB
+interchain-security-pd genesis gentx $PROV_KEY_SUB $STAKE2 --chain-id provider --home ${PROV_NODE_SUB_DIR} --keyring-backend test --moniker $MONIKER_SUB
 
-interchain-security-pd collect-gentxs --home ${PROV_NODE_SUB_DIR} --gentx-dir ${PROV_NODE_SUB_DIR}/config/gentx/
+interchain-security-pd genesis collect-gentxs --home ${PROV_NODE_SUB_DIR} --gentx-dir ${PROV_NODE_SUB_DIR}/config/gentx/
 
 cp ${PROV_NODE_SUB_DIR}/config/genesis.json  ${PROV_NODE_DIR}/config/genesis.json
 
@@ -130,7 +130,7 @@ cp ${PROV_NODE_SUB_DIR}/config/genesis.json  ${PROV_NODE_DIR}/config/genesis.jso
 sed -i -r "/node =/ s/= .*/= \"tcp:\/\/${NODE_IP}:26658\"/" ${PROV_NODE_DIR}/config/client.toml
 sed -i -r 's/timeout_commit = "5s"/timeout_commit = "3s"/g' ${PROV_NODE_DIR}/config/config.toml
 sed -i -r 's/timeout_propose = "3s"/timeout_propose = "1s"/g' ${PROV_NODE_DIR}/config/config.toml
-sed -i -r 's/fast_sync = true/fast_sync = false/g' ${PROV_NODE_DIR}/config/config.toml
+sed -i -r 's/block_sync = true/block_sync = false/g' ${PROV_NODE_DIR}/config/config.toml
 
 # Start gaia
 interchain-security-pd start \
@@ -146,7 +146,7 @@ waiting 10 "for provider node to start"
 sed -i -r "/node =/ s/= .*/= \"tcp:\/\/${NODE_IP}:26628\"/" ${PROV_NODE_SUB_DIR}/config/client.toml
 sed -i -r 's/timeout_commit = "5s"/timeout_commit = "3s"/g' ${PROV_NODE_SUB_DIR}/config/config.toml
 sed -i -r 's/timeout_propose = "3s"/timeout_propose = "1s"/g' ${PROV_NODE_SUB_DIR}/config/config.toml
-sed -i -r 's/fast_sync = true/fast_sync = false/g' ${PROV_NODE_SUB_DIR}/config/config.toml
+sed -i -r 's/block_sync = true/block_sync = false/g' ${PROV_NODE_SUB_DIR}/config/config.toml
 
 # Start gaia
 interchain-security-pd start \
@@ -163,7 +163,7 @@ waiting 10 "for provider sub-node to start"
 tee ${PROV_NODE_DIR}/consumer-proposal.json<<EOF
 {
     "title": "Create a chain",
-    "description": "Gonna be a great chain",
+    "summary": "Gonna be a great chain",
     "chain_id": "consumer",
     "initial_height": {
         "revision_height": 1
@@ -184,14 +184,14 @@ EOF
 interchain-security-pd keys show $PROV_KEY --keyring-backend test --home ${PROV_NODE_DIR}
 
 # Submit consumer chain proposal
-interchain-security-pd tx gov submit-proposal consumer-addition ${PROV_NODE_DIR}/consumer-proposal.json --chain-id provider --from $PROV_KEY --home ${PROV_NODE_DIR} --node tcp://${NODE_IP}:26658  --keyring-backend test -b block -y
+interchain-security-pd tx gov submit-legacy-proposal consumer-addition ${PROV_NODE_DIR}/consumer-proposal.json --chain-id provider --from $PROV_KEY --home ${PROV_NODE_DIR} --node tcp://${NODE_IP}:26658 --keyring-backend test -y --gas auto
 
-waiting 1 "for proposal to be submitted"
+waiting 3 "for proposal to be submitted"
 
 # Vote yes to proposal
-interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} -b block -y --keyring-backend test
+interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} -y --keyring-backend test
 
-waiting 3 "for proposal to be voted on"
+waiting 10 "for proposal to be voted on"
 
 # CONSUMER CHAIN ##
 
@@ -203,7 +203,7 @@ interchain-security-cd keys add $PROV_KEY --home  ${CONS_NODE_DIR} --keyring-bac
 
 # Add stake to user account
 CONS_ACCOUNT_ADDR=$(jq -r '.address' ${CONS_NODE_DIR}/${PROV_KEY}.json)
-interchain-security-cd add-genesis-account "$CONS_ACCOUNT_ADDR" 1000000000stake --home ${CONS_NODE_DIR}
+interchain-security-cd genesis add-genesis-account "$CONS_ACCOUNT_ADDR" 1000000000stake --home ${CONS_NODE_DIR}
 
 # Add consumer genesis states to genesis file
 interchain-security-pd query provider consumer-genesis consumer --home ${PROV_NODE_DIR} -o json > consumer_gen.json
@@ -220,7 +220,7 @@ cp ${PROV_NODE_DIR}/config/node_key.json ${CONS_NODE_DIR}/config/node_key.json
 
 # Set default client port
 sed -i -r "/node =/ s/= .*/= \"tcp:\/\/${NODE_IP}:26648\"/" ${CONS_NODE_DIR}/config/client.toml
-sed -i -r 's/fast_sync = true/fast_sync = false/g' ${CONS_NODE_DIR}/config/config.toml
+sed -i -r 's/block_sync = true/block_sync = false/g' ${CONS_NODE_DIR}/config/config.toml
 
 
 # Start gaia
@@ -435,7 +435,7 @@ diag "Fork => Height: ${height}, Hash: ${hash}"
 cp -r ${CONS_NODE_DIR} ${CONS_FORK_NODE_DIR}
 # Set default client port
 sed -i -r "/node =/ s/= .*/= \"tcp:\/\/${NODE_IP}:26638\"/" ${CONS_FORK_NODE_DIR}/config/client.toml
-sed -i -r 's/fast_sync = true/fast_sync = false/g' ${CONS_FORK_NODE_DIR}/config/config.toml
+sed -i -r 's/block_sync = true/block_sync = false/g' ${CONS_FORK_NODE_DIR}/config/config.toml
 
 
 # Start gaia
@@ -509,4 +509,3 @@ else
         exit 1
     fi
 fi
-
