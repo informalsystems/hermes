@@ -219,7 +219,7 @@ while [ $TRIES -lt $MAX_TRIES ]; do
     else
         echo "Proposal status is $proposal_status. Continuing to check..."
     fi
-    ((TRIES++))
+    TRIES=$((TRIES + 1))
 
     sleep 2
 done
