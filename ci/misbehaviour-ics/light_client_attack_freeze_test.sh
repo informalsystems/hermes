@@ -52,8 +52,8 @@ fi
 HERMES_CONFIG="$HOME_DIR/hermes.toml"
 HERMES_CONFIG_FORK="$HOME_DIR/hermes-fork.toml"
 # Hermes binary
-HERMES_BIN=“cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG”
-HERMES_BIN_FORK=“cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG_FORK”
+HERMES_BIN="cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG"
+HERMES_BIN_FORK="cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG_FORK"
 
 # Validator moniker
 MONIKER="coordinator"
@@ -191,9 +191,37 @@ waiting 3 "for proposal to be submitted"
 # Vote yes to proposal
 interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} -y --keyring-backend test
 
-waiting 10 "for proposal to be voted on"
-
 # CONSUMER CHAIN ##
+
+### Assert that the proposal for the consumer chain passed
+PROPOSAL_STATUS_PASSED="PROPOSAL_STATUS_PASSED"
+MAX_TRIES=10
+TRIES=0
+
+cat ${PROV_NODE_DIR}/config/genesis.json | grep "period"
+
+while [ $TRIES -lt $MAX_TRIES ]; do
+    output=$(interchain-security-pd query gov proposal 1 --home ${PROV_NODE_DIR} --node tcp://${NODE_IP}:26658 --output json)
+
+    proposal_status=$(echo "$output" | grep -o '"status":"[^"]*' | awk -F ':"' '{print $2}')
+    if [ "$proposal_status" = "$PROPOSAL_STATUS_PASSED" ]; then
+        echo "Proposal status is now $proposal_status. Exiting loop."
+        break
+    else
+        echo "Proposal status is $proposal_status. Continuing to check..."
+    fi
+    ((TRIES++))
+
+    sleep 2
+done
+
+if [ $TRIES -eq $MAX_TRIES ]; then
+    echo "[ERROR] Failed due to an issue with the consumer proposal"
+    echo "This is likely due to a misconfiguration in the test script."
+    exit 0
+fi
+
+waiting 3 "for passed proposal to be executed"
 
 # Build genesis file and node directory structure
 interchain-security-cd init $MONIKER --chain-id consumer  --home  ${CONS_NODE_DIR}
