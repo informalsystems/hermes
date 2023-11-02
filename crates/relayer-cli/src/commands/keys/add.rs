@@ -220,6 +220,9 @@ pub fn add_key(
             keyring.add_key(key_name, key_pair.clone())?;
             key_pair.into()
         }
+        ChainConfig::Namada(_) => {
+            return Err(eyre!("Namada key cannot be added"));
+        }
     };
 
     Ok(key_pair)
@@ -255,6 +258,9 @@ pub fn restore_key(
 
             keyring.add_key(key_name, key_pair.clone())?;
             key_pair.into()
+        }
+        ChainConfig::Namada(_) => {
+            return Err(eyre!("Namada key cannot be restored"));
         }
     };
 

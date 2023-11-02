@@ -286,8 +286,6 @@ impl KeyRing<Ed25519KeyPair> {
     }
 }
 
-// Why is this not a method on `ChainConfig`?
-
 fn disk_store_path(folder_name: &str, keystore_folder: &Option<PathBuf>) -> Result<PathBuf, Error> {
     let ks_folder = match keystore_folder {
         Some(folder) => folder.to_owned(),
