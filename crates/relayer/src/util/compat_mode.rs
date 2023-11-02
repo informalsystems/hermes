@@ -17,7 +17,7 @@ pub fn compat_mode_from_version(
     // This will prioritize the use of the CompatMode specified in Hermes configuration file
     match (configured_version, queried_version) {
         (Some(configured), Ok(queried)) if !configured.equal_to_tm_compat_mode(queried) => {
-            warn!("Be wary of potential CompatMode version misconfiguration. Configured version: {}, Version output from chain: {}. Hermes will use the configured CompatMode version `{}`. If this configuration is done on purpose this message can be ignored.", configured, queried, configured);
+            warn!("be wary of potential `compat_mode` misconfiguration. Configured version: {}, chain version: {}. Hermes will use the configured `compat_mode` version `{}`. If this configuration is done on purpose this message can be ignored.", configured, queried, configured);
             Ok(configured.clone())
         }
         (Some(configured), _) => Ok(configured.clone()),
