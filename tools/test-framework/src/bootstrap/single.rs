@@ -45,7 +45,9 @@ pub fn bootstrap_single_node(
     genesis_modifier: impl FnOnce(&mut serde_json::Value) -> Result<(), Error>,
     chain_number: usize,
 ) -> Result<FullNode, Error> {
-    let stake_denom = Denom::base("stake");
+    let native_token_number = chain_number % builder.native_tokens.len();
+    let native_token = &builder.native_tokens[native_token_number];
+    let native_denom = Denom::base(native_token);
 
     let denom = if use_random_id {
         Denom::base(&format!("coin{:x}", random_u32()))
@@ -58,12 +60,13 @@ pub fn bootstrap_single_node(
     // when running `evmosd start`.
     let initial_amount = random_u128_range(1_000_000_000_000_000_000, 2_000_000_000_000_000_000);
 
-    let initial_stake = Token::new(stake_denom, initial_amount);
-    let additional_initial_stake = initial_stake
+    let initial_native_token = Token::new(native_denom, initial_amount);
+    let additional_native_token = initial_native_token
         .clone()
         .checked_add(1_000_000_000_000u64)
         .ok_or(Error::generic(eyre!(
-            "error creating initial stake with additional amount"
+            "error creating initial {} with additional amount",
+            native_token
         )))?;
     let initial_coin = Token::new(denom.clone(), initial_amount);
 
@@ -79,15 +82,15 @@ pub fn bootstrap_single_node(
     let user2 = add_wallet(&chain_driver, "user2", use_random_id)?;
 
     // Validator is given more tokens as they are required to vote on upgrade chain
-    chain_driver.add_genesis_account(&validator.address, &[&additional_initial_stake])?;
+    chain_driver.add_genesis_account(&validator.address, &[&additional_native_token])?;
 
-    chain_driver.add_genesis_validator(&validator.id, &initial_stake)?;
+    chain_driver.add_genesis_validator(&validator.id, &initial_native_token)?;
 
-    chain_driver.add_genesis_account(&user1.address, &[&initial_stake, &initial_coin])?;
+    chain_driver.add_genesis_account(&user1.address, &[&initial_native_token, &initial_coin])?;
 
-    chain_driver.add_genesis_account(&user2.address, &[&initial_stake, &initial_coin])?;
+    chain_driver.add_genesis_account(&user2.address, &[&initial_native_token, &initial_coin])?;
 
-    chain_driver.add_genesis_account(&relayer.address, &[&initial_stake, &initial_coin])?;
+    chain_driver.add_genesis_account(&relayer.address, &[&initial_native_token, &initial_coin])?;
 
     chain_driver.collect_gen_txs()?;
 
@@ -101,17 +104,19 @@ pub fn bootstrap_single_node(
         config::set_timeout_commit(config, Duration::from_secs(1))?;
         config::set_timeout_propose(config, Duration::from_secs(1))?;
         config::set_mode(config, "validator")?;
+        config::set_indexer(config, "kv")?;
 
         config_modifier(config)?;
 
         Ok(())
     })?;
 
+    let minimum_gas = format!("0{}", native_token);
     chain_driver.update_chain_config("app.toml", |config| {
         config::set_grpc_port(config, chain_driver.grpc_port)?;
         config::disable_grpc_web(config)?;
         config::disable_api(config)?;
-        config::set_minimum_gas_price(config, "0stake")?;
+        config::set_minimum_gas_price(config, &minimum_gas)?;
 
         Ok(())
     })?;

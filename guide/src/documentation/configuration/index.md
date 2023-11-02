@@ -17,3 +17,6 @@ This section includes everything you need to know to configure Hermes.
 
 - **[Performance Tuning](./performance.md)**
     * Learn about configurations allowing more refined performance tuning.
+
+- **[CometBFT Compatibility modes](./comet-compat-mode.md)**
+    * Handle different CometBFT compatibility modes.

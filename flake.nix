@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
     flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix/update-ics;
+    cosmos-nix.url = github:informalsystems/cosmos.nix;
   };
 
   outputs = inputs: let
@@ -48,6 +48,7 @@
           stride-consumer
           migaloo
           neutron
+          celestia
           ;
 
         python = nixpkgs.python3.withPackages (p: [

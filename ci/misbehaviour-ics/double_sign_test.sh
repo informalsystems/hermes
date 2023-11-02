@@ -80,7 +80,7 @@ do
 
     # Build genesis file and node directory structure
     interchain-security-pd init $MONIKER --chain-id provider --home ${PROV_NODE_DIR}
-    jq ".app_state.gov.voting_params.voting_period = \"10s\" | .app_state.staking.params.unbonding_time = \"86400s\"" \
+    jq ".app_state.gov.params.voting_period = \"5s\" | .app_state.staking.params.unbonding_time = \"86400s\"" \
     ${PROV_NODE_DIR}/config/genesis.json > \
     ${PROV_NODE_DIR}/edited_genesis.json && mv ${PROV_NODE_DIR}/edited_genesis.json ${PROV_NODE_DIR}/config/genesis.json
 
@@ -99,10 +99,10 @@ do
 
     # Add stake to user
     PROV_ACCOUNT_ADDR=$(jq -r '.address' ${PROV_NODE_DIR}/${PROV_KEY}.json)
-    interchain-security-pd add-genesis-account $PROV_ACCOUNT_ADDR $USER_COINS --home ${PROV_NODE_DIR} --keyring-backend test
+    interchain-security-pd genesis add-genesis-account $PROV_ACCOUNT_ADDR $USER_COINS --home ${PROV_NODE_DIR} --keyring-backend test
 
     PROV_ACCOUNT_ADDR2=$(jq -r '.address' ${PROV_NODE_DIR}/${PROV_KEY2}.json)
-    interchain-security-pd add-genesis-account $PROV_ACCOUNT_ADDR2 $USER_COINS --home ${PROV_NODE_DIR} --keyring-backend test
+    interchain-security-pd genesis add-genesis-account $PROV_ACCOUNT_ADDR2 $USER_COINS --home ${PROV_NODE_DIR} --keyring-backend test
     sleep 1
 
     # copy genesis out, unless this validator is the lead validator
@@ -141,7 +141,7 @@ do
     fi
 
     # Stake 1/1000 user's coins
-    interchain-security-pd gentx $PROV_KEY  $STAKE --chain-id provider --home ${PROV_NODE_DIR} --keyring-backend test --moniker $MONIKER
+    interchain-security-pd genesis gentx $PROV_KEY  $STAKE --chain-id provider --home ${PROV_NODE_DIR} --keyring-backend test --moniker $MONIKER
     sleep 1
 
     # Copy gentxs to the lead validator for possible future collection. 
@@ -152,7 +152,7 @@ do
 done
 
 # Collect genesis transactions with lead validator
-interchain-security-pd collect-gentxs --home ${LEAD_VALIDATOR_PROV_DIR} --gentx-dir ${LEAD_VALIDATOR_PROV_DIR}/config/gentx/
+interchain-security-pd genesis collect-gentxs --home ${LEAD_VALIDATOR_PROV_DIR} --gentx-dir ${LEAD_VALIDATOR_PROV_DIR}/config/gentx/
 
 sleep 1
 
@@ -222,7 +222,7 @@ done
 tee ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json<<EOF
 {
     "title": "Create a chain",
-    "description": "Gonna be a great chain",
+    "summary": "Gonna be a great chain",
     "chain_id": "consumer",
     "initial_height": {
         "revision_height": 1
@@ -244,9 +244,9 @@ sleep 5
 interchain-security-pd keys show $LEAD_PROV_KEY --keyring-backend test --home ${LEAD_VALIDATOR_PROV_DIR}
 
 # Submit consumer chain proposal
-interchain-security-pd tx gov submit-proposal consumer-addition ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json --chain-id provider --from $LEAD_PROV_KEY --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR  --keyring-backend test -b block -y --gas auto
+interchain-security-pd tx gov submit-legacy-proposal consumer-addition ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json --chain-id provider --from $LEAD_PROV_KEY --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR  --keyring-backend test -y --gas auto
 
-sleep 1
+sleep 3
 
 # Vote yes to proposal
 for index in "${!MONIKERS[@]}"
@@ -257,7 +257,7 @@ do
     RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
 
     PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${MONIKER}
-    interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} --node $RPC_LADDR -b block -y --keyring-backend test
+    interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} --node $RPC_LADDR -y --keyring-backend test
 done
 
 HERMES_PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${HERMES_VALIDATOR_MONIKER}
@@ -265,9 +265,35 @@ HERMES_KEY=${HERMES_VALIDATOR_MONIKER}-key
 HERMES_KEY2=${HERMES_VALIDATOR_MONIKER}-key2
 HERMES_CONS_NODE_DIR=${CONS_NODES_ROOT_DIR}/consumer-${HERMES_VALIDATOR_MONIKER}
 
-# sleep 3
-
 # # ## CONSUMER CHAIN ##
+
+### Assert that the proposal for the consumer chain passed
+PROPOSAL_STATUS_PASSED="PROPOSAL_STATUS_PASSED"
+MAX_TRIES=10
+TRIES=0
+
+cat ${PROV_NODE_DIR}/config/genesis.json | grep "period"
+
+while [ $TRIES -lt $MAX_TRIES ]; do
+    output=$(interchain-security-pd query gov proposal 1 --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR --output json)
+
+    proposal_status=$(echo "$output" | grep -o '"status":"[^"]*' | awk -F ':"' '{print $2}')
+    if [ "$proposal_status" = "$PROPOSAL_STATUS_PASSED" ]; then
+        echo "Proposal status is now $proposal_status. Exiting loop."
+        break
+    else
+        echo "Proposal status is $proposal_status. Continuing to check..."
+    fi
+    TRIES=$((TRIES + 1))
+
+    sleep 2
+done
+
+if [ $TRIES -eq $MAX_TRIES ]; then
+    echo "[ERROR] Failed due to an issue with the consumer proposal"
+    echo "This is likely due to a misconfiguration in the test script."
+    exit 0
+fi
 
 # # Clean start
 for index in "${!MONIKERS[@]}"
@@ -299,9 +325,9 @@ do
 
     # Add stake to user
     CONS_ACCOUNT_ADDR=$(jq -r '.address' ${CONS_NODE_DIR}/${PROV_KEY}.json)
-    interchain-security-cd add-genesis-account $CONS_ACCOUNT_ADDR $USER_COINS --home ${CONS_NODE_DIR}
+    interchain-security-cd genesis add-genesis-account $CONS_ACCOUNT_ADDR $USER_COINS --home ${CONS_NODE_DIR}
     CONS_ACCOUNT_ADDR2=$(jq -r '.address' ${CONS_NODE_DIR}/${PROV_KEY2}.json)
-    interchain-security-cd add-genesis-account $CONS_ACCOUNT_ADDR2 $USER_COINS --home ${CONS_NODE_DIR}
+    interchain-security-cd genesis add-genesis-account $CONS_ACCOUNT_ADDR2 $USER_COINS --home ${CONS_NODE_DIR}
     sleep 10
 
     ### this probably doesnt have to be done for each node

@@ -149,6 +149,17 @@ pub fn set_mode(config: &mut Value, mode: &str) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn set_indexer(config: &mut Value, mode: &str) -> Result<(), Error> {
+    config
+        .get_mut("tx_index")
+        .ok_or_else(|| eyre!("expect tx_index section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("indexer".to_string(), mode.into());
+
+    Ok(())
+}
+
 pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> Result<(), Error> {
     let max_deposit_period = genesis
         .get_mut("app_state")

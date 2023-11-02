@@ -1,4 +1,5 @@
 use crate::chain::cosmos::config::error::Error as ConfigError;
+use crate::config::compat_mode::CompatMode;
 use crate::config::default;
 use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
@@ -123,6 +124,7 @@ pub struct CosmosSdkConfig {
     pub address_type: AddressType,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub extension_options: Vec<ExtensionOption>,
+    pub compat_mode: Option<CompatMode>,
 }
 
 impl CosmosSdkConfig {

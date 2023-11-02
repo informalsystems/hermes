@@ -174,8 +174,8 @@ where
 {
     let mut config = Config::default();
 
-    add_chain_config(&mut config, chains.node_a.value(), test_config)?;
-    add_chain_config(&mut config, chains.node_b.value(), test_config)?;
+    add_chain_config(&mut config, chains.node_a.value(), test_config, 0)?;
+    add_chain_config(&mut config, chains.node_b.value(), test_config, 1)?;
 
     config_modifier(&mut config);
 

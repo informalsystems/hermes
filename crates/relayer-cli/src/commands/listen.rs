@@ -17,6 +17,7 @@ use ibc_relayer::{
     chain::handle::Subscription,
     config::{ChainConfig, EventSourceMode},
     event::source::EventSource,
+    util::compat_mode::compat_mode_from_version,
 };
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
@@ -181,10 +182,11 @@ fn detect_compatibility_mode(
     };
     let client = HttpClient::new(rpc_addr)?;
     let status = rt.block_on(client.status())?;
-    let compat_mode = CompatMode::from_version(status.node_info.version).unwrap_or_else(|e| {
-        warn!("Unsupported tendermint version, will use v0.34 compatibility mode but relaying might not work as desired: {e}");
-        CompatMode::V0_34
-    });
+    let compat_mode = match config {
+        ChainConfig::CosmosSdk(config) => {
+            compat_mode_from_version(&config.compat_mode, status.node_info.version)?.into()
+        }
+    };
     Ok(compat_mode)
 }
 
