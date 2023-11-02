@@ -123,6 +123,9 @@ pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
             )?;
             keyring.remove_key(key_name)?;
         }
+        ChainConfig::Namada(_) => {
+            return Err(eyre!("Namada key cannot be deleted"));
+        }
     }
     Ok(())
 }
@@ -140,6 +143,9 @@ pub fn delete_all_keys(config: &ChainConfig) -> eyre::Result<()> {
             for (key_name, _) in keys {
                 keyring.remove_key(&key_name)?;
             }
+        }
+        ChainConfig::Namada(_) => {
+            return Err(eyre!("Namada key cannot be deleted"));
         }
     }
     Ok(())

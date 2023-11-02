@@ -7,11 +7,13 @@ use crate::util::random::{random_u32, random_unused_tcp_port};
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 const EVMOS_HD_PATH: &str = "m/44'/60'/0'/0/0";
+const NAMADA_HD_PATH: &str = "m/44'/60'/0'/0/0";
 
 #[derive(Clone, Debug)]
 pub enum ChainType {
     Cosmos,
     Evmos,
+    Namada,
 }
 
 impl ChainType {
@@ -19,6 +21,7 @@ impl ChainType {
         match self {
             Self::Cosmos => COSMOS_HD_PATH,
             Self::Evmos => EVMOS_HD_PATH,
+            Self::Namada => NAMADA_HD_PATH,
         }
     }
 
@@ -32,6 +35,7 @@ impl ChainType {
                 }
             }
             Self::Evmos => ChainId::from_string(&format!("evmos_9000-{prefix}")),
+            Self::Namada => ChainId::from_string(&prefix.to_string()),
         }
     }
 
@@ -45,6 +49,7 @@ impl ChainType {
                 res.push("--json-rpc.address".to_owned());
                 res.push(format!("localhost:{json_rpc_port}"));
             }
+            Self::Namada => {}
         }
         res
     }
@@ -55,6 +60,7 @@ impl ChainType {
             Self::Evmos => AddressType::Ethermint {
                 pk_type: "/ethermint.crypto.v1.ethsecp256k1.PubKey".to_string(),
             },
+            Self::Namada => AddressType::default(),
         }
     }
 }
@@ -69,6 +75,7 @@ impl FromStr for ChainType {
             name if name.contains("wasmd") => Ok(ChainType::Cosmos),
             name if name.contains("icad") => Ok(ChainType::Cosmos),
             name if name.contains("evmosd") => Ok(ChainType::Evmos),
+            name if name.contains("namada") => Ok(ChainType::Namada),
             _ => Ok(ChainType::Cosmos),
         }
     }

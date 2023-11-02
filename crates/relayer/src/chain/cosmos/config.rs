@@ -141,7 +141,7 @@ impl CosmosSdkConfig {
 /// a) non-zero
 /// b) greater or equal to 1/3
 /// c) strictly less than 1
-fn validate_trust_threshold(
+pub fn validate_trust_threshold(
     id: &ChainId,
     trust_threshold: TrustThreshold,
 ) -> Result<(), Diagnostic<ConfigError>> {

@@ -29,7 +29,7 @@ pub mod bus;
 pub mod error;
 pub mod source;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct IbcEventWithHeight {
     pub event: IbcEvent,
     pub height: Height,
