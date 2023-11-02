@@ -415,7 +415,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
         let _span = span!(Level::ERROR, "relay_pending_packets", ?height).entered();
 
-        let tracking_id = TrackingId::new_cleared_uuid();
+        let tracking_id = TrackingId::new_packet_clearing();
         telemetry!(received_event_batch, tracking_id);
 
         for i in 1..=MAX_RETRIES {
@@ -672,8 +672,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     return Ok(reply);
                 }
                 Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
-                    // This error means we could retry
-                    error!("error {}", e.event); // TODO: better error message here
+                    warn!(
+                        "Determining whether we need to retry in response to: {}",
+                        e.event
+                    );
 
                     // if on an ordered channel, perform a packet clearing, but only if we
                     // are not in the middle of another packet clearing process
