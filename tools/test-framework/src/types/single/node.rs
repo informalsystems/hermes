@@ -8,6 +8,7 @@ use eyre::eyre;
 use eyre::Report as Error;
 use ibc_relayer::chain::ChainType;
 use ibc_relayer::config;
+use ibc_relayer::config::compat_mode::CompatMode;
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -126,13 +127,20 @@ impl FullNode {
         &self,
         chain_type: &TestedChainType,
         test_config: &TestConfig,
+        chain_number: usize,
     ) -> Result<config::ChainConfig, Error> {
+        let native_token_number = chain_number % test_config.native_tokens.len();
         let hermes_keystore_dir = test_config
             .chain_store_dir
             .join("hermes_keyring")
             .as_path()
             .display()
             .to_string();
+
+        let compat_mode = test_config.compat_modes.as_ref().map(|modes| {
+            let mode = &modes[chain_number % modes.len()];
+            CompatMode::from_str(mode).unwrap()
+        });
 
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
@@ -164,13 +172,17 @@ impl FullNode {
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
             ccv_consumer_chain: false,
             trust_threshold: Default::default(),
-            gas_price: config::GasPrice::new(0.003, "stake".to_string()),
+            gas_price: config::GasPrice::new(
+                0.003,
+                test_config.native_tokens[native_token_number].clone(),
+            ),
             packet_filter: Default::default(),
             address_type: chain_type.address_type(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
             extension_options: Default::default(),
             sequential_batch_tx: false,
+            compat_mode,
             clear_interval: None,
         })
     }

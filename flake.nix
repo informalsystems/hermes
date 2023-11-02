@@ -48,6 +48,7 @@
           stride-consumer
           migaloo
           neutron
+          celestia
           ;
 
         python = nixpkgs.python3.withPackages (p: [

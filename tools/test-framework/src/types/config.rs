@@ -30,6 +30,10 @@ pub struct TestConfig {
 
     pub account_prefixes: Vec<String>,
 
+    pub native_tokens: Vec<String>,
+
+    pub compat_modes: Option<Vec<String>>,
+
     /**
        The directory path for storing the chain and relayer files.
        Defaults to `"data"`. This can be overridden with the `$CHAIN_STORE_DIR`

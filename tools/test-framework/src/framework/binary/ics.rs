@@ -63,6 +63,8 @@ where
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
             0,
         )?;
+        let provider_native_token = builder.native_tokens[0].clone();
+        let provider_fee = format!("1200{}", provider_native_token);
 
         // Get consumer chain id
         let chain_type = ChainType::from_str(&builder.command_paths[1])?;
@@ -86,7 +88,7 @@ where
             &node_a.chain_driver.command_path,
             &node_a.chain_driver.home_path,
             &node_a.chain_driver.rpc_listen_address(),
-            "1200stake",
+            &provider_fee,
         )?;
 
         node_a.chain_driver.assert_consumer_chain_proposal_passed(

@@ -100,6 +100,7 @@ use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
+use crate::util::compat_mode::compat_mode_from_version;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
@@ -875,10 +876,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
 
-        let compat_mode = CompatMode::from_version(node_info.version).unwrap_or_else(|e| {
-            warn!("Unsupported tendermint version, will use v0.34 compatibility mode but relaying might not work as desired: {e}");
-            CompatMode::V0_34
-        });
+        let compat_mode = compat_mode_from_version(&config.compat_mode, node_info.version)?.into();
         rpc_client.set_compat_mode(compat_mode);
 
         let light_client = TmLightClient::from_config(&config, node_info.id)?;

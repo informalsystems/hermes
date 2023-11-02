@@ -1,5 +1,6 @@
 //! Relayer configuration
 
+pub mod compat_mode;
 pub mod error;
 pub mod filter;
 pub mod gas_multiplier;
@@ -32,6 +33,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
 use crate::chain::ChainType;
+use crate::config::compat_mode::CompatMode;
 use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error as RelayerError;
@@ -663,6 +665,7 @@ pub struct ChainConfig {
     pub address_type: AddressType,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub extension_options: Vec<ExtensionOption>,
+    pub compat_mode: Option<CompatMode>,
     pub clear_interval: Option<u64>,
 }
 

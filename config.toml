@@ -377,6 +377,15 @@ memo_prefix = ''
 # submitted to this chain.
 # fee_granter = ''
 
+# Specify the CometBFT compatibility mode to use.
+# The following behaviours are applied whether the `compat_mode` is configured or not:
+#   * compat_mode is specified and the version queried from /status is the same as the one configured: Use that version without log output
+#   * compat_mode is specified but the version queried from /status differs: The CompatMode configured is used, but a warning log is outputted
+#   * compat_mode is not specified but /status returns a correct version: The CompatMode retrieved from the endpoint is used
+#   * compat_mode is not specified and /status does not return a valid version: Hermes stops and outputs an error informing the user a compat_mode needs to be configured
+# Possible values: [`0.34`, `0.37`]
+# compat_mode = '0.34'
+
 # Specify the a clear interval for the chain.
 # This will override the global clear interval for this chain only, allowing different intervals for each chain.
 # clear_interval = 50

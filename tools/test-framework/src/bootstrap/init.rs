@@ -46,7 +46,13 @@ pub fn init_test() -> Result<TestConfig, Error> {
 
     let account_prefix = env::var("ACCOUNT_PREFIXES").unwrap_or_else(|_| "cosmos".to_string());
 
+    let native_token = env::var("NATIVE_TOKENS").unwrap_or_else(|_| "stake".to_string());
+
+    let compat_modes = env::var("COMPAT_MODES").ok().map(parse_chain_command_paths);
+
     let account_prefixes = parse_chain_command_paths(account_prefix);
+
+    let native_tokens = parse_chain_command_paths(native_token);
 
     let chain_store_dir = format!("{}/test-{}", base_chain_store_dir, random_u32());
 
@@ -65,6 +71,8 @@ pub fn init_test() -> Result<TestConfig, Error> {
         account_prefixes,
         hang_on_fail,
         bootstrap_with_random_ids: false,
+        native_tokens,
+        compat_modes,
     })
 }
 
