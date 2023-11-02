@@ -86,19 +86,19 @@ impl BinaryChannelTest for FeeGrantTest {
 
         let mut modified_relayer = relayer;
 
-        let new_chain_configs: Vec<ChainConfig> = modified_relayer
+        modified_relayer
             .config
             .chains
             .iter_mut()
-            .map(|c| {
-                if c.id == chains.node_a.chain_id().0.clone() {
-                    c.fee_granter = Some("user2".to_owned());
+            .for_each(|chain_config| {
+                if chain_config.id() == chains.node_a.chain_id().0 {
+                    match chain_config {
+                        ChainConfig::CosmosSdk(c) => {
+                            c.fee_granter = Some("user2".to_owned());
+                        }
+                    }
                 }
-                c.clone()
-            })
-            .collect();
-
-        modified_relayer.config.chains = new_chain_configs;
+            });
 
         let mut modified_driver = chains.node_a.chain_driver().0.clone();
 

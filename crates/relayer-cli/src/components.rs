@@ -8,8 +8,8 @@ use ibc_relayer::{
     util::debug_section::DebugSection,
 };
 
-use crate::config::Error;
 use crate::tracing_handle::ReloadHandle;
+use ibc_relayer::config::Error;
 
 /// The name of the environment variable through which one can override
 /// the tracing filter built in [`build_tracing_filter`].

@@ -5,7 +5,7 @@ use std::{
     u64,
 };
 
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::connection::v1::{

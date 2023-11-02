@@ -159,7 +159,7 @@ impl Override<Config> for FeeTransferCmd {
         })?;
 
         if let Some(ref key_name) = self.key_name {
-            src_chain_config.key_name = key_name.to_string();
+            src_chain_config.set_key_name(key_name.to_string());
         }
 
         Ok(config)

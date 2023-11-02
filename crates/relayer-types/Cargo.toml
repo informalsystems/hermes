@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-types"
-version      = "0.25.0"
+version      = "0.26.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -24,13 +24,12 @@ mocks = ["tendermint-testgen", "clock"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.38.0-pre.1" }
+ibc-proto = { version = "0.38.0", features = ["serde"] }
 ics23 = { version = "0.11.0", features = ["std", "host-functions"] }
 time = { version = "0.3" }
 serde_derive = { version = "1.0.104" }
 serde = { version = "1.0" }
 serde_json = { version = "1" }
-erased-serde = { version = "0.3" }
 prost = { version = "0.12" }
 bytes = { version = "1.4.0" }
 subtle-encoding = { version = "0.5" }
@@ -39,7 +38,6 @@ derive_more = { version = "0.99.17", default-features = false, features = ["from
 uint = { version = "0.9" }
 itertools = { version = "0.10.3" }
 primitive-types = { version = "0.12.1", default-features = false, features = ["serde_no_std"] }
-dyn-clone = "1.0.12"
 num-rational = "0.4.1"
 regex = "1"
 

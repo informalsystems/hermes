@@ -21,7 +21,7 @@ use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
@@ -61,7 +61,6 @@ use tendermint_rpc::endpoint::status;
 use tendermint_rpc::{Client, HttpClient, Order};
 
 use crate::account::Balance;
-use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
     sequential_send_batched_messages_and_wait_commit,
@@ -104,12 +103,14 @@ use crate::util::compat_mode::compat_mode_from_version;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
+use crate::{chain::client::ClientSettings, config::Error as ConfigError};
 
 use self::types::app_state::GenesisAppState;
 
 pub mod batch;
 pub mod client;
 pub mod compatibility;
+pub mod config;
 pub mod encode;
 pub mod estimate;
 pub mod fee;
@@ -138,7 +139,7 @@ pub mod wait;
 /// [tm-37-max]: https://github.com/tendermint/tendermint/blob/v0.37.0-rc1/types/params.go#L79
 pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 pub struct CosmosSdkChain {
-    config: ChainConfig,
+    config: config::CosmosSdkConfig,
     tx_config: TxConfig,
     pub rpc_client: HttpClient,
     compat_mode: CompatMode,
@@ -155,7 +156,7 @@ pub struct CosmosSdkChain {
 
 impl CosmosSdkChain {
     /// Get a reference to the configuration for this chain.
-    pub fn config(&self) -> &ChainConfig {
+    pub fn config(&self) -> &config::CosmosSdkConfig {
         &self.config
     }
 
@@ -870,7 +871,17 @@ impl ChainEndpoint for CosmosSdkChain {
     type Time = TmTime;
     type SigningKeyPair = Secp256k1KeyPair;
 
+    fn id(&self) -> &ChainId {
+        &self.config.id
+    }
+
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
+        #[allow(irrefutable_let_patterns)]
+        let ChainConfig::CosmosSdk(config) = config
+        else {
+            return Err(Error::config(ConfigError::wrong_type()));
+        };
+
         let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
@@ -879,7 +890,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let compat_mode = compat_mode_from_version(&config.compat_mode, node_info.version)?.into();
         rpc_client.set_compat_mode(compat_mode);
 
-        let light_client = TmLightClient::from_config(&config, node_info.id)?;
+        let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_info.id)?;
 
         // Initialize key store and load key
         let keybase = KeyRing::new_secp256k1(
@@ -927,6 +938,16 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn keybase_mut(&mut self) -> &mut KeyRing<Self::SigningKeyPair> {
         &mut self.keybase
+    }
+
+    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
+        // Get the key from key seed file
+        let key_pair = self
+            .keybase()
+            .get_key(&self.config.key_name)
+            .map_err(|e| Error::key_not_found(self.config().key_name.clone(), e))?;
+
+        Ok(key_pair)
     }
 
     fn subscribe(&mut self) -> Result<Subscription, Error> {
@@ -1053,8 +1074,8 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     /// Get the chain configuration
-    fn config(&self) -> &ChainConfig {
-        &self.config
+    fn config(&self) -> ChainConfig {
+        ChainConfig::CosmosSdk(self.config.clone())
     }
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
@@ -1956,48 +1977,32 @@ impl ChainEndpoint for CosmosSdkChain {
         );
         crate::telemetry!(query, self.id(), "query_next_sequence_receive");
 
-        match include_proof {
-            IncludeProof::Yes => {
-                let res = self.query(
-                    SeqRecvsPath(request.port_id, request.channel_id),
-                    request.height,
-                    true,
-                )?;
+        let prove = include_proof.to_bool();
 
-                // Note: We expect the return to be a u64 encoded in big-endian. Refer to ibc-go:
-                // https://github.com/cosmos/ibc-go/blob/25767f6bdb5bab2c2a116b41d92d753c93e18121/modules/core/04-channel/client/utils/utils.go#L191
-                if res.value.len() != 8 {
-                    return Err(Error::query("next_sequence_receive".into()));
-                }
-                let seq: Sequence = Bytes::from(res.value).get_u64().into();
+        let res = self.query(
+            SeqRecvsPath(request.port_id, request.channel_id),
+            request.height,
+            true,
+        )?;
 
-                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
-
-                Ok((seq, Some(proof)))
-            }
-            IncludeProof::No => {
-                let mut client = self
-                    .block_on(
-                        ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
-                            self.grpc_addr.clone(),
-                        ),
-                    )
-                    .map_err(Error::grpc_transport)?;
-
-                client = client.max_decoding_message_size(
-                    self.config().max_grpc_decoding_size.get_bytes() as usize,
-                );
-
-                let request = tonic::Request::new(request.into());
-
-                let response = self
-                    .block_on(client.next_sequence_receive(request))
-                    .map_err(|e| Error::grpc_status(e, "query_next_sequence_receive".to_owned()))?
-                    .into_inner();
-
-                Ok((Sequence::from(response.next_sequence_receive), None))
-            }
+        // Note: We expect the return to be a u64 encoded in big-endian. Refer to ibc-go:
+        // https://github.com/cosmos/ibc-go/blob/25767f6bdb5bab2c2a116b41d92d753c93e18121/modules/core/04-channel/client/utils/utils.go#L191
+        if res.value.len() != 8 {
+            return Err(Error::query(format!(
+                "next_sequence_receive: expected a u64 but got {} bytes of data",
+                res.value.len()
+            )));
         }
+
+        let seq: Sequence = Bytes::from(res.value).get_u64().into();
+
+        let proof = if prove {
+            Some(res.proof.ok_or_else(Error::empty_response_proof)?)
+        } else {
+            None
+        };
+
+        Ok((seq, proof))
     }
 
     /// This function queries transactions for events matching certain criteria.
@@ -2296,7 +2301,7 @@ fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
 
 async fn fetch_node_info(
     rpc_client: &HttpClient,
-    config: &ChainConfig,
+    config: &config::CosmosSdkConfig,
 ) -> Result<node::Info, Error> {
     crate::time!("fetch_node_info",
     {

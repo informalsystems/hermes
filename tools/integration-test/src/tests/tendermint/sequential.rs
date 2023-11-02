@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::types::max_msg_num::MaxMsgNum;
+use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::chain::config;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::transfer::build_transfer_message;
@@ -32,14 +33,19 @@ impl TestOverrides for SequentialCommitTest {
 
     fn modify_relayer_config(&self, config: &mut Config) {
         // Use sequential batching for chain A, and default parallel batching for chain B
+        match &mut config.chains[0] {
+            ChainConfig::CosmosSdk(chain_config_a) => {
+                chain_config_a.max_msg_num = MaxMsgNum::new(MESSAGES_PER_BATCH).unwrap();
+                chain_config_a.sequential_batch_tx = true;
+            }
+        };
 
-        let chain_config_a = &mut config.chains[0];
-        chain_config_a.max_msg_num = MaxMsgNum::new(MESSAGES_PER_BATCH).unwrap();
-        chain_config_a.sequential_batch_tx = true;
-
-        let chain_config_b = &mut config.chains[1];
-        chain_config_b.max_msg_num = MaxMsgNum::new(MESSAGES_PER_BATCH).unwrap();
-        chain_config_b.sequential_batch_tx = false;
+        match &mut config.chains[1] {
+            ChainConfig::CosmosSdk(chain_config_b) => {
+                chain_config_b.max_msg_num = MaxMsgNum::new(MESSAGES_PER_BATCH).unwrap();
+                chain_config_b.sequential_batch_tx = false;
+            }
+        };
     }
 
     fn should_spawn_supervisor(&self) -> bool {

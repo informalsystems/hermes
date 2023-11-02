@@ -1,5 +1,6 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
+use ibc_relayer_types::core::ics02_client::header::AnyHeader;
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketRequest;
@@ -36,7 +37,6 @@ use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::keyring::AnySigningKeyPair;
-use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
 

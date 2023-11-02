@@ -6,7 +6,7 @@ use core::time::Duration;
 
 use alloc::sync::Arc;
 use eyre::eyre;
-use ibc_relayer::config::CompatMode;
+use ibc_relayer::config::compat_mode::CompatMode;
 use tokio::runtime::Runtime;
 
 use ibc_relayer::chain::cosmos::types::config::TxConfig;

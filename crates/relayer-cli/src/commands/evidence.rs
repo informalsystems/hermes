@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use ibc_relayer::config::ChainConfig;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint::block::Height as TendermintHeight;
@@ -18,7 +19,6 @@ use ibc_relayer::chain::endpoint::ChainEndpoint;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{IncludeProof, PageRequest, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer::chain::ChainType;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::spawn::spawn_chain_runtime_with_modified_config;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
@@ -76,7 +76,7 @@ impl Runnable for EvidenceCmd {
                 .exit()
             });
 
-        if chain_config.r#type != ChainType::CosmosSdk {
+        if !matches!(chain_config, ChainConfig::CosmosSdk(_)) {
             Output::error(format!(
                 "chain `{}` is not a Cosmos SDK chain",
                 self.chain_id
@@ -85,7 +85,7 @@ impl Runnable for EvidenceCmd {
         }
 
         if let Some(ref key_name) = self.key_name {
-            chain_config.key_name = key_name.to_string();
+            chain_config.set_key_name(key_name.to_string());
         }
 
         let rt = Arc::new(
@@ -237,7 +237,7 @@ fn handle_duplicate_vote(
                 rt.clone(),
                 |chain_config| {
                     if let Some(key_name) = key_name {
-                        chain_config.key_name = key_name.to_string();
+                        chain_config.set_key_name(key_name.to_string());
                     }
                 },
             )?;
@@ -386,7 +386,7 @@ fn handle_light_client_attack(
                 rt.clone(),
                 |chain_config| {
                     if let Some(key_name) = key_name {
-                        chain_config.key_name = key_name.to_string();
+                        chain_config.set_key_name(key_name.to_string());
                     }
                 },
             )?;
@@ -401,7 +401,7 @@ fn handle_light_client_attack(
                 rt.clone(),
                 |chain_config| {
                     if let Some(key_name) = key_name {
-                        chain_config.key_name = key_name.to_string();
+                        chain_config.set_key_name(key_name.to_string());
                     }
                 },
             )?;

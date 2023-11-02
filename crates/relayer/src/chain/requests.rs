@@ -76,10 +76,16 @@ impl Display for QueryHeight {
 
 /// Defines a type to be used in select requests to specify whether or not a proof should be
 /// returned along with the response.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IncludeProof {
     Yes,
     No,
+}
+
+impl IncludeProof {
+    pub fn to_bool(&self) -> bool {
+        *self == IncludeProof::Yes
+    }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

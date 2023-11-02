@@ -6,7 +6,7 @@ use eyre::eyre;
 use std::str::FromStr;
 
 use alloc::sync::Arc;
-use ibc_relayer::config::CompatMode;
+use ibc_relayer::config::compat_mode::CompatMode;
 use tokio::runtime::Runtime;
 
 use crate::chain::driver::ChainDriver;
