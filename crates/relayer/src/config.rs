@@ -1,5 +1,6 @@
 //! Relayer configuration
 
+pub mod compat_mode;
 pub mod error;
 pub mod filter;
 pub mod gas_multiplier;
@@ -17,7 +18,8 @@ use core::{
 use serde_derive::{Deserialize, Serialize};
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
 use tendermint::block::Height as BlockHeight;
-use tendermint_rpc::{Url, WebSocketClientUrl};
+use tendermint_rpc::Url;
+use tendermint_rpc::WebSocketClientUrl;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};

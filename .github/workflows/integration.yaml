@@ -547,6 +547,51 @@ jobs:
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security,ics31 interchain_security::
 
+  celestia-to-gaia:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: celestia
+            command: celestia-appd
+            account_prefix: celestia
+            native_token: utia
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v22
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v12
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          COMPAT_MODES: 0.34
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }},gaiad
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }},cosmos
+          NATIVE_TOKENS: ${{ matrix.chain.native_token }},stake
+        run: |
+          nix shell .#python .#gaia12 .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features celestia
+
   model-based-test:
     runs-on: ubuntu-20.04
     timeout-minutes: 60

@@ -32,6 +32,7 @@
     - [Description of the parameters](./documentation/configuration/description.md)
     - [Filter incentivized packets](./documentation/configuration/filter-incentivized.md)
     - [Performance tuning](./documentation/configuration/performance.md)
+    - [CometBFT Compatibility modes](./documentation/configuration/comet-compat-mode.md)
 
 - [Telemetry](./documentation/telemetry/index.md)
     - [Operators guide](./documentation/telemetry/operators.md)
