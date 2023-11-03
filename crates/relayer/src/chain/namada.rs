@@ -38,7 +38,7 @@ use namada::ledger::parameters::storage as param_storage;
 use namada::ledger::parameters::EpochDuration;
 use namada::ledger::storage::ics23_specs::ibc_proof_specs;
 use namada::ledger::storage::Sha256Hasher;
-use namada::proof_of_stake::parameters::PosParams;
+use namada::proof_of_stake::parameters::OwnedPosParams;
 use namada::proof_of_stake::storage as pos_storage;
 use namada::types::address::{Address, InternalAddress};
 use namada::types::storage::{Key, KeySeg, PrefixValue};
@@ -154,7 +154,7 @@ impl NamadaChain {
     fn get_unbonding_time(&self) -> Result<Duration, Error> {
         let key = pos_storage::params_key();
         let (value, _) = self.query(key, QueryHeight::Latest, IncludeProof::No)?;
-        let pos_params = PosParams::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+        let pos_params = OwnedPosParams::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
 
         let key = param_storage::get_epoch_duration_storage_key();
         let (value, _) = self.query(key, QueryHeight::Latest, IncludeProof::No)?;
@@ -220,6 +220,7 @@ impl ChainEndpoint for NamadaChain {
         // check if the wallet has been set up for this relayer
         let wallet_path = Path::new(BASE_WALLET_DIR).join(config.id.to_string());
         let mut wallet = FsWalletUtils::new(wallet_path);
+        wallet.load().expect("Loading a wallet failed");
         wallet
             .find_key(&config.key_name, None)
             .map_err(Error::namada_key_pair_not_found)?;
