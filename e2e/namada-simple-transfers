@@ -1,0 +1,153 @@
+#!/bin/bash
+
+# This script executes simple transfers between Namada instances locally
+# `make build-release` and `make build-wasm-scripts` on Namada directory in advance
+# Run with `namada-simple-transfers ${namada_dir}`
+
+set -e
+
+NAMADA_DIR=$1
+if [ -z "${NAMADA_DIR}" ]
+then
+  echo "ERROR: Namada directory should be given"
+  exit 1
+fi
+cd $(dirname $0)
+HERMES_DIR=${PWD%/e2e*}
+
+NAMADAC="${NAMADA_DIR}/target/release/namadac"
+NAMADAW="${NAMADA_DIR}/target/release/namadaw"
+DATA_DIR="${HERMES_DIR}/data"
+# IbcToken from `transfer/channel-0/#apfel`
+IBC_TOKEN="atest1d93xxw36xqckvdn9vgcxyv3jvyurqdrr89jrwvmxxcexxdnpx5cnyv3ex93kvepnxdjnqvrzucsc73"
+
+LEDGER_ADDR_A="127.0.0.1:27657"
+LEDGER_ADDR_B="127.0.0.1:28657"
+INITIAL_BALANCE=5000
+
+function init_relayer_balance() {
+  local suffix=$1
+  local ledger_addr=$2
+
+  local base_dir=${DATA_DIR}/namada-${suffix}/.namada
+
+  ${NAMADAC} --base-dir ${base_dir} \
+    transfer \
+    --source albert \
+    --target relayer \
+    --token nam \
+    --amount ${INITIAL_BALANCE} \
+    --node ${ledger_addr}
+}
+
+# ==== main ====
+
+# Run 2 Namada chains
+${HERMES_DIR}/scripts/setup-namada ${NAMADA_DIR}
+
+cd ${HERMES_DIR}
+ids=$(grep "id" config_for_namada.toml | awk -F"'" '/^id/ {print $2}')
+chain_a=$(echo ${ids} | awk '{print $1}')
+chain_b=$(echo ${ids} | awk '{print $2}')
+
+# Initialize the balances
+init_relayer_balance "a" ${LEDGER_ADDR_A}
+init_relayer_balance "b" ${LEDGER_ADDR_B}
+
+# Create a channel
+cargo run --bin hermes -- --config config_for_namada.toml \
+  create channel \
+  --a-chain ${chain_a} \
+  --b-chain ${chain_b} \
+  --a-port transfer \
+  --b-port transfer \
+  --new-client-connection --yes
+
+# faucet apfel on chain_a
+base_dir_a=${DATA_DIR}/namada-a/.namada
+${NAMADAC} --base-dir ${base_dir_a} transfer \
+  --source albert \
+  --target relayer \
+  --token apfel \
+  --amount 1000 \
+  --signing-keys albert-key \
+  --node ${LEDGER_ADDR_A}
+
+# Get the receiver addresses
+receiver_a=$(${NAMADAW} --base-dir ${base_dir_a} address find --alias relayer | awk '{print $4}')
+base_dir_b=${DATA_DIR}/namada-b/.namada
+receiver_b=$(${NAMADAW} --base-dir ${base_dir_b} address find --alias relayer | awk '{print $4}')
+
+# transfer 100 apfel from chain_a to chain_b
+${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
+  --source relayer \
+  --receiver ${receiver_b} \
+  --token apfel \
+  --amount 100 \
+  --signing-keys relayer \
+  --channel-id channel-0 \
+  --node ${LEDGER_ADDR_A}
+
+# packet-recv
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx packet-recv \
+  --dst-chain ${chain_b} \
+  --src-chain ${chain_a} \
+  --src-port transfer \
+  --src-channel channel-0
+
+# packet-ack
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx packet-ack \
+  --dst-chain ${chain_a} \
+  --src-chain ${chain_b} \
+  --src-port transfer \
+  --src-channel channel-0
+
+echo "Balances on chain A"
+${NAMADAC} --base-dir ${base_dir_a} balance \
+  --owner relayer \
+  --node ${LEDGER_ADDR_A}
+
+echo "Balances on chain B"
+${NAMADAC} --base-dir ${base_dir_b} balance \
+  --owner relayer \
+  --node ${LEDGER_ADDR_B}
+
+# transfer back 50 apfel from chain_b to chain_a
+${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
+  --source relayer \
+  --receiver ${receiver_a} \
+  --token ${IBC_TOKEN} \
+  --amount 50 \
+  --signing-keys relayer \
+  --channel-id channel-0 \
+  --node ${LEDGER_ADDR_B}
+
+# packet-recv
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx packet-recv \
+  --dst-chain ${chain_a} \
+  --src-chain ${chain_b} \
+  --src-port transfer \
+  --src-channel channel-0
+
+# packet-ack
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx packet-ack \
+  --dst-chain ${chain_b} \
+  --src-chain ${chain_a} \
+  --src-port transfer \
+  --src-channel channel-0
+
+echo "Balances on chain A"
+${NAMADAC} --base-dir ${base_dir_a} balance \
+  --owner relayer \
+  --node ${LEDGER_ADDR_A}
+
+echo "Balances on chain B"
+${NAMADAC} --base-dir ${base_dir_b} balance \
+  --owner relayer \
+  --node ${LEDGER_ADDR_B}
+
+killall namadan
