@@ -125,21 +125,23 @@ impl NamadaChain {
             }
         );
 
-        use crate::config::EventSourceMode as Mode;
-        let rpc_client = HttpClient::new(self.config.rpc_addr.clone())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        let node_info = self
+            .rt
+            .block_on(fetch_node_info(&self.rpc_client, &self.config))?;
+        let compat_mode = CompatMode::from_version(node_info.version).unwrap_or(CompatMode::V0_37);
 
+        use crate::config::EventSourceMode as Mode;
         let (event_source, monitor_tx) = match &self.config.event_source {
             Mode::Push { url, batch_delay } => EventSource::websocket(
                 self.config.id.clone(),
                 url.clone(),
-                CompatMode::V0_37,
+                compat_mode,
                 *batch_delay,
                 self.rt.clone(),
             ),
             Mode::Pull { interval } => EventSource::rpc(
                 self.config.id.clone(),
-                rpc_client,
+                self.rpc_client.clone(),
                 *interval,
                 self.rt.clone(),
             ),
@@ -208,7 +210,7 @@ impl ChainEndpoint for NamadaChain {
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
         let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_info.id)?;
 
-        // not used in Anoma, but the trait requires KeyRing
+        // not used in Namada, but the trait requires KeyRing
         let keybase = KeyRing::new(
             config.key_store_type,
             "",
@@ -1233,7 +1235,7 @@ impl ChainEndpoint for NamadaChain {
     }
 }
 
-/// Initialize the light client
+/// Fetch the node info
 async fn fetch_node_info(
     rpc_client: &HttpClient,
     config: &CosmosSdkConfig,
