@@ -236,7 +236,7 @@ impl FilterPolicy {
 
         // Return if cache hit
         if let Some(permission) = self.permission_cache.get(&identifier) {
-            trace!(?permission, "cache hit");
+            trace!(?permission, "cache hit for client id: {identifier:#?}");
 
             return Ok(*permission);
         }
@@ -274,7 +274,7 @@ impl FilterPolicy {
 
         // Return if cache hit
         if let Some(permission) = self.permission_cache.get(&identifier) {
-            trace!(?permission, "cache hit");
+            trace!(?permission, "cache hit: for conn id: {identifier:#?}");
 
             return Ok(*permission);
         }
@@ -329,7 +329,7 @@ impl FilterPolicy {
 
         // Return if cache hit
         if let Some(permission) = self.permission_cache.get(&identifier) {
-            trace!(?permission, "cache hit");
+            trace!(?permission, "cache hit for chan id: {identifier:#?}");
             return Ok(*permission);
         }
 
