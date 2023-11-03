@@ -788,6 +788,8 @@ fn process_batch<Chain: ChainHandle>(
             continue;
         }
 
+        debug!("following event passed the packet filter: {:#?}", events_with_heights);
+
         let src = registry
             .get_or_spawn(object.src_chain_id())
             .map_err(Error::spawn)?;
