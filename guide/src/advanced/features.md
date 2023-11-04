@@ -110,6 +110,8 @@ __Feature comparison between Hermes and the Go relayer__
 |                        |       |        |
 | FT_Transfer            | ✅    | ✅     | can submit an ICS-20 fungible token transfer message
 | ICA_Relay               | ✅    | ✅     | can relay ICS-27 Interchain account packets
+| Interchain Query (ICQ) support |   ✅    |     ✅     | interchain querying using ABCI
+| Cross-chain Queries            |   ❌    |     ✅     | cross-chain querying between IBC-enabled chains
 | Packet_Recv_A          | ✅    | ✅     |
 | Packet_Recv_P          | ✅    | ✅     |
 | Packet_Timeout_A       | ✅    | ✅     |
