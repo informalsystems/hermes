@@ -55,7 +55,7 @@ cat "$HERMES_LOG"
 info "--------------------------------------------------"
 echo ""
 
-if grep -q "Evidence succesfully submitted" "$HERMES_LOG"; then
+if grep -q "Evidence successfully submitted" "$HERMES_LOG"; then
     warn "Misbehaviour detection failed!"
     exit 1
 else
