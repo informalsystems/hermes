@@ -16,16 +16,14 @@ cd $(dirname $0)
 HERMES_DIR=${PWD%/scripts*}
 
 # edit for your environment
-NAMADAC="${NAMADA_DIR}/target/release/namadac"
-NAMADAN="${NAMADA_DIR}/target/release/namadan"
-NAMADAW="${NAMADA_DIR}/target/release/namadaw"
-BASE_GENESIS_PATH="${NAMADA_DIR}/genesis/e2e-tests-single-node.toml"
+NAMADAC="${NAMADA_DIR}/target/debug/namadac"
+NAMADAN="${NAMADA_DIR}/target/debug/namadan"
+NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
+BASE_GENESIS_DIR="${NAMADA_DIR}/genesis/localnet"
 CHECKSUM_PATH="${NAMADA_DIR}/wasm/checksums.json"
 DATA_DIR="${HERMES_DIR}/data"
-GENESIS_PATH="${DATA_DIR}/e2e-tests-single-node.toml"
 
-NET_ADDR="127.0.0.1:27656"
-LEDGER_ADDR="tcp://127.0.0.1:27657"
+LEDGER_ADDR="127.0.0.1:27657"
 
 HERMES_CONFIG_TEMPLATE="
 [global]
@@ -68,42 +66,60 @@ gas_price = { price = 0.001, denom = 'nam' }
 "
 
 function make_genesis() {
-    sed "s/epochs_per_year = .*/epochs_per_year = 31536/g" \
-      ${BASE_GENESIS_PATH} > ${GENESIS_PATH}
+  local base_dir=${DATA_DIR}/namada
+
+  mkdir -p ${base_dir}/templates
+  cp ${BASE_GENESIS_DIR}/*.toml ${base_dir}/templates
+  sed -i .bak "s/epochs_per_year = .*/epochs_per_year = 31536/g" ${base_dir}/templates/parameters.toml
+
+  mkdir ${base_dir}/pre-genesis
+  cp -r ${BASE_GENESIS_DIR}/src/pre-genesis/* ${base_dir}/pre-genesis
 }
 
 function init_network() {
-  local genesis_path=$1
+  local base_dir=${DATA_DIR}/namada
+  local validator_base_dir=${base_dir}/setup/validator-0
 
-  mkdir -p ${DATA_DIR}/namada
-  NAMADA_BASE_DIR=${DATA_DIR}/namada/.namada \
-  ${NAMADAC} utils init-network \
-    --unsafe-dont-encrypt \
-    --genesis-path ${genesis_path} \
+  mkdir -p ${base_dir}/genesis
+  local chain_id=$(NAMADA_BASE_DIR=${base_dir} \
+    ${NAMADAC} utils init-network \
     --chain-prefix namada-test \
-    --localhost \
-    --dont-archive \
+    --genesis-time "2023-01-01T00:00:00Z" \
+    --templates-path ${base_dir}/templates \
     --wasm-checksums-path ${CHECKSUM_PATH} \
-  | awk '$1 == "Derived" {print $4}'
+    --archive-dir ${base_dir}/genesis \
+    | awk '$1 == "Derived" {print $4}')
+
+  NAMADA_NETWORK_CONFIGS_DIR=${base_dir}/genesis \
+  ${NAMADAC} --base-dir ${validator_base_dir} \
+    utils join-network \
+    --chain-id ${chain_id} \
+    --genesis-validator validator-0 \
+    --pre-genesis-path \
+    ${base_dir}/pre-genesis/validator-0 \
+    --dont-prefetch-wasm
+
+  rm -rf ${base_dir}/${chain_id}
+  # for non-validator
+  NAMADA_NETWORK_CONFIGS_DIR=${base_dir}/genesis \
+  ${NAMADAC} --base-dir ${base_dir} \
+  utils join-network \
+  --chain-id ${chain_id} \
+  --dont-prefetch-wasm
 }
 
 function copy_wasm() {
   local chain_id=$1
+  local base_dir=${DATA_DIR}/namada
 
-  local base_dir=${DATA_DIR}/namada/.namada
-
-  cp ${NAMADA_DIR}/wasm/checksums.json ${base_dir}/${chain_id}/setup/validator-0/.namada/${chain_id}/wasm/
-  cp ${NAMADA_DIR}/wasm/*.wasm ${base_dir}/${chain_id}/setup/validator-0/.namada/${chain_id}/wasm/
+  cp ${NAMADA_DIR}/wasm/*.wasm ${base_dir}/setup/validator-0/${chain_id}/wasm/
 }
-
 
 function init_relayer_acc() {
   local chain_id=$1
 
-  local base_dir=${DATA_DIR}/namada/.namada
+  local base_dir=${DATA_DIR}/namada
   local wallet_dir=${HERMES_DIR}/namada_wallet/${chain_id}
-
-  cp ${base_dir}/${chain_id}/setup/other/wallet.toml ${base_dir}/${chain_id}/wallet.toml
 
   ${NAMADAW} --base-dir ${base_dir} \
     key gen --alias relayer --unsafe-dont-encrypt
@@ -114,11 +130,10 @@ function init_relayer_acc() {
 
 function fund_relayer_acc() {
   local account=$1
-  local ledger_addr=$2
-  local base_dir=${DATA_DIR}/namada/.namada
+  local base_dir=${DATA_DIR}/namada
 
   ${NAMADAC} --base-dir ${base_dir} \
-    transfer --node ${ledger_addr} \
+    transfer --node ${LEDGER_ADDR} \
     --source ${account} --target relayer --amount 10000 --token NAM
 }
 
@@ -127,11 +142,12 @@ function fund_relayer_acc() {
 mkdir -p ${DATA_DIR}
 
 make_genesis
-chain_id=$(init_network ${GENESIS_PATH})
+result=$(init_network)
+chain_id=$(echo "${result}" | awk '$5 == "ID" {id = $6} END {print id}')
 
 copy_wasm ${chain_id}
 
-${NAMADAN} --base-dir ${DATA_DIR}/namada/.namada/${chain_id}/setup/validator-0/.namada/ \
+${NAMADAN} --base-dir ${DATA_DIR}/namada/setup/validator-0 \
   ledger run > ${DATA_DIR}/namada/namada.log 2>&1 &
 echo "Namada chain's PID = $!"
 sleep 5

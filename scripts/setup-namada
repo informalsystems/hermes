@@ -20,17 +20,13 @@ fi
 HERMES_DIR=${PWD%/scripts*}
 
 # edit for your environment
-NAMADAC="${NAMADA_DIR}/target/release/namadac"
-NAMADAN="${NAMADA_DIR}/target/release/namadan"
-NAMADAW="${NAMADA_DIR}/target/release/namadaw"
-BASE_GENESIS_PATH="${NAMADA_DIR}/genesis/e2e-tests-single-node.toml"
+NAMADAC="${NAMADA_DIR}/target/debug/namadac"
+NAMADAN="${NAMADA_DIR}/target/debug/namadan"
+NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
+BASE_GENESIS_DIR="${NAMADA_DIR}/genesis/localnet"
 CHECKSUM_PATH="${NAMADA_DIR}/wasm/checksums.json"
 DATA_DIR="${HERMES_DIR}/data"
-GENESIS_PATH_A="${DATA_DIR}/e2e-tests-single-node-a.toml"
-GENESIS_PATH_B="${DATA_DIR}/e2e-tests-single-node-b.toml"
 
-NET_ADDR_A="127.0.0.1:27656"
-NET_ADDR_B="127.0.0.1:28656"
 LEDGER_ADDR_A="127.0.0.1:27657"
 LEDGER_ADDR_B="127.0.0.1:28657"
 
@@ -87,42 +83,56 @@ gas_price = { price = 0.001, denom = 'nam' }
 
 function make_genesis() {
   local suffix=$1
+  local base_dir=${DATA_DIR}/namada-${suffix}
 
-  if [ "${suffix}" == "a" ]
-  then
-    sed "s/epochs_per_year = .*/epochs_per_year = 31536/g" \
-      ${BASE_GENESIS_PATH} > ${GENESIS_PATH_A}
-  else
-    sed -e "s/${NET_ADDR_A}/${NET_ADDR_B}/g" \
-      -e "s/epochs_per_year = .*/epochs_per_year = 31536/g" \
-      ${BASE_GENESIS_PATH} > ${GENESIS_PATH_B}
-  fi
+  mkdir -p ${base_dir}/templates
+  cp ${BASE_GENESIS_DIR}/*.toml ${base_dir}/templates
+  sed -i .bak "s/epochs_per_year = .*/epochs_per_year = 31536/g" ${base_dir}/templates/parameters.toml
+
+  mkdir ${base_dir}/pre-genesis
+  cp -r ${BASE_GENESIS_DIR}/src/pre-genesis/* ${base_dir}/pre-genesis
 }
 
 function init_network() {
   local suffix=$1
-  local genesis_path=$2
+  local base_dir=${DATA_DIR}/namada-${suffix}
+  local validator_base_dir=${base_dir}/setup/validator-0
 
-  mkdir -p ${DATA_DIR}/namada-${suffix}
-  NAMADA_BASE_DIR=${DATA_DIR}/namada-${suffix}/.namada \
-  ${NAMADAC} utils init-network \
-    --unsafe-dont-encrypt \
-    --genesis-path ${genesis_path} \
-    --chain-prefix namada-test \
-    --localhost \
-    --dont-archive \
+  mkdir -p ${base_dir}/genesis
+  local chain_id=$(NAMADA_BASE_DIR=${base_dir} \
+    ${NAMADAC} utils init-network \
+    --chain-prefix namada-${suffix} \
+    --genesis-time "2023-01-01T00:00:00Z" \
+    --templates-path ${base_dir}/templates \
     --wasm-checksums-path ${CHECKSUM_PATH} \
-  | awk '$1 == "Derived" {print $4}'
+    --archive-dir ${base_dir}/genesis \
+    | awk '$1 == "Derived" {print $4}')
+
+  NAMADA_NETWORK_CONFIGS_DIR=${base_dir}/genesis \
+  ${NAMADAC} --base-dir ${validator_base_dir} \
+    utils join-network \
+    --chain-id ${chain_id} \
+    --genesis-validator validator-0 \
+    --pre-genesis-path \
+    ${base_dir}/pre-genesis/validator-0 \
+    --dont-prefetch-wasm
+
+  rm -rf ${base_dir}/${chain_id}
+  # for non-validator
+  NAMADA_NETWORK_CONFIGS_DIR=${base_dir}/genesis \
+  ${NAMADAC} --base-dir ${base_dir} \
+  utils join-network \
+  --chain-id ${chain_id} \
+  --dont-prefetch-wasm
 }
 
 function copy_wasm() {
   local suffix=$1
   local chain_id=$2
 
-  local base_dir=${DATA_DIR}/namada-${suffix}/.namada
+  local base_dir=${DATA_DIR}/namada-${suffix}
 
-  cp ${NAMADA_DIR}/wasm/checksums.json ${base_dir}/${chain_id}/setup/validator-0/.namada/${chain_id}/wasm/
-  cp ${NAMADA_DIR}/wasm/*.wasm ${base_dir}/${chain_id}/setup/validator-0/.namada/${chain_id}/wasm/
+  cp ${NAMADA_DIR}/wasm/*.wasm ${base_dir}/setup/validator-0/${chain_id}/wasm/
 }
 
 function init_relayer_acc() {
@@ -130,10 +140,10 @@ function init_relayer_acc() {
   local chain_id=$2
   local ledger_addr=$3
 
-  local base_dir=${DATA_DIR}/namada-${suffix}/.namada
+  local base_dir=${DATA_DIR}/namada-${suffix}
   local wallet_dir=${HERMES_DIR}/namada_wallet/${chain_id}
 
-  cp ${base_dir}/${chain_id}/setup/other/wallet.toml ${base_dir}/${chain_id}/wallet.toml
+  #cp ${base_dir}/${chain_id}/setup/other/wallet.toml ${base_dir}/${chain_id}/wallet.toml
 
   ${NAMADAW} --base-dir ${base_dir} \
     key gen --alias relayer --unsafe-dont-encrypt
@@ -148,29 +158,57 @@ mkdir -p ${DATA_DIR}
 
 # for chain A
 make_genesis "a"
-chain_id_a=$(init_network "a" ${GENESIS_PATH_A})
+result=$(init_network "a")
+chain_id_a=$(echo "${result}" | awk '$5 == "ID" {id = $6} END {print id}')
 
 copy_wasm "a" ${chain_id_a}
 
-${NAMADAN} --base-dir ${DATA_DIR}/namada-a/.namada/${chain_id_a}/setup/validator-0/.namada/ \
+${NAMADAN} --base-dir ${DATA_DIR}/namada-a/setup/validator-0 \
   ledger run > ${DATA_DIR}/namada-a/namada.log 2>&1 &
-echo "Namada chain A's PID = $!"
 sleep 5
 
-init_relayer_acc "a" ${chain_id_a} ${LEDGER_ADDR_A}
+# shutdown temporarily to bootstrap chain-b
+killall namadan
 
 # for chain B
 make_genesis "b"
-chain_id_b=$(init_network "b" ${GENESIS_PATH_B})
+result=$(init_network "b")
+chain_id_b=$(echo "${result}" | awk '$5 == "ID" {id = $6} END {print id}')
 
 copy_wasm "b" ${chain_id_b}
 
-
-${NAMADAN} --base-dir ${DATA_DIR}/namada-b/.namada/${chain_id_b}/setup/validator-0/.namada/ \
+${NAMADAN} --base-dir ${DATA_DIR}/namada-b/setup/validator-0 \
   ledger run > ${DATA_DIR}/namada-b/namada.log 2>&1 &
-echo "Namada chain B's PID = $!"
 sleep 5
 
+# shutdown temporarily to bootstrap chain-b
+killall namadan
+
+# Edit chain-b addresses
+sed -i .bak \
+  -e "s/:27656/:28656/" \
+  -e "s/:27657/:28657/" \
+  -e "s/:27658/:28658/" \
+  ${DATA_DIR}/namada-b/setup/validator-0/${chain_id_b}/config.toml
+sed -i .bak \
+  -e "s/:27656/:28656/" \
+  -e "s/:27657/:28657/" \
+  -e "s/:27658/:28658/" \
+  ${DATA_DIR}/namada-b/setup/validator-0/${chain_id_b}/cometbft/config/config.toml
+
+# Restart each chain
+${NAMADAN} --base-dir ${DATA_DIR}/namada-a/setup/validator-0 \
+  ledger run > ${DATA_DIR}/namada-a/namada.log 2>&1 &
+echo "Namada chain A's PID = $!"
+
+${NAMADAN} --base-dir ${DATA_DIR}/namada-b/setup/validator-0 \
+  ledger run > ${DATA_DIR}/namada-b/namada.log 2>&1 &
+echo "Namada chain B's PID = $!"
+
+sleep 5
+
+# create "relayer" account on each chain
+init_relayer_acc "a" ${chain_id_a} ${LEDGER_ADDR_A}
 init_relayer_acc "b" ${chain_id_b} ${LEDGER_ADDR_B}
 
 # for the relayer
