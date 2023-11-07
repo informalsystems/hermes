@@ -24,8 +24,8 @@ ibc-proto         = { version = "0.39.0", features = ["serde"] }
 ibc-telemetry     = { version = "0.26.4", path = "../telemetry", optional = true }
 ibc-relayer-types = { version = "0.26.4", path = "../relayer-types", features = ["mocks"] }
 
-namada = { git = "https://github.com/anoma/namada", rev = "63f2e4be022ded03ce0639f4a2a20945c3719080" }
-namada_sdk = { git = "https://github.com/anoma/namada", rev = "63f2e4be022ded03ce0639f4a2a20945c3719080", features = ["std", "async-client"] }
+namada = { git = "https://github.com/anoma/namada", rev = "7116b6aa916026e97f3f871f291c6ba1c7b427d2" }
+namada_sdk = { git = "https://github.com/anoma/namada", rev = "7116b6aa916026e97f3f871f291c6ba1c7b427d2", features = ["std", "async-client"] }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"

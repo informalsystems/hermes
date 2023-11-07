@@ -15,11 +15,9 @@ fi
 cd $(dirname $0)
 HERMES_DIR=${PWD%/e2e*}
 
-NAMADAC="${NAMADA_DIR}/target/release/namadac"
-NAMADAW="${NAMADA_DIR}/target/release/namadaw"
+NAMADAC="${NAMADA_DIR}/target/debug/namadac"
+NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
 DATA_DIR="${HERMES_DIR}/data"
-# IbcToken from `transfer/channel-0/#apfel`
-IBC_TOKEN="atest1d93xxw36xqckvdn9vgcxyv3jvyurqdrr89jrwvmxxcexxdnpx5cnyv3ex93kvepnxdjnqvrzucsc73"
 
 LEDGER_ADDR_A="127.0.0.1:27657"
 LEDGER_ADDR_B="127.0.0.1:28657"
@@ -29,7 +27,7 @@ function init_relayer_balance() {
   local suffix=$1
   local ledger_addr=$2
 
-  local base_dir=${DATA_DIR}/namada-${suffix}/.namada
+  local base_dir=${DATA_DIR}/namada-${suffix}
 
   ${NAMADAC} --base-dir ${base_dir} \
     transfer \
@@ -64,7 +62,7 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --new-client-connection --yes
 
 # faucet apfel on chain_a
-base_dir_a=${DATA_DIR}/namada-a/.namada
+base_dir_a=${DATA_DIR}/namada-a
 ${NAMADAC} --base-dir ${base_dir_a} transfer \
   --source albert \
   --target relayer \
@@ -75,7 +73,7 @@ ${NAMADAC} --base-dir ${base_dir_a} transfer \
 
 # Get the receiver addresses
 receiver_a=$(${NAMADAW} --base-dir ${base_dir_a} address find --alias relayer | awk '{print $4}')
-base_dir_b=${DATA_DIR}/namada-b/.namada
+base_dir_b=${DATA_DIR}/namada-b
 receiver_b=$(${NAMADAW} --base-dir ${base_dir_b} address find --alias relayer | awk '{print $4}')
 
 # transfer 100 apfel from chain_a to chain_b
@@ -113,12 +111,18 @@ echo "Balances on chain B"
 ${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner relayer \
   --node ${LEDGER_ADDR_B}
+# get token address
+received_token=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --owner relayer \
+  --node ${LEDGER_ADDR_B} \
+  | sed -e s/://g \
+  | awk '$1 ~ /transfer\/channel-0/ {print $1}')
 
 # transfer back 50 apfel from chain_b to chain_a
 ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --source relayer \
   --receiver ${receiver_a} \
-  --token ${IBC_TOKEN} \
+  --token ${received_token} \
   --amount 50 \
   --signing-keys relayer \
   --channel-id channel-0 \

@@ -422,7 +422,7 @@ impl ChainEndpoint for NamadaChain {
         let key_name = key_name.unwrap_or(&self.config.key_name);
         let denom = denom.unwrap_or("NAM");
         let token = match self.wallet.find_address(denom) {
-            Some(addr) => addr.clone(),
+            Some(addr) => addr.into_owned(),
             None => Address::decode(denom)
                 .map_err(|_| Error::namada_address_not_found(denom.to_string()))?,
         };
@@ -432,7 +432,7 @@ impl ChainEndpoint for NamadaChain {
             .find_address(key_name)
             .ok_or_else(|| Error::namada_address_not_found(key_name.to_string()))?;
 
-        let balance_key = token::balance_key(&token, owner);
+        let balance_key = token::balance_key(&token, &owner);
         let (value, _) = self.query(balance_key, QueryHeight::Latest, IncludeProof::No)?;
         if value.is_empty() {
             return Ok(Balance {
@@ -474,7 +474,7 @@ impl ChainEndpoint for NamadaChain {
         let prefix = Key::from(Address::Internal(InternalAddress::Multitoken).to_db_key());
         for PrefixValue { key, value } in self.query_prefix(prefix)? {
             if let Some([token, owner]) = token::is_any_token_balance_key(&key) {
-                if key_owner == owner {
+                if key_owner.as_ref() == owner {
                     let amount =
                         token::Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
                     let denom_key = token::denom_key(token);

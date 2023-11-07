@@ -38,7 +38,7 @@ impl NamadaChain {
             .wallet
             .find_address(&fee_token)
             .ok_or_else(|| Error::namada_address_not_found(fee_token))?
-            .clone();
+            .into_owned();
 
         // fee
         let gas_limit_key = parameter_storage::get_fee_unshielding_gas_limit_key();
@@ -55,7 +55,7 @@ impl NamadaChain {
             .wallet
             .find_address(&self.config.key_name)
             .expect("The relayer doesn't exist in the wallet")
-            .clone();
+            .into_owned();
 
         let tx_args = TxArgs {
             dry_run: false,
