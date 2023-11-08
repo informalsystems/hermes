@@ -28,7 +28,7 @@ pub fn update_relayer_config_for_consumer_chain(config: &mut Config) {
                 chain_config.ccv_consumer_chain = true;
                 chain_config.trusting_period = Some(Duration::from_secs(99));
             }
-            ChainConfig::CosmosSdk(_) => {}
+            ChainConfig::CosmosSdk(_) | ChainConfig::Namada(_) => {}
         }
     }
 }
