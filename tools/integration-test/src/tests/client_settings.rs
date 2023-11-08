@@ -36,6 +36,7 @@ impl TestOverrides for ClientDefaultsTest {
                 chain_config_a.trust_threshold =
                     TrustThreshold::new(13, 23).unwrap().try_into().unwrap();
             }
+            ChainConfig::Namada(_) => {}
         }
 
         match &mut config.chains[1] {
@@ -45,6 +46,7 @@ impl TestOverrides for ClientDefaultsTest {
                 chain_config_b.trusting_period = Some(Duration::from_secs(340_000));
                 chain_config_b.trust_threshold = TrustThreshold::TWO_THIRDS.try_into().unwrap();
             }
+            ChainConfig::Namada(_) => {}
         }
     }
 }
