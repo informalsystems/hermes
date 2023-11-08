@@ -99,8 +99,8 @@ function init_network() {
     ${base_dir}/pre-genesis/validator-0 \
     --dont-prefetch-wasm
 
-  rm -rf ${base_dir}/${chain_id}
   # for non-validator
+  rm -rf ${base_dir}/${chain_id}
   NAMADA_NETWORK_CONFIGS_DIR=${base_dir}/genesis \
   ${NAMADAC} --base-dir ${base_dir} \
   utils join-network \
