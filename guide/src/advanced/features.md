@@ -83,6 +83,8 @@ __Feature comparison between Hermes and the Go relayer__
 
 | Features \      Status | Hermes | Cosmos Go | Feature Details  |
 | ---------------------- | :---: | :----: |:-------|
+| Feegrant support       | ✅    | ✅     | add `feeGranter` to tx sign for sending the transactions
+|                        |       |        |
 | Restart                | ✅    | ✅     | replays any IBC events that happened before restart
 | Multiple_Paths         | ✅    | ✅     | relays on multiple paths concurrently
 |                        |       |        |
