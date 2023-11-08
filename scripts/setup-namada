@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # This script sets up 2 Namada chains locally
-# `make build-release` and `make build-wasm-scripts` on Namada directory in advance
-# Run with `setup-namada.sh ${namada_dir}`
+# `make build` and `make build-wasm-scripts` on Namada directory in advance
+# Run with `setup-namada ${namada_dir}`
 
 set -e
 
