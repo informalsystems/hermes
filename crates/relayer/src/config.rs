@@ -656,7 +656,7 @@ impl ChainConfig {
 
     pub fn clear_interval(&self) -> Option<u64> {
         match self {
-            Self::CosmosSdk(config) => config.clear_interval,
+            Self::CosmosSdk(config) | Self::Namada(config) => config.clear_interval,
         }
     }
 }

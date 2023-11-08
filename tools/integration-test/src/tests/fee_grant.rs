@@ -93,7 +93,7 @@ impl BinaryChannelTest for FeeGrantTest {
             .for_each(|chain_config| {
                 if chain_config.id() == chains.node_a.chain_id().0 {
                     match chain_config {
-                        ChainConfig::CosmosSdk(c) => {
+                        ChainConfig::CosmosSdk(c) | ChainConfig::Namada(c) => {
                             c.fee_granter = Some("user2".to_owned());
                         }
                     }

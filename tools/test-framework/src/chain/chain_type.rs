@@ -35,7 +35,7 @@ impl ChainType {
                 }
             }
             Self::Evmos => ChainId::from_string(&format!("evmos_9000-{prefix}")),
-            Self::Namada => ChainId::from_string(&prefix.to_string()),
+            Self::Namada => ChainId::from_string(prefix),
         }
     }
 

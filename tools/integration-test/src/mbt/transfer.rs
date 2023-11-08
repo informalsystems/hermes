@@ -159,7 +159,7 @@ impl TestOverrides for IbcTransferMBT {
 
         for chain_config in config.chains.iter_mut() {
             match chain_config {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.trusting_period = Some(CLIENT_EXPIRY);
                 }
             }
