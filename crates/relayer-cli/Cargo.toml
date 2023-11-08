@@ -8,7 +8,7 @@ keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
 repository = "https://github.com/informalsystems/hermes"
 authors    = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.70"
+rust-version = "1.71"
 description  = """
   Hermes is an IBC Relayer written in Rust
 """
