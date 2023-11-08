@@ -40,11 +40,6 @@ jobs:
       - name: Check templates
         run: bash scripts/auto_gen_templates.sh --mode "check"
       - uses: actions-rs/cargo@v1
-        name: Update lockfile
-        with:
-          command: generate-lockfile
-          args: --manifest-path tools/check-guide/Cargo.toml
-      - uses: actions-rs/cargo@v1
         name: Check guide
         with:
           command: run
