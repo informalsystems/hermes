@@ -96,6 +96,11 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: Install Protoc
+        uses: heliaxdev/setup-protoc@v2
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:

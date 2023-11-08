@@ -15,6 +15,11 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: Install Protoc
+        uses: heliaxdev/setup-protoc@v2
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: katyo/publish-crates@v2
         with:
           dry-run: true
