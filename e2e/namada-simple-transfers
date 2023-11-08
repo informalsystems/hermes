@@ -104,6 +104,7 @@ cargo run --bin hermes -- --config config_for_namada.toml \
 
 echo "Balances on chain A"
 ${NAMADAC} --base-dir ${base_dir_a} balance \
+  --token apfel \
   --owner relayer \
   --node ${LEDGER_ADDR_A}
 
@@ -146,12 +147,54 @@ cargo run --bin hermes -- --config config_for_namada.toml \
 
 echo "Balances on chain A"
 ${NAMADAC} --base-dir ${base_dir_a} balance \
+  --token apfel \
   --owner relayer \
   --node ${LEDGER_ADDR_A}
 
 echo "Balances on chain B"
 ${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${received_token} \
   --owner relayer \
   --node ${LEDGER_ADDR_B}
 
+# Start Hermes
+cargo run --bin hermes -- --config config_for_namada.toml \
+  start > ${HERMES_DIR}/e2e/hermes.log 2>&1 &
+
+# transfer 300 apfel from chain_a to chain_b
+${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
+  --source relayer \
+  --receiver ${receiver_b} \
+  --token apfel \
+  --amount 200 \
+  --signing-keys relayer \
+  --channel-id channel-0 \
+  --node ${LEDGER_ADDR_A}
+
+# transfer 300 apfel from chain_a to chain_b twice
+${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
+  --source relayer \
+  --receiver ${receiver_b} \
+  --token apfel \
+  --amount 300 \
+  --signing-keys relayer \
+  --channel-id channel-0 \
+  --node ${LEDGER_ADDR_A}
+
+# wait for relaying
+sleep 10
+
+echo "Balances on chain A"
+${NAMADAC} --base-dir ${base_dir_a} balance \
+  --token apfel \
+  --owner relayer \
+  --node ${LEDGER_ADDR_A}
+
+echo "Balances on chain B"
+${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${received_token} \
+  --owner relayer \
+  --node ${LEDGER_ADDR_B}
+
+killall hermes
 killall namadan
