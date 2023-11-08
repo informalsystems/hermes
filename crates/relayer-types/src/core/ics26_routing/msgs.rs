@@ -9,7 +9,7 @@ use crate::core::ics04_channel::msgs::{
     chan_open_init, chan_open_try, recv_packet, timeout, timeout_on_close, ChannelMsg, PacketMsg,
 };
 use crate::core::ics26_routing::error::Error;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 
 /// Enumeration of all messages that the local ICS26 module is capable of routing.
 #[derive(Clone, Debug)]

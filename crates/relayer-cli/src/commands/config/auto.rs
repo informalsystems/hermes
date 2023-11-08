@@ -5,14 +5,13 @@ use abscissa_core::{Command, Runnable};
 use crate::conclude::Output;
 
 use ibc_relayer::config::{store, ChainConfig, Config};
-use ibc_relayer::keyring::list_keys;
 
 use std::collections::HashSet;
 use std::path::PathBuf;
 use tracing::{info, warn};
 
 fn find_key(chain_config: &ChainConfig) -> Option<String> {
-    let keys = list_keys(chain_config).ok()?;
+    let keys = chain_config.list_keys().ok()?;
     keys.into_iter().next().map(|(name, _)| name)
 }
 
@@ -117,7 +116,7 @@ impl Runnable for AutoCmd {
             .collect();
 
         // Determine which chains were not fetched
-        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id.name()));
+        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id().name()));
         let missing_chains_set: HashSet<_> =
             sorted_names_set.difference(&fetched_chains_set).collect();
 
@@ -128,15 +127,15 @@ impl Runnable for AutoCmd {
         for (chain_config, key_option) in configs_and_keys {
             // If a key is provided, use it
             if let Some(key_name) = key_option {
-                info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
-                chain_config.key_name = key_name;
+                info!("{}: uses key \"{}\"", &chain_config.id(), &key_name);
+                chain_config.set_key_name(key_name);
             } else {
                 // Otherwise, find the key in the keystore
-                let chain_id = &chain_config.id;
+                let chain_id = &chain_config.id();
                 let key = find_key(chain_config);
-                if let Some(key) = key {
-                    info!("{}: uses key '{}'", &chain_id, &key);
-                    chain_config.key_name = key;
+                if let Some(key_name) = key {
+                    info!("{}: uses key '{}'", &chain_id, &key_name);
+                    chain_config.set_key_name(key_name);
                 } else {
                     // If no key is found, warn the user and continue
                     warn!("No key found for chain: {}", chain_id);

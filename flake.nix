@@ -27,8 +27,9 @@
       packages = {
         inherit
           (cosmos-nix)
+          cometbft
           gaia6-ordered
-          gaia11
+          gaia12
           osmosis
           wasmd
           ibc-go-v2-simapp
@@ -37,6 +38,7 @@
           ibc-go-v5-simapp
           ibc-go-v6-simapp
           ibc-go-v7-simapp
+          interchain-security
           apalache
           evmos
           juno
@@ -46,6 +48,7 @@
           stride-consumer
           migaloo
           neutron
+          celestia
           ;
 
         python = nixpkgs.python3.withPackages (p: [

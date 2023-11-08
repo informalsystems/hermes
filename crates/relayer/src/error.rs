@@ -5,9 +5,13 @@ use core::time::Duration;
 use flex_error::{define_error, DisplayOnly, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
-use ibc_proto::protobuf::Error as TendermintProtoError;
 use prost::{DecodeError, EncodeError};
 use regex::Regex;
+use tonic::{
+    metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
+    Status as GrpcStatus,
+};
+
 use tendermint::abci;
 use tendermint::Error as TendermintError;
 use tendermint_light_client::builder::error::Error as LightClientBuilderError;
@@ -15,28 +19,19 @@ use tendermint_light_client::components::io::IoError as LightClientIoError;
 use tendermint_light_client::errors::{
     Error as LightClientError, ErrorDetail as LightClientErrorDetail,
 };
+use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
 use tendermint_rpc::Error as TendermintRpcError;
-use tonic::{
-    metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
-    Status as GrpcStatus,
-};
 
-use ibc_relayer_types::{
-    applications::{
-        ics29_fee::error::Error as FeeError, ics31_icq::error::Error as CrossChainQueryError,
-    },
-    clients::ics07_tendermint::error as tendermint_error,
-    core::{
-        ics02_client::{client_type::ClientType, error as client_error},
-        ics03_connection::error as connection_error,
-        ics23_commitment::error as commitment_error,
-        ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
-    },
-    proofs::ProofError,
-    relayer::ics18_relayer::error as relayer_error,
-};
+use ibc_relayer_types::applications::ics29_fee::error::Error as FeeError;
+use ibc_relayer_types::applications::ics31_icq::error::Error as CrossChainQueryError;
+use ibc_relayer_types::clients::ics07_tendermint::error as tendermint_error;
+use ibc_relayer_types::core::ics02_client::{client_type::ClientType, error as client_error};
+use ibc_relayer_types::core::ics03_connection::error as connection_error;
+use ibc_relayer_types::core::ics23_commitment::error as commitment_error;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
+use ibc_relayer_types::proofs::ProofError;
 
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
@@ -280,10 +275,6 @@ define_error! {
         Ics07
             [ tendermint_error::Error ]
             |_| { "ICS 07 error" },
-
-        Ics18
-            [ relayer_error::Error ]
-            |_| { "ICS 18 error" },
 
         Ics23
             [ commitment_error::Error ]
@@ -591,6 +582,10 @@ define_error! {
             { address: String }
             [ TendermintRpcError ]
             |e| { format!("invalid archive node address {}", e.address) },
+
+        InvalidCompatMode
+            [ TendermintRpcError ]
+            |_| { "Invalid CompatMode queried from chain and no `compat_mode` configured in Hermes. This can be fixed by specifying a `compat_mode` in Hermes config.toml" },
     }
 }
 
@@ -691,6 +686,7 @@ impl GrpcStatusSubdetail {
 fn parse_sequences_in_mismatch_error_message(message: &str) -> Option<(u64, u64)> {
     let re = Regex::new(r"account sequence mismatch, expected (?P<expected>\d+), got (?P<got>\d+)")
         .unwrap();
+
     match re.captures(message) {
         None => None,
         Some(captures) => match (captures["expected"].parse(), captures["got"].parse()) {

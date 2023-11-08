@@ -1,1 +1,1 @@
-[[#BINARY hermes]][[#GLOBALOPTIONS]] keys add[[#OPTIONS]] --chain [[#CHAIN_ID]] --key-file [[#KEY_FILE]]
+Add a key from a Comet keyring file:

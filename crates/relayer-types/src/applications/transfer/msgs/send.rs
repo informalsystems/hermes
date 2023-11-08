@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 

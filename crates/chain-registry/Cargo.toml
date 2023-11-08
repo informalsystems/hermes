@@ -1,23 +1,20 @@
 [package]
 name         = "ibc-chain-registry"
-version      = "0.25.0"
+version      = "0.26.0"
 edition      = "2021"
 license      = "Apache-2.0"
 keywords     = ["cosmos", "ibc", "relayer", "chain", "registry"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.70"
+rust-version = "1.71"
 description  = """
     Service to fetch data from the chain-registry
 """
 
 [dependencies]
-ibc-proto         = { version = "0.34.0", features = ["serde"] }
-ibc-relayer-types = { version = "0.25.0", path = "../relayer-types" }
-tendermint-rpc = { version = "0.33.0", features = [
-    "http-client",
-    "websocket-client",
-] }
+ibc-relayer-types = { version = "0.26.0", path = "../relayer-types" }
+ibc-proto         = { version = "0.38.0", features = ["serde"] }
+tendermint-rpc    = { version = "0.34.0", features = ["http-client", "websocket-client"] }
 
 async-trait = "0.1.72"
 flex-error  = { version = "0.4.4", default-features = false }

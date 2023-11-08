@@ -1,4 +1,4 @@
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 

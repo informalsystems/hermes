@@ -42,7 +42,7 @@ info "Update client on ibc-0 against the forked chain ibc-1-f"
 $HERMES --config config_fork.toml update client --client 07-tendermint-0 --host-chain ibc-0
 
 info "Wait for chain ibc-1 to stop..."
-sleep 5
+sleep 10
 
 info "Killing Hermes"
 kill -9 "$HERMES_PID"

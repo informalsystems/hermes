@@ -1,10 +1,14 @@
 DESCRIPTION:
-Adds key to a configured chain or restores a key to a configured chain using a mnemonic
+Add a key to a chain from its keyring file or restore a key using its mnemonic
 
 USAGE:
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
-
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>
+    Add a key from a Comet keyring file:
+        hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
+    
+    Add a key from a file containing its mnemonic:
+        hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>
+    
+    On *nix platforms, both flags also accept `/dev/stdin` as a value, which will read the key or the mnemonic from stdin.
 
 OPTIONS:
     -h, --help                   Print help information
@@ -13,6 +17,12 @@ OPTIONS:
         --overwrite              Overwrite the key if there is already one with the same key name
 
 FLAGS:
-        --chain <CHAIN_ID>                 Identifier of the chain
-        --key-file <KEY_FILE>              Path to the key file
-        --mnemonic-file <MNEMONIC_FILE>    Path to file containing mnemonic to restore the key from
+        --chain <CHAIN_ID>
+            Identifier of the chain
+
+        --key-file <KEY_FILE>
+            Path to the key file, or /dev/stdin to read the content from stdin
+
+        --mnemonic-file <MNEMONIC_FILE>
+            Path to file containing the mnemonic to restore the key from, or /dev/stdin to read the
+            mnemonic from stdin

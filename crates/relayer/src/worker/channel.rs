@@ -19,11 +19,11 @@ fn max_block_times<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Duration {
     let a_block_time = match chains.a.config() {
         Err(_e) => Duration::from_millis(500),
-        Ok(config) => config.max_block_time,
+        Ok(config) => config.max_block_time(),
     };
     let b_block_time = match chains.b.config() {
         Err(_e) => Duration::from_millis(500),
-        Ok(config) => config.max_block_time,
+        Ok(config) => config.max_block_time(),
     };
     a_block_time.max(b_block_time)
 }

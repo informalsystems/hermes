@@ -1,6 +1,4 @@
 use std::str::FromStr;
-use std::thread;
-use std::time::Duration;
 
 use crate::bootstrap::consumer::bootstrap_consumer_node;
 use crate::bootstrap::single::bootstrap_single_node;
@@ -65,6 +63,8 @@ where
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
             0,
         )?;
+        let provider_native_token = builder.native_tokens[0].clone();
+        let provider_fee = format!("1200{}", provider_native_token);
 
         // Get consumer chain id
         let chain_type = ChainType::from_str(&builder.command_paths[1])?;
@@ -74,17 +74,29 @@ where
             .chain_driver
             .submit_consumer_chain_proposal(chain_id.as_str(), "2023-05-31T12:09:47.048227Z")?;
 
-        thread::sleep(Duration::from_secs(2));
+        node_a
+            .chain_driver
+            .assert_consumer_chain_proposal_submitted(
+                node_a.chain_driver.chain_id.as_str(),
+                &node_a.chain_driver.command_path,
+                &node_a.chain_driver.home_path,
+                &node_a.chain_driver.rpc_listen_address(),
+            )?;
 
         vote_proposal(
             node_a.chain_driver.chain_id.as_str(),
             &node_a.chain_driver.command_path,
             &node_a.chain_driver.home_path,
             &node_a.chain_driver.rpc_listen_address(),
-            "1200stake",
+            &provider_fee,
         )?;
 
-        thread::sleep(Duration::from_secs(30));
+        node_a.chain_driver.assert_consumer_chain_proposal_passed(
+            node_a.chain_driver.chain_id.as_str(),
+            &node_a.chain_driver.command_path,
+            &node_a.chain_driver.home_path,
+            &node_a.chain_driver.rpc_listen_address(),
+        )?;
 
         let node_b = bootstrap_consumer_node(
             builder,

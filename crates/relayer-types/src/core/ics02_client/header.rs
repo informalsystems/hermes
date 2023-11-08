@@ -1,29 +1,20 @@
-use dyn_clone::DynClone;
-use erased_serde::Serialize as ErasedSerialize;
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
+use core::fmt::Debug;
 
+use serde::{Deserialize, Serialize};
+
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::Protobuf;
+
+use crate::clients::ics07_tendermint::header::{
+    decode_header as tm_decode_header, Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
+};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
-use crate::dynamic_typing::AsAny;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// Abstract of consensus state update information
-///
-/// Users are not expected to implement sealed::ErasedPartialEqHeader.
-/// Effectively, that trait bound mandates implementors to derive PartialEq,
-/// after which our blanket implementation will implement
-/// `ErasedPartialEqHeader` for their type.
-pub trait Header:
-    AsAny
-    + sealed::ErasedPartialEqHeader
-    + DynClone
-    + ErasedSerialize
-    + ErasedProtobuf<Any, Error = Error>
-    + core::fmt::Debug
-    + Send
-    + Sync
+pub trait Header: Debug + Send + Sync // Any: From<Self>,
 {
     /// The type of client (eg. Tendermint)
     fn client_type(&self) -> ClientType;
@@ -33,48 +24,77 @@ pub trait Header:
 
     /// The timestamp of the consensus state
     fn timestamp(&self) -> Timestamp;
-
-    /// Convert into a boxed trait object
-    fn into_box(self) -> Box<dyn Header>
-    where
-        Self: Sized,
-    {
-        Box::new(self)
-    }
 }
 
-// Implements `Clone` for `Box<dyn Header>`
-dyn_clone::clone_trait_object!(Header);
+/// Decodes an encoded header into a known `Header` type,
+pub fn decode_header(header_bytes: &[u8]) -> Result<AnyHeader, Error> {
+    // For now, we only have tendermint; however when there is more than one, we
+    // can try decoding into all the known types, and return an error only if
+    // none work
+    let header: TendermintHeader =
+        Protobuf::<Any>::decode(header_bytes).map_err(Error::invalid_raw_header)?;
 
-// Implements `serde::Serialize` for all types that have Header as supertrait
-erased_serde::serialize_trait_object!(Header);
-
-pub fn downcast_header<H: Header>(h: &dyn Header) -> Option<&H> {
-    h.as_any().downcast_ref::<H>()
+    Ok(AnyHeader::Tendermint(header))
 }
 
-impl PartialEq for dyn Header {
-    fn eq(&self, other: &Self) -> bool {
-        self.eq_header(other)
-    }
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[allow(clippy::large_enum_variant)]
+pub enum AnyHeader {
+    Tendermint(TendermintHeader),
 }
 
-mod sealed {
-    use super::*;
-
-    pub trait ErasedPartialEqHeader {
-        fn eq_header(&self, other: &dyn Header) -> bool;
-    }
-
-    impl<H> ErasedPartialEqHeader for H
-    where
-        H: Header + PartialEq,
-    {
-        fn eq_header(&self, other: &dyn Header) -> bool {
-            other
-                .as_any()
-                .downcast_ref::<H>()
-                .map_or(false, |h| self == h)
+impl Header for AnyHeader {
+    fn client_type(&self) -> ClientType {
+        match self {
+            Self::Tendermint(header) => header.client_type(),
         }
+    }
+
+    fn height(&self) -> Height {
+        match self {
+            Self::Tendermint(header) => header.height(),
+        }
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        match self {
+            Self::Tendermint(header) => header.timestamp(),
+        }
+    }
+}
+
+impl Protobuf<Any> for AnyHeader {}
+
+impl TryFrom<Any> for AnyHeader {
+    type Error = Error;
+
+    fn try_from(raw: Any) -> Result<Self, Error> {
+        match raw.type_url.as_str() {
+            TENDERMINT_HEADER_TYPE_URL => {
+                let val = tm_decode_header(raw.value.as_slice())?;
+                Ok(AnyHeader::Tendermint(val))
+            }
+
+            _ => Err(Error::unknown_header_type(raw.type_url)),
+        }
+    }
+}
+
+impl From<AnyHeader> for Any {
+    fn from(value: AnyHeader) -> Self {
+        use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
+
+        match value {
+            AnyHeader::Tendermint(header) => Any {
+                type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
+                value: Protobuf::<RawHeader>::encode_vec(header),
+            },
+        }
+    }
+}
+
+impl From<TendermintHeader> for AnyHeader {
+    fn from(header: TendermintHeader) -> Self {
+        Self::Tendermint(header)
     }
 }

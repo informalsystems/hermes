@@ -39,9 +39,9 @@ pub async fn refresh_account<'a>(
     let account = query_account(grpc_address, account_address).await?;
 
     info!(
-        sequence = %account.sequence,
-        number = %account.account_number,
-        "refresh: retrieved account",
+        old = %m_account.sequence,
+        new = %account.sequence,
+        "refreshed account sequence number",
     );
 
     *m_account = account.into();

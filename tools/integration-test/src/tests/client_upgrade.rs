@@ -70,10 +70,12 @@ impl BinaryChainTest for ClientUpgradeTest {
         ChainB: ibc_test_framework::prelude::ChainHandle,
     >(
         &self,
-        _config: &ibc_test_framework::prelude::TestConfig,
+        config: &ibc_test_framework::prelude::TestConfig,
         _relayer: ibc_test_framework::prelude::RelayerDriver,
         chains: ibc_test_framework::prelude::ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), ibc_test_framework::prelude::Error> {
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(&config.native_tokens[0]));
         let foreign_clients = chains.clone().foreign_clients;
 
         let upgraded_chain_id = chains.chain_id_a().0.clone();
@@ -84,7 +86,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         let opts = UpgradePlanOptions {
             src_client_id,
             amount: 10000000u64,
-            denom: "stake".to_string(),
+            denom: fee_denom_a.to_string(),
             height_offset: DELTA_HEIGHT,
             upgraded_chain_id,
             upgraded_unbonding_period: None,
@@ -116,7 +118,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal("1200stake")?;
+        driver.vote_proposal(&fee_denom_a.with_amount(1200u64).to_string())?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         let target_reference_application_height = client_upgrade_height
@@ -188,10 +190,12 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         ChainB: ibc_test_framework::prelude::ChainHandle,
     >(
         &self,
-        _config: &ibc_test_framework::prelude::TestConfig,
+        config: &ibc_test_framework::prelude::TestConfig,
         _relayer: ibc_test_framework::prelude::RelayerDriver,
         chains: ibc_test_framework::prelude::ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), ibc_test_framework::prelude::Error> {
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(&config.native_tokens[0]));
         let foreign_clients = chains.clone().foreign_clients;
 
         let upgraded_chain_id = chains.chain_id_a().0.clone();
@@ -202,7 +206,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         let opts = UpgradePlanOptions {
             src_client_id,
             amount: 10000000u64,
-            denom: "stake".to_string(),
+            denom: fee_denom_a.to_string(),
             height_offset: DELTA_HEIGHT,
             upgraded_chain_id,
             upgraded_unbonding_period: None,
@@ -234,7 +238,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal("1200stake")?;
+        driver.vote_proposal(&fee_denom_a.with_amount(1200u64).to_string())?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         let target_reference_application_height = client_upgrade_height
@@ -270,10 +274,12 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         ChainB: ibc_test_framework::prelude::ChainHandle,
     >(
         &self,
-        _config: &ibc_test_framework::prelude::TestConfig,
+        config: &ibc_test_framework::prelude::TestConfig,
         _relayer: ibc_test_framework::prelude::RelayerDriver,
         chains: ibc_test_framework::prelude::ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), ibc_test_framework::prelude::Error> {
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(&config.native_tokens[0]));
         let foreign_clients = chains.clone().foreign_clients;
 
         let upgraded_chain_id = chains.chain_id_a().0.clone();
@@ -284,7 +290,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         let opts = UpgradePlanOptions {
             src_client_id,
             amount: 10000000u64,
-            denom: "stake".to_string(),
+            denom: fee_denom_a.to_string(),
             height_offset: DELTA_HEIGHT,
             upgraded_chain_id,
             upgraded_unbonding_period: None,
@@ -316,7 +322,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal("1200stake")?;
+        driver.vote_proposal(&fee_denom_a.with_amount(1200u64).to_string())?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         let target_reference_application_height = client_upgrade_height

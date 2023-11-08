@@ -10,7 +10,6 @@ use abscissa_core::{Command, Runnable};
 use eyre::eyre;
 use hdpath::StandardHDPath;
 use ibc_relayer::{
-    chain::ChainType,
     config::{ChainConfig, Config},
     keyring::{
         AnySigningKeyPair, KeyRing, Secp256k1KeyPair, SigningKeyPair, SigningKeyPairSized, Store,
@@ -30,18 +29,23 @@ use crate::conclude::Output;
 ///
 /// `keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>`
 ///
-/// The command to restore a key from a file containing mnemonic:
+/// The command to restore a key from a file containing its mnemonic:
 ///
 /// `keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>`
 ///
-/// The key-file and mnemonic-file flags can't be given at the same time, this will cause a terminating error.
+/// On *nix platforms, both flags also accept `/dev/stdin` as a value, which will read the key or the mnemonic from stdin.
+///
+/// The `--key-file` and `--mnemonic-file` flags cannot both be provided at the same time, this will cause a terminating error.
+///
 /// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
-#[clap(
-    override_usage = "hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
-
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>"
-)]
+#[clap(override_usage = "Add a key from a Comet keyring file:
+        hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
+    
+    Add a key from a file containing its mnemonic:
+        hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>
+    
+    On *nix platforms, both flags also accept `/dev/stdin` as a value, which will read the key or the mnemonic from stdin.")]
 pub struct KeysAddCmd {
     #[clap(
         long = "chain",
@@ -56,7 +60,7 @@ pub struct KeysAddCmd {
         required = true,
         value_name = "KEY_FILE",
         help_heading = "FLAGS",
-        help = "Path to the key file",
+        help = "Path to the key file, or /dev/stdin to read the content from stdin",
         group = "add-restore"
     )]
     key_file: Option<PathBuf>,
@@ -66,7 +70,7 @@ pub struct KeysAddCmd {
         required = true,
         value_name = "MNEMONIC_FILE",
         help_heading = "FLAGS",
-        help = "Path to file containing mnemonic to restore the key from",
+        help = "Path to file containing the mnemonic to restore the key from, or /dev/stdin to read the mnemonic from stdin",
         group = "add-restore"
     )]
     mnemonic_file: Option<PathBuf>,
@@ -102,7 +106,7 @@ impl KeysAddCmd {
         let name = self
             .key_name
             .clone()
-            .unwrap_or_else(|| chain_config.key_name.clone());
+            .unwrap_or_else(|| chain_config.key_name().to_string());
 
         let hd_path = StandardHDPath::from_str(&self.hd_path)
             .map_err(|_| eyre!("invalid derivation path: {}", self.hd_path))?;
@@ -146,7 +150,7 @@ impl Runnable for KeysAddCmd {
                         "Added key '{}' ({}) on chain {}",
                         opts.name,
                         key.account(),
-                        opts.config.id
+                        opts.config.id(),
                     ))
                     .exit(),
                     Err(e) => Output::error(format!(
@@ -170,7 +174,7 @@ impl Runnable for KeysAddCmd {
                         "Restored key '{}' ({}) on chain {}",
                         opts.name,
                         key.account(),
-                        opts.config.id
+                        opts.config.id()
                     ))
                     .exit(),
                     Err(e) => Output::error(format!(
@@ -198,8 +202,8 @@ pub fn add_key(
     hd_path: &StandardHDPath,
     overwrite: bool,
 ) -> eyre::Result<AnySigningKeyPair> {
-    let key_pair = match config.r#type {
-        ChainType::CosmosSdk => {
+    let key_pair = match config {
+        ChainConfig::CosmosSdk(config) => {
             let mut keyring = KeyRing::new_secp256k1(
                 Store::Test,
                 &config.account_prefix,
@@ -231,8 +235,8 @@ pub fn restore_key(
     let mnemonic_content =
         fs::read_to_string(mnemonic).map_err(|_| eyre!("error reading the mnemonic file"))?;
 
-    let key_pair = match config.r#type {
-        ChainType::CosmosSdk => {
+    let key_pair = match config {
+        ChainConfig::CosmosSdk(config) => {
             let mut keyring = KeyRing::new_secp256k1(
                 Store::Test,
                 &config.account_prefix,
