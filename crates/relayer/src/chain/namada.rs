@@ -198,7 +198,7 @@ impl ChainEndpoint for NamadaChain {
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         #[allow(irrefutable_let_patterns)]
-        let ChainConfig::CosmosSdk(config) = config
+        let ChainConfig::Namada(config) = config
         else {
             return Err(Error::config(ConfigError::wrong_type()));
         };
