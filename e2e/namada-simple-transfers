@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script executes simple transfers between Namada instances locally
-# `make build-release` and `make build-wasm-scripts` on Namada directory in advance
+# `make build` and `make build-wasm-scripts` on Namada directory in advance
 # Run with `namada-simple-transfers ${namada_dir}`
 
 set -e
