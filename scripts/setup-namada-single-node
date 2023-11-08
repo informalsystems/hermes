@@ -55,7 +55,7 @@ port = 3001
 
 [[chains]]
 id = '_CHAIN_ID_'
-type = 'namada'
+type = 'Namada'
 rpc_addr = 'http://127.0.0.1:27657'
 grpc_addr = 'http://127.0.0.1:9090'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:27657/websocket', batch_delay = '500ms' }
