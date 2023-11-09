@@ -85,7 +85,7 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --b-port transfer \
   --new-client-connection --yes
 
-# Transfer 100 samoleans from Gaia to Namada
+echo "~~ Transfer 100 samoleans from Gaia to Namada ~~"
 namada_receiver=$(${NAMADAW} --base-dir ${base_dir} address find --alias relayer | awk '{print $4}')
 cargo run --bin hermes -- --config config_for_namada.toml \
   tx ft-transfer \
@@ -114,18 +114,18 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --src-port transfer \
   --src-channel channel-0
 
-echo "Balances on Namada"
+echo "==== Balances on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} balance \
   --token ${IBC_TOKEN} \
   --owner relayer \
   --node ${NAMADA_LEDGER_ADDR}
 
-echo "Balances on Gaia"
+echo "==== Balances on Gaia ===="
 gaia_user=$(gaiad --home ${DATA_DIR}/gaia-0 \
   keys --keyring-backend="test" show user -a)
 gaiad query bank balances ${gaia_user}
 
-# transfer back 50 samoleans from Namada to Gaia
+echo "~~ Transfer back 50 samoleans from Namada to Gaia ~~"
 ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
   --source relayer \
   --receiver ${gaia_user} \
@@ -151,20 +151,20 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --src-port transfer \
   --src-channel channel-0
 
-echo "Balances on Namada"
+echo "==== Balances on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} balance \
   --token ${IBC_TOKEN} \
   --owner relayer \
   --node ${NAMADA_LEDGER_ADDR}
 
-echo "Balances on Gaia"
+echo "==== Balances on Gaia ===="
 gaiad query bank balances ${gaia_user}
 
 echo "==== Start Hermes ===="
 cargo run --bin hermes -- --config config_for_namada.toml \
   start > ${HERMES_DIR}/e2e/hermes.log 2>&1 &
 
-# transfer 200 apfel from Namada to Gaia
+echo "~~ Transfer 200 apfel from Namada to Gaia ~~"
 ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
   --source relayer \
   --receiver ${gaia_user} \
@@ -177,12 +177,12 @@ ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
 # wait for relaying
 sleep 10
 
-echo "Balances on Namada"
+echo "==== Balances on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} balance \
   --owner relayer \
   --node ${NAMADA_LEDGER_ADDR}
 
-echo "Balances on Gaia"
+echo "==== Balances on Gaia ===="
 gaiad query bank balances ${gaia_user}
 
 killall hermes

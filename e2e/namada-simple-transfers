@@ -84,7 +84,7 @@ ${NAMADAC} --base-dir ${base_dir_b} transfer \
 receiver_a=$(${NAMADAW} --base-dir ${base_dir_a} address find --alias relayer | awk '{print $4}')
 receiver_b=$(${NAMADAW} --base-dir ${base_dir_b} address find --alias relayer | awk '{print $4}')
 
-# transfer 100 apfel from chain_a to chain_b
+echo "~~ Transfer 100 apfel from chain_a to chain_b ~~"
 ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --source relayer \
   --receiver ${receiver_b} \
@@ -110,13 +110,13 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --src-port transfer \
   --src-channel channel-0
 
-echo "Balances on chain A"
+echo "==== Balances on chain A ===="
 ${NAMADAC} --base-dir ${base_dir_a} balance \
   --token apfel \
   --owner relayer \
   --node ${LEDGER_ADDR_A}
 
-echo "Balances on chain B"
+echo "==== Balances on chain B ===="
 ${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner relayer \
   --node ${LEDGER_ADDR_B}
@@ -127,7 +127,7 @@ received_token=$(${NAMADAC} --base-dir ${base_dir_b} balance \
   | sed -e s/://g \
   | awk '$1 ~ /transfer\/channel-0/ {print $1}')
 
-# transfer back 50 apfel from chain_b to chain_a
+echo "~~ Transfer back 50 apfel from chain_b to chain_a ~~"
 ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --source relayer \
   --receiver ${receiver_a} \
@@ -153,13 +153,13 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --src-port transfer \
   --src-channel channel-0
 
-echo "Balances on chain A"
+echo "==== Balances on chain A ===="
 ${NAMADAC} --base-dir ${base_dir_a} balance \
   --token apfel \
   --owner relayer \
   --node ${LEDGER_ADDR_A}
 
-echo "Balances on chain B"
+echo "==== Balances on chain B ===="
 ${NAMADAC} --base-dir ${base_dir_b} balance \
   --token ${received_token} \
   --owner relayer \
@@ -169,7 +169,7 @@ echo "==== Start Hermes ===="
 cargo run --bin hermes -- --config config_for_namada.toml \
   start > ${HERMES_DIR}/e2e/hermes.log 2>&1 &
 
-# transfer 200 apfel from chain_a to chain_b
+echo "~~ Transfer 200 apfel from chain_a to chain_b ~~"
 ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --source relayer \
   --receiver ${receiver_b} \
@@ -179,7 +179,7 @@ ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --channel-id channel-0 \
   --node ${LEDGER_ADDR_A}
 
-# transfer 300 apfel from chain_b to chain_a
+echo "~~ Transfer 300 apfel from chain_b to chain_a ~~"
 ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --source relayer \
   --receiver ${receiver_a} \
@@ -192,12 +192,12 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
 # wait for relaying
 sleep 10
 
-echo "Balances on chain A"
+echo "==== Balances on chain A ===="
 ${NAMADAC} --base-dir ${base_dir_a} balance \
   --owner relayer \
   --node ${LEDGER_ADDR_A}
 
-echo "Balances on chain B"
+echo "==== Balances on chain B ===="
 ${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner relayer \
   --node ${LEDGER_ADDR_B}
