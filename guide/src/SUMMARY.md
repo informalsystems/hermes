@@ -31,6 +31,7 @@
     - [Configure Hermes](./documentation/configuration/configure-hermes.md)
     - [Description of the parameters](./documentation/configuration/description.md)
     - [Filter incentivized packets](./documentation/configuration/filter-incentivized.md)
+    - [Packet clearing](./documentation/configuration/packet-clearing.md)
     - [Performance tuning](./documentation/configuration/performance.md)
 
 - [Telemetry](./documentation/telemetry/index.md)

@@ -171,6 +171,7 @@ impl FullNode {
             proof_specs: Default::default(),
             extension_options: Default::default(),
             sequential_batch_tx: false,
+            clear_interval: None,
         })
     }
 
