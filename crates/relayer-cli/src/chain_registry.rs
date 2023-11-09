@@ -161,6 +161,7 @@ where
         sequential_batch_tx: false,
         extension_options: Vec::new(),
         compat_mode: None,
+        clear_interval: None,
     }))
 }
 
