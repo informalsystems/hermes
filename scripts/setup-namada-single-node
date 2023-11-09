@@ -62,7 +62,7 @@ event_source = { mode = 'push', url = 'ws://127.0.0.1:27657/websocket', batch_de
 account_prefix = ''
 key_name = 'relayer'
 store_prefix = 'ibc'
-gas_price = { price = 0.001, denom = 'nam' }
+gas_price = { price = 0.001, denom = '_FEE_TOKEN_' }
 "
 
 function make_genesis() {
@@ -119,13 +119,9 @@ function init_relayer_acc() {
   local chain_id=$1
 
   local base_dir=${DATA_DIR}/namada
-  local wallet_dir=${HERMES_DIR}/namada_wallet/${chain_id}
 
   ${NAMADAW} --base-dir ${base_dir} \
     key gen --alias relayer --unsafe-dont-encrypt
-
-  mkdir -p ${wallet_dir}
-  cp ${base_dir}/${chain_id}/wallet.toml ${wallet_dir}
 }
 
 function fund_relayer_acc() {
@@ -135,6 +131,18 @@ function fund_relayer_acc() {
   ${NAMADAC} --base-dir ${base_dir} \
     transfer --node ${LEDGER_ADDR} \
     --source ${account} --target relayer --amount 10000 --token NAM
+}
+
+function add_relayer_key() {
+  local chain_id=$1
+
+  local base_dir=${DATA_DIR}/namada
+
+  cargo run --bin hermes -- --config ${HERMES_DIR}/config_for_namada.toml \
+    keys add \
+    --chain ${chain_id} \
+    --key-file ${base_dir}/${chain_id}/wallet.toml \
+    --overwrite
 }
 
 # ==== main ====
@@ -157,11 +165,15 @@ sleep 10
 
 fund_relayer_acc "albert" ${LEDGER_ADDR}
 
+nam_addr=$(${NAMADAW} --base-dir ${DATA_DIR}/namada address find --alias nam | awk '{print $4}')
+
 # for the relayer
 cd ${HERMES_DIR}
 echo "${HERMES_CONFIG_TEMPLATE}" \
-  | sed -e "s/_CHAIN_ID_/${chain_id}/g" \
+  | sed -e "s/_CHAIN_ID_/${chain_id}/g" -e "s/_FEE_TOKEN_/${nam_addr}/g" \
   > ${HERMES_DIR}/config_for_namada.toml
+
+add_relayer_key ${chain_id}
 
 echo "A Namada chain is running"
 echo "You can use Hermes with ${HERMES_DIR}/config_for_namada.toml"

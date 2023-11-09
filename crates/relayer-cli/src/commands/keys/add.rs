@@ -12,8 +12,8 @@ use hdpath::StandardHDPath;
 use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{
-        AnySigningKeyPair, KeyRing, NamadaKeyPair, Secp256k1KeyPair,
-        SigningKeyPair, SigningKeyPairSized, Store,
+        AnySigningKeyPair, KeyRing, NamadaKeyPair, Secp256k1KeyPair, SigningKeyPair,
+        SigningKeyPairSized, Store,
     },
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -229,7 +229,7 @@ pub fn add_key(
 
             use namada_sdk::wallet::fs::FsWalletUtils;
             let path = if file.is_file() {
-                file.parent().ok_or(eyre!("error invalid path"))?
+                file.parent().ok_or(eyre!("invalid Namada wallet path"))?
             } else {
                 file
             };
@@ -245,7 +245,8 @@ pub fn add_key(
             let secret_key = secret_key
                 .get::<FsWalletUtils>(true, None)
                 .map_err(|_| eyre!("error loading the key from Namada wallet"))?;
-            let pkh = pkh.ok_or_else(|| eyre!("error loading the public key hash from Namada wallet"))?;
+            let pkh =
+                pkh.ok_or_else(|| eyre!("error loading the public key hash from Namada wallet"))?;
             let address = wallet
                 .find_address(key_name)
                 .ok_or_else(|| eyre!("error loading the address from Namada wallet"))?;
