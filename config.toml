@@ -389,6 +389,10 @@ memo_prefix = ''
 # Possible values: [`0.34`, `0.37`]
 # compat_mode = '0.34'
 
+# Specify the a clear interval for the chain.
+# This will override the global clear interval for the chain only allowing different intervals for each chain.
+# clear_interval = 50
+
 [[chains]]
 id = 'ibc-1'
 type = "CosmosSdk"

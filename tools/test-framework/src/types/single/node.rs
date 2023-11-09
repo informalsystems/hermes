@@ -182,6 +182,7 @@ impl FullNode {
             extension_options: Default::default(),
             sequential_batch_tx: false,
             compat_mode,
+            clear_interval: None,
         }))
     }
 
