@@ -12,7 +12,8 @@ use hdpath::StandardHDPath;
 use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{
-        AnySigningKeyPair, KeyRing, Secp256k1KeyPair, SigningKeyPair, SigningKeyPairSized, Store,
+        AnySigningKeyPair, KeyRing, NamadaKeyPair, Secp256k1KeyPair,
+        SigningKeyPair, SigningKeyPairSized, Store,
     },
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -220,8 +221,42 @@ pub fn add_key(
             keyring.add_key(key_name, key_pair.clone())?;
             key_pair.into()
         }
-        ChainConfig::Namada(_) => {
-            return Err(eyre!("Namada key cannot be added"));
+        ChainConfig::Namada(config) => {
+            let mut keyring =
+                KeyRing::new_namada(Store::Test, &config.id, &config.key_store_folder)?;
+
+            check_key_exists(&keyring, key_name, overwrite);
+
+            use namada_sdk::wallet::fs::FsWalletUtils;
+            let path = if file.is_file() {
+                file.parent().ok_or(eyre!("error invalid path"))?
+            } else {
+                file
+            };
+            let mut wallet = FsWalletUtils::new(path.to_path_buf());
+            wallet
+                .load()
+                .map_err(|_| eyre!("error loading Namada wallet"))?;
+
+            let keys = wallet.get_keys();
+            let (secret_key, pkh) = keys
+                .get(key_name)
+                .ok_or_else(|| eyre!("error loading the key from Namada wallet"))?;
+            let secret_key = secret_key
+                .get::<FsWalletUtils>(true, None)
+                .map_err(|_| eyre!("error loading the key from Namada wallet"))?;
+            let pkh = pkh.ok_or_else(|| eyre!("error loading the public key hash from Namada wallet"))?;
+            let address = wallet
+                .find_address(key_name)
+                .ok_or_else(|| eyre!("error loading the address from Namada wallet"))?;
+            let namada_key = NamadaKeyPair {
+                alias: key_name.to_string(),
+                address: address.into_owned(),
+                pkh: pkh.clone(),
+                secret_key: secret_key.clone(),
+            };
+            keyring.add_key(key_name, namada_key.clone())?;
+            namada_key.into()
         }
     };
 

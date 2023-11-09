@@ -33,29 +33,18 @@ impl NamadaChain {
 
         let chain_id = ChainId::from_str(self.config.id.as_str()).expect("invalid chain ID");
 
-        let fee_token = self.config.gas_price.denom.clone();
-        let fee_token = self
-            .wallet
-            .find_address(&fee_token)
-            .ok_or_else(|| Error::namada_address_not_found(fee_token))?
-            .into_owned();
+        let fee_token = &self.config.gas_price.denom;
+        let fee_token = Address::decode(fee_token)
+            .map_err(|_| Error::namada_address_not_found(fee_token.to_string()))?;
 
         // fee
         let gas_limit_key = parameter_storage::get_fee_unshielding_gas_limit_key();
         let (value, _) = self.query(gas_limit_key, QueryHeight::Latest, IncludeProof::No)?;
         let gas_limit = GasLimit::try_from_slice(&value).map_err(Error::borsh_decode)?;
 
-        // the wallet should exist because it's confirmed when the bootstrap
-        let relayer_key_pair = self
-            .wallet
-            .find_key(&self.config.key_name, None)
-            .expect("The relayer key should exist in the wallet");
-
-        let relayer_addr = self
-            .wallet
-            .find_address(&self.config.key_name)
-            .expect("The relayer doesn't exist in the wallet")
-            .into_owned();
+        let namada_key = self.get_key()?;
+        let relayer_key_pair = namada_key.secret_key;
+        let relayer_addr = namada_key.address;
 
         let tx_args = TxArgs {
             dry_run: false,
