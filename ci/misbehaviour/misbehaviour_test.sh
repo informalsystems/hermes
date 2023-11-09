@@ -56,10 +56,10 @@ info "--------------------------------------------------"
 echo ""
 
 if grep -q "Evidence successfully submitted" "$HERMES_LOG"; then
+    info "Misbehaviour detected and submitted successfully!"
+else
     warn "Misbehaviour detection failed!"
     exit 1
-else
-    info "Misbehaviour detected and submitted successfully!"
 fi
 
 STOPPED_HEIGHT="$(curl -s http://localhost:$IBC_1_RPC_PORT/status | jq -r .result.sync_info.latest_block_height)"
