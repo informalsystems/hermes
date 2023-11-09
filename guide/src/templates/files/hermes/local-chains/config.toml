@@ -36,7 +36,7 @@ account_prefix = 'cosmos'
 key_name = 'wallet'
 store_prefix = 'ibc'
 gas_price = { price = 0.001, denom = 'stake' }
-gas_multiplier = 1.1
+gas_multiplier = 1.2
 default_gas = 1000000
 max_gas = 10000000
 max_msg_num = 30
@@ -64,7 +64,7 @@ account_prefix = 'cosmos'
 key_name = 'wallet'
 store_prefix = 'ibc'
 gas_price = { price = 0.001, denom = 'stake' }
-gas_multiplier = 1.1
+gas_multiplier = 1.2
 default_gas = 1000000
 max_gas = 10000000
 max_msg_num = 30
@@ -80,4 +80,3 @@ trust_threshold = { numerator = '2', denominator = '3' }
 #   ['ica*', '*'],
 #   ['transfer', 'channel-0'],
 # ]
-
