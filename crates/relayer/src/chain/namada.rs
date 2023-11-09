@@ -3,7 +3,6 @@ use core::str::FromStr;
 use std::thread;
 
 use core::time::Duration;
-use std::path::Path;
 
 use ibc_proto::ibc::applications::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
@@ -44,13 +43,9 @@ use namada::types::address::{Address, InternalAddress};
 use namada::types::storage::{Key, KeySeg, PrefixValue};
 use namada::types::token;
 use namada_sdk::borsh::BorshDeserialize;
-use namada_sdk::io::StdIo;
 use namada_sdk::masp::fs::FsShieldedUtils;
 use namada_sdk::masp::ShieldedContext;
 use namada_sdk::queries::Client as SdkClient;
-use namada_sdk::wallet::fs::FsWalletUtils;
-use namada_sdk::wallet::Wallet;
-use namada_sdk::{rpc, NamadaImpl};
 use tendermint::block::Height as TmHeight;
 use tendermint::node;
 use tendermint::Time;
@@ -76,39 +71,45 @@ use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::source::{EventSource, TxEventSourceCmd};
 use crate::event::IbcEventWithHeight;
-use crate::keyring::{KeyRing, Secp256k1KeyPair};
+use crate::keyring::{KeyRing, NamadaKeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
 use crate::misbehaviour::MisbehaviourEvidence;
+use namada_sdk::io::NullIo;
+use namada_sdk::wallet::Store;
+use namada_sdk::wallet::{StoredKeypair, Wallet};
+use namada_sdk::{rpc, NamadaImpl};
 
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 
-const BASE_WALLET_DIR: &str = "namada_wallet";
-
+pub mod key;
 pub mod query;
 pub mod tx;
+mod wallet;
 
 pub struct NamadaChain {
     // Reuse CosmosSdkConfig for tendermint's light clients
     config: CosmosSdkConfig,
     rpc_client: HttpClient,
-    wallet: Wallet<FsWalletUtils>,
+    wallet: Wallet<wallet::NullWalletUtils>,
     shielded_ctx: ShieldedContext<FsShieldedUtils>,
     native_token: Address,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
-    keybase: KeyRing<Secp256k1KeyPair>,
+    keybase: KeyRing<NamadaKeyPair>,
     tx_monitor_cmd: Option<TxEventSourceCmd>,
 }
 
 impl NamadaChain {
-    fn namada_ctx(&mut self) -> NamadaImpl<'_, HttpClient, FsWalletUtils, FsShieldedUtils, StdIo> {
+    fn namada_ctx(
+        &mut self,
+    ) -> NamadaImpl<'_, HttpClient, wallet::NullWalletUtils, FsShieldedUtils, NullIo> {
         NamadaImpl::native_new(
             &self.rpc_client,
             &mut self.wallet,
             &mut self.shielded_ctx,
-            &StdIo,
+            &NullIo,
             self.native_token.clone(),
         )
     }
@@ -186,7 +187,7 @@ impl ChainEndpoint for NamadaChain {
     type ConsensusState = TmConsensusState;
     type ClientState = TmClientState;
     type Time = Time;
-    type SigningKeyPair = Secp256k1KeyPair;
+    type SigningKeyPair = NamadaKeyPair;
 
     fn id(&self) -> &ChainId {
         &self.config.id
@@ -210,24 +211,24 @@ impl ChainEndpoint for NamadaChain {
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
         let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_info.id)?;
 
-        // not used in Namada, but the trait requires KeyRing
-        let keybase = KeyRing::new(
-            config.key_store_type,
-            "",
-            &config.id,
-            &config.key_store_folder,
-        )
-        .map_err(Error::key_base)?;
-
-        // check if the wallet has been set up for this relayer
-        let wallet_path = Path::new(BASE_WALLET_DIR).join(config.id.to_string());
-        let mut wallet = FsWalletUtils::new(wallet_path);
-        wallet.load().expect("Loading a wallet failed");
-        wallet
-            .find_key(&config.key_name, None)
-            .map_err(Error::namada_key_pair_not_found)?;
+        let keybase =
+            KeyRing::new_namada(config.key_store_type, &config.id, &config.key_store_folder)
+                .map_err(Error::key_base)?;
 
         let shielded_ctx = ShieldedContext::<FsShieldedUtils>::default();
+
+        let mut store = Store::default();
+        let key = keybase
+            .get_key(&config.key_name)
+            .map_err(|e| Error::key_not_found(config.key_name.clone(), e))?;
+        store.insert_address::<wallet::NullWalletUtils>(key.alias.into(), key.address, true);
+        store.insert_keypair::<wallet::NullWalletUtils>(
+            config.key_name.clone().into(),
+            StoredKeypair::Raw(key.secret_key),
+            key.pkh,
+            true,
+        );
+        let wallet = Wallet::new(wallet::NullWalletUtils, store);
 
         let native_token = rt
             .block_on(rpc::query_native_token(&rpc_client))
@@ -298,21 +299,17 @@ impl ChainEndpoint for NamadaChain {
     }
 
     fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
-        // TODO add Namada key
-        use crate::keyring::errors::Error as KeyringError;
-        Err(Error::key_not_found(
-            self.config().key_name.clone(),
-            KeyringError::key_not_found(),
-        ))
+        self.keybase
+            .get_key(&self.config.key_name)
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))
     }
 
     fn get_signer(&self) -> Result<Signer, Error> {
-        let address = self
-            .wallet
-            .find_address(&self.config.key_name)
-            .ok_or_else(|| Error::namada_address_not_found(self.config.key_name.clone()))?;
-
-        Ok(Signer::from_str(&address.to_string()).unwrap())
+        let key = self
+            .keybase
+            .get_key(&self.config.key_name)
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
+        Ok(Signer::from_str(&key.account()).expect("The key name shouldn't be empty"))
     }
 
     fn version_specs(&self) -> Result<Specs, Error> {
@@ -419,18 +416,16 @@ impl ChainEndpoint for NamadaChain {
     }
 
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
-        let key_name = key_name.unwrap_or(&self.config.key_name);
-        let denom = denom.unwrap_or("NAM");
-        let token = match self.wallet.find_address(denom) {
-            Some(addr) => addr.into_owned(),
-            None => Address::decode(denom)
-                .map_err(|_| Error::namada_address_not_found(denom.to_string()))?,
-        };
+        // Given key_name and denom should be raw Namada addresses
+        let default_owner = self.get_signer()?;
+        let owner = key_name.unwrap_or(default_owner.as_ref());
+        let owner = Address::decode(owner)
+            .map_err(|_| Error::namada_address_not_found(owner.to_string()))?;
 
-        let owner = self
-            .wallet
-            .find_address(key_name)
-            .ok_or_else(|| Error::namada_address_not_found(key_name.to_string()))?;
+        let default_token = self.native_token.to_string();
+        let denom = denom.unwrap_or(&default_token);
+        let token = Address::decode(denom)
+            .map_err(|_| Error::namada_address_not_found(denom.to_string()))?;
 
         let balance_key = token::balance_key(&token, &owner);
         let (value, _) = self.query(balance_key, QueryHeight::Latest, IncludeProof::No)?;
@@ -464,17 +459,16 @@ impl ChainEndpoint for NamadaChain {
     }
 
     fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
-        let key_name = key_name.unwrap_or(&self.config.key_name);
-        let key_owner = self
-            .wallet
-            .find_address(key_name)
-            .ok_or_else(|| Error::namada_address_not_found(key_name.to_string()))?;
+        let default_owner = self.get_signer()?;
+        let owner = key_name.unwrap_or(default_owner.as_ref());
+        let owner = Address::decode(owner)
+            .map_err(|_| Error::namada_address_not_found(owner.to_string()))?;
 
         let mut balances = vec![];
         let prefix = Key::from(Address::Internal(InternalAddress::Multitoken).to_db_key());
         for PrefixValue { key, value } in self.query_prefix(prefix)? {
-            if let Some([token, owner]) = token::is_any_token_balance_key(&key) {
-                if key_owner.as_ref() == owner {
+            if let Some([token, bal_owner]) = token::is_any_token_balance_key(&key) {
+                if owner == *bal_owner {
                     let amount =
                         token::Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
                     let denom_key = token::denom_key(token);
@@ -493,14 +487,9 @@ impl ChainEndpoint for NamadaChain {
                             denom: namada_denom,
                         }
                     };
-                    let alias = self
-                        .wallet
-                        .find_alias(token)
-                        .map(|a| a.to_string())
-                        .unwrap_or(token.to_string());
                     let balance = Balance {
                         amount: denominated_amount.to_string(),
-                        denom: alias,
+                        denom: token.to_string(),
                     };
                     balances.push(balance);
                 }

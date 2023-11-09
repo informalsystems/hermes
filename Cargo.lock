@@ -3148,6 +3148,7 @@ dependencies = [
  "ibc-relayer-types",
  "ibc-telemetry",
  "itertools 0.10.5",
+ "namada_sdk",
  "once_cell",
  "oneline-eyre",
  "regex",
