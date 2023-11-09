@@ -105,8 +105,6 @@ Now, let's exchange `samoleans` between two chains.
     - Balances on ibc-1:
         ```
         balances:
-        - amount: "0"
-        denom: ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
         - amount: "100000000"
         denom: samoleans
         - amount: "99983879"
