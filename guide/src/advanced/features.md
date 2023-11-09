@@ -120,8 +120,10 @@ __Feature comparison between Hermes and the Go relayer__
 | Packet_TimeoutClose_P  | ✅    | ✅     |
 | Packet_Optimistic      | ❌    | ❌     | relay packets over non-Open channels
 |                        |       |        |
+| Modular Architecture   | ✅    | ✅     | defined interface can be implemented for different chain types
 | Cl_Non_Tendermint      | ❌    | ❌     | supports non tendermint IBC light clients
-| Chain_Non_Cosmos       | ❌    | ❌     | supports non cosmos-SDK chains
+| Chain_Non_Cosmos       | ❌    | ✅     | supports non cosmos-SDK chains
+| Penumbra support       | ❌    | ✅     | supports Penumbra non-cosmos-SDK chain
 |                        |       |        |
 | Cfg_Static            | ✅    | ✅     | provides means for configuration prior to being started
 | Cfg_Dynamic           | ❌    | ❌     | provides means for configuration and monitoring during runtime

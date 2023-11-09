@@ -475,7 +475,7 @@ Proposed
 ## References
 
 * PRs for removing `Any*` enums:
-    * Remove all occurences of Any* enums from light clients
+    * Remove all occurrences of Any* enums from light clients
       ([PR #2332](https://github.com/informalsystems/hermes/pull/2332))
     * Remove Any* enums ([PR #2338](https://github.com/informalsystems/hermes/pull/2338))
 * Experimental PR for extracting `ibc-base` crate ([PR #2327](https://github.com/informalsystems/hermes/pull/2327))
