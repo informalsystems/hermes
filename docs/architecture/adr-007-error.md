@@ -37,7 +37,7 @@ impl Kind {
 The design above is meant to separate between two concerns:
 
   - The metadata about an error, as captured in `Kind`.
-  - The trace of how the error occured, as captured in `anomaly::Context`.
+  - The trace of how the error occurred, as captured in `anomaly::Context`.
   - The type `Error` is defined to be `anomaly::Error<Kind>`, which is a newtype wrapper to `Box<anomaly::Context<Kind>>`.
 
 There are a few issues with the original design using `anomaly`:

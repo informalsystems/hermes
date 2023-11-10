@@ -125,6 +125,7 @@ pub struct CosmosSdkConfig {
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub extension_options: Vec<ExtensionOption>,
     pub compat_mode: Option<CompatMode>,
+    pub clear_interval: Option<u64>,
 }
 
 impl CosmosSdkConfig {
