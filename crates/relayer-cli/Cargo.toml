@@ -45,7 +45,6 @@ hdpath                   = "0.6.3"
 http                     = "0.2"
 humantime                = "2.1"
 itertools                = "0.10.5"
-namada_sdk               = { git = "https://github.com/anoma/namada", rev = "7116b6aa916026e97f3f871f291c6ba1c7b427d2", features = ["std"] }
 oneline-eyre             = "0.1"
 regex                    = "1.9.5"
 serde                    = { version = "1.0", features = ["serde_derive"] }
@@ -56,6 +55,7 @@ tokio                    = { version = "1.0", features = ["full"] }
 tracing                  = "0.1.36"
 tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
 time                     = "0.3"
+
 [dependencies.tendermint]
 version = "0.34.0"
 features = ["secp256k1"]

@@ -190,7 +190,7 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --node ${LEDGER_ADDR_B}
 
 # wait for relaying
-sleep 10
+sleep 15
 
 echo "==== Balances on chain A ===="
 ${NAMADAC} --base-dir ${base_dir_a} balance \
