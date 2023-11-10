@@ -318,7 +318,9 @@ impl TestOverrides for ClearPacketOverrideTest {
         for chain_config in config.chains.iter_mut() {
             match chain_config {
                 // Use a small clear interval in the chain configurations to override the global high interval
-                ChainConfig::CosmosSdk(chain_config) => chain_config.clear_interval = Some(10),
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
+                    chain_config.clear_interval = Some(10)
+                }
             }
         }
     }
