@@ -22,9 +22,9 @@ use ibc_test_framework::framework::binary::channel::run_binary_interchain_securi
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::assert_eventually_channel_established;
 use ibc_test_framework::relayer::channel::query_channel_end;
-use ibc_test_framework::util::interchain_security::update_genesis_for_consumer_chain;
-
-use crate::tests::utils::interchain_send_tx;
+use ibc_test_framework::util::interchain_security::{
+    interchain_send_tx, update_genesis_for_consumer_chain,
+};
 
 #[test]
 fn test_ica_ordered_channel() -> Result<(), Error> {

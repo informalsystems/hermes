@@ -16,10 +16,8 @@ use ibc_test_framework::framework::binary::channel::run_binary_interchain_securi
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::assert_eventually_channel_established;
 use ibc_test_framework::util::interchain_security::{
-    update_genesis_for_consumer_chain, update_relayer_config_for_consumer_chain,
+    interchain_send_tx, update_genesis_for_consumer_chain, update_relayer_config_for_consumer_chain,
 };
-
-use crate::tests::utils::interchain_send_tx;
 
 #[test]
 fn test_ics_ica_transfer() -> Result<(), Error> {
