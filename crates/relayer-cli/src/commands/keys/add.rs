@@ -10,6 +10,7 @@ use abscissa_core::{Command, Runnable};
 use eyre::eyre;
 use hdpath::StandardHDPath;
 use ibc_relayer::{
+    chain::namada::wallet::CliWalletUtils,
     config::{ChainConfig, Config},
     keyring::{
         AnySigningKeyPair, KeyRing, NamadaKeyPair, Secp256k1KeyPair, SigningKeyPair,
@@ -227,13 +228,12 @@ pub fn add_key(
 
             check_key_exists(&keyring, key_name, overwrite);
 
-            use namada_sdk::wallet::fs::FsWalletUtils;
             let path = if file.is_file() {
                 file.parent().ok_or(eyre!("invalid Namada wallet path"))?
             } else {
                 file
             };
-            let mut wallet = FsWalletUtils::new(path.to_path_buf());
+            let mut wallet = CliWalletUtils::new(path.to_path_buf());
             wallet
                 .load()
                 .map_err(|_| eyre!("error loading Namada wallet"))?;
@@ -243,7 +243,7 @@ pub fn add_key(
                 .get(key_name)
                 .ok_or_else(|| eyre!("error loading the key from Namada wallet"))?;
             let secret_key = secret_key
-                .get::<FsWalletUtils>(true, None)
+                .get::<CliWalletUtils>(true, None)
                 .map_err(|_| eyre!("error loading the key from Namada wallet"))?;
             let pkh =
                 pkh.ok_or_else(|| eyre!("error loading the public key hash from Namada wallet"))?;
@@ -296,7 +296,9 @@ pub fn restore_key(
             key_pair.into()
         }
         ChainConfig::Namada(_) => {
-            return Err(eyre!("Namada key cannot be restored"));
+            return Err(eyre!(
+                "Namada key can't be restored here. Use Namada wallet."
+            ));
         }
     };
 

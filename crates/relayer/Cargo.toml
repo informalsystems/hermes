@@ -24,9 +24,6 @@ ibc-proto         = { version = "0.39.0", features = ["serde"] }
 ibc-telemetry     = { version = "0.26.1", path = "../telemetry", optional = true }
 ibc-relayer-types = { version = "0.26.1", path = "../relayer-types", features = ["mocks"] }
 
-namada = { git = "https://github.com/anoma/namada", rev = "7116b6aa916026e97f3f871f291c6ba1c7b427d2" }
-namada_sdk = { git = "https://github.com/anoma/namada", rev = "7116b6aa916026e97f3f871f291c6ba1c7b427d2", features = ["std", "async-client"] }
-
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
 serde = "1.0"
@@ -73,6 +70,7 @@ strum = { version = "0.25", features = ["derive"] }
 tokio-stream = "0.1.14"
 once_cell = "1.17.1"
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
+rpassword = "5.0.1"
 
 [dependencies.byte-unit]
 version = "4.0.19"
@@ -110,6 +108,15 @@ default-features = false
 [dependencies.tendermint-light-client-verifier]
 version = "0.34.0"
 default-features = false
+
+[dependencies.namada]
+git = "https://github.com/anoma/namada"
+rev = "7116b6aa916026e97f3f871f291c6ba1c7b427d2"
+
+[dependencies.namada_sdk]
+git = "https://github.com/anoma/namada"
+rev = "7116b6aa916026e97f3f871f291c6ba1c7b427d2"
+features = ["std", "async-client"]
 
 [dev-dependencies]
 ibc-relayer-types = { version = "0.26.1", path = "../relayer-types", features = ["mocks"] }

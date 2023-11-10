@@ -33,8 +33,7 @@ use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 use namada::ledger::ibc::storage;
-use namada::ledger::parameters::storage as param_storage;
-use namada::ledger::parameters::EpochDuration;
+use namada::ledger::parameters::{storage as param_storage, EpochDuration};
 use namada::ledger::storage::ics23_specs::ibc_proof_specs;
 use namada::ledger::storage::Sha256Hasher;
 use namada::proof_of_stake::parameters::OwnedPosParams;
@@ -43,12 +42,15 @@ use namada::types::address::{Address, InternalAddress};
 use namada::types::storage::{Key, KeySeg, PrefixValue};
 use namada::types::token;
 use namada_sdk::borsh::BorshDeserialize;
+use namada_sdk::io::NullIo;
 use namada_sdk::masp::fs::FsShieldedUtils;
 use namada_sdk::masp::ShieldedContext;
 use namada_sdk::queries::Client as SdkClient;
+use namada_sdk::wallet::Store;
+use namada_sdk::wallet::{StoredKeypair, Wallet};
+use namada_sdk::{rpc, NamadaImpl};
 use tendermint::block::Height as TmHeight;
-use tendermint::node;
-use tendermint::Time;
+use tendermint::{node, Time};
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_rpc::client::CompatMode;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
@@ -60,6 +62,7 @@ use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::config::CosmosSdkConfig;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::cosmos::version::Specs;
+use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::handle::Subscription;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
@@ -73,27 +76,23 @@ use crate::event::source::{EventSource, TxEventSourceCmd};
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyRing, NamadaKeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
-use crate::light_client::LightClient;
-use crate::light_client::Verified;
+use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
-use namada_sdk::io::NullIo;
-use namada_sdk::wallet::Store;
-use namada_sdk::wallet::{StoredKeypair, Wallet};
-use namada_sdk::{rpc, NamadaImpl};
-
-use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 
 pub mod key;
-pub mod query;
-pub mod tx;
-mod wallet;
+mod query;
+mod tx;
+pub mod wallet;
 
 pub struct NamadaChain {
-    // Reuse CosmosSdkConfig for tendermint's light clients
+    /// Reuse CosmosSdkConfig for tendermint's light clients
     config: CosmosSdkConfig,
     rpc_client: HttpClient,
+    /// Wallet for Namada context just reading the added keys
     wallet: Wallet<wallet::NullWalletUtils>,
+    /// Shielded context for Namada context
     shielded_ctx: ShieldedContext<FsShieldedUtils>,
+    /// Namada native token
     native_token: Address,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
