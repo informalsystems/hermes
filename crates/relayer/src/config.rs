@@ -648,8 +648,15 @@ impl ChainConfig {
                     .map(|(key_name, keys)| (key_name, keys.into()))
                     .collect()
             }
-            // TODO Namada should use the wallet
-            ChainConfig::Namada(_) => return Err(keyring::errors::Error::key_not_found()),
+            ChainConfig::Namada(config) => {
+                let keyring =
+                    KeyRing::new_namada(Store::Test, &config.id, &config.key_store_folder)?;
+                keyring
+                    .keys()?
+                    .into_iter()
+                    .map(|(key_name, keys)| (key_name, keys.into()))
+                    .collect()
+            }
         };
         Ok(keys)
     }

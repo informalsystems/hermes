@@ -175,7 +175,7 @@ ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
   --node ${NAMADA_LEDGER_ADDR}
 
 # wait for relaying
-sleep 10
+sleep 15
 
 echo "==== Balances on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} balance \
