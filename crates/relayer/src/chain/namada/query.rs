@@ -7,18 +7,18 @@ use namada::ledger::ibc::storage::{ibc_denom_key_prefix, is_ibc_denom_key};
 use namada::types::address::{Address, InternalAddress};
 use namada::types::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::borsh::BorshDeserialize;
-use namada_sdk::queries::Client as SdkClient;
-use namada_sdk::queries::RPC;
+use namada_sdk::queries::{Client as SdkClient, RPC};
 use namada_sdk::rpc;
 use tendermint::block::Height as TmHeight;
 
-use crate::chain::requests::{QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest};
+use crate::chain::endpoint::ChainEndpoint;
+use crate::chain::requests::{
+    IncludeProof, QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest,
+};
 use crate::error::Error;
 use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
 use super::NamadaChain;
-use crate::chain::endpoint::ChainEndpoint;
-use crate::chain::requests::IncludeProof;
 
 impl NamadaChain {
     pub fn query(

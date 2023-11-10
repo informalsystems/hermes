@@ -3094,6 +3094,7 @@ dependencies = [
  "regex",
  "retry",
  "ripemd",
+ "rpassword",
  "secp256k1",
  "semver 1.0.20",
  "serde",
@@ -3176,6 +3177,7 @@ dependencies = [
  "ibc-relayer-types",
  "reqwest",
  "serde",
+ "serde_json",
  "tokio",
  "toml 0.7.8",
  "tracing",
@@ -5404,6 +5406,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "rpassword"
+version = "5.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffc936cf8a7ea60c58f030fd36a612a48f440610214dc54bc36431f9ea0c3efb"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
