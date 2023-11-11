@@ -3,10 +3,10 @@ use ibc_relayer_types::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height as ICSHeight;
-use namada::ledger::ibc::storage::{ibc_denom_key_prefix, is_ibc_denom_key};
-use namada::types::address::{Address, InternalAddress};
-use namada::types::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::borsh::BorshDeserialize;
+use namada_sdk::core::ledger::ibc::storage::{ibc_denom_key_prefix, is_ibc_denom_key};
+use namada_sdk::core::types::address::{Address, InternalAddress};
+use namada_sdk::core::types::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::queries::{Client as SdkClient, RPC};
 use namada_sdk::rpc;
 use tendermint::block::Height as TmHeight;
@@ -197,11 +197,27 @@ impl NamadaChain {
                         .as_str()
                         .parse()
                         .expect("invalid event type"),
-                    &request.source_port_id.as_str().parse().unwrap(),
-                    &request.source_channel_id.as_str().parse().unwrap(),
-                    &request.destination_port_id.as_str().parse().unwrap(),
-                    &request.destination_channel_id.as_str().parse().unwrap(),
-                    &namada::ibc::core::ics04_channel::packet::Sequence::from(u64::from(sequence)),
+                    &request
+                        .source_port_id
+                        .as_str()
+                        .parse()
+                        .expect("PortId should be parsable"),
+                    &request
+                        .source_channel_id
+                        .as_str()
+                        .parse()
+                        .expect("ChannelId should be parsable"),
+                    &request
+                        .destination_port_id
+                        .as_str()
+                        .parse()
+                        .expect("PortId should be parsable"),
+                    &request
+                        .destination_channel_id
+                        .as_str()
+                        .parse()
+                        .expect("ChannelId should be parsable"),
+                    &u64::from(sequence).into(),
                 ),
             )
             .map_err(NamadaError::query)?
