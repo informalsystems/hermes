@@ -109,14 +109,10 @@ default-features = false
 version = "0.34.0"
 default-features = false
 
-[dependencies.namada]
-git = "https://github.com/anoma/namada"
-rev = "7116b6aa916026e97f3f871f291c6ba1c7b427d2"
-
 [dependencies.namada_sdk]
 git = "https://github.com/anoma/namada"
 rev = "7116b6aa916026e97f3f871f291c6ba1c7b427d2"
-features = ["std", "async-client"]
+features = ["std", "abciplus", "async-client", "masp-tx-gen", "tendermint-rpc"]
 
 [dev-dependencies]
 ibc-relayer-types = { version = "0.26.4", path = "../relayer-types", features = ["mocks"] }
