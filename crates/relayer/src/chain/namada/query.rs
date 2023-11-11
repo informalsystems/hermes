@@ -18,6 +18,7 @@ use crate::chain::requests::{
 use crate::error::Error;
 use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
+use super::error::Error as NamadaError;
 use super::NamadaChain;
 
 impl NamadaChain {
@@ -40,7 +41,7 @@ impl NamadaChain {
                 height,
                 is_proven,
             ))
-            .map_err(Error::namada_sdk)?;
+            .map_err(NamadaError::namada)?;
 
         let proof = if is_proven {
             let proof_ops = proof.ok_or_else(Error::empty_response_proof)?;
@@ -61,14 +62,14 @@ impl NamadaChain {
                 RPC.shell()
                     .storage_prefix(&self.rpc_client, None, None, false, &prefix),
             )
-            .map_err(Error::namada_query)?;
+            .map_err(NamadaError::query)?;
         Ok(response.data)
     }
 
     pub fn query_epoch(&self) -> Result<Epoch, Error> {
         self.rt
             .block_on(rpc::query_epoch(&self.rpc_client))
-            .map_err(Error::namada_sdk)
+            .map_err(|e| Error::namada(NamadaError::namada(e)))
     }
 
     pub fn query_update_event(
@@ -83,7 +84,7 @@ impl NamadaChain {
                 &request.client_id.as_str().parse().unwrap(),
                 &height,
             ))
-            .map_err(Error::namada_query)?;
+            .map_err(NamadaError::query)?;
         match event {
             Some(event) => {
                 let h = event
@@ -115,7 +116,7 @@ impl NamadaChain {
                 &self.rpc_client,
                 &tx_hash.try_into().expect("Invalid tx hash"),
             ))
-            .map_err(Error::namada_query)?
+            .map_err(NamadaError::query)?
         {
             Some(applied) => {
                 let h = applied
@@ -203,7 +204,7 @@ impl NamadaChain {
                     &namada::ibc::core::ics04_channel::packet::Sequence::from(u64::from(sequence)),
                 ),
             )
-            .map_err(Error::namada_query)?
+            .map_err(NamadaError::query)?
         {
             Some(event) => {
                 let h = event
@@ -251,10 +252,10 @@ impl NamadaChain {
     /// Get IBC denom
     pub fn query_denom(&self, raw_addr: String) -> Result<String, Error> {
         let token = Address::decode(&raw_addr)
-            .map_err(|_| Error::namada_address_not_found(raw_addr.to_string()))?;
+            .map_err(|_| NamadaError::address_decode(raw_addr.to_string()))?;
         let hash = match &token {
             Address::Internal(InternalAddress::IbcToken(hash)) => hash,
-            _ => return Err(Error::namada_address_not_found(token.to_string())),
+            _ => return Err(NamadaError::denom_not_found(raw_addr).into()),
         };
 
         let prefix = ibc_denom_key_prefix(None);
@@ -268,8 +269,8 @@ impl NamadaChain {
                     false
                 }
             })
-            .ok_or(Error::namada_address_not_found(token.to_string()))?;
+            .ok_or(NamadaError::denom_not_found(raw_addr))?;
 
-        String::try_from_slice(&pair.value).map_err(Error::borsh_decode)
+        String::try_from_slice(&pair.value).map_err(|e| Error::namada(NamadaError::borsh_decode(e)))
     }
 }

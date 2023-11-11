@@ -35,6 +35,7 @@ use ibc_relayer_types::proofs::ProofError;
 
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
+use crate::chain::namada::error::Error as NamadaError;
 use crate::config::Error as ConfigError;
 use crate::event::source;
 use crate::keyring::{errors::Error as KeyringError, KeyType};
@@ -587,28 +588,9 @@ define_error! {
             [ TendermintRpcError ]
             |_| { "Invalid CompatMode queried from chain and no `compat_mode` configured in Hermes. This can be fixed by specifying a `compat_mode` in Hermes config.toml" },
 
-        NamadaWalletNotInitialized
-            |_| { "Namada wallet has not been initialized yet" },
-
-        NamadaKeyPairNotFound
-            [ TraceError<namada_sdk::wallet::FindKeyError> ]
-            |_| { "The keypair was not found" },
-
-        NamadaAddressNotFound
-            { alias: String }
-            |e| { format!("The address was not found for {}", e.alias) },
-
-        NamadaSdk
-            [ TraceError<namada_sdk::error::Error> ]
-            |e| { format!("Namada error {}", e) },
-
-        NamadaQuery
-            [ TraceError<namada_sdk::queries::Error> ]
-            |e| { format!("Namada error {}", e) },
-
-        BorshDecode
-            [ TraceError<std::io::Error> ]
-            |_| { "error decoding borsh" },
+        Namada
+            [ NamadaError ]
+            |_| { "Namada error" },
     }
 }
 
