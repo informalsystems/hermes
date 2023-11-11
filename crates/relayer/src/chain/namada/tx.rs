@@ -21,6 +21,7 @@ use crate::chain::endpoint::ChainEndpoint;
 use crate::chain::requests::{IncludeProof, QueryHeight, QueryTxHash, QueryTxRequest};
 use crate::error::Error;
 
+use super::error::Error as NamadaError;
 use super::NamadaChain;
 
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);
@@ -35,12 +36,12 @@ impl NamadaChain {
 
         let fee_token = &self.config.gas_price.denom;
         let fee_token = Address::decode(fee_token)
-            .map_err(|_| Error::namada_address_not_found(fee_token.to_string()))?;
+            .map_err(|_| NamadaError::address_decode(fee_token.to_string()))?;
 
         // fee
         let gas_limit_key = parameter_storage::get_fee_unshielding_gas_limit_key();
         let (value, _) = self.query(gas_limit_key, QueryHeight::Latest, IncludeProof::No)?;
-        let gas_limit = GasLimit::try_from_slice(&value).map_err(Error::borsh_decode)?;
+        let gas_limit = GasLimit::try_from_slice(&value).map_err(NamadaError::borsh_decode)?;
 
         let namada_key = self.get_key()?;
         let relayer_key_pair = namada_key.secret_key;
@@ -83,13 +84,13 @@ impl NamadaChain {
         };
         let (mut tx, signing_data, _epoch) = rt
             .block_on(args.build(&namada_ctx))
-            .map_err(Error::namada_sdk)?;
+            .map_err(NamadaError::namada)?;
         rt.block_on(namada_ctx.sign(&mut tx, &args.tx, signing_data))
-            .map_err(Error::namada_sdk)?;
+            .map_err(NamadaError::namada)?;
         let decrypted_hash = tx.raw_header_hash().to_string();
         let response = rt
             .block_on(namada_ctx.submit(tx, &args.tx))
-            .map_err(Error::namada_sdk)?;
+            .map_err(NamadaError::namada)?;
 
         match response {
             tx::ProcessTxResponse::Broadcast(mut response) => {
@@ -148,26 +149,26 @@ impl NamadaChain {
             let key = self
                 .wallet
                 .find_key_by_pkh(pkh, args.clone().password)
-                .map_err(Error::namada_key_pair_not_found)?;
+                .map_err(|e| NamadaError::namada(namada_sdk::error::Error::Other(e.to_string())))?;
             let public_key = key.ref_to();
 
             if tx::is_reveal_pk_needed(&self.rpc_client, address, args.force)
                 .await
-                .map_err(Error::namada_sdk)?
+                .map_err(NamadaError::namada)?
             {
                 let namada_ctx = self.namada_ctx();
                 let (mut tx, signing_data, _epoch) =
                     tx::build_reveal_pk(&namada_ctx, args, &public_key)
                         .await
-                        .map_err(Error::namada_sdk)?;
+                        .map_err(NamadaError::namada)?;
                 namada_ctx
                     .sign(&mut tx, args, signing_data)
                     .await
-                    .map_err(Error::namada_sdk)?;
+                    .map_err(NamadaError::namada)?;
                 namada_ctx
                     .submit(tx, args)
                     .await
-                    .map_err(Error::namada_sdk)?;
+                    .map_err(NamadaError::namada)?;
             }
         }
         Ok(())

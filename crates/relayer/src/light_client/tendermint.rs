@@ -144,12 +144,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             ))
         })?;
 
-        let update_header: &TmHeader = match any_header {
-            AnyHeader::Tendermint(header) => Ok(header),
+        let update_header = match any_header {
+            AnyHeader::Tendermint(header) => Ok::<_, Error>(header),
         }?;
 
         let client_state = match client_state {
-            AnyClientState::Tendermint(client_state) => Ok(client_state),
+            AnyClientState::Tendermint(client_state) => Ok::<_, Error>(client_state),
 
             #[cfg(test)]
             _ => Err(Error::misbehaviour(format!(
@@ -316,7 +316,7 @@ impl LightClient {
         let scheduler = components::scheduler::basic_bisecting_schedule;
 
         let client_state = match client_state {
-            AnyClientState::Tendermint(client_state) => Ok(client_state),
+            AnyClientState::Tendermint(client_state) => Ok::<_, Error>(client_state),
 
             #[cfg(test)]
             _ => Err(Error::client_type_mismatch(

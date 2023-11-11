@@ -79,6 +79,9 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
 
+use self::error::Error as NamadaError;
+
+pub mod error;
 pub mod key;
 mod query;
 mod tx;
@@ -156,12 +159,13 @@ impl NamadaChain {
     fn get_unbonding_time(&self) -> Result<Duration, Error> {
         let key = pos_storage::params_key();
         let (value, _) = self.query(key, QueryHeight::Latest, IncludeProof::No)?;
-        let pos_params = OwnedPosParams::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+        let pos_params =
+            OwnedPosParams::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
 
         let key = param_storage::get_epoch_duration_storage_key();
         let (value, _) = self.query(key, QueryHeight::Latest, IncludeProof::No)?;
         let epoch_duration =
-            EpochDuration::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+            EpochDuration::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
         let unbonding_period = pos_params.pipeline_len * epoch_duration.min_duration.0;
         Ok(Duration::from_secs(unbonding_period))
     }
@@ -231,7 +235,7 @@ impl ChainEndpoint for NamadaChain {
 
         let native_token = rt
             .block_on(rpc::query_native_token(&rpc_client))
-            .map_err(Error::namada_sdk)?;
+            .map_err(NamadaError::namada)?;
 
         // overwrite the proof spec
         let config = CosmosSdkConfig {
@@ -414,13 +418,13 @@ impl ChainEndpoint for NamadaChain {
         // Given key_name and denom should be raw Namada addresses
         let default_owner = self.get_signer()?;
         let owner = key_name.unwrap_or(default_owner.as_ref());
-        let owner = Address::decode(owner)
-            .map_err(|_| Error::namada_address_not_found(owner.to_string()))?;
+        let owner =
+            Address::decode(owner).map_err(|_| NamadaError::address_decode(owner.to_string()))?;
 
         let default_token = self.native_token.to_string();
         let denom = denom.unwrap_or(&default_token);
-        let token = Address::decode(denom)
-            .map_err(|_| Error::namada_address_not_found(denom.to_string()))?;
+        let token =
+            Address::decode(denom).map_err(|_| NamadaError::address_decode(denom.to_string()))?;
 
         let balance_key = token::balance_key(&token, &owner);
         let (value, _) = self.query(balance_key, QueryHeight::Latest, IncludeProof::No)?;
@@ -430,7 +434,8 @@ impl ChainEndpoint for NamadaChain {
                 denom: denom.to_string(),
             });
         }
-        let amount = token::Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+        let amount =
+            token::Amount::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
         let denom_key = token::denom_key(&token);
         let (value, _) = self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
         let denominated_amount = if value.is_empty() {
@@ -439,8 +444,8 @@ impl ChainEndpoint for NamadaChain {
                 denom: 0.into(),
             }
         } else {
-            let token_denom =
-                token::Denomination::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+            let token_denom = token::Denomination::try_from_slice(&value[..])
+                .map_err(NamadaError::borsh_decode)?;
             token::DenominatedAmount {
                 amount,
                 denom: token_denom,
@@ -456,16 +461,16 @@ impl ChainEndpoint for NamadaChain {
     fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
         let default_owner = self.get_signer()?;
         let owner = key_name.unwrap_or(default_owner.as_ref());
-        let owner = Address::decode(owner)
-            .map_err(|_| Error::namada_address_not_found(owner.to_string()))?;
+        let owner =
+            Address::decode(owner).map_err(|_| NamadaError::address_decode(owner.to_string()))?;
 
         let mut balances = vec![];
         let prefix = Key::from(Address::Internal(InternalAddress::Multitoken).to_db_key());
         for PrefixValue { key, value } in self.query_prefix(prefix)? {
             if let Some([token, bal_owner]) = token::is_any_token_balance_key(&key) {
                 if owner == *bal_owner {
-                    let amount =
-                        token::Amount::try_from_slice(&value[..]).map_err(Error::borsh_decode)?;
+                    let amount = token::Amount::try_from_slice(&value[..])
+                        .map_err(NamadaError::borsh_decode)?;
                     let denom_key = token::denom_key(token);
                     let (value, _) =
                         self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
@@ -476,7 +481,7 @@ impl ChainEndpoint for NamadaChain {
                         }
                     } else {
                         let namada_denom = token::Denomination::try_from_slice(&value[..])
-                            .map_err(Error::borsh_decode)?;
+                            .map_err(NamadaError::borsh_decode)?;
                         token::DenominatedAmount {
                             amount,
                             denom: namada_denom,
