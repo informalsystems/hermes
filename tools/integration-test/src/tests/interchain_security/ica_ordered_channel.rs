@@ -23,7 +23,7 @@ use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::assert_eventually_channel_established;
 use ibc_test_framework::relayer::channel::query_channel_end;
 use ibc_test_framework::util::interchain_security::{
-    interchain_send_tx, update_genesis_for_consumer_chain,
+    interchain_send_tx, update_genesis_for_consumer_chain, update_relayer_config_for_consumer_chain,
 };
 
 #[test]
@@ -65,6 +65,8 @@ impl TestOverrides for IcaOrderedChannelTest {
         config.mode.packets.enabled = true;
         config.mode.packets.clear_on_start = false;
         config.mode.packets.clear_interval = 0;
+
+        update_relayer_config_for_consumer_chain(config);
     }
 
     fn should_spawn_supervisor(&self) -> bool {
