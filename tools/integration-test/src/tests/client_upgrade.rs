@@ -26,7 +26,7 @@ use ibc_test_framework::{
 };
 
 const MAX_DEPOSIT_PERIOD: &str = "10s";
-const VOTING_PERIOD: &str = "10s";
+const VOTING_PERIOD: u64 = 10;
 const DELTA_HEIGHT: u64 = 15;
 const WAIT_CHAIN_UPGRADE: Duration = Duration::from_secs(4);
 const MAX_WAIT_FOR_CHAIN_HEIGHT: Duration = Duration::from_secs(60);

@@ -111,7 +111,7 @@ pub fn query_recipient_transactions(
     rpc_listen_address: &str,
     recipient_address: &str,
 ) -> Result<json::Value, Error> {
-    let res = simple_exec(
+    let res = match simple_exec(
         chain_id,
         command_path,
         &[
@@ -122,8 +122,25 @@ pub fn query_recipient_transactions(
             "--events",
             &format!("transfer.recipient={recipient_address}"),
         ],
-    )?
-    .stdout;
+    ) {
+        Ok(output) => output.stdout,
+        // Cosmos SDK v0.50.1 changed the `query txs` CLI flag from `--events` to `--query`
+        Err(_) => {
+            simple_exec(
+                chain_id,
+                command_path,
+                &[
+                    "--node",
+                    rpc_listen_address,
+                    "query",
+                    "txs",
+                    "--query",
+                    &format!("transfer.recipient='{recipient_address}'"),
+                ],
+            )?
+            .stdout
+        }
+    };
 
     tracing::debug!("parsing tx result: {}", res);
 
