@@ -180,7 +180,7 @@ mod tests {
                 "--height-offset",
                 "21",
                 "--gov-account",
-                "gov_acccount"
+                "gov_account"
             ])
         )
     }
@@ -211,7 +211,7 @@ mod tests {
                 "--amount",
                 "42",
                 "--gov-account",
-                "gov_acccount",
+                "gov_account",
                 "--height-offset",
                 "21",
                 "--denom",
@@ -246,7 +246,7 @@ mod tests {
                 "--amount",
                 "42",
                 "--gov-account",
-                "gov_acccount",
+                "gov_account",
                 "--height-offset",
                 "21",
                 "--new-chain",
@@ -281,7 +281,7 @@ mod tests {
                 "--amount",
                 "42",
                 "--gov-account",
-                "gov_acccount",
+                "gov_account",
                 "--height-offset",
                 "21",
                 "--new-unbonding",
@@ -316,7 +316,7 @@ mod tests {
                 "--amount",
                 "42",
                 "--gov-account",
-                "gov_acccount",
+                "gov_account",
                 "--height-offset",
                 "21",
                 "--upgrade-name",
@@ -356,7 +356,7 @@ mod tests {
             "--amount",
             "42",
             "--gov-account",
-            "gov_acccount"
+            "gov_account"
         ])
         .is_err())
     }
@@ -374,7 +374,7 @@ mod tests {
             "--height-offset",
             "21",
             "--gov-account",
-            "gov_acccount"
+            "gov_account"
         ])
         .is_err())
     }
@@ -392,7 +392,7 @@ mod tests {
             "--height-offset",
             "21",
             "--gov-account",
-            "gov_acccount"
+            "gov_account"
         ])
         .is_err())
     }
@@ -410,7 +410,7 @@ mod tests {
             "--height-offset",
             "21",
             "--gov-account",
-            "gov_acccount"
+            "gov_account"
         ])
         .is_err())
     }
@@ -428,7 +428,7 @@ mod tests {
             "--height-offset",
             "21",
             "--gov-account",
-            "gov_acccount"
+            "gov_account"
         ])
         .is_err())
     }
