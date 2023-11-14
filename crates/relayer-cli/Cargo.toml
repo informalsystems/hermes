@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "1.7.0"
+version    = "1.7.1"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -25,11 +25,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc-relayer-types  = { version = "0.26.0", path = "../relayer-types" }
-ibc-relayer        = { version = "0.26.0", path = "../relayer" }
-ibc-telemetry      = { version = "0.26.0", path = "../telemetry", optional = true }
-ibc-relayer-rest   = { version = "0.26.0", path = "../relayer-rest", optional = true }
-ibc-chain-registry = { version = "0.26.0" , path = "../chain-registry" }
+ibc-relayer-types  = { version = "0.26.1", path = "../relayer-types" }
+ibc-relayer        = { version = "0.26.1", path = "../relayer" }
+ibc-telemetry      = { version = "0.26.1", path = "../telemetry", optional = true }
+ibc-relayer-rest   = { version = "0.26.1", path = "../relayer-rest", optional = true }
+ibc-chain-registry = { version = "0.26.1" , path = "../chain-registry" }
 
 clap                     = { version = "3.2", features = ["cargo"] }
 clap_complete            = "3.2"
