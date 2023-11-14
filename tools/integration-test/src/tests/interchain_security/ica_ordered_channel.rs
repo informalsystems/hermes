@@ -86,13 +86,15 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
         let (wallet, channel_id, port_id) =
             register_interchain_account(&chains.node_b, chains.handle_b(), &connection_b_to_a)?;
 
-        // Check that the corresponding ICA channel is eventually established.
-        let _counterparty_channel_id = assert_eventually_channel_established(
-            chains.handle_b(),
-            chains.handle_a(),
-            &channel_id.as_ref(),
-            &port_id.as_ref(),
-        )?;
+        relayer.with_supervisor(|| {
+            // Check that the corresponding ICA channel is eventually established.
+            let _counterparty_channel_id = assert_eventually_channel_established(
+                chains.handle_b(),
+                chains.handle_a(),
+                &channel_id.as_ref(),
+                &port_id.as_ref(),
+            )?;
+        });
 
         // Assert that the channel returned by `register_interchain_account` is an ordered channel
         let channel_end =
