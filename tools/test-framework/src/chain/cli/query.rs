@@ -3,6 +3,7 @@ use eyre::eyre;
 use ibc_relayer_types::applications::transfer::amount::Amount;
 use serde_json as json;
 use serde_yaml as yaml;
+use std::collections::HashMap;
 use tracing::debug;
 
 use crate::chain::exec::simple_exec;
@@ -192,4 +193,57 @@ pub fn query_cross_chain_query(
     .stdout;
 
     Ok(res)
+}
+
+/// Query authority account for a specific module
+pub fn query_auth_module(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    module_name: &str,
+) -> Result<String, Error> {
+    let output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "--node",
+            rpc_listen_address,
+            "query",
+            "auth",
+            "module-account",
+            module_name,
+            "--output",
+            "json",
+        ],
+    )?
+    .stdout;
+
+    let json_res: HashMap<String, serde_json::Value> =
+        serde_json::from_str(&output).map_err(handle_generic_error)?;
+
+    let account = json_res
+        .get("account")
+        .ok_or_else(|| eyre!("expect `account` string field to be present in json result"))?;
+
+    // Depending on the version used the CLI `query auth module-account` will have a field `base_account` or
+    // or a field `value` containing the address.
+    let res = match account.get("base_account") {
+        Some(base_account) => base_account
+            .get("address")
+            .ok_or_else(|| eyre!("expect `address` string field to be present in json result"))?
+            .as_str()
+            .ok_or_else(|| eyre!("failed to convert value to &str"))?,
+        None => account
+            .get("value")
+            .ok_or_else(|| eyre!("expect `value` string field to be present in json result"))?
+            .get("address")
+            .ok_or_else(|| eyre!("expect `address` string field to be present in json result"))?
+            .as_str()
+            .ok_or_else(|| eyre!("failed to convert value to &str"))?,
+    };
+
+    Ok(res.to_owned())
 }

@@ -59,6 +59,15 @@ pub struct TxIbcUpgradeChainCmd {
     height_offset: u64,
 
     #[clap(
+        long = "gov-account",
+        required = true,
+        value_name = "GOV_ACCOUNT",
+        help_heading = "REQUIRED",
+        help = "Authority account used to sign upgrade proposal"
+    )]
+    gov_account: String,
+
+    #[clap(
         long = "new-chain",
         value_name = "CHAIN_ID",
         help = "New chain identifier to assign to the upgrading chain (optional)"
@@ -103,6 +112,7 @@ impl TxIbcUpgradeChainCmd {
                 .upgrade_name
                 .clone()
                 .unwrap_or_else(|| "plan".to_string()),
+            gov_account: self.gov_account.clone(),
         };
 
         Ok(opts)
@@ -151,6 +161,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: "gov_account".to_string(),
                 new_chain_id: None,
                 new_unbonding: None,
                 upgrade_name: None,
@@ -167,7 +178,9 @@ mod tests {
                 "--amount",
                 "42",
                 "--height-offset",
-                "21"
+                "21",
+                "--gov-account",
+                "gov_acccount"
             ])
         )
     }
@@ -181,6 +194,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: "gov_account".to_string(),
                 new_chain_id: None,
                 new_unbonding: None,
                 upgrade_name: None,
@@ -196,6 +210,8 @@ mod tests {
                 "client_sender",
                 "--amount",
                 "42",
+                "--gov-account",
+                "gov_acccount",
                 "--height-offset",
                 "21",
                 "--denom",
@@ -213,6 +229,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: "gov_account".to_string(),
                 new_chain_id: Some(ChainId::from_string("new_chain")),
                 new_unbonding: None,
                 upgrade_name: None,
@@ -228,6 +245,8 @@ mod tests {
                 "client_sender",
                 "--amount",
                 "42",
+                "--gov-account",
+                "gov_acccount",
                 "--height-offset",
                 "21",
                 "--new-chain",
@@ -245,6 +264,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: "gov_account".to_string(),
                 new_chain_id: None,
                 new_unbonding: Some(17),
                 upgrade_name: None,
@@ -260,6 +280,8 @@ mod tests {
                 "client_sender",
                 "--amount",
                 "42",
+                "--gov-account",
+                "gov_acccount",
                 "--height-offset",
                 "21",
                 "--new-unbonding",
@@ -277,6 +299,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: "gov_account".to_string(),
                 new_chain_id: None,
                 new_unbonding: None,
                 upgrade_name: Some("upgrade_name".to_owned()),
@@ -292,12 +315,32 @@ mod tests {
                 "client_sender",
                 "--amount",
                 "42",
+                "--gov-account",
+                "gov_acccount",
                 "--height-offset",
                 "21",
                 "--upgrade-name",
                 "upgrade_name"
             ])
         )
+    }
+
+    #[test]
+    fn test_upgrade_chain_no_gov_account() {
+        assert!(TxIbcUpgradeChainCmd::try_parse_from([
+            "test",
+            "--reference-chain",
+            "chain_receiver",
+            "--host-chain",
+            "chain_sender",
+            "--host-client",
+            "client_sender",
+            "--amount",
+            "42",
+            "--height-offset",
+            "21",
+        ])
+        .is_err())
     }
 
     #[test]
@@ -311,7 +354,9 @@ mod tests {
             "--host-client",
             "client_sender",
             "--amount",
-            "42"
+            "42",
+            "--gov-account",
+            "gov_acccount"
         ])
         .is_err())
     }
@@ -327,7 +372,9 @@ mod tests {
             "--host-client",
             "client_sender",
             "--height-offset",
-            "21"
+            "21",
+            "--gov-account",
+            "gov_acccount"
         ])
         .is_err())
     }
@@ -343,7 +390,9 @@ mod tests {
             "--amount",
             "42",
             "--height-offset",
-            "21"
+            "21",
+            "--gov-account",
+            "gov_acccount"
         ])
         .is_err())
     }
@@ -359,7 +408,9 @@ mod tests {
             "--amount",
             "42",
             "--height-offset",
-            "21"
+            "21",
+            "--gov-account",
+            "gov_acccount"
         ])
         .is_err())
     }
@@ -375,7 +426,9 @@ mod tests {
             "--amount",
             "42",
             "--height-offset",
-            "21"
+            "21",
+            "--gov-account",
+            "gov_acccount"
         ])
         .is_err())
     }

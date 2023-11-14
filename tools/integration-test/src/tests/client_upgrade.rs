@@ -82,6 +82,8 @@ impl BinaryChainTest for ClientUpgradeTest {
 
         let src_client_id = foreign_clients.client_id_b().0.clone();
 
+        let gov_account = chains.node_a.chain_driver().query_auth_module("gov")?;
+
         // Create and send an chain upgrade proposal
         let opts = UpgradePlanOptions {
             src_client_id,
@@ -91,6 +93,7 @@ impl BinaryChainTest for ClientUpgradeTest {
             upgraded_chain_id,
             upgraded_unbonding_period: None,
             upgrade_plan_name: "plan".to_string(),
+            gov_account,
         };
 
         build_and_send_ibc_upgrade_proposal(
@@ -202,6 +205,8 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
 
         let src_client_id = foreign_clients.client_id_b().0.clone();
 
+        let gov_account = chains.node_a.chain_driver().query_auth_module("gov")?;
+
         // Create and send an chain upgrade proposal
         let opts = UpgradePlanOptions {
             src_client_id,
@@ -211,6 +216,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
             upgraded_chain_id,
             upgraded_unbonding_period: None,
             upgrade_plan_name: "plan".to_string(),
+            gov_account,
         };
 
         build_and_send_ibc_upgrade_proposal(
@@ -286,6 +292,8 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
 
         let src_client_id = foreign_clients.client_id_b().0.clone();
 
+        let gov_account = chains.node_a.chain_driver().query_auth_module("gov")?;
+
         // Create and send an chain upgrade proposal
         let opts = UpgradePlanOptions {
             src_client_id,
@@ -295,6 +303,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
             upgraded_chain_id,
             upgraded_unbonding_period: None,
             upgrade_plan_name: "plan".to_string(),
+            gov_account,
         };
 
         build_and_send_ibc_upgrade_proposal(

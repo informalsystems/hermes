@@ -8,10 +8,10 @@ use flex_error::define_error;
 
 use tendermint::Hash as TxHash;
 
-use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
+use ibc_proto::cosmos::gov::v1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::Plan;
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::client::v1::UpgradeProposal;
+use ibc_proto::ibc::core::client::v1::MsgIbcSoftwareUpgrade;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::UpgradeOptions;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
@@ -66,6 +66,7 @@ pub struct UpgradePlanOptions {
     pub upgraded_chain_id: ChainId,
     pub upgraded_unbonding_period: Option<Duration>,
     pub upgrade_plan_name: String,
+    pub gov_account: String,
 }
 
 pub fn build_and_send_ibc_upgrade_proposal(
@@ -113,16 +114,15 @@ pub fn build_and_send_ibc_upgrade_proposal(
         opts.upgraded_chain_id.clone(),
     );
 
-    let proposal = UpgradeProposal {
-        title: "proposal 0".to_string(),
-        description: "upgrade the chain software and unbonding period".to_string(),
-        upgraded_client_state: Some(Any::from(AnyClientState::from(client_state))),
+    let proposal = MsgIbcSoftwareUpgrade {
         plan: Some(Plan {
             name: opts.upgrade_plan_name.clone(),
             height: plan_height.revision_height() as i64,
             info: "".to_string(),
             ..Default::default() // deprecated fields - time & upgraded_client_state
         }),
+        upgraded_client_state: Some(Any::from(AnyClientState::from(client_state))),
+        signer: opts.gov_account.clone(),
     };
 
     let proposal = Proposal::Default(proposal);
@@ -143,15 +143,18 @@ pub fn build_and_send_ibc_upgrade_proposal(
     };
 
     let msg = MsgSubmitProposal {
-        content: Some(any_proposal),
+        messages: vec![any_proposal],
         initial_deposit: vec![coins],
         proposer: proposer.to_string(),
+        metadata: "".to_string(),
+        title: "proposal 0".to_string(),
+        summary: "upgrade the chain software and unbonding period".to_string(),
     };
 
     let mut buf_msg = Vec::new();
     prost::Message::encode(&msg, &mut buf_msg).unwrap();
     let any_msg = Any {
-        type_url: "/cosmos.gov.v1beta1.MsgSubmitProposal".to_string(),
+        type_url: "/cosmos.gov.v1.MsgSubmitProposal".to_string(),
         value: buf_msg,
     };
 
@@ -168,7 +171,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
 }
 
 enum Proposal {
-    Default(UpgradeProposal),
+    Default(MsgIbcSoftwareUpgrade),
 }
 
 impl Proposal {
@@ -181,7 +184,7 @@ impl Proposal {
 
     fn type_url(&self) -> String {
         match self {
-            Proposal::Default(_) => "/ibc.core.client.v1.UpgradeProposal",
+            Proposal::Default(_) => "/ibc.core.client.v1.MsgIBCSoftwareUpgrade",
         }
         .to_owned()
     }
