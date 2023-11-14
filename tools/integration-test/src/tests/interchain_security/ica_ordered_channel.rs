@@ -94,7 +94,9 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
                 &channel_id.as_ref(),
                 &port_id.as_ref(),
             )?;
-        });
+
+            Ok(())
+        })?;
 
         // Assert that the channel returned by `register_interchain_account` is an ordered channel
         let channel_end =
