@@ -144,7 +144,7 @@ impl ChainHandle for BaseChainHandle {
         })
     }
 
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+    fn ibc_version(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
         self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
     }
 

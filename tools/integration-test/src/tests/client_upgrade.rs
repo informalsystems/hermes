@@ -17,19 +17,15 @@ use std::str::FromStr;
 
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_test_framework::{
-    chain::{
-        config::{set_max_deposit_period, set_voting_period},
-        ext::wait_chain::wait_for_chain_height,
-    },
-    prelude::*,
-};
+use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
+use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::util::proposal_status::ProposalStatus;
 
 const MAX_DEPOSIT_PERIOD: &str = "10s";
 const VOTING_PERIOD: u64 = 10;
 const DELTA_HEIGHT: u64 = 15;
 const WAIT_CHAIN_UPGRADE: Duration = Duration::from_secs(4);
-const MAX_WAIT_FOR_CHAIN_HEIGHT: Duration = Duration::from_secs(60);
 
 #[test]
 fn test_client_upgrade() -> Result<(), Error> {
@@ -103,14 +99,22 @@ impl BinaryChainTest for ClientUpgradeTest {
         )
         .map_err(Error::upgrade_chain)?;
 
-        // Wait for the proposal to be processed
-        std::thread::sleep(Duration::from_secs(2));
+        info!("Assert that the chain upgrade proposal is eventually in voting period");
 
         let driver = chains.node_a.chain_driver();
 
+        driver.value().assert_proposal_status(
+            driver.value().chain_id.as_str(),
+            &driver.value().command_path,
+            &driver.value().home_path,
+            &driver.value().rpc_listen_address(),
+            ProposalStatus::VotingPeriod,
+            "1",
+        )?;
+
         // Retrieve the height which should be used to upgrade the client
         let upgrade_height = driver.query_upgrade_proposal_height(
-            &Uri::from_str(&driver.0.grpc_address()).map_err(handle_generic_error)?,
+            &Uri::from_str(&driver.value().grpc_address()).map_err(handle_generic_error)?,
             1,
         )?;
 
@@ -123,17 +127,16 @@ impl BinaryChainTest for ClientUpgradeTest {
         // Vote on the proposal so the chain will upgrade
         driver.vote_proposal(&fee_denom_a.with_amount(1200u64).to_string())?;
 
-        // The application height reports a height of 1 less than the height according to Tendermint
-        let target_reference_application_height = client_upgrade_height
-            .decrement()
-            .expect("Upgrade height cannot be 1");
+        info!("Assert that the chain upgrade proposal is eventually passed");
 
-        assert!(wait_for_chain_height(
-            &foreign_clients,
-            target_reference_application_height,
-            MAX_WAIT_FOR_CHAIN_HEIGHT
-        )
-        .is_ok());
+        driver.value().assert_proposal_status(
+            driver.value().chain_id.as_str(),
+            &driver.value().command_path,
+            &driver.value().home_path,
+            &driver.value().rpc_listen_address(),
+            ProposalStatus::Passed,
+            "1",
+        )?;
 
         // Wait for the chain to upgrade
         std::thread::sleep(WAIT_CHAIN_UPGRADE);
@@ -226,10 +229,18 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         )
         .map_err(Error::upgrade_chain)?;
 
-        // Wait for the proposal to be processed
-        std::thread::sleep(Duration::from_secs(2));
+        info!("Assert that the chain upgrade proposal is eventually in voting period");
 
         let driver = chains.node_a.chain_driver();
+
+        driver.value().assert_proposal_status(
+            driver.value().chain_id.as_str(),
+            &driver.value().command_path,
+            &driver.value().home_path,
+            &driver.value().rpc_listen_address(),
+            ProposalStatus::VotingPeriod,
+            "1",
+        )?;
 
         // Retrieve the height which should be used to upgrade the client
         let upgrade_height = driver.query_upgrade_proposal_height(
@@ -247,16 +258,18 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         driver.vote_proposal(&fee_denom_a.with_amount(1200u64).to_string())?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
-        let target_reference_application_height = client_upgrade_height
-            .decrement()
-            .expect("Upgrade height cannot be 1");
+        client_upgrade_height.increment();
 
-        assert!(wait_for_chain_height(
-            &foreign_clients,
-            target_reference_application_height,
-            MAX_WAIT_FOR_CHAIN_HEIGHT
-        )
-        .is_ok());
+        info!("Assert that the chain upgrade proposal is eventually passed");
+
+        driver.value().assert_proposal_status(
+            driver.value().chain_id.as_str(),
+            &driver.value().command_path,
+            &driver.value().home_path,
+            &driver.value().rpc_listen_address(),
+            ProposalStatus::Passed,
+            "1",
+        )?;
 
         // Wait for the chain to upgrade
         std::thread::sleep(WAIT_CHAIN_UPGRADE);
@@ -313,14 +326,22 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         )
         .map_err(Error::upgrade_chain)?;
 
-        // Wait for the proposal to be processed
-        std::thread::sleep(Duration::from_secs(2));
+        info!("Assert that the chain upgrade proposal is eventually in voting period");
 
         let driver = chains.node_a.chain_driver();
 
+        driver.value().assert_proposal_status(
+            driver.value().chain_id.as_str(),
+            &driver.value().command_path,
+            &driver.value().home_path,
+            &driver.value().rpc_listen_address(),
+            ProposalStatus::VotingPeriod,
+            "1",
+        )?;
+
         // Retrieve the height which should be used to upgrade the client
         let upgrade_height = driver.query_upgrade_proposal_height(
-            &Uri::from_str(&driver.0.grpc_address()).map_err(handle_generic_error)?,
+            &Uri::from_str(&driver.value().grpc_address()).map_err(handle_generic_error)?,
             1,
         )?;
 
@@ -334,16 +355,20 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         driver.vote_proposal(&fee_denom_a.with_amount(1200u64).to_string())?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
-        let target_reference_application_height = client_upgrade_height
+        client_upgrade_height
             .decrement()
             .expect("Upgrade height cannot be 1");
 
-        assert!(wait_for_chain_height(
-            &foreign_clients,
-            target_reference_application_height,
-            MAX_WAIT_FOR_CHAIN_HEIGHT
-        )
-        .is_ok());
+        info!("Assert that the chain upgrade proposal is eventually passed");
+
+        driver.value().assert_proposal_status(
+            driver.value().chain_id.as_str(),
+            &driver.value().command_path,
+            &driver.value().home_path,
+            &driver.value().rpc_listen_address(),
+            ProposalStatus::Passed,
+            "1",
+        )?;
 
         // Wait for the chain to upgrade
         std::thread::sleep(WAIT_CHAIN_UPGRADE);

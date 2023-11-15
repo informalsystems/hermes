@@ -4,7 +4,7 @@ use ibc_relayer::config::default::max_grpc_decoding_size;
 use prost::Message;
 
 use ibc_proto::cosmos::gov::v1beta1::{query_client::QueryClient, QueryProposalRequest};
-use ibc_proto::ibc::core::client::v1::MsgIbcSoftwareUpgrade;
+use ibc_proto::ibc::core::client::v1::{MsgIbcSoftwareUpgrade, UpgradeProposal};
 use ibc_relayer::error::Error as RelayerError;
 
 use crate::chain::cli::upgrade::vote_proposal;
@@ -79,18 +79,33 @@ pub async fn query_upgrade_proposal_height(
         .content
         .ok_or_else(|| eyre!("failed to retrieve content of Proposal"))?;
 
-    if proposal_content.type_url != *"/ibc.core.client.v1.MsgIBCSoftwareUpgrade" {
-        return Err(Error::incorrect_proposal_type_url(
-            proposal_content.type_url,
-        ));
-    }
+    let height = match proposal_content.type_url.as_str() {
+        "/ibc.core.client.v1.MsgIBCSoftwareUpgrade" => {
+            let upgrade_plan = MsgIbcSoftwareUpgrade::decode(&proposal_content.value as &[u8])
+                .map_err(handle_generic_error)?;
 
-    let upgrade_plan = MsgIbcSoftwareUpgrade::decode(&proposal_content.value as &[u8])
-        .map_err(handle_generic_error)?;
+            let plan = upgrade_plan
+                .plan
+                .ok_or_else(|| eyre!("failed to plan from MsgIbcSoftwareUpgrade"))?;
 
-    let plan = upgrade_plan
-        .plan
-        .ok_or_else(|| eyre!("failed to plan from MsgIbcSoftwareUpgrade"))?;
+            plan.height as u64
+        }
+        "/ibc.core.client.v1.UpgradeProposal" => {
+            let upgrade_plan = UpgradeProposal::decode(&proposal_content.value as &[u8])
+                .map_err(handle_generic_error)?;
 
-    Ok(plan.height as u64)
+            let plan = upgrade_plan
+                .plan
+                .ok_or_else(|| eyre!("failed to plan from MsgIbcSoftwareUpgrade"))?;
+
+            plan.height as u64
+        }
+        _ => {
+            return Err(Error::incorrect_proposal_type_url(
+                proposal_content.type_url,
+            ))
+        }
+    };
+
+    Ok(height)
 }

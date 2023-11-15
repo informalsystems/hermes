@@ -141,7 +141,7 @@ pub enum ChainRequest {
     },
 
     IbcVersion {
-        reply_to: ReplyTo<Option<semver::Version>>,
+        reply_to: ReplyTo<(Option<semver::Version>, semver::Version)>,
     },
 
     QueryBalance {
@@ -412,7 +412,7 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     fn add_key(&self, key_name: String, key: AnySigningKeyPair) -> Result<(), Error>;
 
     /// Return the version of the IBC protocol that this chain is running, if known.
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
+    fn ibc_version(&self) -> Result<(Option<semver::Version>, semver::Version), Error>;
 
     /// Query the balance of the given account for the given denom.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.

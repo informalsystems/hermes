@@ -449,7 +449,10 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn ibc_version(&mut self, reply_to: ReplyTo<Option<semver::Version>>) -> Result<(), Error> {
+    fn ibc_version(
+        &mut self,
+        reply_to: ReplyTo<(Option<semver::Version>, semver::Version)>,
+    ) -> Result<(), Error> {
         let result = self.chain.ibc_version();
         reply_to.send(result).map_err(Error::send)
     }

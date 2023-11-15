@@ -1363,7 +1363,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.38.0"
-source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=luca_joss/update-to-ibc-go-v8#ed4eb279196fc848281417f46d0353fbb0ca06de"
+source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=luca_joss/update-to-ibc-go-v8#3ef7d188988844d924906a5fb2a693b42267ffb9"
 dependencies = [
  "base64 0.21.5",
  "bytes",

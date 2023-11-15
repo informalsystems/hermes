@@ -203,7 +203,7 @@ pub fn query_auth_module(
     rpc_listen_address: &str,
     module_name: &str,
 ) -> Result<String, Error> {
-    let output = simple_exec(
+    let account = match simple_exec(
         chain_id,
         command_path,
         &[
@@ -218,15 +218,60 @@ pub fn query_auth_module(
             "--output",
             "json",
         ],
-    )?
-    .stdout;
+    ) {
+        Ok(output) => {
+            let json_res: HashMap<String, serde_json::Value> =
+                serde_json::from_str(&output.stdout).map_err(handle_generic_error)?;
 
-    let json_res: HashMap<String, serde_json::Value> =
-        serde_json::from_str(&output).map_err(handle_generic_error)?;
+            json_res
+                .get("account")
+                .ok_or_else(|| eyre!("expect `account` string field to be present in json result"))?
+                .clone()
+        }
+        Err(e) => {
+            debug!("CLI `query auth module-account` failed, will try with `query auth module-accounts`: {e}");
+            let output = simple_exec(
+                chain_id,
+                command_path,
+                &[
+                    "--home",
+                    home_path,
+                    "--node",
+                    rpc_listen_address,
+                    "query",
+                    "auth",
+                    "module-accounts",
+                    "--output",
+                    "json",
+                ],
+            )?
+            .stdout;
+            let json_res: HashMap<String, serde_json::Value> =
+                serde_json::from_str(&output).map_err(handle_generic_error)?;
 
-    let account = json_res
-        .get("account")
-        .ok_or_else(|| eyre!("expect `account` string field to be present in json result"))?;
+            let accounts = json_res
+                .get("accounts")
+                .ok_or_else(|| {
+                    eyre!("expect `accounts` string field to be present in json result")
+                })?
+                .as_array()
+                .ok_or_else(|| eyre!("expected `accounts` to be an array"))?;
+
+            accounts
+                .iter()
+                .find(|&account| {
+                    if let Some(name) = account.get("name") {
+                        name == module_name
+                    } else {
+                        false
+                    }
+                })
+                .ok_or_else(|| {
+                    eyre!("expected to find the account for the `{module_name}` module")
+                })?
+                .clone()
+        }
+    };
 
     // Depending on the version used the CLI `query auth module-account` will have a field `base_account` or
     // or a field `value` containing the address.
