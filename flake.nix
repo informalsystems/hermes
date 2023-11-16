@@ -29,7 +29,8 @@
           (cosmos-nix)
           cometbft
           gaia6-ordered
-          gaia12
+          gaia13
+          gaia14
           osmosis
           wasmd
           ibc-go-v2-simapp
