@@ -75,23 +75,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     src_chain: impl ChainHandle, // the source chain; supplies a client state for building the upgrade plan
     opts: &UpgradePlanOptions,
 ) -> Result<TxHash, UpgradeChainError> {
-    let (maybe_ibc_version, sdk_version) = dst_chain.version_specs().unwrap();
-    let legacy_version = match maybe_ibc_version {
-        Some(ibc_version) => {
-            // Some ibc-go simapps return unreliable ibc-go versions, such as simapp v8.0.0
-            // returns version v1.0.0. So if the ibc-go version matches which is not maintained
-            // anymore, use the Cosmos SDK version to determine if the legacy upgrade proposal
-            // has to be used
-            if ibc_version.major < 4 {
-                sdk_version.minor < 50
-            } else {
-                ibc_version.major < 8
-            }
-        }
-        None => sdk_version.minor < 50,
-    };
-
-    let any_msg = if legacy_version {
+    let any_msg = if requires_legacy_upgrade_proposal(dst_chain.clone()) {
         build_legacy_upgrade_proposal(dst_chain.clone(), src_chain, opts)
     } else {
         build_upgrade_proposal(dst_chain.clone(), src_chain, opts)
@@ -107,6 +91,28 @@ pub fn build_and_send_ibc_upgrade_proposal(
         .map_err(|e| UpgradeChainError::submit(dst_chain.id(), e))?;
 
     Ok(responses[0].hash)
+}
+
+/// Looks at the ibc-go version to determine if the legacy `UpgradeProposal` message
+/// or if the newer `MsgIBCSoftwareUpdate` message should be used to upgrade the chain.
+/// If the ibc-go version returned isn't reliable, a deprecated version, then the version
+/// of Cosmos SDK is used.
+fn requires_legacy_upgrade_proposal(dst_chain: impl ChainHandle) -> bool {
+    let (maybe_ibc_version, sdk_version) = dst_chain.version_specs().unwrap();
+    match maybe_ibc_version {
+        Some(ibc_version) => {
+            // Some ibc-go simapps return unreliable ibc-go versions, such as simapp v8.0.0
+            // returns version v1.0.0. So if the ibc-go version matches which is not maintained
+            // anymore, use the Cosmos SDK version to determine if the legacy upgrade proposal
+            // has to be used
+            if ibc_version.major < 4 {
+                sdk_version.minor < 50
+            } else {
+                ibc_version.major < 8
+            }
+        }
+        None => sdk_version.minor < 50,
+    }
 }
 
 /// Ibc-go versions up to v7.x.x use the deprecated `UpgradeProposal` to upgrade a chain
