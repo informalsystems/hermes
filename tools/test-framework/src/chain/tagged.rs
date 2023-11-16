@@ -83,7 +83,7 @@ pub trait TaggedChainDriverExt<Chain> {
     ) -> Result<json::Value, Error>;
 
     /**
-       Tagged version of [`ChainDriver::query_auth_module`].
+       Tagged version of [`query_auth_module`].
 
         Query for the authority account for a specific module.
     */
