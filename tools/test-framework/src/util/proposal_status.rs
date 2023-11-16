@@ -1,4 +1,5 @@
 use serde_json::Value;
+use std::str::FromStr;
 
 use crate::prelude::*;
 
@@ -30,11 +31,11 @@ impl TryFrom<i64> for ProposalStatus {
     }
 }
 
-impl TryFrom<String> for ProposalStatus {
-    type Error = Error;
+impl FromStr for ProposalStatus {
+    type Err = Error;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.as_str() {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
             "PROPOSAL_STATUS_UNSPECIFIED" => Ok(Self::Unspecified),
             "PROPOSAL_STATUS_DEPOSIT_PERIOD" => Ok(Self::DepositPeriod),
             "PROPOSAL_STATUS_VOTING_PERIOD" => Ok(Self::VotingPeriod),
@@ -42,7 +43,7 @@ impl TryFrom<String> for ProposalStatus {
             "PROPOSAL_STATUS_REJECTED" => Ok(Self::Rejected),
             "PROPOSAL_STATUS_FAILED" => Ok(Self::Failed),
             _ => Err(Error::generic(eyre!(
-                "unknown value for proposal status: `{value}`"
+                "unknown value for proposal status: `{s}`"
             ))),
         }
     }
@@ -73,7 +74,7 @@ impl TryFrom<&Value> for ProposalStatus {
             let str_value = value
                 .as_str()
                 .ok_or_else(|| eyre!("error converting value to str: `{value}`"))?;
-            ProposalStatus::try_from(str_value.to_owned())
+            ProposalStatus::from_str(str_value)
         }
     }
 }
