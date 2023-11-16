@@ -106,6 +106,7 @@ use crate::util::pretty::{
 use crate::{chain::client::ClientSettings, config::Error as ConfigError};
 
 use self::types::app_state::GenesisAppState;
+use self::version::Specs;
 
 pub mod batch;
 pub mod client;
@@ -1078,9 +1079,9 @@ impl ChainEndpoint for CosmosSdkChain {
         ChainConfig::CosmosSdk(self.config.clone())
     }
 
-    fn version_specs(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
+    fn version_specs(&self) -> Result<Specs, Error> {
         let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
-        Ok((version_specs.ibc_go, version_specs.cosmos_sdk))
+        Ok(version_specs)
     }
 
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {

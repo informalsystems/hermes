@@ -21,6 +21,7 @@
 */
 
 use crossbeam_channel as channel;
+use ibc_relayer::chain::cosmos::version::Specs;
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::{
@@ -121,7 +122,7 @@ where
         self.value().add_key(key_name, key)
     }
 
-    fn version_specs(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
+    fn version_specs(&self) -> Result<Specs, Error> {
         self.value().version_specs()
     }
 

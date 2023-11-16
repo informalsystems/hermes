@@ -45,6 +45,7 @@ use crate::{
 
 use super::{
     client::ClientSettings,
+    cosmos::version::Specs,
     endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     requests::*,
@@ -449,10 +450,7 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn version_specs(
-        &mut self,
-        reply_to: ReplyTo<(Option<semver::Version>, semver::Version)>,
-    ) -> Result<(), Error> {
+    fn version_specs(&mut self, reply_to: ReplyTo<Specs>) -> Result<(), Error> {
         let result = self.chain.version_specs();
         reply_to.send(result).map_err(Error::send)
     }

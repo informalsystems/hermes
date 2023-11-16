@@ -26,7 +26,10 @@ use ibc_relayer_types::{
 
 use crate::{
     account::Balance,
-    chain::{client::ClientSettings, endpoint::ChainStatus, requests::*, tracking::TrackedMsgs},
+    chain::{
+        client::ClientSettings, cosmos::version::Specs, endpoint::ChainStatus, requests::*,
+        tracking::TrackedMsgs,
+    },
     client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -144,7 +147,7 @@ impl ChainHandle for BaseChainHandle {
         })
     }
 
-    fn version_specs(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
+    fn version_specs(&self) -> Result<Specs, Error> {
         self.send(|reply_to| ChainRequest::VersionSpecs { reply_to })
     }
 

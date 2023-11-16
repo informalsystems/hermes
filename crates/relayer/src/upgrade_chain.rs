@@ -98,20 +98,20 @@ pub fn build_and_send_ibc_upgrade_proposal(
 /// If the ibc-go version returned isn't reliable, a deprecated version, then the version
 /// of Cosmos SDK is used.
 pub fn requires_legacy_upgrade_proposal(dst_chain: impl ChainHandle) -> bool {
-    let (maybe_ibc_version, sdk_version) = dst_chain.version_specs().unwrap();
-    match maybe_ibc_version {
+    let version_specs = dst_chain.version_specs().unwrap();
+    match version_specs.ibc_go {
         Some(ibc_version) => {
             // Some ibc-go simapps return unreliable ibc-go versions, such as simapp v8.0.0
             // returns version v1.0.0. So if the ibc-go version matches which is not maintained
             // anymore, use the Cosmos SDK version to determine if the legacy upgrade proposal
             // has to be used
             if ibc_version.major < 4 {
-                sdk_version.minor < 50
+                version_specs.cosmos_sdk.minor < 50
             } else {
                 ibc_version.major < 8
             }
         }
-        None => sdk_version.minor < 50,
+        None => version_specs.cosmos_sdk.minor < 50,
     }
 }
 
