@@ -135,6 +135,9 @@ impl BinaryChainTest for ClientUpgradeTest {
         // The error is ignored as the client state will be asserted afterwards.
         let _ = foreign_clients.client_a_to_b.upgrade(client_upgrade_height);
 
+        // Wait to seconds before querying the client state
+        std::thread::sleep(Duration::from_secs(2));
+
         let (state, _) = chains.handle_b().query_client_state(
             QueryClientStateRequest {
                 client_id: foreign_clients.client_a_to_b.id().clone(),
@@ -184,6 +187,9 @@ impl BinaryChainTest for InvalidClientUpgradeTest {
         // Trigger the client upgrade
         // The error is ignored as the client state will be asserted afterwards.
         let _ = foreign_clients.client_a_to_b.upgrade(client_upgrade_height);
+
+        // Wait to seconds before querying the client state
+        std::thread::sleep(Duration::from_secs(2));
 
         let (state, _) = chains.handle_b().query_client_state(
             QueryClientStateRequest {
@@ -279,6 +285,9 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         let _ = foreign_clients
             .client_a_to_b
             .upgrade(client_upgrade_height.increment());
+
+        // Wait to seconds before querying the client state
+        std::thread::sleep(Duration::from_secs(2));
 
         let (state, _) = chains.handle_b().query_client_state(
             QueryClientStateRequest {
@@ -377,6 +386,9 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
                 .decrement()
                 .map_err(handle_generic_error)?,
         );
+
+        // Wait to seconds before querying the client state
+        std::thread::sleep(Duration::from_secs(2));
 
         let (state, _) = chains.handle_b().query_client_state(
             QueryClientStateRequest {
