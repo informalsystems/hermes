@@ -150,9 +150,9 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().add_key(key_name, key)
     }
 
-    fn ibc_version(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
+    fn version_specs(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
         self.inc_metric("ibc_version");
-        self.inner().ibc_version()
+        self.inner().version_specs()
     }
 
     fn query_balance(

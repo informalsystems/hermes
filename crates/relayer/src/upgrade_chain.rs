@@ -75,7 +75,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     src_chain: impl ChainHandle, // the source chain; supplies a client state for building the upgrade plan
     opts: &UpgradePlanOptions,
 ) -> Result<TxHash, UpgradeChainError> {
-    let (maybe_ibc_version, sdk_version) = dst_chain.ibc_version().unwrap();
+    let (maybe_ibc_version, sdk_version) = dst_chain.version_specs().unwrap();
     let legacy_version = match maybe_ibc_version {
         Some(ibc_version) => {
             // Some ibc-go simapps return unreliable ibc-go versions, such as simapp v8.0.0

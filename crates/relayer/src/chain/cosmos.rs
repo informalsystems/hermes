@@ -1078,7 +1078,7 @@ impl ChainEndpoint for CosmosSdkChain {
         ChainConfig::CosmosSdk(self.config.clone())
     }
 
-    fn ibc_version(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
+    fn version_specs(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
         let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
         Ok((version_specs.ibc_go, version_specs.cosmos_sdk))
     }

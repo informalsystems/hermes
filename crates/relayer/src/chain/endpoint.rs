@@ -124,7 +124,7 @@ pub trait ChainEndpoint: Sized {
     // Versioning
 
     /// Return the version of the IBC protocol that this chain is running, if known.
-    fn ibc_version(&self) -> Result<(Option<semver::Version>, semver::Version), Error>;
+    fn version_specs(&self) -> Result<(Option<semver::Version>, semver::Version), Error>;
 
     // Send transactions
 

@@ -121,8 +121,8 @@ where
         self.value().add_key(key_name, key)
     }
 
-    fn ibc_version(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
-        self.value().ibc_version()
+    fn version_specs(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
+        self.value().version_specs()
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

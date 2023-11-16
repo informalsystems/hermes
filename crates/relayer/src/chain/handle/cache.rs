@@ -122,8 +122,8 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().add_key(key_name, key)
     }
 
-    fn ibc_version(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
-        self.inner().ibc_version()
+    fn version_specs(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
+        self.inner().version_specs()
     }
 
     fn query_balance(

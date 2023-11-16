@@ -144,8 +144,8 @@ impl ChainHandle for BaseChainHandle {
         })
     }
 
-    fn ibc_version(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
-        self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
+    fn version_specs(&self) -> Result<(Option<semver::Version>, semver::Version), Error> {
+        self.send(|reply_to| ChainRequest::VersionSpecs { reply_to })
     }
 
     fn query_balance(
