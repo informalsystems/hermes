@@ -2,11 +2,15 @@ DESCRIPTION:
 Send an IBC upgrade plan
 
 USAGE:
-    hermes tx upgrade-chain [OPTIONS] --reference-chain <REFERENCE_CHAIN_ID> --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET> --gov-account <GOV_ACCOUNT>
+    hermes tx upgrade-chain [OPTIONS] --reference-chain <REFERENCE_CHAIN_ID> --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>
 
 OPTIONS:
         --denom <DENOM>
             Denomination for the deposit (default: 'stake')
+
+        --gov-account <GOV_ACCOUNT>
+            Authority account used to sign upgrade proposal. Note: This is only used for chains with
+            ibc-go version v8.0.0 or higher
 
     -h, --help
             Print help information
@@ -23,9 +27,6 @@ OPTIONS:
 REQUIRED:
         --amount <AMOUNT>
             Amount of stake
-
-        --gov-account <GOV_ACCOUNT>
-            Authority account used to sign upgrade proposal
 
         --height-offset <HEIGHT_OFFSET>
             Upgrade height offset in number of blocks since current

@@ -77,14 +77,16 @@ gaiad version --log_level error --long | head -n4
     ```
 
     ```shell
-    {{#template ../../../templates/commands/hermes/tx/upgrade-chain_1.md REFERENCE_CHAIN_ID=ibc-0 HOST_CHAIN_ID=ibc-1 HOST_CLIENT_ID=07-tendermint-0 AMOUNT=10000000 HEIGHT_OFFSET=60 GOV_ACCOUNT=<QUERIED_ACCOUNT>}}
+    {{#template ../../../templates/commands/hermes/tx/upgrade-chain_1.md REFERENCE_CHAIN_ID=ibc-0 HOST_CHAIN_ID=ibc-1 HOST_CLIENT_ID=07-tendermint-0 AMOUNT=10000000 HEIGHT_OFFSET=60 OPTIONS= --gov-account <QUERIED_ACCOUNT>}}
     ```
 
-    If the ibc-go version used is lower than `v8.0.0` you can input an empty string for the `--gov-account` flag as it will not be used.
+    If the ibc-go version used is lower than `v8.0.0` you can ignore the `--gov-account` flag as it will not be used.
 
     ```shell
-    {{#template ../../../templates/commands/hermes/tx/upgrade-chain_1.md REFERENCE_CHAIN_ID=ibc-0 HOST_CHAIN_ID=ibc-1 HOST_CLIENT_ID=07-tendermint-0 AMOUNT=10000000 HEIGHT_OFFSET=60 GOV_ACCOUNT=""}}
+    {{#template ../../../templates/commands/hermes/tx/upgrade-chain_1.md REFERENCE_CHAIN_ID=ibc-0 HOST_CHAIN_ID=ibc-1 HOST_CLIENT_ID=07-tendermint-0 AMOUNT=10000000 HEIGHT_OFFSET=60}}
     ```
+
+    For this test, the `--gov-account` can be ignored.
 
     ```text
     Success: transaction::Hash(CE98D8D98091BA8016BD852D18056E54C4CB3C4525E7F40DD3C40B4FD0F2482B)
