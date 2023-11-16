@@ -97,7 +97,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
 /// or if the newer `MsgIBCSoftwareUpdate` message should be used to upgrade the chain.
 /// If the ibc-go version returned isn't reliable, a deprecated version, then the version
 /// of Cosmos SDK is used.
-fn requires_legacy_upgrade_proposal(dst_chain: impl ChainHandle) -> bool {
+pub fn requires_legacy_upgrade_proposal(dst_chain: impl ChainHandle) -> bool {
     let (maybe_ibc_version, sdk_version) = dst_chain.version_specs().unwrap();
     match maybe_ibc_version {
         Some(ibc_version) => {
