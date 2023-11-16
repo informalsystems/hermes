@@ -33,6 +33,7 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::version::Specs;
 use crate::chain::handle::Subscription;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
@@ -124,7 +125,7 @@ pub trait ChainEndpoint: Sized {
     // Versioning
 
     /// Return the version of the IBC protocol that this chain is running, if known.
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
+    fn version_specs(&self) -> Result<Specs, Error>;
 
     // Send transactions
 

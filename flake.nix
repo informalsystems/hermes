@@ -38,6 +38,7 @@
           ibc-go-v5-simapp
           ibc-go-v6-simapp
           ibc-go-v7-simapp
+          ibc-go-v8-simapp
           interchain-security
           apalache
           evmos

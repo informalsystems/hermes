@@ -60,6 +60,9 @@ jobs:
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
+          - package: ibc-go-v8-simapp
+            command: simd
+            account_prefix: cosmos
           - package: wasmd
             command: wasmd
             account_prefix: wasm
@@ -157,6 +160,9 @@ jobs:
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
+          - package: ibc-go-v8-simapp
+            command: simd
+            account_prefix: cosmos
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
@@ -204,6 +210,9 @@ jobs:
             command: simd
             account_prefix: cosmos
           - package: ibc-go-v7-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v8-simapp
             command: simd
             account_prefix: cosmos
           - package: migaloo

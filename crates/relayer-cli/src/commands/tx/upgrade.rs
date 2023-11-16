@@ -3,6 +3,7 @@ use core::time::Duration;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+use ibc_relayer::upgrade_chain::requires_legacy_upgrade_proposal;
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
@@ -59,6 +60,13 @@ pub struct TxIbcUpgradeChainCmd {
     height_offset: u64,
 
     #[clap(
+        long = "gov-account",
+        value_name = "GOV_ACCOUNT",
+        help = "Authority account used to sign upgrade proposal. Note: This is only used for chains with ibc-go version v8.0.0 or higher"
+    )]
+    gov_account: Option<String>,
+
+    #[clap(
         long = "new-chain",
         value_name = "CHAIN_ID",
         help = "New chain identifier to assign to the upgrading chain (optional)"
@@ -88,7 +96,7 @@ pub struct TxIbcUpgradeChainCmd {
 }
 
 impl TxIbcUpgradeChainCmd {
-    fn validate_options(&self) -> Result<UpgradePlanOptions, String> {
+    fn validate_options(&self, gov_account: String) -> Result<UpgradePlanOptions, String> {
         let opts = UpgradePlanOptions {
             src_client_id: self.host_client_id.clone(),
             amount: self.amount,
@@ -103,6 +111,7 @@ impl TxIbcUpgradeChainCmd {
                 .upgrade_name
                 .clone()
                 .unwrap_or_else(|| "plan".to_string()),
+            gov_account,
         };
 
         Ok(opts)
@@ -113,16 +122,24 @@ impl Runnable for TxIbcUpgradeChainCmd {
     fn run(&self) {
         let config = app_config();
 
-        let opts = match self.validate_options() {
-            Err(err) => Output::error(err).exit(),
-            Ok(result) => result,
-        };
-
         let host_chain = spawn_chain_runtime(&config, &self.host_chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let reference_chain = spawn_chain_runtime(&config, &self.reference_chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
+
+        let gov_account = if requires_legacy_upgrade_proposal(reference_chain.clone()) {
+            "".to_string()
+        } else if let Some(gov_account) = &self.gov_account {
+            gov_account.clone()
+        } else {
+            Output::error("The chain being upgraded uses an ibc-go version v8.0.0 or higher, which requires the governance module account to be specified using the flag `--gov-account`".to_owned()).exit();
+        };
+
+        let opts = match self.validate_options(gov_account) {
+            Err(err) => Output::error(err).exit(),
+            Ok(result) => result,
+        };
 
         let res = build_and_send_ibc_upgrade_proposal(reference_chain, host_chain, &opts)
             .map_err(Error::upgrade_chain);
@@ -151,6 +168,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: None,
                 new_chain_id: None,
                 new_unbonding: None,
                 upgrade_name: None,
@@ -167,7 +185,7 @@ mod tests {
                 "--amount",
                 "42",
                 "--height-offset",
-                "21"
+                "21",
             ])
         )
     }
@@ -181,6 +199,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: None,
                 new_chain_id: None,
                 new_unbonding: None,
                 upgrade_name: None,
@@ -213,6 +232,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: None,
                 new_chain_id: Some(ChainId::from_string("new_chain")),
                 new_unbonding: None,
                 upgrade_name: None,
@@ -245,6 +265,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: None,
                 new_chain_id: None,
                 new_unbonding: Some(17),
                 upgrade_name: None,
@@ -277,6 +298,7 @@ mod tests {
                 host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
+                gov_account: None,
                 new_chain_id: None,
                 new_unbonding: None,
                 upgrade_name: Some("upgrade_name".to_owned()),
@@ -301,6 +323,39 @@ mod tests {
     }
 
     #[test]
+    fn test_upgrade_chain_gov_account() {
+        assert_eq!(
+            TxIbcUpgradeChainCmd {
+                reference_chain_id: ChainId::from_string("chain_receiver"),
+                host_chain_id: ChainId::from_string("chain_sender"),
+                host_client_id: ClientId::from_str("client_sender").unwrap(),
+                amount: 42,
+                height_offset: 21,
+                gov_account: Some("gov_account".to_owned()),
+                new_chain_id: None,
+                new_unbonding: None,
+                upgrade_name: None,
+                denom: None
+            },
+            TxIbcUpgradeChainCmd::parse_from([
+                "test",
+                "--reference-chain",
+                "chain_receiver",
+                "--host-chain",
+                "chain_sender",
+                "--host-client",
+                "client_sender",
+                "--amount",
+                "42",
+                "--height-offset",
+                "21",
+                "--gov-account",
+                "gov_account"
+            ])
+        )
+    }
+
+    #[test]
     fn test_upgrade_chain_no_height_offset() {
         assert!(TxIbcUpgradeChainCmd::try_parse_from([
             "test",
@@ -311,7 +366,7 @@ mod tests {
             "--host-client",
             "client_sender",
             "--amount",
-            "42"
+            "42",
         ])
         .is_err())
     }
@@ -327,7 +382,7 @@ mod tests {
             "--host-client",
             "client_sender",
             "--height-offset",
-            "21"
+            "21",
         ])
         .is_err())
     }
@@ -343,7 +398,7 @@ mod tests {
             "--amount",
             "42",
             "--height-offset",
-            "21"
+            "21",
         ])
         .is_err())
     }
@@ -359,7 +414,7 @@ mod tests {
             "--amount",
             "42",
             "--height-offset",
-            "21"
+            "21",
         ])
         .is_err())
     }
@@ -375,7 +430,7 @@ mod tests {
             "--amount",
             "42",
             "--height-offset",
-            "21"
+            "21",
         ])
         .is_err())
     }
