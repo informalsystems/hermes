@@ -57,7 +57,7 @@ impl TestOverrides for InterchainSecurityIcqTest {
                     *duration = serde_json::Value::String("20s".to_owned());
                 }
             }
-            set_voting_period(genesis, "10s")?;
+            set_voting_period(genesis, 10)?;
             set_staking_max_entries(genesis, "10")?;
             set_staking_bond_denom(genesis, "stake")?;
             set_mint_mint_denom(genesis, "stake")?;
