@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc_relayer::config::ChainConfig;
+use ibc_relayer::config::{ChainConfig, Config};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint::block::Height as TendermintHeight;
@@ -96,7 +96,13 @@ impl Runnable for EvidenceCmd {
         );
 
         let chain = CosmosSdkChain::bootstrap(chain_config, rt.clone()).unwrap();
-        let res = monitor_misbehaviours(rt, chain, self.key_name.as_ref(), self.check_past_blocks);
+        let res = monitor_misbehaviours(
+            rt,
+            &config,
+            chain,
+            self.key_name.as_ref(),
+            self.check_past_blocks,
+        );
 
         match res {
             Ok(()) => Output::success(()).exit(),
@@ -107,6 +113,7 @@ impl Runnable for EvidenceCmd {
 
 fn monitor_misbehaviours(
     rt: Arc<TokioRuntime>,
+    config: &Config,
     mut chain: CosmosSdkChain,
     key_name: Option<&String>,
     check_past_blocks: u64,
@@ -136,7 +143,7 @@ fn monitor_misbehaviours(
     while height >= target_height {
         debug!("checking for evidence at height {height}");
 
-        if let Err(e) = check_misbehaviour_at(rt.clone(), &chain, key_name, height) {
+        if let Err(e) = check_misbehaviour_at(rt.clone(), config, &chain, key_name, height) {
             warn!("error while checking for misbehaviour at height {height}: {e}");
         }
 
@@ -159,9 +166,13 @@ fn monitor_misbehaviours(
                     if let IbcEvent::NewBlock(new_block) = &event_with_height.event {
                         info!("checking for evidence at height {}", new_block.height);
 
-                        if let Err(e) =
-                            check_misbehaviour_at(rt.clone(), &chain, key_name, new_block.height)
-                        {
+                        if let Err(e) = check_misbehaviour_at(
+                            rt.clone(),
+                            config,
+                            &chain,
+                            key_name,
+                            new_block.height,
+                        ) {
                             error!(
                                 "error while checking for misbehaviour at height {}: {e}",
                                 new_block.height
@@ -184,6 +195,7 @@ fn monitor_misbehaviours(
 /// clients of the chain, freezing them.
 fn check_misbehaviour_at(
     rt: Arc<TokioRuntime>,
+    config: &Config,
     chain: &CosmosSdkChain,
     key_name: Option<&String>,
     height: Height,
@@ -198,13 +210,13 @@ fn check_misbehaviour_at(
                 warn!("found duplicate vote evidence");
                 trace!("{dv:#?}");
 
-                handle_duplicate_vote(rt.clone(), chain, key_name, *dv)?;
+                handle_duplicate_vote(rt.clone(), config, chain, key_name, *dv)?;
             }
             tendermint::evidence::Evidence::LightClientAttack(lc) => {
                 warn!("found light client attack evidence");
                 trace!("{lc:#?}");
 
-                handle_light_client_attack(rt.clone(), chain, key_name, *lc)?;
+                handle_light_client_attack(rt.clone(), config, chain, key_name, *lc)?;
             }
         }
     }
@@ -214,16 +226,15 @@ fn check_misbehaviour_at(
 
 fn handle_duplicate_vote(
     rt: Arc<TokioRuntime>,
+    config: &Config,
     chain: &CosmosSdkChain,
     key_name: Option<&String>,
     dv: DuplicateVoteEvidence,
 ) -> eyre::Result<()> {
     use ibc_relayer::chain::requests::QueryConsensusStateHeightsRequest;
 
-    let config = app_config();
-
     // Fetch all the counterparty clients of this chain.
-    let counterparty_clients = fetch_all_counterparty_clients(chain)?;
+    let counterparty_clients = fetch_all_counterparty_clients(config, chain)?;
 
     let mut chains = HashMap::new();
 
@@ -232,7 +243,7 @@ fn handle_duplicate_vote(
     for (counterparty_chain_id, counterparty_client_id) in counterparty_clients {
         if !chains.contains_key(&counterparty_chain_id) {
             let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
-                &config,
+                config,
                 &counterparty_chain_id,
                 rt.clone(),
                 |chain_config| {
@@ -240,12 +251,26 @@ fn handle_duplicate_vote(
                         chain_config.set_key_name(key_name.to_string());
                     }
                 },
-            )?;
+            );
+
+            let chain_handle = match chain_handle {
+                Ok(chain_handle) => chain_handle,
+                Err(e) => {
+                    error!(
+                        "failed to spawn chain runtime for chain `{chain_id}`: {e}",
+                        chain_id = chain.id()
+                    );
+
+                    continue;
+                }
+            };
 
             chains.insert(counterparty_chain_id.clone(), chain_handle);
         };
 
-        let counterparty_chain_handle = chains.get(&counterparty_chain_id).unwrap();
+        let counterparty_chain_handle = chains
+            .get(&counterparty_chain_id)
+            .expect("chain handle was either already there or we just inserted it");
 
         let signer = counterparty_chain_handle.get_signer()?;
 
@@ -356,17 +381,16 @@ fn fetch_infraction_block_header(
 
 fn handle_light_client_attack(
     rt: Arc<TokioRuntime>,
+    config: &Config,
     chain: &CosmosSdkChain,
     key_name: Option<&String>,
     evidence: LightClientAttackEvidence,
 ) -> eyre::Result<()> {
-    let config = app_config();
-
     // Build the two headers to submit as part of the `MsgSubmitMisbehaviour` message.
     let (header1, header2) = build_evidence_headers(rt.clone(), chain, evidence.clone())?;
 
     // Fetch all the counterparty clients of this chain.
-    let counterparty_clients = fetch_all_counterparty_clients(chain)?;
+    let counterparty_clients = fetch_all_counterparty_clients(config, chain)?;
 
     let mut chains = HashMap::new();
 
@@ -381,7 +405,7 @@ fn handle_light_client_attack(
 
         if !chains.contains_key(chain.id()) {
             let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
-                &config,
+                config,
                 chain.id(),
                 rt.clone(),
                 |chain_config| {
@@ -389,14 +413,26 @@ fn handle_light_client_attack(
                         chain_config.set_key_name(key_name.to_string());
                     }
                 },
-            )?;
+            );
+
+            let chain_handle = match chain_handle {
+                Ok(chain_handle) => chain_handle,
+                Err(e) => {
+                    error!(
+                        "failed to spawn chain runtime for chain `{chain_id}`: {e}",
+                        chain_id = chain.id()
+                    );
+
+                    continue;
+                }
+            };
 
             chains.insert(chain.id().clone(), chain_handle);
         }
 
         if !chains.contains_key(&counterparty_chain_id) {
             let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
-                &config,
+                config,
                 &counterparty_chain_id,
                 rt.clone(),
                 |chain_config| {
@@ -404,13 +440,30 @@ fn handle_light_client_attack(
                         chain_config.set_key_name(key_name.to_string());
                     }
                 },
-            )?;
+            );
+
+            let chain_handle = match chain_handle {
+                Ok(chain_handle) => chain_handle,
+                Err(e) => {
+                    error!(
+                        "failed to spawn chain runtime for chain `{counterparty_chain_id}`: {e}",
+                        counterparty_chain_id = counterparty_chain_id
+                    );
+
+                    continue;
+                }
+            };
 
             chains.insert(counterparty_chain_id.clone(), chain_handle);
         };
 
-        let chain_handle = chains.get(chain.id()).unwrap();
-        let counterparty_chain_handle = chains.get(&counterparty_chain_id).unwrap();
+        let chain_handle = chains
+            .get(chain.id())
+            .expect("chain handle was either already there or we just inserted it");
+
+        let counterparty_chain_handle = chains
+            .get(&counterparty_chain_id)
+            .expect("chain handle was either already there or we just inserted it");
 
         let counterparty_client = ForeignClient::restore(
             counterparty_client_id.clone(),
@@ -636,6 +689,7 @@ fn is_counterparty_provider(
 ///     2.2. From the client state, extract the chain id of the counterparty chain.
 /// 4. Return a list of all counterparty chains and counterparty clients.
 fn fetch_all_counterparty_clients(
+    config: &Config,
     chain: &CosmosSdkChain,
 ) -> eyre::Result<Vec<(ChainId, ClientId)>> {
     use ibc_relayer::chain::requests::{QueryClientStateRequest, QueryConnectionsRequest};
@@ -677,9 +731,16 @@ fn fetch_all_counterparty_clients(
         };
 
         let counterparty_chain_id = client_state.chain_id();
-        info!("found counterparty client with id `{client_id}` on counterparty chain `{counterparty_chain_id}`");
 
-        counterparty_clients.push((counterparty_chain_id, client_id.clone()));
+        if config.find_chain(&counterparty_chain_id).is_some() {
+            info!("found counterparty client with id `{client_id}` on counterparty chain `{counterparty_chain_id}`");
+            counterparty_clients.push((counterparty_chain_id, client_id.clone()));
+        } else {
+            debug!(
+                "skipping counterparty client `{client_id}` on counterparty \
+                chain `{counterparty_chain_id}` tgat is not present in the config..."
+            );
+        }
     }
 
     Ok(counterparty_clients)
