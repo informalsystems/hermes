@@ -124,6 +124,10 @@ impl WorkerMap {
         dst: Chain,
         config: &Config,
     ) -> &WorkerHandle {
+
+        // Clear workers, to prevent returning stopping workers.
+        self.clean_stopped_workers();
+
         if self.workers.contains_key(&object) {
             &self.workers[&object]
         } else {
