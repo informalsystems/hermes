@@ -708,12 +708,18 @@ fn fetch_all_counterparty_clients(
     let mut counterparty_clients = vec![];
 
     for connection in connections {
+        let client_id = connection.connection_end.client_id();
+        let counterparty_client_id = connection.connection_end.counterparty().client_id();
+
         debug!(
-            "fetching counterparty client state for connection `{}`",
+            "found connection `{}` with client `{client_id}` and counterparty client `{counterparty_client_id}`",
             connection.connection_id
         );
 
-        let client_id = connection.connection_end.client_id();
+        debug!(
+            "fetching client state for client `{client_id}` on connection `{}`",
+            connection.connection_id
+        );
 
         let client_state = chain.query_client_state(
             QueryClientStateRequest {
@@ -726,9 +732,7 @@ fn fetch_all_counterparty_clients(
         let client_state = match client_state {
             Ok((client_state, _)) => client_state,
             Err(e) => {
-                error!(
-                    "failed to fetch client state for counterparty client `{client_id}`, skipping..."
-                );
+                error!("failed to fetch client state for client `{client_id}`, skipping...");
                 error!("reason: {e}");
 
                 continue;
@@ -738,8 +742,9 @@ fn fetch_all_counterparty_clients(
         let counterparty_chain_id = client_state.chain_id();
 
         if config.find_chain(&counterparty_chain_id).is_some() {
-            info!("found counterparty client with id `{client_id}` on counterparty chain `{counterparty_chain_id}`");
-            counterparty_clients.push((counterparty_chain_id, client_id.clone()));
+            info!("found counterparty client `{counterparty_client_id}` which lives on counterparty chain `{counterparty_chain_id}`");
+
+            counterparty_clients.push((counterparty_chain_id, counterparty_client_id.clone()));
         } else {
             debug!(
                 "skipping counterparty client `{client_id}` on counterparty \
