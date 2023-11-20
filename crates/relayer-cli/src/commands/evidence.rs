@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::ops::Deref;
+use std::ops::{ControlFlow, Deref};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
@@ -224,127 +224,167 @@ fn check_misbehaviour_at(
     Ok(())
 }
 
+fn spawn_runtime(
+    rt: Arc<TokioRuntime>,
+    config: &Config,
+    cache: &mut HashMap<ChainId, BaseChainHandle>,
+    chain_id: &ChainId,
+    key_name: Option<&String>,
+) -> eyre::Result<BaseChainHandle> {
+    if !cache.contains_key(chain_id) {
+        let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
+            config,
+            chain_id,
+            rt,
+            |chain_config| {
+                if let Some(key_name) = key_name {
+                    chain_config.set_key_name(key_name.to_string());
+                }
+            },
+        )?;
+
+        cache.insert(chain_id.clone(), chain_handle);
+    }
+
+    Ok(cache
+        .get(chain_id)
+        .expect("chain handle was either already there or we just inserted it")
+        .clone())
+}
+
 fn handle_duplicate_vote(
     rt: Arc<TokioRuntime>,
     config: &Config,
     chain: &CosmosSdkChain,
     key_name: Option<&String>,
-    dv: DuplicateVoteEvidence,
+    evidence: DuplicateVoteEvidence,
 ) -> eyre::Result<()> {
-    use ibc_relayer::chain::requests::QueryConsensusStateHeightsRequest;
-
     // Fetch all the counterparty clients of this chain.
     let counterparty_clients = fetch_all_counterparty_clients(config, chain)?;
 
+    // Cache for the chain handles
     let mut chains = HashMap::new();
 
     // For each counterparty client, build the double voting evidence and submit it to the chain,
     // freezing that client.
     for (counterparty_chain_id, counterparty_client_id) in counterparty_clients {
-        if !chains.contains_key(&counterparty_chain_id) {
-            let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
-                config,
-                &counterparty_chain_id,
-                rt.clone(),
-                |chain_config| {
-                    if let Some(key_name) = key_name {
-                        chain_config.set_key_name(key_name.to_string());
-                    }
-                },
-            );
-
-            let chain_handle = match chain_handle {
-                Ok(chain_handle) => chain_handle,
-                Err(e) => {
-                    error!(
-                        "failed to spawn chain runtime for chain `{chain_id}`: {e}",
-                        chain_id = chain.id()
-                    );
-
-                    continue;
-                }
-            };
-
-            chains.insert(counterparty_chain_id.clone(), chain_handle);
+        let counterparty_chain_handle = match spawn_runtime(
+            rt.clone(),
+            config,
+            &mut chains,
+            &counterparty_chain_id,
+            key_name,
+        ) {
+            Ok(chain_handle) => chain_handle,
+            Err(e) => {
+                error!("failed to spawn runtime for chain `{counterparty_chain_id}`: {e}");
+                continue;
+            }
         };
 
-        let counterparty_chain_handle = chains
-            .get(&counterparty_chain_id)
-            .expect("chain handle was either already there or we just inserted it");
-
-        let signer = counterparty_chain_handle.get_signer()?;
-
-        if !is_counterparty_provider(chain, counterparty_chain_handle, &counterparty_client_id) {
-            debug!("counterparty client `{counterparty_client_id}` on chain `{counterparty_chain_id}` is not a CCV client, skipping...");
-            continue;
-        }
-
-        let infraction_height = dv.vote_a.height;
-
-        // Get the trusted height in the same way we do for client updates,
-        // ie. retrieve the consensus state at the highest height smaller than the infraction height.
-        //
-        // Note: The consensus state heights are sorted in increasing order.
-        let consensus_state_heights =
-            chain.query_consensus_state_heights(QueryConsensusStateHeightsRequest {
-                client_id: counterparty_client_id.clone(),
-                pagination: Some(PageRequest::all()),
-            })?;
-
-        // Retrieve the consensus state at the highest height smaller than the infraction height.
-        let consensus_state_height_before_infraction_height = consensus_state_heights
-            .into_iter()
-            .filter(|height| height.revision_height() < infraction_height.value())
-            .last();
-
-        let Some(trusted_height) = consensus_state_height_before_infraction_height else {
-            error!(
-                "cannot build infraction block header for client `{counterparty_client_id}` on chain `{counterparty_chain_id}`,\
-                reason: could not find consensus state at highest height smaller than infraction height {infraction_height}"
-            );
-
-            continue;
-        };
-
-        // Construct the light client block header for the consumer chain at the infraction height
-        let infraction_block_header =
-            fetch_infraction_block_header(&rt, chain, infraction_height, trusted_height)?;
-
-        let submit_msg = MsgSubmitIcsConsumerDoubleVoting {
-            submitter: signer.clone(),
-            duplicate_vote_evidence: dv.clone(),
-            infraction_block_header,
-        }
-        .to_any();
-
-        info!(
-            "submitting consumer double voting evidence to provider chain `{counterparty_chain_id}`"
+        let next = submit_duplicate_vote_evidence(
+            &rt,
+            chain,
+            &counterparty_chain_handle,
+            &counterparty_chain_id,
+            &counterparty_client_id,
+            &evidence,
         );
 
-        let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "double_voting_evidence");
-        let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
-
-        for response in responses {
-            if response.code.is_ok() {
-                info!("successfully submitted double voting evidence to chain `{counterparty_chain_id}`, tx hash: {}", response.hash);
-            } else {
+        match next {
+            Ok(ControlFlow::Continue(())) => continue,
+            Ok(ControlFlow::Break(())) => break,
+            Err(e) => {
                 error!(
-                    "failed to submit double voting evidence to chain `{counterparty_chain_id}`: {response:?}"
+                    "failed to report double voting evidence to chain `{counterparty_chain_id}`: {e}"
                 );
+
+                continue;
             }
         }
-
-        // We have submitted the evidence to the provider, and because there can only be a single
-        // provider for a consumer chain, we can stop now. No need to check all the other
-        // counteparties.
-        break;
     }
 
     Ok(())
 }
 
+fn submit_duplicate_vote_evidence(
+    rt: &TokioRuntime,
+    chain: &CosmosSdkChain,
+    counterparty_chain_handle: &BaseChainHandle,
+    counterparty_chain_id: &ChainId,
+    counterparty_client_id: &ClientId,
+    evidence: &DuplicateVoteEvidence,
+) -> eyre::Result<ControlFlow<()>> {
+    use ibc_relayer::chain::requests::QueryConsensusStateHeightsRequest;
+
+    let signer = counterparty_chain_handle.get_signer()?;
+
+    if !is_counterparty_provider(chain, counterparty_chain_handle, counterparty_client_id) {
+        debug!("counterparty client `{counterparty_client_id}` on chain `{counterparty_chain_id}` is not a CCV client, skipping...");
+        return Ok(ControlFlow::Continue(()));
+    }
+
+    let infraction_height = evidence.vote_a.height;
+
+    // Get the trusted height in the same way we do for client updates,
+    // ie. retrieve the consensus state at the highest height smaller than the infraction height.
+    //
+    // Note: The consensus state heights are sorted in increasing order.
+    let consensus_state_heights =
+        chain.query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+            client_id: counterparty_client_id.clone(),
+            pagination: Some(PageRequest::all()),
+        })?;
+
+    // Retrieve the consensus state at the highest height smaller than the infraction height.
+    let consensus_state_height_before_infraction_height = consensus_state_heights
+        .into_iter()
+        .filter(|height| height.revision_height() < infraction_height.value())
+        .last();
+
+    let Some(trusted_height) = consensus_state_height_before_infraction_height else {
+        error!(
+            "cannot build infraction block header for client `{counterparty_client_id}` on chain `{counterparty_chain_id}`,\
+            reason: could not find consensus state at highest height smaller than infraction height {infraction_height}"
+        );
+
+        return Ok(ControlFlow::Continue(()));
+    };
+
+    // Construct the light client block header for the consumer chain at the infraction height
+    let infraction_block_header =
+        fetch_infraction_block_header(rt, chain, infraction_height, trusted_height)?;
+
+    let submit_msg = MsgSubmitIcsConsumerDoubleVoting {
+        submitter: signer.clone(),
+        duplicate_vote_evidence: evidence.clone(),
+        infraction_block_header,
+    }
+    .to_any();
+
+    info!("submitting consumer double voting evidence to provider chain `{counterparty_chain_id}`");
+
+    let tracked_msgs = TrackedMsgs::new_static(vec![submit_msg], "double_voting_evidence");
+    let responses = counterparty_chain_handle.send_messages_and_wait_check_tx(tracked_msgs)?;
+
+    for response in responses {
+        if response.code.is_ok() {
+            info!("successfully submitted double voting evidence to chain `{counterparty_chain_id}`, tx hash: {}", response.hash);
+        } else {
+            error!(
+                "failed to submit double voting evidence to chain `{counterparty_chain_id}`: {response:?}"
+            );
+        }
+    }
+
+    // We have submitted the evidence to the provider, and because there can only be a single
+    // provider for a consumer chain, we can stop now. No need to check all the other
+    // counteparties.
+    Ok(ControlFlow::Break(()))
+}
+
 fn fetch_infraction_block_header(
-    rt: &Arc<TokioRuntime>,
+    rt: &TokioRuntime,
     chain: &CosmosSdkChain,
     infraction_height: TendermintHeight,
     trusted_height: Height,
@@ -392,78 +432,43 @@ fn handle_light_client_attack(
     // Fetch all the counterparty clients of this chain.
     let counterparty_clients = fetch_all_counterparty_clients(config, chain)?;
 
+    // Cache for the chain handles
     let mut chains = HashMap::new();
+
+    let chain_handle = spawn_runtime(rt.clone(), config, &mut chains, chain.id(), key_name)
+        .map_err(|e| {
+            eyre::eyre!(
+                "failed to spawn chain runtime for chain `{chain_id}`: {e}",
+                chain_id = chain.id()
+            )
+        })?;
 
     // For each counterparty client, build the misbehaviour evidence and submit it to the chain,
     // freezing that client.
     for (counterparty_chain_id, counterparty_client_id) in counterparty_clients {
+        let counterparty_chain_handle = match spawn_runtime(
+            rt.clone(),
+            config,
+            &mut chains,
+            &counterparty_chain_id,
+            key_name,
+        ) {
+            Ok(chain_handle) => chain_handle,
+            Err(e) => {
+                error!(
+                    "failed to spawn chain runtime for chain `{counterparty_chain_id}`: {e}",
+                    counterparty_chain_id = counterparty_chain_id
+                );
+
+                continue;
+            }
+        };
+
         let misbehaviour = TendermintMisbehaviour {
             client_id: counterparty_client_id.clone(),
             header1: header1.clone(),
             header2: header2.clone(),
         };
-
-        if !chains.contains_key(chain.id()) {
-            let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
-                config,
-                chain.id(),
-                rt.clone(),
-                |chain_config| {
-                    if let Some(key_name) = key_name {
-                        chain_config.set_key_name(key_name.to_string());
-                    }
-                },
-            );
-
-            let chain_handle = match chain_handle {
-                Ok(chain_handle) => chain_handle,
-                Err(e) => {
-                    error!(
-                        "failed to spawn chain runtime for chain `{chain_id}`: {e}",
-                        chain_id = chain.id()
-                    );
-
-                    continue;
-                }
-            };
-
-            chains.insert(chain.id().clone(), chain_handle);
-        }
-
-        if !chains.contains_key(&counterparty_chain_id) {
-            let chain_handle = spawn_chain_runtime_with_modified_config::<BaseChainHandle>(
-                config,
-                &counterparty_chain_id,
-                rt.clone(),
-                |chain_config| {
-                    if let Some(key_name) = key_name {
-                        chain_config.set_key_name(key_name.to_string());
-                    }
-                },
-            );
-
-            let chain_handle = match chain_handle {
-                Ok(chain_handle) => chain_handle,
-                Err(e) => {
-                    error!(
-                        "failed to spawn chain runtime for chain `{counterparty_chain_id}`: {e}",
-                        counterparty_chain_id = counterparty_chain_id
-                    );
-
-                    continue;
-                }
-            };
-
-            chains.insert(counterparty_chain_id.clone(), chain_handle);
-        };
-
-        let chain_handle = chains
-            .get(chain.id())
-            .expect("chain handle was either already there or we just inserted it");
-
-        let counterparty_chain_handle = chains
-            .get(&counterparty_chain_id)
-            .expect("chain handle was either already there or we just inserted it");
 
         let counterparty_client = ForeignClient::restore(
             counterparty_client_id.clone(),
@@ -476,7 +481,7 @@ fn handle_light_client_attack(
             chain,
             counterparty_client,
             counterparty_client_id,
-            counterparty_chain_handle,
+            &counterparty_chain_handle,
             misbehaviour,
         );
 
@@ -738,10 +743,14 @@ fn fetch_all_counterparty_clients(
         } else {
             debug!(
                 "skipping counterparty client `{client_id}` on counterparty \
-                chain `{counterparty_chain_id}` tgat is not present in the config..."
+                chain `{counterparty_chain_id}` which is not present in the config..."
             );
         }
     }
+
+    // Remove duplicates
+    counterparty_clients.sort();
+    counterparty_clients.dedup();
 
     Ok(counterparty_clients)
 }
