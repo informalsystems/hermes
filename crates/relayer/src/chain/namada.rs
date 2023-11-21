@@ -47,7 +47,7 @@ use namada_sdk::proof_of_stake::storage as pos_storage;
 use namada_sdk::proof_of_stake::OwnedPosParams;
 use namada_sdk::queries::Client as SdkClient;
 use namada_sdk::wallet::Store;
-use namada_sdk::wallet::{StoredKeypair, Wallet};
+use namada_sdk::wallet::Wallet;
 use namada_sdk::{rpc, NamadaImpl};
 use tendermint::block::Height as TmHeight;
 use tendermint::{node, Time};
@@ -224,11 +224,12 @@ impl ChainEndpoint for NamadaChain {
         let key = keybase
             .get_key(&config.key_name)
             .map_err(|e| Error::key_not_found(config.key_name.clone(), e))?;
-        store.insert_address::<wallet::NullWalletUtils>(key.alias.into(), key.address, true);
         store.insert_keypair::<wallet::NullWalletUtils>(
             config.key_name.clone().into(),
-            StoredKeypair::Raw(key.secret_key),
-            key.pkh,
+            key.secret_key,
+            None,
+            Some(key.address),
+            None,
             true,
         );
         let wallet = Wallet::new(wallet::NullWalletUtils, store);

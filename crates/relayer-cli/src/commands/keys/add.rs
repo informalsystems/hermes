@@ -238,22 +238,15 @@ pub fn add_key(
                 .load()
                 .map_err(|_| eyre!("error loading Namada wallet"))?;
 
-            let keys = wallet.get_keys();
-            let (secret_key, pkh) = keys
-                .get(key_name)
-                .ok_or_else(|| eyre!("error loading the key from Namada wallet"))?;
-            let secret_key = secret_key
-                .get::<CliWalletUtils>(true, None)
+            let secret_key = wallet
+                .find_secret_key(key_name, None)
                 .map_err(|_| eyre!("error loading the key from Namada wallet"))?;
-            let pkh =
-                pkh.ok_or_else(|| eyre!("error loading the public key hash from Namada wallet"))?;
             let address = wallet
                 .find_address(key_name)
                 .ok_or_else(|| eyre!("error loading the address from Namada wallet"))?;
             let namada_key = NamadaKeyPair {
                 alias: key_name.to_string(),
                 address: address.into_owned(),
-                pkh: pkh.clone(),
                 secret_key: secret_key.clone(),
             };
             keyring.add_key(key_name, namada_key.clone())?;
