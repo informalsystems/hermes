@@ -2,7 +2,6 @@ use core::any::Any;
 
 use namada_sdk::core::types::address::Address;
 use namada_sdk::core::types::key::common::SecretKey;
-use namada_sdk::core::types::key::PublicKeyHash;
 
 use crate::config::AddressType;
 use crate::keyring::errors::Error;
@@ -14,7 +13,6 @@ use serde::{Deserialize, Serialize};
 pub struct NamadaKeyPair {
     pub alias: String,
     pub address: Address,
-    pub pkh: PublicKeyHash,
     pub secret_key: SecretKey,
 }
 

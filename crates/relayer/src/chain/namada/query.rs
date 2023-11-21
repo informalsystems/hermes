@@ -270,7 +270,7 @@ impl NamadaChain {
         let token = Address::decode(&raw_addr)
             .map_err(|_| NamadaError::address_decode(raw_addr.to_string()))?;
         let hash = match &token {
-            Address::Internal(InternalAddress::IbcToken(hash)) => hash,
+            Address::Internal(InternalAddress::IbcToken(hash)) => hash.to_string(),
             _ => return Err(NamadaError::denom_not_found(raw_addr).into()),
         };
 

@@ -12,7 +12,7 @@ use namada_sdk::core::types::address::{Address, ImplicitAddress};
 use namada_sdk::core::types::chain::ChainId;
 use namada_sdk::core::types::key::RefTo;
 use namada_sdk::core::types::transaction::GasLimit;
-use namada_sdk::{tx, Namada};
+use namada_sdk::{signing, tx, Namada};
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::chain::cosmos;
@@ -70,6 +70,7 @@ impl NamadaChain {
             tx_reveal_code_path: PathBuf::from(tx::TX_REVEAL_PK),
             verification_key: None,
             password: None,
+            use_device: false,
         };
         let rt = self.rt.clone();
         rt.block_on(self.submit_reveal_aux(&tx_args, &relayer_addr))?;
@@ -85,7 +86,7 @@ impl NamadaChain {
         let (mut tx, signing_data, _epoch) = rt
             .block_on(args.build(&namada_ctx))
             .map_err(NamadaError::namada)?;
-        rt.block_on(namada_ctx.sign(&mut tx, &args.tx, signing_data))
+        rt.block_on(namada_ctx.sign(&mut tx, &args.tx, signing_data, signing::default_sign))
             .map_err(NamadaError::namada)?;
         let decrypted_hash = tx.raw_header_hash().to_string();
         let response = rt
@@ -162,7 +163,7 @@ impl NamadaChain {
                         .await
                         .map_err(NamadaError::namada)?;
                 namada_ctx
-                    .sign(&mut tx, args, signing_data)
+                    .sign(&mut tx, args, signing_data, signing::default_sign)
                     .await
                     .map_err(NamadaError::namada)?;
                 namada_ctx
