@@ -124,12 +124,18 @@ impl WorkerMap {
         dst: Chain,
         config: &Config,
     ) -> &WorkerHandle {
-
-        // Clear workers, to prevent returning stopping workers.
-        self.clean_stopped_workers();
-
         if self.workers.contains_key(&object) {
-            &self.workers[&object]
+            if self.workers[&object].shutdown_stopped_tasks() {
+                self.remove_stopped(
+                    self.workers[&object].id(),
+                    self.workers[&object].object().clone(),
+                );
+
+                let worker = self.spawn_worker(src, dst, &object, config);
+                self.workers.entry(object).or_insert(worker)
+            } else {
+                &self.workers[&object]
+            }
         } else {
             let worker = self.spawn_worker(src, dst, &object, config);
             self.workers.entry(object).or_insert(worker)
