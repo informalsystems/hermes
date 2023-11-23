@@ -319,6 +319,11 @@ fn extract_block_events(
         extract_events(height, block_events, "send_packet", "packet_data"),
         height,
     );
+    append_events::<ChannelEvents::WriteAcknowledgement>(
+        &mut events,
+        extract_events(height, block_events, "write_acknowledgement", "packet_ack"),
+        height,
+    );
     append_events::<ChannelEvents::CloseInit>(
         &mut events,
         extract_events(height, block_events, "channel_close_init", "channel_id"),
