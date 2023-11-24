@@ -1146,7 +1146,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
             // If the client already stores a consensus state for the target height,
             // there is no need to update the client
-
             telemetry!(
                 client_updates_skipped,
                 &self.src_chain.id(),
