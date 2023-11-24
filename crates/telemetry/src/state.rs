@@ -101,6 +101,10 @@ pub struct TelemetryState {
     /// Number of client update messages submitted per client
     client_updates_submitted: Counter<u64>,
 
+    /// Number of client update skipped due to consensus state already
+    /// existing
+    client_updates_skipped: Counter<u64>,
+
     /// Number of misbehaviours detected and submitted per client
     client_misbehaviours_submitted: Counter<u64>,
 
@@ -231,6 +235,11 @@ impl TelemetryState {
             client_updates_submitted: meter
                 .u64_counter("client_updates_submitted")
                 .with_description("Number of client update messages submitted")
+                .init(),
+
+            client_updates_skipped: meter
+                .u64_counter("client_updates_skipped")
+                .with_description("Number of client update messages skipped")
                 .init(),
 
             client_misbehaviours_submitted: meter
@@ -458,6 +467,7 @@ impl TelemetryState {
         ];
 
         self.client_updates_submitted.add(&cx, 0, labels);
+        self.client_updates_skipped.add(&cx, 0, labels);
 
         if misbehaviour {
             self.client_misbehaviours_submitted.add(&cx, 0, labels);
@@ -510,6 +520,25 @@ impl TelemetryState {
         ];
 
         self.client_updates_submitted.add(&cx, count, labels);
+    }
+
+    /// Update the number of client updates skipped per client
+    pub fn client_updates_skipped(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        client: &ClientId,
+        count: u64,
+    ) {
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
+            KeyValue::new("client", client.to_string()),
+        ];
+
+        self.client_updates_skipped.add(&cx, count, labels);
     }
 
     /// Number of client misbehaviours per client
