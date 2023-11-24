@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## v1.7.2
+
+*November 27th, 2023*
+
+This patch release of Hermes adds a new metric `client_upgrade_skipped` allowing
+users to assess the efficiency of the feature skipping client updates released in
+the patch v1.7.1.
+
+### FEATURES
+
+- [Telemetry & Metrics](telemetry)
+  - Added metric `client_updates_skipped` to track the number of client
+    update messages skipped due to the conscensus state existing already.
+    ([\#3707](https://github.com/informalsystems/hermes/issues/3707))
+
 ## v1.7.1
 
 *November 13th, 2023*

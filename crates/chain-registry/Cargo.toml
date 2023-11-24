@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-chain-registry"
-version      = "0.26.1"
+version      = "0.26.2"
 edition      = "2021"
 license      = "Apache-2.0"
 keywords     = ["cosmos", "ibc", "relayer", "chain", "registry"]
@@ -12,7 +12,7 @@ description  = """
 """
 
 [dependencies]
-ibc-relayer-types = { version = "0.26.1", path = "../relayer-types" }
+ibc-relayer-types = { version = "0.26.2", path = "../relayer-types" }
 ibc-proto         = { version = "0.38.0", features = ["serde"] }
 tendermint-rpc    = { version = "0.34.0", features = ["http-client", "websocket-client"] }
 
