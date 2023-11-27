@@ -142,6 +142,7 @@ the `backlog_oldest_sequence` that is blocked.
 | `tx_latency_submitted`         | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted), per chain, counterparty chain, channel and port | `u64` ValueRecorder | None                       |
 | `cleared_send_packet_count_total`    | Number of SendPacket events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                              | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
 | `cleared_acknowledgment_count_total` | Number of WriteAcknowledgement events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                    | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
+| `broadcast_errors_total`        | Number of errors observed by Hermes when broadcasting a Tx, per error type and account                                                                                                         | `u64` Counter       | Packet workers enabled |
 
 Notes:
 - The two metrics `cleared_send_packet_count_total` and `cleared_acknowledgment_count_total` are only populated if `tx_confirmation = true`.
