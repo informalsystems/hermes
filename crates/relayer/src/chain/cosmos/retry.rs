@@ -107,6 +107,13 @@ async fn do_send_tx_with_account_sequence_retry(
                 refreshing account sequence number and retrying once"
             );
 
+            telemetry!(
+                broadcast_errors,
+                &account.address.to_string(),
+                response.code.into(),
+                &response.log,
+            );
+
             refresh_account_and_retry_send_tx_with_account_sequence(
                 rpc_client, config, key_pair, account, tx_memo, messages,
             )
@@ -145,6 +152,13 @@ async fn do_send_tx_with_account_sequence_retry(
                         ?response,
                         diagnostic = ?sdk_error_from_tx_sync_error_code(code.into()),
                         "failed to broadcast tx with unrecoverable error"
+                    );
+
+                    telemetry!(
+                        broadcast_errors,
+                        &account.address.to_string(),
+                        code.into(),
+                        &response.log
                     );
 
                     Ok(response)
