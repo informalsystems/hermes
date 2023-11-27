@@ -45,7 +45,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia12
+          - package: gaia13
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia14
             command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v4-simapp
@@ -258,7 +261,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia12
+          - package: gaia13
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia14
             command: gaiad
             account_prefix: cosmos
           - package: juno
@@ -304,7 +310,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia12 .#stride-no-admin
+          - package: .#gaia13 .#stride-no-admin
+            command: gaiad,strided
+            account_prefix: cosmos,stride
+          - package: .#gaia14 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -340,6 +349,7 @@ jobs:
           nix shell ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features ics31 ics31::
+
   fee-grant:
     runs-on: ubuntu-20.04
     strategy:
@@ -391,7 +401,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia12
+          - package: gaia13
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia14
             command: gaiad
             account_prefix: cosmos
     steps:
@@ -434,9 +447,12 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: neutron
-            command: neutrond
-            account_prefix: neutron
+          - package: .#gaia13 .#neutron
+            command: gaiad,neutrond
+            account_prefix: cosmos,neutron
+          - package: .#gaia14 .#neutron
+            command: gaiad,neutrond
+            account_prefix: cosmos,neutron
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
@@ -464,10 +480,10 @@ jobs:
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           NEXTEST_RETRIES: 2
-          CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#gaia12 .#${{ matrix.chain.package }} -c \
+          nix shell ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security interchain_security::
 
@@ -477,9 +493,12 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: stride-consumer
-            command: strided
-            account_prefix: stride
+          - package: .#gaia13 .#stride-consumer
+            command: gaiad,strided
+            account_prefix: cosmos,stride
+          - package: .#gaia14 .#stride-consumer
+            command: gaiad,strided
+            account_prefix: cosmos,stride
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
@@ -507,10 +526,10 @@ jobs:
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           NEXTEST_RETRIES: 2
-          CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#gaia12 .#${{ matrix.chain.package }} -c \
+          nix shell ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security,ica interchain_security::
 
@@ -520,9 +539,12 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: stride-consumer-no-admin
-            command: strided
-            account_prefix: stride
+          - package: .#gaia13 .#stride-consumer-no-admin
+            command: gaiad,strided
+            account_prefix: cosmos,stride
+          - package: .#gaia14 .#stride-consumer-no-admin
+            command: gaiad,strided
+            account_prefix: cosmos,stride
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
@@ -549,10 +571,10 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATHS: gaiad,${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: cosmos,${{ matrix.chain.account_prefix }}
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#gaia12 .#${{ matrix.chain.package }} -c \
+          nix shell ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features interchain-security,ics31 interchain_security::
 
@@ -562,10 +584,14 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: celestia
-            command: celestia-appd
-            account_prefix: celestia
-            native_token: utia
+          - package: .#celestia .#gaia13
+            command: celestia-appd,gaiad
+            account_prefix: celestia,cosmos
+            native_token: utia,stake
+          - package: .#celestia .#gaia14
+            command: celestia-appd,gaiad
+            account_prefix: celestia,cosmos
+            native_token: utia,stake
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
@@ -593,11 +619,11 @@ jobs:
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           COMPAT_MODES: 0.34
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }},gaiad
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }},cosmos
-          NATIVE_TOKENS: ${{ matrix.chain.native_token }},stake
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+          NATIVE_TOKENS: ${{ matrix.chain.native_token }}
         run: |
-          nix shell .#python .#gaia12 .#${{ matrix.chain.package }} -c \
+          nix shell .#python ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features celestia
 
