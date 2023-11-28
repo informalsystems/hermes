@@ -16,6 +16,9 @@ to measure the efficiency of the client update skip feature released in patch v1
   - Added metric `client_updates_skipped` to track the number of client
     update messages skipped due to the conscensus state existing already.
     ([\#3707](https://github.com/informalsystems/hermes/issues/3707))
+  - Add a new metric `broadcast_errors` which
+    records the number of times a specific error is observed by Hermes when broadcasting transactions
+    ([\#3708](https://github.com/informalsystems/hermes/issues/3708))
 
 ## v1.7.1
 
