@@ -37,7 +37,7 @@ pub type TaggedClientIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a 
 pub type TaggedPortId<ChainA, ChainB> = DualTagged<ChainA, ChainB, PortId>;
 
 /**
-   A reference to [`PortId`](PortId) tagged with first, the host chain
+   A reference to [`PortId`] tagged with first, the host chain
    that has the port ID, and second, the counterparty chain that the port ID
    corresponds to.
 */
