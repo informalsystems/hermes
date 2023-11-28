@@ -29,7 +29,8 @@
           (cosmos-nix)
           cometbft
           gaia6-ordered
-          gaia12
+          gaia13
+          gaia14
           osmosis
           wasmd
           ibc-go-v2-simapp
@@ -38,6 +39,7 @@
           ibc-go-v5-simapp
           ibc-go-v6-simapp
           ibc-go-v7-simapp
+          ibc-go-v8-simapp
           interchain-security
           apalache
           evmos

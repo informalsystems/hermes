@@ -34,6 +34,10 @@ backlog_size{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transf
 # TYPE client_updates_submitted_total counter
 client_updates_submitted_total{client="07-tendermint-0",dst_chain="ibc-0",service_name="unknown_service",src_chain="ibc-1",otel_scope_name="hermes",otel_scope_version=""} 2
 client_updates_submitted_total{client="07-tendermint-0",dst_chain="ibc-1",service_name="unknown_service",src_chain="ibc-0",otel_scope_name="hermes",otel_scope_version=""} 2
+# HELP client_updates_skipped_total Number of client update messages skipped
+# TYPE client_updates_skipped_total counter
+client_updates_skipped_total{client="07-tendermint-0",dst_chain="ibc-0",service_name="unknown_service",src_chain="ibc-1",otel_scope_name="hermes",otel_scope_version=""} 0
+client_updates_skipped_total{client="07-tendermint-0",dst_chain="ibc-1",service_name="unknown_service",src_chain="ibc-0",otel_scope_name="hermes",otel_scope_version=""} 0
 # HELP ics29_period_fees Amount of ICS29 fees rewarded over the past 7 days
 # TYPE ics29_period_fees gauge
 ics29_period_fees{chain="ibc-0",denom="stake",receiver="cosmos1j6z6q9d2gf2suav88z8g3zf726vz9ehg4hkr8x",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version=""} 0
