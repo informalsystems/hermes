@@ -51,12 +51,6 @@ jobs:
           - package: gaia14
             command: gaiad
             account_prefix: cosmos
-          - package: ibc-go-v4-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: ibc-go-v5-simapp
-            command: simd
-            account_prefix: cosmos
           - package: ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
@@ -69,9 +63,6 @@ jobs:
           - package: wasmd
             command: wasmd
             account_prefix: wasm
-          - package: evmos
-            command: evmosd
-            account_prefix: evmos
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
@@ -81,6 +72,10 @@ jobs:
           - package: juno
             command: junod
             account_prefix: juno
+          - package: .#provenance
+            command: provenanced
+            account_prefix: pb
+            native_token: nhash
 
     steps:
       - uses: actions/checkout@v4
@@ -206,9 +201,6 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: ibc-go-v5-simapp
-            command: simd
-            account_prefix: cosmos
           - package: ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
@@ -359,9 +351,10 @@ jobs:
           - package: stride
             command: strided
             account_prefix: stride
-          - package: evmos
-            command: evmosd
-            account_prefix: evmos
+          - package: .#provenance
+            command: provenanced
+            account_prefix: pb
+            native_token: nhash
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v22
@@ -668,7 +661,7 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
           NATIVE_TOKENS: ${{ matrix.chain.native_token }}
         run: |
-          nix shell .#python ${{ matrix.chain.package }} -c \
+          nix shell ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features async-icq async_icq::
 

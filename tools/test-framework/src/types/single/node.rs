@@ -142,6 +142,18 @@ impl FullNode {
             CompatMode::from_str(mode).unwrap()
         });
 
+        // Provenance requires a very high gas price
+        let gas_price = match chain_type {
+            TestedChainType::Provenance => config::GasPrice::new(
+                5000.0,
+                test_config.native_tokens[native_token_number].clone(),
+            ),
+            _ => config::GasPrice::new(
+                0.003,
+                test_config.native_tokens[native_token_number].clone(),
+            ),
+        };
+
         Ok(config::ChainConfig::CosmosSdk(CosmosSdkConfig {
             id: self.chain_driver.chain_id.clone(),
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
@@ -161,7 +173,7 @@ impl FullNode {
             default_gas: None,
             max_gas: Some(3000000),
             gas_adjustment: None,
-            gas_multiplier: Some(GasMultiplier::unsafe_new(1.2)),
+            gas_multiplier: Some(GasMultiplier::unsafe_new(1.5)),
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
@@ -171,10 +183,7 @@ impl FullNode {
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
             ccv_consumer_chain: false,
             trust_threshold: Default::default(),
-            gas_price: config::GasPrice::new(
-                0.003,
-                test_config.native_tokens[native_token_number].clone(),
-            ),
+            gas_price,
             packet_filter: Default::default(),
             address_type: chain_type.address_type(),
             memo_prefix: Default::default(),

@@ -1,6 +1,5 @@
 use ibc_relayer::channel::version::Version;
-use ibc_relayer::config::gas_multiplier::GasMultiplier;
-use ibc_relayer::config::{ChainConfig, GasPrice};
+use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
 use ibc_test_framework::chain::ext::async_icq::AsyncIcqMethodsExt;
 use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
@@ -25,16 +24,6 @@ pub struct AsyncIcqTest;
 
 impl TestOverrides for AsyncIcqTest {
     fn modify_relayer_config(&self, config: &mut Config) {
-        for chain in &mut config.chains {
-            match chain {
-                ChainConfig::CosmosSdk(chain_config) => {
-                    if chain_config.id.as_str().contains("pio-mainnet") {
-                        chain_config.gas_price = GasPrice::new(5000.0, "nhash".to_owned());
-                        chain_config.gas_multiplier = Some(GasMultiplier::unsafe_new(1.5));
-                    }
-                }
-            }
-        }
         config.mode.channels.enabled = true;
         config.mode.clients.misbehaviour = false;
     }

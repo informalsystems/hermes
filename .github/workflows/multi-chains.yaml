@@ -74,9 +74,6 @@ jobs:
             command: wasmd
             account_prefix: wasm
         second-package:
-          - package: evmos
-            command: evmosd
-            account_prefix: evmos
           - package: osmosis
             command: osmosisd
             account_prefix: osmo

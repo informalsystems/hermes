@@ -179,6 +179,31 @@ pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> 
     Ok(())
 }
 
+pub fn set_min_deposit_amount(
+    genesis: &mut serde_json::Value,
+    min_deposit_amount: u64,
+) -> Result<(), Error> {
+    let min_deposit = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("gov"))
+        .and_then(|gov| get_mut_with_fallback(gov, "params", "deposit_params"))
+        .and_then(|deposit_params| deposit_params.get_mut("min_deposit"))
+        .and_then(|min_deposit| min_deposit.as_array_mut())
+        .ok_or_else(|| eyre!("failed to find min_deposit in genesis file"))?
+        .get_mut(0)
+        .and_then(|min_deposit_entry| min_deposit_entry.as_object_mut())
+        .ok_or_else(|| eyre!("failed to find first entry of min_deposit in genesis file"))?;
+
+    min_deposit
+        .insert(
+            "amount".to_owned(),
+            serde_json::Value::String(min_deposit_amount.to_string()),
+        )
+        .ok_or_else(|| eyre!("failed to update deposit_params amount in genesis file"))?;
+
+    Ok(())
+}
+
 pub fn set_staking_bond_denom(genesis: &mut serde_json::Value, denom: &str) -> Result<(), Error> {
     let bond_denom = genesis
         .get_mut("app_state")
