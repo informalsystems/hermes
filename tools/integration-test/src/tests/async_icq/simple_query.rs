@@ -91,7 +91,8 @@ impl BinaryConnectionTest for AsyncIcqTest {
             &port_b.as_ref(),
             Version::new("icq-1".to_owned()),
         )?;
-        // Check that the corresponding ICA channel is eventually established.
+
+        // Check that the oracle channel is eventually established
         let _counterparty_channel_id = assert_eventually_channel_established(
             chains.handle_b(),
             chains.handle_a(),
