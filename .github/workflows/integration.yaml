@@ -361,6 +361,7 @@ jobs:
           - package: stride
             command: strided
             account_prefix: stride
+            native_token: stake
           - package: provenance
             command: provenanced
             account_prefix: pb
@@ -393,6 +394,7 @@ jobs:
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+          NATIVE_TOKENS: ${{ matrix.chain.native_token }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
