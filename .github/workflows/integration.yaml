@@ -48,30 +48,39 @@ jobs:
           - package: gaia13
             command: gaiad
             account_prefix: cosmos
+            native_token: stake
           - package: gaia14
             command: gaiad
             account_prefix: cosmos
+            native_token: stake
           - package: ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
+            native_token: stake
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
+            native_token: stake
           - package: ibc-go-v8-simapp
             command: simd
             account_prefix: cosmos
+            native_token: stake
           - package: wasmd
             command: wasmd
             account_prefix: wasm
+            native_token: stake
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
+            native_token: stake
           - package: stride
             command: strided
             account_prefix: stride
+            native_token: stake
           - package: juno
             command: junod
             account_prefix: juno
+            native_token: stake
           - package: provenance
             command: provenanced
             account_prefix: pb
@@ -107,6 +116,7 @@ jobs:
           NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+          NATIVE_TOKENS: ${{ matrix.chain.native_token }}
         run: |
             nix shell .#python .#${{ matrix.chain.package }} -c \
               cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2
