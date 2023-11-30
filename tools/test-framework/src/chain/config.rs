@@ -23,6 +23,17 @@ pub fn set_rpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn enable_grpc(config: &mut Value) -> Result<(), Error> {
+    config
+        .get_mut("grpc")
+        .ok_or_else(|| eyre!("expect grpc section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("enable".to_string(), true.into());
+
+    Ok(())
+}
+
 pub fn set_grpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
     config
         .get_mut("grpc")
