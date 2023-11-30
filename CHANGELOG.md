@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## v1.7.3
+
+*November 29th, 2023*
+
+This release improves the reliability of the `evidence` command and 
+fixes a bug that was preventing evidence to be reported,
+as seen on the Gaia RS testnet.
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Improve reliability of `evidence` command and fix a bug that was
+    preventing evidence to be reported, as seen on the Gaia RS testnet
+    ([\#3702](https://github.com/informalsystems/hermes/pull/3702))
+
 ## v1.7.2
 
 *November 28th, 2023*
