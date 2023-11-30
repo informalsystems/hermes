@@ -1108,6 +1108,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             unreceived_packets(self.dst_chain(), self.src_chain(), &self.path_id)
                 .map_err(LinkError::supervisor)?;
 
+        // Use queried unreceived packets to update the backlog metric
+        ibc_telemetry::global().update_backlog(
+            sequences.iter().map(|&sequence| sequence.into()).collect(),
+            &self.src_chain().id(),
+            self.src_channel_id(),
+            self.src_port_id(),
+            &self.dst_chain().id(),
+        );
+
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
         // Skip: no relevant events found.
@@ -1169,6 +1178,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let Some((sequences, src_response_height)) = sequences_and_height else {
             return Ok(());
         };
+
+        // Use queried unreceived acks to update the backlog metric
+        ibc_telemetry::global().update_backlog(
+            sequences.iter().map(|&sequence| sequence.into()).collect(),
+            &self.dst_chain().id(),
+            self.dst_channel_id(),
+            self.dst_port_id(),
+            &self.src_chain().id(),
+        );
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 

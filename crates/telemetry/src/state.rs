@@ -968,6 +968,40 @@ impl TelemetryState {
         self.backlog_size.observe(&cx, total, labels);
     }
 
+    /// Inserts in the backlog a new event for the given sequence number.
+    /// This happens when the relayer observed a new SendPacket event.
+    pub fn update_backlog(
+        &self,
+        sequences: Vec<u64>,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        // Unique identifier for a chain/channel/port.
+        let path_uid: PathIdentifier = PathIdentifier::new(
+            chain_id.to_string(),
+            channel_id.to_string(),
+            port_id.to_string(),
+        );
+
+        // Remove any sequence number from the backlog which isn't in the list of queried pending packets
+        // as they might have been relayed without the Hermes instance observing it
+        if let Some(path_backlog) = self.backlogs.get(&path_uid) {
+            let _ = path_backlog.iter().map(|entry| {
+                if !sequences.contains(entry.value()) {
+                    self.backlog_remove(
+                        *entry.value(),
+                        chain_id,
+                        channel_id,
+                        port_id,
+                        counterparty_chain_id,
+                    )
+                }
+            });
+        }
+    }
+
     /// Evicts from the backlog the event for the given sequence number.
     /// Removing events happens when the relayer observed either an acknowledgment
     /// or a timeout for a packet sequence number, which means that the corresponding
