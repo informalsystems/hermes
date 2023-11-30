@@ -41,6 +41,7 @@ fee-grant = []
 interchain-security = []
 celestia = []
 async-icq = []
+juno = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
