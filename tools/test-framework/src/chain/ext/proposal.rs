@@ -12,6 +12,7 @@ use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::prelude::{handle_generic_error, TaggedChainDriverExt};
 use crate::types::tagged::*;
+use crate::util::proposal_status::ProposalStatus;
 
 use super::bootstrap::ChainBootstrapMethodsExt;
 
@@ -90,7 +91,7 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &self.value().command_path,
             &self.value().home_path,
             &self.value().rpc_listen_address(),
-            "PROPOSAL_STATUS_VOTING_PERIOD",
+            ProposalStatus::VotingPeriod,
             "1",
         )?;
 
@@ -107,7 +108,7 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &self.value().command_path,
             &self.value().home_path,
             &self.value().rpc_listen_address(),
-            "PROPOSAL_STATUS_PASSED",
+            ProposalStatus::Passed,
             "1",
         )?;
 
@@ -200,7 +201,7 @@ fn create_channel_upgrade_proposal(
                 "connection_hops": ["{connection_hops}"],
                 "version": {version}
               },
-              "signer":{signer}
+              "signer":"{signer}"
             }
           ],
         "deposit": "10000001stake",
