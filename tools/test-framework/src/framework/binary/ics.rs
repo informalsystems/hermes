@@ -11,6 +11,7 @@ use crate::framework::base::{run_basic_test, BasicTest, HasOverrides, TestConfig
 use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::prelude::FullNode;
 use crate::types::config::TestConfig;
+use crate::util::proposal_status::ProposalStatus;
 
 /**
 Runs a test case that implements [`InterchainSecurityChainTest`].
@@ -63,6 +64,8 @@ where
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
             0,
         )?;
+        let provider_native_token = builder.native_tokens[0].clone();
+        let provider_fee = format!("1200{}", provider_native_token);
 
         // Get consumer chain id
         let chain_type = ChainType::from_str(&builder.command_paths[1])?;
@@ -72,28 +75,30 @@ where
             .chain_driver
             .submit_consumer_chain_proposal(chain_id.as_str(), "2023-05-31T12:09:47.048227Z")?;
 
-        node_a
-            .chain_driver
-            .assert_consumer_chain_proposal_submitted(
-                node_a.chain_driver.chain_id.as_str(),
-                &node_a.chain_driver.command_path,
-                &node_a.chain_driver.home_path,
-                &node_a.chain_driver.rpc_listen_address(),
-            )?;
+        node_a.chain_driver.assert_proposal_status(
+            node_a.chain_driver.chain_id.as_str(),
+            &node_a.chain_driver.command_path,
+            &node_a.chain_driver.home_path,
+            &node_a.chain_driver.rpc_listen_address(),
+            ProposalStatus::VotingPeriod,
+            "1",
+        )?;
 
         vote_proposal(
             node_a.chain_driver.chain_id.as_str(),
             &node_a.chain_driver.command_path,
             &node_a.chain_driver.home_path,
             &node_a.chain_driver.rpc_listen_address(),
-            "1200stake",
+            &provider_fee,
         )?;
 
-        node_a.chain_driver.assert_consumer_chain_proposal_passed(
+        node_a.chain_driver.assert_proposal_status(
             node_a.chain_driver.chain_id.as_str(),
             &node_a.chain_driver.command_path,
             &node_a.chain_driver.home_path,
             &node_a.chain_driver.rpc_listen_address(),
+            ProposalStatus::Passed,
+            "1",
         )?;
 
         let node_b = bootstrap_consumer_node(

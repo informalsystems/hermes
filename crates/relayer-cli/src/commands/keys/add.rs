@@ -10,7 +10,6 @@ use abscissa_core::{Command, Runnable};
 use eyre::eyre;
 use hdpath::StandardHDPath;
 use ibc_relayer::{
-    chain::ChainType,
     config::{ChainConfig, Config},
     keyring::{
         AnySigningKeyPair, KeyRing, Secp256k1KeyPair, SigningKeyPair, SigningKeyPairSized, Store,
@@ -107,7 +106,7 @@ impl KeysAddCmd {
         let name = self
             .key_name
             .clone()
-            .unwrap_or_else(|| chain_config.key_name.clone());
+            .unwrap_or_else(|| chain_config.key_name().to_string());
 
         let hd_path = StandardHDPath::from_str(&self.hd_path)
             .map_err(|_| eyre!("invalid derivation path: {}", self.hd_path))?;
@@ -151,7 +150,7 @@ impl Runnable for KeysAddCmd {
                         "Added key '{}' ({}) on chain {}",
                         opts.name,
                         key.account(),
-                        opts.config.id
+                        opts.config.id(),
                     ))
                     .exit(),
                     Err(e) => Output::error(format!(
@@ -175,7 +174,7 @@ impl Runnable for KeysAddCmd {
                         "Restored key '{}' ({}) on chain {}",
                         opts.name,
                         key.account(),
-                        opts.config.id
+                        opts.config.id()
                     ))
                     .exit(),
                     Err(e) => Output::error(format!(
@@ -203,8 +202,8 @@ pub fn add_key(
     hd_path: &StandardHDPath,
     overwrite: bool,
 ) -> eyre::Result<AnySigningKeyPair> {
-    let key_pair = match config.r#type {
-        ChainType::CosmosSdk => {
+    let key_pair = match config {
+        ChainConfig::CosmosSdk(config) => {
             let mut keyring = KeyRing::new_secp256k1(
                 Store::Test,
                 &config.account_prefix,
@@ -236,8 +235,8 @@ pub fn restore_key(
     let mnemonic_content =
         fs::read_to_string(mnemonic).map_err(|_| eyre!("error reading the mnemonic file"))?;
 
-    let key_pair = match config.r#type {
-        ChainType::CosmosSdk => {
+    let key_pair = match config {
+        ChainConfig::CosmosSdk(config) => {
             let mut keyring = KeyRing::new_secp256k1(
                 Store::Test,
                 &config.account_prefix,

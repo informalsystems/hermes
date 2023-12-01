@@ -31,7 +31,7 @@ ASSUME VersionPickMode \in
 ```
 
 Typical values could be: `MaxHeight = 5` and `MaxBufLen = 2`.
-The `Concurrency` flag enables/disables some non-determinsm of the environment,
+The `Concurrency` flag enables/disables some non-determinism of the environment,
 specifically:
 
 - if TRUE, then the environment can non-deterministically update the light client of a chain.

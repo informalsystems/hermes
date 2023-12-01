@@ -5,7 +5,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::{
     filter::{ChannelFilters, ChannelPolicy, FilterPattern},
-    PacketFilter,
+    ChainConfig, PacketFilter,
 };
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer_types::applications::ics27_ica::msgs::send_tx::MsgSendTx;
@@ -59,7 +59,11 @@ impl TestOverrides for IcaFilterTestAllow {
         config.mode.channels.enabled = true;
 
         for chain in &mut config.chains {
-            chain.packet_filter = self.packet_filter.clone();
+            match chain {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.packet_filter = self.packet_filter.clone();
+                }
+            }
         }
     }
 
@@ -210,10 +214,15 @@ impl TestOverrides for IcaFilterTestDeny {
         config.mode.channels.enabled = true;
 
         for chain in &mut config.chains {
-            chain.packet_filter.channel_policy = ChannelPolicy::Deny(ChannelFilters::new(vec![(
-                FilterPattern::Wildcard("ica*".parse().unwrap()),
-                FilterPattern::Wildcard("*".parse().unwrap()),
-            )]));
+            match chain {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.packet_filter.channel_policy =
+                        ChannelPolicy::Deny(ChannelFilters::new(vec![(
+                            FilterPattern::Wildcard("ica*".parse().unwrap()),
+                            FilterPattern::Wildcard("*".parse().unwrap()),
+                        )]));
+                }
+            }
         }
     }
 }

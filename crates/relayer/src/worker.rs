@@ -130,24 +130,35 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                     let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
                     let link = Arc::new(Mutex::new(link));
-                    let resubmit = Resubmit::from_clear_interval(packets_config.clear_interval);
 
-                    let src_chain_config =
-                        config.chains.iter().find(|chain| chain.id == chains.a.id());
+                    let src_chain_config = config
+                        .chains
+                        .iter()
+                        .find(|chain| *chain.id() == chains.a.id());
 
-                    let fee_filter = match src_chain_config {
-                        Some(chain_config) => chain_config
-                            .packet_filter
-                            .min_fees
-                            .iter()
-                            .find(|(channel, _)| channel.matches(&path.src_channel_id))
-                            .map(|(_, filter)| filter)
-                            .cloned(),
+                    let (fee_filter, clear_interval) = match src_chain_config {
+                        Some(chain_config) => {
+                            let chain_clear_interval = chain_config
+                                .clear_interval()
+                                .unwrap_or(packets_config.clear_interval);
+
+                            let fee_filter = chain_config
+                                .packet_filter()
+                                .min_fees
+                                .iter()
+                                .find(|(channel, _)| channel.matches(&path.src_channel_id))
+                                .map(|(_, filter)| filter)
+                                .cloned();
+
+                            (fee_filter, chain_clear_interval)
+                        }
                         None => {
                             error!("configuration for chain {} not found", chains.a.id());
-                            None
+                            (None, packets_config.clear_interval)
                         }
                     };
+
+                    let resubmit = Resubmit::from_clear_interval(clear_interval);
 
                     // Only spawn the incentivized worker if a fee filter is specified in the configuration
                     let packet_task = match fee_filter {
@@ -161,7 +172,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                             cmd_rx,
                             link.clone(),
                             should_clear_on_start,
-                            packets_config.clear_interval,
+                            clear_interval,
                             path.clone(),
                         ),
                     };

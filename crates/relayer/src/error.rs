@@ -583,6 +583,10 @@ define_error! {
             [ TendermintRpcError ]
             |e| { format!("invalid archive node address {}", e.address) },
 
+        InvalidCompatMode
+            [ TendermintRpcError ]
+            |_| { "Invalid CompatMode queried from chain and no `compat_mode` configured in Hermes. This can be fixed by specifying a `compat_mode` in Hermes config.toml" },
+
         InvalidPortString
             { port: String }
             |e| { format!("invalid port string {}", e.port) },

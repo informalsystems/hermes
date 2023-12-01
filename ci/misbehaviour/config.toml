@@ -112,6 +112,9 @@ port = 3001
 # Specify the chain ID. Required
 id = 'ibc-0'
 
+# Specify the type of chain, currently only "CosmosSdk" is supported.
+type = "CosmosSdk"
+
 # Specify the RPC address and port where the chain RPC server listens on. Required
 rpc_addr = 'http://127.0.0.1:26657'
 
@@ -299,6 +302,7 @@ memo_prefix = ''
 
 [[chains]]
 id = 'ibc-1'
+type = "CosmosSdk"
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }

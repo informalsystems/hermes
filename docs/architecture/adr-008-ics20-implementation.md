@@ -204,7 +204,7 @@ pub fn on_acknowledgement_packet<Ctx>(ctx: &Ctx, ack: ICS20Acknowledgement, data
     where Ctx: ICS20Context
 {
     match ack {
-        ICS20Acknowledgement::Sucess => Ok(()),
+        ICS20Acknowledgement::Success => Ok(()),
         _ => refund_packet_token(ctx, data)
     }
 }
