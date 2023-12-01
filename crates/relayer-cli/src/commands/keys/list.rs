@@ -6,10 +6,7 @@ use abscissa_core::{Command, Runnable};
 
 use crate::conclude::Output;
 use crate::{application::app_config, conclude::json};
-use ibc_relayer::{
-    config::{ChainConfig, Config},
-    keyring::list_keys,
-};
+use ibc_relayer::config::{ChainConfig, Config};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
@@ -45,7 +42,7 @@ impl Runnable for KeysListCmd {
             Ok(result) => result,
         };
 
-        match list_keys(&opts.chain_config) {
+        match opts.chain_config.list_keys() {
             Ok(keys) if json() => {
                 let keys = keys.into_iter().collect::<HashMap<_, _>>();
                 Output::success(keys).exit()

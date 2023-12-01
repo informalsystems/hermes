@@ -445,12 +445,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .a_chain()
             .config()
             .map_err(ConnectionError::relayer)?
-            .max_block_time;
+            .max_block_time();
         let b_block_time = self
             .b_chain()
             .config()
             .map_err(ConnectionError::relayer)?
-            .max_block_time;
+            .max_block_time();
         Ok(a_block_time.max(b_block_time))
     }
 

@@ -35,6 +35,7 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::AnyClientState;
+use crate::config::ChainConfig;
 use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
@@ -122,7 +123,7 @@ define_error! {
                 height: Height,
             }
             |e| {
-                format_args!("client {} is already up-to-date with chain {}@{}",
+                format_args!("client {} is already up-to-date with chain {} at height {}",
                     e.client_id, e.chain_id, e.height)
             },
 
@@ -1130,6 +1131,31 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             }
         );
 
+        let consensus_state = self.dst_chain().query_consensus_state(
+            QueryConsensusStateRequest {
+                client_id: self.id().clone(),
+                consensus_height: target_height,
+                query_height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        );
+
+        if let Ok((consensus_state, _)) = consensus_state {
+            debug!("consensus state already exists at height {target_height}, skipping update");
+            trace!(?consensus_state, "consensus state");
+
+            // If the client already stores a consensus state for the target height,
+            // there is no need to update the client
+            telemetry!(
+                client_updates_skipped,
+                &self.src_chain.id(),
+                &self.dst_chain.id(),
+                &self.id,
+                1,
+            );
+            return Ok(vec![]);
+        }
+
         let src_application_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::client_create(
@@ -1148,6 +1174,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     "dst_chain": self.dst_chain().id(),
                 }
             );
+
             // Wait for the source network to produce block(s) & reach `target_height`.
             while src_application_latest_height()? < target_height {
                 thread::sleep(Duration::from_millis(100));
@@ -1701,16 +1728,16 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let is_ccv_consumer_chain = self
-            .src_chain()
-            .config()
-            .map_err(|e| {
-                ForeignClientError::misbehaviour(
-                    format!("failed querying configuration of src chain {}", self.id),
-                    e,
-                )
-            })?
-            .ccv_consumer_chain;
+        let chain_config = self.src_chain().config().map_err(|e| {
+            ForeignClientError::misbehaviour(
+                format!("failed querying configuration of src chain {}", self.id),
+                e,
+            )
+        })?;
+
+        let is_ccv_consumer_chain = match chain_config {
+            ChainConfig::CosmosSdk(config) => config.ccv_consumer_chain,
+        };
 
         let mut msgs = vec![];
 

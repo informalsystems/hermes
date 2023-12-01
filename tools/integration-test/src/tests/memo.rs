@@ -4,6 +4,7 @@
 //! You can find a more thorough walkthrough of this test at
 //! `tools/test-framework/src/docs/walkthroughs/memo.rs`.
 
+use ibc_relayer::config::ChainConfig;
 use ibc_relayer::config::{types::Memo, Config};
 use serde_json as json;
 
@@ -25,7 +26,11 @@ pub struct MemoTest {
 impl TestOverrides for MemoTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         for chain in config.chains.iter_mut() {
-            chain.memo_prefix = self.memo.clone();
+            match chain {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.memo_prefix = self.memo.clone();
+                }
+            }
         }
     }
 }

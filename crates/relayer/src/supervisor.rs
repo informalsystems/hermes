@@ -643,7 +643,7 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
     let chains = &config.chains;
 
     for config in chains {
-        let id = &config.id;
+        let id = &config.id();
         let _span = error_span!("health_check", chain = %id).entered();
 
         let chain = registry.get_or_spawn(id);
@@ -675,12 +675,13 @@ fn init_subscriptions<Chain: ChainHandle>(
     let mut subscriptions = Vec::with_capacity(chains.len());
 
     for chain_config in chains {
-        let chain = match registry.get_or_spawn(&chain_config.id) {
+        let chain = match registry.get_or_spawn(chain_config.id()) {
             Ok(chain) => chain,
             Err(e) => {
                 error!(
                     "failed to spawn chain runtime for {}: {}",
-                    chain_config.id, e
+                    chain_config.id(),
+                    e
                 );
 
                 continue;
@@ -691,7 +692,8 @@ fn init_subscriptions<Chain: ChainHandle>(
             Ok(subscription) => subscriptions.push((chain, subscription)),
             Err(e) => error!(
                 "failed to subscribe to events of {}: {}",
-                chain_config.id, e
+                chain_config.id(),
+                e
             ),
         }
     }

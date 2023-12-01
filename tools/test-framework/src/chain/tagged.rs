@@ -6,8 +6,9 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::event::IbcEventWithHeight;
+use ibc_relayer::util::compat_mode::compat_mode_from_version;
 use serde_json as json;
-use tendermint_rpc::client::{Client, CompatMode, HttpClient};
+use tendermint_rpc::client::{Client, HttpClient};
 
 use crate::chain::cli::query::query_auth_module;
 use crate::chain::cli::query::query_recipient_transactions;
@@ -71,7 +72,7 @@ pub trait TaggedChainDriverExt<Chain> {
     ) -> Result<(), Error>;
 
     /**
-        Taggged version of [`query_recipient_transactions`].
+        Tagged version of [`query_recipient_transactions`].
 
         Query for the transactions related to a wallet on `Chain`
         receiving token transfer from others.
@@ -81,6 +82,11 @@ pub trait TaggedChainDriverExt<Chain> {
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error>;
 
+    /**
+       Tagged version of [`query_auth_module`].
+
+        Query for the authority account for a specific module.
+    */
     fn query_auth_module(&self, module_name: &str) -> Result<String, Error>;
 }
 
@@ -101,7 +107,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
 
         let status = rt.block_on(client.status()).map_err(handle_generic_error)?;
         let compat_mode =
-            CompatMode::from_version(status.node_info.version).map_err(handle_generic_error)?;
+            compat_mode_from_version(&self.value().compat_mode, status.node_info.version)?.into();
         client.set_compat_mode(compat_mode);
 
         Ok(MonoTagged::new(client))

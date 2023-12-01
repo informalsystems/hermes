@@ -83,11 +83,13 @@ __Feature comparison between Hermes and the Go relayer__
 
 | Features \      Status | Hermes | Cosmos Go | Feature Details  |
 | ---------------------- | :---: | :----: |:-------|
+| Feegrant support       | ✅    | ✅     | add `feeGranter` to tx sign for sending the transactions
+|                        |       |        |
 | Restart                | ✅    | ✅     | replays any IBC events that happened before restart
 | Multiple_Paths         | ✅    | ✅     | relays on multiple paths concurrently
 |                        |       |        |
 | Connection Delay       | ✅    | ❌     | 
-| Cl_Misbehavior         | ✅    | ❌     | monitors and submits IBC client misbehavior
+| Cl_Misbehavior         | ✅    | ✅     | monitors and submits IBC client misbehavior
 | Cl_Refresh             | ✅    | ✅     | periodically refresh an on-chain client to prevent expiration
 | Packet Delay           | ✅    | ❌     | 
 |                        |       |        |
@@ -118,8 +120,10 @@ __Feature comparison between Hermes and the Go relayer__
 | Packet_TimeoutClose_P  | ✅    | ✅     |
 | Packet_Optimistic      | ❌    | ❌     | relay packets over non-Open channels
 |                        |       |        |
+| Modular Architecture   | ✅    | ✅     | defined interface can be implemented for different chain types
 | Cl_Non_Tendermint      | ❌    | ❌     | supports non tendermint IBC light clients
-| Chain_Non_Cosmos       | ❌    | ❌     | supports non cosmos-SDK chains
+| Chain_Non_Cosmos       | ❌    | ✅     | supports non cosmos-SDK chains
+| Penumbra support       | ❌    | ✅     | supports Penumbra non-cosmos-SDK chain
 |                        |       |        |
 | Cfg_Static            | ✅    | ✅     | provides means for configuration prior to being started
 | Cfg_Dynamic           | ❌    | ❌     | provides means for configuration and monitoring during runtime

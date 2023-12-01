@@ -13,10 +13,10 @@ use tendermint_rpc::Url;
 
 use crate::error::{handle_generic_error, Error};
 
-pub fn gas_config_for_test() -> GasConfig {
+pub fn gas_config_for_test(native_token: String) -> GasConfig {
     let max_gas = 3000000;
     let gas_multiplier = 1.1;
-    let gas_price = GasPrice::new(0.003, "stake".to_string());
+    let gas_price = GasPrice::new(0.003, native_token);
 
     let default_gas = max_gas;
     let fee_granter = "".to_string();
@@ -43,10 +43,11 @@ pub fn new_tx_config_for_test(
     raw_rpc_address: String,
     raw_grpc_address: String,
     address_type: AddressType,
+    native_token: String,
 ) -> Result<TxConfig, Error> {
     let rpc_address = Url::from_str(&raw_rpc_address).map_err(handle_generic_error)?;
     let grpc_address = Uri::from_str(&raw_grpc_address).map_err(handle_generic_error)?;
-    let gas_config = gas_config_for_test();
+    let gas_config = gas_config_for_test(native_token);
     let rpc_timeout = Duration::from_secs(30);
     let max_msg_num = Default::default();
     let max_tx_size = Default::default();

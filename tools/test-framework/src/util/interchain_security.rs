@@ -1,3 +1,5 @@
+use ibc_relayer::config::ChainConfig;
+
 use crate::chain::config::set_voting_period;
 use crate::prelude::*;
 
@@ -19,9 +21,14 @@ pub fn update_relayer_config_for_consumer_chain(config: &mut Config) {
     // specified in the Consumer chain proposal. The test framework uses 100s in
     // the proposal.
     for chain_config in config.chains.iter_mut() {
-        if chain_config.id == ChainId::from_string("ibcconsumer") {
-            chain_config.ccv_consumer_chain = true;
-            chain_config.trusting_period = Some(Duration::from_secs(99));
+        match chain_config {
+            ChainConfig::CosmosSdk(chain_config)
+                if chain_config.id == ChainId::from_string("ibcconsumer") =>
+            {
+                chain_config.ccv_consumer_chain = true;
+                chain_config.trusting_period = Some(Duration::from_secs(99));
+            }
+            ChainConfig::CosmosSdk(_) => {}
         }
     }
 }

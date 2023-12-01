@@ -1,3 +1,4 @@
+use ibc_relayer::config::ChainConfig;
 use ibc_relayer::keyring::Store;
 use ibc_test_framework::prelude::*;
 use std::env;
@@ -8,10 +9,14 @@ struct PythonTest;
 impl TestOverrides for PythonTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         for chain in config.chains.iter_mut() {
-            // Modify the key store type to `Store::Test` so that the wallet
-            // keys are stored to ~/.hermes/keys so that we can use them
-            // with external relayer commands.
-            chain.key_store_type = Store::Test;
+            match chain {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    // Modify the key store type to `Store::Test` so that the wallet
+                    // keys are stored to ~/.hermes/keys so that we can use them
+                    // with external relayer commands.
+                    chain_config.key_store_type = Store::Test;
+                }
+            }
         }
     }
 

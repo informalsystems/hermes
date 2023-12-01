@@ -165,8 +165,6 @@ Now, let's exchange `samoleans` between chains.
     - Balances on `ibc-2`:
         ```
         balances:
-        - amount: "0"
-        denom: ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
         - amount: "100000000"
         denom: samoleans
         - amount: "99977059"
@@ -247,8 +245,6 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
     - Balances on `ibc-0`:
         ```
         balances:
-        - amount: "0"
-        denom: ibc/563FDAE5A0D8C15013E4485134A2D2EE3317452278B56B2ED63DDB4EB677DF84
         - amount: "100000000"
         denom: samoleans
         - amount: "99978828"
@@ -306,8 +302,6 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
     - Balances at ibc-3:
         ```
         balances:
-        - amount: "0"
-        denom: ibc/C658F0EB9DE176E080B586D634004141239C3E55676462C976266DB54C56EBE4
         - amount: "100000000"
         denom: samoleans
         - amount: "99973935"
@@ -340,8 +334,6 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
     - Balances on `ibc-2`:
         ```
         balances:
-        - amount: "0"
-        denom: ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
         - amount: "100000000"
         denom: samoleans
         - amount: "99974602"

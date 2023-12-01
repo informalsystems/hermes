@@ -27,6 +27,7 @@ port = 3001
 
 [[chains]]
 id = 'ibc-0'
+type = "CosmosSdk"
 rpc_addr = 'http://localhost:27030'
 grpc_addr = 'http://localhost:27032'
 event_source = { mode = 'push', url = 'ws://localhost:27030/websocket', batch_delay = '200ms' }
@@ -36,7 +37,7 @@ account_prefix = 'cosmos'
 key_name = 'wallet'
 store_prefix = 'ibc'
 gas_price = { price = 0.001, denom = 'stake' }
-gas_multiplier = 1.1
+gas_multiplier = 1.2
 default_gas = 1000000
 max_gas = 10000000
 max_msg_num = 30
@@ -55,6 +56,7 @@ trust_threshold = { numerator = '2', denominator = '3' }
 
 [[chains]]
 id = 'ibc-1'
+type = "CosmosSdk"
 rpc_addr = 'http://localhost:27040'
 grpc_addr = 'http://localhost:27042'
 event_source = { mode = 'push', url = 'ws://localhost:27040/websocket', batch_delay = '200ms' }
@@ -64,7 +66,7 @@ account_prefix = 'cosmos'
 key_name = 'wallet'
 store_prefix = 'ibc'
 gas_price = { price = 0.001, denom = 'stake' }
-gas_multiplier = 1.1
+gas_multiplier = 1.2
 default_gas = 1000000
 max_gas = 10000000
 max_msg_num = 30
@@ -80,4 +82,3 @@ trust_threshold = { numerator = '2', denominator = '3' }
 #   ['ica*', '*'],
 #   ['transfer', 'channel-0'],
 # ]
-

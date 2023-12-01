@@ -1,7 +1,7 @@
 use core::time::Duration;
 use std::thread::sleep;
 
-use ibc_relayer::config::{self, Config, ModeConfig};
+use ibc_relayer::config::{self, ChainConfig, Config, ModeConfig};
 use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
 use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
 
@@ -116,7 +116,11 @@ impl TestOverrides for ExpirationTestOverrides {
         };
 
         for chain_config in config.chains.iter_mut() {
-            chain_config.trusting_period = Some(CLIENT_EXPIRY);
+            match chain_config {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.trusting_period = Some(CLIENT_EXPIRY);
+                }
+            }
         }
     }
 

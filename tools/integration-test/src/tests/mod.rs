@@ -10,6 +10,7 @@ pub mod client_expiration;
 pub mod client_filter;
 pub mod client_refresh;
 pub mod client_settings;
+#[cfg(not(feature = "celestia"))]
 pub mod client_upgrade;
 pub mod connection_delay;
 pub mod consensus_states;
@@ -22,6 +23,7 @@ pub mod python;
 pub mod query_packet;
 pub mod supervisor;
 pub mod tendermint;
+#[cfg(not(feature = "celestia"))]
 pub mod ternary_transfer;
 pub mod transfer;
 

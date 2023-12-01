@@ -9,6 +9,7 @@
 use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use toml::Value;
+use tracing::debug;
 
 /// Set the `rpc` field in the full node config.
 pub fn set_rpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
@@ -149,6 +150,17 @@ pub fn set_mode(config: &mut Value, mode: &str) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn set_indexer(config: &mut Value, mode: &str) -> Result<(), Error> {
+    config
+        .get_mut("tx_index")
+        .ok_or_else(|| eyre!("expect tx_index section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("indexer".to_string(), mode.into());
+
+    Ok(())
+}
+
 pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> Result<(), Error> {
     let max_deposit_period = genesis
         .get_mut("app_state")
@@ -270,12 +282,18 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: u64) -> Result
             .as_object_mut()
             .ok_or_else(|| eyre!("failed to get voting_params in genesis file"))?;
 
-        expedited_voting_period
-            .insert(
-                "expedited_voting_period".to_owned(),
-                serde_json::Value::String(expedited_period),
-            )
-            .ok_or_else(|| eyre!("failed to update expedited_voting_period in genesis file"))?;
+        // Only insert `expedited_voting_period` if it already exists in order to avoid adding an unknown configuration in
+        // chains using Cosmos SDK pre v0.50
+        match expedited_voting_period.get("expedited_voting_period") {
+            Some(_) => {
+                expedited_voting_period
+                .insert(
+                    "expedited_voting_period".to_owned(),
+                    serde_json::Value::String(expedited_period),
+                ).ok_or_else(|| eyre!("failed to update expedited_voting_period in genesis file"))?;
+            },
+            None => debug!("`expedited_voting_period` was not updated, this configuration was introduced in Cosmos SDK v0.50"),
+        }
     }
 
     Ok(())

@@ -6,6 +6,7 @@ use core::time::Duration;
 
 use alloc::sync::Arc;
 use eyre::eyre;
+use ibc_relayer::config::compat_mode::CompatMode;
 use tokio::runtime::Runtime;
 
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
@@ -95,6 +96,8 @@ pub struct ChainDriver {
     pub tx_config: TxConfig,
 
     pub runtime: Arc<Runtime>,
+
+    pub compat_mode: Option<CompatMode>,
 }
 
 impl ExportEnv for ChainDriver {
@@ -120,12 +123,15 @@ impl ChainDriver {
         p2p_port: u16,
         pprof_port: u16,
         runtime: Arc<Runtime>,
+        native_token: String,
+        compat_mode: Option<CompatMode>,
     ) -> Result<Self, Error> {
         let tx_config = new_tx_config_for_test(
             chain_id.clone(),
             format!("http://localhost:{rpc_port}"),
             format!("http://localhost:{grpc_port}"),
             chain_type.address_type(),
+            native_token,
         )?;
 
         Ok(Self {
@@ -141,6 +147,7 @@ impl ChainDriver {
             pprof_port,
             tx_config,
             runtime,
+            compat_mode,
         })
     }
 

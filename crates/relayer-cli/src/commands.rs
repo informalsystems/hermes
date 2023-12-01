@@ -33,7 +33,7 @@ use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Run
 use tracing::{error, info};
 
 use crate::DEFAULT_CONFIG_PATH;
-use ibc_relayer::config::Config;
+use ibc_relayer::config::{ChainConfig, Config};
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
@@ -149,14 +149,20 @@ impl Configurable<Config> for CliCmd {
         let web = "https://hermes.informal.systems";
         let suffix = format!("{} {} ({})", CliCmd::name(), clap::crate_version!(), web);
         for ccfg in config.chains.iter_mut() {
-            ccfg.memo_prefix.apply_suffix(&suffix);
+            #[allow(irrefutable_let_patterns)]
+            if let ChainConfig::CosmosSdk(ref mut cosmos_ccfg) = ccfg {
+                cosmos_ccfg.memo_prefix.apply_suffix(&suffix);
+            }
         }
 
         // For all commands except for `start` Hermes retries
         // for a prolonged period of time.
         if !matches!(self, CliCmd::Start(_)) {
             for c in config.chains.iter_mut() {
-                c.rpc_timeout = Duration::from_secs(120);
+                #[allow(irrefutable_let_patterns)]
+                if let ChainConfig::CosmosSdk(ref mut cosmos_ccfg) = c {
+                    cosmos_ccfg.rpc_timeout = Duration::from_secs(120);
+                }
             }
         }
 

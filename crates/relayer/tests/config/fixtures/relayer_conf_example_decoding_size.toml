@@ -21,6 +21,7 @@ clear_on_start = true
 tx_confirmation = true
 
 [[chains]]
+type = "CosmosSdk"
 id = 'chain_A'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
@@ -40,6 +41,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
 
 [[chains]]
+type = "CosmosSdk"
 id = 'chain_B'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9090'

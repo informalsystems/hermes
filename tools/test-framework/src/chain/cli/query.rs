@@ -4,6 +4,7 @@ use ibc_relayer_types::applications::transfer::amount::Amount;
 use serde_json as json;
 use serde_yaml as yaml;
 use std::collections::HashMap;
+use tracing::debug;
 
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
@@ -71,23 +72,32 @@ pub fn query_balance(
                 .as_array()
                 .ok_or_else(|| eyre!("expected array field"))?;
 
-            let amount_str = balances
-                .iter()
-                .find(|a| {
-                    a.get("denom")
-                        .ok_or_else(|| eyre!("expected denom field"))
-                        .unwrap()
-                        == denom
-                })
-                .ok_or_else(|| eyre!("no entry with denom `{denom}` found"))?
-                .get("amount")
-                .ok_or_else(|| eyre!("expected amount field"))?
-                .as_str()
-                .ok_or_else(|| eyre!("expected amount to be in string format"))?;
+            let amount_str = balances.iter().find(|a| {
+                a.get("denom")
+                    .ok_or_else(|| eyre!("expected denom field"))
+                    .unwrap()
+                    == denom
+            });
 
-            let amount = Amount::from_str(amount_str).map_err(handle_generic_error)?;
+            match amount_str {
+                Some(amount_str) => {
+                    let amount_str = amount_str
+                        .get("amount")
+                        .ok_or_else(|| eyre!("expected amount field"))?
+                        .as_str()
+                        .ok_or_else(|| eyre!("expected amount to be in string format"))?;
 
-            Ok(amount)
+                    let amount = Amount::from_str(amount_str).map_err(handle_generic_error)?;
+
+                    Ok(amount)
+                }
+                None => {
+                    debug!(
+                        "Denom `{denom}` not found when querying for balance, will return 0{denom}"
+                    );
+                    Ok(Amount::from_str("0").map_err(handle_generic_error)?)
+                }
+            }
         }
     }
 }
@@ -102,7 +112,7 @@ pub fn query_recipient_transactions(
     rpc_listen_address: &str,
     recipient_address: &str,
 ) -> Result<json::Value, Error> {
-    let res = simple_exec(
+    let res = match simple_exec(
         chain_id,
         command_path,
         &[
@@ -113,8 +123,25 @@ pub fn query_recipient_transactions(
             "--events",
             &format!("transfer.recipient={recipient_address}"),
         ],
-    )?
-    .stdout;
+    ) {
+        Ok(output) => output.stdout,
+        // Cosmos SDK v0.50.1 changed the `query txs` CLI flag from `--events` to `--query`
+        Err(_) => {
+            simple_exec(
+                chain_id,
+                command_path,
+                &[
+                    "--node",
+                    rpc_listen_address,
+                    "query",
+                    "txs",
+                    "--query",
+                    &format!("transfer.recipient='{recipient_address}'"),
+                ],
+            )?
+            .stdout
+        }
+    };
 
     tracing::debug!("parsing tx result: {}", res);
 
@@ -164,46 +191,6 @@ pub fn query_cross_chain_query(
         ],
     )?
     .stdout;
-
-    Ok(res)
-}
-
-pub fn query_auth_module(
-    chain_id: &str,
-    command_path: &str,
-    home_path: &str,
-    rpc_listen_address: &str,
-    module_name: &str,
-) -> Result<String, Error> {
-    let output = simple_exec(
-        chain_id,
-        command_path,
-        &[
-            "--home",
-            home_path,
-            "--node",
-            rpc_listen_address,
-            "query",
-            "auth",
-            "module-account",
-            module_name,
-            "--output",
-            "json",
-        ],
-    )?
-    .stdout;
-
-    let json_res: HashMap<String, serde_json::Value> =
-        serde_json::from_str(&output).map_err(handle_generic_error)?;
-
-    let res = json_res
-        .get("account")
-        .ok_or_else(|| eyre!("expect account string field to be present in json result"))?
-        .get("base_account")
-        .ok_or_else(|| eyre!("expect base_account string field to be present in json result"))?
-        .get("address")
-        .ok_or_else(|| eyre!("expect address string field to be present in json result"))?
-        .to_string();
 
     Ok(res)
 }

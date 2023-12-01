@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
     flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix/update-ics;
+    cosmos-nix.url = github:informalsystems/cosmos.nix;
   };
 
   outputs = inputs: let
@@ -29,7 +29,8 @@
           (cosmos-nix)
           cometbft
           gaia6-ordered
-          gaia12
+          gaia13
+          gaia14
           osmosis
           wasmd
           ibc-go-v2-simapp
@@ -38,6 +39,7 @@
           ibc-go-v5-simapp
           ibc-go-v6-simapp
           ibc-go-v7-simapp
+          ibc-go-v8-simapp
           ibc-go-v8-channel-upgrade-simapp
           interchain-security
           apalache
@@ -49,6 +51,7 @@
           stride-consumer
           migaloo
           neutron
+          celestia
           ;
 
         python = nixpkgs.python3.withPackages (p: [

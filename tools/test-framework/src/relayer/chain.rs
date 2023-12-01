@@ -22,6 +22,7 @@
 
 use crossbeam_channel as channel;
 use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
+use ibc_relayer::chain::cosmos::version::Specs;
 use ibc_relayer_types::core::ics04_channel::upgrade::Upgrade;
 use tracing::Span;
 
@@ -123,8 +124,8 @@ where
         self.value().add_key(key_name, key)
     }
 
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
-        self.value().ibc_version()
+    fn version_specs(&self) -> Result<Specs, Error> {
+        self.value().version_specs()
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

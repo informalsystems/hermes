@@ -26,6 +26,7 @@ use crate::ibc::token::Token;
 use crate::prelude::assert_eventually_succeed;
 use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
+use crate::util::proposal_status::ProposalStatus;
 
 pub trait ChainBootstrapMethodsExt {
     /**
@@ -110,35 +111,16 @@ pub trait ChainBootstrapMethodsExt {
     ) -> Result<(), Error>;
 
     /**
-       Assert that the consumer chain proposal is eventually submitted.
+       Assert that the proposal is eventually in the desired state.
     */
-    fn assert_consumer_chain_proposal_submitted(
-        &self,
-        chain_id: &str,
-        command_path: &str,
-        home_path: &str,
-        rpc_listen_address: &str,
-    ) -> Result<(), Error>;
-
     fn assert_proposal_status(
         &self,
         chain_id: &str,
         command_path: &str,
         home_path: &str,
         rpc_listen_address: &str,
-        status: &str,
+        status: ProposalStatus,
         proposal_id: &str,
-    ) -> Result<(), Error>;
-
-    /**
-       Assert that the consumer chain proposal eventually passes.
-    */
-    fn assert_consumer_chain_proposal_passed(
-        &self,
-        chain_id: &str,
-        command_path: &str,
-        home_path: &str,
-        rpc_listen_address: &str,
     ) -> Result<(), Error>;
 
     /**
@@ -340,51 +322,19 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         )
     }
 
-    fn assert_consumer_chain_proposal_submitted(
-        &self,
-        chain_id: &str,
-        command_path: &str,
-        home_path: &str,
-        rpc_listen_address: &str,
-    ) -> Result<(), Error> {
-        assert_eventually_succeed(
-            "consumer chain proposal submitted",
-            10,
-            Duration::from_secs(1),
-            || {
-                match query_gov_proposal(chain_id, command_path, home_path, rpc_listen_address, "1") {
-                    Ok(exec_output) => {
-                        let json_res = json::from_str::<json::Value>(&exec_output.stdout).map_err(handle_generic_error)?;
-                        let proposal_status = json_res.get("status")
-                            .ok_or_else(|| eyre!("expected `status` field"))?
-                            .as_str()
-                            .ok_or_else(|| eyre!("expected string field"))?;
-                        if proposal_status == "PROPOSAL_STATUS_VOTING_PERIOD" {
-                            Ok(())
-                        } else {
-                            Err(Error::generic(eyre!("consumer chain proposal is not in voting period. Proposal status: {proposal_status}")))
-                        }
-                    },
-                    Err(e) => Err(Error::generic(eyre!("Error querying the consumer chain proposal. Potential issues could be due to not using enough gas or the proposal submitted is invalid. Error: {e}"))),
-                }
-            },
-        )?;
-        Ok(())
-    }
-
     fn assert_proposal_status(
         &self,
         chain_id: &str,
         command_path: &str,
         home_path: &str,
         rpc_listen_address: &str,
-        status: &str,
+        status: ProposalStatus,
         proposal_id: &str,
     ) -> Result<(), Error> {
         assert_eventually_succeed(
-            &format!("proposal `{}` status: {}", proposal_id, status),
+            &format!("proposal `{}` status: {}", proposal_id, status.as_str()),
             10,
-            Duration::from_secs(1),
+            Duration::from_secs(2),
             || match query_gov_proposal(
                 chain_id,
                 command_path,
@@ -395,58 +345,36 @@ impl ChainBootstrapMethodsExt for ChainDriver {
                 Ok(exec_output) => {
                     let json_res = json::from_str::<json::Value>(&exec_output.stdout)
                         .map_err(handle_generic_error)?;
-                    let proposal_status = json_res
-                        .get("status")
-                        .ok_or_else(|| eyre!("expected `status` field"))?
-                        .as_str()
-                        .ok_or_else(|| eyre!("expected string field"))?;
+                    // Cosmos SDK v0.50.1 outputs the status of the proposal using an integer code
+                    let proposal_status: ProposalStatus = match json_res.get("proposal") {
+                        Some(proposal_status) => proposal_status
+                            .get("status")
+                            .ok_or_else(|| eyre!("expected `status` field"))?
+                            .try_into()?,
+                        None => json_res
+                            .get("status")
+                            .ok_or_else(|| eyre!("expected `status` field"))?
+                            .try_into()?,
+                    };
+
                     if proposal_status == status {
                         Ok(())
                     } else {
-                        Err(Error::generic(eyre!("consumer chain proposal is not in voting period. Proposal status: {proposal_status}")))
+                        Err(Error::generic(eyre!(
+                            "proposal is not in `{}`. Proposal status: {}",
+                            status.as_str(),
+                            proposal_status.as_str()
+                        )))
                     }
                 }
                 Err(e) => {
                     let msg = e.to_string();
-                    if msg.contains(&format!("status:{}", status)) {
+                    if msg.contains(&format!("status:{}", status.as_str())) {
                         Ok(())
                     } else {
-                        Err(Error::generic(eyre!("Error querying the consumer chain proposal. Potential issues could be due to not using enough gas or the proposal submitted is invalid. Error: {e}")))
+                        Err(Error::generic(eyre!("Error querying proposal `{proposal_id}`. Potential issues could be due to not using enough gas or the proposal submitted is invalid. Error: {e}")))
                     }
                 }
-            },
-        )?;
-        Ok(())
-    }
-
-    fn assert_consumer_chain_proposal_passed(
-        &self,
-        chain_id: &str,
-        command_path: &str,
-        home_path: &str,
-        rpc_listen_address: &str,
-    ) -> Result<(), Error> {
-        assert_eventually_succeed(
-            "consumer chain proposal passed",
-            10,
-            Duration::from_secs(5),
-            || {
-                match query_gov_proposal(chain_id, command_path, home_path, rpc_listen_address, "1") {
-                        Ok(exec_output) => {
-                            let json_res = json::from_str::<json::Value>(&exec_output.stdout).map_err(handle_generic_error)?;
-                            let proposal_status = json_res.get("status")
-                                .ok_or_else(|| eyre!("expected `status` field"))?
-                                .as_str()
-                                .ok_or_else(|| eyre!("expected string field"))?;
-
-                            if proposal_status == "PROPOSAL_STATUS_PASSED" {
-                                Ok(())
-                            } else {
-                                Err(Error::generic(eyre!("consumer chain proposal has not passed. Proposal status: {proposal_status}")))
-                            }
-                        },
-                        Err(e) => Err(Error::generic(eyre!("Error querying the consumer chain proposal. Potential issues could be due to not using enough gas or the proposal submitted is invalid. Error: {e}"))),
-                    }
             },
         )?;
         Ok(())

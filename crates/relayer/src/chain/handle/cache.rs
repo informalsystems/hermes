@@ -27,6 +27,7 @@ use ibc_relayer_types::Height;
 use crate::account::Balance;
 use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::version::Specs;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::*;
@@ -124,8 +125,8 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().add_key(key_name, key)
     }
 
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
-        self.inner().ibc_version()
+    fn version_specs(&self) -> Result<Specs, Error> {
+        self.inner().version_specs()
     }
 
     fn query_balance(
