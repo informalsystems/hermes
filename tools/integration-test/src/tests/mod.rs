@@ -10,7 +10,7 @@ pub mod client_expiration;
 pub mod client_filter;
 pub mod client_refresh;
 pub mod client_settings;
-#[cfg(not(feature = "celestia"))]
+#[cfg(not(any(feature = "celestia", feature = "juno")))]
 pub mod client_upgrade;
 pub mod connection_delay;
 pub mod consensus_states;
