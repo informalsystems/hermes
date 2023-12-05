@@ -70,19 +70,16 @@ jobs:
           - package: ibc-go-v8-simapp
             command: simd
             account_prefix: cosmos
-          - package: wasmd
-            command: wasmd
-            account_prefix: wasm
         second-package:
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
-          - package: stride
-            command: strided
-            account_prefix: stride
-          - package: juno
-            command: junod
-            account_prefix: juno
+          - package: migaloo
+            command: migalood
+            account_prefix: migaloo
+          - package: wasmd
+            command: wasmd
+            account_prefix: wasm
 
     steps:
       - uses: actions/checkout@v4
