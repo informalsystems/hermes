@@ -9,7 +9,7 @@
 //! The BroadcastError will reduce the description to simple: "incorrect account sequence"
 //!
 //! Cosmos SDK errors: https://github.com/cosmos/cosmos-sdk/blob/v0.50.1/types/errors/errors.go
-//! Ibc Go errors: https://github.com/cosmos/ibc-go/blob/v8.0.0/modules/core/04-channel/types/errors.go
+//! Ibc Go errors: <https://github.com/cosmos/ibc-go/blob/v8.0.0/modules/core/04-channel/types/errors.go>
 
 pub struct BroadcastError {
     pub code: u32,
