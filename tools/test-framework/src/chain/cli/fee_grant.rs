@@ -8,6 +8,7 @@ pub fn feegrant_grant(
     rpc_listen_address: &str,
     granter: &str,
     grantee: &str,
+    fees: &str,
 ) -> Result<(), Error> {
     simple_exec(
         chain_id,
@@ -26,6 +27,8 @@ pub fn feegrant_grant(
             "grant",
             granter,
             grantee,
+            "--fees",
+            fees,
             "--yes",
         ],
     )?;

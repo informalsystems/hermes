@@ -41,6 +41,8 @@ fee-grant = []
 channel-upgrade = []
 interchain-security = []
 celestia = []
+async-icq = []
+juno = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
@@ -48,3 +50,10 @@ doc = true
 
 [dev-dependencies]
 tempfile = "3.6.0"
+
+[dependencies.tendermint]
+version = "0.34.0"
+
+[dependencies.tendermint-rpc]
+version = "0.34.0"
+features = ["http-client"]

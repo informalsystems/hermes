@@ -10,7 +10,7 @@ pub mod client_expiration;
 pub mod client_filter;
 pub mod client_refresh;
 pub mod client_settings;
-#[cfg(not(feature = "celestia"))]
+#[cfg(not(any(feature = "celestia", feature = "juno")))]
 pub mod client_upgrade;
 pub mod connection_delay;
 pub mod consensus_states;
@@ -26,6 +26,9 @@ pub mod tendermint;
 #[cfg(not(feature = "celestia"))]
 pub mod ternary_transfer;
 pub mod transfer;
+
+#[cfg(any(doc, feature = "async-icq"))]
+pub mod async_icq;
 
 #[cfg(any(doc, feature = "channel-upgrade"))]
 pub mod channel_upgrade;
