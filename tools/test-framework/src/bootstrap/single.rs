@@ -114,6 +114,7 @@ pub fn bootstrap_single_node(
     let minimum_gas = format!("0{}", native_token);
     chain_driver.update_chain_config("app.toml", |config| {
         config::set_grpc_port(config, chain_driver.grpc_port)?;
+        config::enable_grpc(config)?;
         config::disable_grpc_web(config)?;
         config::disable_api(config)?;
         config::set_minimum_gas_price(config, &minimum_gas)?;

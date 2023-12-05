@@ -1356,6 +1356,8 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "tendermint",
+ "tendermint-rpc",
  "time",
  "toml 0.7.8",
  "tonic",
