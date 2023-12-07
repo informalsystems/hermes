@@ -988,17 +988,15 @@ impl TelemetryState {
         // Remove any sequence number from the backlog which isn't in the list of queried pending packets
         // as they might have been relayed without the Hermes instance observing it
         if let Some(path_backlog) = self.backlogs.get(&path_uid) {
-            let _ = path_backlog.iter().map(|entry| {
-                if !sequences.contains(entry.value()) {
-                    self.backlog_remove(
-                        *entry.value(),
-                        chain_id,
-                        channel_id,
-                        port_id,
-                        counterparty_chain_id,
-                    )
-                }
-            });
+            let backlog = path_backlog.value();
+            let keys_to_remove: Vec<u64> = backlog
+                .iter()
+                .filter(|entry| !sequences.contains(entry.key()))
+                .map(|entry| *entry.key())
+                .collect();
+            for key in keys_to_remove.iter() {
+                self.backlog_remove(*key, chain_id, channel_id, port_id, counterparty_chain_id)
+            }
         }
     }
 
@@ -1199,5 +1197,118 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "ics29_period_fees" => Some(Arc::new(last_value())),
             _ => Some(Arc::new(sum())),
         }
+    }
+}
+
+//#[cfg(feature = "telemetry")]
+mod tests {
+    use prometheus::proto::Metric;
+
+    use super::*;
+
+    #[test]
+    fn insert_remove_backlog() {
+        let state = TelemetryState::new(
+            Range {
+                start: 0,
+                end: 5000,
+            },
+            5,
+            Range {
+                start: 0,
+                end: 5000,
+            },
+            5,
+        );
+
+        let chain_id = ChainId::from_string("chain-test");
+        let counterparty_chain_id = ChainId::from_string("counterpartychain-test");
+        let channel_id = ChannelId::new(0);
+        let port_id = PortId::transfer();
+
+        state.backlog_insert(1, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(2, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(3, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(4, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(5, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_remove(3, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_remove(1, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+
+        let metrics = state.exporter.registry().gather().clone();
+        let backlog_size = metrics
+            .iter()
+            .find(|metric| metric.get_name() == "backlog_size")
+            .unwrap();
+        assert!(
+            assert_metric_value(backlog_size.get_metric(), 3),
+            "expected backlog_size to be 3"
+        );
+        let backlog_oldest_sequence = metrics
+            .iter()
+            .find(|&metric| metric.get_name() == "backlog_oldest_sequence")
+            .unwrap();
+        assert!(
+            assert_metric_value(backlog_oldest_sequence.get_metric(), 2),
+            "expected backlog_oldest_sequence to be 2"
+        );
+    }
+
+    #[test]
+    fn update_backlog() {
+        let state = TelemetryState::new(
+            Range {
+                start: 0,
+                end: 5000,
+            },
+            5,
+            Range {
+                start: 0,
+                end: 5000,
+            },
+            5,
+        );
+
+        let chain_id = ChainId::from_string("chain-test");
+        let counterparty_chain_id = ChainId::from_string("counterpartychain-test");
+        let channel_id = ChannelId::new(0);
+        let port_id = PortId::transfer();
+
+        state.backlog_insert(1, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(2, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(3, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(4, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(5, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+
+        state.update_backlog(
+            vec![5],
+            &chain_id,
+            &channel_id,
+            &port_id,
+            &counterparty_chain_id,
+        );
+
+        let metrics = state.exporter.registry().gather().clone();
+        let backlog_size = metrics
+            .iter()
+            .find(|&metric| metric.get_name() == "backlog_size")
+            .unwrap();
+        assert!(
+            assert_metric_value(backlog_size.get_metric(), 1),
+            "expected backlog_size to be 1"
+        );
+        let backlog_oldest_sequence = metrics
+            .iter()
+            .find(|&metric| metric.get_name() == "backlog_oldest_sequence")
+            .unwrap();
+        assert!(
+            assert_metric_value(backlog_oldest_sequence.get_metric(), 5),
+            "expected backlog_oldest_sequence to be 5"
+        );
+    }
+
+    fn assert_metric_value(metric: &[Metric], expected: u64) -> bool {
+        metric
+            .iter()
+            .any(|m| m.get_gauge().get_value() as u64 == expected)
     }
 }
