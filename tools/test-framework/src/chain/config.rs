@@ -377,14 +377,22 @@ pub fn globalfee_minimum_gas_prices(
     genesis: &mut serde_json::Value,
     minimum_gas_prices: serde_json::Value,
 ) -> Result<(), Error> {
-    let params = genesis
+    let globalfee = genesis
         .get_mut("app_state")
-        .and_then(|app_state| app_state.get_mut("globalfee"))
-        .and_then(|globalfee| globalfee.get_mut("params"))
-        .and_then(|params| params.as_object_mut())
-        .ok_or_else(|| eyre!("failed to get `params` fields in genesis file"))?;
+        .and_then(|app_state| app_state.get_mut("globalfee"));
 
-    params.insert("minimum_gas_prices".to_owned(), minimum_gas_prices);
+    // Only update `minimum_gas_prices` if `globalfee` is enabled
+    match globalfee {
+        Some(globalfee) => {
+            let params = globalfee
+                .get_mut("params")
+                .and_then(|params| params.as_object_mut())
+                .ok_or_else(|| eyre!("failed to get `params` fields in genesis file"))?;
+
+            params.insert("minimum_gas_prices".to_owned(), minimum_gas_prices);
+        }
+        None => debug!("chain doesn't have `globalfee`"),
+    }
 
     Ok(())
 }
