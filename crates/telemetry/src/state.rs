@@ -22,7 +22,7 @@ use ibc_relayer_types::{
 
 use tendermint::Time;
 
-use crate::path_identifier::PathIdentifier;
+use crate::{broadcast_error::BroadcastError, path_identifier::PathIdentifier};
 
 const EMPTY_BACKLOG_SYMBOL: u64 = 0;
 const BACKLOG_CAPACITY: usize = 1000;
@@ -1114,13 +1114,14 @@ impl TelemetryState {
 
     /// Add an error and its description to the list of errors observed after broadcasting
     /// a Tx with a specific account.
-    pub fn broadcast_errors(&self, address: &String, error_code: u32, error_description: &String) {
+    pub fn broadcast_errors(&self, address: &String, error_code: u32, error_description: &str) {
         let cx = Context::current();
+        let broadcast_error = BroadcastError::new(error_code, error_description);
 
         let labels = &[
             KeyValue::new("account", address.to_string()),
-            KeyValue::new("error_code", error_code.to_string()),
-            KeyValue::new("error_description", error_description.to_string()),
+            KeyValue::new("error_code", broadcast_error.code.to_string()),
+            KeyValue::new("error_description", broadcast_error.description),
         ];
 
         self.broadcast_errors.add(&cx, 1, labels);
