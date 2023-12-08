@@ -132,6 +132,7 @@ If this metric is increasing, it signals that the packet queue is increasing and
 - If the `backlog_oldest_sequence` remains unchanged for more than a few minutes, that means that the packet with the respective sequence number is likely blocked
 and cannot be relayed. To understand for how long the packet is block, Hermes will populate `backlog_oldest_timestamp`  with the local time when it first observed
 the `backlog_oldest_sequence` that is blocked.
+- __NOTE__: The Hermes instance might miss the acknowledgment of an observed IBC packets relayed, this will cause the `backlog_*` metrics to contain an invalid value. In order to minimise this issue, whenever the Hermes instance clears packets the `backlog_*` metrics will be updated using the queried pending packets.
 
 ## How efficient and how secure is the IBC status on each network?
 
