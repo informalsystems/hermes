@@ -355,6 +355,48 @@ pub fn set_soft_opt_out_threshold(
     Ok(())
 }
 
+pub fn consensus_params_max_gas(
+    genesis: &mut serde_json::Value,
+    max_gas: &str,
+) -> Result<(), Error> {
+    let block = genesis
+        .get_mut("consensus_params")
+        .and_then(|consensus_params| consensus_params.get_mut("block"))
+        .and_then(|block| block.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get `block` field in genesis file"))?;
+
+    block.insert(
+        "max_gas".to_owned(),
+        serde_json::Value::String(max_gas.to_string()),
+    );
+
+    Ok(())
+}
+
+pub fn globalfee_minimum_gas_prices(
+    genesis: &mut serde_json::Value,
+    minimum_gas_prices: serde_json::Value,
+) -> Result<(), Error> {
+    let globalfee = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("globalfee"));
+
+    // Only update `minimum_gas_prices` if `globalfee` is enabled
+    match globalfee {
+        Some(globalfee) => {
+            let params = globalfee
+                .get_mut("params")
+                .and_then(|params| params.as_object_mut())
+                .ok_or_else(|| eyre!("failed to get `params` fields in genesis file"))?;
+
+            params.insert("minimum_gas_prices".to_owned(), minimum_gas_prices);
+        }
+        None => debug!("chain doesn't have `globalfee`"),
+    }
+
+    Ok(())
+}
+
 /// Look up a key in a JSON object, falling back to the second key if the first one cannot be found.
 ///
 /// This lets us support both Tendermint 0.34 and 0.37, which sometimes use different keys for the
