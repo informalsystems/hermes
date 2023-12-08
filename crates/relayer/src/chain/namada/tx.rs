@@ -10,7 +10,6 @@ use namada_sdk::borsh::BorshDeserialize;
 use namada_sdk::core::ledger::parameters::storage as parameter_storage;
 use namada_sdk::core::types::address::{Address, ImplicitAddress};
 use namada_sdk::core::types::chain::ChainId;
-use namada_sdk::core::types::key::RefTo;
 use namada_sdk::core::types::transaction::GasLimit;
 use namada_sdk::{signing, tx, Namada};
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
@@ -44,7 +43,7 @@ impl NamadaChain {
         let gas_limit = GasLimit::try_from_slice(&value).map_err(NamadaError::borsh_decode)?;
 
         let namada_key = self.get_key()?;
-        let relayer_key_pair = namada_key.secret_key;
+        let relayer_public_key = namada_key.secret_key.to_public();
         let relayer_addr = namada_key.address;
 
         let tx_args = TxArgs {
@@ -57,7 +56,7 @@ impl NamadaChain {
             ledger_address: (),
             initialized_account_alias: None,
             wallet_alias_force: false,
-            wrapper_fee_payer: Some(relayer_key_pair.clone()),
+            wrapper_fee_payer: Some(relayer_public_key.clone()),
             fee_amount: None,
             fee_token,
             fee_unshield: None,
@@ -65,17 +64,15 @@ impl NamadaChain {
             expiration: None,
             disposable_signing_key: false,
             chain_id: Some(chain_id),
-            signing_keys: vec![relayer_key_pair],
+            signing_keys: vec![relayer_public_key],
             signatures: vec![],
             tx_reveal_code_path: PathBuf::from(tx::TX_REVEAL_PK),
-            verification_key: None,
             password: None,
             use_device: false,
         };
         let rt = self.rt.clone();
         rt.block_on(self.submit_reveal_aux(&tx_args, &relayer_addr))?;
 
-        let namada_ctx = self.namada_ctx();
         let args = TxCustom {
             tx: tx_args.clone(),
             code_path: Some(PathBuf::from(tx::TX_IBC_WASM)),
@@ -84,13 +81,16 @@ impl NamadaChain {
             owner: relayer_addr.clone(),
         };
         let (mut tx, signing_data, _epoch) = rt
-            .block_on(args.build(&namada_ctx))
+            .block_on(args.build(&self.ctx))
             .map_err(NamadaError::namada)?;
-        rt.block_on(namada_ctx.sign(&mut tx, &args.tx, signing_data, signing::default_sign))
-            .map_err(NamadaError::namada)?;
+        rt.block_on(
+            self.ctx
+                .sign(&mut tx, &args.tx, signing_data, signing::default_sign, ()),
+        )
+        .map_err(NamadaError::namada)?;
         let decrypted_hash = tx.raw_header_hash().to_string();
         let response = rt
-            .block_on(namada_ctx.submit(tx, &args.tx))
+            .block_on(self.ctx.submit(tx, &args.tx))
             .map_err(NamadaError::namada)?;
 
         match response {
@@ -147,26 +147,26 @@ impl NamadaChain {
 
     async fn submit_reveal_aux(&mut self, args: &TxArgs, address: &Address) -> Result<(), Error> {
         if let Address::Implicit(ImplicitAddress(pkh)) = address {
-            let key = self
-                .wallet
-                .find_key_by_pkh(pkh, args.clone().password)
+            let public_key = self
+                .ctx
+                .wallet()
+                .await
+                .find_public_key(pkh.to_string())
                 .map_err(|e| NamadaError::namada(namada_sdk::error::Error::Other(e.to_string())))?;
-            let public_key = key.ref_to();
 
-            if tx::is_reveal_pk_needed(&self.rpc_client, address, args.force)
+            if tx::is_reveal_pk_needed(self.ctx.client(), address, args.force)
                 .await
                 .map_err(NamadaError::namada)?
             {
-                let namada_ctx = self.namada_ctx();
                 let (mut tx, signing_data, _epoch) =
-                    tx::build_reveal_pk(&namada_ctx, args, &public_key)
+                    tx::build_reveal_pk(&self.ctx, args, &public_key)
                         .await
                         .map_err(NamadaError::namada)?;
-                namada_ctx
-                    .sign(&mut tx, args, signing_data, signing::default_sign)
+                self.ctx
+                    .sign(&mut tx, args, signing_data, signing::default_sign, ())
                     .await
                     .map_err(NamadaError::namada)?;
-                namada_ctx
+                self.ctx
                     .submit(tx, args)
                     .await
                     .map_err(NamadaError::namada)?;

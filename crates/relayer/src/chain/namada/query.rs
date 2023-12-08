@@ -9,6 +9,7 @@ use namada_sdk::core::types::address::{Address, InternalAddress};
 use namada_sdk::core::types::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::queries::{Client as SdkClient, RPC};
 use namada_sdk::rpc;
+use namada_sdk::Namada;
 use tendermint::block::Height as TmHeight;
 
 use crate::chain::endpoint::ChainEndpoint;
@@ -36,7 +37,7 @@ impl NamadaChain {
         let (value, proof) = self
             .rt
             .block_on(rpc::query_storage_value_bytes(
-                &self.rpc_client,
+                self.ctx.client(),
                 &key,
                 height,
                 is_proven,
@@ -60,7 +61,7 @@ impl NamadaChain {
             .block_on(
                 // We can't use rpc::query_storage_prefix` because we need byte data
                 RPC.shell()
-                    .storage_prefix(&self.rpc_client, None, None, false, &prefix),
+                    .storage_prefix(self.ctx.client(), None, None, false, &prefix),
             )
             .map_err(NamadaError::query)?;
         Ok(response.data)
@@ -68,7 +69,7 @@ impl NamadaChain {
 
     pub fn query_epoch(&self) -> Result<Epoch, Error> {
         self.rt
-            .block_on(rpc::query_epoch(&self.rpc_client))
+            .block_on(rpc::query_epoch(self.ctx.client()))
             .map_err(|e| Error::namada(NamadaError::namada(e)))
     }
 
@@ -80,7 +81,7 @@ impl NamadaChain {
         let event = self
             .rt
             .block_on(RPC.shell().ibc_client_update(
-                &self.rpc_client,
+                self.ctx.client(),
                 &request.client_id.as_str().parse().unwrap(),
                 &height,
             ))
@@ -113,7 +114,7 @@ impl NamadaChain {
         match self
             .rt
             .block_on(RPC.shell().applied(
-                &self.rpc_client,
+                self.ctx.client(),
                 &tx_hash.try_into().expect("Invalid tx hash"),
             ))
             .map_err(NamadaError::query)?
@@ -191,7 +192,7 @@ impl NamadaChain {
             .rt
             .block_on(
                 RPC.shell().ibc_packet(
-                    &self.rpc_client,
+                    self.ctx.client(),
                     &request
                         .event_id
                         .as_str()
@@ -250,7 +251,7 @@ impl NamadaChain {
             .map_err(|_| Error::invalid_height_no_source())?;
         let response = self
             .rt
-            .block_on(SdkClient::block_results(&self.rpc_client, tm_height))
+            .block_on(SdkClient::block_results(self.ctx.client(), tm_height))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         let events = response

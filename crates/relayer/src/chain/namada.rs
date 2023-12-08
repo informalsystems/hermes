@@ -48,7 +48,7 @@ use namada_sdk::proof_of_stake::OwnedPosParams;
 use namada_sdk::queries::Client as SdkClient;
 use namada_sdk::wallet::Store;
 use namada_sdk::wallet::Wallet;
-use namada_sdk::{rpc, NamadaImpl};
+use namada_sdk::{rpc, Namada, NamadaImpl};
 use tendermint::block::Height as TmHeight;
 use tendermint::{node, Time};
 use tendermint_light_client::types::LightBlock as TMLightBlock;
@@ -90,13 +90,8 @@ pub mod wallet;
 pub struct NamadaChain {
     /// Reuse CosmosSdkConfig for tendermint's light clients
     config: CosmosSdkConfig,
-    rpc_client: HttpClient,
-    /// Wallet for Namada context just reading the added keys
-    wallet: Wallet<wallet::NullWalletUtils>,
-    /// Shielded context for Namada context
-    shielded_ctx: ShieldedContext<FsShieldedUtils>,
-    /// Namada native token
-    native_token: Address,
+    /// Namada context
+    ctx: NamadaImpl<HttpClient, wallet::NullWalletUtils, FsShieldedUtils, NullIo>,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing<NamadaKeyPair>,
@@ -104,18 +99,6 @@ pub struct NamadaChain {
 }
 
 impl NamadaChain {
-    fn namada_ctx(
-        &mut self,
-    ) -> NamadaImpl<'_, HttpClient, wallet::NullWalletUtils, FsShieldedUtils, NullIo> {
-        NamadaImpl::native_new(
-            &self.rpc_client,
-            &mut self.wallet,
-            &mut self.shielded_ctx,
-            &NullIo,
-            self.native_token.clone(),
-        )
-    }
-
     fn config(&self) -> &CosmosSdkConfig {
         &self.config
     }
@@ -130,7 +113,7 @@ impl NamadaChain {
 
         let node_info = self
             .rt
-            .block_on(fetch_node_info(&self.rpc_client, &self.config))?;
+            .block_on(fetch_node_info(self.ctx.client(), &self.config))?;
         let compat_mode = CompatMode::from_version(node_info.version).unwrap_or(CompatMode::V0_37);
 
         use crate::config::EventSourceMode as Mode;
@@ -144,7 +127,7 @@ impl NamadaChain {
             ),
             Mode::Pull { interval } => EventSource::rpc(
                 self.config.id.clone(),
-                self.rpc_client.clone(),
+                self.ctx.client().clone(),
                 *interval,
                 self.rt.clone(),
             ),
@@ -173,7 +156,7 @@ impl NamadaChain {
     fn get_latest_block_time(&self) -> Result<Time, Error> {
         let status = self
             .rt
-            .block_on(SdkClient::status(&self.rpc_client))
+            .block_on(SdkClient::status(self.ctx.client()))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
         Ok(status
             .sync_info
@@ -244,12 +227,11 @@ impl ChainEndpoint for NamadaChain {
             ..config
         };
 
+        let ctx = NamadaImpl::native_new(rpc_client, wallet, shielded_ctx, NullIo, native_token);
+
         Ok(Self {
             config,
-            rpc_client,
-            wallet,
-            shielded_ctx,
-            native_token,
+            ctx,
             light_client,
             rt,
             keybase,
@@ -263,7 +245,7 @@ impl ChainEndpoint for NamadaChain {
 
     fn health_check(&mut self) -> Result<HealthCheck, Error> {
         self.rt
-            .block_on(SdkClient::health(&self.rpc_client))
+            .block_on(SdkClient::health(self.ctx.client()))
             .map_err(|e| {
                 Error::health_check_json_rpc(
                     self.config.id.clone(),
@@ -422,7 +404,7 @@ impl ChainEndpoint for NamadaChain {
         let owner =
             Address::decode(owner).map_err(|_| NamadaError::address_decode(owner.to_string()))?;
 
-        let default_token = self.native_token.to_string();
+        let default_token = self.ctx.native_token().to_string();
         let denom = denom.unwrap_or(&default_token);
         let token =
             Address::decode(denom).map_err(|_| NamadaError::address_decode(denom.to_string()))?;
@@ -537,7 +519,7 @@ impl ChainEndpoint for NamadaChain {
 
         let status = self
             .rt
-            .block_on(SdkClient::status(&self.rpc_client))
+            .block_on(SdkClient::status(self.ctx.client()))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         if status.sync_info.catching_up {
@@ -1115,8 +1097,8 @@ impl ChainEndpoint for NamadaChain {
         };
 
         let rpc_call = match height.value() {
-            0 => SdkClient::latest_block(&self.rpc_client),
-            _ => SdkClient::block(&self.rpc_client, height),
+            0 => SdkClient::latest_block(self.ctx.client()),
+            _ => SdkClient::block(self.ctx.client(), height),
         };
         let response = self
             .rt
