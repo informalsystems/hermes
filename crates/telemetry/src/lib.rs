@@ -1,3 +1,4 @@
+pub mod broadcast_error;
 pub mod encoder;
 mod path_identifier;
 pub mod server;
