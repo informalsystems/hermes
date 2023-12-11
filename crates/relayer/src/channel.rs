@@ -366,6 +366,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             connection_delay: a_connection.delay_period(),
         };
 
+        let mut a_channel_state = a_channel.state;
+
         if a_channel.state_matches(&State::Init) && a_channel.remote.channel_id.is_none() {
             let channels: Vec<IdentifiedChannelEnd> = counterparty_chain
                 .query_connection_channels(QueryConnectionChannelsRequest {
@@ -382,9 +384,30 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     }
                 }
             }
+        } else if a_channel.state_matches(&State::Open(UpgradeState::NotUpgrading))
+            && a_channel.remote.channel_id.is_some()
+        {
+            let (b_channel, _) = counterparty_chain
+                .query_channel(
+                    QueryChannelRequest {
+                        port_id: a_channel.remote.port_id.clone(),
+                        channel_id: a_channel.remote.channel_id.clone().unwrap(),
+                        height: QueryHeight::Specific(height),
+                    },
+                    // IncludeProof::Yes forces a new query when the CachingChainHandle
+                    // is used.
+                    // TODO: Pass the BaseChainHandle instead of the CachingChainHandle
+                    // to the channel worker to avoid querying for a Proof .
+                    IncludeProof::Yes,
+                )
+                .map_err(ChannelError::relayer)?;
+
+            if a_channel.upgraded_sequence > b_channel.upgraded_sequence {
+                a_channel_state = State::Open(UpgradeState::Upgrading);
+            }
         }
 
-        Ok((handshake_channel, a_channel.state))
+        Ok((handshake_channel, a_channel_state))
     }
 
     pub fn src_chain(&self) -> &ChainA {
@@ -773,27 +796,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             (State::Open(UpgradeState::NotUpgrading), State::TryOpen) => {
                 Some(self.build_chan_open_confirm_and_send()?)
             }
-            (State::Open(UpgradeState::NotUpgrading), State::Open(_)) => {
+            (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::NotUpgrading)) => {
                 return Ok((None, Next::Abort))
             }
 
             // If the counterparty state is already Open but current state is TryOpen,
             // return anyway as the final step is to be done by the counterparty worker.
-            (State::TryOpen, State::Open(_)) => return Ok((None, Next::Abort)),
+            (State::TryOpen, State::Open(UpgradeState::NotUpgrading)) => {
+                return Ok((None, Next::Abort))
+            }
 
             // Close handshake steps
             (State::Closed, State::Closed) => return Ok((None, Next::Abort)),
             (State::Closed, _) => Some(self.build_chan_close_confirm_and_send()?),
 
             // Channel Upgrade handshake steps
-            (State::Open(UpgradeState::Upgrading), State::Open(_)) => {
+            (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::NotUpgrading)) => {
                 Some(self.build_chan_upgrade_try_and_send()?)
             }
-            (State::Flushing, State::Open(_)) => Some(self.build_chan_upgrade_ack_and_send()?),
+            (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::Upgrading)) => {
+                Some(self.flipped().build_chan_upgrade_try_and_send()?)
+            }
+            (State::Flushing, State::Open(UpgradeState::Upgrading)) => Some(self.build_chan_upgrade_ack_and_send()?),
             (State::Flushcomplete, State::Flushing) => {
                 Some(self.build_chan_upgrade_confirm_and_send()?)
             }
-            (State::Flushcomplete, State::Open(_)) => {
+            (State::Flushcomplete, State::Open(UpgradeState::Upgrading)) => {
                 Some(self.flipped().build_chan_upgrade_open_and_send()?)
             }
             (State::Open(UpgradeState::Upgrading), State::Flushcomplete) => {

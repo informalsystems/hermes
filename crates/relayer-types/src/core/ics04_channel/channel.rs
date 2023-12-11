@@ -257,6 +257,29 @@ impl ChannelEnd {
     pub fn version_matches(&self, other: &Version) -> bool {
         self.version() == other
     }
+
+    /// Returns whether or not the channel with this state is
+    /// being upgraded.
+    pub fn is_upgrading(&self, other: &Option<IdentifiedChannelEnd>) -> bool {
+        use State::*;
+
+        match other {
+            Some(other) => {
+                let check_sequence = self.upgraded_sequence != other.channel_end.upgraded_sequence;
+
+                let check_state = match self.state {
+                    Open(UpgradeState::NotUpgrading) => matches!(
+                        other.channel_end.state,
+                        Open(UpgradeState::Upgrading) | Flushing | Flushcomplete
+                    ),
+                    Open(UpgradeState::Upgrading) | Flushing | Flushcomplete => true,
+                    _ => false,
+                };
+                check_sequence || check_state
+            }
+            None => false,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -491,21 +514,6 @@ impl State {
             Init => !matches!(other, Uninitialized),
             TryOpen => !matches!(other, Uninitialized | Init),
             Open(UpgradeState::NotUpgrading) => !matches!(other, Uninitialized | Init | TryOpen),
-            _ => false,
-        }
-    }
-
-    /// Returns whether or not the channel with this state is
-    /// being upgraded.
-    pub fn is_upgrading(self, other: Self) -> bool {
-        use State::*;
-
-        match self {
-            Open(UpgradeState::NotUpgrading) => matches!(
-                other,
-                Open(UpgradeState::Upgrading) | Flushing | Flushcomplete
-            ),
-            Open(UpgradeState::Upgrading) | Flushing | Flushcomplete => true,
             _ => false,
         }
     }

@@ -244,9 +244,15 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             chan_state_dst
         );
 
+        let is_channel_upgrading = channel_scan
+            .channel
+            .channel_end
+            .is_upgrading(&channel_scan.counterparty);
+
         if (mode.clients.enabled || mode.packets.enabled)
             && chan_state_src.is_open()
             && (chan_state_dst.is_open() || chan_state_dst.is_closed())
+            && !is_channel_upgrading
         {
             if mode.clients.enabled {
                 // Spawn the client worker
@@ -315,8 +321,6 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             let open_handshake = chan_state_dst.less_or_equal_progress(ChannelState::TryOpen)
                 && chan_state_dst.less_or_equal_progress(chan_state_src);
 
-            let upgrade_handshake = chan_state_dst.is_upgrading(chan_state_src);
-
             // Determine if close handshake is required, i.e. if channel state on source is `Closed`,
             // and on destination channel state is not `Closed, and there are no pending packets.
             // If there are pending packets on destination then we let the packet worker clear the
@@ -324,7 +328,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             let close_handshake =
                 chan_state_src.is_closed() && !chan_state_dst.is_closed() && !has_packets();
 
-            if open_handshake || upgrade_handshake || close_handshake {
+            if open_handshake || is_channel_upgrading || close_handshake {
                 // create worker for channel handshake that will advance the counterparty state
                 let channel_object = Object::Channel(Channel {
                     dst_chain_id: counterparty_chain.id(),
