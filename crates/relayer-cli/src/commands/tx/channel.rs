@@ -10,7 +10,6 @@ use ibc_relayer::channel::{Channel, ChannelSide};
 
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
-use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -659,125 +658,6 @@ impl Runnable for TxChanCloseConfirmCmd {
                 }
             }
         );
-    }
-}
-
-/// Initiate a channel upgrade (ChannelUpgradeInit)
-///
-/// Build and send a `ChannelUpgradeInit` message to a destination
-/// chain that the source chain has an already-existing channel open
-/// with, signaling the intent by the source chain to perform
-/// the channel upgrade handshake.
-#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
-pub struct TxChanUpgradeInitCmd {
-    #[clap(
-        long = "src-chain",
-        required = true,
-        value_name = "SRC_CHAIN_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the source chain"
-    )]
-    src_chain_id: ChainId,
-
-    #[clap(
-        long = "dst-chain",
-        required = true,
-        value_name = "DST_CHAIN_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the destination chain"
-    )]
-    dst_chain_id: ChainId,
-
-    #[clap(
-        long = "dst-port",
-        required = true,
-        value_name = "DST_PORT_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the destination port"
-    )]
-    dst_port_id: PortId,
-
-    #[clap(
-        long = "dst-channel",
-        visible_alias = "dst-chan",
-        required = true,
-        value_name = "DST_CHANNEL_ID",
-        help_heading = "REQUIRED",
-        help = "Identifier of the destination channel"
-    )]
-    dst_chan_id: ChannelId,
-
-    #[clap(
-        long = "version",
-        required = false,
-        value_name = "VERSION",
-        help = "Version of the channel that both chains will upgrade to. Defaults to the version of the initiating chain if not specified."
-    )]
-    version: Option<Version>,
-
-    #[clap(
-        long = "ordering",
-        required = false,
-        value_name = "ORDERING",
-        help = "Ordering of the channel that both chains will upgrade to. Note that the a channel may only be upgraded from a stricter ordering to a less strict ordering, i.e., from ORDERED to UNORDERED. Defaults to the ordering of the initiating chain if not specified."
-    )]
-    ordering: Option<Ordering>,
-
-    #[clap(
-        long = "connection-hops",
-        required = false,
-        value_name = "CONNECTION_HOPS",
-        help = "Set of connection hops for the channel that both chains will upgrade to. Defaults to the connection hops of the initiating chain if not specified."
-    )]
-    connection_hops: Option<Vec<ConnectionId>>,
-}
-
-impl Runnable for TxChanUpgradeInitCmd {
-    fn run(&self) {
-        let config = app_config();
-
-        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
-            Ok(chains) => chains,
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        };
-
-        // Fetch the Channel that will facilitate the communication between the channel ends
-        // being upgraded. This channel is assumed to already exist on the destination chain.
-        let channel = Channel {
-            connection_delay: Default::default(),
-            ordering: Ordering::default(),
-            a_side: ChannelSide::new(
-                chains.src,
-                ClientId::default(),
-                ConnectionId::default(),
-                PortId::default(),
-                None,
-                None,
-            ),
-            b_side: ChannelSide::new(
-                chains.dst,
-                ClientId::default(),
-                ConnectionId::default(),
-                self.dst_port_id.clone(),
-                Some(self.dst_chan_id.clone()),
-                None,
-            ),
-        };
-
-        info!("message ChanUpgradeInit: {}", channel);
-
-        let res: Result<IbcEvent, Error> = channel
-            .build_chan_upgrade_init_and_send(
-                self.version.clone(),
-                self.ordering,
-                self.connection_hops.clone(),
-            )
-            .map_err(Error::channel);
-
-        match res {
-            Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(e).exit(),
-        }
     }
 }
 

@@ -16,7 +16,6 @@ SUBCOMMANDS:
     chan-open-try           Relay the channel attempt (ChannelOpenTry)
     chan-upgrade-ack        Relay the channel upgrade attempt (ChannelUpgradeAck)
     chan-upgrade-confirm    Relay the channel upgrade attempt (ChannelUpgradeConfirm)
-    chan-upgrade-init       Initiate a channel upgrade (ChannelUpgradeInit)
     chan-upgrade-open       Relay the channel upgrade attempt (ChannelUpgradeOpen)
     chan-upgrade-try        Relay the channel upgrade attempt (ChannelUpgradeTry)
     conn-ack                Relay acknowledgment of a connection attempt (ConnectionOpenAck)

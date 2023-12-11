@@ -44,9 +44,6 @@ pub enum TxCmd {
     /// Confirm the closing of a channel (ChannelCloseConfirm)
     ChanCloseConfirm(channel::TxChanCloseConfirmCmd),
 
-    /// Initiate a channel upgrade (ChannelUpgradeInit)
-    ChanUpgradeInit(channel::TxChanUpgradeInitCmd),
-
     /// Relay the channel upgrade attempt (ChannelUpgradeTry)
     ChanUpgradeTry(channel::TxChanUpgradeTryCmd),
 
