@@ -644,6 +644,12 @@ impl ChainConfig {
         };
         Ok(keys)
     }
+
+    pub fn clear_interval(&self) -> Option<u64> {
+        match self {
+            Self::CosmosSdk(config) => config.clear_interval,
+        }
+    }
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.

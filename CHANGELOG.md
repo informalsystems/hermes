@@ -1,5 +1,71 @@
 # CHANGELOG
 
+## v1.7.3
+
+*November 29th, 2023*
+
+This release improves the reliability of the `evidence` command and 
+fixes a bug that was preventing evidence to be reported,
+as seen on the Gaia RS testnet.
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Improve reliability of `evidence` command and fix a bug that was
+    preventing evidence to be reported, as seen on the Gaia RS testnet
+    ([\#3702](https://github.com/informalsystems/hermes/pull/3702))
+
+## v1.7.2
+
+*November 28th, 2023*
+
+This patch release of Hermes adds a metric to improve monitoring errors and one
+to measure the efficiency of the client update skip feature released in patch v1.7.1.
+
+* `broadcast_errors` records the number of times a specific error is observed by Hermes when broadcasting transactions.
+* `client_updates_skipped` records the number of client updates skipped due to the consensus states already existing.
+
+### FEATURES
+
+- [Telemetry & Metrics](telemetry)
+  - Added metric `client_updates_skipped` to track the number of client
+    update messages skipped due to the conscensus state existing already.
+    ([\#3707](https://github.com/informalsystems/hermes/issues/3707))
+  - Add a new metric `broadcast_errors` which
+    records the number of times a specific error is observed by Hermes when broadcasting transactions
+    ([\#3708](https://github.com/informalsystems/hermes/issues/3708))
+
+## v1.7.1
+
+*November 13th, 2023*
+
+This patch release of Hermes now allows operators to set the clearing interval
+at a different value for each chain, using the new per-chain `clear_interval` setting.
+The global `clear_interval` setting is used as a default value if the per-chain
+setting is not defined.
+
+Additionnaly, operators can now override the CometBFT compatibility mode to be used
+for a chain by using the new `compat_mode` per-chain setting. The main use case for this
+is to override the automatically detected compatibility mode in case Hermes gets it wrong
+or encounters a non-standard version number and falls back on the wrong CometBFT version.
+
+On top of that, Hermes will now attempt to save on fees by not building a client update
+for a given height if the consensus state for that height is already present on chain.
+
+### FEATURES
+
+- Add an optional per-chain setting `compat_mode`, which can be
+used to specify which CometBFT compatibility mode is used for interacting with the node over RPC.
+([\#3623](https://github.com/informalsystems/hermes/issues/3623))
+- Add a configuration which allows to override the `clear_interval` for specific
+chains ([\#3691](https://github.com/informalsystems/hermes/issues/3691))
+
+### IMPROVEMENTS
+
+- Hermes now saves on fees by not including a client update if the
+consensus state at desired height is already present on chain.
+([\#3521](https://github.com/informalsystems/hermes/issues/3521))
+
 ## v1.7.0
 
 *October 20th, 2023*

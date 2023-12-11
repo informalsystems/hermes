@@ -1,13 +1,13 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.26.0"
+version      = "0.26.3"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.70"
+rust-version = "1.71"
 description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
@@ -20,9 +20,9 @@ default   = ["flex-error/std", "flex-error/eyre_tracer"]
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc-proto         = { version = "0.38.0", features = ["serde"] }
-ibc-telemetry     = { version = "0.26.0", path = "../telemetry", optional = true }
-ibc-relayer-types = { version = "0.26.0", path = "../relayer-types", features = ["mocks"] }
+ibc-proto         = { version = "0.39.0", features = ["serde"] }
+ibc-telemetry     = { version = "0.26.3", path = "../telemetry", optional = true }
+ibc-relayer-types = { version = "0.26.3", path = "../relayer-types", features = ["mocks"] }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
@@ -109,7 +109,7 @@ version = "0.34.0"
 default-features = false
 
 [dev-dependencies]
-ibc-relayer-types = { version = "0.26.0", path = "../relayer-types", features = ["mocks"] }
+ibc-relayer-types = { version = "0.26.3", path = "../relayer-types", features = ["mocks"] }
 serial_test = "2.0.0"
 env_logger = "0.10.0"
 test-log = { version = "0.2.10", features = ["trace"] }

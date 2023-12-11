@@ -1,13 +1,13 @@
 [package]
 name         = "ibc-relayer-types"
-version      = "0.26.0"
+version      = "0.26.3"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.70"
+rust-version = "1.71"
 description  = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
     This crate comprises the main data structures and on-chain logic.
@@ -24,7 +24,7 @@ mocks = ["tendermint-testgen", "clock"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.38.0", features = ["serde"] }
+ibc-proto = { version = "0.39.0", features = ["serde"] }
 ics23 = { version = "0.11.0", features = ["std", "host-functions"] }
 time = { version = "0.3" }
 serde_derive = { version = "1.0.104" }

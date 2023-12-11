@@ -87,7 +87,7 @@ define_error! {
 
         IncorrectProposalTypeUrl
             { type_url: String }
-            | e | format_args!("expected /ibc.core.client.v1.UpgradeProposal but got {}", e.type_url),
+            | e | format_args!("expected /ibc.core.client.v1.UpgradeProposal or /ibc.core.client.v1.MsgIBCSoftwareUpgrade but got {}", e.type_url),
 
         EmptyProposal
             | _ | { "the Proposal content is empty" },

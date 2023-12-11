@@ -8,6 +8,10 @@ OPTIONS:
         --denom <DENOM>
             Denomination for the deposit (default: 'stake')
 
+        --gov-account <GOV_ACCOUNT>
+            Authority account used to sign upgrade proposal. Note: This is only used for chains with
+            ibc-go version v8.0.0 or higher
+
     -h, --help
             Print help information
 
