@@ -13,11 +13,11 @@ use ibc_relayer::config::{self, ModeConfig};
 
 use ibc_test_framework::chain::{
     cli::host_zone::register_host_zone,
-    config::{
+    config::cosmos::{
         set_crisis_denom, set_mint_mint_denom, set_staking_bond_denom, set_staking_max_entries,
         set_voting_period,
     },
-    ext::crosschainquery::CrossChainQueryMethodsExt,
+    ext::{crosschainquery::CrossChainQueryMethodsExt, denom::ChainDenomMethodsExt},
 };
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
@@ -100,10 +100,14 @@ impl BinaryChannelTest for ICS31Test {
             &denom_a.with_amount(a_to_b_amount).as_ref(),
         )?;
 
+        let path_denom: MonoTagged<ChainA, Denom> =
+            chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
+
         let denom_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
-            &denom_a,
+            &path_denom.as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(

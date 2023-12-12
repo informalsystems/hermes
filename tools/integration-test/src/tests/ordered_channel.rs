@@ -13,6 +13,7 @@
 //! A more thorough walkthrough of this test can be found at
 //! `tools/test-framework/src/docs/walkthroughs/ordered_channel.rs`.
 
+use ibc_test_framework::chain::ext::denom::ChainDenomMethodsExt;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
@@ -96,10 +97,14 @@ impl BinaryChannelTest for OrderedChannelTest {
 
             sleep(Duration::from_secs(1));
 
+            let path_denom: MonoTagged<ChainA, Denom> =
+                chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
+
             let denom_b = derive_ibc_denom(
+                &chains.node_b.chain_driver().value().chain_type,
                 &channel.port_b.as_ref(),
                 &channel.channel_id_b.as_ref(),
-                &denom_a,
+                &path_denom.as_ref(),
             )?;
 
             // Wallet on chain A should have both amount deducted.

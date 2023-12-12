@@ -7,11 +7,13 @@ use crate::util::random::{random_u32, random_unused_tcp_port};
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 const EVMOS_HD_PATH: &str = "m/44'/60'/0'/0/0";
+const NAMADA_HD_PATH: &str = "m/44'/877'/0'/0'/0'";
 
 #[derive(Clone, Debug)]
 pub enum ChainType {
     Cosmos,
     Evmos,
+    Namada,
 }
 
 impl ChainType {
@@ -19,6 +21,7 @@ impl ChainType {
         match self {
             Self::Cosmos => COSMOS_HD_PATH,
             Self::Evmos => EVMOS_HD_PATH,
+            Self::Namada => NAMADA_HD_PATH,
         }
     }
 
@@ -28,10 +31,12 @@ impl ChainType {
                 if use_random_id {
                     ChainId::from_string(&format!("ibc-{}-{:x}", prefix, random_u32()))
                 } else {
-                    ChainId::from_string(&format!("ibc{prefix}"))
+                    //ChainId::from_string(&format!("ibc{prefix}"))
+                    ChainId::from_string(&format!("gaia-0"))
                 }
             }
             Self::Evmos => ChainId::from_string(&format!("evmos_9000-{prefix}")),
+            Self::Namada => ChainId::from_string(&format!("namada-{prefix}")),
         }
     }
 
@@ -40,7 +45,7 @@ impl ChainType {
         let mut res = vec![];
         let json_rpc_port = random_unused_tcp_port();
         match self {
-            Self::Cosmos => {}
+            Self::Cosmos | Self::Namada => {}
             Self::Evmos => {
                 res.push("--json-rpc.address".to_owned());
                 res.push(format!("localhost:{json_rpc_port}"));
@@ -55,6 +60,7 @@ impl ChainType {
             Self::Evmos => AddressType::Ethermint {
                 pk_type: "/ethermint.crypto.v1.ethsecp256k1.PubKey".to_string(),
             },
+            Self::Namada => AddressType::default(),
         }
     }
 }
@@ -69,6 +75,7 @@ impl FromStr for ChainType {
             name if name.contains("wasmd") => Ok(ChainType::Cosmos),
             name if name.contains("icad") => Ok(ChainType::Cosmos),
             name if name.contains("evmosd") => Ok(ChainType::Evmos),
+            name if name.contains("namada") => Ok(ChainType::Namada),
             _ => Ok(ChainType::Cosmos),
         }
     }

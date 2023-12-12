@@ -1,6 +1,7 @@
 use std::thread;
 
 use ibc_relayer::config::ChainConfig;
+use ibc_test_framework::chain::ext::denom::ChainDenomMethodsExt;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
@@ -117,8 +118,11 @@ impl BinaryChannelTest for ClearPacketTest {
 
             sleep(Duration::from_secs(1));
 
-            let amount_b =
-                amount2.transfer(&channel.port_b.as_ref(), &channel.channel_id_b.as_ref())?;
+            let amount_b = amount2.transfer(
+                &chains.node_b.chain_driver().value().chain_type,
+                &channel.port_b.as_ref(),
+                &channel.channel_id_b.as_ref(),
+            )?;
 
             // Wallet on chain A should have both amount deducted.
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
@@ -170,10 +174,14 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
             &denom_a.with_amount(amount1).as_ref(),
         )?;
 
+        let path_denom: MonoTagged<ChainA, Denom> =
+            chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
+
         let denom_b2 = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
-            &denom_a,
+            &path_denom.as_ref(),
         )?;
 
         relayer.with_supervisor(|| {
@@ -236,10 +244,14 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
             &denom_a.with_amount(amount1).as_ref(),
         )?;
 
+        let path_denom: MonoTagged<ChainA, Denom> =
+            chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
+
         let denom_b2 = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
-            &denom_a,
+            &path_denom.as_ref(),
         )?;
 
         thread::sleep(Duration::from_secs(5));
@@ -359,10 +371,14 @@ impl BinaryChannelTest for ClearPacketOverrideTest {
             &denom_a.with_amount(amount1).as_ref(),
         )?;
 
+        let path_denom: MonoTagged<ChainA, Denom> =
+            chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
+
         let denom_b2 = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
-            &denom_a,
+            &path_denom.as_ref(),
         )?;
 
         thread::sleep(Duration::from_secs(5));

@@ -21,7 +21,7 @@ use ibc_relayer::chain::requests::QueryHeight;
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
+use ibc_test_framework::chain::config::cosmos::{set_max_deposit_period, set_voting_period};
 use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::proposal_status::ProposalStatus;

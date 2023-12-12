@@ -92,6 +92,7 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
             )?;
 
             let denom_b = derive_ibc_denom(
+                &chains.node_b.chain_driver().value().chain_type,
                 &channel.port_b.as_ref(),
                 &channel.channel_id_b.as_ref(),
                 &denom_a,
@@ -143,6 +144,7 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
             )?;
 
             let denom_b = derive_ibc_denom(
+                &chains.node_b.chain_driver().value().chain_type,
                 &channel.port_b.as_ref(),
                 &channel.channel_id_b.as_ref(),
                 &denom_a,
@@ -229,6 +231,7 @@ impl BinaryChannelTest for FilterByChannelIncentivizedFeesRelayerTest {
         let balance_a2 = balance_a1 - total_sent;
 
         let denom_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,

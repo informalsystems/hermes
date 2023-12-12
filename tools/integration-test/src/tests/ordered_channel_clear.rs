@@ -2,6 +2,7 @@ use ibc_relayer::config::{types::MaxMsgNum, ChainConfig};
 use ibc_relayer::link::{Link, LinkParameters};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 use ibc_relayer_types::events::IbcEvent;
+use ibc_test_framework::chain::ext::denom::ChainDenomMethodsExt;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
@@ -148,10 +149,14 @@ impl BinaryChannelTest for OrderedChannelClearTest {
 
         sleep(Duration::from_secs(10));
 
+        let path_denom: MonoTagged<ChainA, Denom> =
+            chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
+
         let denom_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
-            &denom_a,
+            &path_denom.as_ref(),
         )?;
 
         // Wallet on chain B should have received IBC transfers with the ibc denomination.

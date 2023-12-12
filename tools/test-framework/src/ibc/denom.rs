@@ -8,6 +8,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use sha2::{Digest, Sha256};
 use subtle_encoding::hex;
 
+use crate::chain::chain_type::ChainType;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 
@@ -51,17 +52,22 @@ pub type TaggedDenomRef<'a, Chain> = MonoTagged<Chain, &'a Denom>;
    Returns the derived denomination on `ChainB`.
 */
 pub fn derive_ibc_denom<ChainA, ChainB>(
+    chain_type: &ChainType,
     port_id: &TaggedPortIdRef<ChainB, ChainA>,
     channel_id: &TaggedChannelIdRef<ChainB, ChainA>,
     denom: &TaggedDenomRef<ChainA>,
 ) -> Result<TaggedDenom<ChainB>, Error> {
     fn derive_denom(
+        chain_type: &ChainType,
         port_id: &PortId,
         channel_id: &ChannelId,
         denom: &str,
     ) -> Result<String, Error> {
         let transfer_path = format!("{port_id}/{channel_id}/{denom}");
-        derive_denom_with_path(&transfer_path)
+        match chain_type {
+            ChainType::Namada => Ok(transfer_path),
+            _ => derive_denom_with_path(&transfer_path),
+        }
     }
 
     /// Derive the transferred token denomination using
@@ -78,7 +84,7 @@ pub fn derive_ibc_denom<ChainA, ChainB>(
 
     match denom.value() {
         Denom::Base(denom) => {
-            let hashed = derive_denom(port_id.value(), channel_id.value(), denom)?;
+            let hashed = derive_denom(chain_type, port_id.value(), channel_id.value(), denom)?;
 
             Ok(MonoTagged::new(Denom::Ibc {
                 path: format!("{port_id}/{channel_id}"),

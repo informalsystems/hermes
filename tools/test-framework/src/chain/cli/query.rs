@@ -102,6 +102,46 @@ pub fn query_balance(
     }
 }
 
+pub fn query_namada_balance(
+    chain_id: &str,
+    _command_path: &str,
+    home_path: &str,
+    denom: &str,
+    wallet_id: &str,
+    rpc_listen_address: &str,
+) -> Result<Amount, Error> {
+    let output = simple_exec(
+        chain_id,
+        //command_path,
+        "namadac",
+        &[
+            "--base-dir",
+            home_path,
+            "balance",
+            "--owner",
+            wallet_id,
+            "--node",
+            rpc_listen_address,
+        ],
+    )?;
+
+    let words: Vec<&str> = output.stdout.split_whitespace().collect();
+    let denom_output = &format!("{denom}:");
+
+    if let Some(derived_index) = words.iter().position(|&w| w.contains(denom_output)) {
+        if let Some(&amount_str) = words.get(derived_index + 1) {
+            return Amount::from_str(amount_str).map_err(handle_generic_error);
+        }
+        Err(Error::generic(eyre!(
+            "chain id is not 1 words after `{denom_output}`: raw output `{}` split output `{words:#?}`",
+            output.stdout
+        )))
+    } else {
+        debug!("Denom `{denom_output}` not found when querying for balance, will return 0{denom}");
+        Ok(Amount::from_str("0").map_err(handle_generic_error)?)
+    }
+}
+
 /**
     Query for the transactions related to a wallet on `Chain`
     receiving token transfer from others.

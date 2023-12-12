@@ -1,5 +1,6 @@
 pub mod bootstrap;
 pub mod crosschainquery;
+pub mod denom;
 pub mod fee;
 pub mod fee_grant;
 pub mod forward;

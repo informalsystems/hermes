@@ -96,15 +96,15 @@ pub fn bootstrap_single_node(
 
     let log_level = std::env::var("CHAIN_LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
 
-    chain_driver.update_chain_config("config.toml", |config| {
-        config::set_log_level(config, &log_level)?;
-        config::set_rpc_port(config, chain_driver.rpc_port)?;
-        config::set_p2p_port(config, chain_driver.p2p_port)?;
-        config::set_pprof_port(config, chain_driver.pprof_port)?;
-        config::set_timeout_commit(config, Duration::from_secs(1))?;
-        config::set_timeout_propose(config, Duration::from_secs(1))?;
-        config::set_mode(config, "validator")?;
-        config::set_indexer(config, "kv")?;
+    chain_driver.update_chain_config("config/config.toml", |config| {
+        config::cosmos::set_log_level(config, &log_level)?;
+        config::cosmos::set_rpc_port(config, chain_driver.rpc_port)?;
+        config::cosmos::set_p2p_port(config, chain_driver.p2p_port)?;
+        config::cosmos::set_pprof_port(config, chain_driver.pprof_port)?;
+        config::cosmos::set_timeout_commit(config, Duration::from_secs(1))?;
+        config::cosmos::set_timeout_propose(config, Duration::from_secs(1))?;
+        config::cosmos::set_mode(config, "validator")?;
+        config::cosmos::set_indexer(config, "kv")?;
 
         config_modifier(config)?;
 
@@ -112,11 +112,11 @@ pub fn bootstrap_single_node(
     })?;
 
     let minimum_gas = format!("0{}", native_token);
-    chain_driver.update_chain_config("app.toml", |config| {
-        config::set_grpc_port(config, chain_driver.grpc_port)?;
-        config::disable_grpc_web(config)?;
-        config::disable_api(config)?;
-        config::set_minimum_gas_price(config, &minimum_gas)?;
+    chain_driver.update_chain_config("config/app.toml", |config| {
+        config::cosmos::set_grpc_port(config, chain_driver.grpc_port)?;
+        config::cosmos::disable_grpc_web(config)?;
+        config::cosmos::disable_api(config)?;
+        config::cosmos::set_minimum_gas_price(config, &minimum_gas)?;
 
         Ok(())
     })?;

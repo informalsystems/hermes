@@ -18,6 +18,7 @@ fn test_client_default_refresh() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(not(feature = "namada"))]
 fn test_client_fail_refresh() -> Result<(), Error> {
     run_binary_chain_test(&ClientFailsTest)
 }
@@ -133,7 +134,9 @@ impl BinaryChainTest for ClientFailsTest {
                         ChainConfig::CosmosSdk(config_chain_a) => {
                             config_chain_a.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
                         }
-                        ChainConfig::Namada(_) => {}
+                        ChainConfig::Namada(config_chain_a) => {
+                            config_chain_a.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
+                        }
                     }
                 }
 
@@ -141,7 +144,9 @@ impl BinaryChainTest for ClientFailsTest {
                     ChainConfig::CosmosSdk(config_chain_b) => {
                         config_chain_b.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
                     }
-                    ChainConfig::Namada(_) => {}
+                    ChainConfig::Namada(config_chain_b) => {
+                        config_chain_b.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
+                    }
                 }
             },
             config,

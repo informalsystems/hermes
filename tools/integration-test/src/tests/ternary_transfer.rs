@@ -1,3 +1,4 @@
+use ibc_test_framework::chain::ext::denom::ChainDenomMethodsExt;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 
@@ -61,10 +62,13 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             &denom_a.with_amount(a_to_b_amount).as_ref(),
         )?;
 
+        let path_denom = node_a.chain_driver().get_denom_for_derive(&denom_a);
+
         let denom_a_to_b = derive_ibc_denom(
+            &node_b.chain_driver().value().chain_type,
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
-            &denom_a,
+            &path_denom.as_ref(),
         )?;
 
         // Chain B will receive ibc/port-b/channel-b/denom
@@ -92,10 +96,15 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         let channel_b_to_c = channels.channel_at::<1, 2>()?;
 
+        let path_denom = node_b
+            .chain_driver()
+            .get_denom_for_derive(&denom_a_to_b.as_ref());
+
         let denom_a_to_c = derive_ibc_denom(
+            &node_c.chain_driver().value().chain_type,
             &channel_b_to_c.port_b.as_ref(),
             &channel_b_to_c.channel_id_b.as_ref(),
-            &denom_a_to_b.as_ref(),
+            &path_denom.as_ref(),
         )?;
 
         let b_to_c_amount = 2500;
@@ -129,10 +138,15 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         let channel_c_to_a = channels.channel_at::<2, 0>()?;
 
+        let path_denom = node_c
+            .chain_driver()
+            .get_denom_for_derive(&denom_a_to_c.as_ref());
+
         let denom_a_to_c_to_a = derive_ibc_denom(
+            &node_a.chain_driver().value().chain_type,
             &channel_c_to_a.port_b.as_ref(),
             &channel_c_to_a.channel_id_b.as_ref(),
-            &denom_a_to_c.as_ref(),
+            &path_denom.as_ref(),
         )?;
 
         let c_to_a_amount = 800;

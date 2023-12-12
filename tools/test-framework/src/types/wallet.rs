@@ -3,7 +3,7 @@
 */
 
 use core::fmt::{self, Display};
-use ibc_relayer::keyring::Secp256k1KeyPair;
+use ibc_relayer::keyring::{AnySigningKeyPair, NamadaKeyPair, Secp256k1KeyPair};
 
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::tagged::*;
@@ -36,7 +36,7 @@ pub struct Wallet {
     // TODO: Parameterize this type on `SigningKeyPair`
     /// The wallet key information in the form of `SigningKeyPair`
     /// that is used by the relayer.
-    pub key: Secp256k1KeyPair,
+    pub key: AnySigningKeyPair,
 }
 
 /**
@@ -82,7 +82,7 @@ pub trait TaggedWallet<Chain> {
     fn address(&self) -> MonoTagged<Chain, &WalletAddress>;
 
     /// Get the `SigningKeyPair` tagged with the given `Chain`.
-    fn key(&self) -> MonoTagged<Chain, &Secp256k1KeyPair>;
+    fn key(&self) -> MonoTagged<Chain, &AnySigningKeyPair>;
 }
 
 /**
@@ -107,11 +107,19 @@ pub trait TaggedTestWalletsExt<Chain> {
 
 impl Wallet {
     /// Create a new [`Wallet`]
-    pub fn new(id: String, address: String, key: Secp256k1KeyPair) -> Self {
+    pub fn new_secp256(id: String, address: String, secp256_key: Secp256k1KeyPair) -> Self {
         Self {
             id: WalletId(id),
             address: WalletAddress(address),
-            key,
+            key: secp256_key.into(),
+        }
+    }
+
+    pub fn new_namada(id: String, address: String, namada_key: NamadaKeyPair) -> Self {
+        Self {
+            id: WalletId(id),
+            address: WalletAddress(address),
+            key: namada_key.into(),
         }
     }
 }
@@ -131,7 +139,7 @@ impl<Chain> TaggedWallet<Chain> for MonoTagged<Chain, Wallet> {
         self.map_ref(|w| &w.address)
     }
 
-    fn key(&self) -> MonoTagged<Chain, &Secp256k1KeyPair> {
+    fn key(&self) -> MonoTagged<Chain, &AnySigningKeyPair> {
         self.map_ref(|w| &w.key)
     }
 }
@@ -145,7 +153,7 @@ impl<'a, Chain> TaggedWallet<Chain> for MonoTagged<Chain, &'a Wallet> {
         self.map_ref(|w| &w.address)
     }
 
-    fn key(&self) -> MonoTagged<Chain, &Secp256k1KeyPair> {
+    fn key(&self) -> MonoTagged<Chain, &AnySigningKeyPair> {
         self.map_ref(|w| &w.key)
     }
 }
