@@ -522,7 +522,10 @@ impl State {
 /// Provides a `to_string` method.
 impl Display for State {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        write!(f, "{}", self.as_string())
+        match self {
+            Self::Open(_) => write!(f, "Open"),
+            _ => write!(f, "{}", self.as_string()),
+        }
     }
 }
 
