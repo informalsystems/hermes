@@ -420,7 +420,7 @@ pub enum UpgradeState {
 /// explicitly, this is an attempt to capture the lifecycle of a
 /// channel, beginning from the `Uninitialized` state, through the
 /// `Open` state, before finally being `Closed`.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Deserialize)]
 pub enum State {
     /// Default state
     Uninitialized,
@@ -442,6 +442,23 @@ pub enum State {
     Flushing,
     /// A channel has just completed flushing any in-flight packets.
     Flushcomplete,
+}
+
+impl Serialize for State {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Uninitialized => serializer.serialize_str("Uninitialized"),
+            Self::Init => serializer.serialize_str("Init"),
+            Self::TryOpen => serializer.serialize_str("TryOpen"),
+            Self::Open(_) => serializer.serialize_str("Open"),
+            Self::Closed => serializer.serialize_str("Closed"),
+            Self::Flushing => serializer.serialize_str("Flushing"),
+            Self::Flushcomplete => serializer.serialize_str("Flushcomplete"),
+        }
+    }
 }
 
 impl State {
@@ -522,10 +539,7 @@ impl State {
 /// Provides a `to_string` method.
 impl Display for State {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        match self {
-            Self::Open(_) => write!(f, "Open"),
-            _ => write!(f, "{}", self.as_string()),
-        }
+        write!(f, "{}", self.as_string())
     }
 }
 
