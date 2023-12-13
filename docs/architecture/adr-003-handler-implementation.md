@@ -552,7 +552,7 @@ pub trait ClientKeeper {
 
 This way, only one implementation of the `ClientReader` and `ClientKeeper` trait is required,
 as it can delegate eg. the serialization of the underlying datatypes to the `Serialize` bound
-of the `Any...` wrappper.
+of the `Any...` wrapper.
 
 Both the `process` and `keep` function are defined to take a message generic over
 the actual client type:
