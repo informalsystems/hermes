@@ -24,6 +24,11 @@ fn test_channel_upgrade_clear_handshake() -> Result<(), Error> {
     run_binary_channel_test(&ChannelUpgradeClearHandshake)
 }
 
+#[test]
+fn test_channel_upgrade_crossing_handshake() -> Result<(), Error> {
+    run_binary_channel_test(&ChannelUpgradeCrossingHandshake)
+}
+
 const MAX_DEPOSIT_PERIOD: &str = "10s";
 const VOTING_PERIOD: u64 = 10;
 
@@ -213,6 +218,127 @@ impl BinaryChannelTest for ChannelUpgradeClearHandshake {
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
             chains.handle_a().get_signer().unwrap().as_ref(),
+        )?;
+
+        // After the governance proposal, wait a few blocks before starting the Hermes instance
+        sleep(Duration::from_secs(5));
+
+        info!("Check that the channel upgrade successfully upgraded the version...");
+
+        relayer.with_supervisor(|| {
+            // This will assert that both channel ends are eventually
+            // in Open state, and that the fields targeted by the upgrade
+            // have been correctly updated.
+            assert_eventually_channel_upgrade_open(
+                &chains.handle_a,
+                &chains.handle_b,
+                &channels.channel_id_a.as_ref(),
+                &channels.port_a.as_ref(),
+                &upgraded_attrs,
+            )?;
+
+            Ok(())
+        })
+    }
+}
+
+pub struct ChannelUpgradeCrossingHandshake;
+
+impl TestOverrides for ChannelUpgradeCrossingHandshake {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.channels.enabled = true;
+        config.mode.clients.misbehaviour = false;
+    }
+
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
+        set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
+        set_voting_period(genesis, VOTING_PERIOD)?;
+        Ok(())
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
+
+impl BinaryChannelTest for ChannelUpgradeCrossingHandshake {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        info!("Check that channels are both in OPEN State");
+
+        assert_eventually_channel_established(
+            &chains.handle_b,
+            &chains.handle_a,
+            &channels.channel_id_b.as_ref(),
+            &channels.port_b.as_ref(),
+        )?;
+
+        let channel_end_a = chains
+            .handle_a
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channels.port_a.0.clone(),
+                    channel_id: channels.channel_id_a.0.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+
+        let channel_end_b = chains
+            .handle_b
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channels.port_b.0.clone(),
+                    channel_id: channels.channel_id_b.0.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd B: {e}"))?;
+
+        let old_ordering = channel_end_a.ordering;
+        let old_connection_hops_a = channel_end_a.connection_hops;
+        let old_connection_hops_b = channel_end_b.connection_hops;
+
+        let channel = channels.channel;
+        let new_version = Version::ics20_with_fee();
+
+        let upgraded_attrs = ChannelUpgradableAttributes::new(
+            new_version.clone(),
+            new_version.clone(),
+            old_ordering,
+            old_connection_hops_a.clone(),
+            old_connection_hops_b.clone(),
+        );
+
+        info!("Will initialise upgrade handshake on chain {} with governance proposal...", chains.node_a.chain_driver().chain_id());
+
+        chains.node_a.chain_driver().initialise_channel_upgrade(
+            channel.src_port_id().as_str(),
+            channel.src_channel_id().unwrap().as_str(),
+            old_ordering.as_str(),
+            old_connection_hops_a.first().unwrap().as_str(),
+            &serde_json::to_string(&new_version.0).unwrap(),
+            chains.handle_a().get_signer().unwrap().as_ref(),
+        )?;
+
+        info!("Will initialise upgrade handshake on chain {} with governance proposal...", chains.node_b.chain_driver().chain_id());
+
+        chains.node_b.chain_driver().initialise_channel_upgrade(
+            channel.dst_port_id().as_str(),
+            channel.dst_channel_id().unwrap().as_str(),
+            old_ordering.as_str(),
+            old_connection_hops_b.first().unwrap().as_str(),
+            &serde_json::to_string(&new_version.0).unwrap(),
+            chains.handle_b().get_signer().unwrap().as_ref(),
         )?;
 
         // After the governance proposal, wait a few blocks before starting the Hermes instance
