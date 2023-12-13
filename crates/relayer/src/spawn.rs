@@ -11,6 +11,9 @@ use crate::{
     error::Error as RelayerError,
 };
 
+use crate::chain::near::NearChain;
+use crate::chain::vp_client::VpChain;
+
 define_error! {
     SpawnError {
         Relayer
@@ -82,6 +85,8 @@ pub fn spawn_chain_runtime_with_config<Handle: ChainHandle>(
 ) -> Result<Handle, SpawnError> {
     let handle = match config.r#type {
         ChainType::CosmosSdk => ChainRuntime::<CosmosSdkChain>::spawn::<Handle>(config, rt),
+        ChainType::Near => ChainRuntime::<NearChain>::spawn::<Handle>(config, rt),
+        ChainType::Vp => ChainRuntime::<VpChain>::spawn::<Handle>(config, rt),
     }
     .map_err(SpawnError::relayer)?;
 

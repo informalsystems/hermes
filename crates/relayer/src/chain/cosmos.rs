@@ -1,3 +1,4 @@
+use super::ic::VpClient;
 use alloc::sync::Arc;
 use bytes::{Buf, Bytes};
 use core::{
@@ -8,6 +9,7 @@ use core::{
 };
 use futures::future::join_all;
 use num_bigint::BigInt;
+use prost::Message;
 use std::{cmp::Ordering, thread};
 
 use tokio::runtime::Runtime as TokioRuntime;
@@ -28,7 +30,6 @@ use ibc_relayer_types::clients::ics07_tendermint::client_state::{
 };
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::{
@@ -42,8 +43,8 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
 use ibc_relayer_types::core::ics24_host::path::{
-    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
-    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+    AcksPath, ChannelEndsPath, ClientStatePath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
+    SeqRecvsPath,
 };
 use ibc_relayer_types::core::ics24_host::{
     ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
@@ -71,7 +72,7 @@ use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
-use crate::chain::cosmos::query::consensus_state::query_consensus_state_heights;
+// use crate::chain::cosmos::query::consensus_state::query_consensus_state_heights;
 use crate::chain::cosmos::query::custom::cross_chain_query_via_rpc;
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::fee::query_incentivized_packet;
@@ -141,6 +142,7 @@ pub struct CosmosSdkChain {
     config: ChainConfig,
     tx_config: TxConfig,
     pub rpc_client: HttpClient,
+    vp_client: VpClient,
     compat_mode: CompatMode,
     grpc_addr: Uri,
     light_client: TmLightClient,
@@ -895,11 +897,29 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let tx_config = TxConfig::try_from(&config)?;
 
+        let canister_pem_path = if config.canister_pem.is_absolute() {
+            config.canister_pem.clone()
+        } else {
+            let current_dir =
+                std::env::current_dir().map_err(|e| Error::report_error(e.to_string()))?;
+            current_dir.join(config.canister_pem.clone())
+        };
+
+        let vp_client = rt
+            .block_on(VpClient::new(&config.ic_endpoint, &canister_pem_path))
+            .map_err(|e| {
+                let position = std::panic::Location::caller();
+                Error::report_error(format!(
+                    "build vp client failed Error({:?}) \n{}",
+                    e, position
+                ))
+            })?;
         // Retrieve the version specification of this chain
 
         let chain = Self {
             config,
             rpc_client,
+            vp_client,
             compat_mode,
             grpc_addr,
             light_client,
@@ -1028,18 +1048,113 @@ impl ChainEndpoint for CosmosSdkChain {
         &mut self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
-        let runtime = self.rt.clone();
+        info!(
+            "tracked_msgs: {:?}, tracking_id: {:?}, \n{}",
+            tracked_msgs
+                .msgs
+                .iter()
+                .map(|msg| msg.type_url.clone())
+                .collect::<Vec<_>>(),
+            tracked_msgs.tracking_id,
+            std::panic::Location::caller()
+        );
+        use ibc_proto::google::protobuf::Any;
 
-        runtime.block_on(self.do_send_messages_and_wait_commit(tracked_msgs))
+        let mut tracked_msgs = tracked_msgs.clone();
+        if tracked_msgs.tracking_id().to_string() != "ft-transfer" {
+            let canister_id = self.config.canister_id.id.as_str();
+            let mut msgs: Vec<Any> = Vec::new();
+            for msg in tracked_msgs.messages() {
+                let res = self
+                    .block_on(self.vp_client.deliver(canister_id, msg.encode_to_vec()))
+                    .map_err(|e| {
+                        let position = std::panic::Location::caller();
+                        Error::report_error(format!(
+                            "call vp deliver failed Error({}) \n{}",
+                            e, position
+                        ))
+                    })?;
+                if !res.is_empty() {
+                    msgs.push(Any::decode(&res[..]).map_err(|e| {
+                        let position = std::panic::Location::caller();
+                        Error::report_error(format!(
+                            "decode call vp deliver result failed Error({}) \n{}",
+                            e, position
+                        ))
+                    })?);
+                }
+            }
+            tracked_msgs.msgs = msgs;
+            info!(
+                "got proto_msgs from ic: {:?} \n{}",
+                tracked_msgs
+                    .msgs
+                    .iter()
+                    .map(|msg| msg.type_url.clone())
+                    .collect::<Vec<_>>(),
+                std::panic::Location::caller()
+            );
+        }
+
+        let rt = self.rt.clone();
+        rt.block_on(self.do_send_messages_and_wait_commit(tracked_msgs))
     }
 
     fn send_messages_and_wait_check_tx(
         &mut self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<Response>, Error> {
-        let runtime = self.rt.clone();
+        info!(
+            "tracked_msgs: {:?}, tracking_id: {:?} \n{}",
+            tracked_msgs
+                .msgs
+                .iter()
+                .map(|msg| msg.type_url.clone())
+                .collect::<Vec<_>>(),
+            tracked_msgs.tracking_id,
+            std::panic::Location::caller()
+        );
+        use ibc_proto::google::protobuf::Any;
 
-        runtime.block_on(self.do_send_messages_and_wait_check_tx(tracked_msgs))
+        let mut tracked_msgs = tracked_msgs.clone();
+        if tracked_msgs.tracking_id().to_string() != "ft-transfer" {
+            let canister_id = self.config.canister_id.id.as_str();
+
+            let mut msgs: Vec<Any> = Vec::new();
+            for msg in tracked_msgs.messages() {
+                let res = self
+                    .block_on(self.vp_client.deliver(canister_id, msg.encode_to_vec()))
+                    .map_err(|e| {
+                        let position = std::panic::Location::caller();
+                        Error::report_error(format!(
+                            "call icp deliver failed Error({}) \n{}",
+                            e, position
+                        ))
+                    })?;
+                if !res.is_empty() {
+                    msgs.push(Any::decode(&res[..]).map_err(|e| {
+                        let position = std::panic::Location::caller();
+                        Error::report_error(format!(
+                            "deliver result decode failed Error({}) \n{}",
+                            e, position
+                        ))
+                    })?);
+                }
+            }
+            tracked_msgs.msgs = msgs;
+            info!(
+                "got proto_msgs from ic: {:?} \n{}",
+                tracked_msgs
+                    .msgs
+                    .iter()
+                    .map(|msg| msg.type_url.clone())
+                    .collect::<Vec<_>>(),
+                std::panic::Location::caller()
+            );
+        }
+
+        let rt = self.rt.clone();
+        rt.block_on(self.do_send_messages_and_wait_check_tx(tracked_msgs))
     }
 
     /// Get the account for the signer
@@ -1208,6 +1323,32 @@ impl ChainEndpoint for CosmosSdkChain {
         );
         crate::telemetry!(query, self.id(), "query_client_state");
 
+        if matches!(include_proof, IncludeProof::No) {
+            let canister_id = self.config.canister_id.id.as_str();
+
+            let serialized_request = serde_json::to_vec(&request).map_err(|e| {
+                let position = std::panic::Location::caller();
+                Error::report_error(format!(
+                    "encode query_client_state request failed Error({}) \n{}",
+                    e, position
+                ))
+            })?;
+            let res = self
+                .block_on(
+                    self.vp_client
+                        .query_client_state(canister_id, serialized_request),
+                )
+                .map_err(|e| {
+                    let position = std::panic::Location::caller();
+                    Error::report_error(format!(
+                        "vp call query_client_state failed  Error({}) \n{}",
+                        e, position
+                    ))
+                })?;
+            let client_state = AnyClientState::decode_vec(&res).map_err(Error::decode)?;
+            return Ok((client_state, None));
+        }
+
         let res = self.query(
             ClientStatePath(request.client_id.clone()),
             request.height,
@@ -1286,11 +1427,21 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryConsensusStateHeightsRequest,
     ) -> Result<Vec<ICSHeight>, Error> {
-        self.block_on(query_consensus_state_heights(
-            self.id(),
-            &self.grpc_addr,
+        crate::time!(
+            "query_consensus_state_heights",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
+
+        crate::telemetry!(query, self.id(), "query_consensus_state_heights");
+        let canister_id = self.config.canister_id.id.as_str();
+        inner_query_consensus_state_heights(
+            self.rt.clone(),
+            self.vp_client.clone(),
+            canister_id,
             request,
-        ))
+        )
     }
 
     fn query_consensus_state(
@@ -1306,32 +1457,33 @@ impl ChainEndpoint for CosmosSdkChain {
         );
         crate::telemetry!(query, self.id(), "query_consensus_state");
 
-        let res = self.query(
-            ClientConsensusStatePath {
-                client_id: request.client_id.clone(),
-                epoch: request.consensus_height.revision_number(),
-                height: request.consensus_height.revision_height(),
-            },
-            request.query_height,
-            matches!(include_proof, IncludeProof::Yes),
-        )?;
+        assert!(matches!(include_proof, IncludeProof::No));
+        assert!(request.client_id.to_string().starts_with("06-solomachine"));
 
-        let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
+        let canister_id = self.config.canister_id.id.as_str();
 
-        if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
-            return Err(Error::consensus_state_type_mismatch(
-                ClientType::Tendermint,
-                consensus_state.client_type(),
-            ));
-        }
+        let serialized_request = serde_json::to_vec(&request).map_err(|e| {
+            let position = std::panic::Location::caller();
+            Error::report_error(format!(
+                "encode query_consensus_state request failed Error({}) \n{}",
+                e, position
+            ))
+        })?;
 
-        match include_proof {
-            IncludeProof::Yes => {
-                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
-                Ok((consensus_state, Some(proof)))
-            }
-            IncludeProof::No => Ok((consensus_state, None)),
-        }
+        let res = self
+            .block_on(
+                self.vp_client
+                    .query_consensus_state(canister_id, serialized_request),
+            )
+            .map_err(|e| {
+                let position = std::panic::Location::caller();
+                Error::report_error(format!(
+                    "vp call query_consensus_state failed Error({}) \n{}",
+                    e, position
+                ))
+            })?;
+        let consensus_state = AnyConsensusState::decode_vec(&res).map_err(Error::decode)?;
+        Ok((consensus_state, None))
     }
 
     /// Performs a `QueryClientConnectionsRequest` gRPC query to fetch all the connection
@@ -2117,7 +2269,10 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
         settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
-        let ClientSettings::Tendermint(settings) = settings;
+        let settings = settings.cosmos_setting().ok_or(Error::report_error(
+            "cosmos client setting is empty".to_string(),
+        ))?;
+
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = settings
             .trusting_period
@@ -2398,8 +2553,43 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     Ok(())
 }
 
+fn inner_query_consensus_state_heights(
+    rt: Arc<TokioRuntime>,
+    vp_client: VpClient,
+    canister_id: &str,
+    request: QueryConsensusStateHeightsRequest,
+) -> Result<Vec<ICSHeight>, Error> {
+    assert!(request.client_id.to_string().starts_with("06-solomachine"));
+
+    let serialized_request = serde_json::to_vec(&request).map_err(|e| {
+        let position = std::panic::Location::caller();
+        Error::report_error(format!(
+            "encode query_consensus_state_heights request failed Error({}) \n{}",
+            e, position
+        ))
+    })?;
+
+    let res = rt
+        .block_on(vp_client.query_consensus_state_heights(canister_id, serialized_request))
+        .map_err(|e| {
+            let position = std::panic::Location::caller();
+            Error::report_error(format!(
+                "vp call query_consensus_state failed Error({}) \n{}",
+                e, position
+            ))
+        })?;
+
+    let heights = res
+        .into_iter()
+        .map(|h| ICSHeight::decode_vec(&h).map_err(Error::decode))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(heights)
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use ibc_relayer_types::{
         core::{ics02_client::client_type::ClientType, ics24_host::identifier::ClientId},
         mock::client_state::MockClientState,
@@ -2481,5 +2671,28 @@ mod tests {
             client_id_suffix(&clients.last().unwrap().client_id).unwrap(),
             7
         );
+    }
+
+    #[test]
+    fn test_query_consensus_state_with_heights() {
+        let name = "default";
+        let home_dir = dirs::home_dir().expect("Failed to get home directory");
+        let pem_file_path = home_dir.join(std::path::Path::new(&format!(
+            ".config/dfx/identity/{}/identity.pem",
+            name
+        )));
+        let rt = Arc::new(tokio::runtime::Runtime::new().unwrap());
+        let vp_client = rt
+            .block_on(VpClient::new("https://ic0.app", &pem_file_path))
+            .unwrap();
+        let cansiter_id = "pcf3v-6iaaa-aaaag-qcuka-cai";
+
+        let request = QueryConsensusStateHeightsRequest {
+            client_id: ClientId::from_str("06-solomachine-1").unwrap(),
+            pagination: None,
+        };
+
+        let res = inner_query_consensus_state_heights(rt, vp_client, cansiter_id, request);
+        dbg!(res);
     }
 }

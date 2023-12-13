@@ -70,6 +70,18 @@ strum = { version = "0.25", features = ["derive"] }
 tokio-stream = "0.1.14"
 once_cell = "1.17.1"
 
+ibc = "0.48.1"
+near-crypto = "0.17"
+near-primitives = "0.17"
+near-jsonrpc-client = "0.6.0"
+near-jsonrpc-primitives = "0.17"
+base64 = "0.12.3"
+tokio-retry = "0.3.0"
+borsh = "1.0"
+candid = "0.9"
+ic-agent = { version = "0.29.0", features = ["pem"] }
+ics12-proto = { version = "0.1.3", default-features = false }
+
 [dependencies.byte-unit]
 version = "4.0.19"
 default-features = false
@@ -109,6 +121,7 @@ serial_test = "2.0.0"
 env_logger = "0.10.0"
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
 test-log = { version = "0.2.10", features = ["trace"] }
+dirs = "5.0.1"
 
 # Needed for generating (synthetic) light blocks.
 tendermint-testgen = { version = "0.34.0" }

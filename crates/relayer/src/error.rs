@@ -2,6 +2,7 @@
 
 use core::time::Duration;
 
+use crate::chain::near::error::NearError;
 use flex_error::{define_error, DisplayOnly, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
@@ -36,7 +37,7 @@ use ibc_relayer_types::proofs::ProofError;
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
 use crate::config::Error as ConfigError;
-use crate::event::source;
+use crate::event::{self, source};
 use crate::keyring::{errors::Error as KeyringError, KeyType};
 use crate::sdk_error::SdkError;
 
@@ -586,6 +587,21 @@ define_error! {
         InvalidCompatMode
             [ TendermintRpcError ]
             |_| { "Invalid CompatMode queried from chain and no `compat_mode` configured in Hermes. This can be fixed by specifying a `compat_mode` in Hermes config.toml" },
+
+        EventMonitor
+            [ event::error::Error ]
+            |_| { "event monitor error" },
+
+        NearChainError
+            [ DisplayOnly<NearError> ]
+            | _ | { "near chain error" },
+
+        ReportError
+            { error: String }
+            |e| {
+                let caller = std::panic::Location::caller();
+                format!("Report Error: ({}) \n{}", e.error, caller)
+            },
     }
 }
 

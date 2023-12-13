@@ -3,6 +3,7 @@ use core::time::Duration;
 use std::thread;
 
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
@@ -25,11 +26,15 @@ use crate::chain::requests::{
     IncludeProof, PageRequest, QueryConnectionRequest, QueryConnectionsRequest, QueryHeight,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::chain::ChainType;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
 use crate::util::pretty::{PrettyDuration, PrettyOption};
 use crate::util::retry::{retry_with_index, RetryResult};
 use crate::util::task::Next;
+
+use ibc_proto::Protobuf;
+use ibc_relayer_types::core::ics02_client::header::{AnyHeader, Header};
 
 mod error;
 pub use error::ConnectionError;
@@ -1011,18 +1016,64 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .src_chain()
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
-        let (client_state, proofs) = self
-            .src_chain()
-            .build_connection_proofs_and_client_state(
-                ConnectionMsgType::OpenTry,
-                src_connection_id,
-                self.src_client_id(),
-                query_height,
-            )
-            .map_err(ConnectionError::connection_proof)?;
 
-        // Build message(s) for updating client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs: Vec<Any>;
+        let client_state;
+        let proofs;
+        if self
+            .src_chain()
+            .config()
+            .map_err(|e| {
+                ConnectionError::custom_error(format!("[in connection: build_conn_try decode src_chain get config failed] -> Error({})", e))
+            })?
+            .r#type
+            == ChainType::Near
+        {
+            msgs = self.build_update_client_on_dst(query_height)?;
+            assert!(!msgs.is_empty());
+            let msg_update_client = msgs.last().ok_or(ConnectionError::custom_error(
+                "[in connection: build_conn_try msgs.last() is none]".into()
+            ))?;
+            let domain_msg =
+                MsgUpdateClient::decode_vec(&msg_update_client.value).map_err(|e| {
+                    ConnectionError::custom_error(format!(
+                        "[in connection: build_conn_try decode MsgUpdateClient failed] -> Error({})",
+                        e
+                    ))
+                })?;
+            let near_header = AnyHeader::try_from(domain_msg.header).map_err(|e| {
+                ConnectionError::custom_error(format!(
+                    "[in connection: build_conn_try decode ClientMessage to AnyHeader failed] -> Error({})",
+                    e
+                ))
+            })?;
+            let proof_height = near_header.height();
+
+            (client_state, proofs) = self
+                .src_chain()
+                .build_connection_proofs_and_client_state(
+                    ConnectionMsgType::OpenTry,
+                    src_connection_id,
+                    self.src_client_id(),
+                    proof_height.decrement().map_err(|e| {
+                        ConnectionError::custom_error(format!("[in connection: build_conn_try proof_height.decrement() failed] -> Error({})", e))
+                    })?,
+                )
+                .map_err(ConnectionError::connection_proof)?;
+        } else {
+            (client_state, proofs) = self
+                .src_chain()
+                .build_connection_proofs_and_client_state(
+                    ConnectionMsgType::OpenTry,
+                    src_connection_id,
+                    self.src_client_id(),
+                    query_height,
+                )
+                .map_err(ConnectionError::connection_proof)?;
+
+            // Build message(s) for updating client on destination
+            msgs = self.build_update_client_on_dst(proofs.height())?;
+        }
 
         let counterparty_versions = if src_connection.versions().is_empty() {
             self.src_chain()
@@ -1153,18 +1204,57 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
-        let (client_state, proofs) = self
-            .src_chain()
-            .build_connection_proofs_and_client_state(
-                ConnectionMsgType::OpenAck,
-                src_connection_id,
-                self.src_client_id(),
-                query_height,
-            )
-            .map_err(ConnectionError::connection_proof)?;
+        let mut msgs: Vec<Any>;
+        let client_state;
+        let proofs;
 
-        // Build message(s) for updating client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        if self.src_chain().config().map_err(|e| {
+                        ConnectionError::custom_error(format!("[in connection: build_conn_ack decode src_chain get config failed] -> Error({})", e))
+                    })?.r#type == ChainType::Near {
+            msgs = self.build_update_client_on_dst(query_height)?;
+            assert!(!msgs.is_empty());
+            let msg_update_client = msgs.last().ok_or(ConnectionError::custom_error(
+                "[in connection: build_conn_ack msgs.last() is none]".into(),
+            ))?;
+            let domain_msg = MsgUpdateClient::decode_vec(&msg_update_client.value).map_err(|e| {
+                                ConnectionError::custom_error(format!(
+                                    "[in connection: build_conn_ack decode MsgUpdateClient failed] -> Error({})",
+                                    e
+                                ))
+                            })?;
+            let near_header = AnyHeader::try_from(domain_msg.header).map_err(|e| {
+                            ConnectionError::custom_error(format!(
+                                "[in connection: build_conn_ack decode ClientMessage to AnyHeader failed] -> Error({})",
+                                e
+                            ))
+                        })?;
+            let proof_height = near_header.height();
+
+            (client_state, proofs) = self
+                .src_chain()
+                .build_connection_proofs_and_client_state(
+                    ConnectionMsgType::OpenAck,
+                    src_connection_id,
+                    self.src_client_id(),
+                    proof_height.decrement().map_err(|e| {
+                                            ConnectionError::custom_error(format!("[in connection: build_conn_ack proof_height.decrement() failed] -> Error({})", e))
+                                        })?,
+                )
+                .map_err(ConnectionError::connection_proof)?;
+        } else {
+            (client_state, proofs) = self
+                .src_chain()
+                .build_connection_proofs_and_client_state(
+                    ConnectionMsgType::OpenAck,
+                    src_connection_id,
+                    self.src_client_id(),
+                    query_height,
+                )
+                .map_err(ConnectionError::connection_proof)?;
+
+            // Build message(s) for updating client on destination
+            msgs = self.build_update_client_on_dst(proofs.height())?;
+        }
 
         // Get signer
         let signer = self
@@ -1249,18 +1339,55 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         // TODO - check that the src connection is consistent with the confirm options
 
-        let (_, proofs) = self
-            .src_chain()
-            .build_connection_proofs_and_client_state(
-                ConnectionMsgType::OpenConfirm,
-                src_connection_id,
-                self.src_client_id(),
-                query_height,
-            )
-            .map_err(ConnectionError::connection_proof)?;
+        let mut msgs: Vec<Any>;
+        let proofs;
+        if self.src_chain().config().map_err(|e| {
+                        ConnectionError::custom_error(format!("[in connection: build_conn_confirm decode src_chain get config failed] -> Error({})", e))
+                    })?.r#type == ChainType::Near {
+            msgs = self.build_update_client_on_dst(query_height)?;
+            assert!(!msgs.is_empty());
+            let msg_update_client = msgs.last().ok_or(ConnectionError::custom_error(
+                            "[in connection: build_conn_confirm msgs.last() is none]".into()
+                        ))?;
+            let domain_msg = MsgUpdateClient::decode_vec(&msg_update_client.value).map_err(|e| {
+                                ConnectionError::custom_error(format!(
+                                    "[in connection: build_conn_confirm decode MsgUpdateClient failed] -> Error({})",
+                                    e
+                                ))
+                            })?;
+            let near_header = AnyHeader::try_from(domain_msg.header).map_err(|e| {
+                            ConnectionError::custom_error(format!(
+                                "[in connection: build_conn_confirm decode ClientMessage to AnyHeader failed] -> Error({})",
+                                e
+                            ))
+                        })?;
+            let proof_height = near_header.height();
 
-        // Build message(s) for updating client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+            (_, proofs) = self
+                .src_chain()
+                .build_connection_proofs_and_client_state(
+                    ConnectionMsgType::OpenConfirm,
+                    src_connection_id,
+                    self.src_client_id(),
+                    proof_height.decrement().map_err(|e| {
+                                            ConnectionError::custom_error(format!("[in connection: build_conn_confirm proof_height.decrement() failed] -> Error({})", e))
+                                        })?,
+                )
+                .map_err(ConnectionError::connection_proof)?;
+        } else {
+            (_, proofs) = self
+                .src_chain()
+                .build_connection_proofs_and_client_state(
+                    ConnectionMsgType::OpenConfirm,
+                    src_connection_id,
+                    self.src_client_id(),
+                    query_height,
+                )
+                .map_err(ConnectionError::connection_proof)?;
+
+            // Build message(s) for updating client on destination
+            msgs = self.build_update_client_on_dst(proofs.height())?;
+        }
 
         // Get signer
         let signer = self

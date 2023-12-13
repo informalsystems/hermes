@@ -27,6 +27,7 @@ use ibc_relayer_types::{
 
 pub mod bus;
 pub mod error;
+pub mod near_event_monitor;
 pub mod source;
 
 #[derive(Clone, Debug, Serialize)]
@@ -475,7 +476,9 @@ mod tests {
         Protobuf::<Any>::encode(header.clone(), &mut header_bytes).unwrap();
 
         let decoded_dyn_header = decode_header(&header_bytes).unwrap();
-        let AnyHeader::Tendermint(decoded_tm_header) = decoded_dyn_header;
+        let AnyHeader::Tendermint(decoded_tm_header) = decoded_dyn_header else {
+            panic!("unexpected header type")
+        };
 
         assert_eq!(header, decoded_tm_header);
     }

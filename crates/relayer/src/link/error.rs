@@ -148,6 +148,12 @@ define_error! {
 
         UpdateClientFailed
              |_| { "failed to update client" },
+
+        CustomError
+            { reason: String }
+            | e | {
+                format_args!("custom error: {}", e.reason)
+            },
    }
 }
 

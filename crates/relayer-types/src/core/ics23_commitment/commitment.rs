@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Deserializer, Serialize};
 use std::{convert::TryFrom, fmt};
 use subtle_encoding::{Encoding, Hex};
 
@@ -124,7 +124,7 @@ impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Default)]
+#[derive(Clone, PartialEq, Eq, Hash, Default)]
 pub struct CommitmentPrefix {
     bytes: Vec<u8>,
 }
@@ -167,6 +167,16 @@ impl Serialize for CommitmentPrefix {
         S: serde::Serializer,
     {
         format!("{self:?}").serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for CommitmentPrefix {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        CommitmentPrefix::try_from(String::deserialize(deserializer)?.as_bytes().to_vec())
+            .map_err(de::Error::custom)
     }
 }
 

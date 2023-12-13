@@ -27,7 +27,6 @@ use ibc_relayer_types::core::ics02_client::header::AnyHeader;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::Height as ICSHeight;
 
-#[cfg(test)]
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 
 use crate::{
@@ -146,12 +145,16 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let update_header: &TmHeader = match any_header {
             AnyHeader::Tendermint(header) => Ok(header),
+
+            _ => Err(Error::misbehaviour(format!(
+                "update header incompatible for chain {}",
+                self.chain_id
+            ))),
         }?;
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
 
-            #[cfg(test)]
             _ => Err(Error::misbehaviour(format!(
                 "client type incompatible for chain {}",
                 self.chain_id
@@ -314,7 +317,6 @@ impl LightClient {
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
 
-            #[cfg(test)]
             _ => Err(Error::client_type_mismatch(
                 ClientType::Tendermint,
                 client_state.client_type(),

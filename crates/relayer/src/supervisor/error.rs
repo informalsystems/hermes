@@ -75,6 +75,12 @@ define_error! {
 
         HandleRecv
             |_| { "failed to receive the result of a command from the supervisor through a channel" },
+
+        CustomError
+            { msg: String }
+            |e| {
+                format_args!("{}", e.msg)
+            },
     }
 }
 

@@ -440,9 +440,20 @@ pub struct QueryTxHash(pub TxHash);
 /// - with sequences in `sequences`
 /// - that occurred at a height either smaller or equal to `height` or exactly at `height`,
 ///   as specified by `event_height_qualifier`
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct QueryPacketEventDataRequest {
     pub event_id: WithBlockDataType,
+    pub source_channel_id: ChannelId,
+    pub source_port_id: PortId,
+    pub destination_channel_id: ChannelId,
+    pub destination_port_id: PortId,
+    pub sequences: Vec<Sequence>,
+    pub height: Qualified<QueryHeight>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct QueryPacketEventDataRequest1 {
+    pub event_type: String,
     pub source_channel_id: ChannelId,
     pub source_port_id: PortId,
     pub destination_channel_id: ChannelId,
@@ -461,7 +472,7 @@ pub struct QueryPacketEventDataRequest {
 /// depending on the request: The request might refer to a specific
 /// height (i.e., we want packets from a block _at height_ T), or to
 /// a range of heights (i.e., all packets _up to height_ T).
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum Qualified<T> {
     SmallerEqual(T),
     Equal(T),

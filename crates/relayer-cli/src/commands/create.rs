@@ -8,12 +8,16 @@ use crate::commands::tx::client::TxCreateClientCmd;
 
 mod channel;
 mod connection;
+mod vp_client;
 
 /// `create` subcommands
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum CreateCmds {
     /// Create a new IBC client
     Client(TxCreateClientCmd),
+
+    /// Create a vp IBC client
+    VpClient(vp_client::TxCreateVpClientCmd),
 
     /// Create a new connection between two chains
     Connection(CreateConnectionCommand),

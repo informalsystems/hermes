@@ -14,6 +14,7 @@ use crate::chain::requests::QueryClientStateRequest;
 use crate::chain::requests::QueryHeight;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
+use crate::chain::ChainType;
 use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
@@ -170,10 +171,23 @@ impl OperationalData {
             // Vector may be empty if the client already has the header for the requested height.
             match self.target {
                 OperationalDataTarget::Source => {
-                    relay_path.build_update_client_on_src(update_height)?
+                    info!(
+                        "OperationalDataTarget::Source should skip update {:?} for {:?}",
+                        update_height,
+                        relay_path.src_chain().config().unwrap().r#type
+                    );
+                    if relay_path.src_chain().config().unwrap().r#type == ChainType::Near {
+                        relay_path.build_update_client_on_src(update_height)?
+                    } else {
+                        vec![]
+                    }
                 }
                 OperationalDataTarget::Destination => {
-                    relay_path.build_update_client_on_dst(update_height)?
+                    if relay_path.src_chain().config().unwrap().r#type == ChainType::Near {
+                        vec![]
+                    } else {
+                        relay_path.build_update_client_on_dst(update_height)?
+                    }
                 }
             }
         } else {

@@ -87,7 +87,16 @@ flex_error::define_error! {
                     "failed to query counterparty connection state of connection '{}' on counterparty chain '{}', reason: {}",
                     e.connection_id, e.counterparty_chain_id, e.reason
                 )
-            }
+            },
+
+        CustomError
+            { reason: String }
+            |e| {
+                format_args!(
+                    "custom error: {}",
+                    e.reason
+                )
+            },
     }
 }
 
