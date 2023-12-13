@@ -1,5 +1,40 @@
 # CHANGELOG
 
+## v1.7.3
+
+*November 29th, 2023*
+
+This release improves the reliability of the `evidence` command and 
+fixes a bug that was preventing evidence to be reported,
+as seen on the Gaia RS testnet.
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Improve reliability of `evidence` command and fix a bug that was
+    preventing evidence to be reported, as seen on the Gaia RS testnet
+    ([\#3702](https://github.com/informalsystems/hermes/pull/3702))
+
+## v1.7.2
+
+*November 28th, 2023*
+
+This patch release of Hermes adds a metric to improve monitoring errors and one
+to measure the efficiency of the client update skip feature released in patch v1.7.1.
+
+* `broadcast_errors` records the number of times a specific error is observed by Hermes when broadcasting transactions.
+* `client_updates_skipped` records the number of client updates skipped due to the consensus states already existing.
+
+### FEATURES
+
+- [Telemetry & Metrics](telemetry)
+  - Added metric `client_updates_skipped` to track the number of client
+    update messages skipped due to the conscensus state existing already.
+    ([\#3707](https://github.com/informalsystems/hermes/issues/3707))
+  - Add a new metric `broadcast_errors` which
+    records the number of times a specific error is observed by Hermes when broadcasting transactions
+    ([\#3708](https://github.com/informalsystems/hermes/issues/3708))
+
 ## v1.7.1
 
 *November 13th, 2023*

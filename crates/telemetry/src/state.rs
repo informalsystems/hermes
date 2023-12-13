@@ -22,7 +22,7 @@ use ibc_relayer_types::{
 
 use tendermint::Time;
 
-use crate::path_identifier::PathIdentifier;
+use crate::{broadcast_error::BroadcastError, path_identifier::PathIdentifier};
 
 const EMPTY_BACKLOG_SYMBOL: u64 = 0;
 const BACKLOG_CAPACITY: usize = 1000;
@@ -197,6 +197,9 @@ pub struct TelemetryState {
 
     /// Sum of rewarded fees over the past FEE_LIFETIME seconds
     period_fees: ObservableGauge<u64>,
+
+    /// Number of errors observed by Hermes when broadcasting a Tx
+    broadcast_errors: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -370,6 +373,13 @@ impl TelemetryState {
             period_fees: meter
                 .u64_observable_gauge("ics29_period_fees")
                 .with_description("Amount of ICS29 fees rewarded over the past 7 days")
+                .init(),
+
+            broadcast_errors: meter
+                .u64_counter("broadcast_errors")
+                .with_description(
+                    "Number of errors observed by Hermes when broadcasting a Tx",
+                )
                 .init(),
         }
     }
@@ -1068,6 +1078,21 @@ impl TelemetryState {
     // the rewarded fees from ICS29.
     pub fn add_visible_fee_address(&self, address: String) {
         self.visible_fee_addresses.insert(address);
+    }
+
+    /// Add an error and its description to the list of errors observed after broadcasting
+    /// a Tx with a specific account.
+    pub fn broadcast_errors(&self, address: &String, error_code: u32, error_description: &str) {
+        let cx = Context::current();
+        let broadcast_error = BroadcastError::new(error_code, error_description);
+
+        let labels = &[
+            KeyValue::new("account", address.to_string()),
+            KeyValue::new("error_code", broadcast_error.code.to_string()),
+            KeyValue::new("error_description", broadcast_error.description),
+        ];
+
+        self.broadcast_errors.add(&cx, 1, labels);
     }
 }
 

@@ -100,11 +100,21 @@ async fn do_send_tx_with_account_sequence_retry(
         }
 
         // Gas estimation succeeded but broadcast_tx_sync failed with a retry-able error.
+        // NOTE: The error code could potentially overlap between Cosmos SDK and Ibc-go channel
+        // error codes. This is currently not the case of incorrect account sequence error
+        //which is the Cosmos SDK code 32 and Ibc-go channel errors only go up to 25.
         Ok(ref response) if response.code == Code::from(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
             warn!(
                 ?response,
                 "failed to broadcast tx because of a mismatched account sequence number, \
                 refreshing account sequence number and retrying once"
+            );
+
+            telemetry!(
+                broadcast_errors,
+                &account.address.to_string(),
+                response.code.into(),
+                &response.log,
             );
 
             refresh_account_and_retry_send_tx_with_account_sequence(
@@ -119,6 +129,8 @@ async fn do_send_tx_with_account_sequence_retry(
             debug!("gas estimation succeeded");
 
             // Gas estimation and broadcast_tx_sync were successful.
+            // NOTE: The error code could potentially overlap between Cosmos SDK and Ibc-go channel
+            // error codes.
             match response.code {
                 Code::Ok => {
                     let old_account_sequence = account.sequence;
@@ -145,6 +157,13 @@ async fn do_send_tx_with_account_sequence_retry(
                         ?response,
                         diagnostic = ?sdk_error_from_tx_sync_error_code(code.into()),
                         "failed to broadcast tx with unrecoverable error"
+                    );
+
+                    telemetry!(
+                        broadcast_errors,
+                        &account.address.to_string(),
+                        code.into(),
+                        &response.log
                     );
 
                     Ok(response)
