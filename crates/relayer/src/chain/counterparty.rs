@@ -32,6 +32,7 @@ use crate::channel::ChannelError;
 use crate::client_state::IdentifiedAnyClientState;
 use crate::path::PathIdentifiers;
 use crate::supervisor::Error;
+use crate::telemetry;
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
@@ -501,6 +502,19 @@ pub fn unreceived_packets(
         &path.counterparty_port_id,
         &path.counterparty_channel_id,
     )?;
+
+    telemetry!(
+        update_backlog,
+        commit_sequences
+            .iter()
+            .map(|s| u64::from(*s))
+            .collect::<Vec<u64>>()
+            .clone(),
+        &counterparty_chain.id(),
+        &path.counterparty_channel_id,
+        &path.counterparty_port_id,
+        &chain.id()
+    );
 
     let packet_seq_nrs =
         unreceived_packets_sequences(chain, &path.port_id, &path.channel_id, commit_sequences)?;
