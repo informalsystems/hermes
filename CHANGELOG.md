@@ -2,14 +2,21 @@
 
 ## v1.7.4
 
-*December , 2023*
+*December 15th, 2023*
 
 This release improves the monitoring of Hermes instances by fixing the `broadcast_errors` metric so
 that it correctly batches the same errors together. It also improves the metrics `backlog_*` by
 updating them whenever Hermes queries pending packets.
 
+A fix avoiding packets being discarded if the idle worker clean-up is removing the worker at the same
+time the packets are received.
+
 ### BUG FIXES
 
+- [Relayer Library](relayer)
+  - Avoid retrieving a worker which is being removed by the idle worker clean-up
+    process.
+    process ([\#3703](https://github.com/informalsystems/hermes/issues/3703))
 - [Relayer CLI](relayer-cli)
   - Fix a bug in the `evidence` command which would sometimes
     prevent the detected misbehaviour evidence from being submitted,
