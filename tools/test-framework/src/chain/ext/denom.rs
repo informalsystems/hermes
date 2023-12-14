@@ -39,6 +39,7 @@ impl<'a, Chain> ChainDenomMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDrive
                     .as_str()
                     .unwrap();
                 MonoTagged::new(Denom::base(denom_str))
+                //MonoTagged::new(Denom::base("nam"))
             }
             _ => denom.cloned().clone(),
         }
