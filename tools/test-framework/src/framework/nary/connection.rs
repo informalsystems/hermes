@@ -7,21 +7,48 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use crate::bootstrap::nary::connection::bootstrap_connections;
-use crate::error::Error;
-use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::RelayerConfigOverride;
-use crate::framework::binary::connection::{BinaryConnectionTest, ConnectionDelayOverride};
-use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
-use crate::framework::nary::chain::{NaryChainTest, RunNaryChainTest};
-use crate::framework::nary::node::run_nary_node_test;
-use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
-use crate::relayer::driver::RelayerDriver;
-use crate::types::config::TestConfig;
-use crate::types::env::write_env;
-use crate::types::nary::chains::NaryConnectedChains;
-use crate::types::nary::connection::ConnectedConnections;
-use crate::util::suspend::hang_on_error;
+use crate::{
+    bootstrap::nary::connection::bootstrap_connections,
+    error::Error,
+    framework::{
+        base::{
+            HasOverrides,
+            TestConfigOverride,
+        },
+        binary::{
+            chain::RelayerConfigOverride,
+            connection::{
+                BinaryConnectionTest,
+                ConnectionDelayOverride,
+            },
+            node::{
+                NodeConfigOverride,
+                NodeGenesisOverride,
+            },
+        },
+        nary::{
+            chain::{
+                NaryChainTest,
+                RunNaryChainTest,
+            },
+            node::run_nary_node_test,
+        },
+        supervisor::{
+            RunWithSupervisor,
+            SupervisorOverride,
+        },
+    },
+    relayer::driver::RelayerDriver,
+    types::{
+        config::TestConfig,
+        env::write_env,
+        nary::{
+            chains::NaryConnectedChains,
+            connection::ConnectedConnections,
+        },
+    },
+    util::suspend::hang_on_error,
+};
 
 pub fn run_nary_connection_test<Test, Overrides, const SIZE: usize>(
     test: &Test,

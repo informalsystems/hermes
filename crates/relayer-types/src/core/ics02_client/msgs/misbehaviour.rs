@@ -1,11 +1,17 @@
-use ibc_proto::google::protobuf::Any as ProtoAny;
-use ibc_proto::ibc::core::client::v1::MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour;
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    google::protobuf::Any as ProtoAny,
+    ibc::core::client::v1::MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour,
+    Protobuf,
+};
 
-use crate::core::ics02_client::error::Error;
-use crate::core::ics24_host::identifier::ClientId;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+    core::{
+        ics02_client::error::Error,
+        ics24_host::identifier::ClientId,
+    },
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgSubmitMisbehaviour";
 

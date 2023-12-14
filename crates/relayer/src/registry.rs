@@ -1,18 +1,29 @@
 //! Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 
-use alloc::collections::btree_map::BTreeMap as HashMap;
-use alloc::sync::Arc;
-use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-
-use tokio::runtime::Runtime as TokioRuntime;
-use tracing::{trace, warn};
+use alloc::{
+    collections::btree_map::BTreeMap as HashMap,
+    sync::Arc,
+};
+use std::sync::{
+    RwLock,
+    RwLockReadGuard,
+    RwLockWriteGuard,
+};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use tokio::runtime::Runtime as TokioRuntime;
+use tracing::{
+    trace,
+    warn,
+};
 
 use crate::{
     chain::handle::ChainHandle,
     config::Config,
-    spawn::{spawn_chain_runtime, SpawnError},
+    spawn::{
+        spawn_chain_runtime,
+        SpawnError,
+    },
     util::lock::RwArc,
 };
 

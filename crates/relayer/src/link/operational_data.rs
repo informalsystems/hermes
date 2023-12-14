@@ -1,22 +1,45 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
-use std::ops::Add;
-use std::time::{Duration, Instant};
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
+use std::{
+    ops::Add,
+    time::{
+        Duration,
+        Instant,
+    },
+};
 
 use ibc_proto::google::protobuf::Any;
-use tracing::{debug, info};
+use ibc_relayer_types::{
+    core::ics02_client::client_state::ClientState,
+    Height,
+};
+use tracing::{
+    debug,
+    info,
+};
 
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::Height;
-
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::IncludeProof;
-use crate::chain::requests::QueryClientStateRequest;
-use crate::chain::requests::QueryHeight;
-use crate::chain::tracking::TrackedMsgs;
-use crate::chain::tracking::TrackingId;
-use crate::event::IbcEventWithHeight;
-use crate::link::error::LinkError;
-use crate::link::RelayPath;
+use crate::{
+    chain::{
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            QueryClientStateRequest,
+            QueryHeight,
+        },
+        tracking::{
+            TrackedMsgs,
+            TrackingId,
+        },
+    },
+    event::IbcEventWithHeight,
+    link::{
+        error::LinkError,
+        RelayPath,
+    },
+};
 
 /// The chain that the events associated with a piece of [`OperationalData`] are bound for.
 #[derive(Clone, Copy, PartialEq, Eq)]

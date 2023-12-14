@@ -1,24 +1,40 @@
 use alloc::collections::BTreeMap as HashMap;
 
 use flex_error::define_error;
-use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
-use tracing::{debug, trace};
-
-use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
-use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+use ibc_relayer_types::core::{
+    ics02_client::trust_threshold::TrustThreshold,
+    ics03_connection::connection::ConnectionEnd,
+    ics04_channel::error::Error as ChannelError,
+    ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        ClientId,
+        ConnectionId,
+        PortId,
+    },
+};
+use tracing::{
+    debug,
+    trace,
 };
 
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{
-    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
+use crate::{
+    chain::{
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            QueryChannelRequest,
+            QueryClientStateRequest,
+            QueryConnectionRequest,
+            QueryHeight,
+        },
+    },
+    client_state::AnyClientState,
+    error::Error as RelayerError,
+    object,
+    registry::Registry,
+    spawn::SpawnError,
 };
-use crate::client_state::AnyClientState;
-use crate::error::Error as RelayerError;
-use crate::object;
-use crate::registry::Registry;
-use crate::spawn::SpawnError;
 
 /// The lower bound trust threshold value. Clients with a trust threshold less
 /// than this will not be allowed due to security concerns.

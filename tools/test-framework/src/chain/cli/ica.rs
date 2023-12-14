@@ -1,8 +1,13 @@
 use eyre::eyre;
 use serde_json as json;
 
-use crate::chain::exec::simple_exec;
-use crate::error::{handle_generic_error, Error};
+use crate::{
+    chain::exec::simple_exec,
+    error::{
+        handle_generic_error,
+        Error,
+    },
+};
 
 /// Register a new interchain account controlled by the given account
 /// over the given connection.

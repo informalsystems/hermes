@@ -2,11 +2,16 @@ use ibc_test_framework::{
     prelude::*,
     relayer::{
         channel::{
-            ack_channel, assert_eventually_channel_established, init_channel,
-            init_channel_optimistic, try_channel,
+            ack_channel,
+            assert_eventually_channel_established,
+            init_channel,
+            init_channel_optimistic,
+            try_channel,
         },
         connection::{
-            ack_connection, assert_eventually_connection_established, init_connection,
+            ack_connection,
+            assert_eventually_connection_established,
+            init_connection,
             try_connection,
         },
     },

@@ -1,10 +1,21 @@
-use ibc_relayer::chain::counterparty::{channel_on_destination, pending_packet_summary};
-use ibc_relayer::link::{Link, LinkParameters};
-
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::channel::query_identified_channel_end;
-use ibc_test_framework::relayer::connection::query_identified_connection_end;
-use ibc_test_framework::util::random::random_u128_range;
+use ibc_relayer::{
+    chain::counterparty::{
+        channel_on_destination,
+        pending_packet_summary,
+    },
+    link::{
+        Link,
+        LinkParameters,
+    },
+};
+use ibc_test_framework::{
+    prelude::*,
+    relayer::{
+        channel::query_identified_channel_end,
+        connection::query_identified_connection_end,
+    },
+    util::random::random_u128_range,
+};
 
 #[test]
 fn test_query_packet_pending() -> Result<(), Error> {

@@ -3,19 +3,37 @@
 */
 
 use core::time::Duration;
-use eyre::{eyre, Report as Error};
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::config::default::connection_delay as default_connection_delay;
-use ibc_relayer::connection::{Connection, ConnectionSide};
-use ibc_relayer_types::timestamp::ZERO_DURATION;
-use tracing::{debug, info};
 
-use crate::relayer::connection::TaggedConnectionExt;
-use crate::types::binary::client::ClientIdPair;
-use crate::types::binary::connection::ConnectedConnection;
-use crate::types::binary::foreign_client::ForeignClientPair;
-use crate::types::id::TaggedClientIdRef;
-use crate::util::random::random_u64_range;
+use eyre::{
+    eyre,
+    Report as Error,
+};
+use ibc_relayer::{
+    chain::handle::ChainHandle,
+    config::default::connection_delay as default_connection_delay,
+    connection::{
+        Connection,
+        ConnectionSide,
+    },
+};
+use ibc_relayer_types::timestamp::ZERO_DURATION;
+use tracing::{
+    debug,
+    info,
+};
+
+use crate::{
+    relayer::connection::TaggedConnectionExt,
+    types::{
+        binary::{
+            client::ClientIdPair,
+            connection::ConnectedConnection,
+            foreign_client::ForeignClientPair,
+        },
+        id::TaggedClientIdRef,
+    },
+    util::random::random_u64_range,
+};
 
 pub struct BootstrapConnectionOptions {
     pub connection_delay: Duration,

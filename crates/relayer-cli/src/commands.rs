@@ -18,22 +18,46 @@ mod update;
 mod upgrade;
 mod version;
 
-use self::{
-    clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
-    evidence::EvidenceCmd, fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd,
-    logs::LogsCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
-    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
-};
-
 use core::time::Duration;
 use std::path::PathBuf;
 
-use abscissa_core::clap::Parser;
-use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Runnable};
-use tracing::{error, info};
+use abscissa_core::{
+    clap::Parser,
+    config::Override,
+    Command,
+    Configurable,
+    FrameworkError,
+    Runnable,
+};
+use ibc_relayer::config::{
+    ChainConfig,
+    Config,
+};
+use tracing::{
+    error,
+    info,
+};
 
+use self::{
+    clear::ClearCmds,
+    completions::CompletionsCmd,
+    config::ConfigCmd,
+    create::CreateCmds,
+    evidence::EvidenceCmd,
+    fee::FeeCmd,
+    health::HealthCheckCmd,
+    keys::KeysCmd,
+    listen::ListenCmd,
+    logs::LogsCmd,
+    misbehaviour::MisbehaviourCmd,
+    query::QueryCmd,
+    start::StartCmd,
+    tx::TxCmd,
+    update::UpdateCmds,
+    upgrade::UpgradeCmds,
+    version::VersionCmd,
+};
 use crate::DEFAULT_CONFIG_PATH;
-use ibc_relayer::config::{ChainConfig, Config};
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {

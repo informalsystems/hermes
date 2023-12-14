@@ -1,14 +1,26 @@
 use std::str::FromStr;
 
-use serde_derive::{Deserialize, Serialize};
-
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 
 use super::timeout::TimeoutHeight;
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::timestamp::{Expiry::Expired, Timestamp};
-use crate::Height;
+use crate::{
+    core::{
+        ics04_channel::error::Error,
+        ics24_host::identifier::{
+            ChannelId,
+            PortId,
+        },
+    },
+    timestamp::{
+        Expiry::Expired,
+        Timestamp,
+    },
+    Height,
+};
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -262,10 +274,15 @@ impl From<Packet> for RawPacket {
 #[cfg(test)]
 pub mod test_utils {
 
-    use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
-    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+    use ibc_proto::ibc::core::{
+        channel::v1::Packet as RawPacket,
+        client::v1::Height as RawHeight,
+    };
 
-    use crate::core::ics24_host::identifier::{ChannelId, PortId};
+    use crate::core::ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    };
 
     /// Returns a dummy `RawPacket`, for testing only!
     pub fn get_dummy_raw_packet(timeout_height: u64, timeout_timestamp: u64) -> RawPacket {
@@ -288,13 +305,16 @@ pub mod test_utils {
 #[cfg(test)]
 mod tests {
 
+    use ibc_proto::ibc::core::{
+        channel::v1::Packet as RawPacket,
+        client::v1::Height as RawHeight,
+    };
     use test_log::test;
 
-    use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
-    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-
-    use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
-    use crate::core::ics04_channel::packet::Packet;
+    use crate::core::ics04_channel::packet::{
+        test_utils::get_dummy_raw_packet,
+        Packet,
+    };
 
     #[test]
     fn packet_try_from_raw() {

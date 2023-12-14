@@ -2,14 +2,24 @@
 //! represented as a fraction with valid values in the
 //! range `[0, 1)`.
 
-use std::convert::TryFrom;
-use std::fmt::{Display, Error as FmtError, Formatter};
+use std::{
+    convert::TryFrom,
+    fmt::{
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
+};
 
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    ibc::lightclients::tendermint::v1::Fraction,
+    Protobuf,
+};
 use num_rational::Ratio;
-use serde::{Deserialize, Serialize};
-
-use ibc_proto::ibc::lightclients::tendermint::v1::Fraction;
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use tendermint::trust_threshold::TrustThresholdFraction;
 
 use crate::core::ics02_client::error::Error;

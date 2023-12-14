@@ -2,15 +2,27 @@
    Driver for spawning the relayer.
 */
 
-use ibc_relayer::chain::handle::CountingAndCachingChainHandle;
-use ibc_relayer::config::Config;
-use ibc_relayer::registry::SharedRegistry;
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
 use std::path::PathBuf;
 
-use crate::error::Error;
-use crate::types::env::{EnvWriter, ExportEnv};
-use crate::util::suspend::hang_on_error;
+use ibc_relayer::{
+    chain::handle::CountingAndCachingChainHandle,
+    config::Config,
+    registry::SharedRegistry,
+    supervisor::{
+        spawn_supervisor,
+        SupervisorHandle,
+        SupervisorOptions,
+    },
+};
+
+use crate::{
+    error::Error,
+    types::env::{
+        EnvWriter,
+        ExportEnv,
+    },
+    util::suspend::hang_on_error,
+};
 
 /**
    Encapsulates the parameters needed to spawn the relayer supervisor.

@@ -1,22 +1,45 @@
 #![allow(clippy::redundant_closure_call)]
 
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
-use ibc_relayer::channel::{Channel, ChannelSide};
-use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
-use ibc_relayer_types::core::ics04_channel::channel::Ordering;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
 };
-use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer::{
+    chain::{
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            QueryConnectionRequest,
+            QueryHeight,
+        },
+    },
+    channel::{
+        Channel,
+        ChannelSide,
+    },
+};
+use ibc_relayer_types::{
+    core::{
+        ics03_connection::connection::ConnectionEnd,
+        ics04_channel::channel::Ordering,
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            ClientId,
+            ConnectionId,
+            PortId,
+        },
+    },
+    events::IbcEvent,
+};
 
-use crate::cli_utils::ChainHandlePair;
-use crate::conclude::Output;
-use crate::error::Error;
-use crate::prelude::*;
+use crate::{
+    cli_utils::ChainHandlePair,
+    conclude::Output,
+    error::Error,
+    prelude::*,
+};
 
 macro_rules! tx_chan_cmd {
     ($dbg_string:literal, $func:ident, $self:expr, $chan:expr) => {
@@ -671,17 +694,26 @@ impl Runnable for TxChanCloseConfirmCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        TxChanCloseConfirmCmd, TxChanCloseInitCmd, TxChanOpenAckCmd, TxChanOpenConfirmCmd,
-        TxChanOpenInitCmd, TxChanOpenTryCmd,
-    };
-
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::{
         ics04_channel::channel::Ordering,
-        ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId},
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            ConnectionId,
+            PortId,
+        },
+    };
+
+    use super::{
+        TxChanCloseConfirmCmd,
+        TxChanCloseInitCmd,
+        TxChanOpenAckCmd,
+        TxChanOpenConfirmCmd,
+        TxChanOpenInitCmd,
+        TxChanOpenTryCmd,
     };
 
     #[test]

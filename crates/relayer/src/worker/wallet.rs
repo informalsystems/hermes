@@ -1,11 +1,20 @@
 use std::time::Duration;
 
-use tracing::{error_span, trace, warn};
+use tracing::{
+    error_span,
+    trace,
+    warn,
+};
 
 use crate::{
     chain::handle::ChainHandle,
     telemetry,
-    util::task::{spawn_background_task, Next, TaskError, TaskHandle},
+    util::task::{
+        spawn_background_task,
+        Next,
+        TaskError,
+        TaskHandle,
+    },
 };
 
 pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {

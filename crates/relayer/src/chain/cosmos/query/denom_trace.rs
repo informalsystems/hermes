@@ -1,12 +1,14 @@
 use http::uri::Uri;
-
 use ibc_proto::ibc::applications::transfer::v1::{
-    query_client::QueryClient, QueryDenomTraceRequest,
+    query_client::QueryClient,
+    QueryDenomTraceRequest,
 };
 
-use crate::config::default::max_grpc_decoding_size;
-use crate::denom::DenomTrace;
-use crate::error::Error;
+use crate::{
+    config::default::max_grpc_decoding_size,
+    denom::DenomTrace,
+    error::Error,
+};
 
 // Uses the GRPC client to retrieve the denom trace for a specific hash
 pub async fn query_denom_trace(grpc_address: &Uri, hash: &str) -> Result<DenomTrace, Error> {

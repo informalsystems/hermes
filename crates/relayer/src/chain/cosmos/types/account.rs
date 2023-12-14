@@ -1,4 +1,9 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
+
 use ibc_proto::cosmos::auth::v1beta1::BaseAccount;
 
 /// Wrapper for account number and sequence number.

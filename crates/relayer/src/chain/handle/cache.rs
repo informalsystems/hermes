@@ -1,45 +1,92 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
+
 use crossbeam_channel as channel;
-use ibc_relayer_types::core::ics02_client::header::AnyHeader;
+use ibc_proto::ibc::apps::fee::v1::{
+    QueryIncentivizedPacketRequest,
+    QueryIncentivizedPacketResponse,
+};
+use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
+    core::{
+        ics02_client::{
+            events::UpdateClient,
+            header::AnyHeader,
+        },
+        ics03_connection::{
+            connection::{
+                ConnectionEnd,
+                IdentifiedConnectionEnd,
+            },
+            version::Version,
+        },
+        ics04_channel::{
+            channel::{
+                ChannelEnd,
+                IdentifiedChannelEnd,
+            },
+            packet::{
+                PacketMsgType,
+                Sequence,
+            },
+        },
+        ics23_commitment::{
+            commitment::CommitmentPrefix,
+            merkle::MerkleProof,
+        },
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            ClientId,
+            ConnectionId,
+            PortChannelId,
+            PortId,
+        },
+    },
+    proofs::Proofs,
+    signer::Signer,
+    Height,
+};
 use tracing::Span;
 
-use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketRequest;
-use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketResponse;
-use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
-use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc_relayer_types::core::ics03_connection::version::Version;
-use ibc_relayer_types::core::ics04_channel::channel::ChannelEnd;
-use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+use crate::{
+    account::Balance,
+    cache::{
+        Cache,
+        CacheStatus,
+    },
+    chain::{
+        client::ClientSettings,
+        cosmos::version::Specs,
+        endpoint::{
+            ChainStatus,
+            HealthCheck,
+        },
+        handle::{
+            ChainHandle,
+            ChainRequest,
+            Subscription,
+        },
+        requests::*,
+        tracking::TrackedMsgs,
+    },
+    client_state::{
+        AnyClientState,
+        IdentifiedAnyClientState,
+    },
+    config::ChainConfig,
+    connection::ConnectionMsgType,
+    consensus_state::AnyConsensusState,
+    denom::DenomTrace,
+    error::Error,
+    event::IbcEventWithHeight,
+    keyring::AnySigningKeyPair,
+    misbehaviour::MisbehaviourEvidence,
+    telemetry,
 };
-use ibc_relayer_types::proofs::Proofs;
-use ibc_relayer_types::signer::Signer;
-use ibc_relayer_types::Height;
-
-use crate::account::Balance;
-use crate::cache::{Cache, CacheStatus};
-use crate::chain::client::ClientSettings;
-use crate::chain::cosmos::version::Specs;
-use crate::chain::endpoint::{ChainStatus, HealthCheck};
-use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use crate::chain::requests::*;
-use crate::chain::tracking::TrackedMsgs;
-use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
-use crate::config::ChainConfig;
-use crate::connection::ConnectionMsgType;
-use crate::consensus_state::AnyConsensusState;
-use crate::denom::DenomTrace;
-use crate::error::Error;
-use crate::event::IbcEventWithHeight;
-use crate::keyring::AnySigningKeyPair;
-use crate::misbehaviour::MisbehaviourEvidence;
-use crate::telemetry;
 
 /// A chain handle with support for caching.
 /// To be used for the passive relaying mode (i.e., `start` CLI).

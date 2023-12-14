@@ -6,10 +6,22 @@ use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
 use super::foreign_client::ForeignClientPair;
-use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
-use crate::types::id::{TaggedChainIdRef, TaggedClientIdRef};
-use crate::types::single::node::{FullNode, TaggedFullNodeExt};
-use crate::types::tagged::*;
+use crate::types::{
+    env::{
+        prefix_writer,
+        EnvWriter,
+        ExportEnv,
+    },
+    id::{
+        TaggedChainIdRef,
+        TaggedClientIdRef,
+    },
+    single::node::{
+        FullNode,
+        TaggedFullNodeExt,
+    },
+    tagged::*,
+};
 
 /**
    Two connected chains including the full node, chain handles, and

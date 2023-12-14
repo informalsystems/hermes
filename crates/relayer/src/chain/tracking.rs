@@ -1,4 +1,8 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 
 use ibc_proto::google::protobuf::Any;
 use uuid::Uuid;

@@ -1,15 +1,28 @@
-use std::fmt::{Display, Error as FmtError, Formatter};
+use std::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::mock::Header as RawMockHeader;
-use ibc_proto::Protobuf;
-use serde_derive::{Deserialize, Serialize};
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::mock::Header as RawMockHeader,
+    Protobuf,
+};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::Error;
-use crate::core::ics02_client::header::Header;
-use crate::timestamp::Timestamp;
-use crate::Height;
+use crate::{
+    core::ics02_client::{
+        client_type::ClientType,
+        error::Error,
+        header::Header,
+    },
+    timestamp::Timestamp,
+    Height,
+};
 
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
@@ -121,8 +134,9 @@ impl From<MockHeader> for Any {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ibc_proto::Protobuf;
+
+    use super::*;
 
     #[test]
     fn encode_any() {

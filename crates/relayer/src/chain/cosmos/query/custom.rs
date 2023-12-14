@@ -1,10 +1,17 @@
-use crate::chain::requests::CrossChainQueryRequest;
-use crate::error::Error;
 use hex;
 use ibc_relayer_types::applications::ics31_icq::{
-    error::Error as CrossChainQueryError, response::CrossChainQueryResponse,
+    error::Error as CrossChainQueryError,
+    response::CrossChainQueryResponse,
 };
-use tendermint_rpc::{Client, HttpClient};
+use tendermint_rpc::{
+    Client,
+    HttpClient,
+};
+
+use crate::{
+    chain::requests::CrossChainQueryRequest,
+    error::Error,
+};
 
 pub async fn cross_chain_query_via_rpc(
     client: &HttpClient,

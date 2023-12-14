@@ -1,11 +1,18 @@
-use eyre::eyre;
-use serde_json as json;
 use std::time::Duration;
 
-use crate::chain::cli::query::query_cross_chain_query;
-use crate::error::Error;
-use crate::prelude::{assert_eventually_succeed, handle_generic_error, ChainDriver};
-use crate::types::tagged::MonoTagged;
+use eyre::eyre;
+use serde_json as json;
+
+use crate::{
+    chain::cli::query::query_cross_chain_query,
+    error::Error,
+    prelude::{
+        assert_eventually_succeed,
+        handle_generic_error,
+        ChainDriver,
+    },
+    types::tagged::MonoTagged,
+};
 
 /**
    Number of times (seconds) to try and query the list of cross chain

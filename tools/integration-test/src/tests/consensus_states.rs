@@ -2,9 +2,12 @@ use std::time::Duration;
 
 use ibc_relayer::chain::{
     cosmos::query::consensus_state::query_consensus_states,
-    requests::{PageRequest, QueryConsensusStateHeightsRequest, QueryConsensusStatesRequest},
+    requests::{
+        PageRequest,
+        QueryConsensusStateHeightsRequest,
+        QueryConsensusStatesRequest,
+    },
 };
-
 use ibc_test_framework::prelude::*;
 
 #[test]

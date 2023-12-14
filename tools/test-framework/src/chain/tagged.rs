@@ -3,22 +3,49 @@
 */
 
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer::chain::cosmos::tx::simple_send_tx;
-use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::event::IbcEventWithHeight;
-use ibc_relayer::util::compat_mode::compat_mode_from_version;
+use ibc_relayer::{
+    chain::cosmos::{
+        tx::simple_send_tx,
+        types::config::TxConfig,
+    },
+    event::IbcEventWithHeight,
+    util::compat_mode::compat_mode_from_version,
+};
 use serde_json as json;
-use tendermint_rpc::client::{Client, HttpClient};
+use tendermint_rpc::client::{
+    Client,
+    HttpClient,
+};
 
-use crate::chain::cli::query::query_auth_module;
-use crate::chain::cli::query::query_recipient_transactions;
-use crate::chain::driver::ChainDriver;
-use crate::error::{handle_generic_error, Error};
-use crate::ibc::denom::Denom;
-use crate::ibc::token::{TaggedDenomExt, TaggedToken, TaggedTokenRef};
-use crate::types::id::TaggedChainIdRef;
-use crate::types::tagged::*;
-use crate::types::wallet::{Wallet, WalletAddress};
+use crate::{
+    chain::{
+        cli::query::{
+            query_auth_module,
+            query_recipient_transactions,
+        },
+        driver::ChainDriver,
+    },
+    error::{
+        handle_generic_error,
+        Error,
+    },
+    ibc::{
+        denom::Denom,
+        token::{
+            TaggedDenomExt,
+            TaggedToken,
+            TaggedTokenRef,
+        },
+    },
+    types::{
+        id::TaggedChainIdRef,
+        tagged::*,
+        wallet::{
+            Wallet,
+            WalletAddress,
+        },
+    },
+};
 
 /**
    A [`ChainDriver`] may be tagged with a `Chain` tag in the form

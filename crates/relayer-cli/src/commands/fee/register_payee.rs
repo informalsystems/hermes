@@ -1,16 +1,33 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 use core::str::FromStr;
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer_types::applications::ics29_fee::msgs::register_payee::build_register_payee_message;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer_types::signer::Signer;
 
-use crate::application::app_config;
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::Error;
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::chain::{
+    handle::ChainHandle,
+    tracking::TrackedMsgs,
+};
+use ibc_relayer_types::{
+    applications::ics29_fee::msgs::register_payee::build_register_payee_message,
+    core::ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        PortId,
+    },
+    signer::Signer,
+};
+
+use crate::{
+    application::app_config,
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    error::Error,
+};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct RegisterPayeeCmd {
@@ -95,12 +112,16 @@ fn run_register_payee_command(
 #[cfg(test)]
 mod tests {
 
-    use super::RegisterPayeeCmd;
-
-    use abscissa_core::clap::Parser;
     use std::str::FromStr;
 
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+    use abscissa_core::clap::Parser;
+    use ibc_relayer_types::core::ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        PortId,
+    };
+
+    use super::RegisterPayeeCmd;
 
     #[test]
     fn test_regiser_payee() {

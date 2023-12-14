@@ -1,6 +1,13 @@
-use std::fmt::{Display, Error as FmtError, Formatter};
+use std::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use super::error::Error;
 

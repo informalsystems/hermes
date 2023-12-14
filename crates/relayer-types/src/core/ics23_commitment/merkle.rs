@@ -1,17 +1,26 @@
-use tendermint::merkle::proof::ProofOps as TendermintProof;
-
-use ibc_proto::ibc::core::commitment::v1::MerklePath;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
-use ibc_proto::ibc::core::commitment::v1::MerkleRoot;
-use ics23::commitment_proof::Proof;
+use ibc_proto::ibc::core::commitment::v1::{
+    MerklePath,
+    MerkleProof as RawMerkleProof,
+    MerkleRoot,
+};
 use ics23::{
-    calculate_existence_root, verify_membership, verify_non_membership, CommitmentProof,
+    calculate_existence_root,
+    commitment_proof::Proof,
+    verify_membership,
+    verify_non_membership,
+    CommitmentProof,
     NonExistenceProof,
 };
+use tendermint::merkle::proof::ProofOps as TendermintProof;
 
-use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot};
-use crate::core::ics23_commitment::error::Error;
-use crate::core::ics23_commitment::specs::ProofSpecs;
+use crate::core::ics23_commitment::{
+    commitment::{
+        CommitmentPrefix,
+        CommitmentRoot,
+    },
+    error::Error,
+    specs::ProofSpecs,
+};
 
 pub fn apply_prefix(prefix: &CommitmentPrefix, mut path: Vec<String>) -> MerklePath {
     let mut key_path: Vec<String> = vec![format!("{prefix:?}")];

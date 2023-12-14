@@ -1,18 +1,35 @@
-use std::io::Write;
-use std::panic::{RefUnwindSafe, UnwindSafe};
-
-use ibc_relayer::config::{
-    ChainConfig, Channels as ConfigChannels, Clients as ConfigClients,
-    Connections as ConfigConnections, ModeConfig, Packets as ConfigPackets,
+use std::{
+    io::Write,
+    panic::{
+        RefUnwindSafe,
+        UnwindSafe,
+    },
 };
 
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::types::tagged::mono::Tagged;
+use ibc_relayer::config::{
+    ChainConfig,
+    Channels as ConfigChannels,
+    Clients as ConfigClients,
+    Connections as ConfigConnections,
+    ModeConfig,
+    Packets as ConfigPackets,
+};
+use ibc_test_framework::{
+    prelude::*,
+    types::tagged::mono::Tagged,
+};
 
-use super::state::{Action, State};
-
-use super::itf::InformalTrace;
-use super::utils::{get_chain, CLIENT_EXPIRY};
+use super::{
+    itf::InformalTrace,
+    state::{
+        Action,
+        State,
+    },
+    utils::{
+        get_chain,
+        CLIENT_EXPIRY,
+    },
+};
 
 const TEST_NAMES: &[&str] = &[
     "LocalTransferInv",
@@ -126,8 +143,10 @@ fn test_ibc_transfer() -> Result<(), Error> {
 #[test]
 #[cfg(feature = "manual")]
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
-    use ibc_test_framework::framework::binary::chain::run_self_connected_binary_chain_test;
-    use ibc_test_framework::framework::binary::channel::RunBinaryChannelTest;
+    use ibc_test_framework::framework::binary::{
+        chain::run_self_connected_binary_chain_test,
+        channel::RunBinaryChannelTest,
+    };
 
     execute_mbt(|trace| {
         run_self_connected_binary_chain_test(&RunBinaryConnectionTest::new(

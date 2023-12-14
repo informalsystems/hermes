@@ -1,4 +1,7 @@
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 
 /// Packet commitment
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]

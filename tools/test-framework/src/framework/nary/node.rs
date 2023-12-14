@@ -3,15 +3,28 @@
    running without setting up the relayer.
 */
 
-use crate::bootstrap::single::bootstrap_single_node;
-use crate::chain::builder::ChainBuilder;
-use crate::error::Error;
-use crate::framework::base::HasOverrides;
-use crate::framework::base::{run_basic_test, BasicTest, TestConfigOverride};
-use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
-use crate::types::config::TestConfig;
-use crate::types::single::node::FullNode;
-use crate::util::array::try_into_array;
+use crate::{
+    bootstrap::single::bootstrap_single_node,
+    chain::builder::ChainBuilder,
+    error::Error,
+    framework::{
+        base::{
+            run_basic_test,
+            BasicTest,
+            HasOverrides,
+            TestConfigOverride,
+        },
+        binary::node::{
+            NodeConfigOverride,
+            NodeGenesisOverride,
+        },
+    },
+    types::{
+        config::TestConfig,
+        single::node::FullNode,
+    },
+    util::array::try_into_array,
+};
 
 pub fn run_nary_node_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Result<(), Error>
 where

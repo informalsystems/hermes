@@ -1,9 +1,13 @@
-use crate::entry::EntryPoint;
-use abscissa_core::clap::Parser;
-use abscissa_core::Runnable;
+use std::io;
+
+use abscissa_core::{
+    clap::Parser,
+    Runnable,
+};
 use clap::IntoApp;
 use clap_complete::Shell;
-use std::io;
+
+use crate::entry::EntryPoint;
 
 #[derive(Debug, Parser, PartialEq, Eq)]
 pub struct CompletionsCmd {
@@ -26,10 +30,10 @@ impl Runnable for CompletionsCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::CompletionsCmd;
-
     use abscissa_core::clap::Parser;
     use clap_complete::Shell;
+
+    use super::CompletionsCmd;
 
     #[test]
     fn test_completions() {

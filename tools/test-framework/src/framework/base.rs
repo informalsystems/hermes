@@ -4,13 +4,16 @@
 */
 
 use alloc::sync::Arc;
+
 use tokio::runtime::Runtime;
 use tracing::info;
 
-use crate::bootstrap::init::init_test;
-use crate::chain::builder::ChainBuilder;
-use crate::error::Error;
-use crate::types::config::TestConfig;
+use crate::{
+    bootstrap::init::init_test,
+    chain::builder::ChainBuilder,
+    error::Error,
+    types::config::TestConfig,
+};
 
 /**
    Runs a primitive test case implementing [`PrimitiveTest`].

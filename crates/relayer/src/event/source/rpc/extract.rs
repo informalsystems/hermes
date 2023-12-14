@@ -1,13 +1,20 @@
-use ibc_relayer_types::applications::ics29_fee::events::DistributionType;
+use ibc_relayer_types::{
+    applications::ics29_fee::events::DistributionType,
+    core::{
+        ics02_client::height::Height,
+        ics24_host::identifier::ChainId,
+    },
+    events::IbcEvent,
+};
 use tendermint::abci;
 
-use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::events::IbcEvent;
-
-use crate::telemetry;
-
-use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
+use crate::{
+    event::{
+        ibc_event_try_from_abci_event,
+        IbcEventWithHeight,
+    },
+    telemetry,
+};
 
 pub fn extract_events(
     _chain_id: &ChainId,

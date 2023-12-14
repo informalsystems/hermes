@@ -1,31 +1,59 @@
-use std::convert::TryInto;
-use std::thread;
-use std::time::{Duration, Instant};
-
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use itertools::Itertools;
-use tracing::{error_span, info};
-
-use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::Height;
-
-use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::Qualified;
-use crate::chain::tracking::TrackingId;
-use crate::error::Error;
-use crate::event::IbcEventWithHeight;
-use crate::link::error::LinkError;
-use crate::link::operational_data::{OperationalData, TrackedEvents};
-use crate::link::packet_events::{
-    query_packet_events_with, query_send_packet_events, query_write_ack_events,
+use std::{
+    convert::TryInto,
+    thread,
+    time::{
+        Duration,
+        Instant,
+    },
 };
-use crate::link::relay_path::RelayPath;
-use crate::link::relay_sender::SyncSender;
-use crate::link::Link;
-use crate::path::PathIdentifiers;
-use crate::util::collate::CollatedIterExt;
-use crate::util::pretty::{PrettyDuration, PrettySlice};
+
+use ibc_relayer_types::{
+    core::ics04_channel::packet::Sequence,
+    events::IbcEvent,
+    Height,
+};
+use itertools::Itertools;
+use tracing::{
+    error_span,
+    info,
+};
+
+use crate::{
+    chain::{
+        counterparty::{
+            unreceived_acknowledgements,
+            unreceived_packets,
+        },
+        handle::ChainHandle,
+        requests::Qualified,
+        tracking::TrackingId,
+    },
+    error::Error,
+    event::IbcEventWithHeight,
+    link::{
+        error::LinkError,
+        operational_data::{
+            OperationalData,
+            TrackedEvents,
+        },
+        packet_events::{
+            query_packet_events_with,
+            query_send_packet_events,
+            query_write_ack_events,
+        },
+        relay_path::RelayPath,
+        relay_sender::SyncSender,
+        Link,
+    },
+    path::PathIdentifiers,
+    util::{
+        collate::CollatedIterExt,
+        pretty::{
+            PrettyDuration,
+            PrettySlice,
+        },
+    },
+};
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_

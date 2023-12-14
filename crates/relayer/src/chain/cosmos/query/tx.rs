@@ -1,21 +1,52 @@
-use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::Height as ICSHeight;
-use tendermint::abci::Event;
-use tendermint::Hash as TxHash;
-use tendermint_rpc::endpoint::tx::Response as TxResponse;
-use tendermint_rpc::{Client, HttpClient, Order, Url};
+use ibc_relayer_types::{
+    core::{
+        ics02_client::height::Height,
+        ics04_channel::packet::{
+            Packet,
+            Sequence,
+        },
+        ics24_host::identifier::ChainId,
+    },
+    events::IbcEvent,
+    Height as ICSHeight,
+};
+use tendermint::{
+    abci::Event,
+    Hash as TxHash,
+};
+use tendermint_rpc::{
+    endpoint::tx::Response as TxResponse,
+    Client,
+    HttpClient,
+    Order,
+    Url,
+};
 use tracing::warn;
 
-use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
-use crate::chain::cosmos::types::events;
-use crate::chain::requests::{
-    QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxHash, QueryTxRequest,
+use crate::{
+    chain::{
+        cosmos::{
+            query::{
+                header_query,
+                packet_query,
+                tx_hash_query,
+            },
+            types::events,
+        },
+        requests::{
+            QueryClientEventRequest,
+            QueryHeight,
+            QueryPacketEventDataRequest,
+            QueryTxHash,
+            QueryTxRequest,
+        },
+    },
+    error::Error,
+    event::{
+        ibc_event_try_from_abci_event,
+        IbcEventWithHeight,
+    },
 };
-use crate::error::Error;
-use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
 /// This function queries transactions for events matching certain criteria.
 /// 1. Client Update request - returns a vector with at most one update client event

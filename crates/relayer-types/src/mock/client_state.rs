@@ -1,21 +1,30 @@
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::mock::ClientState as RawMockClientState,
+    Protobuf,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::mock::ClientState as RawMockClientState;
-use ibc_proto::Protobuf;
-
-use crate::core::ics02_client::client_state::ClientState;
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::Error;
-
-use crate::core::ics24_host::identifier::ChainId;
-
-use crate::mock::consensus_state::MockConsensusState;
-use crate::mock::header::MockHeader;
-
-use crate::Height;
+use crate::{
+    core::{
+        ics02_client::{
+            client_state::ClientState,
+            client_type::ClientType,
+            error::Error,
+        },
+        ics24_host::identifier::ChainId,
+    },
+    mock::{
+        consensus_state::MockConsensusState,
+        header::MockHeader,
+    },
+    Height,
+};
 
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
@@ -71,8 +80,9 @@ impl TryFrom<Any> for MockClientState {
     type Error = Error;
 
     fn try_from(raw: Any) -> Result<Self, Error> {
-        use bytes::Buf;
         use core::ops::Deref;
+
+        use bytes::Buf;
         use prost::Message;
 
         fn decode_client_state<B: Buf>(buf: B) -> Result<MockClientState, Error> {

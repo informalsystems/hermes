@@ -1,7 +1,13 @@
-use serde::ser::{Serialize, SerializeMap, Serializer};
+use ibc_relayer_types::core::ics24_host::{
+    error::ValidationErrorDetail,
+    identifier::ChainId,
+};
+use serde::ser::{
+    Serialize,
+    SerializeMap,
+    Serializer,
+};
 use thiserror::Error;
-
-use ibc_relayer_types::core::ics24_host::{error::ValidationErrorDetail, identifier::ChainId};
 
 #[derive(Error, Debug)]
 pub enum RestApiError {

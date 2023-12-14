@@ -1,10 +1,19 @@
 use core::str::FromStr;
 
-use serde::{Deserialize, Deserializer};
+use serde::{
+    Deserialize,
+    Deserializer,
+};
 use subtle_encoding::base64;
-use tracing::{error, trace};
+use tracing::{
+    error,
+    trace,
+};
 
-use super::{errors::Error, key_utils::decode_bech32};
+use super::{
+    errors::Error,
+    key_utils::decode_bech32,
+};
 
 #[derive(Debug)]
 pub enum EncodedPubKey {

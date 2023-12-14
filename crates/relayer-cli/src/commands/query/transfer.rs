@@ -1,7 +1,10 @@
 //! `query transfer` subcommand
 
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
 
 mod denom_trace;
 

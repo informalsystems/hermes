@@ -1,13 +1,30 @@
-use std::fmt::{Display, Error as FmtError, Formatter};
-use std::str::FromStr;
+use std::{
+    fmt::{
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
+    str::FromStr,
+};
 
-use derive_more::{Display, From};
+use derive_more::{
+    Display,
+    From,
+};
 use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use super::error::Error;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::serializers::serde_string;
+use crate::{
+    core::ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    },
+    serializers::serde_string,
+};
 
 /// Base denomination type
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Display)]

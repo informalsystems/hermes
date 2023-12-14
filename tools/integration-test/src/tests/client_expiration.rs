@@ -1,24 +1,41 @@
 use core::time::Duration;
 use std::thread::sleep;
 
-use ibc_relayer::config::{self, ChainConfig, Config, ModeConfig};
-use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
-use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
-
-use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
-use ibc_test_framework::bootstrap::binary::channel::{
-    bootstrap_channel_with_chains, bootstrap_channel_with_connection,
+use ibc_relayer::config::{
+    self,
+    ChainConfig,
+    Config,
+    ModeConfig,
 };
-use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::channel::{
-    assert_eventually_channel_established, init_channel, query_channel_end,
+use ibc_relayer_types::core::{
+    ics03_connection::connection::State as ConnectionState,
+    ics04_channel::channel::State as ChannelState,
 };
-use ibc_test_framework::relayer::connection::{
-    assert_eventually_connection_established, init_connection, query_connection_end,
+use ibc_test_framework::{
+    bootstrap::binary::{
+        chain::bootstrap_foreign_client_pair,
+        channel::{
+            bootstrap_channel_with_chains,
+            bootstrap_channel_with_connection,
+        },
+        connection::bootstrap_connection,
+    },
+    ibc::denom::derive_ibc_denom,
+    prelude::*,
+    relayer::{
+        channel::{
+            assert_eventually_channel_established,
+            init_channel,
+            query_channel_end,
+        },
+        connection::{
+            assert_eventually_connection_established,
+            init_connection,
+            query_connection_end,
+        },
+        refresh::spawn_refresh_client_tasks,
+    },
 };
-use ibc_test_framework::relayer::refresh::spawn_refresh_client_tasks;
 
 // The cosmos ChainHandle handles requests in serial, and a refresh client
 // request may get blocked by other operations and cause the refresh to fail

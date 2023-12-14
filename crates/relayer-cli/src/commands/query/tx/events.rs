@@ -1,19 +1,29 @@
 use core::str::FromStr;
 
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::chain::{
+    handle::ChainHandle,
+    requests::{
+        QueryTxHash,
+        QueryTxRequest,
+    },
+};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint::Hash;
 
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{QueryTxHash, QueryTxRequest};
-
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::Error;
-use crate::prelude::app_config;
+use crate::{
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    error::Error,
+    prelude::app_config,
+};
 
 /// Query the events emitted by transaction
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
@@ -62,10 +72,10 @@ impl Runnable for QueryTxEventsCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryTxEventsCmd;
-
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+
+    use super::QueryTxEventsCmd;
 
     #[test]
     fn test_query_tx_events() {

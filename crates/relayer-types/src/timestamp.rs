@@ -1,12 +1,27 @@
-use std::fmt::{Display, Error as FmtError, Formatter};
-use std::hash::Hash;
-use std::num::ParseIntError;
-use std::ops::{Add, Sub};
-use std::str::FromStr;
-use std::time::Duration;
+use std::{
+    fmt::{
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
+    hash::Hash,
+    num::ParseIntError,
+    ops::{
+        Add,
+        Sub,
+    },
+    str::FromStr,
+    time::Duration,
+};
 
-use flex_error::{define_error, TraceError};
-use serde_derive::{Deserialize, Serialize};
+use flex_error::{
+    define_error,
+    TraceError,
+};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 use tendermint::Time;
 use time::OffsetDateTime;
 
@@ -233,13 +248,17 @@ impl From<Time> for Timestamp {
 
 #[cfg(test)]
 mod tests {
-    use time::OffsetDateTime;
-
     use core::time::Duration;
     use std::thread::sleep;
-    use test_log::test;
 
-    use super::{Expiry, Timestamp, ZERO_DURATION};
+    use test_log::test;
+    use time::OffsetDateTime;
+
+    use super::{
+        Expiry,
+        Timestamp,
+        ZERO_DURATION,
+    };
 
     #[test]
     fn test_timestamp_comparisons() {

@@ -1,16 +1,25 @@
 //! This is the definition of a transfer messages that an application submits to a chain.
 
-use ibc_proto::cosmos::base::v1beta1::Coin;
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    cosmos::base::v1beta1::Coin,
+    google::protobuf::Any,
+    ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer,
+    Protobuf,
+};
 
-use crate::applications::transfer::error::Error;
-use crate::core::ics04_channel::timeout::TimeoutHeight;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::signer::Signer;
-use crate::timestamp::Timestamp;
-use crate::tx_msg::Msg;
+use crate::{
+    applications::transfer::error::Error,
+    core::{
+        ics04_channel::timeout::TimeoutHeight,
+        ics24_host::identifier::{
+            ChannelId,
+            PortId,
+        },
+    },
+    signer::Signer,
+    timestamp::Timestamp,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
@@ -129,19 +138,34 @@ impl From<MsgTransfer> for Any {
 
 #[cfg(test)]
 pub mod test_util {
-    use core::ops::Add;
-    use core::time::Duration;
+    use core::{
+        ops::Add,
+        time::Duration,
+    };
 
     use super::MsgTransfer;
-    use crate::applications::transfer::packet::PacketData;
-    use crate::applications::transfer::Coin;
-    use crate::bigint::U256;
-    use crate::core::ics04_channel::packet::{Packet, Sequence};
-    use crate::core::ics04_channel::timeout::TimeoutHeight;
-    use crate::signer::Signer;
     use crate::{
-        applications::transfer::{BaseCoin, PrefixedCoin},
-        core::ics24_host::identifier::{ChannelId, PortId},
+        applications::transfer::{
+            packet::PacketData,
+            BaseCoin,
+            Coin,
+            PrefixedCoin,
+        },
+        bigint::U256,
+        core::{
+            ics04_channel::{
+                packet::{
+                    Packet,
+                    Sequence,
+                },
+                timeout::TimeoutHeight,
+            },
+            ics24_host::identifier::{
+                ChannelId,
+                PortId,
+            },
+        },
+        signer::Signer,
         test_utils::get_dummy_bech32_account,
         timestamp::Timestamp,
     };

@@ -1,15 +1,30 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::Runnable;
-
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{
-    IncludeProof, PageRequest, QueryClientStateRequest, QueryConnectionsRequest, QueryHeight,
+use abscissa_core::{
+    clap::Parser,
+    Runnable,
 };
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId};
+use ibc_relayer::chain::{
+    handle::ChainHandle,
+    requests::{
+        IncludeProof,
+        PageRequest,
+        QueryClientStateRequest,
+        QueryConnectionsRequest,
+        QueryHeight,
+    },
+};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId,
+    ConnectionId,
+};
 
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::prelude::*;
+use crate::{
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    prelude::*,
+};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryConnectionsCmd {
@@ -99,10 +114,10 @@ impl Runnable for QueryConnectionsCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryConnectionsCmd;
-
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+
+    use super::QueryConnectionsCmd;
 
     #[test]
     fn test_query_connections_required_only() {

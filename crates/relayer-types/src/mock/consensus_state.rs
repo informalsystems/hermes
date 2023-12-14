@@ -1,14 +1,25 @@
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
-use ibc_proto::Protobuf;
-use serde::{Deserialize, Serialize};
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::mock::ConsensusState as RawMockConsensusState,
+    Protobuf,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::consensus_state::ConsensusState;
-use crate::core::ics02_client::error::Error;
-use crate::core::ics23_commitment::commitment::CommitmentRoot;
-use crate::mock::header::MockHeader;
-use crate::timestamp::Timestamp;
+use crate::{
+    core::{
+        ics02_client::{
+            client_type::ClientType,
+            consensus_state::ConsensusState,
+            error::Error,
+        },
+        ics23_commitment::commitment::CommitmentRoot,
+    },
+    mock::header::MockHeader,
+    timestamp::Timestamp,
+};
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
@@ -63,8 +74,9 @@ impl TryFrom<Any> for MockConsensusState {
     type Error = Error;
 
     fn try_from(raw: Any) -> Result<Self, Error> {
-        use bytes::Buf;
         use core::ops::Deref;
+
+        use bytes::Buf;
         use prost::Message;
 
         fn decode_consensus_state<B: Buf>(buf: B) -> Result<MockConsensusState, Error> {

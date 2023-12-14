@@ -1,12 +1,21 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::chain::{
+    endpoint::HealthCheck::*,
+    handle::ChainHandle,
+};
 
-use ibc_relayer::chain::endpoint::HealthCheck::*;
-use ibc_relayer::chain::handle::ChainHandle;
-
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::prelude::*;
+use crate::{
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    prelude::*,
+};
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct HealthCheckCmd {}

@@ -1,15 +1,30 @@
 use alloc::sync::Arc;
-use core::fmt::{Display, Error as FmtError, Formatter};
-use ibc_relayer_types::core::ics04_channel::channel::Ordering;
-use serde::{Deserialize, Serialize};
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 use std::sync::Mutex;
+
+use ibc_relayer_types::core::ics04_channel::channel::Ordering;
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use tracing::error;
 
-use crate::foreign_client::ForeignClient;
-use crate::link::{Link, LinkParameters, Resubmit};
 use crate::{
-    chain::handle::{ChainHandle, ChainHandlePair},
+    chain::handle::{
+        ChainHandle,
+        ChainHandlePair,
+    },
     config::Config,
+    foreign_client::ForeignClient,
+    link::{
+        Link,
+        LinkParameters,
+        Resubmit,
+    },
     object::Object,
 };
 
@@ -19,7 +34,10 @@ mod error;
 pub use error::RunError;
 
 mod handle;
-pub use handle::{WorkerData, WorkerHandle};
+pub use handle::{
+    WorkerData,
+    WorkerHandle,
+};
 
 mod cmd;
 pub use cmd::WorkerCmd;

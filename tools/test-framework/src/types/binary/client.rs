@@ -2,8 +2,13 @@
    Type definitions for IBC clients connected between two chains.
 */
 
-use crate::types::env::{EnvWriter, ExportEnv};
-use crate::types::id::TaggedClientId;
+use crate::types::{
+    env::{
+        EnvWriter,
+        ExportEnv,
+    },
+    id::TaggedClientId,
+};
 
 /**
    Data type to store the client IDs of two chains that are connected.

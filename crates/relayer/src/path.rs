@@ -1,5 +1,10 @@
-use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer_types::core::{
+    ics04_channel::channel::IdentifiedChannelEnd,
+    ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    },
+};
 
 /// Defines the channel & port identifiers which comprise
 /// the two ends of a relayer path.

@@ -1,9 +1,19 @@
-use eyre::eyre;
-use std::process::Command;
-use std::str;
-use tracing::{debug, trace};
+use std::{
+    process::Command,
+    str,
+};
 
-use crate::error::{handle_exec_error, handle_generic_error, Error};
+use eyre::eyre;
+use tracing::{
+    debug,
+    trace,
+};
+
+use crate::error::{
+    handle_exec_error,
+    handle_generic_error,
+    Error,
+};
 
 pub struct ExecOutput {
     pub stdout: String,

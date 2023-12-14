@@ -1,7 +1,9 @@
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer_types::events::IbcEvent;
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::transfer::build_transfer_message;
+use ibc_test_framework::{
+    prelude::*,
+    relayer::transfer::build_transfer_message,
+};
 
 #[test]
 fn test_error_events() -> Result<(), Error> {

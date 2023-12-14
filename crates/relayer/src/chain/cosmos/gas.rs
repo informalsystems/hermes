@@ -1,11 +1,16 @@
 use core::cmp::min;
-use ibc_proto::cosmos::base::v1beta1::Coin;
-use ibc_proto::cosmos::tx::v1beta1::Fee;
+
+use ibc_proto::cosmos::{
+    base::v1beta1::Coin,
+    tx::v1beta1::Fee,
+};
 use num_bigint::BigInt;
 use num_rational::BigRational;
 
-use crate::chain::cosmos::types::gas::GasConfig;
-use crate::config::GasPrice;
+use crate::{
+    chain::cosmos::types::gas::GasConfig,
+    config::GasPrice,
+};
 
 pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64) -> Fee {
     let adjusted_gas_limit = adjust_estimated_gas(AdjustGas {
@@ -98,7 +103,10 @@ fn adjust_estimated_gas(
 
 #[cfg(test)]
 mod tests {
-    use super::{adjust_estimated_gas, AdjustGas};
+    use super::{
+        adjust_estimated_gas,
+        AdjustGas,
+    };
 
     #[test]
     fn adjust_zero_gas() {

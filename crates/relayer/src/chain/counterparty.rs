@@ -3,35 +3,60 @@ use std::collections::HashSet;
 use ibc_relayer_types::{
     core::{
         ics03_connection::connection::{
-            ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
+            ConnectionEnd,
+            IdentifiedConnectionEnd,
+            State as ConnectionState,
         },
         ics04_channel::{
-            channel::{IdentifiedChannelEnd, State},
+            channel::{
+                IdentifiedChannelEnd,
+                State,
+            },
             packet::Sequence,
         },
         ics24_host::identifier::{
-            ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+            ChainId,
+            ChannelId,
+            ClientId,
+            ConnectionId,
+            PortChannelId,
+            PortId,
         },
     },
     Height,
 };
-use serde::{Deserialize, Serialize};
-use tracing::{error, trace};
-
-use super::requests::{
-    IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
-    QueryClientStateRequest, QueryConnectionRequest, QueryPacketAcknowledgementsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+use serde::{
+    Deserialize,
+    Serialize,
 };
+use tracing::{
+    error,
+    trace,
+};
+
 use super::{
     handle::ChainHandle,
-    requests::{QueryConnectionChannelsRequest, QueryPacketCommitmentsRequest},
+    requests::{
+        IncludeProof,
+        PageRequest,
+        QueryChannelRequest,
+        QueryClientConnectionsRequest,
+        QueryClientStateRequest,
+        QueryConnectionChannelsRequest,
+        QueryConnectionRequest,
+        QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentsRequest,
+        QueryUnreceivedAcksRequest,
+        QueryUnreceivedPacketsRequest,
+    },
 };
-use crate::chain::requests::QueryHeight;
-use crate::channel::ChannelError;
-use crate::client_state::IdentifiedAnyClientState;
-use crate::path::PathIdentifiers;
-use crate::supervisor::Error;
+use crate::{
+    chain::requests::QueryHeight,
+    channel::ChannelError,
+    client_state::IdentifiedAnyClientState,
+    path::PathIdentifiers,
+    supervisor::Error,
+};
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,

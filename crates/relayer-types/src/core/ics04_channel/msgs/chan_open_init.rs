@@ -1,12 +1,19 @@
-use crate::core::ics04_channel::channel::ChannelEnd;
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics24_host::identifier::PortId;
+use ibc_proto::{
+    ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit,
+    Protobuf,
+};
 
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
-
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
-use ibc_proto::Protobuf;
+use crate::{
+    core::{
+        ics04_channel::{
+            channel::ChannelEnd,
+            error::Error,
+        },
+        ics24_host::identifier::PortId,
+    },
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenInit";
 
@@ -75,9 +82,13 @@ pub mod test_util {
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 
-    use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
-    use crate::core::ics24_host::identifier::PortId;
-    use crate::test_utils::get_dummy_bech32_account;
+    use crate::{
+        core::{
+            ics04_channel::channel::test_util::get_dummy_raw_channel_end,
+            ics24_host::identifier::PortId,
+        },
+        test_utils::get_dummy_bech32_account,
+    };
 
     /// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
     pub fn get_dummy_raw_msg_chan_open_init() -> RawMsgChannelOpenInit {
@@ -91,11 +102,13 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
-    use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
     use test_log::test;
+
+    use crate::core::ics04_channel::msgs::chan_open_init::{
+        test_util::get_dummy_raw_msg_chan_open_init,
+        MsgChannelOpenInit,
+    };
 
     #[test]
     fn channel_open_init_from_raw() {

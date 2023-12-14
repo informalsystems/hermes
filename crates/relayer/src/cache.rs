@@ -3,15 +3,22 @@
 //! Utilizes the [`moka`](https://docs.rs/moka) crate, which provides full
 //! concurrency of retrievals and a high expected concurrency for updates.
 use core::fmt::Formatter;
-use std::fmt;
-use std::time::Duration;
+use std::{
+    fmt,
+    time::Duration,
+};
 
+use ibc_relayer_types::core::{
+    ics02_client::height::Height,
+    ics03_connection::connection::ConnectionEnd,
+    ics04_channel::channel::ChannelEnd,
+    ics24_host::identifier::{
+        ClientId,
+        ConnectionId,
+        PortChannelId,
+    },
+};
 use moka::sync::Cache as MokaCache;
-
-use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
-use ibc_relayer_types::core::ics04_channel::channel::ChannelEnd;
-use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
 
 use crate::client_state::AnyClientState;
 

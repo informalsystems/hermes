@@ -3,8 +3,10 @@
 #![deny(warnings, missing_docs, trivial_casts, unused_qualifications)]
 #![forbid(unsafe_code)]
 
-use ibc_relayer_cli::application::APPLICATION;
-use ibc_relayer_cli::components::enable_ansi;
+use ibc_relayer_cli::{
+    application::APPLICATION,
+    components::enable_ansi,
+};
 
 fn main() -> eyre::Result<()> {
     install_error_reporter()?;

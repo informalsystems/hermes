@@ -1,17 +1,27 @@
 use core::fmt::Debug;
 
-use serde::{Deserialize, Serialize};
-
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::Protobuf;
-
-use crate::clients::ics07_tendermint::header::{
-    decode_header as tm_decode_header, Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
+use ibc_proto::{
+    google::protobuf::Any,
+    Protobuf,
 };
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::Error;
-use crate::timestamp::Timestamp;
-use crate::Height;
+use serde::{
+    Deserialize,
+    Serialize,
+};
+
+use crate::{
+    clients::ics07_tendermint::header::{
+        decode_header as tm_decode_header,
+        Header as TendermintHeader,
+        TENDERMINT_HEADER_TYPE_URL,
+    },
+    core::ics02_client::{
+        client_type::ClientType,
+        error::Error,
+    },
+    timestamp::Timestamp,
+    Height,
+};
 
 /// Abstract of consensus state update information
 pub trait Header: Debug + Send + Sync // Any: From<Self>,

@@ -1,16 +1,36 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::handle::ChainHandle;
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::chain::{
+    handle::ChainHandle,
+    requests::{
+        IncludeProof,
+        QueryChannelRequest,
+        QueryHeight,
+    },
+};
+use ibc_relayer_types::{
+    core::{
+        ics04_channel::channel::State,
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            PortId,
+        },
+    },
+    Height,
+};
 
-use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
-
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::prelude::*;
-use ibc_relayer_types::core::ics04_channel::channel::State;
-use ibc_relayer_types::Height;
+use crate::{
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    prelude::*,
+};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryChannelEndCmd {
@@ -89,12 +109,16 @@ impl Runnable for QueryChannelEndCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryChannelEndCmd;
-
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+    use ibc_relayer_types::core::ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        PortId,
+    };
+
+    use super::QueryChannelEndCmd;
 
     #[test]
     fn test_query_channel_end_required_only() {

@@ -2,11 +2,21 @@
 //! version field of a channel end.
 //!
 
-use serde_derive::{Deserialize, Serialize};
+use std::{
+    convert::Infallible,
+    fmt::{
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
+    str::FromStr,
+};
+
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 use serde_json as json;
-use std::convert::Infallible;
-use std::fmt::{Display, Error as FmtError, Formatter};
-use std::str::FromStr;
 
 use crate::applications::transfer;
 

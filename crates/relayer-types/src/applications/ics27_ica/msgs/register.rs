@@ -1,14 +1,24 @@
-use serde::{Deserialize, Serialize};
+use ibc_proto::{
+    ibc::applications::interchain_accounts::controller::v1::MsgRegisterInterchainAccount as RawMsgRegisterInterchainAccount,
+    Protobuf,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-use ibc_proto::ibc::applications::interchain_accounts::controller::v1::MsgRegisterInterchainAccount as RawMsgRegisterInterchainAccount;
-use ibc_proto::Protobuf;
-
-use crate::applications::ics27_ica::error::Error;
-use crate::core::ics04_channel::version::Version;
-use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics24_host::identifier::ConnectionId;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+    applications::ics27_ica::error::Error,
+    core::{
+        ics04_channel::version::Version,
+        ics24_host::{
+            error::ValidationError,
+            identifier::ConnectionId,
+        },
+    },
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str =
     "/ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccount";

@@ -1,40 +1,84 @@
+use core::time::Duration;
+use std::{
+    borrow::BorrowMut,
+    sync::{
+        Arc,
+        Mutex,
+    },
+};
+
+use crossbeam_channel::Receiver;
+use ibc_proto::ibc::{
+    apps::fee::v1::{
+        IdentifiedPacketFees,
+        QueryIncentivizedPacketRequest,
+    },
+    core::channel::v1::PacketId,
+};
+use ibc_relayer_types::{
+    applications::{
+        ics29_fee::events::IncentivizedPacket,
+        transfer::{
+            Amount,
+            Coin,
+            RawCoin,
+        },
+    },
+    core::ics04_channel::{
+        events::WriteAcknowledgement,
+        packet::Sequence,
+    },
+    events::{
+        IbcEvent,
+        IbcEventType,
+    },
+    Height,
+};
+use itertools::Itertools;
+use moka::sync::Cache;
+use tracing::{
+    debug,
+    error,
+    error_span,
+    info,
+    trace,
+    warn,
+};
 #[cfg(feature = "telemetry")]
 use {
     ibc_relayer_types::core::ics24_host::identifier::ChannelId,
     ibc_relayer_types::core::ics24_host::identifier::PortId,
 };
 
-use core::time::Duration;
-use std::borrow::BorrowMut;
-use std::sync::{Arc, Mutex};
-
-use crossbeam_channel::Receiver;
-use itertools::Itertools;
-use moka::sync::Cache;
-use tracing::{debug, error, error_span, info, trace, warn};
-
-use ibc_proto::ibc::apps::fee::v1::{IdentifiedPacketFees, QueryIncentivizedPacketRequest};
-use ibc_proto::ibc::core::channel::v1::PacketId;
-use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
-use ibc_relayer_types::applications::transfer::{Amount, Coin, RawCoin};
-use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::events::{IbcEvent, IbcEventType};
-use ibc_relayer_types::Height;
-
-use crate::chain::handle::ChainHandle;
-use crate::config::filter::FeePolicy;
-use crate::event::source::EventBatch;
-use crate::foreign_client::HasExpiredOrFrozenError;
-use crate::link::Resubmit;
-use crate::link::{error::LinkError, Link};
-use crate::object::Packet;
-use crate::telemetry;
-use crate::util::lock::{LockExt, RwArc};
-use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
-
-use super::error::RunError;
-use super::WorkerCmd;
+use super::{
+    error::RunError,
+    WorkerCmd,
+};
+use crate::{
+    chain::handle::ChainHandle,
+    config::filter::FeePolicy,
+    event::source::EventBatch,
+    foreign_client::HasExpiredOrFrozenError,
+    link::{
+        error::LinkError,
+        Link,
+        Resubmit,
+    },
+    object::Packet,
+    telemetry,
+    util::{
+        lock::{
+            LockExt,
+            RwArc,
+        },
+        task::{
+            spawn_background_task,
+            Next,
+            TaskError,
+            TaskHandle,
+        },
+    },
+};
 
 const INCENTIVIZED_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const INCENTIVIZED_CACHE_MAX_CAPACITY: u64 = 1000;

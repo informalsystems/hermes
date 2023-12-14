@@ -2,26 +2,40 @@
    Implementation of [`ChainDriver`].
 */
 
+use alloc::sync::Arc;
 use core::time::Duration;
 
-use alloc::sync::Arc;
 use eyre::eyre;
-use ibc_relayer::config::compat_mode::CompatMode;
+use ibc_relayer::{
+    chain::cosmos::types::config::TxConfig,
+    config::compat_mode::CompatMode,
+};
+use ibc_relayer_types::{
+    applications::transfer::amount::Amount,
+    core::ics24_host::identifier::ChainId,
+};
 use tokio::runtime::Runtime;
 
-use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer_types::applications::transfer::amount::Amount;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-
-use crate::chain::chain_type::ChainType;
-use crate::chain::cli::query::query_balance;
-use crate::error::Error;
-use crate::ibc::denom::Denom;
-use crate::ibc::token::Token;
-use crate::relayer::tx::new_tx_config_for_test;
-use crate::types::env::{EnvWriter, ExportEnv};
-use crate::types::wallet::WalletAddress;
-use crate::util::retry::assert_eventually_succeed;
+use crate::{
+    chain::{
+        chain_type::ChainType,
+        cli::query::query_balance,
+    },
+    error::Error,
+    ibc::{
+        denom::Denom,
+        token::Token,
+    },
+    relayer::tx::new_tx_config_for_test,
+    types::{
+        env::{
+            EnvWriter,
+            ExportEnv,
+        },
+        wallet::WalletAddress,
+    },
+    util::retry::assert_eventually_succeed,
+};
 
 /**
    Number of times (seconds) to try and query a wallet to reach the

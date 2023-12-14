@@ -3,28 +3,55 @@
    `hermes tx ft-transfer`.
 */
 
-use core::ops::Add;
-use core::time::Duration;
-use eyre::eyre;
-use ibc_relayer_types::core::ics04_channel::packet::Packet;
-use ibc_relayer_types::events::IbcEvent;
+use core::{
+    ops::Add,
+    time::Duration,
+};
 
+use eyre::eyre;
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer::chain::cosmos::tx::batched_send_tx;
-use ibc_relayer::chain::cosmos::tx::simple_send_tx;
-use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
-use ibc_relayer::transfer::TransferError;
-use ibc_relayer_types::applications::transfer::error::Error as Ics20Error;
-use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
-use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer::{
+    chain::cosmos::{
+        tx::{
+            batched_send_tx,
+            simple_send_tx,
+        },
+        types::config::TxConfig,
+    },
+    transfer::{
+        build_transfer_message as raw_build_transfer_message,
+        TransferError,
+    },
+};
+use ibc_relayer_types::{
+    applications::transfer::error::Error as Ics20Error,
+    core::ics04_channel::{
+        packet::Packet,
+        timeout::TimeoutHeight,
+    },
+    events::IbcEvent,
+    timestamp::Timestamp,
+};
 use tendermint_rpc::HttpClient;
 
-use crate::error::{handle_generic_error, Error};
-use crate::ibc::token::TaggedTokenRef;
-use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
-use crate::types::tagged::*;
-use crate::types::wallet::{Wallet, WalletAddress};
+use crate::{
+    error::{
+        handle_generic_error,
+        Error,
+    },
+    ibc::token::TaggedTokenRef,
+    types::{
+        id::{
+            TaggedChannelIdRef,
+            TaggedPortIdRef,
+        },
+        tagged::*,
+        wallet::{
+            Wallet,
+            WalletAddress,
+        },
+    },
+};
 
 pub fn build_transfer_message<SrcChain, DstChain>(
     port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,

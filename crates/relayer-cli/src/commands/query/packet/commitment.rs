@@ -1,18 +1,42 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::requests::{IncludeProof, QueryHeight, QueryPacketCommitmentRequest};
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::chain::{
+    handle::ChainHandle,
+    requests::{
+        IncludeProof,
+        QueryHeight,
+        QueryPacketCommitmentRequest,
+    },
+};
+use ibc_relayer_types::{
+    core::{
+        ics04_channel::packet::Sequence,
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            PortId,
+        },
+    },
+    Height,
+};
 use serde::Serialize;
-use subtle_encoding::{Encoding, Hex};
+use subtle_encoding::{
+    Encoding,
+    Hex,
+};
 
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer_types::Height;
-
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::Error;
-use crate::prelude::*;
+use crate::{
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    error::Error,
+    prelude::*,
+};
 
 #[derive(Serialize, Debug)]
 struct PacketSeqs {
@@ -112,15 +136,19 @@ impl Runnable for QueryPacketCommitmentCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryPacketCommitmentCmd;
-
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::{
         ics04_channel::packet::Sequence,
-        ics24_host::identifier::{ChainId, ChannelId, PortId},
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            PortId,
+        },
     };
+
+    use super::QueryPacketCommitmentCmd;
 
     #[test]
     fn test_query_packet_commitment_required_only() {

@@ -1,16 +1,28 @@
+use std::{
+    fmt::Display,
+    str::FromStr,
+};
+
 use itertools::Itertools;
-use serde_derive::{Deserialize, Serialize};
-use std::fmt::Display;
-use std::str::FromStr;
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 use tendermint::abci;
 
 use super::error::Error;
-use crate::applications::transfer::coin::RawCoin;
-use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::events::IbcEventType;
-
-use crate::signer::Signer;
+use crate::{
+    applications::transfer::coin::RawCoin,
+    core::{
+        ics04_channel::packet::Sequence,
+        ics24_host::identifier::{
+            ChannelId,
+            PortId,
+        },
+    },
+    events::IbcEventType,
+    signer::Signer,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct IncentivizedPacket {

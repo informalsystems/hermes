@@ -1,18 +1,21 @@
 use core::fmt::Debug;
 
-use tracing::error;
-
 use crossbeam_channel as channel;
-
-use ibc_relayer::supervisor::dump_state::SupervisorState;
 use ibc_relayer::{
     config::ChainConfig,
     rest::{
-        request::{reply_channel, ReplySender, Request, VersionInfo},
+        request::{
+            reply_channel,
+            ReplySender,
+            Request,
+            VersionInfo,
+        },
         RestApiError,
     },
+    supervisor::dump_state::SupervisorState,
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use tracing::error;
 
 pub const NAME: &str = env!(
     "CARGO_PKG_NAME",

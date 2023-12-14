@@ -1,7 +1,9 @@
-use crate::core::ics24_host::error::ValidationError;
-use crate::signer::SignerError;
-
 use flex_error::define_error;
+
+use crate::{
+    core::ics24_host::error::ValidationError,
+    signer::SignerError,
+};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]

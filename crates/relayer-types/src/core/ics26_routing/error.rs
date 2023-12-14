@@ -1,9 +1,16 @@
-use flex_error::{define_error, TraceError};
+use flex_error::{
+    define_error,
+    TraceError,
+};
 
-use crate::applications::transfer;
-use crate::core::ics02_client;
-use crate::core::ics03_connection;
-use crate::core::ics04_channel;
+use crate::{
+    applications::transfer,
+    core::{
+        ics02_client,
+        ics03_connection,
+        ics04_channel,
+    },
+};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]

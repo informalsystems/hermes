@@ -1,30 +1,53 @@
 //! Contains functions to generate a relayer config for a given chain
 
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::marker::Send;
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    marker::Send,
+};
 
 use futures::future::join_all;
 use http::Uri;
-use tokio::task::{JoinError, JoinHandle};
-use tracing::trace;
-
-use ibc_chain_registry::asset_list::AssetList;
-use ibc_chain_registry::chain::ChainData;
-use ibc_chain_registry::error::RegistryError;
-use ibc_chain_registry::fetchable::Fetchable;
-use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
-use ibc_chain_registry::paths::IBCPath;
-use ibc_chain_registry::querier::*;
-use ibc_relayer::chain::cosmos::config::CosmosSdkConfig;
-use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
-use ibc_relayer::config::gas_multiplier::GasMultiplier;
-use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
-use ibc_relayer::keyring::Store;
-
+use ibc_chain_registry::{
+    asset_list::AssetList,
+    chain::ChainData,
+    error::RegistryError,
+    fetchable::Fetchable,
+    formatter::{
+        SimpleGrpcFormatter,
+        UriFormatter,
+    },
+    paths::IBCPath,
+    querier::*,
+};
+use ibc_relayer::{
+    chain::cosmos::config::CosmosSdkConfig,
+    config::{
+        default,
+        filter::{
+            FilterPattern,
+            PacketFilter,
+        },
+        gas_multiplier::GasMultiplier,
+        types::{
+            MaxMsgNum,
+            MaxTxSize,
+            Memo,
+        },
+        AddressType,
+        ChainConfig,
+        EventSourceMode,
+        GasPrice,
+    },
+    keyring::Store,
+};
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
+use tokio::task::{
+    JoinError,
+    JoinHandle,
+};
+use tracing::trace;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
 
@@ -325,11 +348,16 @@ pub async fn get_configs(
 /// else they will fail due to the amount of concurrent queries.
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use ibc_relayer::config::filter::ChannelPolicy;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
-    use serial_test::serial;
     use std::str::FromStr;
+
+    use ibc_relayer::config::filter::ChannelPolicy;
+    use ibc_relayer_types::core::ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    };
+    use serial_test::serial;
+
+    use super::*;
 
     // Use commit from 28.04.23 for tests
     const TEST_COMMIT: &str = "95b99457e828402bde994816ce57e548d7e1a76d";

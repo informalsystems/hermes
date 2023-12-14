@@ -1,17 +1,33 @@
 use std::str::FromStr;
 
-use crate::bootstrap::consumer::bootstrap_consumer_node;
-use crate::bootstrap::single::bootstrap_single_node;
-use crate::chain::builder::ChainBuilder;
-use crate::chain::chain_type::ChainType;
-use crate::chain::cli::upgrade::vote_proposal;
-use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
-use crate::error::Error;
-use crate::framework::base::{run_basic_test, BasicTest, HasOverrides, TestConfigOverride};
-use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
-use crate::prelude::FullNode;
-use crate::types::config::TestConfig;
-use crate::util::proposal_status::ProposalStatus;
+use crate::{
+    bootstrap::{
+        consumer::bootstrap_consumer_node,
+        single::bootstrap_single_node,
+    },
+    chain::{
+        builder::ChainBuilder,
+        chain_type::ChainType,
+        cli::upgrade::vote_proposal,
+        ext::bootstrap::ChainBootstrapMethodsExt,
+    },
+    error::Error,
+    framework::{
+        base::{
+            run_basic_test,
+            BasicTest,
+            HasOverrides,
+            TestConfigOverride,
+        },
+        binary::node::{
+            NodeConfigOverride,
+            NodeGenesisOverride,
+        },
+    },
+    prelude::FullNode,
+    types::config::TestConfig,
+    util::proposal_status::ProposalStatus,
+};
 
 /**
 Runs a test case that implements [`InterchainSecurityChainTest`].

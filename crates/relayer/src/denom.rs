@@ -1,6 +1,9 @@
 //! Data structures related to the denomination of coins used by the relayer.
 
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 /// The denom trace
 #[derive(Clone, Debug, Serialize, Deserialize)]

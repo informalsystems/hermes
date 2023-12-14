@@ -1,15 +1,31 @@
 use ibc_relayer_types::core::{
     ics03_connection::connection::State as ConnectionState,
     ics04_channel::channel::State as ChannelState,
-    ics24_host::identifier::{ChannelId, PortChannelId, PortId},
+    ics24_host::identifier::{
+        ChannelId,
+        PortChannelId,
+        PortId,
+    },
 };
 use tracing::info;
 
-use crate::chain::requests::{QueryChannelRequest, QueryHeight};
-use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
-use crate::chain::{handle::ChainHandle, requests::IncludeProof};
-use crate::channel::{Channel, ChannelSide};
-use crate::link::error::LinkError;
+use crate::{
+    chain::{
+        counterparty::check_channel_counterparty,
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            QueryChannelRequest,
+            QueryConnectionRequest,
+            QueryHeight,
+        },
+    },
+    channel::{
+        Channel,
+        ChannelSide,
+    },
+    link::error::LinkError,
+};
 
 pub mod cli;
 pub mod error;
@@ -22,12 +38,13 @@ mod relay_sender;
 mod relay_summary;
 mod tx_hashes;
 
-use tx_hashes::TxHashes;
-
+pub use relay_path::{
+    RelayPath,
+    Resubmit,
+};
 // Re-export the telemetries summary
 pub use relay_summary::RelaySummary;
-
-pub use relay_path::{RelayPath, Resubmit};
+use tx_hashes::TxHashes;
 
 #[derive(Clone, Debug)]
 pub struct LinkParameters {

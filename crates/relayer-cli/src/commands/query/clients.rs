@@ -1,15 +1,30 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::handle::ChainHandle;
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::chain::{
+    handle::ChainHandle,
+    requests::{
+        PageRequest,
+        QueryClientStatesRequest,
+    },
+};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId,
+    ClientId,
+};
 use serde::Serialize;
 
-use ibc_relayer::chain::requests::{PageRequest, QueryClientStatesRequest};
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::Error;
-use crate::prelude::*;
+use crate::{
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    error::Error,
+    prelude::*,
+};
 
 /// Query clients command
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
@@ -109,10 +124,10 @@ impl Runnable for QueryAllClientsCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryAllClientsCmd;
-
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+
+    use super::QueryAllClientsCmd;
 
     #[test]
     fn test_query_clients_required_only() {

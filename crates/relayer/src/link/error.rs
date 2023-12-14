@@ -1,15 +1,28 @@
 use flex_error::define_error;
-use ibc_relayer_types::core::ics02_client::error::Error as Ics02Error;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::Height;
+use ibc_relayer_types::{
+    core::{
+        ics02_client::error::Error as Ics02Error,
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            PortId,
+        },
+    },
+    events::IbcEvent,
+    Height,
+};
 
-use crate::channel::ChannelError;
-use crate::connection::ConnectionError;
-use crate::error::Error;
-use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
-use crate::supervisor::Error as SupervisorError;
-use crate::transfer::TransferError;
+use crate::{
+    channel::ChannelError,
+    connection::ConnectionError,
+    error::Error,
+    foreign_client::{
+        ForeignClientError,
+        HasExpiredOrFrozenError,
+    },
+    supervisor::Error as SupervisorError,
+    transfer::TransferError,
+};
 
 define_error! {
     LinkError {

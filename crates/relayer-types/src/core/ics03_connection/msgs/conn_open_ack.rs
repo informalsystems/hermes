@@ -1,15 +1,26 @@
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck,
+    Protobuf,
+};
 
-use crate::core::ics03_connection::error::Error;
-use crate::core::ics03_connection::version::Version;
-use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
-use crate::core::ics24_host::identifier::ConnectionId;
-use crate::proofs::{ConsensusProof, Proofs};
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
-use crate::Height;
+use crate::{
+    core::{
+        ics03_connection::{
+            error::Error,
+            version::Version,
+        },
+        ics23_commitment::commitment::CommitmentProofBytes,
+        ics24_host::identifier::ConnectionId,
+    },
+    proofs::{
+        ConsensusProof,
+        Proofs,
+    },
+    signer::Signer,
+    tx_msg::Msg,
+    Height,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenAck";
 
@@ -134,12 +145,21 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 #[cfg(test)]
 pub mod test_util {
 
-    use ibc_proto::ibc::core::client::v1::Height;
-    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::{
+        client::v1::Height,
+        connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck,
+    };
 
-    use crate::core::ics03_connection::version::Version;
-    use crate::core::ics24_host::identifier::ConnectionId;
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+    use crate::{
+        core::{
+            ics03_connection::version::Version,
+            ics24_host::identifier::ConnectionId,
+        },
+        test_utils::{
+            get_dummy_bech32_account,
+            get_dummy_proof,
+        },
+    };
 
     pub fn get_dummy_raw_msg_conn_open_ack(
         proof_height: u64,
@@ -170,13 +190,16 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
 
+    use ibc_proto::ibc::core::{
+        client::v1::Height,
+        connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck,
+    };
     use test_log::test;
 
-    use ibc_proto::ibc::core::client::v1::Height;
-    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-
-    use crate::core::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_raw_msg_conn_open_ack;
-    use crate::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
+    use crate::core::ics03_connection::msgs::conn_open_ack::{
+        test_util::get_dummy_raw_msg_conn_open_ack,
+        MsgConnectionOpenAck,
+    };
 
     #[test]
     fn parse_connection_open_ack_msg() {

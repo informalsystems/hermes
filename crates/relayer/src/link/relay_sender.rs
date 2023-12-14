@@ -1,15 +1,27 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 
+use ibc_relayer_types::events::IbcEvent;
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tracing::info;
 
-use ibc_relayer_types::events::IbcEvent;
-
-use crate::chain::handle::ChainHandle;
-use crate::chain::tracking::TrackedMsgs;
-use crate::link::error::LinkError;
-use crate::link::RelaySummary;
-use crate::util::pretty::{PrettyCode, PrettyEvents};
+use crate::{
+    chain::{
+        handle::ChainHandle,
+        tracking::TrackedMsgs,
+    },
+    link::{
+        error::LinkError,
+        RelaySummary,
+    },
+    util::pretty::{
+        PrettyCode,
+        PrettyEvents,
+    },
+};
 
 pub trait SubmitReply {
     /// Creates a new, empty instance, i.e., comprising zero replies.

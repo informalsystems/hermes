@@ -2,28 +2,52 @@
    Type definition for a single running full node.
 */
 
-use core::str::FromStr;
-use core::time::Duration;
-use eyre::eyre;
-use eyre::Report as Error;
-use ibc_relayer::chain::cosmos::config::CosmosSdkConfig;
-use ibc_relayer::config;
-use ibc_relayer::config::compat_mode::CompatMode;
-use ibc_relayer::config::gas_multiplier::GasMultiplier;
-use ibc_relayer::keyring::Store;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use std::sync::{Arc, RwLock};
-use tendermint_rpc::Url;
-use tendermint_rpc::WebSocketClientUrl;
+use core::{
+    str::FromStr,
+    time::Duration,
+};
+use std::sync::{
+    Arc,
+    RwLock,
+};
 
-use crate::chain::chain_type::ChainType as TestedChainType;
-use crate::chain::driver::ChainDriver;
-use crate::ibc::denom::Denom;
-use crate::prelude::TestConfig;
-use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
-use crate::types::process::ChildProcess;
-use crate::types::tagged::*;
-use crate::types::wallet::TestWallets;
+use eyre::{
+    eyre,
+    Report as Error,
+};
+use ibc_relayer::{
+    chain::cosmos::config::CosmosSdkConfig,
+    config,
+    config::{
+        compat_mode::CompatMode,
+        gas_multiplier::GasMultiplier,
+    },
+    keyring::Store,
+};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use tendermint_rpc::{
+    Url,
+    WebSocketClientUrl,
+};
+
+use crate::{
+    chain::{
+        chain_type::ChainType as TestedChainType,
+        driver::ChainDriver,
+    },
+    ibc::denom::Denom,
+    prelude::TestConfig,
+    types::{
+        env::{
+            prefix_writer,
+            EnvWriter,
+            ExportEnv,
+        },
+        process::ChildProcess,
+        tagged::*,
+        wallet::TestWallets,
+    },
+};
 
 pub type TaggedFullNode<Chain> = MonoTagged<Chain, FullNode>;
 

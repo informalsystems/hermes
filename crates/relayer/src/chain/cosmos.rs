@@ -1,112 +1,228 @@
 use alloc::sync::Arc;
-use bytes::{Buf, Bytes};
 use core::{
-    convert::{TryFrom, TryInto},
+    convert::{
+        TryFrom,
+        TryInto,
+    },
     future::Future,
     str::FromStr,
     time::Duration,
 };
+use std::{
+    cmp::Ordering,
+    thread,
+};
+
+use bytes::{
+    Buf,
+    Bytes,
+};
 use futures::future::join_all;
+use ibc_proto::{
+    cosmos::{
+        base::node::v1beta1::ConfigResponse,
+        staking::v1beta1::Params as StakingParams,
+    },
+    ibc::apps::fee::v1::{
+        QueryIncentivizedPacketRequest,
+        QueryIncentivizedPacketResponse,
+    },
+    interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams,
+    Protobuf,
+};
+use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
+    clients::ics07_tendermint::{
+        client_state::{
+            AllowUpdate,
+            ClientState as TmClientState,
+        },
+        consensus_state::ConsensusState as TmConsensusState,
+        header::Header as TmHeader,
+    },
+    core::{
+        ics02_client::{
+            client_type::ClientType,
+            error::Error as ClientError,
+            events::UpdateClient,
+        },
+        ics03_connection::connection::{
+            ConnectionEnd,
+            IdentifiedConnectionEnd,
+        },
+        ics04_channel::{
+            channel::{
+                ChannelEnd,
+                IdentifiedChannelEnd,
+            },
+            packet::Sequence,
+        },
+        ics23_commitment::{
+            commitment::CommitmentPrefix,
+            merkle::MerkleProof,
+        },
+        ics24_host::{
+            identifier::{
+                ChainId,
+                ChannelId,
+                ClientId,
+                ConnectionId,
+                PortId,
+            },
+            path::{
+                AcksPath,
+                ChannelEndsPath,
+                ClientConsensusStatePath,
+                ClientStatePath,
+                CommitmentsPath,
+                ConnectionsPath,
+                ReceiptsPath,
+                SeqRecvsPath,
+            },
+            ClientUpgradePath,
+            Path,
+            IBC_QUERY_PATH,
+            SDK_UPGRADE_QUERY_PATH,
+        },
+    },
+    signer::Signer,
+    Height as ICSHeight,
+};
 use num_bigint::BigInt;
-use std::{cmp::Ordering, thread};
-
-use tokio::runtime::Runtime as TokioRuntime;
-use tonic::codegen::http::Uri;
-use tonic::metadata::AsciiMetadataValue;
-use tracing::{debug, error, info, instrument, trace, warn};
-
-use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
-use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
-use ibc_proto::ibc::apps::fee::v1::{
-    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+use tendermint::{
+    block::Height as TmHeight,
+    node::{
+        self,
+        info::TxIndexStatus,
+    },
+    time::Time as TmTime,
 };
-use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
-use ibc_proto::Protobuf;
-use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
-use ibc_relayer_types::clients::ics07_tendermint::client_state::{
-    AllowUpdate, ClientState as TmClientState,
-};
-use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
-use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc_relayer_types::core::ics02_client::client_type::ClientType;
-use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics03_connection::connection::{
-    ConnectionEnd, IdentifiedConnectionEnd,
-};
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
-};
-use ibc_relayer_types::core::ics24_host::path::{
-    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
-    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
-};
-use ibc_relayer_types::core::ics24_host::{
-    ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
-};
-use ibc_relayer_types::signer::Signer;
-use ibc_relayer_types::Height as ICSHeight;
-
-use tendermint::block::Height as TmHeight;
-use tendermint::node::{self, info::TxIndexStatus};
-use tendermint::time::Time as TmTime;
 use tendermint_light_client::verifier::types::LightBlock as TmLightBlock;
-use tendermint_rpc::client::CompatMode;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::endpoint::status;
-use tendermint_rpc::{Client, HttpClient, Order};
+use tendermint_rpc::{
+    client::CompatMode,
+    endpoint::{
+        broadcast::tx_sync::Response,
+        status,
+    },
+    Client,
+    HttpClient,
+    Order,
+};
+use tokio::runtime::Runtime as TokioRuntime;
+use tonic::{
+    codegen::http::Uri,
+    metadata::AsciiMetadataValue,
+};
+use tracing::{
+    debug,
+    error,
+    info,
+    instrument,
+    trace,
+    warn,
+};
 
-use crate::account::Balance;
-use crate::chain::cosmos::batch::{
-    send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
-    sequential_send_batched_messages_and_wait_commit,
+use self::{
+    types::app_state::GenesisAppState,
+    version::Specs,
 };
-use crate::chain::cosmos::encode::key_pair_to_signer;
-use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
-use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
-use crate::chain::cosmos::query::account::get_or_fetch_account;
-use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
-use crate::chain::cosmos::query::consensus_state::query_consensus_state_heights;
-use crate::chain::cosmos::query::custom::cross_chain_query_via_rpc;
-use crate::chain::cosmos::query::denom_trace::query_denom_trace;
-use crate::chain::cosmos::query::fee::query_incentivized_packet;
-use crate::chain::cosmos::query::status::query_status;
-use crate::chain::cosmos::query::tx::{
-    filter_matching_event, query_packets_from_block, query_packets_from_txs, query_txs,
+use crate::{
+    account::Balance,
+    chain::{
+        client::ClientSettings,
+        cosmos::{
+            batch::{
+                send_batched_messages_and_wait_check_tx,
+                send_batched_messages_and_wait_commit,
+                sequential_send_batched_messages_and_wait_commit,
+            },
+            encode::key_pair_to_signer,
+            fee::maybe_register_counterparty_payee,
+            gas::{
+                calculate_fee,
+                mul_ceil,
+            },
+            query::{
+                abci_query,
+                account::get_or_fetch_account,
+                balance::{
+                    query_all_balances,
+                    query_balance,
+                },
+                consensus_state::query_consensus_state_heights,
+                custom::cross_chain_query_via_rpc,
+                denom_trace::query_denom_trace,
+                fee::query_incentivized_packet,
+                fetch_version_specs,
+                packet_query,
+                status::query_status,
+                tx::{
+                    filter_matching_event,
+                    query_packets_from_block,
+                    query_packets_from_txs,
+                    query_txs,
+                },
+                QueryResponse,
+            },
+            types::{
+                account::Account,
+                config::TxConfig,
+                gas::{
+                    default_gas_from_config,
+                    gas_multiplier_from_config,
+                    max_gas_from_config,
+                },
+            },
+        },
+        endpoint::{
+            ChainEndpoint,
+            ChainStatus,
+            HealthCheck,
+        },
+        handle::Subscription,
+        requests::*,
+        tracking::TrackedMsgs,
+    },
+    client_state::{
+        AnyClientState,
+        IdentifiedAnyClientState,
+    },
+    config::{
+        parse_gas_prices,
+        ChainConfig,
+        Error as ConfigError,
+        GasPrice,
+    },
+    consensus_state::AnyConsensusState,
+    denom::DenomTrace,
+    error::Error,
+    event::{
+        source::{
+            EventSource,
+            TxEventSourceCmd,
+        },
+        IbcEventWithHeight,
+    },
+    keyring::{
+        KeyRing,
+        Secp256k1KeyPair,
+        SigningKeyPair,
+    },
+    light_client::{
+        tendermint::LightClient as TmLightClient,
+        LightClient,
+        Verified,
+    },
+    misbehaviour::MisbehaviourEvidence,
+    util::{
+        compat_mode::compat_mode_from_version,
+        pretty::{
+            PrettyIdentifiedChannel,
+            PrettyIdentifiedClientState,
+            PrettyIdentifiedConnection,
+        },
+    },
 };
-use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
-use crate::chain::cosmos::types::account::Account;
-use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::gas::{
-    default_gas_from_config, gas_multiplier_from_config, max_gas_from_config,
-};
-use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
-use crate::chain::handle::Subscription;
-use crate::chain::requests::*;
-use crate::chain::tracking::TrackedMsgs;
-use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
-use crate::config::{parse_gas_prices, ChainConfig, GasPrice};
-use crate::consensus_state::AnyConsensusState;
-use crate::denom::DenomTrace;
-use crate::error::Error;
-use crate::event::source::{EventSource, TxEventSourceCmd};
-use crate::event::IbcEventWithHeight;
-use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
-use crate::light_client::tendermint::LightClient as TmLightClient;
-use crate::light_client::{LightClient, Verified};
-use crate::misbehaviour::MisbehaviourEvidence;
-use crate::util::compat_mode::compat_mode_from_version;
-use crate::util::pretty::{
-    PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
-};
-use crate::{chain::client::ClientSettings, config::Error as ConfigError};
-
-use self::types::app_state::GenesisAppState;
-use self::version::Specs;
 
 pub mod batch;
 pub mod client;
@@ -2423,16 +2539,26 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use ibc_relayer_types::{
-        core::{ics02_client::client_type::ClientType, ics24_host::identifier::ClientId},
-        mock::client_state::MockClientState,
-        mock::header::MockHeader,
+        core::{
+            ics02_client::client_type::ClientType,
+            ics24_host::identifier::ClientId,
+        },
+        mock::{
+            client_state::MockClientState,
+            header::MockHeader,
+        },
         Height,
     };
 
-    use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
-    use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
-
     use super::calculate_fee;
+    use crate::{
+        chain::cosmos::client_id_suffix,
+        client_state::{
+            AnyClientState,
+            IdentifiedAnyClientState,
+        },
+        config::GasPrice,
+    };
 
     #[test]
     fn mul_ceil() {

@@ -1,10 +1,14 @@
 use eyre::eyre;
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::util::task::TaskHandle;
-use ibc_relayer::worker::client::spawn_refresh_client;
+use ibc_relayer::{
+    chain::handle::ChainHandle,
+    util::task::TaskHandle,
+    worker::client::spawn_refresh_client,
+};
 
-use crate::error::Error;
-use crate::types::binary::foreign_client::ForeignClientPair;
+use crate::{
+    error::Error,
+    types::binary::foreign_client::ForeignClientPair,
+};
 
 pub fn spawn_refresh_client_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
     foreign_clients: &ForeignClientPair<ChainA, ChainB>,

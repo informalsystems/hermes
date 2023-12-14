@@ -1,5 +1,8 @@
 use ics23::ProofSpec;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 /// An array of proof specifications.
 ///

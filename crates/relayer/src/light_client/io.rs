@@ -1,6 +1,14 @@
-use tendermint::{account, block::Height};
+use tendermint::{
+    account,
+    block::Height,
+};
 use tendermint_light_client::{
-    components::io::{AtHeight, Io, IoError, ProdIo},
+    components::io::{
+        AtHeight,
+        Io,
+        IoError,
+        ProdIo,
+    },
     types::LightBlock,
 };
 

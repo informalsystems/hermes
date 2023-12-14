@@ -1,7 +1,9 @@
 use ibc_relayer::config::ChainConfig;
 
-use crate::chain::config::set_voting_period;
-use crate::prelude::*;
+use crate::{
+    chain::config::set_voting_period,
+    prelude::*,
+};
 
 pub fn update_genesis_for_consumer_chain(genesis: &mut serde_json::Value) -> Result<(), Error> {
     // Consumer chain doesn't have a gov key.

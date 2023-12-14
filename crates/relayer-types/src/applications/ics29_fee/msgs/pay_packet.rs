@@ -1,12 +1,23 @@
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::applications::fee::v1::{Fee as ProtoFee, MsgPayPacketFee};
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::applications::fee::v1::{
+        Fee as ProtoFee,
+        MsgPayPacketFee,
+    },
+};
 
-use crate::applications::ics29_fee::error::Error;
-use crate::applications::transfer::coin::RawCoin;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-
-use crate::signer::Signer;
-use crate::tx_msg::encode_message;
+use crate::{
+    applications::{
+        ics29_fee::error::Error,
+        transfer::coin::RawCoin,
+    },
+    core::ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    },
+    signer::Signer,
+    tx_msg::encode_message,
+};
 
 const TYPE_URL: &str = "/ibc.applications.fee.v1.MsgPayPacketFee";
 

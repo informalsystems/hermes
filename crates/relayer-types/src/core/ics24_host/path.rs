@@ -4,11 +4,21 @@
 ///
 use std::str::FromStr;
 
-use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-
-use derive_more::{Display, From};
+use derive_more::{
+    Display,
+    From,
+};
 use flex_error::define_error;
+
+use crate::core::{
+    ics04_channel::packet::Sequence,
+    ics24_host::identifier::{
+        ChannelId,
+        ClientId,
+        ConnectionId,
+        PortId,
+    },
+};
 
 /// ABCI Query path for the IBC sub-store
 pub const IBC_QUERY_PATH: &str = "store/ibc/key";
@@ -578,8 +588,9 @@ fn parse_upgrades(components: &[&str]) -> Option<Path> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use core::str::FromStr;
+
+    use super::*;
 
     #[test]
     fn invalid_path_doesnt_parse() {

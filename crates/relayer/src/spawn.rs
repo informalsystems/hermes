@@ -1,13 +1,19 @@
 use alloc::sync::Arc;
 
 use flex_error::define_error;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-
 use crate::{
-    chain::{cosmos::CosmosSdkChain, handle::ChainHandle, runtime::ChainRuntime},
-    config::{ChainConfig, Config},
+    chain::{
+        cosmos::CosmosSdkChain,
+        handle::ChainHandle,
+        runtime::ChainRuntime,
+    },
+    config::{
+        ChainConfig,
+        Config,
+    },
     error::Error as RelayerError,
 };
 

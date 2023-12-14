@@ -1,12 +1,21 @@
-use derive_more::{From, Into};
-use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
-use ibc_proto::Protobuf;
+use derive_more::{
+    From,
+    Into,
+};
+use ibc_proto::{
+    ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement,
+    Protobuf,
+};
 
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::packet::Packet;
-use crate::proofs::Proofs;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+    core::ics04_channel::{
+        error::Error,
+        packet::Packet,
+    },
+    proofs::Proofs,
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 
@@ -122,12 +131,21 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
-    use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
-    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+    use ibc_proto::ibc::core::{
+        channel::v1::{
+            MsgAcknowledgement as RawMsgAcknowledgement,
+            Packet as RawPacket,
+        },
+        client::v1::Height as RawHeight,
+    };
 
-    use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+    use crate::{
+        core::ics04_channel::packet::test_utils::get_dummy_raw_packet,
+        test_utils::{
+            get_dummy_bech32_account,
+            get_dummy_proof,
+        },
+    };
 
     /// Returns a dummy `RawMsgAcknowledgement`, for testing only!
     /// The `height` parametrizes both the proof height as well as the timeout height.
@@ -155,14 +173,19 @@ pub mod test_util {
 #[cfg(test)]
 mod test {
 
+    use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
     use test_log::test;
 
-    use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
-
-    use crate::core::ics04_channel::error::Error;
-    use crate::core::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
-    use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-    use crate::test_utils::get_dummy_bech32_account;
+    use crate::{
+        core::ics04_channel::{
+            error::Error,
+            msgs::acknowledgement::{
+                test_util::get_dummy_raw_msg_acknowledgement,
+                MsgAcknowledgement,
+            },
+        },
+        test_utils::get_dummy_bech32_account,
+    };
 
     #[test]
     fn msg_acknowledgment_try_from_raw() {

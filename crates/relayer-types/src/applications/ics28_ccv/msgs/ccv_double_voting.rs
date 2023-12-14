@@ -1,14 +1,17 @@
 use core::fmt;
 
-use ibc_proto::interchain_security::ccv::provider::v1::MsgSubmitConsumerDoubleVoting as RawIcsDoubleVoting;
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    interchain_security::ccv::provider::v1::MsgSubmitConsumerDoubleVoting as RawIcsDoubleVoting,
+    Protobuf,
+};
 use tendermint::evidence::DuplicateVoteEvidence;
 
-use crate::clients::ics07_tendermint::header::Header;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
-
 use super::error::Error;
+use crate::{
+    clients::ics07_tendermint::header::Header,
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const ICS_DOUBLE_VOTING_TYPE_URL: &str =
     "/interchain_security.ccv.provider.v1.MsgSubmitConsumerDoubleVoting";

@@ -3,26 +3,51 @@
    together with the relayer setup with chain handles and foreign clients.
 */
 
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::config::Config;
-use ibc_relayer::foreign_client::CreateOptions as ClientOptions;
+use ibc_relayer::{
+    chain::handle::ChainHandle,
+    config::Config,
+    foreign_client::CreateOptions as ClientOptions,
+};
 use tracing::info;
 
-use crate::bootstrap::binary::chain::{bootstrap_chains_with_full_nodes, BootstrapClientOptions};
-use crate::error::Error;
-use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::ics::InterchainSecurityChainTest;
-use crate::framework::binary::node::{
-    run_binary_node_test, run_single_node_test, BinaryNodeTest, NodeConfigOverride,
-    NodeGenesisOverride,
+use crate::{
+    bootstrap::binary::chain::{
+        bootstrap_chains_with_full_nodes,
+        BootstrapClientOptions,
+    },
+    error::Error,
+    framework::{
+        base::{
+            HasOverrides,
+            TestConfigOverride,
+        },
+        binary::{
+            ics::InterchainSecurityChainTest,
+            node::{
+                run_binary_node_test,
+                run_single_node_test,
+                BinaryNodeTest,
+                NodeConfigOverride,
+                NodeGenesisOverride,
+            },
+        },
+        supervisor::{
+            RunWithSupervisor,
+            SupervisorOverride,
+        },
+    },
+    relayer::driver::RelayerDriver,
+    types::{
+        binary::chains::{
+            ConnectedChains,
+            DropChainHandle,
+        },
+        config::TestConfig,
+        env::write_env,
+        single::node::FullNode,
+    },
+    util::suspend::hang_on_error,
 };
-use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
-use crate::relayer::driver::RelayerDriver;
-use crate::types::binary::chains::{ConnectedChains, DropChainHandle};
-use crate::types::config::TestConfig;
-use crate::types::env::write_env;
-use crate::types::single::node::FullNode;
-use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`BinaryChainTest`], with

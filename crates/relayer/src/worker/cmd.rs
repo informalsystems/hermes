@@ -1,6 +1,13 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 
-use ibc_relayer_types::{core::ics02_client::events::NewBlock, Height};
+use ibc_relayer_types::{
+    core::ics02_client::events::NewBlock,
+    Height,
+};
 
 use crate::event::source::EventBatch;
 

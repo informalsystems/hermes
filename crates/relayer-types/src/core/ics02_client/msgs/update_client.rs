@@ -1,14 +1,22 @@
 //! Definition of domain type message `MsgUpdateAnyClient`.
 
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient,
+    Protobuf,
+};
 
-use crate::core::ics02_client::error::Error;
-use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics24_host::identifier::ClientId;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+    core::{
+        ics02_client::error::Error,
+        ics24_host::{
+            error::ValidationError,
+            identifier::ClientId,
+        },
+    },
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 
@@ -73,14 +81,17 @@ impl From<MsgUpdateClient> for RawMsgUpdateClient {
 #[cfg(test)]
 mod tests {
 
+    use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
     use test_log::test;
 
-    use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
-
-    use crate::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
-    use crate::core::ics02_client::msgs::MsgUpdateClient;
-    use crate::core::ics24_host::identifier::ClientId;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::{
+        clients::ics07_tendermint::header::test_util::get_dummy_ics07_header,
+        core::{
+            ics02_client::msgs::MsgUpdateClient,
+            ics24_host::identifier::ClientId,
+        },
+        test_utils::get_dummy_account_id,
+    };
 
     #[test]
     fn msg_update_client_serialization() {

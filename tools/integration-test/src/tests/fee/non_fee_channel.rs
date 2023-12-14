@@ -8,8 +8,10 @@
 //! ensures then that the transaction still follows through using
 //! `ibc_transfer_token` if the transfer without fees is used.
 
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::random::random_u128_range;
+use ibc_test_framework::{
+    prelude::*,
+    util::random::random_u128_range,
+};
 
 #[test]
 fn test_non_fee_channel() -> Result<(), Error> {

@@ -1,25 +1,32 @@
 //! All errors which can be raised from a command.
 
-use flex_error::{define_error, DisplayError};
 use std::io::Error as IoError;
 
+use flex_error::{
+    define_error,
+    DisplayError,
+};
+use ibc_relayer::{
+    channel::ChannelError,
+    connection::ConnectionError,
+    error::Error as RelayerError,
+    foreign_client::ForeignClientError,
+    keyring::errors::Error as KeyRingError,
+    link::error::LinkError,
+    spawn::SpawnError,
+    supervisor::Error as SupervisorError,
+    transfer::TransferError,
+    upgrade_chain::UpgradeChainError,
+};
+use ibc_relayer_types::{
+    applications::ics29_fee::error::Error as FeeError,
+    core::{
+        ics04_channel::channel::IdentifiedChannelEnd,
+        ics24_host::identifier::ChainId,
+    },
+    signer::SignerError,
+};
 use tendermint::Error as TendermintError;
-
-use ibc_relayer_types::applications::ics29_fee::error::Error as FeeError;
-use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::signer::SignerError;
-
-use ibc_relayer::channel::ChannelError;
-use ibc_relayer::connection::ConnectionError;
-use ibc_relayer::error::Error as RelayerError;
-use ibc_relayer::foreign_client::ForeignClientError;
-use ibc_relayer::keyring::errors::Error as KeyRingError;
-use ibc_relayer::link::error::LinkError;
-use ibc_relayer::spawn::SpawnError;
-use ibc_relayer::supervisor::Error as SupervisorError;
-use ibc_relayer::transfer::TransferError;
-use ibc_relayer::upgrade_chain::UpgradeChainError;
 
 define_error! {
     /// An error raised within the relayer CLI

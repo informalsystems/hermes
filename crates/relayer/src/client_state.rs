@@ -1,30 +1,46 @@
 use core::time::Duration;
 
-use serde::{Deserialize, Serialize};
-
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
-use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientState;
-use ibc_proto::Protobuf;
-use ibc_relayer_types::clients::ics07_tendermint::client_state::{
-    ClientState as TmClientState, UpgradeOptions as TmUpgradeOptions,
-    TENDERMINT_CLIENT_STATE_TYPE_URL,
-};
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics02_client::client_type::ClientType;
-use ibc_relayer_types::core::ics02_client::error::Error;
-use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
-
-use ibc_relayer_types::core::ics24_host::error::ValidationError;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer_types::Height;
-
 #[cfg(test)]
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::{
+        core::client::v1::IdentifiedClientState,
+        lightclients::tendermint::v1::ClientState as RawTmClientState,
+    },
+    Protobuf,
+};
 #[cfg(test)]
 use ibc_relayer_types::mock::client_state::MockClientState;
 #[cfg(test)]
 use ibc_relayer_types::mock::client_state::MOCK_CLIENT_STATE_TYPE_URL;
+use ibc_relayer_types::{
+    clients::ics07_tendermint::client_state::{
+        ClientState as TmClientState,
+        UpgradeOptions as TmUpgradeOptions,
+        TENDERMINT_CLIENT_STATE_TYPE_URL,
+    },
+    core::{
+        ics02_client::{
+            client_state::ClientState,
+            client_type::ClientType,
+            error::Error,
+            trust_threshold::TrustThreshold,
+        },
+        ics24_host::{
+            error::ValidationError,
+            identifier::{
+                ChainId,
+                ClientId,
+            },
+        },
+    },
+    Height,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -275,8 +291,10 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
 #[cfg(test)]
 mod tests {
     use ibc_proto::google::protobuf::Any;
-    use ibc_relayer_types::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-    use ibc_relayer_types::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
+    use ibc_relayer_types::clients::ics07_tendermint::{
+        client_state::test_util::get_dummy_tendermint_client_state,
+        header::test_util::get_dummy_tendermint_header,
+    };
     use test_log::test;
 
     use super::AnyClientState;

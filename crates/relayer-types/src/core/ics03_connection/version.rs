@@ -1,13 +1,21 @@
 use std::fmt::Display;
 
-use crate::utils::pretty::PrettySlice;
+use ibc_proto::{
+    ibc::core::connection::v1::Version as RawVersion,
+    Protobuf,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
-use ibc_proto::Protobuf;
-use serde::{Deserialize, Serialize};
-
-use crate::core::ics03_connection::error::Error;
-use crate::core::ics04_channel::channel::Ordering;
+use crate::{
+    core::{
+        ics03_connection::error::Error,
+        ics04_channel::channel::Ordering,
+    },
+    utils::pretty::PrettySlice,
+};
 
 /// Stores the identifier and the features supported by a version
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -111,12 +119,17 @@ pub fn pick_version(
 #[cfg(test)]
 mod tests {
 
+    use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
     use test_log::test;
 
-    use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
-
-    use crate::core::ics03_connection::error::Error;
-    use crate::core::ics03_connection::version::{get_compatible_versions, pick_version, Version};
+    use crate::core::ics03_connection::{
+        error::Error,
+        version::{
+            get_compatible_versions,
+            pick_version,
+            Version,
+        },
+    };
 
     fn good_versions() -> Vec<RawVersion> {
         vec![

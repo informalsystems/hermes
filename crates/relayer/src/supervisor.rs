@@ -1,44 +1,86 @@
-use alloc::collections::btree_map::BTreeMap as HashMap;
-use alloc::sync::Arc;
-use core::convert::Infallible;
-use core::ops::Deref;
-use core::time::Duration;
+use alloc::{
+    collections::btree_map::BTreeMap as HashMap,
+    sync::Arc,
+};
+use core::{
+    convert::Infallible,
+    ops::Deref,
+    time::Duration,
+};
 use std::sync::RwLock;
 
-use crossbeam_channel::{unbounded, Receiver, Sender};
-use itertools::Itertools;
-use tracing::{debug, error, error_span, info, instrument, trace, warn};
-
+use crossbeam_channel::{
+    unbounded,
+    Receiver,
+    Sender,
+};
 use ibc_relayer_types::{
-    core::ics24_host::identifier::{ChainId, ChannelId, PortId},
+    core::ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        PortId,
+    },
     events::IbcEvent,
     Height,
 };
+use itertools::Itertools;
+use tracing::{
+    debug,
+    error,
+    error_span,
+    info,
+    instrument,
+    trace,
+    warn,
+};
 
 use crate::{
-    chain::{endpoint::HealthCheck, handle::ChainHandle, tracking::TrackingId},
+    chain::{
+        endpoint::HealthCheck,
+        handle::ChainHandle,
+        tracking::TrackingId,
+    },
     config::Config,
     event::{
-        source::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+        source::{
+            self,
+            Error as EventError,
+            ErrorDetail as EventErrorDetail,
+            EventBatch,
+        },
         IbcEventWithHeight,
     },
     object::Object,
-    registry::{Registry, SharedRegistry},
+    registry::{
+        Registry,
+        SharedRegistry,
+    },
     rest,
     supervisor::scan::ScanMode,
     telemetry,
     util::{
         lock::LockExt,
-        task::{spawn_background_task, Next, TaskError, TaskHandle},
+        task::{
+            spawn_background_task,
+            Next,
+            TaskError,
+            TaskHandle,
+        },
     },
     worker::WorkerMap,
 };
 
 pub mod client_state_filter;
-use client_state_filter::{FilterPolicy, Permission};
+use client_state_filter::{
+    FilterPolicy,
+    Permission,
+};
 
 pub mod error;
-pub use error::{Error, ErrorDetail};
+pub use error::{
+    Error,
+    ErrorDetail,
+};
 
 pub mod dump_state;
 use dump_state::SupervisorState;
@@ -49,7 +91,10 @@ pub mod spawn;
 pub mod cmd;
 use cmd::SupervisorCmd;
 
-use self::{scan::ChainScanner, spawn::SpawnContext};
+use self::{
+    scan::ChainScanner,
+    spawn::SpawnContext,
+};
 
 type ArcBatch = Arc<source::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;

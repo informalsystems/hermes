@@ -12,19 +12,33 @@
 //! - The `test_height_too_low_client_upgrade`tests the case where the client
 //!   fails to upgrade because a height too small is given as input.
 
-use http::Uri;
 use std::str::FromStr;
 
-use ibc_relayer::chain::requests::IncludeProof;
-use ibc_relayer::chain::requests::QueryClientStateRequest;
-use ibc_relayer::chain::requests::QueryHeight;
-use ibc_relayer::client_state::AnyClientState;
-use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
+use http::Uri;
+use ibc_relayer::{
+    chain::requests::{
+        IncludeProof,
+        QueryClientStateRequest,
+        QueryHeight,
+    },
+    client_state::AnyClientState,
+    upgrade_chain::{
+        build_and_send_ibc_upgrade_proposal,
+        UpgradePlanOptions,
+    },
+};
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
-use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::proposal_status::ProposalStatus;
+use ibc_test_framework::{
+    chain::{
+        config::{
+            set_max_deposit_period,
+            set_voting_period,
+        },
+        ext::bootstrap::ChainBootstrapMethodsExt,
+    },
+    prelude::*,
+    util::proposal_status::ProposalStatus,
+};
 
 const MAX_DEPOSIT_PERIOD: &str = "10s";
 const VOTING_PERIOD: u64 = 10;

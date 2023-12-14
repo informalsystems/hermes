@@ -2,7 +2,10 @@ use std::str::FromStr;
 
 use derive_more::Display;
 use flex_error::define_error;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]

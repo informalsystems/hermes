@@ -2,45 +2,76 @@ mod detector;
 
 use std::time::Duration;
 
+#[cfg(test)]
+use ibc_relayer_types::core::ics02_client::client_type::ClientType;
+use ibc_relayer_types::{
+    clients::ics07_tendermint::{
+        header::Header as TmHeader,
+        misbehaviour::Misbehaviour as TmMisbehaviour,
+    },
+    core::{
+        ics02_client::{
+            events::UpdateClient,
+            header::AnyHeader,
+        },
+        ics24_host::identifier::ChainId,
+    },
+    Height as ICSHeight,
+};
 use itertools::Itertools;
 use tendermint::Time;
-use tracing::{debug, error, trace, warn};
-
 use tendermint_light_client::{
     components::{
         self,
-        io::{AtHeight, Io, ProdIo},
+        io::{
+            AtHeight,
+            Io,
+            ProdIo,
+        },
     },
     light_client::LightClient as TmLightClient,
     state::State as LightClientState,
-    store::{memory::MemoryStore, LightStore},
-    verifier::types::{Height as TMHeight, LightBlock, PeerId, Status},
-    verifier::ProdVerifier,
+    store::{
+        memory::MemoryStore,
+        LightStore,
+    },
+    verifier::{
+        types::{
+            Height as TMHeight,
+            LightBlock,
+            PeerId,
+            Status,
+        },
+        ProdVerifier,
+    },
 };
 use tendermint_light_client_detector::Divergence;
 use tendermint_rpc as rpc;
-
-use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics02_client::header::AnyHeader;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::Height as ICSHeight;
-
-#[cfg(test)]
-use ibc_relayer_types::core::ics02_client::client_type::ClientType;
-
-use crate::{
-    chain::cosmos::config::CosmosSdkConfig,
-    chain::cosmos::CosmosSdkChain,
-    client_state::AnyClientState,
-    error::Error,
-    misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
+use tracing::{
+    debug,
+    error,
+    trace,
+    warn,
 };
 
 use super::{
-    io::{AnyIo, RestartAwareIo},
+    io::{
+        AnyIo,
+        RestartAwareIo,
+    },
     Verified,
+};
+use crate::{
+    chain::cosmos::{
+        config::CosmosSdkConfig,
+        CosmosSdkChain,
+    },
+    client_state::AnyClientState,
+    error::Error,
+    misbehaviour::{
+        AnyMisbehaviour,
+        MisbehaviourEvidence,
+    },
 };
 
 pub struct LightClient {

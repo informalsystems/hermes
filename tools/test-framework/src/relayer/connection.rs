@@ -3,20 +3,44 @@
 */
 
 use core::time::Duration;
-use eyre::eyre;
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
-use ibc_relayer::connection::{extract_connection_id, Connection, ConnectionSide};
-use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
-use ibc_relayer_types::core::ics03_connection::connection::{
-    ConnectionEnd, IdentifiedConnectionEnd,
-};
-use ibc_relayer_types::timestamp::ZERO_DURATION;
 
-use crate::error::Error;
-use crate::types::id::{TaggedClientIdRef, TaggedConnectionId, TaggedConnectionIdRef};
-use crate::types::tagged::DualTagged;
-use crate::util::retry::assert_eventually_succeed;
+use eyre::eyre;
+use ibc_relayer::{
+    chain::{
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            QueryConnectionRequest,
+            QueryHeight,
+        },
+    },
+    connection::{
+        extract_connection_id,
+        Connection,
+        ConnectionSide,
+    },
+};
+use ibc_relayer_types::{
+    core::ics03_connection::connection::{
+        ConnectionEnd,
+        IdentifiedConnectionEnd,
+        State as ConnectionState,
+    },
+    timestamp::ZERO_DURATION,
+};
+
+use crate::{
+    error::Error,
+    types::{
+        id::{
+            TaggedClientIdRef,
+            TaggedConnectionId,
+            TaggedConnectionIdRef,
+        },
+        tagged::DualTagged,
+    },
+    util::retry::assert_eventually_succeed,
+};
 
 /**
    An extension trait that provide helper methods to get tagged identifiers

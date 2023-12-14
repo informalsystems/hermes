@@ -1,21 +1,37 @@
-use super::error::RunError;
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{
-    CrossChainQueryRequest, IncludeProof, QueryConnectionRequest, QueryHeight,
-};
-use crate::chain::tracking::TrackedMsgs;
-use crate::error::Error;
-use crate::event::IbcEventWithHeight;
-use crate::foreign_client::ForeignClient;
-use crate::object::CrossChainQuery;
-use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
-use crate::worker::WorkerCmd;
+use std::time::Duration;
 
 use crossbeam_channel::Receiver;
 use ibc_relayer_types::core::ics02_client::height::Height;
-use std::time::Duration;
-use tracing::{info, info_span};
+use tracing::{
+    info,
+    info_span,
+};
 use uuid::Uuid;
+
+use super::error::RunError;
+use crate::{
+    chain::{
+        handle::ChainHandle,
+        requests::{
+            CrossChainQueryRequest,
+            IncludeProof,
+            QueryConnectionRequest,
+            QueryHeight,
+        },
+        tracking::TrackedMsgs,
+    },
+    error::Error,
+    event::IbcEventWithHeight,
+    foreign_client::ForeignClient,
+    object::CrossChainQuery,
+    util::task::{
+        spawn_background_task,
+        Next,
+        TaskError,
+        TaskHandle,
+    },
+    worker::WorkerCmd,
+};
 
 impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
     type Error = Error;

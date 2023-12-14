@@ -2,12 +2,15 @@
 //! Contains struct to build a `tendermint_rpc::Url` representing a
 //! WebSocket URL from a RPC URL and to parse or build a valid `http::Uri`
 //! from an (in)complete GRPC URL.
-use crate::error::RegistryError;
-use http::uri::Scheme;
-use http::Uri;
 use std::str::FromStr;
 
+use http::{
+    uri::Scheme,
+    Uri,
+};
 use tendermint_rpc::Url;
+
+use crate::error::RegistryError;
 
 /// `UriFormatter` contains the basic expectations to parse a valid URL from a `&str`.
 pub trait UriFormatter {
@@ -96,10 +99,12 @@ impl UriFormatter for SimpleGrpcFormatter {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{
+        cmp::PartialEq,
+        fmt::Debug,
+    };
 
-    use std::cmp::PartialEq;
-    use std::fmt::Debug;
+    use super::*;
 
     struct FormatterTest<T> {
         input: &'static str,
@@ -181,9 +186,11 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn all_chain_registry_grpc_address() -> Result<(), RegistryError> {
-        use crate::chain::ChainData;
-        use crate::constants::ALL_CHAINS;
-        use crate::fetchable::Fetchable;
+        use crate::{
+            chain::ChainData,
+            constants::ALL_CHAINS,
+            fetchable::Fetchable,
+        };
 
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
 
@@ -204,9 +211,11 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn all_chain_registry_rpc_address() -> Result<(), RegistryError> {
-        use crate::chain::ChainData;
-        use crate::constants::ALL_CHAINS;
-        use crate::fetchable::Fetchable;
+        use crate::{
+            chain::ChainData,
+            constants::ALL_CHAINS,
+            fetchable::Fetchable,
+        };
 
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
 

@@ -1,8 +1,18 @@
-use derive_more::{Display, From, Into};
-use serde::{Deserialize, Serialize};
-use std::iter::Sum;
-use std::ops::Add;
-use std::str::FromStr;
+use std::{
+    iter::Sum,
+    ops::Add,
+    str::FromStr,
+};
+
+use derive_more::{
+    Display,
+    From,
+    Into,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use super::error::Error;
 use crate::bigint::U256;

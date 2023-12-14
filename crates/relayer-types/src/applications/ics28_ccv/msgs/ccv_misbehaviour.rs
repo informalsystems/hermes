@@ -1,15 +1,20 @@
 use core::fmt;
 
-use serde::{Deserialize, Serialize};
-
-use ibc_proto::interchain_security::ccv::provider::v1::MsgSubmitConsumerMisbehaviour as RawIcsMisbehaviour;
-use ibc_proto::Protobuf;
-
-use crate::clients::ics07_tendermint::misbehaviour::Misbehaviour;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use ibc_proto::{
+    interchain_security::ccv::provider::v1::MsgSubmitConsumerMisbehaviour as RawIcsMisbehaviour,
+    Protobuf,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use super::error::Error;
+use crate::{
+    clients::ics07_tendermint::misbehaviour::Misbehaviour,
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const ICS_MISBEHAVIOR_TYPE_URL: &str =
     "/interchain_security.ccv.provider.v1.MsgSubmitConsumerMisbehaviour";

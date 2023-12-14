@@ -1,16 +1,31 @@
 //! Custom `serde` deserializer for `FilterMatch`
 
-use core::fmt;
-use core::str::FromStr;
-use itertools::Itertools;
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use std::collections::HashMap;
-use std::hash::Hash;
+use core::{
+    fmt,
+    str::FromStr,
+};
+use std::{
+    collections::HashMap,
+    hash::Hash,
+};
 
-use ibc_relayer_types::applications::transfer::RawCoin;
-use ibc_relayer_types::bigint::U256;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
-use ibc_relayer_types::events::IbcEventType;
+use ibc_relayer_types::{
+    applications::transfer::RawCoin,
+    bigint::U256,
+    core::ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    },
+    events::IbcEventType,
+};
+use itertools::Itertools;
+use serde::{
+    de,
+    Deserialize,
+    Deserializer,
+    Serialize,
+    Serializer,
+};
 
 /// Represents all the filtering policies for packets.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -372,8 +387,9 @@ impl<'de> Deserialize<'de> for ChannelFilterMatch {
 }
 
 pub(crate) mod port {
-    use super::*;
     use ibc_relayer_types::core::ics24_host::identifier::PortId;
+
+    use super::*;
 
     pub struct PortFilterMatchVisitor;
 
@@ -400,8 +416,9 @@ pub(crate) mod port {
 }
 
 pub(crate) mod channel {
-    use super::*;
     use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
+
+    use super::*;
 
     pub struct ChannelFilterMatchVisitor;
 
@@ -452,7 +469,10 @@ mod tests {
     fn serialize_packet_filter_policy() {
         use std::str::FromStr;
 
-        use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
+        use ibc_relayer_types::core::ics24_host::identifier::{
+            ChannelId,
+            PortId,
+        };
 
         let filter_policy = ChannelFilters(vec![
             (

@@ -8,34 +8,58 @@ pub mod proof_specs;
 pub mod types;
 
 use alloc::collections::BTreeMap;
-use byte_unit::Byte;
 use core::{
     cmp::Ordering,
-    fmt::{Display, Error as FmtError, Formatter},
+    fmt::{
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
     str::FromStr,
     time::Duration,
 };
-use serde_derive::{Deserialize, Serialize};
-use std::{fs, fs::File, io::Write, ops::Range, path::Path};
-use tendermint::block::Height as BlockHeight;
-use tendermint_rpc::Url;
-use tendermint_rpc::WebSocketClientUrl;
+use std::{
+    fs,
+    fs::File,
+    io::Write,
+    ops::Range,
+    path::Path,
+};
 
+use byte_unit::Byte;
+pub use error::Error;
+pub use filter::PacketFilter;
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer_types::timestamp::ZERO_DURATION;
-
-use crate::extension_options::ExtensionOptionDynamicFeeTx;
-use crate::keyring::Store;
-use crate::keyring::{AnySigningKeyPair, KeyRing};
-use crate::{chain::cosmos::config::CosmosSdkConfig, error::Error as RelayerError};
-
-use crate::keyring;
+use ibc_relayer_types::{
+    core::ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        PortId,
+    },
+    timestamp::ZERO_DURATION,
+};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
+use tendermint::block::Height as BlockHeight;
+use tendermint_rpc::{
+    Url,
+    WebSocketClientUrl,
+};
 
 pub use crate::config::Error as ConfigError;
-pub use error::Error;
-
-pub use filter::PacketFilter;
+use crate::{
+    chain::cosmos::config::CosmosSdkConfig,
+    error::Error as RelayerError,
+    extension_options::ExtensionOptionDynamicFeeTx,
+    keyring,
+    keyring::{
+        AnySigningKeyPair,
+        KeyRing,
+        Store,
+    },
+};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -724,9 +748,14 @@ impl From<CosmosConfigError> for Error {
 mod tests {
     use core::str::FromStr;
 
-    use super::{load, parse_gas_prices, store_writer};
-    use crate::config::GasPrice;
     use test_log::test;
+
+    use super::{
+        load,
+        parse_gas_prices,
+        store_writer,
+    };
+    use crate::config::GasPrice;
 
     #[test]
     fn parse_valid_config() {

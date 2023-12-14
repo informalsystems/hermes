@@ -1,17 +1,31 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::{
+    chain::{
+        counterparty::unreceived_acknowledgements,
+        handle::BaseChainHandle,
+    },
+    path::PathIdentifiers,
+    util::collate::CollatedIterExt,
+};
+use ibc_relayer_types::core::{
+    ics04_channel::packet::Sequence,
+    ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        PortId,
+    },
+};
 
-use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
-use ibc_relayer::chain::handle::BaseChainHandle;
-use ibc_relayer::path::PathIdentifiers;
-use ibc_relayer::util::collate::CollatedIterExt;
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-
-use crate::cli_utils::spawn_chain_counterparty;
-use crate::conclude::Output;
-use crate::error::Error;
-use crate::prelude::*;
+use crate::{
+    cli_utils::spawn_chain_counterparty,
+    conclude::Output,
+    error::Error,
+    prelude::*,
+};
 
 /// This command does the following:
 /// 1. queries the chain to get its counterparty, channel and port identifiers (needed in 2)
@@ -90,12 +104,16 @@ impl Runnable for QueryPendingAcksCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryPendingAcksCmd;
-
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+    use ibc_relayer_types::core::ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        PortId,
+    };
+
+    use super::QueryPendingAcksCmd;
 
     #[test]
     fn test_query_packet_unreceived_acks() {

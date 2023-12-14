@@ -1,6 +1,8 @@
+use flex_error::{
+    define_error,
+    TraceError,
+};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-
-use flex_error::{define_error, TraceError};
 use tracing_subscriber::filter::ParseError;
 
 // Specifies all the possible errors that a Hermes config file can contain.

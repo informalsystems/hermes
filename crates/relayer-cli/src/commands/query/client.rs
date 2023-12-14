@@ -1,23 +1,43 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
 use color_eyre::eyre::eyre;
-
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{
-    IncludeProof, PageRequest, QueryClientConnectionsRequest, QueryClientEventRequest,
-    QueryClientStateRequest, QueryConsensusStateHeightsRequest, QueryConsensusStateRequest,
-    QueryHeight, QueryTxRequest,
+use ibc_relayer::chain::{
+    handle::ChainHandle,
+    requests::{
+        IncludeProof,
+        PageRequest,
+        QueryClientConnectionsRequest,
+        QueryClientEventRequest,
+        QueryClientStateRequest,
+        QueryConsensusStateHeightsRequest,
+        QueryConsensusStateRequest,
+        QueryHeight,
+        QueryTxRequest,
+    },
+};
+use ibc_relayer_types::{
+    core::{
+        ics02_client::client_state::ClientState,
+        ics24_host::identifier::{
+            ChainId,
+            ClientId,
+        },
+    },
+    events::WithBlockDataType,
+    Height,
 };
 
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::core::ics24_host::identifier::ClientId;
-use ibc_relayer_types::events::WithBlockDataType;
-use ibc_relayer_types::Height;
-
-use crate::application::app_config;
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
+use crate::{
+    application::app_config,
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+};
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
@@ -407,15 +427,21 @@ impl Runnable for QueryClientConnectionsCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        QueryClientConnectionsCmd, QueryClientConsensusCmd, QueryClientHeaderCmd,
-        QueryClientStateCmd, QueryClientStatusCmd,
-    };
-
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
+    use ibc_relayer_types::core::ics24_host::identifier::{
+        ChainId,
+        ClientId,
+    };
+
+    use super::{
+        QueryClientConnectionsCmd,
+        QueryClientConsensusCmd,
+        QueryClientHeaderCmd,
+        QueryClientStateCmd,
+        QueryClientStatusCmd,
+    };
 
     #[test]
     fn test_query_client_connections_required_only() {

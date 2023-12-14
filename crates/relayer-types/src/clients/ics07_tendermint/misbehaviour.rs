@@ -1,12 +1,21 @@
-use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;
-use ibc_proto::Protobuf;
-use serde::{Deserialize, Serialize};
+use ibc_proto::{
+    ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour,
+    Protobuf,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-use crate::clients::ics07_tendermint::error::Error;
-use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics24_host::identifier::ClientId;
-use crate::tx_msg::Msg;
-use crate::Height;
+use crate::{
+    clients::ics07_tendermint::{
+        error::Error,
+        header::Header,
+    },
+    core::ics24_host::identifier::ClientId,
+    tx_msg::Msg,
+    Height,
+};
 
 pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Misbehaviour";
 

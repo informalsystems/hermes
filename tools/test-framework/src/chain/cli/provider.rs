@@ -1,8 +1,15 @@
-use std::collections::HashMap;
-use std::str;
+use std::{
+    collections::HashMap,
+    str,
+};
 
-use crate::chain::exec::{simple_exec, ExecOutput};
-use crate::error::Error;
+use crate::{
+    chain::exec::{
+        simple_exec,
+        ExecOutput,
+    },
+    error::Error,
+};
 
 pub fn submit_consumer_chain_proposal(
     chain_id: &str,

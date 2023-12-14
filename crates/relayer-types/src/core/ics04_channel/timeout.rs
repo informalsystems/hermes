@@ -1,10 +1,19 @@
-use std::fmt::{Display, Error as FmtError, Formatter};
-
-use serde::{Deserialize, Serialize};
+use std::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-use crate::core::ics02_client::{error::Error as ICS2Error, height::Height};
+use crate::core::ics02_client::{
+    error::Error as ICS2Error,
+    height::Height,
+};
 
 /// Indicates a consensus height on the destination chain after which the packet
 /// will no longer be processed, and will instead count as having timed-out.

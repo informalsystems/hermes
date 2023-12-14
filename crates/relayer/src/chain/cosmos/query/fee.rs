@@ -1,18 +1,29 @@
 use http::uri::Uri;
-use ibc_proto::ibc::applications::fee::v1::query_client::QueryClient;
-use ibc_proto::ibc::applications::fee::v1::{
-    QueryCounterpartyPayeeRequest, QueryIncentivizedPacketsForChannelRequest,
+use ibc_proto::ibc::{
+    applications::fee::v1::{
+        query_client::QueryClient,
+        QueryCounterpartyPayeeRequest,
+        QueryIncentivizedPacketsForChannelRequest,
+    },
+    apps::fee::v1::{
+        QueryIncentivizedPacketRequest,
+        QueryIncentivizedPacketResponse,
+    },
 };
-use ibc_proto::ibc::apps::fee::v1::{
-    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+use ibc_relayer_types::{
+    applications::ics29_fee::packet_fee::IdentifiedPacketFees,
+    core::ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    },
+    signer::Signer,
 };
-use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
-use ibc_relayer_types::signer::Signer;
 use tonic::Code;
 
-use crate::config::default::max_grpc_decoding_size;
-use crate::error::Error;
+use crate::{
+    config::default::max_grpc_decoding_size,
+    error::Error,
+};
 
 pub async fn query_counterparty_payee(
     grpc_address: &Uri,

@@ -1,16 +1,25 @@
-use std::error::Error;
-use std::net::SocketAddr;
-use std::sync::Arc;
+use std::{
+    error::Error,
+    net::SocketAddr,
+    sync::Arc,
+};
 
-use axum::extract::Query;
-use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::{Extension, Router};
+use axum::{
+    extract::Query,
+    response::IntoResponse,
+    routing::get,
+    Extension,
+    Router,
+};
+use prometheus::{
+    Encoder,
+    TextEncoder,
+};
 
-use prometheus::{Encoder, TextEncoder};
-
-use crate::encoder::JsonEncoder;
-use crate::state::TelemetryState;
+use crate::{
+    encoder::JsonEncoder,
+    state::TelemetryState,
+};
 
 #[derive(Copy, Clone, Debug, Default, serde::Deserialize)]
 enum Format {

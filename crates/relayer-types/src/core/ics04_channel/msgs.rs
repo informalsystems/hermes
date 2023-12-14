@@ -1,16 +1,18 @@
 //! Message definitions for all ICS4 domain types: channel open & close handshake datagrams, as well
 //! as packets.
 
-use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use crate::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use crate::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use crate::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
-use crate::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
+use crate::core::ics04_channel::msgs::{
+    acknowledgement::MsgAcknowledgement,
+    chan_close_confirm::MsgChannelCloseConfirm,
+    chan_close_init::MsgChannelCloseInit,
+    chan_open_ack::MsgChannelOpenAck,
+    chan_open_confirm::MsgChannelOpenConfirm,
+    chan_open_init::MsgChannelOpenInit,
+    chan_open_try::MsgChannelOpenTry,
+    recv_packet::MsgRecvPacket,
+    timeout::MsgTimeout,
+    timeout_on_close::MsgTimeoutOnClose,
+};
 
 // Opening handshake messages.
 pub mod chan_open_ack;

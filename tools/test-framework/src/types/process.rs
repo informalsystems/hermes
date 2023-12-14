@@ -3,8 +3,9 @@
    child process when the value is dropped.
 */
 
-use eyre::Report as Error;
 use std::process::Child;
+
+use eyre::Report as Error;
 
 /**
    A lightweight wrapper around std::process::Child to ensure that the

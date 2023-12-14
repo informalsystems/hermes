@@ -3,7 +3,10 @@ pub use any_signing_key_pair::AnySigningKeyPair;
 pub use ed25519_key_pair::Ed25519KeyPair;
 pub use key_type::KeyType;
 pub use secp256k1_key_pair::Secp256k1KeyPair;
-pub use signing_key_pair::{SigningKeyPair, SigningKeyPairSized};
+pub use signing_key_pair::{
+    SigningKeyPair,
+    SigningKeyPairSized,
+};
 
 mod any_signing_key_pair;
 mod ed25519_key_pair;
@@ -14,14 +17,21 @@ mod secp256k1_key_pair;
 mod signing_key_pair;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
-use std::ffi::OsStr;
-use std::fs::{self, File};
-use std::path::PathBuf;
-
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use serde::{Deserialize, Serialize};
+use std::{
+    ffi::OsStr,
+    fs::{
+        self,
+        File,
+    },
+    path::PathBuf,
+};
 
 use errors::Error;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
 pub const KEYSTORE_DISK_BACKEND: &str = "keyring-test";

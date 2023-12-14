@@ -1,32 +1,59 @@
 use core::str::FromStr;
+use std::{
+    fs,
+    path::PathBuf,
+    str,
+    time::Duration,
+};
+
 use eyre::eyre;
 use hdpath::StandardHDPath;
+use ibc_relayer::keyring::{
+    Secp256k1KeyPair,
+    SigningKeyPair,
+};
 use serde_json as json;
-use std::fs;
-use std::path::PathBuf;
-use std::str;
-use std::time::Duration;
 use toml;
 use tracing::debug;
 
-use ibc_relayer::keyring::{Secp256k1KeyPair, SigningKeyPair};
-
-use crate::chain::cli::bootstrap::{
-    add_genesis_account, add_genesis_validator, add_wallet, collect_gen_txs, initialize,
-    start_chain,
+use crate::{
+    chain::{
+        cli::{
+            bootstrap::{
+                add_genesis_account,
+                add_genesis_validator,
+                add_wallet,
+                collect_gen_txs,
+                initialize,
+                start_chain,
+            },
+            provider::{
+                copy_validator_key_pair,
+                query_consumer_genesis,
+                query_gov_proposal,
+                replace_genesis_state,
+                submit_consumer_chain_proposal,
+            },
+        },
+        driver::ChainDriver,
+        exec::simple_exec,
+    },
+    error::{
+        handle_generic_error,
+        Error,
+    },
+    ibc::token::Token,
+    prelude::assert_eventually_succeed,
+    types::{
+        process::ChildProcess,
+        wallet::{
+            Wallet,
+            WalletAddress,
+            WalletId,
+        },
+    },
+    util::proposal_status::ProposalStatus,
 };
-use crate::chain::cli::provider::{
-    copy_validator_key_pair, query_consumer_genesis, query_gov_proposal, replace_genesis_state,
-    submit_consumer_chain_proposal,
-};
-use crate::chain::driver::ChainDriver;
-use crate::chain::exec::simple_exec;
-use crate::error::{handle_generic_error, Error};
-use crate::ibc::token::Token;
-use crate::prelude::assert_eventually_succeed;
-use crate::types::process::ChildProcess;
-use crate::types::wallet::{Wallet, WalletAddress, WalletId};
-use crate::util::proposal_status::ProposalStatus;
 
 pub trait ChainBootstrapMethodsExt {
     /**

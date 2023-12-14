@@ -1,9 +1,18 @@
-use core::fmt::Debug;
-use core::marker::{Send, Sync};
+use core::{
+    fmt::Debug,
+    marker::{
+        Send,
+        Sync,
+    },
+};
 
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics23_commitment::commitment::CommitmentRoot;
-use crate::timestamp::Timestamp;
+use crate::{
+    core::{
+        ics02_client::client_type::ClientType,
+        ics23_commitment::commitment::CommitmentRoot,
+    },
+    timestamp::Timestamp,
+};
 
 /// Abstract of consensus state information used by the validity predicate
 /// to verify new commits & state roots.

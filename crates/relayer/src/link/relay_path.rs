@@ -1,66 +1,140 @@
-use alloc::collections::BTreeMap as HashMap;
-use alloc::collections::VecDeque;
-use std::ops::Sub;
-use std::time::{Duration, Instant};
+use alloc::collections::{
+    BTreeMap as HashMap,
+    VecDeque,
+};
+use std::{
+    ops::Sub,
+    time::{
+        Duration,
+        Instant,
+    },
+};
 
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer_types::{
+    core::{
+        ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent,
+        ics04_channel::{
+            channel::{
+                ChannelEnd,
+                Ordering,
+                State as ChannelState,
+            },
+            events::{
+                SendPacket,
+                WriteAcknowledgement,
+            },
+            msgs::{
+                acknowledgement::MsgAcknowledgement,
+                chan_close_confirm::MsgChannelCloseConfirm,
+                recv_packet::MsgRecvPacket,
+                timeout::MsgTimeout,
+                timeout_on_close::MsgTimeoutOnClose,
+            },
+            packet::{
+                Packet,
+                PacketMsgType,
+            },
+        },
+        ics24_host::identifier::{
+            ChannelId,
+            ClientId,
+            ConnectionId,
+            PortId,
+        },
+    },
+    events::{
+        IbcEvent,
+        IbcEventType,
+        WithBlockDataType,
+    },
+    signer::Signer,
+    timestamp::Timestamp,
+    tx_msg::Msg,
+    Height,
+};
 use itertools::Itertools;
-use tracing::{debug, error, info, span, trace, warn, Level};
+use tracing::{
+    debug,
+    error,
+    info,
+    span,
+    trace,
+    warn,
+    Level,
+};
 
-use ibc_relayer_types::core::ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent;
-use ibc_relayer_types::core::ics04_channel::channel::{
-    ChannelEnd, Ordering, State as ChannelState,
+use crate::{
+    chain::{
+        counterparty::{
+            unreceived_acknowledgements,
+            unreceived_packets,
+        },
+        endpoint::ChainStatus,
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            Qualified,
+            QueryChannelRequest,
+            QueryClientEventRequest,
+            QueryHeight,
+            QueryHostConsensusStateRequest,
+            QueryNextSequenceReceiveRequest,
+            QueryPacketCommitmentRequest,
+            QueryTxRequest,
+            QueryUnreceivedAcksRequest,
+            QueryUnreceivedPacketsRequest,
+        },
+        tracking::{
+            TrackedMsgs,
+            TrackingId,
+        },
+    },
+    channel::{
+        error::ChannelError,
+        Channel,
+    },
+    event::{
+        source::EventBatch,
+        IbcEventWithHeight,
+    },
+    foreign_client::{
+        ForeignClient,
+        ForeignClientError,
+    },
+    link::{
+        error::{
+            self,
+            LinkError,
+        },
+        operational_data::{
+            OperationalData,
+            OperationalDataTarget,
+            TrackedEvents,
+            TransitMessage,
+        },
+        packet_events::{
+            query_packet_events_with,
+            query_send_packet_events,
+            query_write_ack_events,
+        },
+        pending,
+        pending::PendingTxs,
+        relay_sender,
+        relay_sender::{
+            AsyncReply,
+            SubmitReply,
+        },
+        relay_summary::RelaySummary,
+    },
+    path::PathIdentifiers,
+    telemetry,
+    util::{
+        collate::CollatedIterExt,
+        pretty::PrettyEvents,
+        queue::Queue,
+    },
 };
-use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
-use ibc_relayer_types::core::ics04_channel::msgs::{
-    acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
-    recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
-};
-use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType};
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc_relayer_types::events::{IbcEvent, IbcEventType, WithBlockDataType};
-use ibc_relayer_types::signer::Signer;
-use ibc_relayer_types::timestamp::Timestamp;
-use ibc_relayer_types::tx_msg::Msg;
-use ibc_relayer_types::Height;
-
-use crate::chain::counterparty::unreceived_acknowledgements;
-use crate::chain::counterparty::unreceived_packets;
-use crate::chain::endpoint::ChainStatus;
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::QueryChannelRequest;
-use crate::chain::requests::QueryClientEventRequest;
-use crate::chain::requests::QueryHeight;
-use crate::chain::requests::QueryHostConsensusStateRequest;
-use crate::chain::requests::QueryNextSequenceReceiveRequest;
-use crate::chain::requests::QueryPacketCommitmentRequest;
-use crate::chain::requests::QueryTxRequest;
-use crate::chain::requests::QueryUnreceivedAcksRequest;
-use crate::chain::requests::QueryUnreceivedPacketsRequest;
-use crate::chain::requests::{IncludeProof, Qualified};
-use crate::chain::tracking::TrackedMsgs;
-use crate::chain::tracking::TrackingId;
-use crate::channel::error::ChannelError;
-use crate::channel::Channel;
-use crate::event::source::EventBatch;
-use crate::event::IbcEventWithHeight;
-use crate::foreign_client::{ForeignClient, ForeignClientError};
-use crate::link::error::{self, LinkError};
-use crate::link::operational_data::{
-    OperationalData, OperationalDataTarget, TrackedEvents, TransitMessage,
-};
-use crate::link::packet_events::query_packet_events_with;
-use crate::link::packet_events::query_send_packet_events;
-use crate::link::packet_events::query_write_ack_events;
-use crate::link::pending::PendingTxs;
-use crate::link::relay_sender::{AsyncReply, SubmitReply};
-use crate::link::relay_summary::RelaySummary;
-use crate::link::{pending, relay_sender};
-use crate::path::PathIdentifiers;
-use crate::telemetry;
-use crate::util::collate::CollatedIterExt;
-use crate::util::pretty::PrettyEvents;
-use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
 

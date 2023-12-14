@@ -5,13 +5,21 @@
 
 use toml;
 
-use crate::bootstrap::single::bootstrap_single_node;
-use crate::chain::builder::ChainBuilder;
-use crate::error::Error;
-use crate::framework::base::HasOverrides;
-use crate::framework::base::{run_basic_test, BasicTest, TestConfigOverride};
-use crate::types::config::TestConfig;
-use crate::types::single::node::FullNode;
+use crate::{
+    bootstrap::single::bootstrap_single_node,
+    chain::builder::ChainBuilder,
+    error::Error,
+    framework::base::{
+        run_basic_test,
+        BasicTest,
+        HasOverrides,
+        TestConfigOverride,
+    },
+    types::{
+        config::TestConfig,
+        single::node::FullNode,
+    },
+};
 
 /**
    Runs a test case that implements [`BinaryNodeTest`].

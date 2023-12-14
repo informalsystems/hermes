@@ -1,35 +1,78 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
-use core::time::Duration;
+use core::{
+    fmt::{
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
+    time::Duration,
+};
 use std::thread;
 
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer_types::{
+    core::{
+        ics02_client::height::Height,
+        ics03_connection::{
+            connection::{
+                ConnectionEnd,
+                Counterparty,
+                IdentifiedConnectionEnd,
+                State,
+            },
+            msgs::{
+                conn_open_ack::MsgConnectionOpenAck,
+                conn_open_confirm::MsgConnectionOpenConfirm,
+                conn_open_init::MsgConnectionOpenInit,
+                conn_open_try::MsgConnectionOpenTry,
+            },
+        },
+        ics24_host::identifier::{
+            ClientId,
+            ConnectionId,
+        },
+    },
+    events::IbcEvent,
+    timestamp::ZERO_DURATION,
+    tx_msg::Msg,
+};
 use serde::Serialize;
-use tracing::{debug, error, info, warn};
-
-use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics03_connection::connection::{
-    ConnectionEnd, Counterparty, IdentifiedConnectionEnd, State,
+use tracing::{
+    debug,
+    error,
+    info,
+    warn,
 };
-use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
-use ibc_relayer_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use ibc_relayer_types::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use ibc_relayer_types::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::timestamp::ZERO_DURATION;
-use ibc_relayer_types::tx_msg::Msg;
 
-use crate::chain::counterparty::connection_state_on_destination;
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{
-    IncludeProof, PageRequest, QueryConnectionRequest, QueryConnectionsRequest, QueryHeight,
+use crate::{
+    chain::{
+        counterparty::connection_state_on_destination,
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            PageRequest,
+            QueryConnectionRequest,
+            QueryConnectionsRequest,
+            QueryHeight,
+        },
+        tracking::TrackedMsgs,
+    },
+    foreign_client::{
+        ForeignClient,
+        HasExpiredOrFrozenError,
+    },
+    object::Connection as WorkerConnectionObject,
+    util::{
+        pretty::{
+            PrettyDuration,
+            PrettyOption,
+        },
+        retry::{
+            retry_with_index,
+            RetryResult,
+        },
+        task::Next,
+    },
 };
-use crate::chain::tracking::TrackedMsgs;
-use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
-use crate::object::Connection as WorkerConnectionObject;
-use crate::util::pretty::{PrettyDuration, PrettyOption};
-use crate::util::retry::{retry_with_index, RetryResult};
-use crate::util::task::Next;
 
 mod error;
 pub use error::ConnectionError;
@@ -41,9 +84,15 @@ mod handshake_retry {
     //! Provides utility methods and constants to configure the retry behavior
     //! for the connection handshake algorithm.
 
-    use crate::connection::ConnectionError;
-    use crate::util::retry::{clamp_total, ConstantGrowth};
     use core::time::Duration;
+
+    use crate::{
+        connection::ConnectionError,
+        util::retry::{
+            clamp_total,
+            ConstantGrowth,
+        },
+    };
 
     /// Approximate number of retries per block.
     const PER_BLOCK_RETRIES: u32 = 10;

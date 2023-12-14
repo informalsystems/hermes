@@ -1,8 +1,12 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
-
-use crate::link::relay_sender::AsyncReply;
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 
 use tendermint::Hash as TxHash;
+
+use crate::link::relay_sender::AsyncReply;
 
 /// A collection of transaction hashes.
 #[derive(Clone)]

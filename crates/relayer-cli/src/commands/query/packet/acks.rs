@@ -1,16 +1,25 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-
-use ibc_relayer::chain::counterparty::acknowledgements_on_chain;
-use ibc_relayer::chain::handle::BaseChainHandle;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-
-use crate::cli_utils::spawn_chain_counterparty;
-use crate::conclude::Output;
-use crate::error::Error;
-use crate::prelude::*;
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::chain::{
+    counterparty::acknowledgements_on_chain,
+    handle::BaseChainHandle,
+};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId,
+    ChannelId,
+    PortId,
+};
 
 use super::util::PacketSeqs;
+use crate::{
+    cli_utils::spawn_chain_counterparty,
+    conclude::Output,
+    error::Error,
+    prelude::*,
+};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryPacketAcknowledgementsCmd {
@@ -81,12 +90,16 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryPacketAcknowledgementsCmd;
-
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+    use ibc_relayer_types::core::ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        PortId,
+    };
+
+    use super::QueryPacketAcknowledgementsCmd;
 
     #[test]
     fn test_query_packet_acks() {

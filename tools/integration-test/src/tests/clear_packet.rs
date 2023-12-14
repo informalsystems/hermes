@@ -1,8 +1,10 @@
 use std::thread;
 
 use ibc_relayer::config::ChainConfig;
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::random::random_u128_range;
+use ibc_test_framework::{
+    prelude::*,
+    util::random::random_u128_range,
+};
 
 #[test]
 fn test_clear_packet() -> Result<(), Error> {

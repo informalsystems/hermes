@@ -1,24 +1,52 @@
-use core::fmt::{Debug, Error, Formatter};
+use core::fmt::{
+    Debug,
+    Error,
+    Formatter,
+};
 
-use abscissa_core::clap::Parser;
-use abscissa_core::Runnable;
+use abscissa_core::{
+    clap::Parser,
+    Runnable,
+};
+use eyre::eyre;
+use ibc_relayer::{
+    chain::{
+        handle::{
+            BaseChainHandle,
+            ChainHandle,
+        },
+        requests::{
+            IncludeProof,
+            PageRequest,
+            QueryChannelRequest,
+            QueryChannelsRequest,
+            QueryClientStateRequest,
+            QueryConnectionRequest,
+            QueryHeight,
+        },
+    },
+    registry::Registry,
+};
+use ibc_relayer_types::core::{
+    ics04_channel::channel::{
+        ChannelEnd,
+        State,
+    },
+    ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        ConnectionId,
+        PortChannelId,
+        PortId,
+    },
+};
 use serde::Serialize;
 
-use eyre::eyre;
-use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
-use ibc_relayer::chain::requests::{
-    IncludeProof, PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
-    QueryConnectionRequest, QueryHeight,
+use crate::{
+    commands::query::channel_ends::ChannelEnds,
+    conclude::Output,
+    prelude::*,
 };
-use ibc_relayer::registry::Registry;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, State};
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ConnectionId, PortChannelId, PortId,
-};
-
-use crate::commands::query::channel_ends::ChannelEnds;
-use crate::conclude::Output;
-use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryChannelsCmd {
@@ -383,10 +411,10 @@ impl Debug for QueryChannelsOutput {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryChannelsCmd;
-
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+
+    use super::QueryChannelsCmd;
 
     #[test]
     fn test_query_channels_required_only() {

@@ -1,23 +1,44 @@
-use core::fmt;
-use core::mem;
-
-use crossbeam_channel::Sender;
-use serde::Deserialize;
-use serde::Serialize;
-use tracing::{debug, trace};
-
-use ibc_relayer_types::{
-    core::{ics02_client::events::NewBlock, ics24_host::identifier::ChainId},
-    Height,
+use core::{
+    fmt,
+    mem,
 };
 
-use crate::chain::tracking::TrackingId;
-use crate::event::IbcEventWithHeight;
-use crate::util::lock::{LockExt, RwArc};
-use crate::util::task::TaskHandle;
-use crate::{event::source::EventBatch, object::Object};
+use crossbeam_channel::Sender;
+use ibc_relayer_types::{
+    core::{
+        ics02_client::events::NewBlock,
+        ics24_host::identifier::ChainId,
+    },
+    Height,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
+use tracing::{
+    debug,
+    trace,
+};
 
-use super::{WorkerCmd, WorkerId};
+use super::{
+    WorkerCmd,
+    WorkerId,
+};
+use crate::{
+    chain::tracking::TrackingId,
+    event::{
+        source::EventBatch,
+        IbcEventWithHeight,
+    },
+    object::Object,
+    util::{
+        lock::{
+            LockExt,
+            RwArc,
+        },
+        task::TaskHandle,
+    },
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]

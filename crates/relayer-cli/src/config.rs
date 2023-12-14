@@ -1,5 +1,6 @@
-use crate::prelude::app_reader;
 use std::path::PathBuf;
+
+use crate::prelude::app_reader;
 
 /// Get the path to configuration file
 pub fn config_path() -> Option<PathBuf> {

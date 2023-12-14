@@ -2,12 +2,22 @@
    Type definitions for channel connected between two chains.
 */
 
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::channel::Channel;
+use ibc_relayer::{
+    chain::handle::ChainHandle,
+    channel::Channel,
+};
 
 use super::connection::ConnectedConnection;
-use crate::types::env::{EnvWriter, ExportEnv};
-use crate::types::id::{TaggedChannelId, TaggedPortId};
+use crate::types::{
+    env::{
+        EnvWriter,
+        ExportEnv,
+    },
+    id::{
+        TaggedChannelId,
+        TaggedPortId,
+    },
+};
 
 /**
    A channel that is connected between two chains with the full handshake

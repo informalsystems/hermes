@@ -1,22 +1,38 @@
 use core::time::Duration;
 use std::thread;
 
-use tracing::{debug, error, instrument, warn};
-
 use ibc_proto::google::protobuf::Any;
 use tendermint::abci::Code;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::HttpClient;
+use tendermint_rpc::{
+    endpoint::broadcast::tx_sync::Response,
+    HttpClient,
+};
+use tracing::{
+    debug,
+    error,
+    instrument,
+    warn,
+};
 
-use crate::chain::cosmos::query::account::refresh_account;
-use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
-use crate::chain::cosmos::types::account::Account;
-use crate::chain::cosmos::types::config::TxConfig;
-use crate::config::types::Memo;
-use crate::error::Error;
-use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
-use crate::sdk_error::sdk_error_from_tx_sync_error_code;
-use crate::{telemetry, time};
+use crate::{
+    chain::cosmos::{
+        query::account::refresh_account,
+        tx::estimate_fee_and_send_tx,
+        types::{
+            account::Account,
+            config::TxConfig,
+        },
+    },
+    config::types::Memo,
+    error::Error,
+    keyring::{
+        Secp256k1KeyPair,
+        SigningKeyPair,
+    },
+    sdk_error::sdk_error_from_tx_sync_error_code,
+    telemetry,
+    time,
+};
 
 // Delay in milliseconds before retrying in the case of account sequence mismatch.
 const ACCOUNT_SEQUENCE_RETRY_DELAY: u64 = 300;

@@ -1,12 +1,17 @@
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket,
+    Protobuf,
+};
 
-use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
-
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::packet::Packet;
-use crate::proofs::Proofs;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+    core::ics04_channel::{
+        error::Error,
+        packet::Packet,
+    },
+    proofs::Proofs,
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 
@@ -89,14 +94,24 @@ impl From<MsgRecvPacket> for RawMsgRecvPacket {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
-    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+    use core::{
+        ops::Add,
+        time::Duration,
+    };
 
-    use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-    use crate::timestamp::Timestamp;
-    use core::ops::Add;
-    use core::time::Duration;
+    use ibc_proto::ibc::core::{
+        channel::v1::MsgRecvPacket as RawMsgRecvPacket,
+        client::v1::Height as RawHeight,
+    };
+
+    use crate::{
+        core::ics04_channel::packet::test_utils::get_dummy_raw_packet,
+        test_utils::{
+            get_dummy_bech32_account,
+            get_dummy_proof,
+        },
+        timestamp::Timestamp,
+    };
 
     /// Returns a dummy `RawMsgRecvPacket`, for testing only! The `height` parametrizes both the
     /// proof height as well as the timeout height.
@@ -120,14 +135,19 @@ pub mod test_util {
 #[cfg(test)]
 mod test {
 
+    use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
     use test_log::test;
 
-    use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
-
-    use crate::core::ics04_channel::error::Error;
-    use crate::core::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
-    use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-    use crate::test_utils::get_dummy_bech32_account;
+    use crate::{
+        core::ics04_channel::{
+            error::Error,
+            msgs::recv_packet::{
+                test_util::get_dummy_raw_msg_recv_packet,
+                MsgRecvPacket,
+            },
+        },
+        test_utils::get_dummy_bech32_account,
+    };
 
     #[test]
     fn msg_recv_packet_try_from_raw() {

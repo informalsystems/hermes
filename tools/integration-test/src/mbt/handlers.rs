@@ -1,23 +1,45 @@
-use ibc_relayer::util::task::TaskHandle;
-use ibc_relayer::worker::client::spawn_refresh_client;
-
-use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
-use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
-use ibc_test_framework::chain::ext::transfer::ChainTransferMethodsExt;
-use ibc_test_framework::chain::tagged::TaggedChainDriverExt;
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::channel::{assert_eventually_channel_established, init_channel};
-use ibc_test_framework::relayer::connection::{
-    assert_eventually_connection_established, init_connection,
+use ibc_relayer::{
+    util::task::TaskHandle,
+    worker::client::spawn_refresh_client,
 };
-use ibc_test_framework::types::binary::client::ClientIdPair;
-use ibc_test_framework::types::binary::connection::ConnectedConnection;
-use ibc_test_framework::types::tagged::mono::Tagged;
+use ibc_test_framework::{
+    bootstrap::binary::{
+        chain::bootstrap_foreign_client_pair,
+        connection::bootstrap_connection,
+    },
+    chain::{
+        ext::transfer::ChainTransferMethodsExt,
+        tagged::TaggedChainDriverExt,
+    },
+    ibc::denom::derive_ibc_denom,
+    prelude::*,
+    relayer::{
+        channel::{
+            assert_eventually_channel_established,
+            init_channel,
+        },
+        connection::{
+            assert_eventually_connection_established,
+            init_connection,
+        },
+    },
+    types::{
+        binary::{
+            client::ClientIdPair,
+            connection::ConnectedConnection,
+        },
+        tagged::mono::Tagged,
+    },
+};
 
-use super::state::Packet;
-
-use super::utils::{get_denom, get_wallet, wait_for_client};
+use super::{
+    state::Packet,
+    utils::{
+        get_denom,
+        get_wallet,
+        wait_for_client,
+    },
+};
 
 pub fn setup_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: &ConnectedChains<ChainA, ChainB>,

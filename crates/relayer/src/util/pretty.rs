@@ -1,13 +1,29 @@
-use core::fmt::{Debug, Display, Error as FmtError, Formatter};
+use core::fmt::{
+    Debug,
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 use std::time::Duration;
 
 use ibc_proto::{
     cosmos::tx::v1beta1::Fee,
     google::protobuf::Any,
     ibc::core::{
-        channel::v1::{Counterparty as ChannelCounterparty, IdentifiedChannel},
-        client::v1::{ConsensusStateWithHeight, Height, IdentifiedClientState},
-        connection::v1::{Counterparty as ConnectionCounterparty, IdentifiedConnection, Version},
+        channel::v1::{
+            Counterparty as ChannelCounterparty,
+            IdentifiedChannel,
+        },
+        client::v1::{
+            ConsensusStateWithHeight,
+            Height,
+            IdentifiedClientState,
+        },
+        connection::v1::{
+            Counterparty as ConnectionCounterparty,
+            IdentifiedConnection,
+            Version,
+        },
     },
 };
 use tendermint::abci::Code;

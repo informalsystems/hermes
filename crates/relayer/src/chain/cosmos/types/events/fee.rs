@@ -1,5 +1,10 @@
-use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
-use ibc_relayer_types::events::{IbcEvent, IbcEventType};
+use ibc_relayer_types::{
+    applications::ics29_fee::events::IncentivizedPacket,
+    events::{
+        IbcEvent,
+        IbcEventType,
+    },
+};
 use tendermint::abci::Event as AbciEvent;
 
 pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {

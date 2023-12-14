@@ -1,13 +1,19 @@
 use core::str::FromStr;
+use std::collections::HashMap;
+
 use eyre::eyre;
 use ibc_relayer_types::applications::transfer::amount::Amount;
 use serde_json as json;
 use serde_yaml as yaml;
-use std::collections::HashMap;
 use tracing::debug;
 
-use crate::chain::exec::simple_exec;
-use crate::error::{handle_generic_error, Error};
+use crate::{
+    chain::exec::simple_exec,
+    error::{
+        handle_generic_error,
+        Error,
+    },
+};
 
 pub fn query_balance(
     chain_id: &str,

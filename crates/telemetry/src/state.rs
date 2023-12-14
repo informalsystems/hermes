@@ -1,25 +1,43 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 use std::{
     ops::Range,
     sync::Mutex,
-    time::{Duration, Instant},
+    time::{
+        Duration,
+        Instant,
+    },
 };
 
-use dashmap::{DashMap, DashSet};
+use dashmap::{
+    DashMap,
+    DashSet,
+};
+use ibc_relayer_types::{
+    applications::transfer::Coin,
+    core::ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        ClientId,
+        PortId,
+    },
+    signer::Signer,
+};
 use opentelemetry::{
     global,
-    metrics::{Counter, ObservableGauge, UpDownCounter},
-    Context, KeyValue,
+    metrics::{
+        Counter,
+        ObservableGauge,
+        UpDownCounter,
+    },
+    Context,
+    KeyValue,
 };
 use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
-
-use ibc_relayer_types::{
-    applications::transfer::Coin,
-    core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
-    signer::Signer,
-};
-
 use tendermint::Time;
 
 use crate::path_identifier::PathIdentifier;
@@ -209,8 +227,13 @@ impl TelemetryState {
         tx_latency_confirmed_range: Range<u64>,
         tx_latency_confirmed_buckets: u64,
     ) -> Self {
-        use opentelemetry::sdk::export::metrics::aggregation;
-        use opentelemetry::sdk::metrics::{controllers, processors};
+        use opentelemetry::sdk::{
+            export::metrics::aggregation,
+            metrics::{
+                controllers,
+                processors,
+            },
+        };
 
         let controller = controllers::basic(processors::factory(
             CustomAggregatorSelector::new(
@@ -1097,11 +1120,21 @@ impl TelemetryState {
 
 use std::sync::Arc;
 
-use opentelemetry::metrics::Unit;
-use opentelemetry::sdk::export::metrics::AggregatorSelector;
-use opentelemetry::sdk::metrics::aggregators::Aggregator;
-use opentelemetry::sdk::metrics::aggregators::{histogram, last_value, sum};
-use opentelemetry::sdk::metrics::sdk_api::Descriptor;
+use opentelemetry::{
+    metrics::Unit,
+    sdk::{
+        export::metrics::AggregatorSelector,
+        metrics::{
+            aggregators::{
+                histogram,
+                last_value,
+                sum,
+                Aggregator,
+            },
+            sdk_api::Descriptor,
+        },
+    },
+};
 
 #[derive(Debug)]
 struct CustomAggregatorSelector {

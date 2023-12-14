@@ -1,6 +1,12 @@
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-use super::itf::{Map, Set};
+use super::itf::{
+    Map,
+    Set,
+};
 
 pub type ChainId = u128;
 pub type DenomId = ChainId;

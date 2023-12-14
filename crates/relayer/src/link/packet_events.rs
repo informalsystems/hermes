@@ -1,18 +1,32 @@
 //! Utility methods for querying packet event data.
 
+use ibc_relayer_types::{
+    core::ics04_channel::packet::Sequence,
+    events::WithBlockDataType,
+    Height,
+};
 use itertools::Itertools;
-use tracing::{info, span, warn, Level};
+use tracing::{
+    info,
+    span,
+    warn,
+    Level,
+};
 
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::events::WithBlockDataType;
-use ibc_relayer_types::Height;
-
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{Qualified, QueryHeight, QueryPacketEventDataRequest};
-use crate::error::Error;
-use crate::event::IbcEventWithHeight;
-use crate::path::PathIdentifiers;
-use crate::util::collate::CollatedIterExt;
+use crate::{
+    chain::{
+        handle::ChainHandle,
+        requests::{
+            Qualified,
+            QueryHeight,
+            QueryPacketEventDataRequest,
+        },
+    },
+    error::Error,
+    event::IbcEventWithHeight,
+    path::PathIdentifiers,
+    util::collate::CollatedIterExt,
+};
 
 /// Limit on how many query results should be expected.
 pub const CHUNK_LENGTH: usize = 50;

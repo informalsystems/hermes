@@ -1,5 +1,8 @@
 max_width = 100
 reorder_imports = true
+imports_layout = "Vertical"
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
 
 # nightly only
 

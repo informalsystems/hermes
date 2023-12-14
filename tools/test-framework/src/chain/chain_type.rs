@@ -1,9 +1,15 @@
 use core::str::FromStr;
+
 use ibc_relayer::config::AddressType;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::error::Error;
-use crate::util::random::{random_u32, random_unused_tcp_port};
+use crate::{
+    error::Error,
+    util::random::{
+        random_u32,
+        random_unused_tcp_port,
+    },
+};
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 const EVMOS_HD_PATH: &str = "m/44'/60'/0'/0/0";

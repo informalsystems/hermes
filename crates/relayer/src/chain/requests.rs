@@ -1,38 +1,57 @@
-use core::fmt::{self, Display};
+use core::fmt::{
+    self,
+    Display,
+};
+
+use ibc_proto::{
+    cosmos::base::query::v1beta1::PageRequest as RawPageRequest,
+    ibc::core::{
+        channel::v1::{
+            QueryChannelClientStateRequest as RawQueryChannelClientStateRequest,
+            QueryChannelsRequest as RawQueryChannelsRequest,
+            QueryConnectionChannelsRequest as RawQueryConnectionChannelsRequest,
+            QueryNextSequenceReceiveRequest as RawQueryNextSequenceReceiveRequest,
+            QueryPacketAcknowledgementsRequest as RawQueryPacketAcknowledgementsRequest,
+            QueryPacketCommitmentsRequest as RawQueryPacketCommitmentsRequest,
+            QueryUnreceivedAcksRequest as RawQueryUnreceivedAcksRequest,
+            QueryUnreceivedPacketsRequest as RawQueryUnreceivedPacketsRequest,
+        },
+        client::v1::{
+            QueryClientStatesRequest as RawQueryClientStatesRequest,
+            QueryConsensusStateHeightsRequest as RawQueryConsensusStateHeightsRequest,
+            QueryConsensusStatesRequest as RawQueryConsensusStatesRequest,
+        },
+        connection::v1::{
+            QueryClientConnectionsRequest as RawQueryClientConnectionsRequest,
+            QueryConnectionsRequest as RawQueryConnectionsRequest,
+        },
+    },
+};
+use ibc_relayer_types::{
+    core::{
+        ics04_channel::packet::Sequence,
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            ClientId,
+            ConnectionId,
+            PortId,
+        },
+    },
+    events::WithBlockDataType,
+    Height,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
+use tendermint::{
+    block::Height as TMBlockHeight,
+    Hash as TxHash,
+};
+use tonic::metadata::AsciiMetadataValue;
 
 use crate::error::Error;
-
-use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
-use ibc_proto::ibc::core::channel::v1::{
-    QueryChannelClientStateRequest as RawQueryChannelClientStateRequest,
-    QueryChannelsRequest as RawQueryChannelsRequest,
-    QueryConnectionChannelsRequest as RawQueryConnectionChannelsRequest,
-    QueryNextSequenceReceiveRequest as RawQueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest as RawQueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest as RawQueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest as RawQueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest as RawQueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::client::v1::{
-    QueryClientStatesRequest as RawQueryClientStatesRequest,
-    QueryConsensusStateHeightsRequest as RawQueryConsensusStateHeightsRequest,
-    QueryConsensusStatesRequest as RawQueryConsensusStatesRequest,
-};
-use ibc_proto::ibc::core::connection::v1::{
-    QueryClientConnectionsRequest as RawQueryClientConnectionsRequest,
-    QueryConnectionsRequest as RawQueryConnectionsRequest,
-};
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
-};
-use ibc_relayer_types::events::WithBlockDataType;
-use ibc_relayer_types::Height;
-
-use serde::{Deserialize, Serialize};
-use tendermint::block::Height as TMBlockHeight;
-use tendermint::Hash as TxHash;
-use tonic::metadata::AsciiMetadataValue;
 
 /// Type to specify a height in a query. Specifically, this caters to the use
 /// case where the user wants to query at whatever the latest height is, as

@@ -2,10 +2,13 @@
 //! the case that it relays a timeout packet when an `ibc_token_transfer_with_fee`
 //! operation times out.
 
-use ibc_relayer_types::core::ics04_channel::version::Version;
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::random::random_u128_range;
 use std::thread;
+
+use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_test_framework::{
+    prelude::*,
+    util::random::random_u128_range,
+};
 
 #[test]
 fn test_timeout_fee() -> Result<(), Error> {

@@ -1,7 +1,8 @@
-use async_stream::stream;
 use core::mem;
-use futures::stream::Stream;
 use std::time::Duration;
+
+use async_stream::stream;
+use futures::stream::Stream;
 use tokio_stream::StreamExt;
 
 /// ## Example
@@ -161,10 +162,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    use futures::{executor::block_on, stream, StreamExt};
+    use futures::{
+        executor::block_on,
+        stream,
+        StreamExt,
+    };
     use test_log::test;
+
+    use super::*;
 
     fn ok<A>(a: A) -> Result<A, ()> {
         Ok(a)

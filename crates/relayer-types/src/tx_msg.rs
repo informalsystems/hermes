@@ -1,5 +1,8 @@
 use ibc_proto::google::protobuf::Any;
-use prost::{EncodeError, Message};
+use prost::{
+    EncodeError,
+    Message,
+};
 
 use crate::core::ics24_host::error::ValidationError;
 

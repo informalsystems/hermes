@@ -1,14 +1,27 @@
-use crate::chain_registry::get_configs;
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use std::{
+    collections::HashSet,
+    path::PathBuf,
+};
 
-use crate::conclude::Output;
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::config::{
+    store,
+    ChainConfig,
+    Config,
+};
+use tracing::{
+    info,
+    warn,
+};
 
-use ibc_relayer::config::{store, ChainConfig, Config};
-
-use std::collections::HashSet;
-use std::path::PathBuf;
-use tracing::{info, warn};
+use crate::{
+    chain_registry::get_configs,
+    conclude::Output,
+};
 
 fn find_key(chain_config: &ChainConfig) -> Option<String> {
     let keys = chain_config.list_keys().ok()?;
@@ -177,9 +190,11 @@ impl Runnable for AutoCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::AutoCmd;
-    use abscissa_core::clap::Parser;
     use std::path::PathBuf;
+
+    use abscissa_core::clap::Parser;
+
+    use super::AutoCmd;
 
     #[test]
     fn auto_config_without_commit() {

@@ -1,17 +1,41 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::requests::{IncludeProof, QueryHeight, QueryPacketAcknowledgementRequest};
-use subtle_encoding::{Encoding, Hex};
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::chain::{
+    handle::ChainHandle,
+    requests::{
+        IncludeProof,
+        QueryHeight,
+        QueryPacketAcknowledgementRequest,
+    },
+};
+use ibc_relayer_types::{
+    core::{
+        ics04_channel::packet::Sequence,
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            PortId,
+        },
+    },
+    Height,
+};
+use subtle_encoding::{
+    Encoding,
+    Hex,
+};
 
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer_types::Height;
-
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::Error;
-use crate::prelude::*;
+use crate::{
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    error::Error,
+    prelude::*,
+};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryPacketAcknowledgmentCmd {
@@ -102,13 +126,19 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryPacketAcknowledgmentCmd;
-
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+    use ibc_relayer_types::core::{
+        ics04_channel::packet::Sequence,
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            PortId,
+        },
+    };
+
+    use super::QueryPacketAcknowledgmentCmd;
 
     #[test]
     fn test_query_packet_ack_required_only() {

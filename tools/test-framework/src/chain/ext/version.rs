@@ -1,7 +1,11 @@
-use crate::chain::cli::version::major_version;
-use crate::chain::driver::ChainDriver;
-use crate::error::Error;
-use crate::types::tagged::*;
+use crate::{
+    chain::{
+        cli::version::major_version,
+        driver::ChainDriver,
+    },
+    error::Error,
+    types::tagged::*,
+};
 
 pub trait ChainVersionMethodsExt {
     fn major_version(&self) -> Result<u64, Error>;

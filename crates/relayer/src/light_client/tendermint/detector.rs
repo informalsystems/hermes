@@ -1,23 +1,45 @@
-use tracing::{error, info};
-
+use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 use tendermint::{
-    evidence::{Evidence, LightClientAttackEvidence},
-    Hash, Time,
+    evidence::{
+        Evidence,
+        LightClientAttackEvidence,
+    },
+    Hash,
+    Time,
 };
 use tendermint_light_client::{
     builder::LightClientBuilder,
-    components::{clock::FixedClock, io::ProdIo, scheduler},
+    components::{
+        clock::FixedClock,
+        io::ProdIo,
+        scheduler,
+    },
     predicates::ProdPredicates,
     store::memory::MemoryStore,
-    types::{LightBlock, PeerId},
+    types::{
+        LightBlock,
+        PeerId,
+    },
     verifier::ProdVerifier,
 };
-use tendermint_light_client_detector::{detect_divergence, Divergence, Provider};
-use tendermint_rpc::{Client, HttpClient};
+use tendermint_light_client_detector::{
+    detect_divergence,
+    Divergence,
+    Provider,
+};
+use tendermint_rpc::{
+    Client,
+    HttpClient,
+};
+use tracing::{
+    error,
+    info,
+};
 
-use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
-
-use crate::{error::Error, util::block_on};
+use crate::{
+    error::Error,
+    util::block_on,
+};
 
 type Hasher = tendermint::crypto::default::Sha256;
 

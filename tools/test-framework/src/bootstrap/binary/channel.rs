@@ -2,22 +2,46 @@
     Helper functions for bootstrapping a channel between two chains.
 */
 
-use eyre::{eyre, Report as Error};
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::channel::{Channel, ChannelSide};
-use ibc_relayer_types::core::ics04_channel::channel::Ordering;
-use ibc_relayer_types::core::ics04_channel::version::Version;
-use ibc_relayer_types::core::ics24_host::identifier::PortId;
-use tracing::{debug, info};
+use eyre::{
+    eyre,
+    Report as Error,
+};
+use ibc_relayer::{
+    chain::handle::ChainHandle,
+    channel::{
+        Channel,
+        ChannelSide,
+    },
+};
+use ibc_relayer_types::core::{
+    ics04_channel::{
+        channel::Ordering,
+        version::Version,
+    },
+    ics24_host::identifier::PortId,
+};
+use tracing::{
+    debug,
+    info,
+};
 
-use super::connection::{bootstrap_connection, BootstrapConnectionOptions};
-use crate::types::binary::chains::ConnectedChains;
-use crate::types::binary::channel::ConnectedChannel;
-use crate::types::binary::connection::ConnectedConnection;
-use crate::types::binary::foreign_client::ForeignClientPair;
-use crate::types::id::TaggedPortIdRef;
-use crate::types::tagged::*;
-use crate::util::random::random_u64_range;
+use super::connection::{
+    bootstrap_connection,
+    BootstrapConnectionOptions,
+};
+use crate::{
+    types::{
+        binary::{
+            chains::ConnectedChains,
+            channel::ConnectedChannel,
+            connection::ConnectedConnection,
+            foreign_client::ForeignClientPair,
+        },
+        id::TaggedPortIdRef,
+        tagged::*,
+    },
+    util::random::random_u64_range,
+};
 
 pub struct BootstrapChannelOptions {
     pub order: Ordering,

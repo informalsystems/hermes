@@ -1,17 +1,32 @@
 use core::time::Duration;
 
-use flex_error::{define_error, ErrorMessageTracer};
-
-use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
-use ibc_relayer_types::core::ics04_channel::channel::State;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, PortChannelId, PortId,
+use flex_error::{
+    define_error,
+    ErrorMessageTracer,
 };
-use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::{
+    core::{
+        ics02_client::error::Error as ClientError,
+        ics04_channel::channel::State,
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            ClientId,
+            PortChannelId,
+            PortId,
+        },
+    },
+    events::IbcEvent,
+};
 
-use crate::error::Error as RelayerError;
-use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
-use crate::supervisor::Error as SupervisorError;
+use crate::{
+    error::Error as RelayerError,
+    foreign_client::{
+        ForeignClientError,
+        HasExpiredOrFrozenError,
+    },
+    supervisor::Error as SupervisorError,
+};
 
 define_error! {
     ChannelError {

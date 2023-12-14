@@ -1,8 +1,16 @@
-use ibc_relayer::config::ChainConfig;
-use ibc_relayer::keyring::Store;
+use std::{
+    env,
+    process::{
+        Command,
+        Stdio,
+    },
+};
+
+use ibc_relayer::{
+    config::ChainConfig,
+    keyring::Store,
+};
 use ibc_test_framework::prelude::*;
-use std::env;
-use std::process::{Command, Stdio};
 
 struct PythonTest;
 

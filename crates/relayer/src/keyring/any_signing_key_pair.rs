@@ -1,6 +1,11 @@
 use serde::Serialize;
 
-use super::{Ed25519KeyPair, KeyType, Secp256k1KeyPair, SigningKeyPair};
+use super::{
+    Ed25519KeyPair,
+    KeyType,
+    Secp256k1KeyPair,
+    SigningKeyPair,
+};
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]

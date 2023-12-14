@@ -1,7 +1,15 @@
-use ibc_relayer::config::{self, ModeConfig};
-use ibc_relayer::object::ObjectType;
-use ibc_test_framework::relayer::channel::init_channel;
-use ibc_test_framework::{prelude::*, util::random::random_u128_range};
+use ibc_relayer::{
+    config::{
+        self,
+        ModeConfig,
+    },
+    object::ObjectType,
+};
+use ibc_test_framework::{
+    prelude::*,
+    relayer::channel::init_channel,
+    util::random::random_u128_range,
+};
 
 #[test]
 fn test_clean_packet_workers() -> Result<(), Error> {

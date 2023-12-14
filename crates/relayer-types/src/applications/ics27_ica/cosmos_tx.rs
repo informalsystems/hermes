@@ -1,12 +1,18 @@
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::applications::interchain_accounts::v1::CosmosTx as RawCosmosTx;
-use ibc_proto::Protobuf;
-use serde_derive::Deserialize;
-use serde_derive::Serialize;
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::applications::interchain_accounts::v1::CosmosTx as RawCosmosTx,
+    Protobuf,
+};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 
-use crate::applications::ics27_ica::error::Error;
-use crate::core::ics24_host::error::ValidationError;
-use crate::tx_msg::Msg;
+use crate::{
+    applications::ics27_ica::error::Error,
+    core::ics24_host::error::ValidationError,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.applications.interchain_accounts.v1.CosmosTx";
 

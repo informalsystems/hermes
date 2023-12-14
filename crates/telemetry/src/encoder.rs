@@ -1,11 +1,23 @@
 // Copyright 2019 TiKV Project Authors. Licensed under Apache-2.0.
 
-use std::collections::BTreeMap;
-use std::io::{self, Write};
+use std::{
+    collections::BTreeMap,
+    io::{
+        self,
+        Write,
+    },
+};
 
-use prometheus::proto::{self, MetricFamily, MetricType};
-use prometheus::{Encoder, Error, Result};
-
+use prometheus::{
+    proto::{
+        self,
+        MetricFamily,
+        MetricType,
+    },
+    Encoder,
+    Error,
+    Result,
+};
 use serde::Serialize;
 
 /// The JSON format of metric family.

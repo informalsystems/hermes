@@ -1,21 +1,38 @@
-use ibc_relayer::supervisor::SupervisorOptions;
-use ibc_relayer::util::debug_section::DebugSection;
-use std::error::Error;
-use std::io;
+use std::{
+    error::Error,
+    io,
+};
 
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
 use crossbeam_channel::Sender;
+use ibc_relayer::{
+    chain::handle::{
+        CachingChainHandle,
+        ChainHandle,
+    },
+    config::Config,
+    registry::SharedRegistry,
+    rest,
+    supervisor::{
+        cmd::SupervisorCmd,
+        spawn_supervisor,
+        SupervisorHandle,
+        SupervisorOptions,
+    },
+    util::debug_section::DebugSection,
+};
 
-use ibc_relayer::chain::handle::{CachingChainHandle, ChainHandle};
-use ibc_relayer::config::Config;
-use ibc_relayer::registry::SharedRegistry;
-use ibc_relayer::rest;
-use ibc_relayer::supervisor::{cmd::SupervisorCmd, spawn_supervisor, SupervisorHandle};
-
-use crate::conclude::json;
-use crate::conclude::Output;
-use crate::prelude::*;
+use crate::{
+    conclude::{
+        json,
+        Output,
+    },
+    prelude::*,
+};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct StartCmd {
@@ -31,8 +48,10 @@ impl Runnable for StartCmd {
         let app = app_reader();
 
         if app.debug_enabled(DebugSection::ProfilingJson) {
-            use std::env;
-            use std::path::Path;
+            use std::{
+                env,
+                path::Path,
+            };
 
             use ibc_relayer::util::profiling::open_or_create_profile_file;
 
@@ -86,7 +105,10 @@ impl Runnable for StartCmd {
 /// - [DEPRECATED] SIGHUP: Trigger a reload of the configuration.
 /// - SIGUSR1: Ask the supervisor to dump its state and print it to the console.
 fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
-    use signal_hook::{consts::signal::*, iterator::Signals};
+    use signal_hook::{
+        consts::signal::*,
+        iterator::Signals,
+    };
 
     let sigs = vec![
         SIGHUP,  // Reload of configuration (disabled)
@@ -246,9 +268,9 @@ fn make_supervisor<Chain: ChainHandle>(
 
 #[cfg(test)]
 mod tests {
-    use super::StartCmd;
-
     use abscissa_core::clap::Parser;
+
+    use super::StartCmd;
 
     #[test]
     fn test_start_required_only() {

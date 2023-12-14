@@ -1,10 +1,20 @@
-use ibc_proto::ibc::core::channel::v1::PacketId as ProtoPacketId;
-use std::convert::TryFrom;
-use std::str::FromStr;
+use std::{
+    convert::TryFrom,
+    str::FromStr,
+};
 
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_proto::ibc::core::channel::v1::PacketId as ProtoPacketId;
+
+use crate::core::{
+    ics04_channel::{
+        error::Error,
+        packet::Sequence,
+    },
+    ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    },
+};
 
 #[derive(Debug, Clone)]
 pub struct PacketId {

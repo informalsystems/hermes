@@ -4,9 +4,11 @@
 //! channel version to be used in a channel open
 //! handshake.
 
-use ibc_relayer_types::{applications::transfer, core::ics24_host::identifier::PortId};
-
 pub use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_relayer_types::{
+    applications::transfer,
+    core::ics24_host::identifier::PortId,
+};
 
 /// Returns the default channel version, depending on the the given [`PortId`].
 pub fn default_by_port(port_id: &PortId) -> Option<Version> {

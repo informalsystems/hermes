@@ -3,29 +3,52 @@
     with connected foreign clients.
 */
 
-use eyre::Report as Error;
-use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
-use ibc_relayer::config::Config;
-use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
-use ibc_relayer::foreign_client::{
-    extract_client_id, CreateOptions as ClientOptions, ForeignClient,
+use std::{
+    fs,
+    path::Path,
+    thread,
+    time::Duration,
 };
-use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
-use ibc_relayer::registry::SharedRegistry;
-use ibc_relayer_types::core::ics24_host::identifier::ClientId;
-use std::path::Path;
-use std::time::Duration;
-use std::{fs, thread};
-use tracing::{debug, info};
 
-use crate::relayer::driver::RelayerDriver;
-use crate::types::binary::chains::ConnectedChains;
-use crate::types::binary::foreign_client::ForeignClientPair;
-use crate::types::config::TestConfig;
-use crate::types::single::node::FullNode;
-use crate::types::tagged::*;
-use crate::types::wallet::{TestWallets, Wallet};
-use crate::util::random::random_u64_range;
+use eyre::Report as Error;
+use ibc_relayer::{
+    chain::handle::{
+        ChainHandle,
+        CountingAndCachingChainHandle,
+    },
+    config::Config,
+    error::ErrorDetail as RelayerErrorDetail,
+    foreign_client::{
+        extract_client_id,
+        CreateOptions as ClientOptions,
+        ForeignClient,
+    },
+    keyring::errors::ErrorDetail as KeyringErrorDetail,
+    registry::SharedRegistry,
+};
+use ibc_relayer_types::core::ics24_host::identifier::ClientId;
+use tracing::{
+    debug,
+    info,
+};
+
+use crate::{
+    relayer::driver::RelayerDriver,
+    types::{
+        binary::{
+            chains::ConnectedChains,
+            foreign_client::ForeignClientPair,
+        },
+        config::TestConfig,
+        single::node::FullNode,
+        tagged::*,
+        wallet::{
+            TestWallets,
+            Wallet,
+        },
+    },
+    util::random::random_u64_range,
+};
 
 #[derive(Default)]
 pub struct BootstrapClientOptions {

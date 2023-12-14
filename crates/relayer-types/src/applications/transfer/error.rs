@@ -1,18 +1,35 @@
-use std::convert::Infallible;
-use std::str::Utf8Error;
-use std::string::FromUtf8Error;
+use std::{
+    convert::Infallible,
+    str::Utf8Error,
+    string::FromUtf8Error,
+};
 
-use flex_error::{define_error, DisplayOnly, TraceError};
+use flex_error::{
+    define_error,
+    DisplayOnly,
+    TraceError,
+};
 use subtle_encoding::Error as EncodingError;
 use tendermint_proto::Error as TendermintProtoError;
 use uint::FromDecStrErr;
 
-use crate::core::ics04_channel::channel::Ordering;
-use crate::core::ics04_channel::error as channel_error;
-use crate::core::ics04_channel::version::Version;
-use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::signer::SignerError;
+use crate::{
+    core::{
+        ics04_channel::{
+            channel::Ordering,
+            error as channel_error,
+            version::Version,
+        },
+        ics24_host::{
+            error::ValidationError,
+            identifier::{
+                ChannelId,
+                PortId,
+            },
+        },
+    },
+    signer::SignerError,
+};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]

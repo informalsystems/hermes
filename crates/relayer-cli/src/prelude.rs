@@ -8,4 +8,7 @@
 pub use abscissa_core::prelude::*;
 
 /// Application state accessors
-pub use crate::application::{app_config, app_reader};
+pub use crate::application::{
+    app_config,
+    app_reader,
+};

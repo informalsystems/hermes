@@ -1,12 +1,20 @@
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_proto::{
+    ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm,
+    Protobuf,
+};
 
-use crate::proofs::Proofs;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
-
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
-use ibc_proto::Protobuf;
+use crate::{
+    core::{
+        ics04_channel::error::Error,
+        ics24_host::identifier::{
+            ChannelId,
+            PortId,
+        },
+    },
+    proofs::Proofs,
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenConfirm";
 
@@ -89,11 +97,21 @@ impl From<MsgChannelOpenConfirm> for RawMsgChannelOpenConfirm {
 #[cfg(test)]
 pub mod test_util {
 
-    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
+    use ibc_proto::ibc::core::{
+        channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm,
+        client::v1::Height,
+    };
 
-    use crate::core::ics24_host::identifier::{ChannelId, PortId};
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-    use ibc_proto::ibc::core::client::v1::Height;
+    use crate::{
+        core::ics24_host::identifier::{
+            ChannelId,
+            PortId,
+        },
+        test_utils::{
+            get_dummy_bech32_account,
+            get_dummy_proof,
+        },
+    };
 
     /// Returns a dummy `RawMsgChannelOpenConfirm`, for testing only!
     pub fn get_dummy_raw_msg_chan_open_confirm(proof_height: u64) -> RawMsgChannelOpenConfirm {
@@ -113,13 +131,16 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
 
-    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
+    use ibc_proto::ibc::core::{
+        channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm,
+        client::v1::Height,
+    };
     use test_log::test;
 
-    use crate::core::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
-    use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-
-    use ibc_proto::ibc::core::client::v1::Height;
+    use crate::core::ics04_channel::msgs::chan_open_confirm::{
+        test_util::get_dummy_raw_msg_chan_open_confirm,
+        MsgChannelOpenConfirm,
+    };
 
     #[test]
     fn parse_channel_open_confirm_msg() {

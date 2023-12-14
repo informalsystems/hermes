@@ -1,38 +1,81 @@
-use std::collections::HashMap;
-use std::ops::{ControlFlow, Deref};
-use std::sync::Arc;
-use std::thread::sleep;
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    ops::{
+        ControlFlow,
+        Deref,
+    },
+    sync::Arc,
+    thread::sleep,
+    time::Duration,
+};
 
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-use ibc_relayer::config::{ChainConfig, Config};
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::{
+    chain::{
+        cosmos::CosmosSdkChain,
+        endpoint::ChainEndpoint,
+        handle::{
+            BaseChainHandle,
+            ChainHandle,
+        },
+        requests::{
+            IncludeProof,
+            PageRequest,
+            QueryHeight,
+        },
+        tracking::TrackedMsgs,
+    },
+    config::{
+        ChainConfig,
+        Config,
+    },
+    foreign_client::ForeignClient,
+    spawn::spawn_chain_runtime_with_modified_config,
+};
+use ibc_relayer_types::{
+    applications::ics28_ccv::msgs::{
+        ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting,
+        ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour,
+    },
+    clients::ics07_tendermint::{
+        header::Header as TendermintHeader,
+        misbehaviour::Misbehaviour as TendermintMisbehaviour,
+    },
+    core::{
+        ics02_client::{
+            height::Height,
+            msgs::misbehaviour::MsgSubmitMisbehaviour,
+        },
+        ics24_host::identifier::{
+            ChainId,
+            ClientId,
+        },
+    },
+    events::IbcEvent,
+    tx_msg::Msg,
+};
+use tendermint::{
+    block::Height as TendermintHeight,
+    evidence::{
+        DuplicateVoteEvidence,
+        LightClientAttackEvidence,
+    },
+    validator,
+};
+use tendermint_rpc::{
+    Client,
+    Paging,
+};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use tendermint::block::Height as TendermintHeight;
-use tendermint::evidence::{DuplicateVoteEvidence, LightClientAttackEvidence};
-use tendermint::validator;
-use tendermint_rpc::{Client, Paging};
-
-use ibc_relayer::chain::cosmos::CosmosSdkChain;
-use ibc_relayer::chain::endpoint::ChainEndpoint;
-use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
-use ibc_relayer::chain::requests::{IncludeProof, PageRequest, QueryHeight};
-use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer::spawn::spawn_chain_runtime_with_modified_config;
-use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
-use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
-use ibc_relayer_types::clients::ics07_tendermint::header::Header as TendermintHeader;
-use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TendermintMisbehaviour;
-use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::tx_msg::Msg;
-
-use crate::conclude::Output;
-use crate::prelude::*;
+use crate::{
+    conclude::Output,
+    prelude::*,
+};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct EvidenceCmd {
@@ -697,7 +740,10 @@ fn fetch_all_counterparty_clients(
     config: &Config,
     chain: &CosmosSdkChain,
 ) -> eyre::Result<Vec<(ChainId, ClientId)>> {
-    use ibc_relayer::chain::requests::{QueryClientStateRequest, QueryConnectionsRequest};
+    use ibc_relayer::chain::requests::{
+        QueryClientStateRequest,
+        QueryConnectionsRequest,
+    };
 
     let connections = chain.query_connections(QueryConnectionsRequest {
         pagination: Some(PageRequest::all()),
@@ -829,10 +875,10 @@ fn build_evidence_headers(
 
 #[cfg(test)]
 mod tests {
-    use super::EvidenceCmd;
-
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+
+    use super::EvidenceCmd;
 
     #[test]
     fn test_misbehaviour() {

@@ -1,11 +1,17 @@
 use crossbeam_channel::TryRecvError;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use tracing::{error, trace};
+use tracing::{
+    error,
+    trace,
+};
 
 use crate::{
     config::Config,
-    rest::request::ReplySender,
-    rest::request::{Request, VersionInfo},
+    rest::request::{
+        ReplySender,
+        Request,
+        VersionInfo,
+    },
     supervisor::dump_state::SupervisorState,
 };
 

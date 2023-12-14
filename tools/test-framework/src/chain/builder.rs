@@ -2,19 +2,20 @@
    Builder construct that spawn new chains with some common parameters.
 */
 
-use eyre::eyre;
+use alloc::sync::Arc;
 use std::str::FromStr;
 
-use alloc::sync::Arc;
+use eyre::eyre;
 use ibc_relayer::config::compat_mode::CompatMode;
 use tokio::runtime::Runtime;
 
-use crate::chain::driver::ChainDriver;
-use crate::error::Error;
-use crate::types::config::TestConfig;
-use crate::util::random::random_unused_tcp_port;
-
 use super::chain_type::ChainType;
+use crate::{
+    chain::driver::ChainDriver,
+    error::Error,
+    types::config::TestConfig,
+    util::random::random_unused_tcp_port,
+};
 
 /**
    Used for holding common configuration needed to create new `ChainDriver`s.

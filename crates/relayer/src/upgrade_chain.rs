@@ -5,24 +5,47 @@ use std::ops::Add;
 
 use bytes::BufMut;
 use flex_error::define_error;
-
+use ibc_proto::{
+    cosmos::{
+        gov::{
+            v1::MsgSubmitProposal,
+            v1beta1::MsgSubmitProposal as LegacyMsgSubmitProposal,
+        },
+        upgrade::v1beta1::Plan,
+    },
+    google::protobuf::Any,
+    ibc::core::client::v1::{
+        MsgIbcSoftwareUpgrade,
+        UpgradeProposal,
+    },
+};
+use ibc_relayer_types::{
+    clients::ics07_tendermint::client_state::UpgradeOptions,
+    core::{
+        ics02_client::client_state::ClientState,
+        ics24_host::identifier::{
+            ChainId,
+            ClientId,
+        },
+    },
+    downcast,
+    Height,
+};
 use tendermint::Hash as TxHash;
 
-use ibc_proto::cosmos::gov::v1::MsgSubmitProposal;
-use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal as LegacyMsgSubmitProposal;
-use ibc_proto::cosmos::upgrade::v1beta1::Plan;
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::client::v1::{MsgIbcSoftwareUpgrade, UpgradeProposal};
-use ibc_relayer_types::clients::ics07_tendermint::client_state::UpgradeOptions;
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer_types::{downcast, Height};
-
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
-use crate::chain::tracking::TrackedMsgs;
-use crate::client_state::AnyClientState;
-use crate::error::Error;
+use crate::{
+    chain::{
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            QueryClientStateRequest,
+            QueryHeight,
+        },
+        tracking::TrackedMsgs,
+    },
+    client_state::AnyClientState,
+    error::Error,
+};
 
 define_error! {
     UpgradeChainError {

@@ -1,19 +1,38 @@
 use core::time::Duration;
-use ibc_relayer::event::IbcEventWithHeight;
-use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 
-use crate::chain::driver::ChainDriver;
-use crate::chain::tagged::TaggedChainDriverExt;
-use crate::error::Error;
-use crate::ibc::token::TaggedTokenRef;
-use crate::relayer::fee::{
-    ibc_token_transfer_with_fee, pay_packet_fee, query_counterparty_payee,
-    query_incentivized_packets, register_counterparty_payee, register_payee,
+use ibc_relayer::event::IbcEventWithHeight;
+use ibc_relayer_types::{
+    applications::ics29_fee::packet_fee::IdentifiedPacketFees,
+    core::ics04_channel::packet::Sequence,
 };
-use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
-use crate::types::tagged::*;
-use crate::types::wallet::{Wallet, WalletAddress};
+
+use crate::{
+    chain::{
+        driver::ChainDriver,
+        tagged::TaggedChainDriverExt,
+    },
+    error::Error,
+    ibc::token::TaggedTokenRef,
+    relayer::fee::{
+        ibc_token_transfer_with_fee,
+        pay_packet_fee,
+        query_counterparty_payee,
+        query_incentivized_packets,
+        register_counterparty_payee,
+        register_payee,
+    },
+    types::{
+        id::{
+            TaggedChannelIdRef,
+            TaggedPortIdRef,
+        },
+        tagged::*,
+        wallet::{
+            Wallet,
+            WalletAddress,
+        },
+    },
+};
 
 pub trait ChainFeeMethodsExt<Chain> {
     fn ibc_token_transfer_with_fee<Counterparty>(

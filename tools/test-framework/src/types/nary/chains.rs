@@ -2,19 +2,35 @@
    Constructs for N-ary connected chains.
 */
 
-use core::convert::{From, TryFrom};
-use eyre::eyre;
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::foreign_client::ForeignClient;
+use core::convert::{
+    From,
+    TryFrom,
+};
 
-use crate::error::Error;
-use crate::types::binary::chains::ConnectedChains as BinaryConnectedChains;
-use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
-use crate::types::nary::aliases::*;
-use crate::types::nary::foreign_client::*;
-use crate::types::single::node::FullNode;
-use crate::types::tagged::*;
-use crate::util::array::try_into_array;
+use eyre::eyre;
+use ibc_relayer::{
+    chain::handle::ChainHandle,
+    foreign_client::ForeignClient,
+};
+
+use crate::{
+    error::Error,
+    types::{
+        binary::chains::ConnectedChains as BinaryConnectedChains,
+        env::{
+            prefix_writer,
+            EnvWriter,
+            ExportEnv,
+        },
+        nary::{
+            aliases::*,
+            foreign_client::*,
+        },
+        single::node::FullNode,
+        tagged::*,
+    },
+    util::array::try_into_array,
+};
 
 /**
    A fixed-size N-ary connected chains as specified by `SIZE`.

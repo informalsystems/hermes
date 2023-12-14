@@ -2,7 +2,10 @@ use ibc_proto::ibc::{
     applications::interchain_accounts::v1::InterchainAccountPacketData as RawInterchainAccountPacketData,
     apps::interchain_accounts::v1::Type,
 };
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 
 use crate::applications::ics27_ica::error::Error;
 

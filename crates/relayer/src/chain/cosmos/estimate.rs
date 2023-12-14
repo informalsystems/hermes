@@ -1,19 +1,36 @@
-use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx};
-use ibc_proto::google::protobuf::Any;
+use ibc_proto::{
+    cosmos::tx::v1beta1::{
+        Fee,
+        Tx,
+    },
+    google::protobuf::Any,
+};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tonic::codegen::http::Uri;
-use tracing::{debug, error, span, warn, Level};
+use tracing::{
+    debug,
+    error,
+    span,
+    warn,
+    Level,
+};
 
-use crate::chain::cosmos::encode::sign_tx;
-use crate::chain::cosmos::gas::gas_amount_to_fee;
-use crate::chain::cosmos::simulate::send_tx_simulate;
-use crate::chain::cosmos::types::account::Account;
-use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::gas::GasConfig;
-use crate::config::types::Memo;
-use crate::error::Error;
-use crate::keyring::Secp256k1KeyPair;
-use crate::util::pretty::PrettyFee;
+use crate::{
+    chain::cosmos::{
+        encode::sign_tx,
+        gas::gas_amount_to_fee,
+        simulate::send_tx_simulate,
+        types::{
+            account::Account,
+            config::TxConfig,
+            gas::GasConfig,
+        },
+    },
+    config::types::Memo,
+    error::Error,
+    keyring::Secp256k1KeyPair,
+    util::pretty::PrettyFee,
+};
 
 pub async fn estimate_tx_fees(
     config: &TxConfig,

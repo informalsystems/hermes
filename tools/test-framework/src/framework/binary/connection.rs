@@ -5,26 +5,50 @@
 */
 
 use core::time::Duration;
+
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use crate::bootstrap::binary::connection::{bootstrap_connection, BootstrapConnectionOptions};
-use crate::error::Error;
-use crate::framework::base::HasOverrides;
-use crate::framework::base::TestConfigOverride;
-use crate::framework::binary::chain::{
-    BinaryChainTest, ClientOptionsOverride, RelayerConfigOverride, RunBinaryChainTest,
+use crate::{
+    bootstrap::binary::connection::{
+        bootstrap_connection,
+        BootstrapConnectionOptions,
+    },
+    error::Error,
+    framework::{
+        base::{
+            HasOverrides,
+            TestConfigOverride,
+        },
+        binary::{
+            chain::{
+                BinaryChainTest,
+                ClientOptionsOverride,
+                RelayerConfigOverride,
+                RunBinaryChainTest,
+            },
+            node::{
+                run_binary_node_test,
+                NodeConfigOverride,
+                NodeGenesisOverride,
+            },
+        },
+        supervisor::{
+            RunWithSupervisor,
+            SupervisorOverride,
+        },
+    },
+    relayer::driver::RelayerDriver,
+    types::{
+        binary::{
+            chains::ConnectedChains,
+            connection::ConnectedConnection,
+        },
+        config::TestConfig,
+        env::write_env,
+    },
+    util::suspend::hang_on_error,
 };
-use crate::framework::binary::node::{
-    run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
-};
-use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
-use crate::relayer::driver::RelayerDriver;
-use crate::types::binary::chains::ConnectedChains;
-use crate::types::binary::connection::ConnectedConnection;
-use crate::types::config::TestConfig;
-use crate::types::env::write_env;
-use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`BinaryConnectionTest`], with

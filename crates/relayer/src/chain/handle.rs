@@ -1,54 +1,87 @@
 use alloc::sync::Arc;
-use core::fmt::{self, Debug, Display};
+use core::fmt::{
+    self,
+    Debug,
+    Display,
+};
 
 use crossbeam_channel as channel;
-use tracing::Span;
-
 use ibc_proto::ibc::apps::fee::v1::{
-    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+    QueryIncentivizedPacketRequest,
+    QueryIncentivizedPacketResponse,
 };
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
-        ics02_client::{events::UpdateClient, header::AnyHeader},
+        ics02_client::{
+            events::UpdateClient,
+            header::AnyHeader,
+        },
         ics03_connection::{
-            connection::{ConnectionEnd, IdentifiedConnectionEnd},
+            connection::{
+                ConnectionEnd,
+                IdentifiedConnectionEnd,
+            },
             version::Version,
         },
         ics04_channel::{
-            channel::{ChannelEnd, IdentifiedChannelEnd},
-            packet::{PacketMsgType, Sequence},
+            channel::{
+                ChannelEnd,
+                IdentifiedChannelEnd,
+            },
+            packet::{
+                PacketMsgType,
+                Sequence,
+            },
         },
-        ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+        ics23_commitment::{
+            commitment::CommitmentPrefix,
+            merkle::MerkleProof,
+        },
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            ClientId,
+            ConnectionId,
+            PortId,
+        },
     },
     proofs::Proofs,
     signer::Signer,
     Height,
 };
+use tracing::Span;
 
+use super::{
+    client::ClientSettings,
+    cosmos::version::Specs,
+    endpoint::{
+        ChainStatus,
+        HealthCheck,
+    },
+    requests::*,
+    tracking::TrackedMsgs,
+};
 use crate::{
     account::Balance,
-    client_state::{AnyClientState, IdentifiedAnyClientState},
+    client_state::{
+        AnyClientState,
+        IdentifiedAnyClientState,
+    },
     config::ChainConfig,
     connection::ConnectionMsgType,
     consensus_state::AnyConsensusState,
     denom::DenomTrace,
     error::Error,
     event::{
-        source::{EventBatch, Result as MonitorResult},
+        source::{
+            EventBatch,
+            Result as MonitorResult,
+        },
         IbcEventWithHeight,
     },
     keyring::AnySigningKeyPair,
     misbehaviour::MisbehaviourEvidence,
-};
-
-use super::{
-    client::ClientSettings,
-    cosmos::version::Specs,
-    endpoint::{ChainStatus, HealthCheck},
-    requests::*,
-    tracking::TrackedMsgs,
 };
 
 mod base;

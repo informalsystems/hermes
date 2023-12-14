@@ -1,12 +1,16 @@
 //! Definition of domain type message `MsgCreateClient`.
 
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient,
+    Protobuf,
+};
 
-use crate::core::ics02_client::error::Error;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+    core::ics02_client::error::Error,
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
@@ -76,15 +80,18 @@ impl From<MsgCreateClient> for RawMsgCreateClient {
 #[cfg(test)]
 mod tests {
 
+    use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use test_log::test;
 
-    use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
-
-    use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-    use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
-    use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::core::ics02_client::msgs::create_client::MsgCreateClient;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::{
+        clients::ics07_tendermint::{
+            client_state::test_util::get_dummy_tendermint_client_state,
+            consensus_state::ConsensusState as TmConsensusState,
+            header::test_util::get_dummy_tendermint_header,
+        },
+        core::ics02_client::msgs::create_client::MsgCreateClient,
+        test_utils::get_dummy_account_id,
+    };
 
     #[test]
     fn msg_create_client_serialization() {

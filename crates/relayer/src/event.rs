@@ -1,29 +1,57 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
-use serde::Serialize;
-use tendermint::abci::Event as AbciEvent;
+use core::fmt::{
+    Display,
+    Error as FmtError,
+    Formatter,
+};
 
 use ibc_relayer_types::{
-    applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
-    applications::ics31_icq::events::CrossChainQueryPacket,
-    core::ics02_client::{
-        error::Error as ClientError,
-        events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
-        header::{decode_header, AnyHeader},
-        height::HeightErrorDetail,
+    applications::{
+        ics29_fee::events::{
+            DistributeFeePacket,
+            IncentivizedPacket,
+        },
+        ics31_icq::events::CrossChainQueryPacket,
     },
-    core::ics03_connection::{
-        error::Error as ConnectionError,
-        events::{self as connection_events, Attributes as ConnectionAttributes},
+    core::{
+        ics02_client::{
+            error::Error as ClientError,
+            events::{
+                self as client_events,
+                Attributes as ClientAttributes,
+                HEADER_ATTRIBUTE_KEY,
+            },
+            header::{
+                decode_header,
+                AnyHeader,
+            },
+            height::HeightErrorDetail,
+        },
+        ics03_connection::{
+            error::Error as ConnectionError,
+            events::{
+                self as connection_events,
+                Attributes as ConnectionAttributes,
+            },
+        },
+        ics04_channel::{
+            error::Error as ChannelError,
+            events::{
+                self as channel_events,
+                Attributes as ChannelAttributes,
+            },
+            packet::Packet,
+            timeout::TimeoutHeight,
+        },
     },
-    core::ics04_channel::{
-        error::Error as ChannelError,
-        events::{self as channel_events, Attributes as ChannelAttributes},
-        packet::Packet,
-        timeout::TimeoutHeight,
+    events::{
+        Error as IbcEventError,
+        IbcEvent,
+        IbcEventType,
     },
-    events::{Error as IbcEventError, IbcEvent, IbcEventType},
     Height,
 };
+use serde::Serialize;
+use tendermint::abci::Event as AbciEvent;
 
 pub mod bus;
 pub mod error;
@@ -459,14 +487,23 @@ pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, ChannelError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use ibc_proto::{
+        google::protobuf::Any,
+        Protobuf,
+    };
+    use ibc_relayer_types::{
+        clients::ics07_tendermint::header::test_util::get_dummy_ics07_header,
+        core::{
+            ics02_client::header::{
+                decode_header,
+                AnyHeader,
+            },
+            ics04_channel::packet::Sequence,
+        },
+        timestamp::Timestamp,
+    };
 
-    use ibc_proto::google::protobuf::Any;
-    use ibc_proto::Protobuf;
-    use ibc_relayer_types::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
-    use ibc_relayer_types::core::ics02_client::header::{decode_header, AnyHeader};
-    use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-    use ibc_relayer_types::timestamp::Timestamp;
+    use super::*;
 
     #[test]
     fn extract_header() {

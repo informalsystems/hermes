@@ -2,21 +2,39 @@
    Helper functions for bootstrapping a single full node.
 */
 use core::time::Duration;
+use std::sync::{
+    Arc,
+    RwLock,
+};
+
 use eyre::eyre;
-use std::sync::{Arc, RwLock};
 use toml;
 use tracing::info;
 
-use crate::chain::builder::ChainBuilder;
-use crate::chain::config;
-use crate::chain::driver::ChainDriver;
-use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
-use crate::error::Error;
-use crate::ibc::denom::Denom;
-use crate::ibc::token::Token;
-use crate::types::single::node::FullNode;
-use crate::types::wallet::{TestWallets, Wallet};
-use crate::util::random::{random_u128_range, random_u32};
+use crate::{
+    chain::{
+        builder::ChainBuilder,
+        config,
+        driver::ChainDriver,
+        ext::bootstrap::ChainBootstrapMethodsExt,
+    },
+    error::Error,
+    ibc::{
+        denom::Denom,
+        token::Token,
+    },
+    types::{
+        single::node::FullNode,
+        wallet::{
+            TestWallets,
+            Wallet,
+        },
+    },
+    util::random::{
+        random_u128_range,
+        random_u32,
+    },
+};
 
 /**
    Bootstrap a single full node with the provided [`ChainBuilder`] and

@@ -3,20 +3,36 @@
 */
 
 use core::convert::TryInto;
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::config::Config;
-use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer::registry::SharedRegistry;
 
-use crate::bootstrap::binary::chain::{
-    add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client, new_registry,
-    save_relayer_config,
+use ibc_relayer::{
+    chain::handle::ChainHandle,
+    config::Config,
+    foreign_client::ForeignClient,
+    registry::SharedRegistry,
 };
-use crate::error::{handle_generic_error, Error};
-use crate::relayer::driver::RelayerDriver;
-use crate::types::config::TestConfig;
-use crate::types::nary::chains::{DynamicConnectedChains, NaryConnectedChains};
-use crate::types::single::node::FullNode;
+
+use crate::{
+    bootstrap::binary::chain::{
+        add_chain_config,
+        add_keys_to_chain_handle,
+        bootstrap_foreign_client,
+        new_registry,
+        save_relayer_config,
+    },
+    error::{
+        handle_generic_error,
+        Error,
+    },
+    relayer::driver::RelayerDriver,
+    types::{
+        config::TestConfig,
+        nary::chains::{
+            DynamicConnectedChains,
+            NaryConnectedChains,
+        },
+        single::node::FullNode,
+    },
+};
 
 /**
   Bootstrap a fixed number of chains specified by `SIZE`.

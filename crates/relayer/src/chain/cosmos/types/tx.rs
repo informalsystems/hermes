@@ -1,4 +1,7 @@
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, TxBody};
+use ibc_proto::cosmos::tx::v1beta1::{
+    AuthInfo,
+    TxBody,
+};
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::event::IbcEventWithHeight;

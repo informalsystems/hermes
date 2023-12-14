@@ -1,13 +1,32 @@
 use core::any::Any;
 
-use bip39::{Language, Mnemonic, Seed};
-use ed25519_dalek::{SigningKey, VerifyingKey};
-use ed25519_dalek_bip32::{ChildIndex, DerivationPath, ExtendedSigningKey};
+use bip39::{
+    Language,
+    Mnemonic,
+    Seed,
+};
+use ed25519_dalek::{
+    SigningKey,
+    VerifyingKey,
+};
+use ed25519_dalek_bip32::{
+    ChildIndex,
+    DerivationPath,
+    ExtendedSigningKey,
+};
 use hdpath::StandardHDPath;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use signature::Signer;
 
-use super::{errors::Error, KeyFile, KeyType, SigningKeyPair};
+use super::{
+    errors::Error,
+    KeyFile,
+    KeyType,
+    SigningKeyPair,
+};
 use crate::config::AddressType;
 
 pub fn private_key_from_mnemonic(

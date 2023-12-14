@@ -1,29 +1,63 @@
-use crate::utils::pretty::PrettySlice;
+use std::{
+    borrow::Cow,
+    convert::{
+        TryFrom,
+        TryInto,
+    },
+    fmt::{
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
+    str::FromStr,
+};
 
-use flex_error::{define_error, TraceError};
-use serde_derive::{Deserialize, Serialize};
-use std::borrow::Cow;
-use std::convert::{TryFrom, TryInto};
-use std::fmt::{Display, Error as FmtError, Formatter};
-use std::str::FromStr;
+use flex_error::{
+    define_error,
+    TraceError,
+};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 use tendermint::abci;
 
-use crate::applications::ics29_fee::error::Error as FeeError;
-use crate::applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket};
-use crate::applications::ics31_icq::error::Error as QueryPacketError;
-use crate::applications::ics31_icq::events::CrossChainQueryPacket;
-use crate::core::ics02_client::error as client_error;
-use crate::core::ics02_client::events as ClientEvents;
-use crate::core::ics02_client::events::NewBlock;
-use crate::core::ics03_connection::error as connection_error;
-use crate::core::ics03_connection::events as ConnectionEvents;
-use crate::core::ics03_connection::events::Attributes as ConnectionAttributes;
-use crate::core::ics04_channel::error as channel_error;
-use crate::core::ics04_channel::events as ChannelEvents;
-use crate::core::ics04_channel::events::Attributes as ChannelAttributes;
-use crate::core::ics04_channel::packet::Packet;
-use crate::core::ics24_host::error::ValidationError;
-use crate::timestamp::ParseTimestampError;
+use crate::{
+    applications::{
+        ics29_fee::{
+            error::Error as FeeError,
+            events::{
+                DistributeFeePacket,
+                IncentivizedPacket,
+            },
+        },
+        ics31_icq::{
+            error::Error as QueryPacketError,
+            events::CrossChainQueryPacket,
+        },
+    },
+    core::{
+        ics02_client::{
+            error as client_error,
+            events as ClientEvents,
+            events::NewBlock,
+        },
+        ics03_connection::{
+            error as connection_error,
+            events as ConnectionEvents,
+            events::Attributes as ConnectionAttributes,
+        },
+        ics04_channel::{
+            error as channel_error,
+            events as ChannelEvents,
+            events::Attributes as ChannelAttributes,
+            packet::Packet,
+        },
+        ics24_host::error::ValidationError,
+    },
+    timestamp::ParseTimestampError,
+    utils::pretty::PrettySlice,
+};
 
 define_error! {
     Error {

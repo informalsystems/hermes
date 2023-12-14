@@ -1,12 +1,18 @@
 //! `fee` subcommand
 
-use abscissa_core::clap::Parser;
-use abscissa_core::{config::Override, Command, Runnable};
+use abscissa_core::{
+    clap::Parser,
+    config::Override,
+    Command,
+    Runnable,
+};
 use ibc_relayer::config::Config;
 
-use self::register_counterparty_payee::RegisterCounterpartyPayeeCmd;
-use self::register_payee::RegisterPayeeCmd;
-use self::transfer::FeeTransferCmd;
+use self::{
+    register_counterparty_payee::RegisterCounterpartyPayeeCmd,
+    register_payee::RegisterPayeeCmd,
+    transfer::FeeTransferCmd,
+};
 
 pub mod register_counterparty_payee;
 pub mod register_payee;

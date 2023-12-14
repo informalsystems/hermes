@@ -3,16 +3,27 @@
 */
 
 use core::convert::TryFrom;
+
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 
 use super::aliases::NthChainHandle;
-use crate::error::Error;
-use crate::types::binary::connection::ConnectedConnection;
-use crate::types::env::{EnvWriter, ExportEnv};
-use crate::types::tagged::*;
-use crate::util::array::{into_nested_vec, try_into_nested_array};
+use crate::{
+    error::Error,
+    types::{
+        binary::connection::ConnectedConnection,
+        env::{
+            EnvWriter,
+            ExportEnv,
+        },
+        tagged::*,
+    },
+    util::array::{
+        into_nested_vec,
+        try_into_nested_array,
+    },
+};
 
 /**
    A fixed-size N-ary connected connections as specified by `SIZE`.

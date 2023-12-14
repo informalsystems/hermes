@@ -1,16 +1,25 @@
-use std::fmt::Display;
-use std::str::FromStr;
+use std::{
+    fmt::Display,
+    str::FromStr,
+};
 
-use ibc_proto::Protobuf;
-use serde_derive::Deserialize;
-use serde_derive::Serialize;
+use ibc_proto::{
+    cosmos::bank::v1beta1::MsgSend as RawMsgSend,
+    Protobuf,
+};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 
-use ibc_proto::cosmos::bank::v1beta1::MsgSend as RawMsgSend;
-
-use crate::applications::transfer::error::Error;
-use crate::applications::transfer::Coin;
-use crate::core::ics24_host::error::ValidationError;
-use crate::tx_msg::Msg;
+use crate::{
+    applications::transfer::{
+        error::Error,
+        Coin,
+    },
+    core::ics24_host::error::ValidationError,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/cosmos.bank.v1beta1.MsgSend";
 

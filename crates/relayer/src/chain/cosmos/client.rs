@@ -2,14 +2,14 @@
 
 use core::time::Duration;
 
+use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 use tracing::warn;
 
-use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
-
-use crate::chain::cosmos::config::CosmosSdkConfig;
-use crate::foreign_client::CreateOptions;
-
-use crate::util::pretty::PrettyDuration;
+use crate::{
+    chain::cosmos::config::CosmosSdkConfig,
+    foreign_client::CreateOptions,
+    util::pretty::PrettyDuration,
+};
 
 /// Cosmos-specific client parameters for the `build_client_state` operation.
 #[derive(Clone, Debug, Default)]

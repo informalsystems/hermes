@@ -1,18 +1,33 @@
-use super::packet::Sequence;
-use super::timeout::TimeoutHeight;
-use crate::core::ics02_client::error as client_error;
-use crate::core::ics03_connection::error as connection_error;
-use crate::core::ics04_channel::channel::State;
-use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-
-use crate::proofs::ProofError;
-use crate::signer::SignerError;
-use crate::timestamp::Timestamp;
-use crate::Height;
-
-use flex_error::{define_error, TraceError};
+use flex_error::{
+    define_error,
+    TraceError,
+};
 use tendermint_proto::Error as TendermintError;
+
+use super::{
+    packet::Sequence,
+    timeout::TimeoutHeight,
+};
+use crate::{
+    core::{
+        ics02_client::error as client_error,
+        ics03_connection::error as connection_error,
+        ics04_channel::channel::State,
+        ics24_host::{
+            error::ValidationError,
+            identifier::{
+                ChannelId,
+                ClientId,
+                ConnectionId,
+                PortId,
+            },
+        },
+    },
+    proofs::ProofError,
+    signer::SignerError,
+    timestamp::Timestamp,
+    Height,
+};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]

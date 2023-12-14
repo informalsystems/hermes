@@ -1,16 +1,29 @@
 use core::time::Duration;
 
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+use ibc_relayer::upgrade_chain::{
+    build_and_send_ibc_upgrade_proposal,
+    requires_legacy_upgrade_proposal,
+    UpgradePlanOptions,
+};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId,
+    ClientId,
+};
 
-use ibc_relayer::upgrade_chain::requires_legacy_upgrade_proposal;
-use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::Error;
-use crate::prelude::*;
+use crate::{
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    error::Error,
+    prelude::*,
+};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxIbcUpgradeChainCmd {
@@ -153,11 +166,15 @@ impl Runnable for TxIbcUpgradeChainCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::TxIbcUpgradeChainCmd;
+    use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-    use std::str::FromStr;
+    use ibc_relayer_types::core::ics24_host::identifier::{
+        ChainId,
+        ClientId,
+    };
+
+    use super::TxIbcUpgradeChainCmd;
 
     #[test]
     fn test_upgrade_chain_required_only() {

@@ -6,7 +6,11 @@
 //! - The `AtomicIbcForwardHopTransferTest` tests the case where the
 //!   hop between chain C and D fails. In this case the sender is still refunded.
 
-use ibc_relayer::config::{self, Config, ModeConfig};
+use ibc_relayer::config::{
+    self,
+    Config,
+    ModeConfig,
+};
 use ibc_test_framework::prelude::*;
 
 use crate::tests::forward::memo::HopMemoField;

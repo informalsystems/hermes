@@ -1,14 +1,28 @@
-use std::convert::{From, Infallible};
-use std::fmt::{Debug, Display, Error as FmtError, Formatter};
-use std::str::FromStr;
+use std::{
+    convert::{
+        From,
+        Infallible,
+    },
+    fmt::{
+        Debug,
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
+    str::FromStr,
+};
 
 use regex::Regex;
-use serde::{Deserialize, Serialize};
-
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics24_host::error::ValidationError;
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use super::validate::*;
+use crate::core::{
+    ics02_client::client_type::ClientType,
+    ics24_host::error::ValidationError,
+};
 
 /// This type is subject to future changes.
 ///

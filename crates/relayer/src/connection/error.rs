@@ -1,14 +1,32 @@
 use core::time::Duration;
 
-use flex_error::{define_error, ErrorMessageTracer};
+use flex_error::{
+    define_error,
+    ErrorMessageTracer,
+};
+use ibc_relayer_types::{
+    core::{
+        ics03_connection::connection::{
+            Counterparty,
+            State,
+        },
+        ics24_host::identifier::{
+            ChainId,
+            ClientId,
+            ConnectionId,
+        },
+    },
+    events::IbcEvent,
+};
 
-use ibc_relayer_types::core::ics03_connection::connection::{Counterparty, State};
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc_relayer_types::events::IbcEvent;
-
-use crate::error::Error as RelayerError;
-use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
-use crate::supervisor::Error as SupervisorError;
+use crate::{
+    error::Error as RelayerError,
+    foreign_client::{
+        ForeignClientError,
+        HasExpiredOrFrozenError,
+    },
+    supervisor::Error as SupervisorError,
+};
 
 define_error! {
     ConnectionError {

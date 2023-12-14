@@ -1,17 +1,33 @@
-use ibc_relayer_types::applications::ics29_fee::msgs::register_payee::build_register_counterparty_payee_message;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
-use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::{
+    applications::ics29_fee::msgs::register_payee::build_register_counterparty_payee_message,
+    core::ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    },
+    signer::Signer,
+};
 use tendermint_rpc::HttpClient;
 
-use crate::chain::cosmos::query::account::get_or_fetch_account;
-use crate::chain::cosmos::query::fee::query_counterparty_payee;
-use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
-use crate::chain::cosmos::types::account::Account;
-use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::wait::wait_tx_succeed;
-use crate::config::types::Memo;
-use crate::error::Error;
-use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
+use crate::{
+    chain::cosmos::{
+        query::{
+            account::get_or_fetch_account,
+            fee::query_counterparty_payee,
+        },
+        retry::send_tx_with_account_sequence_retry,
+        types::{
+            account::Account,
+            config::TxConfig,
+        },
+        wait::wait_tx_succeed,
+    },
+    config::types::Memo,
+    error::Error,
+    keyring::{
+        Secp256k1KeyPair,
+        SigningKeyPair,
+    },
+};
 
 // FIXME: monster function, refactor
 pub async fn maybe_register_counterparty_payee(

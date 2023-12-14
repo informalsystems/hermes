@@ -1,19 +1,46 @@
 use core::time::Duration;
-use eyre::eyre;
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
-use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
-use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, Ordering};
-use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 
-use crate::error::Error;
-use crate::types::id::{
-    TaggedChannelId, TaggedChannelIdRef, TaggedClientIdRef, TaggedConnectionIdRef, TaggedPortId,
-    TaggedPortIdRef,
+use eyre::eyre;
+use ibc_relayer::{
+    chain::{
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            QueryChannelRequest,
+            QueryHeight,
+        },
+    },
+    channel::{
+        extract_channel_id,
+        Channel,
+        ChannelSide,
+    },
 };
-use crate::types::tagged::DualTagged;
-use crate::util::retry::assert_eventually_succeed;
+use ibc_relayer_types::core::{
+    ics04_channel::channel::{
+        ChannelEnd,
+        IdentifiedChannelEnd,
+        Ordering,
+        State as ChannelState,
+    },
+    ics24_host::identifier::ConnectionId,
+};
+
+use crate::{
+    error::Error,
+    types::{
+        id::{
+            TaggedChannelId,
+            TaggedChannelIdRef,
+            TaggedClientIdRef,
+            TaggedConnectionIdRef,
+            TaggedPortId,
+            TaggedPortIdRef,
+        },
+        tagged::DualTagged,
+    },
+    util::retry::assert_eventually_succeed,
+};
 
 pub trait TaggedChannelEndExt<ChainA, ChainB> {
     fn tagged_counterparty_channel_id(&self) -> Option<TaggedChannelId<ChainB, ChainA>>;

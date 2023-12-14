@@ -1,11 +1,20 @@
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::applications::fee::v1::{MsgRegisterCounterpartyPayee, MsgRegisterPayee};
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::applications::fee::v1::{
+        MsgRegisterCounterpartyPayee,
+        MsgRegisterPayee,
+    },
+};
 
-use crate::applications::ics29_fee::error::Error;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-
-use crate::signer::Signer;
-use crate::tx_msg::encode_message;
+use crate::{
+    applications::ics29_fee::error::Error,
+    core::ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    },
+    signer::Signer,
+    tx_msg::encode_message,
+};
 
 pub fn build_register_counterparty_payee_message(
     address: &Signer,

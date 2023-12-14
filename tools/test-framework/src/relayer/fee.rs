@@ -1,27 +1,58 @@
 use core::time::Duration;
+
 use http::uri::Uri;
-use ibc_relayer::chain::cosmos::query::fee::{
-    query_counterparty_payee as raw_query_counterparty_payee,
-    query_incentivized_packets as raw_query_incentivized_packets,
+use ibc_relayer::{
+    chain::cosmos::{
+        query::fee::{
+            query_counterparty_payee as raw_query_counterparty_payee,
+            query_incentivized_packets as raw_query_incentivized_packets,
+        },
+        tx::simple_send_tx,
+        types::config::TxConfig,
+    },
+    event::IbcEventWithHeight,
 };
-use ibc_relayer::chain::cosmos::tx::simple_send_tx;
-use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::event::IbcEventWithHeight;
-use ibc_relayer_types::applications::ics29_fee::msgs::pay_packet::build_pay_packet_message;
-use ibc_relayer_types::applications::ics29_fee::msgs::pay_packet_async::build_pay_packet_fee_async_message;
-use ibc_relayer_types::applications::ics29_fee::msgs::register_payee::{
-    build_register_counterparty_payee_message, build_register_payee_message,
+use ibc_relayer_types::{
+    applications::ics29_fee::{
+        msgs::{
+            pay_packet::build_pay_packet_message,
+            pay_packet_async::build_pay_packet_fee_async_message,
+            register_payee::{
+                build_register_counterparty_payee_message,
+                build_register_payee_message,
+            },
+        },
+        packet_fee::IdentifiedPacketFees,
+    },
+    core::ics04_channel::packet::Sequence,
 };
-use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use tendermint_rpc::HttpClient;
 
-use crate::error::{handle_generic_error, Error};
-use crate::ibc::token::{TaggedTokenExt, TaggedTokenRef};
-use crate::relayer::transfer::build_transfer_message;
-use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
-use crate::types::tagged::{DualTagged, MonoTagged};
-use crate::types::wallet::{Wallet, WalletAddress};
+use crate::{
+    error::{
+        handle_generic_error,
+        Error,
+    },
+    ibc::token::{
+        TaggedTokenExt,
+        TaggedTokenRef,
+    },
+    relayer::transfer::build_transfer_message,
+    types::{
+        id::{
+            TaggedChannelIdRef,
+            TaggedPortIdRef,
+        },
+        tagged::{
+            DualTagged,
+            MonoTagged,
+        },
+        wallet::{
+            Wallet,
+            WalletAddress,
+        },
+    },
+};
 
 pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
     rpc_client: MonoTagged<SrcChain, &HttpClient>,

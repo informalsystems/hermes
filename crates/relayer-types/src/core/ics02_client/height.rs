@@ -1,15 +1,26 @@
-use std::cmp::Ordering;
-use std::num::ParseIntError;
-use std::str::FromStr;
+use std::{
+    cmp::Ordering,
+    num::ParseIntError,
+    str::FromStr,
+};
 
-use flex_error::{define_error, TraceError};
-use ibc_proto::Protobuf;
-use serde_derive::{Deserialize, Serialize};
+use flex_error::{
+    define_error,
+    TraceError,
+};
+use ibc_proto::{
+    ibc::core::client::v1::Height as RawHeight,
+    Protobuf,
+};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 
-use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-
-use crate::core::ics02_client::error::Error;
-use crate::core::ics24_host::identifier::ChainId;
+use crate::core::{
+    ics02_client::error::Error,
+    ics24_host::identifier::ChainId,
+};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {

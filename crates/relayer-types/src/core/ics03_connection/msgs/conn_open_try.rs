@@ -1,22 +1,39 @@
 use std::{
-    convert::{TryFrom, TryInto},
+    convert::{
+        TryFrom,
+        TryInto,
+    },
     str::FromStr,
     time::Duration,
 };
 
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    google::protobuf::Any,
+    ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry,
+    Protobuf,
+};
 
-use crate::core::ics03_connection::connection::Counterparty;
-use crate::core::ics03_connection::error::Error;
-use crate::core::ics03_connection::version::Version;
-use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
-use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::proofs::{ConsensusProof, Proofs};
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
-use crate::Height;
+use crate::{
+    core::{
+        ics03_connection::{
+            connection::Counterparty,
+            error::Error,
+            version::Version,
+        },
+        ics23_commitment::commitment::CommitmentProofBytes,
+        ics24_host::identifier::{
+            ClientId,
+            ConnectionId,
+        },
+    },
+    proofs::{
+        ConsensusProof,
+        Proofs,
+    },
+    signer::Signer,
+    tx_msg::Msg,
+    Height,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
 
@@ -170,14 +187,30 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 #[cfg(test)]
 pub mod test_util {
 
-    use ibc_proto::ibc::core::client::v1::Height;
-    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use ibc_proto::ibc::core::{
+        client::v1::Height,
+        connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry,
+    };
 
-    use crate::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-    use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
-    use crate::core::ics03_connection::version::get_compatible_versions;
-    use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+    use crate::{
+        core::{
+            ics03_connection::{
+                msgs::{
+                    conn_open_try::MsgConnectionOpenTry,
+                    test_util::get_dummy_raw_counterparty,
+                },
+                version::get_compatible_versions,
+            },
+            ics24_host::identifier::{
+                ClientId,
+                ConnectionId,
+            },
+        },
+        test_utils::{
+            get_dummy_bech32_account,
+            get_dummy_proof,
+        },
+    };
 
     /// Testing-specific helper methods.
     impl MsgConnectionOpenTry {
@@ -237,15 +270,22 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
 
+    use ibc_proto::ibc::core::{
+        client::v1::Height,
+        connection::v1::{
+            Counterparty as RawCounterparty,
+            MsgConnectionOpenTry as RawMsgConnectionOpenTry,
+        },
+    };
     use test_log::test;
 
-    use ibc_proto::ibc::core::client::v1::Height;
-    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
-    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
-
-    use crate::core::ics03_connection::msgs::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
-    use crate::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-    use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
+    use crate::core::ics03_connection::msgs::{
+        conn_open_try::{
+            test_util::get_dummy_raw_msg_conn_open_try,
+            MsgConnectionOpenTry,
+        },
+        test_util::get_dummy_raw_counterparty,
+    };
 
     #[test]
     fn parse_connection_open_try_msg() {

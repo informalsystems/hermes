@@ -1,11 +1,19 @@
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit,
+    Protobuf,
+};
 
-use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
-
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+    core::{
+        ics04_channel::error::Error,
+        ics24_host::identifier::{
+            ChannelId,
+            PortId,
+        },
+    },
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseInit";
 
@@ -71,8 +79,13 @@ pub mod test_util {
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 
-    use crate::core::ics24_host::identifier::{ChannelId, PortId};
-    use crate::test_utils::get_dummy_bech32_account;
+    use crate::{
+        core::ics24_host::identifier::{
+            ChannelId,
+            PortId,
+        },
+        test_utils::get_dummy_bech32_account,
+    };
 
     /// Returns a dummy `RawMsgChannelCloseInit`, for testing only!
     pub fn get_dummy_raw_msg_chan_close_init() -> RawMsgChannelCloseInit {
@@ -87,12 +100,13 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
 
+    use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
     use test_log::test;
 
-    use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
-
-    use crate::core::ics04_channel::msgs::chan_close_init::test_util::get_dummy_raw_msg_chan_close_init;
-    use crate::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
+    use crate::core::ics04_channel::msgs::chan_close_init::{
+        test_util::get_dummy_raw_msg_chan_close_init,
+        MsgChannelCloseInit,
+    };
 
     #[test]
     fn parse_channel_close_init_msg() {

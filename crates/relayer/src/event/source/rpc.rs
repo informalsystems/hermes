@@ -3,34 +3,55 @@ pub mod extract;
 use std::sync::Arc;
 
 use crossbeam_channel as channel;
-use tokio::{
-    runtime::Runtime as TokioRuntime,
-    time::{sleep, Duration, Instant},
-};
-use tracing::{debug, error, error_span, trace};
-
-use tendermint::abci;
-use tendermint::block::Height as BlockHeight;
-use tendermint_rpc::{Client, HttpClient};
-
 use ibc_relayer_types::{
     core::{
-        ics02_client::{events::NewBlock, height::Height},
+        ics02_client::{
+            events::NewBlock,
+            height::Height,
+        },
         ics24_host::identifier::ChainId,
     },
     events::IbcEvent,
 };
+use tendermint::{
+    abci,
+    block::Height as BlockHeight,
+};
+use tendermint_rpc::{
+    Client,
+    HttpClient,
+};
+use tokio::{
+    runtime::Runtime as TokioRuntime,
+    time::{
+        sleep,
+        Duration,
+        Instant,
+    },
+};
+use tracing::{
+    debug,
+    error,
+    error_span,
+    trace,
+};
 
+use self::extract::extract_events;
+use super::{
+    EventBatch,
+    EventSourceCmd,
+    TxEventSourceCmd,
+};
 use crate::{
     chain::tracking::TrackingId,
-    event::{bus::EventBus, source::Error, IbcEventWithHeight},
+    event::{
+        bus::EventBus,
+        source::Error,
+        IbcEventWithHeight,
+    },
     telemetry,
     util::retry::ConstantGrowth,
 };
-
-use super::{EventBatch, EventSourceCmd, TxEventSourceCmd};
-
-use self::extract::extract_events;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -245,8 +266,12 @@ fn poll_backoff(poll_interval: Duration) -> impl Iterator<Item = Duration> {
 }
 
 fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {
+    use std::hash::{
+        Hash,
+        Hasher,
+    };
+
     use itertools::Itertools;
-    use std::hash::{Hash, Hasher};
 
     #[derive(Clone)]
     struct HashEvent(abci::Event);

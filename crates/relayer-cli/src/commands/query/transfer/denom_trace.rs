@@ -1,12 +1,20 @@
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::application::app_config;
-use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::{exit_with_unrecoverable_error, json, Output};
+use crate::{
+    application::app_config,
+    cli_utils::spawn_chain_runtime,
+    conclude::{
+        exit_with_unrecoverable_error,
+        json,
+        Output,
+    },
+};
 
 /// The data structure that represents the arguments when invoking the `query transfer denom-trace` CLI command.
 ///
@@ -58,10 +66,10 @@ impl Runnable for DenomTraceCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::DenomTraceCmd;
-
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+
+    use super::DenomTraceCmd;
 
     #[test]
     fn test_transfer_denom_trace() {

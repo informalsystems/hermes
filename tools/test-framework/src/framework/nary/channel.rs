@@ -8,24 +8,51 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use tracing::info;
 
-use crate::bootstrap::nary::channel::bootstrap_channels_with_connections;
-use crate::error::Error;
-use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::RelayerConfigOverride;
-use crate::framework::binary::channel::{BinaryChannelTest, ChannelOrderOverride};
-use crate::framework::binary::connection::ConnectionDelayOverride;
-use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
-use crate::framework::nary::chain::RunNaryChainTest;
-use crate::framework::nary::connection::{NaryConnectionTest, RunNaryConnectionTest};
-use crate::framework::nary::node::run_nary_node_test;
-use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
-use crate::relayer::driver::RelayerDriver;
-use crate::types::config::TestConfig;
-use crate::types::env::write_env;
-use crate::types::nary::chains::NaryConnectedChains;
-use crate::types::nary::channel::ConnectedChannels;
-use crate::types::nary::connection::ConnectedConnections;
-use crate::util::suspend::hang_on_error;
+use crate::{
+    bootstrap::nary::channel::bootstrap_channels_with_connections,
+    error::Error,
+    framework::{
+        base::{
+            HasOverrides,
+            TestConfigOverride,
+        },
+        binary::{
+            chain::RelayerConfigOverride,
+            channel::{
+                BinaryChannelTest,
+                ChannelOrderOverride,
+            },
+            connection::ConnectionDelayOverride,
+            node::{
+                NodeConfigOverride,
+                NodeGenesisOverride,
+            },
+        },
+        nary::{
+            chain::RunNaryChainTest,
+            connection::{
+                NaryConnectionTest,
+                RunNaryConnectionTest,
+            },
+            node::run_nary_node_test,
+        },
+        supervisor::{
+            RunWithSupervisor,
+            SupervisorOverride,
+        },
+    },
+    relayer::driver::RelayerDriver,
+    types::{
+        config::TestConfig,
+        env::write_env,
+        nary::{
+            chains::NaryConnectedChains,
+            channel::ConnectedChannels,
+            connection::ConnectedConnections,
+        },
+    },
+    util::suspend::hang_on_error,
+};
 
 pub fn run_nary_channel_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Result<(), Error>
 where

@@ -7,38 +7,71 @@ use std::time::Duration;
 use crossbeam_channel as channel;
 use futures::{
     pin_mut,
-    stream::{self, select_all, StreamExt},
-    Stream, TryStreamExt,
+    stream::{
+        self,
+        select_all,
+        StreamExt,
+    },
+    Stream,
+    TryStreamExt,
 };
-use tokio::task::JoinHandle;
-use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
-use tracing::{debug, error, info, instrument, trace};
-
+use ibc_relayer_types::{
+    core::ics24_host::identifier::ChainId,
+    events::IbcEvent,
+};
 use tendermint_rpc::{
-    client::CompatMode, event::Event as RpcEvent, query::Query, SubscriptionClient,
-    WebSocketClient, WebSocketClientDriver, WebSocketClientUrl,
+    client::CompatMode,
+    event::Event as RpcEvent,
+    query::Query,
+    SubscriptionClient,
+    WebSocketClient,
+    WebSocketClientDriver,
+    WebSocketClientUrl,
+};
+use tokio::{
+    runtime::Runtime as TokioRuntime,
+    sync::mpsc,
+    task::JoinHandle,
+};
+use tracing::{
+    debug,
+    error,
+    info,
+    instrument,
+    trace,
 };
 
-use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
-
+use self::extract::extract_events;
+use super::{
+    EventBatch,
+    EventSourceCmd,
+    Result,
+    SubscriptionStream,
+    TxEventSourceCmd,
+};
 use crate::{
     chain::tracking::TrackingId,
-    event::{bus::EventBus, error::*, IbcEventWithHeight},
+    event::{
+        bus::EventBus,
+        error::*,
+        IbcEventWithHeight,
+    },
     telemetry,
     util::{
-        retry::{retry_with_index, RetryResult},
+        retry::{
+            retry_with_index,
+            RetryResult,
+        },
         stream::try_group_while_timeout,
     },
 };
 
-use super::{EventBatch, EventSourceCmd, Result, SubscriptionStream, TxEventSourceCmd};
-
-use self::extract::extract_events;
-
 mod retry_strategy {
-    use crate::util::retry::clamp_total;
     use core::time::Duration;
+
     use retry::delay::Fibonacci;
+
+    use crate::util::retry::clamp_total;
 
     // Default parameters for the retrying mechanism
     const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute

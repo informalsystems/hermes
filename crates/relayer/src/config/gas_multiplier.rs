@@ -1,5 +1,13 @@
-use serde::de::Unexpected;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{
+    de::{
+        Error as _,
+        Unexpected,
+    },
+    Deserialize,
+    Deserializer,
+    Serialize,
+    Serializer,
+};
 
 flex_error::define_error! {
     Error {
@@ -76,10 +84,10 @@ impl From<GasMultiplier> for f64 {
 #[cfg(test)]
 #[allow(dead_code)] // the field of the struct `DummyConfig` defined below is never accessed
 mod tests {
-    use super::*;
-
     use serde::Deserialize;
     use test_log::test;
+
+    use super::*;
 
     #[test]
     fn parse_invalid_gas_multiplier() {

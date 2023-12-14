@@ -1,24 +1,43 @@
 use core::time::Duration;
 
-use abscissa_core::clap::Parser;
-use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
+use abscissa_core::{
+    clap::Parser,
+    config::Override,
+    Command,
+    FrameworkErrorKind,
+    Runnable,
+};
 use eyre::eyre;
-
 use ibc_relayer::{
     chain::handle::ChainHandle,
     config::Config,
     event::IbcEventWithHeight,
-    transfer::{build_and_send_transfer_messages, TransferOptions},
+    transfer::{
+        build_and_send_transfer_messages,
+        TransferOptions,
+    },
 };
 use ibc_relayer_types::{
     applications::transfer::Amount,
-    core::ics24_host::identifier::{ChainId, ChannelId, PortId},
+    core::ics24_host::identifier::{
+        ChainId,
+        ChannelId,
+        PortId,
+    },
 };
 
-use crate::cli_utils::{check_can_send_on_channel, ChainHandlePair};
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::Error;
-use crate::prelude::*;
+use crate::{
+    cli_utils::{
+        check_can_send_on_channel,
+        ChainHandlePair,
+    },
+    conclude::{
+        exit_with_unrecoverable_error,
+        Output,
+    },
+    error::Error,
+    prelude::*,
+};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxIcs20MsgTransferCmd {
@@ -211,15 +230,19 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
     use ibc_relayer_types::{
         applications::transfer::Amount,
-        core::ics24_host::identifier::{ChainId, ChannelId, PortId},
+        core::ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            PortId,
+        },
     };
 
     use super::TxIcs20MsgTransferCmd;
-
-    use abscissa_core::clap::Parser;
-    use std::str::FromStr;
 
     #[test]
     fn test_ft_transfer_required_only() {

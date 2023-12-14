@@ -1,8 +1,13 @@
 use semver::Version;
 use tracing::debug;
 
-use crate::chain::exec::simple_exec;
-use crate::error::{handle_generic_error, Error};
+use crate::{
+    chain::exec::simple_exec,
+    error::{
+        handle_generic_error,
+        Error,
+    },
+};
 
 pub fn get_chain_command_version(command: &str) -> Result<Option<Version>, Error> {
     let output = simple_exec("version-command", command, &["version"])?;

@@ -1,14 +1,30 @@
-use alloc::collections::BTreeMap;
-use alloc::fmt::{Display, Error as FmtError, Formatter};
+use alloc::{
+    collections::BTreeMap,
+    fmt::{
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
+};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use tracing::info;
 
 use crate::{
-    object::{Object, ObjectType},
-    worker::{WorkerData, WorkerHandle, WorkerId},
+    object::{
+        Object,
+        ObjectType,
+    },
+    worker::{
+        WorkerData,
+        WorkerHandle,
+        WorkerId,
+    },
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

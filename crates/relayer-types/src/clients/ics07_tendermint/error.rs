@@ -1,15 +1,28 @@
-use flex_error::{define_error, TraceError};
-
-use crate::core::ics02_client::error::Error as Ics02Error;
-use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics24_host::identifier::ClientId;
-use crate::timestamp::{Timestamp, TimestampOverflowError};
-
-use crate::Height;
-use tendermint::account::Id;
-use tendermint::hash::Hash;
-use tendermint::Error as TendermintError;
+use flex_error::{
+    define_error,
+    TraceError,
+};
+use tendermint::{
+    account::Id,
+    hash::Hash,
+    Error as TendermintError,
+};
 use tendermint_light_client_verifier::errors::VerificationErrorDetail as LightClientErrorDetail;
+
+use crate::{
+    core::{
+        ics02_client::error::Error as Ics02Error,
+        ics24_host::{
+            error::ValidationError,
+            identifier::ClientId,
+        },
+    },
+    timestamp::{
+        Timestamp,
+        TimestampOverflowError,
+    },
+    Height,
+};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]

@@ -55,9 +55,9 @@
 //! Output::success(h).with_result(end).exit();
 //! ```
 
-use console::style;
 use core::fmt;
 
+use console::style;
 use serde::Serialize;
 use tracing::warn;
 

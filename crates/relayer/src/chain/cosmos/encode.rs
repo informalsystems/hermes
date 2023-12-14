@@ -1,21 +1,55 @@
-use bech32::{ToBase32, Variant};
 use core::str::FromStr;
-use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
-use ibc_proto::google::protobuf::Any;
-use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::signer::Signer;
+
+use bech32::{
+    ToBase32,
+    Variant,
+};
+use ibc_proto::{
+    cosmos::tx::v1beta1::{
+        mode_info::{
+            Single,
+            Sum,
+        },
+        AuthInfo,
+        Fee,
+        ModeInfo,
+        SignDoc,
+        SignerInfo,
+        TxBody,
+        TxRaw,
+    },
+    google::protobuf::Any,
+};
+use ibc_relayer_types::{
+    core::{
+        ics02_client::error::Error as ClientError,
+        ics24_host::identifier::ChainId,
+    },
+    signer::Signer,
+};
 use prost::Message;
 use tendermint::account::Id as AccountId;
 
-use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
-use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::tx::SignedTx;
-use crate::config::types::Memo;
-use crate::config::AddressType;
-use crate::error::Error;
-use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
+use crate::{
+    chain::cosmos::types::{
+        account::{
+            Account,
+            AccountNumber,
+            AccountSequence,
+        },
+        config::TxConfig,
+        tx::SignedTx,
+    },
+    config::{
+        types::Memo,
+        AddressType,
+    },
+    error::Error,
+    keyring::{
+        Secp256k1KeyPair,
+        SigningKeyPair,
+    },
+};
 
 pub fn sign_and_encode_tx(
     config: &TxConfig,

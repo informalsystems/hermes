@@ -1,19 +1,32 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use core::mem;
 
-use ibc_relayer_types::core::ics02_client::events::NewBlock;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::Height;
-use tracing::{debug, trace};
+use ibc_relayer_types::{
+    core::{
+        ics02_client::events::NewBlock,
+        ics24_host::identifier::ChainId,
+    },
+    Height,
+};
+use tracing::{
+    debug,
+    trace,
+};
 
+use super::{
+    spawn_worker_tasks,
+    WorkerHandle,
+    WorkerId,
+};
 use crate::{
-    chain::handle::{ChainHandle, ChainHandlePair},
+    chain::handle::{
+        ChainHandle,
+        ChainHandlePair,
+    },
     config::Config,
     object::Object,
     telemetry,
 };
-
-use super::{spawn_worker_tasks, WorkerHandle, WorkerId};
 
 /// Manage the lifecycle of [`WorkerHandle`]s associated with [`Object`]s.
 #[derive(Debug)]

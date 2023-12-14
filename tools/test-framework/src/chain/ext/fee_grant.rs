@@ -1,7 +1,9 @@
-use crate::chain::cli::fee_grant::feegrant_grant;
-use crate::error::Error;
-use crate::prelude::ChainDriver;
-use crate::types::tagged::MonoTagged;
+use crate::{
+    chain::cli::fee_grant::feegrant_grant,
+    error::Error,
+    prelude::ChainDriver,
+    types::tagged::MonoTagged,
+};
 pub trait FeeGrantMethodsExt<Chain> {
     fn feegrant_grant(&self, granter: &str, grantee: &str) -> Result<(), Error>;
 }

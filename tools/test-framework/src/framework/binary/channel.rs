@@ -4,37 +4,63 @@
    connected IBC channels with completed handshakes.
 */
 
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer_types::core::{
+    ics04_channel::{
+        channel::Ordering,
+        version::Version,
+    },
+    ics24_host::identifier::PortId,
+};
 use tracing::info;
 
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_types::core::ics04_channel::channel::Ordering;
-use ibc_relayer_types::core::ics04_channel::version::Version;
-use ibc_relayer_types::core::ics24_host::identifier::PortId;
-
-use crate::bootstrap::binary::channel::{
-    bootstrap_channel_with_connection, BootstrapChannelOptions,
+use crate::{
+    bootstrap::binary::channel::{
+        bootstrap_channel_with_connection,
+        BootstrapChannelOptions,
+    },
+    error::Error,
+    framework::{
+        base::{
+            HasOverrides,
+            TestConfigOverride,
+        },
+        binary::{
+            chain::{
+                ClientOptionsOverride,
+                RelayerConfigOverride,
+                RunBinaryChainTest,
+            },
+            connection::{
+                BinaryConnectionTest,
+                ConnectionDelayOverride,
+                RunBinaryConnectionTest,
+            },
+            ics::run_binary_interchain_security_node_test,
+            node::{
+                run_binary_node_test,
+                NodeConfigOverride,
+                NodeGenesisOverride,
+            },
+        },
+        supervisor::{
+            RunWithSupervisor,
+            SupervisorOverride,
+        },
+    },
+    relayer::driver::RelayerDriver,
+    types::{
+        binary::{
+            chains::ConnectedChains,
+            channel::ConnectedChannel,
+            connection::ConnectedConnection,
+        },
+        config::TestConfig,
+        env::write_env,
+        tagged::*,
+    },
+    util::suspend::hang_on_error,
 };
-use crate::error::Error;
-use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::{
-    ClientOptionsOverride, RelayerConfigOverride, RunBinaryChainTest,
-};
-use crate::framework::binary::connection::{
-    BinaryConnectionTest, ConnectionDelayOverride, RunBinaryConnectionTest,
-};
-use crate::framework::binary::ics::run_binary_interchain_security_node_test;
-use crate::framework::binary::node::{
-    run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
-};
-use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
-use crate::relayer::driver::RelayerDriver;
-use crate::types::binary::chains::ConnectedChains;
-use crate::types::binary::channel::ConnectedChannel;
-use crate::types::binary::connection::ConnectedConnection;
-use crate::types::config::TestConfig;
-use crate::types::env::write_env;
-use crate::types::tagged::*;
-use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`BinaryChannelTest`], with

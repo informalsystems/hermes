@@ -1,12 +1,17 @@
 //! The following tests are for the Interchain Security.
 //! These tests require the first chain to be a Provider chain and
 //! the second chain a Consumer chain.
-use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::interchain_security::{
-    update_genesis_for_consumer_chain, update_relayer_config_for_consumer_chain,
+use ibc_test_framework::{
+    framework::binary::channel::run_binary_interchain_security_channel_test,
+    prelude::*,
+    util::{
+        interchain_security::{
+            update_genesis_for_consumer_chain,
+            update_relayer_config_for_consumer_chain,
+        },
+        random::random_u128_range,
+    },
 };
-use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
 fn test_ics_transfer() -> Result<(), Error> {

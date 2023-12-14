@@ -1,9 +1,15 @@
-use ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
-use ibc_proto::cosmos::tx::v1beta1::{SimulateRequest, SimulateResponse, Tx};
+use ibc_proto::cosmos::tx::v1beta1::{
+    service_client::ServiceClient,
+    SimulateRequest,
+    SimulateResponse,
+    Tx,
+};
 use tonic::codegen::http::Uri;
 
-use crate::config::default::max_grpc_decoding_size;
-use crate::error::Error;
+use crate::{
+    config::default::max_grpc_decoding_size,
+    error::Error,
+};
 
 pub async fn send_tx_simulate(grpc_address: &Uri, tx: Tx) -> Result<SimulateResponse, Error> {
     let mut tx_bytes = vec![];

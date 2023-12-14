@@ -18,11 +18,19 @@
 //!   the memo fields are misspelled:
 //!    - Misspelled receiver address, port or channel: The intermediary chain will refund the sender.
 
-use ibc_relayer::config::{self, Config, ModeConfig};
+use ibc_relayer::config::{
+    self,
+    Config,
+    ModeConfig,
+};
 use ibc_test_framework::prelude::*;
 
 use crate::tests::forward::memo::{
-    MemoField, MemoInfo, MemoMisspelledField, MisspelledChannelMemoInfo, MisspelledPortMemoInfo,
+    MemoField,
+    MemoInfo,
+    MemoMisspelledField,
+    MisspelledChannelMemoInfo,
+    MisspelledPortMemoInfo,
     MisspelledReceiverMemoInfo,
 };
 

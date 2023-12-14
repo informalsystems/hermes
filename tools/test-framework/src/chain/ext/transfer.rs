@@ -1,18 +1,41 @@
 use core::time::Duration;
 
-use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics04_channel::packet::Packet;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer_types::core::{
+    ics02_client::height::Height,
+    ics04_channel::packet::Packet,
+    ics24_host::identifier::{
+        ChannelId,
+        PortId,
+    },
+};
 
-use crate::chain::cli::transfer::{local_transfer_token, transfer_from_chain};
-use crate::chain::driver::ChainDriver;
-use crate::chain::tagged::TaggedChainDriverExt;
-use crate::error::Error;
-use crate::ibc::token::TaggedTokenRef;
-use crate::relayer::transfer::{batched_ibc_token_transfer, ibc_token_transfer};
-use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
-use crate::types::tagged::*;
-use crate::types::wallet::{Wallet, WalletAddress};
+use crate::{
+    chain::{
+        cli::transfer::{
+            local_transfer_token,
+            transfer_from_chain,
+        },
+        driver::ChainDriver,
+        tagged::TaggedChainDriverExt,
+    },
+    error::Error,
+    ibc::token::TaggedTokenRef,
+    relayer::transfer::{
+        batched_ibc_token_transfer,
+        ibc_token_transfer,
+    },
+    types::{
+        id::{
+            TaggedChannelIdRef,
+            TaggedPortIdRef,
+        },
+        tagged::*,
+        wallet::{
+            Wallet,
+            WalletAddress,
+        },
+    },
+};
 
 pub trait ChainTransferMethodsExt<Chain> {
     /**

@@ -1,6 +1,13 @@
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChannelId,
+    PortId,
+};
 
-use crate::prelude::{DualTagged, MonoTagged, WalletAddress};
+use crate::prelude::{
+    DualTagged,
+    MonoTagged,
+    WalletAddress,
+};
 
 /// Build the recipient address as following:
 /// {intermediate_refund_address}|{foward_port}/{forward_channel}:{final_destination_address}

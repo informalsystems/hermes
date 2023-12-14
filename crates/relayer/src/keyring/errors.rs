@@ -1,5 +1,10 @@
-use flex_error::{define_error, DisplayOnly, TraceError};
 use std::io::Error as IoError;
+
+use flex_error::{
+    define_error,
+    DisplayOnly,
+    TraceError,
+};
 
 use super::KeyType;
 use crate::config::AddressType;

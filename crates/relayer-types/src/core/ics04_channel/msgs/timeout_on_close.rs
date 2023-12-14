@@ -1,11 +1,20 @@
-use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
-use ibc_proto::Protobuf;
+use ibc_proto::{
+    ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose,
+    Protobuf,
+};
 
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::packet::{Packet, Sequence};
-use crate::proofs::Proofs;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+    core::ics04_channel::{
+        error::Error,
+        packet::{
+            Packet,
+            Sequence,
+        },
+    },
+    proofs::Proofs,
+    signer::Signer,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeoutOnClose";
 
@@ -112,8 +121,10 @@ mod tests {
     use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
     use test_log::test;
 
-    use crate::core::ics04_channel::msgs::timeout_on_close::test_util::get_dummy_raw_msg_timeout_on_close;
-    use crate::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
+    use crate::core::ics04_channel::msgs::timeout_on_close::{
+        test_util::get_dummy_raw_msg_timeout_on_close,
+        MsgTimeoutOnClose,
+    };
 
     #[test]
     fn msg_timeout_on_close_try_from_raw() {
@@ -195,11 +206,18 @@ mod tests {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
-    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+    use ibc_proto::ibc::core::{
+        channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose,
+        client::v1::Height as RawHeight,
+    };
 
-    use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+    use crate::{
+        core::ics04_channel::packet::test_utils::get_dummy_raw_packet,
+        test_utils::{
+            get_dummy_bech32_account,
+            get_dummy_proof,
+        },
+    };
 
     /// Returns a dummy `RawMsgTimeoutOnClose`, for testing only!
     /// The `height` parametrizes both the proof height as well as the timeout height.

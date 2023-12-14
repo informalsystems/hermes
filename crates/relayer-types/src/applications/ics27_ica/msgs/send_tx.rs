@@ -1,15 +1,25 @@
-use serde_derive::{Deserialize, Serialize};
+use ibc_proto::{
+    ibc::applications::interchain_accounts::controller::v1::MsgSendTx as RawMsgSendTx,
+    Protobuf,
+};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 
-use ibc_proto::ibc::applications::interchain_accounts::controller::v1::MsgSendTx as RawMsgSendTx;
-use ibc_proto::Protobuf;
-
-use crate::applications::ics27_ica::error::Error;
-use crate::applications::ics27_ica::packet_data::InterchainAccountPacketData;
-use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics24_host::identifier::ConnectionId;
-use crate::signer::Signer;
-use crate::timestamp::Timestamp;
-use crate::tx_msg::Msg;
+use crate::{
+    applications::ics27_ica::{
+        error::Error,
+        packet_data::InterchainAccountPacketData,
+    },
+    core::ics24_host::{
+        error::ValidationError,
+        identifier::ConnectionId,
+    },
+    signer::Signer,
+    timestamp::Timestamp,
+    tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.applications.interchain_accounts.controller.v1.MsgSendTx";
 

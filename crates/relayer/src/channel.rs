@@ -1,42 +1,89 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
-use core::time::Duration;
-
-use ibc_proto::google::protobuf::Any;
-use serde::Serialize;
-use tracing::{debug, error, info, warn};
+use core::{
+    fmt::{
+        Display,
+        Error as FmtError,
+        Formatter,
+    },
+    time::Duration,
+};
 
 pub use error::ChannelError;
-use ibc_relayer_types::core::ics04_channel::channel::{
-    ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State,
+use ibc_proto::google::protobuf::Any;
+use ibc_relayer_types::{
+    core::{
+        ics04_channel::{
+            channel::{
+                ChannelEnd,
+                Counterparty,
+                IdentifiedChannelEnd,
+                Ordering,
+                State,
+            },
+            msgs::{
+                chan_close_confirm::MsgChannelCloseConfirm,
+                chan_close_init::MsgChannelCloseInit,
+                chan_open_ack::MsgChannelOpenAck,
+                chan_open_confirm::MsgChannelOpenConfirm,
+                chan_open_init::MsgChannelOpenInit,
+                chan_open_try::MsgChannelOpenTry,
+            },
+        },
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            ClientId,
+            ConnectionId,
+            PortId,
+        },
+    },
+    events::IbcEvent,
+    tx_msg::Msg,
+    Height,
 };
-use ibc_relayer_types::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use ibc_relayer_types::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+use serde::Serialize;
+use tracing::{
+    debug,
+    error,
+    info,
+    warn,
 };
-use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::tx_msg::Msg;
-use ibc_relayer_types::Height;
 
-use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{
-    IncludeProof, PageRequest, QueryChannelRequest, QueryConnectionChannelsRequest,
-    QueryConnectionRequest, QueryHeight,
+use crate::{
+    chain::{
+        counterparty::{
+            channel_connection_client,
+            channel_state_on_destination,
+        },
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            PageRequest,
+            QueryChannelRequest,
+            QueryConnectionChannelsRequest,
+            QueryConnectionRequest,
+            QueryHeight,
+        },
+        tracking::TrackedMsgs,
+    },
+    connection::Connection,
+    foreign_client::{
+        ForeignClient,
+        HasExpiredOrFrozenError,
+    },
+    object::Channel as WorkerChannelObject,
+    supervisor::error::Error as SupervisorError,
+    util::{
+        pretty::{
+            PrettyDuration,
+            PrettyOption,
+        },
+        retry::{
+            retry_with_index,
+            RetryResult,
+        },
+        task::Next,
+    },
 };
-use crate::chain::tracking::TrackedMsgs;
-use crate::connection::Connection;
-use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
-use crate::object::Channel as WorkerChannelObject;
-use crate::supervisor::error::Error as SupervisorError;
-use crate::util::pretty::{PrettyDuration, PrettyOption};
-use crate::util::retry::retry_with_index;
-use crate::util::retry::RetryResult;
-use crate::util::task::Next;
 
 pub mod error;
 pub mod version;
@@ -46,9 +93,15 @@ pub mod channel_handshake_retry {
     //! Provides utility methods and constants to configure the retry behavior
     //! for the channel handshake algorithm.
 
-    use crate::channel::ChannelError;
-    use crate::util::retry::{clamp_total, ConstantGrowth};
     use core::time::Duration;
+
+    use crate::{
+        channel::ChannelError,
+        util::retry::{
+            clamp_total,
+            ConstantGrowth,
+        },
+    };
 
     /// Approximate number of retries per block.
     const PER_BLOCK_RETRIES: u32 = 10;

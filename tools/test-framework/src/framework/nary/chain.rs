@@ -6,22 +6,43 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use crate::bootstrap::nary::chain::{
-    boostrap_chains_with_nodes, boostrap_chains_with_self_connected_node,
+use crate::{
+    bootstrap::nary::chain::{
+        boostrap_chains_with_nodes,
+        boostrap_chains_with_self_connected_node,
+    },
+    error::Error,
+    framework::{
+        base::{
+            HasOverrides,
+            TestConfigOverride,
+        },
+        binary::{
+            chain::RelayerConfigOverride,
+            node::{
+                NodeConfigOverride,
+                NodeGenesisOverride,
+            },
+        },
+        nary::node::{
+            run_nary_node_test,
+            NaryNodeTest,
+        },
+        supervisor::{
+            RunWithSupervisor,
+            SupervisorOverride,
+        },
+    },
+    relayer::driver::RelayerDriver,
+    types::{
+        binary::chains::DropChainHandle,
+        config::TestConfig,
+        env::write_env,
+        nary::chains::NaryConnectedChains,
+        single::node::FullNode,
+    },
+    util::suspend::hang_on_error,
 };
-use crate::error::Error;
-use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::RelayerConfigOverride;
-use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
-use crate::framework::nary::node::{run_nary_node_test, NaryNodeTest};
-use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
-use crate::relayer::driver::RelayerDriver;
-use crate::types::binary::chains::DropChainHandle;
-use crate::types::config::TestConfig;
-use crate::types::env::write_env;
-use crate::types::nary::chains::NaryConnectedChains;
-use crate::types::single::node::FullNode;
-use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`NaryChainTest`] with a `SIZE` number of

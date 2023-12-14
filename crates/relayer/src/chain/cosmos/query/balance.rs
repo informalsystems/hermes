@@ -1,12 +1,15 @@
 use http::uri::Uri;
-
 use ibc_proto::cosmos::bank::v1beta1::{
-    query_client::QueryClient, QueryAllBalancesRequest, QueryBalanceRequest,
+    query_client::QueryClient,
+    QueryAllBalancesRequest,
+    QueryBalanceRequest,
 };
 
-use crate::account::Balance;
-use crate::config::default::max_grpc_decoding_size;
-use crate::error::Error;
+use crate::{
+    account::Balance,
+    config::default::max_grpc_decoding_size,
+    error::Error,
+};
 
 /// Uses the GRPC client to retrieve the account balance for a specific denom
 pub async fn query_balance(

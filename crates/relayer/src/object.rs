@@ -1,28 +1,50 @@
 use std::fmt::Display;
 
 use flex_error::define_error;
-use serde::{Deserialize, Serialize};
-
-use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
-use ibc_relayer_types::core::{
-    ics02_client::events::UpdateClient,
-    ics03_connection::events::Attributes as ConnectionAttributes,
-    ics04_channel::events::{
-        Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
+use ibc_relayer_types::{
+    applications::ics29_fee::events::IncentivizedPacket,
+    core::{
+        ics02_client::events::UpdateClient,
+        ics03_connection::events::Attributes as ConnectionAttributes,
+        ics04_channel::events::{
+            Attributes,
+            CloseInit,
+            SendPacket,
+            TimeoutPacket,
+            WriteAcknowledgement,
+        },
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            ClientId,
+            ConnectionId,
+            PortId,
+        },
     },
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+};
+use serde::{
+    Deserialize,
+    Serialize,
 };
 
-use crate::chain::{
-    counterparty::{
-        channel_connection_client, channel_connection_client_no_checks,
-        counterparty_chain_from_channel, counterparty_chain_from_connection,
+use crate::{
+    chain::{
+        counterparty::{
+            channel_connection_client,
+            channel_connection_client_no_checks,
+            counterparty_chain_from_channel,
+            counterparty_chain_from_connection,
+        },
+        handle::ChainHandle,
+        requests::{
+            IncludeProof,
+            QueryClientStateRequest,
+            QueryHeight,
+        },
     },
-    handle::ChainHandle,
-    requests::{IncludeProof, QueryClientStateRequest, QueryHeight},
+    error::Error as RelayerError,
+    supervisor::Error as SupervisorError,
 };
-use crate::error::Error as RelayerError;
-use crate::supervisor::Error as SupervisorError;
 
 /// Client
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]

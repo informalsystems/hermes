@@ -1,8 +1,12 @@
 //! `version` subcommand
 
+use abscissa_core::{
+    clap::Parser,
+    Command,
+    Runnable,
+};
+
 use super::CliCmd;
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 
 /// `version` subcommand
 ///

@@ -2,7 +2,10 @@
 //! The base structure of the memos are taken from
 //! https://github.com/strangelove-ventures/packet-forward-middleware#examples
 
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 pub trait HasForwardMemoInfo {
     fn new_memo(receiver: String, port: String, channel: String) -> Self;
