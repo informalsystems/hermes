@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v1.7.4
+
+*December , 2023*
+
+This release improves the monitoring of Hermes instances by fixing the `broadcast_errors` metric so
+that it correctly batches the same errors together. It also improves the metrics `backlog_*` by
+updating them whenever Hermes queries pending packets.
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Fix a bug in the `evidence` command which would sometimes
+    prevent the detected misbehaviour evidence from being submitted,
+    instead erroring out with a validator set hash mismatch.
+    ([\#3697](https://github.com/informalsystems/hermes/pull/3697))
+- [Telemetry & Metrics](telemetry)
+  - Fix the issue where `broadcast_errors` metric would not correctly batch
+    the same errors together.
+    together ([\#3720](https://github.com/informalsystems/hermes/issues/3720))
+
 ## v1.7.3
 
 *November 29th, 2023*
