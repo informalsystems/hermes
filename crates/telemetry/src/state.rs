@@ -1202,7 +1202,6 @@ impl AggregatorSelector for CustomAggregatorSelector {
     }
 }
 
-#[cfg(all(feature = "telemetry", test))]
 #[cfg(test)]
 mod tests {
     use prometheus::proto::Metric;

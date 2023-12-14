@@ -507,7 +507,7 @@ pub fn unreceived_packets(
         update_backlog,
         commit_sequences
             .iter()
-            .map(|s| std::convert::Into::<u64>::into(*s))
+            .map(|s| u64::from(*s))
             .collect::<Vec<u64>>()
             .clone(),
         &counterparty_chain.id(),
