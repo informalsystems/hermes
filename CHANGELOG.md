@@ -4,12 +4,13 @@
 
 *December 15th, 2023*
 
+Special thanks to Yun Yeo (@beer-1) for his contributions ([#3697] and [#3703]).
+
 This release improves the monitoring of Hermes instances by fixing the `broadcast_errors` metric so
 that it correctly batches the same errors together. It also improves the metrics `backlog_*` by
 updating them whenever Hermes queries pending packets.
 
-A fix avoiding packets being discarded if the idle worker clean-up is removing the worker at the same
-time the packets are received.
+Some additional stability has been added in the idle worker clean-up and the `evidence` command.
 
 ### BUG FIXES
 
@@ -26,6 +27,13 @@ time the packets are received.
   - Fix the issue where `broadcast_errors` metric would not correctly batch
     the same errors together.
     together ([\#3720](https://github.com/informalsystems/hermes/issues/3720))
+  - Update the values of `backlog` metrics when clearing packets.
+    Change the `backlog_oldest_timestamp` to `backlog_latest_update_timestamp`
+    which shows the last time the `backlog` metrics have been updated.
+    ([\#3723](https://github.com/informalsystems/hermes/issues/3723))
+
+[#3697]: https://github.com/informalsystems/hermes/issues/3697
+[#3703]: https://github.com/informalsystems/hermes/issues/3703
 
 ## v1.7.3
 
