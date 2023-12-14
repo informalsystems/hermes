@@ -170,9 +170,9 @@ pub struct TelemetryState {
     /// SendPacket events were relayed.
     backlog_oldest_sequence: ObservableGauge<u64>,
 
-    /// Record the timestamp related to `backlog_oldest_sequence`.
+    /// Record the timestamp of the last time the `backlog_*` metrics have been updated.
     /// The timestamp is the time passed since since the unix epoch in seconds.
-    backlog_oldest_timestamp: ObservableGauge<u64>,
+    backlog_latest_update_timestamp: ObservableGauge<u64>,
 
     /// Records the length of the backlog, i.e., how many packets are pending.
     backlog_size: ObservableGauge<u64>,
@@ -350,10 +350,10 @@ impl TelemetryState {
                 .with_description("Sequence number of the oldest SendPacket event in the backlog")
                 .init(),
 
-            backlog_oldest_timestamp: meter
-                .u64_observable_gauge("backlog_oldest_timestamp")
+            backlog_latest_update_timestamp: meter
+                .u64_observable_gauge("backlog_latest_update_timestamp")
                 .with_unit(Unit::new("seconds"))
-                .with_description("Local timestamp for the oldest SendPacket event in the backlog")
+                .with_description("Local timestamp for the last time the backlog metrics have been updated")
                 .init(),
 
             backlog_size: meter
@@ -457,7 +457,7 @@ impl TelemetryState {
         }
 
         self.backlog_oldest_sequence.observe(&cx, 0, labels);
-        self.backlog_oldest_timestamp.observe(&cx, 0, labels);
+        self.backlog_latest_update_timestamp.observe(&cx, 0, labels);
         self.backlog_size.observe(&cx, 0, labels);
     }
 
@@ -922,8 +922,7 @@ impl TelemetryState {
         };
 
         // Update the backlog with the incoming data and retrieve the oldest values
-        let (oldest_sn, oldest_ts, total) = if let Some(path_backlog) = self.backlogs.get(&path_uid)
-        {
+        let (oldest_sn, total) = if let Some(path_backlog) = self.backlogs.get(&path_uid) {
             // Avoid having the inner backlog map growing more than a given threshold, by removing
             // the oldest sequence number entry.
             if path_backlog.len() > BACKLOG_RESET_THRESHOLD {
@@ -935,20 +934,11 @@ impl TelemetryState {
 
             // Return the oldest event information to be recorded in telemetry
             if let Some(min) = path_backlog.iter().map(|v| *v.key()).min() {
-                if let Some(oldest) = path_backlog.get(&min) {
-                    (min, *oldest.value(), path_backlog.len() as u64)
-                } else {
-                    // Timestamp was not found, this should not happen, record a 0 ts.
-                    (min, 0, path_backlog.len() as u64)
-                }
+                (min, path_backlog.len() as u64)
             } else {
                 // We just inserted a new key/value, so this else branch is unlikely to activate,
                 // but it can happen in case of concurrent updates to the backlog.
-                (
-                    EMPTY_BACKLOG_SYMBOL,
-                    EMPTY_BACKLOG_SYMBOL,
-                    EMPTY_BACKLOG_SYMBOL,
-                )
+                (EMPTY_BACKLOG_SYMBOL, EMPTY_BACKLOG_SYMBOL)
             }
         } else {
             // If there is no inner backlog for this path, create a new map to store it.
@@ -958,13 +948,13 @@ impl TelemetryState {
             self.backlogs.insert(path_uid, new_path_backlog);
 
             // Return the current event information to be recorded in telemetry
-            (seq_nr, timestamp, 1)
+            (seq_nr, 1)
         };
 
         // Update metrics to reflect the new state of the backlog
         self.backlog_oldest_sequence.observe(&cx, oldest_sn, labels);
-        self.backlog_oldest_timestamp
-            .observe(&cx, oldest_ts, labels);
+        self.backlog_latest_update_timestamp
+            .observe(&cx, timestamp, labels);
         self.backlog_size.observe(&cx, total, labels);
     }
 
@@ -985,17 +975,18 @@ impl TelemetryState {
             port_id.to_string(),
         );
 
-        // Remove any sequence number from the backlog which isn't in the list of queried pending packets
-        // as they might have been relayed without the Hermes instance observing it
-        if let Some(path_backlog) = self.backlogs.get(&path_uid) {
-            let backlog = path_backlog.value();
-            let keys_to_remove: Vec<u64> = backlog
-                .iter()
-                .filter(|entry| !sequences.contains(entry.key()))
-                .map(|entry| *entry.key())
-                .collect();
-            for key in keys_to_remove.iter() {
+        // This condition is done in order to avoid having an incorrect `backlog_latest_update_timestamp`.
+        // If the sequences is an empty vector by removing the entries using `backlog_remove` the `backlog_latest_update_timestamp`
+        // will only be updated if the current backlog is not empty.
+        // If the sequences is not empty, then it is possible to simple remove the backlog for that path and insert the sequences.
+        if sequences.is_empty() {
+            for key in sequences.iter() {
                 self.backlog_remove(*key, chain_id, channel_id, port_id, counterparty_chain_id)
+            }
+        } else {
+            self.backlogs.remove(&path_uid);
+            for key in sequences.iter() {
+                self.backlog_insert(*key, chain_id, channel_id, port_id, counterparty_chain_id)
             }
         }
     }
@@ -1028,24 +1019,26 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
+        // Retrieve local timestamp when this SendPacket event was recorded.
+        let now = Time::now();
+        let timestamp = match now.duration_since(Time::unix_epoch()) {
+            Ok(ts) => ts.as_secs(),
+            Err(_) => 0,
+        };
+
         if let Some(path_backlog) = self.backlogs.get(&path_uid) {
             if path_backlog.remove(&seq_nr).is_some() {
+                // If the entry was removed update the latest update timestamp.
+                self.backlog_latest_update_timestamp
+                    .observe(&cx, timestamp, labels);
                 // The oldest pending sequence number is the minimum key in the inner (path) backlog.
                 if let Some(min_key) = path_backlog.iter().map(|v| *v.key()).min() {
-                    if let Some(oldest) = path_backlog.get(&min_key) {
-                        self.backlog_oldest_timestamp
-                            .observe(&cx, *oldest.value(), labels);
-                    } else {
-                        self.backlog_oldest_timestamp.observe(&cx, 0, labels);
-                    }
                     self.backlog_oldest_sequence.observe(&cx, min_key, labels);
                     self.backlog_size
                         .observe(&cx, path_backlog.len() as u64, labels);
                 } else {
                     // No mimimum found, update the metrics to reflect an empty backlog
                     self.backlog_oldest_sequence
-                        .observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
-                    self.backlog_oldest_timestamp
                         .observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
                     self.backlog_size.observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
                 }
@@ -1188,7 +1181,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
         match descriptor.name() {
             "wallet_balance" => Some(Arc::new(last_value())),
             "backlog_oldest_sequence" => Some(Arc::new(last_value())),
-            "backlog_oldest_timestamp" => Some(Arc::new(last_value())),
+            "backlog_latest_update_timestamp" => Some(Arc::new(last_value())),
             "backlog_size" => Some(Arc::new(last_value())),
             // Prometheus' supports only collector for histogram, sum, and last value aggregators.
             // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
