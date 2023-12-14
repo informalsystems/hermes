@@ -980,8 +980,16 @@ impl TelemetryState {
         // will only be updated if the current backlog is not empty.
         // If the sequences is not empty, then it is possible to simple remove the backlog for that path and insert the sequences.
         if sequences.is_empty() {
-            for key in sequences.iter() {
-                self.backlog_remove(*key, chain_id, channel_id, port_id, counterparty_chain_id)
+            if let Some(path_backlog) = self.backlogs.get(&path_uid) {
+                let current_keys: Vec<u64> = path_backlog
+                    .value()
+                    .iter()
+                    .map(|entry| *entry.key())
+                    .collect();
+
+                for key in current_keys.iter() {
+                    self.backlog_remove(*key, chain_id, channel_id, port_id, counterparty_chain_id)
+                }
             }
         } else {
             self.backlogs.remove(&path_uid);
@@ -1194,7 +1202,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
     }
 }
 
-#[cfg(feature = "telemetry")]
+#[cfg(all(feature = "telemetry", test))]
 mod tests {
     use prometheus::proto::Metric;
 
@@ -1297,6 +1305,59 @@ mod tests {
         assert!(
             assert_metric_value(backlog_oldest_sequence.get_metric(), 5),
             "expected backlog_oldest_sequence to be 5"
+        );
+    }
+
+    #[test]
+    fn update_backlog_empty() {
+        let state = TelemetryState::new(
+            Range {
+                start: 0,
+                end: 5000,
+            },
+            5,
+            Range {
+                start: 0,
+                end: 5000,
+            },
+            5,
+        );
+
+        let chain_id = ChainId::from_string("chain-test");
+        let counterparty_chain_id = ChainId::from_string("counterpartychain-test");
+        let channel_id = ChannelId::new(0);
+        let port_id = PortId::transfer();
+
+        state.backlog_insert(1, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(2, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(3, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(4, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+        state.backlog_insert(5, &chain_id, &channel_id, &port_id, &counterparty_chain_id);
+
+        state.update_backlog(
+            vec![],
+            &chain_id,
+            &channel_id,
+            &port_id,
+            &counterparty_chain_id,
+        );
+
+        let metrics = state.exporter.registry().gather().clone();
+        let backlog_size = metrics
+            .iter()
+            .find(|&metric| metric.get_name() == "backlog_size")
+            .unwrap();
+        assert!(
+            assert_metric_value(backlog_size.get_metric(), 0),
+            "expected backlog_size to be 0"
+        );
+        let backlog_oldest_sequence = metrics
+            .iter()
+            .find(|&metric| metric.get_name() == "backlog_oldest_sequence")
+            .unwrap();
+        assert!(
+            assert_metric_value(backlog_oldest_sequence.get_metric(), 0),
+            "expected backlog_oldest_sequence to be 0"
         );
     }
 
