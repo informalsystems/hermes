@@ -10,7 +10,9 @@ This release improves the monitoring of Hermes instances by fixing the `broadcas
 that it correctly batches the same errors together. It also improves the metrics `backlog_*` by
 updating them whenever Hermes queries pending packets.
 
-Some additional stability has been added in the idle worker clean-up and the `evidence` command.
+This release also improves the reliability of the idle worker clean-up and 
+fixes a bug within the `evidence` command which would sometimes prevent
+the misbehaviour evidence from being reported.
 
 ### BUG FIXES
 
