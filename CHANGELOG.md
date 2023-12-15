@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## v1.7.4
+
+*December 15th, 2023*
+
+Special thanks to Yun Yeo (@beer-1) for his contributions ([#3697] and [#3703]).
+
+This release improves the monitoring of Hermes instances by fixing the `broadcast_errors` metric so
+that it correctly batches the same errors together. It also improves the metrics `backlog_*` by
+updating them whenever Hermes queries pending packets.
+
+This release also improves the reliability of the idle worker clean-up and 
+fixes a bug within the `evidence` command which would sometimes prevent
+the misbehaviour evidence from being reported.
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Avoid retrieving a worker which is being removed by the idle worker clean-up
+    process.
+    process ([\#3703](https://github.com/informalsystems/hermes/issues/3703))
+- [Relayer CLI](relayer-cli)
+  - Fix a bug in the `evidence` command which would sometimes
+    prevent the detected misbehaviour evidence from being submitted,
+    instead erroring out with a validator set hash mismatch.
+    ([\#3697](https://github.com/informalsystems/hermes/pull/3697))
+- [Telemetry & Metrics](telemetry)
+  - Fix the issue where `broadcast_errors` metric would not correctly batch
+    the same errors together.
+    together ([\#3720](https://github.com/informalsystems/hermes/issues/3720))
+  - Update the values of `backlog` metrics when clearing packets.
+    Change the `backlog_oldest_timestamp` to `backlog_latest_update_timestamp`
+    which shows the last time the `backlog` metrics have been updated.
+    ([\#3723](https://github.com/informalsystems/hermes/issues/3723))
+
+[#3697]: https://github.com/informalsystems/hermes/issues/3697
+[#3703]: https://github.com/informalsystems/hermes/issues/3703
+
 ## v1.7.3
 
 *November 29th, 2023*
