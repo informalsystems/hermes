@@ -16,19 +16,17 @@ the misbehaviour evidence from being reported.
 
 ### BUG FIXES
 
-- [Relayer Library](relayer)
-  - Avoid retrieving a worker which is being removed by the idle worker clean-up
-    process.
-    process ([\#3703](https://github.com/informalsystems/hermes/issues/3703))
 - [Relayer CLI](relayer-cli)
   - Fix a bug in the `evidence` command which would sometimes
     prevent the detected misbehaviour evidence from being submitted,
     instead erroring out with a validator set hash mismatch.
     ([\#3697](https://github.com/informalsystems/hermes/pull/3697))
+- [Relayer Library](relayer)
+  - Avoid retrieving a worker which is being removed by the idle worker clean-up
+    process. ([\#3703](https://github.com/informalsystems/hermes/issues/3703))
 - [Telemetry & Metrics](telemetry)
   - Fix the issue where `broadcast_errors` metric would not correctly batch
-    the same errors together.
-    together ([\#3720](https://github.com/informalsystems/hermes/issues/3720))
+    the same errors together.([\#3720](https://github.com/informalsystems/hermes/issues/3720))
   - Update the values of `backlog` metrics when clearing packets.
     Change the `backlog_oldest_timestamp` to `backlog_latest_update_timestamp`
     which shows the last time the `backlog` metrics have been updated.
