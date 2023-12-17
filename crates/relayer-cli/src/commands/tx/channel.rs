@@ -1185,6 +1185,136 @@ impl Runnable for TxChanUpgradeOpenCmd {
     }
 }
 
+/// Relay channel upgrade cancel when counterparty has aborted the upgrade (ChannelUpgradeCancel)
+///
+/// Build and send a `ChannelUpgradeCancel` message to cancel
+/// the channel upgrade handshake given that the counterparty has aborted.
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
+pub struct TxChanUpgradeCancelCmd {
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        value_name = "DST_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination chain"
+    )]
+    dst_chain_id: ChainId,
+
+    #[clap(
+        long = "src-chain",
+        required = true,
+        value_name = "SRC_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source chain"
+    )]
+    src_chain_id: ChainId,
+
+    #[clap(
+        long = "dst-connection",
+        visible_alias = "dst-conn",
+        required = true,
+        value_name = "DST_CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination connection"
+    )]
+    dst_conn_id: ConnectionId,
+
+    #[clap(
+        long = "dst-port",
+        required = true,
+        value_name = "DST_PORT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination port"
+    )]
+    dst_port_id: PortId,
+
+    #[clap(
+        long = "src-port",
+        required = true,
+        value_name = "SRC_PORT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source port"
+    )]
+    src_port_id: PortId,
+
+    #[clap(
+        long = "src-channel",
+        visible_alias = "src-chan",
+        required = true,
+        value_name = "SRC_CHANNEL_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source channel (required)"
+    )]
+    src_chan_id: ChannelId,
+
+    #[clap(
+        long = "dst-channel",
+        visible_alias = "dst-chan",
+        required = true,
+        help_heading = "REQUIRED",
+        value_name = "DST_CHANNEL_ID",
+        help = "Identifier of the destination channel (optional)"
+    )]
+    dst_chan_id: Option<ChannelId>,
+}
+
+impl Runnable for TxChanUpgradeCancelCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
+            Ok(chains) => chains,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
+
+        // Retrieve the connection
+        let dst_connection = match chains.dst.query_connection(
+            QueryConnectionRequest {
+                connection_id: self.dst_conn_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((connection, _)) => connection,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
+
+        // Fetch the Channel that will facilitate the communication between the channel ends
+        // being upgraded. This channel is assumed to already exist on the destination chain.
+        let channel = Channel {
+            connection_delay: Default::default(),
+            ordering: Ordering::default(),
+            a_side: ChannelSide::new(
+                chains.src,
+                ClientId::default(),
+                ConnectionId::default(),
+                self.src_port_id.clone(),
+                Some(self.src_chan_id.clone()),
+                None,
+            ),
+            b_side: ChannelSide::new(
+                chains.dst,
+                dst_connection.client_id().clone(),
+                self.dst_conn_id.clone(),
+                self.dst_port_id.clone(),
+                self.dst_chan_id.clone(),
+                None,
+            ),
+        };
+
+        info!("message ChanUpgradeCancel: {}", channel);
+
+        let res: Result<IbcEvent, Error> = channel
+            .build_chan_upgrade_cancel_and_send()
+            .map_err(Error::channel);
+
+        match res {
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(e).exit(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use abscissa_core::clap::Parser;

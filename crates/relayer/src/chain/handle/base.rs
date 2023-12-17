@@ -5,7 +5,7 @@ use tracing::Span;
 
 use ibc_proto::ibc::{
     apps::fee::v1::{QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse},
-    core::channel::v1::QueryUpgradeRequest,
+    core::channel::v1::{QueryUpgradeRequest, QueryUpgradeErrorRequest},
 };
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
@@ -16,7 +16,7 @@ use ibc_relayer_types::{
         ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
         ics04_channel::{
             packet::{PacketMsgType, Sequence},
-            upgrade::Upgrade,
+            upgrade::{Upgrade, ErrorReceipt},
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::ChainId,
@@ -532,6 +532,18 @@ impl ChainHandle for BaseChainHandle {
         height: Height,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
         self.send(|reply_to| ChainRequest::QueryUpgrade {
+            request,
+            height,
+            reply_to,
+        })
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryUpgradeError {
             request,
             height,
             reply_to,

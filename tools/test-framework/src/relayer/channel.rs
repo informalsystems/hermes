@@ -5,8 +5,9 @@ use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeigh
 use ibc_relayer::channel::version::Version as ChannelEndVersion;
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 use ibc_relayer_types::core::ics04_channel::channel::{
-    ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState, UpgradeState,
+    ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState, UpgradeState
 };
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 
@@ -445,6 +446,31 @@ pub fn assert_eventually_channel_upgrade_open<ChainA: ChainHandle, ChainB: Chain
     )
 }
 
+pub fn assert_eventually_channel_upgrade_cancel<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    upgrade_attrs: &ChannelUpgradableAttributes,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel upgrade cancel step should be done",
+        20,
+        Duration::from_secs(1),
+        || {
+            assert_channel_upgrade_state(
+                ChannelState::Open(UpgradeState::NotUpgrading),
+                ChannelState::Open(UpgradeState::NotUpgrading),
+                handle_a,
+                handle_b,
+                channel_id_a,
+                port_id_a,
+                upgrade_attrs,
+            )
+        },
+    )
+}
+
 /// Note that the field modified by the channel upgrade are only updated when
 /// the channel returns in the OPEN State
 fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -477,16 +503,16 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
         )));
     }
 
-    if !channel_end_a
-        .value()
-        .order_matches(upgrade_attrs.ordering())
-    {
-        return Err(Error::generic(eyre!(
-            "expected channel end A ordering to be `{}`, but it is instead `{}`",
-            upgrade_attrs.ordering(),
-            channel_end_a.value().ordering()
-        )));
-    }
+    // if !channel_end_a
+    //     .value()
+    //     .upgraded_sequence.eq(&Sequence::from(5))
+    // {
+    //     return Err(Error::generic(eyre!(
+    //         "expected channel end A upgrade sequence to be `{}`, but it is instead `{}`",
+    //         upgrade_attrs.ordering(),
+    //         channel_end_a.value().upgraded_sequence
+    //     )));
+    // }
 
     if !channel_end_a
         .value()

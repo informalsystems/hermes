@@ -21,9 +21,9 @@
 */
 
 use crossbeam_channel as channel;
-use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeErrorRequest};
 use ibc_relayer::chain::cosmos::version::Specs;
-use ibc_relayer_types::core::ics04_channel::upgrade::Upgrade;
+use ibc_relayer_types::core::ics04_channel::upgrade::{Upgrade, ErrorReceipt};
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::{
@@ -444,5 +444,13 @@ where
         height: Height,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
         self.value().query_upgrade(request, height)
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        self.value().query_upgrade_error(request, height)
     }
 }

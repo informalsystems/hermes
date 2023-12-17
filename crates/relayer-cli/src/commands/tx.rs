@@ -56,6 +56,9 @@ pub enum TxCmd {
     /// Relay the channel upgrade attempt (ChannelUpgradeOpen)
     ChanUpgradeOpen(channel::TxChanUpgradeOpenCmd),
 
+    /// Relay the channel upgrade cancellation (ChannelUpgradeCancel)
+    ChanUpgradeCancel(channel::TxChanUpgradeCancelCmd),
+
     /// Send a fungible token transfer test transaction (ICS20 MsgTransfer)
     FtTransfer(transfer::TxIcs20MsgTransferCmd),
 

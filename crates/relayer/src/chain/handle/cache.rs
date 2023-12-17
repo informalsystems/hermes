@@ -1,11 +1,12 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use ibc_relayer_types::core::ics02_client::header::AnyHeader;
+use ibc_relayer_types::core::ics04_channel::upgrade::ErrorReceipt;
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketRequest;
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketResponse;
-use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeErrorRequest};
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
@@ -524,5 +525,13 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         height: Height,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
         self.inner.query_upgrade(request, height)
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        self.inner.query_upgrade_error(request, height)
     }
 }

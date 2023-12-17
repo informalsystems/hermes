@@ -1,4 +1,5 @@
 use ibc_proto::ibc::core::channel::v1::Upgrade as RawUpgrade;
+use ibc_proto::ibc::core::channel::v1::ErrorReceipt as RawErrorReceipt;
 use ibc_proto::Protobuf;
 
 use crate::core::ics04_channel::error::Error as ChannelError;
@@ -45,6 +46,34 @@ impl From<Upgrade> for RawUpgrade {
             fields: Some(value.fields.into()),
             timeout,
             latest_sequence_send: value.latest_sequence_send.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ErrorReceipt {
+    pub sequence: Sequence,
+    pub message: String,
+}
+
+impl Protobuf<RawErrorReceipt> for ErrorReceipt {}
+
+impl TryFrom<RawErrorReceipt> for ErrorReceipt {
+    type Error = ChannelError;
+
+    fn try_from(value: RawErrorReceipt) -> Result<Self, Self::Error> {
+        Ok(Self {
+            sequence: value.sequence.into(),
+            message: value.message,
+        })
+    }
+}
+
+impl From<ErrorReceipt> for RawErrorReceipt {
+    fn from(value: ErrorReceipt) -> Self {
+        Self {
+            sequence: value.sequence.into(),
+            message: value.message,
         }
     }
 }
