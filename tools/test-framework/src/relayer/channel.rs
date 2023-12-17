@@ -503,16 +503,16 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
         )));
     }
 
-    // if !channel_end_a
-    //     .value()
-    //     .upgraded_sequence.eq(&Sequence::from(5))
-    // {
-    //     return Err(Error::generic(eyre!(
-    //         "expected channel end A upgrade sequence to be `{}`, but it is instead `{}`",
-    //         upgrade_attrs.ordering(),
-    //         channel_end_a.value().upgraded_sequence
-    //     )));
-    // }
+    if !channel_end_a
+        .value()
+        .upgraded_sequence.eq(&Sequence::from(5))
+    {
+        return Err(Error::generic(eyre!(
+            "expected channel end A upgrade sequence to be `{}`, but it is instead `{}`",
+            upgrade_attrs.ordering(),
+            channel_end_a.value().upgraded_sequence
+        )));
+    }
 
     if !channel_end_a
         .value()
