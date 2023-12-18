@@ -81,7 +81,9 @@ impl BinaryChannelTest for FeeGrantTest {
             .first()
             .ok_or_else(|| eyre!("chain configuration is empty"))?
         {
-            ChainConfig::CosmosSdk(chain_config) => chain_config.gas_price.denom.clone(),
+            ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
+                chain_config.gas_price.denom.clone()
+            }
         };
 
         let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base(gas_denom_str));
@@ -224,7 +226,9 @@ impl BinaryChannelTest for NoFeeGrantTest {
             .first()
             .ok_or_else(|| eyre!("chain configuration is empty"))?
         {
-            ChainConfig::CosmosSdk(chain_config) => chain_config.gas_price.denom.clone(),
+            ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
+                chain_config.gas_price.denom.clone()
+            }
         };
 
         let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base(gas_denom_str));
