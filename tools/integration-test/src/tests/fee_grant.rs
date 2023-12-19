@@ -14,7 +14,6 @@ use std::thread;
 
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer_types::bigint::U256;
-use ibc_test_framework::chain::ext::denom::ChainDenomMethodsExt;
 use ibc_test_framework::chain::ext::fee_grant::FeeGrantMethodsExt;
 use ibc_test_framework::prelude::*;
 
@@ -68,17 +67,14 @@ impl BinaryChannelTest for FeeGrantTest {
         // Wait for the feegrant to be processed
         thread::sleep(Duration::from_secs(5));
 
-        let path_denom: MonoTagged<ChainA, Denom> =
-            chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
-
         let denom_b = derive_ibc_denom(
             &chains.node_b.chain_driver().value().chain_type,
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
-            &path_denom.as_ref(),
+            &denom_a,
         )?;
 
-        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base("stake".to_owned()));
+        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
 
         let balance_user1_before = chains
             .node_a
@@ -204,17 +200,14 @@ impl BinaryChannelTest for NoFeeGrantTest {
         // Wait for the feegrant to be processed
         thread::sleep(Duration::from_secs(5));
 
-        let path_denom: MonoTagged<ChainA, Denom> =
-            chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
-
         let denom_b = derive_ibc_denom(
             &chains.node_b.chain_driver().value().chain_type,
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
-            &path_denom.as_ref(),
+            &denom_a,
         )?;
 
-        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base("stake".to_owned()));
+        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
 
         let balance_user1_before = chains
             .node_a

@@ -1,5 +1,4 @@
 use core::time::Duration;
-use ibc_test_framework::chain::ext::denom::ChainDenomMethodsExt;
 use time::OffsetDateTime;
 
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
@@ -60,14 +59,11 @@ impl BinaryChannelTest for ConnectionDelayTest {
 
             let time1 = OffsetDateTime::now_utc();
 
-            let path_denom: MonoTagged<ChainA, Denom> =
-                chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
-
             let denom_b = derive_ibc_denom(
                 &chains.node_b.chain_driver().value().chain_type,
                 &channel.port_b.as_ref(),
                 &channel.channel_id_b.as_ref(),
-                &path_denom.as_ref(),
+                &denom_a,
             )?;
 
             info!(

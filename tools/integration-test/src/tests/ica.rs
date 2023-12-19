@@ -115,7 +115,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
             .chain_driver()
             .query_interchain_account(&wallet.address(), &connection.connection_id_a.as_ref())?;
 
-        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
+        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &ica_address.as_ref(),

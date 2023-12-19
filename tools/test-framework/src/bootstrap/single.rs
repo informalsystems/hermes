@@ -47,12 +47,13 @@ pub fn bootstrap_single_node(
 ) -> Result<FullNode, Error> {
     let native_token_number = chain_number % builder.native_tokens.len();
     let native_token = &builder.native_tokens[native_token_number];
-    let native_denom = Denom::base(native_token);
+    let native_denom = Denom::base(native_token, native_token);
 
     let denom = if use_random_id {
-        Denom::base(&format!("coin{:x}", random_u32()))
+        let random_coin = format!("coin{:x}", random_u32());
+        Denom::base(&random_coin, &random_coin)
     } else {
-        Denom::base("samoleans")
+        Denom::base("samoleans", "samoleans")
     };
 
     // Evmos requires of at least 1_000_000_000_000_000_000 or else there will be the

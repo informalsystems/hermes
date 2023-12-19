@@ -199,7 +199,7 @@ impl ChainDriver {
                 self.chain_id.as_str(),
                 &self.command_path,
                 &self.home_path,
-                &denom.to_string(),
+                denom,
                 &wallet_id.0,
                 &self.rpc_listen_address(),
             ),

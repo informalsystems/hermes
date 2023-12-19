@@ -24,9 +24,9 @@ pub fn bootstrap_consumer_node(
     chain_number: usize,
     provider_chain_driver: &ChainDriver,
 ) -> Result<FullNode, Error> {
-    let stake_denom = Denom::base("stake");
+    let stake_denom = Denom::base("stake", "stake");
 
-    let denom = Denom::base("samoleans");
+    let denom = Denom::base("samoleans", "samoleans");
 
     let initial_amount = random_u128_range(1_000_000_000_000_000_000, 2_000_000_000_000_000_000);
 

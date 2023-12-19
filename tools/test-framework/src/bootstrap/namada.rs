@@ -20,6 +20,7 @@ use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::prelude::{TestWallets, Wallet};
 use crate::types::single::node::FullNode;
+use crate::util::namada::get_namada_denom_address;
 
 use std::fs;
 use std::process::{Command, Stdio};
@@ -83,8 +84,6 @@ pub fn bootstrap_namada_node(
             pre_genesis_path,
         ],
     )?;
-
-    let denom = Denom::base("nam");
 
     let genesis_path = &format!("{home_path}/genesis");
     fs::create_dir_all(genesis_path)?;
@@ -279,6 +278,9 @@ pub fn bootstrap_namada_node(
 
     let mut updated_chain_driver = chain_driver.clone();
     updated_chain_driver.chain_id = ChainId::from_string(&chain_id);
+
+    let denom_str = get_namada_denom_address(&chain_id, home_path, "nam");
+    let denom = Denom::base("nam", &denom_str);
 
     let node = FullNode {
         chain_driver: updated_chain_driver,

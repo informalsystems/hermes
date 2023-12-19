@@ -3,7 +3,6 @@ use ibc_relayer::worker::client::spawn_refresh_client;
 
 use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
 use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
-use ibc_test_framework::chain::ext::denom::ChainDenomMethodsExt;
 use ibc_test_framework::chain::ext::transfer::ChainTransferMethodsExt;
 use ibc_test_framework::chain::tagged::TaggedChainDriverExt;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
@@ -224,15 +223,11 @@ pub fn ibc_transfer_receive_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
         DualTagged::new(channels.channel_id_b.value()),
     );
 
-    let path_denom: MonoTagged<ChainA, Denom> = node_source
-        .chain_driver()
-        .get_denom_for_derive(&denom_source);
-
     let denom_target = derive_ibc_denom(
         &node_target.value().chain_driver.chain_type,
         &port_target,
         &channel_id_target,
-        &path_denom.as_ref(),
+        &denom_source,
     )?;
 
     info!(

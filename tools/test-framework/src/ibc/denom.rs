@@ -17,7 +17,10 @@ use crate::types::tagged::*;
 */
 #[derive(Debug, Clone)]
 pub enum Denom {
-    Base(String),
+    Base {
+        display_name: String,
+        raw_address: String,
+    },
     Ibc {
         path: String,
         denom: String,
@@ -57,17 +60,24 @@ pub fn derive_ibc_denom<ChainA, ChainB>(
     channel_id: &TaggedChannelIdRef<ChainB, ChainA>,
     denom: &TaggedDenomRef<ChainA>,
 ) -> Result<TaggedDenom<ChainB>, Error> {
+    match chain_type {
+        ChainType::Namada => derive_namada_ibc_denom(port_id, channel_id, denom),
+        _ => derive_cosmos_ibc_denom(port_id, channel_id, denom),
+    }
+}
+
+fn derive_cosmos_ibc_denom<ChainA, ChainB>(
+    port_id: &TaggedPortIdRef<ChainB, ChainA>,
+    channel_id: &TaggedChannelIdRef<ChainB, ChainA>,
+    denom: &TaggedDenomRef<ChainA>,
+) -> Result<TaggedDenom<ChainB>, Error> {
     fn derive_denom(
-        chain_type: &ChainType,
         port_id: &PortId,
         channel_id: &ChannelId,
         denom: &str,
     ) -> Result<String, Error> {
         let transfer_path = format!("{port_id}/{channel_id}/{denom}");
-        match chain_type {
-            ChainType::Namada => Ok(transfer_path),
-            _ => derive_denom_with_path(&transfer_path),
-        }
+        derive_denom_with_path(&transfer_path)
     }
 
     /// Derive the transferred token denomination using
@@ -83,12 +93,15 @@ pub fn derive_ibc_denom<ChainA, ChainB>(
     }
 
     match denom.value() {
-        Denom::Base(denom) => {
-            let hashed = derive_denom(chain_type, port_id.value(), channel_id.value(), denom)?;
+        Denom::Base {
+            display_name,
+            raw_address,
+        } => {
+            let hashed = derive_denom(port_id.value(), channel_id.value(), raw_address)?;
 
             Ok(MonoTagged::new(Denom::Ibc {
                 path: format!("{port_id}/{channel_id}"),
-                denom: denom.clone(),
+                denom: display_name.clone(),
                 hashed,
             }))
         }
@@ -105,14 +118,46 @@ pub fn derive_ibc_denom<ChainA, ChainB>(
     }
 }
 
+fn derive_namada_ibc_denom<ChainA, ChainB>(
+    port_id: &TaggedPortIdRef<ChainB, ChainA>,
+    channel_id: &TaggedChannelIdRef<ChainB, ChainA>,
+    denom: &TaggedDenomRef<ChainA>,
+) -> Result<TaggedDenom<ChainB>, Error> {
+    match denom.value() {
+        Denom::Base {
+            display_name,
+            raw_address,
+        } => {
+            let ibc_display_name = format!("{port_id}/{channel_id}/{display_name}");
+            let ibc_raw_address = format!("{port_id}/{channel_id}/{raw_address}");
+
+            Ok(MonoTagged::new(Denom::Base {
+                display_name: ibc_display_name,
+                raw_address: ibc_raw_address,
+            }))
+        }
+        Denom::Ibc { hashed, .. } => {
+            let ibc_denom = format!("{port_id}/{channel_id}/{hashed}");
+
+            Ok(MonoTagged::new(Denom::Base {
+                display_name: ibc_denom.clone(),
+                raw_address: ibc_denom,
+            }))
+        }
+    }
+}
+
 impl Denom {
-    pub fn base(denom: &str) -> Self {
-        Denom::Base(denom.to_string())
+    pub fn base(display_name: &str, raw_address: &str) -> Self {
+        Denom::Base {
+            display_name: display_name.to_owned(),
+            raw_address: raw_address.to_owned(),
+        }
     }
 
     pub fn hash_only(&self) -> String {
         match self {
-            Denom::Base(denom) => denom.to_string(),
+            Denom::Base { raw_address, .. } => raw_address.to_string(),
             Denom::Ibc { hashed, .. } => match hashed.find('/') {
                 Some(index) => hashed[index + 1..].to_string(),
                 None => hashed.to_string(),
@@ -120,9 +165,16 @@ impl Denom {
         }
     }
 
+    pub fn display_name(&self) -> String {
+        match self {
+            Denom::Base { display_name, .. } => display_name.to_string(),
+            Denom::Ibc { hashed, .. } => hashed.to_string(),
+        }
+    }
+
     pub fn as_str(&self) -> &str {
         match self {
-            Denom::Base(denom) => denom,
+            Denom::Base { display_name, .. } => display_name,
             Denom::Ibc { hashed, .. } => hashed,
         }
     }
@@ -131,8 +183,8 @@ impl Denom {
 impl Display for Denom {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
-            Denom::Base(denom) => {
-                write!(f, "{denom}")
+            Denom::Base { display_name, .. } => {
+                write!(f, "{display_name}")
             }
             Denom::Ibc { hashed, .. } => {
                 write!(f, "{hashed}")
@@ -144,7 +196,16 @@ impl Display for Denom {
 impl PartialEq for Denom {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Base(d1), Self::Base(d2)) => d1 == d2,
+            (
+                Self::Base {
+                    display_name: d1,
+                    raw_address: a1,
+                },
+                Self::Base {
+                    display_name: d2,
+                    raw_address: a2,
+                },
+            ) => (d1 == d2) && (a1 == a2),
             (
                 Self::Ibc {
                     path: p1,
