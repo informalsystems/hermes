@@ -1,8 +1,8 @@
 use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeCancel as RawMsgChannelUpgradeCancel;
 use ibc_proto::Protobuf;
 
-use crate::core::ics04_channel::upgrade::ErrorReceipt;
 use crate::core::ics04_channel::error::Error;
+use crate::core::ics04_channel::upgrade::ErrorReceipt;
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
@@ -64,7 +64,9 @@ impl TryFrom<RawMsgChannelUpgradeCancel> for MsgChannelUpgradeCancel {
     type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelUpgradeCancel) -> Result<Self, Self::Error> {
-        let raw_error_receipt = raw_msg.error_receipt.ok_or(Error::missing_upgrade_error_receipt())?;
+        let raw_error_receipt = raw_msg
+            .error_receipt
+            .ok_or(Error::missing_upgrade_error_receipt())?;
         let error_receipt = ErrorReceipt::try_from(raw_error_receipt)?;
 
         let proof_height = raw_msg
@@ -102,9 +104,11 @@ impl From<MsgChannelUpgradeCancel> for RawMsgChannelUpgradeCancel {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::core::channel::v1::{MsgChannelUpgradeCancel as RawMsgChannelUpgradeCancel, ErrorReceipt};
-    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
     use ibc_proto::ibc::core::channel::v1::ErrorReceipt as RawErrorReceipt;
+    use ibc_proto::ibc::core::channel::v1::{
+        ErrorReceipt, MsgChannelUpgradeCancel as RawMsgChannelUpgradeCancel,
+    };
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
@@ -116,7 +120,7 @@ pub mod test_util {
             channel_id: ChannelId::default().to_string(),
             error_receipt: Some(RawErrorReceipt {
                 sequence: 1,
-                message: "error message".to_string()
+                message: "error message".to_string(),
             }),
             proof_error_receipt: get_dummy_proof(),
             proof_height: Some(RawHeight {

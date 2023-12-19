@@ -1,8 +1,8 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
-use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeErrorRequest};
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics04_channel::upgrade::{Upgrade, ErrorReceipt};
+use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
 
 use tokio::runtime::Runtime as TokioRuntime;
 

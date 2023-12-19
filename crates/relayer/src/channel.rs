@@ -1,9 +1,9 @@
 pub use error::ChannelError;
-use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeErrorRequest};
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_ack::MsgChannelUpgradeAck;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_cancel::MsgChannelUpgradeCancel;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_confirm::MsgChannelUpgradeConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_open::MsgChannelUpgradeOpen;
-use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_cancel::MsgChannelUpgradeCancel;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::upgrade_fields::UpgradeFields;
 
@@ -2151,9 +2151,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
 
-        let error_receipt_proof = maybe_error_receipt_proof.ok_or(ChannelError::missing_upgrade_error_receipt_proof())?;
+        let error_receipt_proof =
+            maybe_error_receipt_proof.ok_or(ChannelError::missing_upgrade_error_receipt_proof())?;
 
-        let proof_error_receipt = CommitmentProofBytes::try_from(error_receipt_proof).map_err(ChannelError::malformed_proof)?;
+        let proof_error_receipt = CommitmentProofBytes::try_from(error_receipt_proof)
+            .map_err(ChannelError::malformed_proof)?;
 
         // Building the channel proof at the queried height
         let proofs = self

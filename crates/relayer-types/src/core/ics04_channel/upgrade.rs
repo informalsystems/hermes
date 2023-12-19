@@ -1,5 +1,5 @@
-use ibc_proto::ibc::core::channel::v1::Upgrade as RawUpgrade;
 use ibc_proto::ibc::core::channel::v1::ErrorReceipt as RawErrorReceipt;
+use ibc_proto::ibc::core::channel::v1::Upgrade as RawUpgrade;
 use ibc_proto::Protobuf;
 
 use crate::core::ics04_channel::error::Error as ChannelError;

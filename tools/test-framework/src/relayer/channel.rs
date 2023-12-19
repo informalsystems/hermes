@@ -5,7 +5,7 @@ use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeigh
 use ibc_relayer::channel::version::Version as ChannelEndVersion;
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 use ibc_relayer_types::core::ics04_channel::channel::{
-    ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState, UpgradeState
+    ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState, UpgradeState,
 };
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
@@ -505,7 +505,8 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !channel_end_a
         .value()
-        .upgraded_sequence.eq(&Sequence::from(5))
+        .upgraded_sequence
+        .eq(&Sequence::from(5))
     {
         return Err(Error::generic(eyre!(
             "expected channel end A upgrade sequence to be `{}`, but it is instead `{}`",

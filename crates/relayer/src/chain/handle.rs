@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 use core::fmt::{self, Debug, Display};
-use ibc_relayer_types::core::ics04_channel::upgrade::{Upgrade, ErrorReceipt};
+use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
 
 use crossbeam_channel as channel;
 use tracing::Span;
@@ -8,7 +8,7 @@ use tracing::Span;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
-use ibc_proto::ibc::core::channel::v1::{QueryUpgradeRequest, QueryUpgradeErrorRequest};
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{

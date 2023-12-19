@@ -1087,7 +1087,7 @@ pub struct UpgradeCancel {
     pub upgrade_connection_hops: Vec<ConnectionId>,
     pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
-    pub upgrade_ordering: Ordering
+    pub upgrade_ordering: Ordering,
 }
 
 impl Display for UpgradeCancel {

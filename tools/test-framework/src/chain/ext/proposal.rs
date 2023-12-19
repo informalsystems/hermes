@@ -35,11 +35,7 @@ pub trait ChainProposalMethodsExt {
         signer: &str,
     ) -> Result<(), Error>;
 
-    fn update_channel_params(
-        &self,
-        timestamp: u64,
-        signer: &str,
-    ) -> Result<(), Error>;
+    fn update_channel_params(&self, timestamp: u64, signer: &str) -> Result<(), Error>;
 }
 
 impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDriver> {
@@ -121,17 +117,10 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
         Ok(())
     }
 
-    fn update_channel_params(
-        &self,
-        timestamp: u64,
-        signer: &str,
-    ) -> Result<(), Error> {
+    fn update_channel_params(&self, timestamp: u64, signer: &str) -> Result<(), Error> {
         let gov_address = self.query_auth_module("gov")?;
-        let channel_update_params_proposal = create_channel_update_params_proposal(
-            self.value(),
-            timestamp,
-            &gov_address,
-        )?;
+        let channel_update_params_proposal =
+            create_channel_update_params_proposal(self.value(), timestamp, &gov_address)?;
         submit_gov_proposal(
             self.value().chain_id.as_str(),
             &self.value().command_path,

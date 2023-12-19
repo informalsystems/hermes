@@ -11,7 +11,7 @@
 //!
 //! - `ChannelUpgradeHandshakeFromConfirm` tests that the channel worker will finish the
 //!   upgrade handshake if the channel is being upgraded and is at the Confirm step.
-//! 
+//!
 //! - `ChannelUpgradeHandshakeTimeoutOnAck` tests that the channel worker will finish the
 //!   cancel the upgrade handshake if the Ack step fails due to an upgrade timeout.
 
@@ -21,9 +21,9 @@ use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_perio
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_ack,
-    assert_eventually_channel_upgrade_confirm, assert_eventually_channel_upgrade_init,
-    assert_eventually_channel_upgrade_open, assert_eventually_channel_upgrade_try,
-    assert_eventually_channel_upgrade_cancel, ChannelUpgradableAttributes,
+    assert_eventually_channel_upgrade_cancel, assert_eventually_channel_upgrade_confirm,
+    assert_eventually_channel_upgrade_init, assert_eventually_channel_upgrade_open,
+    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -684,10 +684,10 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
 
         info!("Will update channel params to set a short upgrade timeout...");
 
-        chains.node_a.chain_driver().update_channel_params(
-            5000000000,
-            chains.handle_a().get_signer().unwrap().as_ref(),
-        )?;
+        chains
+            .node_a
+            .chain_driver()
+            .update_channel_params(5000000000, chains.handle_a().get_signer().unwrap().as_ref())?;
 
         info!("Will initialise upgrade handshake with governance proposal...");
 
