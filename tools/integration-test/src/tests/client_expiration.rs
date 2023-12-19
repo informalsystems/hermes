@@ -10,7 +10,6 @@ use ibc_test_framework::bootstrap::binary::channel::{
     bootstrap_channel_with_chains, bootstrap_channel_with_connection,
 };
 use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
-use ibc_test_framework::chain::ext::denom::ChainDenomMethodsExt;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
@@ -317,14 +316,11 @@ impl BinaryChainTest for PacketExpirationTest {
         relayer.with_supervisor(|| {
             let denom_a = chains.node_a.denom();
 
-            let path_denom: MonoTagged<ChainA, Denom> =
-                chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
-
             let denom_b = derive_ibc_denom(
                 &chains.node_b.chain_driver().value().chain_type,
                 &channels.port_b.as_ref(),
                 &channels.channel_id_b.as_ref(),
-                &path_denom.as_ref(),
+                &denom_a,
             )?;
 
             sleep(Duration::from_secs(10));

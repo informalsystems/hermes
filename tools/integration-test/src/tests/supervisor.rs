@@ -1,5 +1,4 @@
 use ibc_relayer::config::{self, Config, ModeConfig};
-use ibc_test_framework::chain::ext::denom::ChainDenomMethodsExt;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 
 use ibc_test_framework::prelude::*;
@@ -93,14 +92,11 @@ impl BinaryChainTest for SupervisorTest {
 
         let denom_a = chains.node_a.denom();
 
-        let path_denom: MonoTagged<ChainA, Denom> =
-            chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
-
         let denom_b = derive_ibc_denom(
             &chains.node_b.chain_driver().value().chain_type,
             &port_b.as_ref(),
             &channel_id_b.as_ref(),
-            &path_denom.as_ref(),
+            &denom_a,
         )?;
 
         // Use the same wallet as the relayer to perform token transfer.
@@ -205,14 +201,11 @@ impl BinaryChannelTest for SupervisorScanTest {
         let denom_a = chains.node_a.denom();
         let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
 
-        let path_denom: MonoTagged<ChainA, Denom> =
-            chains.node_a.chain_driver().get_denom_for_derive(&denom_a);
-
         let denom_b = derive_ibc_denom(
             &chains.node_b.chain_driver().value().chain_type,
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
-            &path_denom.as_ref(),
+            &denom_a,
         )?;
 
         // Use the same wallet as the relayer to perform token transfer.
