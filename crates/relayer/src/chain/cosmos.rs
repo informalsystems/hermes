@@ -471,6 +471,27 @@ impl CosmosSdkChain {
         }
     }
 
+    pub async fn query_eip_base_fee(lcd_address: &str) -> Result<f64, Error> {
+        let url = format!("{}/osmosis/txfees/v1beta1/cur_eip_base_fee", lcd_address);
+        let response = reqwest::get(&url).await.map_err(Error::http_request)?;
+
+        if !response.status().is_success() {
+            return Err(Error::http_response(response.status()));
+        }
+
+        let body = response.text().await.map_err(Error::http_response_body)?;
+        let json: serde_json::Value =
+            serde_json::from_str(&body).map_err(Error::json_deserialize)?;
+
+        let base_fee = json["base_fee"]
+            .as_str()
+            .ok_or_else(|| Error::json_field("base_fee".to_string()))?
+            .parse::<f64>()
+            .map_err(Error::parse_float)?;
+
+        Ok(base_fee)
+    }
+
     /// The minimum gas price that this node accepts
     pub fn min_gas_price(&self) -> Result<Vec<GasPrice>, Error> {
         crate::time!(

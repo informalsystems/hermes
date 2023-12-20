@@ -586,6 +586,30 @@ define_error! {
         InvalidCompatMode
             [ TendermintRpcError ]
             |_| { "Invalid CompatMode queried from chain and no `compat_mode` configured in Hermes. This can be fixed by specifying a `compat_mode` in Hermes config.toml" },
+
+        HttpRequest
+            [ TraceError<reqwest::Error> ]
+            |_| { "HTTP request error" },
+
+        HttpResponse
+            { status: reqwest::StatusCode }
+            |e| { format!("HTTP response error with status code {}", e.status) },
+
+        HttpResponseBody
+            [ TraceError<reqwest::Error> ]
+            |_| { "HTTP response body error" },
+
+        JsonDeserialize
+            [ TraceError<serde_json::Error> ]
+            |_| { "JSON deserialization error" },
+
+        JsonField
+            { field: String }
+            |e| { format!("Missing or invalid JSON field: {}", e.field) },
+
+        ParseFloat
+            [ TraceError<std::num::ParseFloatError> ]
+            |_| { "Error parsing float" },
     }
 }
 
