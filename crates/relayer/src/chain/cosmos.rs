@@ -863,6 +863,7 @@ impl CosmosSdkChain {
 }
 
 pub fn query_eip_base_fee(lcd_address: &str) -> Result<f64, Error> {
+    info!("Querying Omosis EIP-1559 base fee from {}", lcd_address);
     let url = format!("{}/osmosis/txfees/v1beta1/cur_eip_base_fee", lcd_address);
     let response = reqwest::blocking::get(&url).map_err(Error::http_request)?;
 
@@ -871,8 +872,7 @@ pub fn query_eip_base_fee(lcd_address: &str) -> Result<f64, Error> {
     }
 
     let body = response.text().map_err(Error::http_response_body)?;
-    let json: serde_json::Value =
-        serde_json::from_str(&body).map_err(Error::json_deserialize)?;
+    let json: serde_json::Value = serde_json::from_str(&body).map_err(Error::json_deserialize)?;
 
     let base_fee = json["base_fee"]
         .as_str()
@@ -880,9 +880,9 @@ pub fn query_eip_base_fee(lcd_address: &str) -> Result<f64, Error> {
         .parse::<f64>()
         .map_err(Error::parse_float)?;
 
+    info!("Omosis EIP-1559 base fee is {}", base_fee);
     Ok(base_fee)
 }
-
 
 impl ChainEndpoint for CosmosSdkChain {
     type LightBlock = TmLightBlock;

@@ -680,6 +680,7 @@ impl ChainConfig {
                 price: query_eip_base_fee(
                     &self
                         .lcd_addr
+                        .clone()
                         .expect("This branch needs an LCD addr")
                         .to_string(),
                 )
