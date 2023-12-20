@@ -958,7 +958,7 @@
           },
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "backlog_oldest_timestamp{job=\"hermes\"}",
+          "expr": "backlog_latest_update_timestamp{job=\"hermes\"}",
           "format": "table",
           "hide": false,
           "instant": true,
