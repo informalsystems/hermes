@@ -572,6 +572,9 @@ pub struct ChainConfig {
     /// The gRPC URL to connect to
     pub grpc_addr: Url,
 
+    /// The LCD URL to connect to, for Osmosis EIP Fees only
+    pub lcd_addr: Option<Url>,
+
     /// The type of event source and associated settings
     pub event_source: EventSourceMode,
 
