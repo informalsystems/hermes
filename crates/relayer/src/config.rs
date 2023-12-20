@@ -677,7 +677,13 @@ impl ChainConfig {
     pub fn dynamic_gas_price(&self) -> GasPrice {
         match self.id.as_str() {
             "osmosis-1" => GasPrice {
-                price: query_eip_base_fee(&self.lcd_addr.to_string()).unwrap(),
+                price: query_eip_base_fee(
+                    &self
+                        .lcd_addr
+                        .expect("This branch needs an LCD addr")
+                        .to_string(),
+                )
+                .unwrap(),
                 denom: self.gas_price.denom.clone(),
             },
 

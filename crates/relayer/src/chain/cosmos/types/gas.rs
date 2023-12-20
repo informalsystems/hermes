@@ -24,7 +24,7 @@ impl<'a> From<&'a ChainConfig> for GasConfig {
             default_gas: default_gas_from_config(config),
             max_gas: max_gas_from_config(config),
             gas_multiplier: gas_multiplier_from_config(config),
-            gas_price: config.gas_price.clone(),
+            gas_price: config.dynamic_gas_price(),
             max_fee: max_fee_from_config(config),
             fee_granter: fee_granter_from_config(config),
         }
