@@ -24,7 +24,7 @@ ibc-proto         = { version = "0.38.0", features = ["serde"] }
 ibc-telemetry     = { version = "0.26.4", path = "../telemetry", optional = true }
 ibc-relayer-types = { version = "0.26.4", path = "../relayer-types", features = ["mocks"] }
 
-reqwest = "0.11"
+reqwest = { version = "0.11", features = ["blocking"] }
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
 serde = "1.0"

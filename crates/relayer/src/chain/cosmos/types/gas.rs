@@ -62,7 +62,7 @@ fn max_fee_from_config(config: &ChainConfig) -> Fee {
     let max_gas = max_gas_from_config(config);
 
     // The maximum fee the relayer pays for a transaction
-    let max_fee_in_coins = calculate_fee(max_gas, &config.gas_price);
+    let max_fee_in_coins = calculate_fee(max_gas, &config.dynamic_gas_price());
 
     let fee_granter = fee_granter_from_config(config);
 

@@ -43,6 +43,7 @@ use crate::keyring::Store;
 pub use crate::config::Error as ConfigError;
 pub use error::Error;
 
+use crate::chain::cosmos::query_eip_base_fee;
 pub use filter::PacketFilter;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -670,6 +671,19 @@ pub struct ChainConfig {
     pub extension_options: Vec<ExtensionOption>,
     pub compat_mode: Option<CompatMode>,
     pub clear_interval: Option<u64>,
+}
+
+impl ChainConfig {
+    pub fn dynamic_gas_price(&self) -> GasPrice {
+        match self.id.as_str() {
+            "osmosis-1" => GasPrice {
+                price: query_eip_base_fee(&self.lcd_addr.to_string()).unwrap(),
+                denom: self.gas_price.denom.clone(),
+            },
+
+            _ => self.gas_price.clone(),
+        }
+    }
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
