@@ -22,10 +22,10 @@ acknowledgment_packets_confirmed_total{dst_chain="ibc-1",dst_channel="channel-0"
 # TYPE backlog_oldest_sequence gauge
 backlog_oldest_sequence{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version=""} 0
 backlog_oldest_sequence{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version=""} 0
-# HELP backlog_oldest_timestamp Local timestamp for the oldest SendPacket event in the backlog
-# TYPE backlog_oldest_timestamp gauge
-backlog_oldest_timestamp{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version=""} 0
-backlog_oldest_timestamp{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version=""} 0
+# HELP backlog_latest_update_timestamp Local timestamp for the last time the backlog metrics have been updated
+# TYPE backlog_latest_update_timestamp gauge
+backlog_latest_update_timestamp{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version=""} 0
+backlog_latest_update_timestamp{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version=""} 0
 # HELP backlog_size Total number of SendPacket events in the backlog
 # TYPE backlog_size gauge
 backlog_size{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",service_name="unknown_service",otel_scope_name="hermes",otel_scope_version=""} 0
