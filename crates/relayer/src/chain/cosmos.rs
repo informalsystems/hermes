@@ -2368,7 +2368,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         );
     }
 
-    let relayer_gas_price = &chain.config.gas_price;
+    let relayer_gas_price = &chain.config.dynamic_gas_price();
     let node_min_gas_prices = chain.min_gas_price()?;
 
     if !node_min_gas_prices.is_empty() {
