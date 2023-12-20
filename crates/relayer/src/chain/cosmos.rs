@@ -862,16 +862,16 @@ impl CosmosSdkChain {
     }
 }
 
-pub fn query_eip_base_fee(lcd_address: &str) -> Result<f64, Error> {
+pub async fn query_eip_base_fee(lcd_address: &str) -> Result<f64, Error> {
     info!("Querying Omosis EIP-1559 base fee from {}", lcd_address);
     let url = format!("{}/osmosis/txfees/v1beta1/cur_eip_base_fee", lcd_address);
-    let response = reqwest::blocking::get(&url).map_err(Error::http_request)?;
+    let response = reqwest::get(&url).await.map_err(Error::http_request)?;
 
     if !response.status().is_success() {
         return Err(Error::http_response(response.status()));
     }
 
-    let body = response.text().map_err(Error::http_response_body)?;
+    let body = response.text().await.map_err(Error::http_response_body)?;
     let json: serde_json::Value = serde_json::from_str(&body).map_err(Error::json_deserialize)?;
 
     let base_fee = json["base_fee"]
