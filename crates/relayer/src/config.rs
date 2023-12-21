@@ -100,7 +100,7 @@ impl PartialOrd for GasPrice {
 /// the parsing of other prices.
 pub fn parse_gas_prices(prices: String) -> Vec<GasPrice> {
     prices
-        .split(';')
+        .split(',')
         .filter_map(|gp| GasPrice::from_str(gp).ok())
         .collect()
 }
@@ -811,7 +811,7 @@ mod tests {
 
     #[test]
     fn parse_multiple_gas_prices() {
-        let gas_prices = "0.25token1;0.0001token2";
+        let gas_prices = "0.25token1,0.0001token2";
         let parsed = parse_gas_prices(gas_prices.to_string());
 
         let expected = vec![
@@ -838,7 +838,7 @@ mod tests {
 
     #[test]
     fn malformed_gas_prices_do_not_get_parsed() {
-        let malformed_prices = "token1;.token2;0.25token3";
+        let malformed_prices = "token1,.token2,0.25token3";
         let parsed = parse_gas_prices(malformed_prices.to_string());
 
         let expected = vec![GasPrice {
