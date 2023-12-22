@@ -730,10 +730,6 @@ jobs:
             command: namada
             account_prefix: ''
             native_token: nam
-          - package: .#namada,.#gaia14
-            command: namada,gaiad
-            account_prefix: '',cosmos
-            native_token: nam,stake
           - package: .#gaia14,.#namada
             command: gaiad,namada
             account_prefix: cosmos,''
