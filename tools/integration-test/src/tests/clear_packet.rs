@@ -220,7 +220,10 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        let fee_denom_a = MonoTagged::new(Denom::base(
+            &config.native_tokens[0],
+            &config.native_tokens[0],
+        ));
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -344,7 +347,10 @@ impl BinaryChannelTest for ClearPacketOverrideTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        let fee_denom_a = MonoTagged::new(Denom::base(
+            &config.native_tokens[0],
+            &config.native_tokens[0],
+        ));
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();

@@ -199,7 +199,10 @@ impl BinaryChannelTest for SupervisorScanTest {
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        let fee_denom_a = MonoTagged::new(Denom::base(
+            &config.native_tokens[0],
+            &config.native_tokens[0],
+        ));
 
         let denom_b = derive_ibc_denom(
             &chains.node_b.chain_driver().value().chain_type,
