@@ -51,6 +51,7 @@
           migaloo
           neutron
           celestia
+          namada
           ;
 
         python = nixpkgs.python3.withPackages (p: [
