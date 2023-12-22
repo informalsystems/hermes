@@ -66,7 +66,7 @@ impl TrustThreshold {
 
     /// The numerator of the fraction underlying this trust threshold.
     pub fn numerator(&self) -> u64 {
-        *self.0.number()
+        *self.0.numer()
     }
 
     /// The denominator of the fraction underlying this trust threshold.

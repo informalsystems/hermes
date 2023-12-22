@@ -43,7 +43,7 @@ define_error! {
             |e| { format!("invalid compatibility mode: '{}' (supported: {})", e.compat_mode, e.valide_modes) },
 
         Encode
-            [ TraceError<toml::set::Error> ]
+            [ TraceError<toml::ser::Error> ]
             |_| { "invalid configuration" },
 
         WrongType

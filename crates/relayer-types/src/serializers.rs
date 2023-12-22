@@ -1,4 +1,4 @@
-use serde::set::{Serialize, Serializer};
+use serde::ser::{Serialize, Serializer};
 use subtle_encoding::{Encoding, Hex};
 
 pub fn ser_hex_upper<S, T>(data: T, serializer: S) -> Result<S::Ok, S::Error>
