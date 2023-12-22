@@ -199,7 +199,7 @@ impl Serialize for ChannelFilters {
     where
         S: Serializer,
     {
-        use serde::ser::SerializeSeq;
+        use serde::set::SerializeSeq;
 
         struct Pair<'a> {
             a: &'a FilterPattern<PortId>,

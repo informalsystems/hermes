@@ -2,7 +2,7 @@
 
 use core::fmt;
 use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
-use serde::{de, ser, Deserializer, Serializer};
+use serde::{de, set, Deserializer, Serializer};
 
 pub fn serialize<S: Serializer>(
     proof_specs: &Option<ProofSpecs>,
@@ -10,7 +10,7 @@ pub fn serialize<S: Serializer>(
 ) -> Result<S::Ok, S::Error> {
     match proof_specs {
         Some(proof_specs) => {
-            let json_str = serde_json::to_string_pretty(proof_specs).map_err(ser::Error::custom)?;
+            let json_str = serde_json::to_string_pretty(proof_specs).map_err(set::Error::custom)?;
             serializer.serialize_some(&json_str)
         }
         None => serializer.serialize_none(),

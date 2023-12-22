@@ -45,7 +45,7 @@
 //!
 //! This example tests showcases implementing the `TestOverrides` trait, which is used to set
 //! configuration and initialization values for the relayer instance that is being tested (in
-//! this case though, nothing is being overriden).
+//! this case though, nothing is being overridden).
 //!
 //! The main logic of the test is implemented in the `run` function of the `BinaryChannelTest`
 //! trait. This trait is implemented for our empty test struct since we're choosing to run a
