@@ -104,6 +104,8 @@ use crate::util::compat_mode::compat_mode_from_version;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
+use cosmwasm_std::{Decimal, Uint128};
+use osmosis_std::types::cosmos::base::v1beta1::DecProto;
 
 use self::types::app_state::GenesisAppState;
 
@@ -862,9 +864,14 @@ impl CosmosSdkChain {
     }
 }
 
-pub async fn query_eip_base_fee(lcd_address: &str) -> Result<f64, Error> {
-    info!("Querying Omosis EIP-1559 base fee from {}", lcd_address);
-    let url = format!("{}/osmosis/txfees/v1beta1/cur_eip_base_fee", lcd_address);
+pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
+    info!("Querying Omosis EIP-1559 base fee from {}", rpc_address);
+
+    let url = format!(
+        "{}/abci_query?path=\"/osmosis.txfees.v1beta1.Query/GetEipBaseFee\"",
+        rpc_address
+    );
+
     let response = reqwest::get(&url).await.map_err(Error::http_request)?;
 
     if !response.status().is_success() {
@@ -873,12 +880,21 @@ pub async fn query_eip_base_fee(lcd_address: &str) -> Result<f64, Error> {
 
     let body = response.text().await.map_err(Error::http_response_body)?;
     let json: serde_json::Value = serde_json::from_str(&body).map_err(Error::json_deserialize)?;
-
-    let base_fee = json["base_fee"]
+    let base_fee_encoded = json["result"]["response"]["value"]
         .as_str()
-        .ok_or_else(|| Error::json_field("base_fee".to_string()))?
-        .parse::<f64>()
-        .map_err(Error::parse_float)?;
+        .ok_or_else(|| Error::json_field("value".to_string()))?
+        .to_string();
+    let base_fee_decoded = base64::decode(&base_fee_encoded).unwrap();
+
+    let base_fee_dec_proto: DecProto = prost::Message::decode(base_fee_decoded.as_ref())
+        .map_err(|_| Error::json_field("test".to_string()))?;
+
+    let base_fee_uint128 = Uint128::from_str(&base_fee_dec_proto.dec)
+        .map_err(|_| Error::json_field("test".to_string()))?;
+
+    let base_fee_dec = Decimal::new(base_fee_uint128);
+
+    let base_fee = f64::from_str(base_fee_dec.to_string().as_str()).unwrap();
 
     info!("Omosis EIP-1559 base fee is {}", base_fee);
     Ok(base_fee)

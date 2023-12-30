@@ -125,7 +125,6 @@ where
         r#type: default::chain_type(),
         rpc_addr: rpc_data.rpc_address,
         grpc_addr: grpc_address,
-        lcd_addr: None,
         event_source: EventSourceMode::Push {
             url: websocket_address,
             batch_delay: default::batch_delay(),

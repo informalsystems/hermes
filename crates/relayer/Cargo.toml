@@ -23,6 +23,9 @@ telemetry = ["ibc-telemetry"]
 ibc-proto         = { version = "0.38.0", features = ["serde"] }
 ibc-telemetry     = { version = "0.26.4", path = "../telemetry", optional = true }
 ibc-relayer-types = { version = "0.26.4", path = "../relayer-types", features = ["mocks"] }
+osmosis-std = "0.21.0"
+cosmwasm-std = "1.2"
+base64 = "0.13.0"
 
 reqwest = { version = "0.11", features = ["blocking"] }
 subtle-encoding = "0.5"
