@@ -81,8 +81,8 @@ ${NAMADAC} --base-dir ${base_dir_b} transfer \
   --node ${LEDGER_ADDR_B}
 
 # Get the receiver addresses
-receiver_a=$(${NAMADAW} --base-dir ${base_dir_a} address find --alias relayer | awk '{print $4}')
-receiver_b=$(${NAMADAW} --base-dir ${base_dir_b} address find --alias relayer | awk '{print $4}')
+receiver_a=$(${NAMADAW} --base-dir ${base_dir_a} find --alias relayer | awk '/"relayer":/{print $3}')
+receiver_b=$(${NAMADAW} --base-dir ${base_dir_b} find --alias relayer | awk '/"relayer":/{print $3}')
 
 echo "~~ Transfer 100 apfel from chain_a to chain_b ~~"
 ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \

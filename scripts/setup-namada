@@ -142,7 +142,7 @@ function init_relayer_acc() {
   local base_dir=${DATA_DIR}/namada-${suffix}
 
   ${NAMADAW} --base-dir ${base_dir} \
-    key gen --alias relayer --unsafe-dont-encrypt
+    gen --alias relayer --unsafe-dont-encrypt
 }
 
 function add_relayer_key() {
@@ -206,11 +206,11 @@ sed -i .bak \
 ${NAMADAN} --base-dir ${DATA_DIR}/namada-a/setup/validator-0 \
   ledger run > ${DATA_DIR}/namada-a/namada.log 2>&1 &
 echo "Namada chain A's PID = $!"
+sleep 5
 
 ${NAMADAN} --base-dir ${DATA_DIR}/namada-b/setup/validator-0 \
   ledger run > ${DATA_DIR}/namada-b/namada.log 2>&1 &
 echo "Namada chain B's PID = $!"
-
 sleep 5
 
 # Create "relayer" account on each chain
@@ -218,8 +218,8 @@ init_relayer_acc "a" ${chain_id_a}
 init_relayer_acc "b" ${chain_id_b}
 
 # Get token addresses
-nam_addr_a=$(${NAMADAW} --base-dir ${DATA_DIR}/namada-a address find --alias nam | awk '{print $4}')
-nam_addr_b=$(${NAMADAW} --base-dir ${DATA_DIR}/namada-b address find --alias nam | awk '{print $4}')
+nam_addr_a=$(${NAMADAW} --base-dir ${DATA_DIR}/namada-a find --alias nam | awk '/"nam":/{print $3}')
+nam_addr_b=$(${NAMADAW} --base-dir ${DATA_DIR}/namada-b find --alias nam | awk '/"nam":/{print $3}')
 
 # Make Hermes config
 cd ${HERMES_DIR}

@@ -80,7 +80,7 @@ impl NamadaChain {
             serialized_tx: None,
             owner: relayer_addr.clone(),
         };
-        let (mut tx, signing_data, _epoch) = rt
+        let (mut tx, signing_data) = rt
             .block_on(args.build(&self.ctx))
             .map_err(NamadaError::namada)?;
         rt.block_on(
@@ -158,10 +158,9 @@ impl NamadaChain {
                 .await
                 .map_err(NamadaError::namada)?
             {
-                let (mut tx, signing_data, _epoch) =
-                    tx::build_reveal_pk(&self.ctx, args, &public_key)
-                        .await
-                        .map_err(NamadaError::namada)?;
+                let (mut tx, signing_data) = tx::build_reveal_pk(&self.ctx, args, &public_key)
+                    .await
+                    .map_err(NamadaError::namada)?;
                 self.ctx
                     .sign(&mut tx, args, signing_data, signing::default_sign, ())
                     .await

@@ -3670,8 +3670,8 @@ checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
 
 [[package]]
 name = "namada_core"
-version = "0.28.0"
-source = "git+https://github.com/anoma/namada?tag=v0.28.0#9562c1602be0c7a9e40cc486cc673203b6737a98"
+version = "0.29.0"
+source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
 dependencies = [
  "ark-bls12-381",
  "ark-serialize",
@@ -3694,6 +3694,7 @@ dependencies = [
  "k256",
  "masp_primitives",
  "namada_macros",
+ "num-derive",
  "num-integer",
  "num-rational 0.4.1",
  "num-traits",
@@ -3720,8 +3721,8 @@ dependencies = [
 
 [[package]]
 name = "namada_ethereum_bridge"
-version = "0.28.0"
-source = "git+https://github.com/anoma/namada?tag=v0.28.0#9562c1602be0c7a9e40cc486cc673203b6737a98"
+version = "0.29.0"
+source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
 dependencies = [
  "borsh",
  "borsh-ext",
@@ -3742,8 +3743,8 @@ dependencies = [
 
 [[package]]
 name = "namada_macros"
-version = "0.28.0"
-source = "git+https://github.com/anoma/namada?tag=v0.28.0#9562c1602be0c7a9e40cc486cc673203b6737a98"
+version = "0.29.0"
+source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3752,8 +3753,8 @@ dependencies = [
 
 [[package]]
 name = "namada_proof_of_stake"
-version = "0.28.0"
-source = "git+https://github.com/anoma/namada?tag=v0.28.0#9562c1602be0c7a9e40cc486cc673203b6737a98"
+version = "0.29.0"
+source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
 dependencies = [
  "borsh",
  "data-encoding",
@@ -3767,8 +3768,8 @@ dependencies = [
 
 [[package]]
 name = "namada_sdk"
-version = "0.28.0"
-source = "git+https://github.com/anoma/namada?tag=v0.28.0#9562c1602be0c7a9e40cc486cc673203b6737a98"
+version = "0.29.0"
+source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
 dependencies = [
  "async-trait",
  "bimap",
@@ -3782,6 +3783,7 @@ dependencies = [
  "fd-lock",
  "futures",
  "itertools 0.10.5",
+ "lazy_static",
  "masp_primitives",
  "masp_proofs",
  "namada_core",
