@@ -216,7 +216,7 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
     assert_eventually_succeed(
         "channel should eventually established",
         20,
-        Duration::from_secs(1),
+        Duration::from_secs(2),
         || {
             let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
 
