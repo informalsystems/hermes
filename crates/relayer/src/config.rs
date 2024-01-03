@@ -6,7 +6,6 @@ pub mod filter;
 pub mod gas_multiplier;
 pub mod proof_specs;
 pub mod refresh_rate;
-pub mod trust_threshold;
 pub mod types;
 
 use alloc::collections::BTreeMap;
