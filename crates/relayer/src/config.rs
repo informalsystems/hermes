@@ -10,15 +10,14 @@ pub mod trust_threshold;
 pub mod types;
 
 use alloc::collections::BTreeMap;
-use byte_unit::Byte;
-use core::{
-    cmp::Ordering,
-    fmt::{Display, Error as FmtError, Formatter},
-    str::FromStr,
-    time::Duration,
-};
-use serde_derive::{Deserialize, Serialize};
+use core::cmp::Ordering;
+use core::fmt::{Display, Error as FmtError, Formatter};
+use core::str::FromStr;
+use core::time::Duration;
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
+
+use byte_unit::Byte;
+use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height as BlockHeight;
 use tendermint_rpc::Url;
 use tendermint_rpc::WebSocketClientUrl;
@@ -27,10 +26,11 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
+use crate::chain::cosmos::config::CosmosSdkConfig;
+use crate::config::types::TrustThreshold;
+use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
-use crate::keyring::Store;
-use crate::keyring::{AnySigningKeyPair, KeyRing};
-use crate::{chain::cosmos::config::CosmosSdkConfig, error::Error as RelayerError};
+use crate::keyring::{AnySigningKeyPair, KeyRing, Store};
 
 use crate::keyring;
 
@@ -145,8 +145,6 @@ impl Display for ExtensionOption {
 
 /// Defaults for various fields
 pub mod default {
-    use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
-
     use super::*;
 
     pub fn ccv_consumer_chain() -> bool {
