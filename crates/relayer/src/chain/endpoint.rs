@@ -112,7 +112,7 @@ pub trait ChainEndpoint: Sized {
     fn get_signer(&self) -> Result<Signer, Error>;
 
     /// Get the signing key pair
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error>;
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error>;
 
     fn add_key(&mut self, key_name: &str, key_pair: Self::SigningKeyPair) -> Result<(), Error> {
         self.keybase_mut()
