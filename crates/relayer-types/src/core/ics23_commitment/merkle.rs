@@ -138,8 +138,13 @@ impl MerkleProof {
         }
 
         // verify the absence of key in lowest subtree
-        let proof = self.proofs.get(0).ok_or_else(Error::invalid_merkle_proof)?;
-        let spec = ics23_specs.get(0).ok_or_else(Error::invalid_merkle_proof)?;
+        let proof = self
+            .proofs
+            .first()
+            .ok_or_else(Error::invalid_merkle_proof)?;
+        let spec = ics23_specs
+            .first()
+            .ok_or_else(Error::invalid_merkle_proof)?;
         // keys are represented from root-to-leaf
         let key = keys
             .key_path
