@@ -27,7 +27,7 @@ use crate::util::random::{random_u128_range, random_u32};
    a chain with an ID  like `"ibc-alpha-f5a2a988"`
 
    The bootstrap function also tries to use as many random parameters
-   when intitializing the chain, such as using random denomination
+   when initializing the chain, such as using random denomination
    and wallets. This is to help ensure that the test is written to
    only work with specific hardcoded parameters.
 

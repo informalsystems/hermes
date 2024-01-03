@@ -111,7 +111,7 @@ HandlePacketAck(chainID, chain, packetDatagram, delay, log, datagramTimestamp) =
     LET channelEnd == chain.channelEnd IN
     \* get packet
     LET packet == packetDatagram.packet IN
-    \* get packet committment that should be in chain store
+    \* get packet commitment that should be in chain store
     LET packetCommitment == [portID |-> packet.srcPortID,
                               channelID |-> packet.srcChannelID, 
                               sequence |-> packet.sequence,
@@ -125,7 +125,7 @@ HandlePacketAck(chainID, chain, packetDatagram, delay, log, datagramTimestamp) =
     
     IF \* if the channel end is open for packet transmission
        /\ channelEnd.state = "OPEN"
-       \* if the packet committment exists in the chain store
+       \* if the packet commitment exists in the chain store
        /\ packetCommitment \in chain.packetCommitments
        \* if the "PacketRecv" datagram has valid port and channel IDs 
        /\ packet.srcPortID = channelEnd.portID
@@ -167,7 +167,7 @@ HandlePacketAck(chainID, chain, packetDatagram, delay, log, datagramTimestamp) =
     ELSE [chainStore |-> chain, packetLog |-> log, datagramTimestamp |-> datagramTimestamp] 
     
     
-\* write packet committments to chain store
+\* write packet commitments to chain store
 \* @type: (CHAINSTORE, PACKET) => CHAINSTORE;
 WritePacketCommitment(chain, packet) ==
     \* get channel end
@@ -186,7 +186,7 @@ WritePacketCommitment(chain, packet) ==
        /\ \/ packet.timeoutHeight = 0 
           \/ latestClientHeight < packet.timeoutHeight
     THEN IF \* if the channel is ordered, check if packetSeq is nextSendSeq, 
-            \* add a packet committment in the chain store, and increase nextSendSeq
+            \* add a packet commitment in the chain store, and increase nextSendSeq
             /\ channelEnd.order = "ORDERED"
             /\ packet.sequence = channelEnd.nextSendSeq
          THEN [chain EXCEPT 
@@ -203,7 +203,7 @@ WritePacketCommitment(chain, packet) ==
          \* otherwise, do not update the chain store
          ELSE chain
     ELSE IF \* if the channel is unordered, 
-            \* add a packet committment in the chain store
+            \* add a packet commitment in the chain store
             /\ channelEnd.order = "UNORDERED"
          THEN [chain EXCEPT 
                 !.packetCommitments =  
@@ -282,7 +282,7 @@ TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
     \* get counterparty channel end
     LET counterpartyChannelEnd == counterpartyChain.channelEnd IN
     
-    \* get packet committment that should be in chain store
+    \* get packet commitment that should be in chain store
     LET packetCommitment == [portID |-> packet.srcPortID,
                               channelID |-> packet.srcChannelID, 
                               sequence |-> packet.sequence,
@@ -336,7 +336,7 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
     \* get counterparty channel end
     LET counterpartyChannelEnd == counterpartyChain.channelEnd IN
     
-    \* get packet committment that should be in chain store
+    \* get packet commitment that should be in chain store
     LET packetCommitment == [portID |-> packet.srcPortID,
                               channelID |-> packet.srcChannelID, 
                               sequence |-> packet.sequence,

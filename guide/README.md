@@ -72,4 +72,4 @@ Basically if you want to add new content to the guide, just add an entry to the 
 If you are adding content using your favorite IDE and have a terminal opened running `mdbook serve`, it provides a convenient watch functionality, so any changes detected on local files will trigger another build and if you refresh the guide on your browser they will be shown there.
 
 #### Submit your changes
-Once you finish adding the new content just commit your changes (`git commit`) and push them to the respository (`git push`).
+Once you finish adding the new content just commit your changes (`git commit`) and push them to the repository (`git push`).
