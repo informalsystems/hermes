@@ -80,6 +80,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         port: &PortId,
         channel: &ChannelId,
         token: &TaggedTokenRef<Chain>,
+        fees: &TaggedTokenRef<Chain>,
         timeout_height: &Height,
     ) -> Result<(), Error>;
 }
@@ -180,6 +181,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         port: &PortId,
         channel: &ChannelId,
         token: &TaggedTokenRef<Chain>,
+        fees: &TaggedTokenRef<Chain>,
         timeout_height: &Height,
     ) -> Result<(), Error> {
         let driver = *self.value();
@@ -194,6 +196,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             channel.as_ref(),
             recipient.value().as_str(),
             &token.value().to_string(),
+            &fees.value().to_string(),
             &timeout_height_str.to_string(),
         )
     }

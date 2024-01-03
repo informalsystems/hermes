@@ -87,7 +87,7 @@ Initial version of the relayer assumes batching is supported by all chains. An o
 
 A correct relayer MUST:
 
-- **[R-config-start]** Read, parse, validate a configuration file upon start and configure itself for the specifed chains and paths
+- **[R-config-start]** Read, parse, validate a configuration file upon start and configure itself for the specified chains and paths
 - **[R-transport]** Have access to the networking protocols (e.g. TCP/IP, UDP/IP, or QUIC/IP) and physical transport, required to read the state of one blockchain/ machine and submit data to another
 - **[R-provider]** Maintain transport connections to at least one full node per chain
 - **[R-query]** Query IBC data on source and destination chains
@@ -308,7 +308,7 @@ Future versions may create multiple relay threads. One possibility is to create 
 
 A relayer algorithm is described in [relayer algorithm described in IBC Specification](https://github.com/cosmos/ibc/tree/main/spec/relayer/ics-018-relayer-algorithms/README.md#L47) and [Go relayer implementation ](https://github.com/cosmos/relayer/blob/f3a302df9e6e0c28883f5480199d3190821bcc06/relayer/strategies.go#L49.).
 
-This section describes some of the details of the realy thread algorithm in the Rust implementation. Inputs are the IBC Events and the events of interest are described in Appendix A.
+This section describes some of the details of the really thread algorithm in the Rust implementation. Inputs are the IBC Events and the events of interest are described in Appendix A.
 
 At high level, for each event from a source chain, the relayer:
 - queries client, connection, channels and/or packet related state on source and destination chains,
@@ -318,7 +318,7 @@ At high level, for each event from a source chain, the relayer:
 
 #### Proofs
 The relayer must include proofs in some datagrams as required by the IBC handlers. There are two types of proofs:
-- proof of some local state on source chain (A). For example, a proof of correct connection state (`ProofInit`, `ProofTry`, `ProofAck`) is included in some of the connection handshake datagrams. The `ConnOpenTry` message includes the `ProofInit` that is obtained from chain A where the connection should be in `INIT` state and have certain local and counterpary identifiers. The message specific sections below go in more details.
+- proof of some local state on source chain (A). For example, a proof of correct connection state (`ProofInit`, `ProofTry`, `ProofAck`) is included in some of the connection handshake datagrams. The `ConnOpenTry` message includes the `ProofInit` that is obtained from chain A where the connection should be in `INIT` state and have certain local and counterparty identifiers. The message specific sections below go in more details.
 - proof that the chain A's IBC client `clB` is updated with a consensus state and height that have been stored on chain B.
 - these proofs are verified on chain B against the consensus state stored by the A client at `proof_height`.
 
@@ -350,7 +350,7 @@ One proposal is shown below and described in the rest of this section.
 ![IBC_client_heights](assets/IBC_client_heights.jpeg)
 
 The relayer creates a light client on B with `hi` and then updates it as required by processing different IBC events. Let `ha'` be the last consensus state for client on B.
-When some IBC event for X (connection, channel or packet) is received, it includes the height, let it be `hx-1` at which the event occured on A.
+When some IBC event for X (connection, channel or packet) is received, it includes the height, let it be `hx-1` at which the event occurred on A.
 According to the proposal here, the relayer should:
 - get the latest consensus state height of client on B, `ha`
 - let `h = max(hx, ha)`
@@ -793,6 +793,6 @@ The IBC Events, input to the relay thread are described here.
 
 ## References
 
-> Are there any relevant PR comments, issues that led up to this, or articles referrenced for why we made the given design choice? If so link them here!
+> Are there any relevant PR comments, issues that led up to this, or articles referenced for why we made the given design choice? If so link them here!
 
 * {reference link}

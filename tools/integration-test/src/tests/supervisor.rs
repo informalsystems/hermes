@@ -188,12 +188,13 @@ impl TestOverrides for SupervisorScanTest {
 impl BinaryChannelTest for SupervisorScanTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
+        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
 
         let denom_b = derive_ibc_denom(
             &channels.port_b.as_ref(),
@@ -229,6 +230,7 @@ impl BinaryChannelTest for SupervisorScanTest {
             &channels.port_a.0,
             &channels.channel_id_a.0,
             &denom_a.with_amount(1000u64).as_ref(),
+            &fee_denom_a.with_amount(381000000u64).as_ref(),
             &dst_height,
         )?;
 

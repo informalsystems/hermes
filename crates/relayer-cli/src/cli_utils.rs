@@ -5,18 +5,13 @@ use eyre::eyre;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
+use ibc_relayer::chain::counterparty::{channel_connection_client, ChannelConnectionClient};
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
-use ibc_relayer::{
-    chain::{
-        counterparty::{channel_connection_client, ChannelConnectionClient},
-        handle::{BaseChainHandle, ChainHandle},
-    },
-    config::Config,
-    spawn,
-};
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer::config::Config;
+use ibc_relayer::spawn;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
 use crate::error::Error;
@@ -64,7 +59,7 @@ pub fn spawn_chain_runtime(config: &Config, chain_id: &ChainId) -> Result<impl C
     spawn_chain_runtime_generic::<BaseChainHandle>(config, chain_id)
 }
 
-/// Spawns a chain runtime for the chain in the configuraiton identified by the given chain identifier.
+/// Spawns a chain runtime for the chain in the configuration identified by the given chain identifier.
 ///
 /// The `Handle` type parameter allows choosing which kind of [`ChainHandle`] implementation to use.
 ///

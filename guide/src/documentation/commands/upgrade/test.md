@@ -70,9 +70,23 @@ gaiad version --log_level error --long | head -n4
     Use test command to make an upgrade proposal. In the example below a software upgrade proposal is made for `ibc-0`, for the height `300` blocks from the latest height. `10000000stake` is deposited.
     The proposal includes the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1` that was created in the previous step.
 
+    If the chain is using ibc-go version `v8.0.0` or higher, the authority account for the governance module needs to be used. To query the account use:
+
+    ```shell
+    gaiad --node tcp://localhost:27000 --home $HOME/.gm/ibc-0/ query auth module-account gov
+    ```
+
+    ```shell
+    {{#template ../../../templates/commands/hermes/tx/upgrade-chain_1.md REFERENCE_CHAIN_ID=ibc-0 HOST_CHAIN_ID=ibc-1 HOST_CLIENT_ID=07-tendermint-0 AMOUNT=10000000 HEIGHT_OFFSET=60 OPTIONS= --gov-account <QUERIED_ACCOUNT>}}
+    ```
+
+    If the ibc-go version used is lower than `v8.0.0` you can ignore the `--gov-account` flag as it will not be used.
+
     ```shell
     {{#template ../../../templates/commands/hermes/tx/upgrade-chain_1.md REFERENCE_CHAIN_ID=ibc-0 HOST_CHAIN_ID=ibc-1 HOST_CLIENT_ID=07-tendermint-0 AMOUNT=10000000 HEIGHT_OFFSET=60}}
     ```
+
+    For this test, the `--gov-account` can be ignored.
 
     ```text
     Success: transaction::Hash(CE98D8D98091BA8016BD852D18056E54C4CB3C4525E7F40DD3C40B4FD0F2482B)

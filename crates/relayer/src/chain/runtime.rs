@@ -12,6 +12,7 @@ use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
         ics02_client::events::UpdateClient,
+        ics02_client::header::AnyHeader,
         ics03_connection::{
             connection::{ConnectionEnd, IdentifiedConnectionEnd},
             version::Version,
@@ -21,7 +22,7 @@ use ibc_relayer_types::{
             packet::{PacketMsgType, Sequence},
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
     proofs::Proofs,
     signer::Signer,
@@ -39,12 +40,12 @@ use crate::{
     error::Error,
     event::IbcEventWithHeight,
     keyring::AnySigningKeyPair,
-    light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
 
 use super::{
     client::ClientSettings,
+    cosmos::version::Specs,
     endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     requests::*,
@@ -186,8 +187,8 @@ where
                             self.add_key(key_name, key, reply_to)?
                         },
 
-                        ChainRequest::IbcVersion { reply_to } => {
-                            self.ibc_version(reply_to)?
+                        ChainRequest::VersionSpecs { reply_to } => {
+                            self.version_specs(reply_to)?
                         },
 
                         ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to } => {
@@ -349,6 +350,10 @@ where
                         ChainRequest::QueryIncentivizedPacket { request, reply_to } => {
                             self.query_incentivized_packet(request, reply_to)?
                         },
+
+                        ChainRequest::QueryConsumerChains { reply_to } => {
+                            self.query_consumer_chains(reply_to)?
+                        },
                     }
                 },
             }
@@ -445,8 +450,8 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn ibc_version(&mut self, reply_to: ReplyTo<Option<semver::Version>>) -> Result<(), Error> {
-        let result = self.chain.ibc_version();
+    fn version_specs(&mut self, reply_to: ReplyTo<Specs>) -> Result<(), Error> {
+        let result = self.chain.version_specs();
         reply_to.send(result).map_err(Error::send)
     }
 
@@ -846,6 +851,16 @@ where
         reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
     ) -> Result<(), Error> {
         let result = self.chain.query_incentivized_packet(request);
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_consumer_chains(
+        &self,
+        reply_to: ReplyTo<Vec<(ChainId, ClientId)>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_consumer_chains();
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())

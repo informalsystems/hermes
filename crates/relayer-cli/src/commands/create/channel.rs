@@ -11,7 +11,6 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::channel::Channel;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::version::Version;
@@ -23,7 +22,7 @@ use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
 static PROMPT: &str = "Are you sure you want a new connection & clients to be created? Hermes will use default security parameters.";
-static HINT: &str = "Consider using the default invocation\n\nhermes create channel --a-port <PORT-ID> --b-port <PORT-ID> --a-chain <CHAIN-A-ID> --a-connection <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
+static HINT: &str = "Consider using the default invocation\n\nhermes create channel --a-port <PORT-ID> --b-port <PORT-ID> --a-chain <CHAIN-A-ID> --a-connection <CONNECTION-A-ID>\n\nto reuse a pre-existing connection.";
 
 /// The data structure that represents all the possible options when invoking
 /// the `create channel` CLI command.
@@ -32,7 +31,7 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 ///
 /// `create channel --a-port <A_PORT_ID> --b-port <B_PORT_ID> --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID>`
 /// is the default way in which this command should be used, specifying a `Connection-ID`
-/// associated with chain A for this new channel to re-use.
+/// associated with chain A for this new channel to reuse.
 ///
 /// `create channel --a-port <A_PORT_ID> --b-port <B_PORT_ID> --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --new-client-connection`
 /// can alternatively be used to indicate that a new connection/client pair is being

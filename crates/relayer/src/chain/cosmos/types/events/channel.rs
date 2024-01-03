@@ -95,7 +95,7 @@ impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
             .into_bytes();
 
         let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_str().as_bytes());
+        packet.data = Vec::from(data_str.as_bytes());
 
         Ok(Self { packet, ack })
     }

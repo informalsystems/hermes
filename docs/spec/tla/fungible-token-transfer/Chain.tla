@@ -126,7 +126,7 @@ SendPacket ==
               LET updatedChainStore == WritePacketCommitment(chainStore, packet) IN
                 \* if writing the packet commitment was successful
                 /\ chainStore /= updatedChainStore   
-                \* update chain store with packet committment
+                \* update chain store with packet commitment
                 /\ chainStore' = updatedChainStore
                 \* log sent packet
                 /\ packetLog' = Append(packetLog, [

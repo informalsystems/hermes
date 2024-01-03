@@ -13,10 +13,11 @@ use itertools::Itertools;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use flex_error::define_error;
+use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics02_client::header::Header;
+use ibc_relayer_types::core::ics02_client::header::{AnyHeader, Header};
 use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc_relayer_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
@@ -34,11 +35,11 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::AnyClientState;
+use crate::config::ChainConfig;
 use crate::consensus_state::AnyConsensusState;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
-use crate::light_client::AnyHeader;
-use crate::misbehaviour::MisbehaviourEvidence;
+use crate::misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence};
 use crate::telemetry;
 use crate::util::collate::CollatedIterExt;
 use crate::util::pretty::{PrettyDuration, PrettySlice};
@@ -46,6 +47,21 @@ use crate::util::pretty::{PrettyDuration, PrettySlice};
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
 const MAX_RETRIES: usize = 5;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ExpiredOrFrozen {
+    Expired,
+    Frozen,
+}
+
+impl fmt::Display for ExpiredOrFrozen {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ExpiredOrFrozen::Expired => write!(f, "expired"),
+            ExpiredOrFrozen::Frozen => write!(f, "frozen"),
+        }
+    }
+}
 
 define_error! {
     ForeignClientError {
@@ -107,7 +123,7 @@ define_error! {
                 height: Height,
             }
             |e| {
-                format_args!("client {} is already up-to-date with chain {}@{}",
+                format_args!("client {} is already up-to-date with chain {} at height {}",
                     e.client_id, e.chain_id, e.height)
             },
 
@@ -224,13 +240,14 @@ define_error! {
 
         ExpiredOrFrozen
             {
+                status: ExpiredOrFrozen,
                 client_id: ClientId,
                 chain_id: ChainId,
                 description: String,
             }
             |e| {
-                format_args!("client {0} on chain id {1} is expired or frozen: {2}",
-                    e.client_id, e.chain_id, e.description)
+                format_args!("client {0} on chain id {1} is {2}: {3}",
+                    e.client_id, e.chain_id, e.status, e.description)
             },
 
         ConsensusStateNotTrusted
@@ -248,6 +265,14 @@ define_error! {
                 description: String,
             }
             [ RelayerError ]
+            |e| {
+                format_args!("error raised while checking for misbehaviour evidence: {0}", e.description)
+            },
+
+        MisbehaviourDesc
+            {
+                description: String,
+            }
             |e| {
                 format_args!("error raised while checking for misbehaviour evidence: {0}", e.description)
             },
@@ -286,18 +311,39 @@ define_error! {
 }
 
 pub trait HasExpiredOrFrozenError {
-    fn is_expired_or_frozen_error(&self) -> bool;
+    fn is_expired_error(&self) -> bool;
+    fn is_frozen_error(&self) -> bool;
+
+    fn is_expired_or_frozen_error(&self) -> bool {
+        self.is_expired_error() || self.is_frozen_error()
+    }
 }
 
 impl HasExpiredOrFrozenError for ForeignClientErrorDetail {
-    fn is_expired_or_frozen_error(&self) -> bool {
-        matches!(self, Self::ExpiredOrFrozen(_))
+    fn is_expired_error(&self) -> bool {
+        if let Self::ExpiredOrFrozen(e) = self {
+            e.status == ExpiredOrFrozen::Expired
+        } else {
+            false
+        }
+    }
+
+    fn is_frozen_error(&self) -> bool {
+        if let Self::ExpiredOrFrozen(e) = self {
+            e.status == ExpiredOrFrozen::Frozen
+        } else {
+            false
+        }
     }
 }
 
 impl HasExpiredOrFrozenError for ForeignClientError {
-    fn is_expired_or_frozen_error(&self) -> bool {
-        self.detail().is_expired_or_frozen_error()
+    fn is_expired_error(&self) -> bool {
+        self.detail().is_expired_error()
+    }
+
+    fn is_frozen_error(&self) -> bool {
+        self.detail().is_frozen_error()
     }
 }
 
@@ -595,6 +641,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 e,
             )
         })?;
+
         let settings = ClientSettings::for_create_command(options, &src_config, &dst_config);
 
         let client_state: AnyClientState = self
@@ -707,6 +754,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         if client_state.is_frozen() {
             return Err(ForeignClientError::expired_or_frozen(
+                ExpiredOrFrozen::Frozen,
                 self.id().clone(),
                 self.dst_chain.id(),
                 "client state reports that client is frozen".into(),
@@ -729,9 +777,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     "client state is not valid: latest height is outside of trusting period!",
                 );
                 return Err(ForeignClientError::expired_or_frozen(
+                    ExpiredOrFrozen::Expired,
                     self.id().clone(),
                     self.dst_chain.id(),
-                    format!("expired: time elapsed since last client update: {elapsed:?}"),
+                    format!("time elapsed since last client update: {elapsed:?}"),
                 ));
             }
             ConsensusStateTrusted::Trusted { elapsed } => Ok((client_state, Some(elapsed))),
@@ -784,6 +833,20 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })
         } else {
             Ok(ConsensusStateTrusted::Trusted { elapsed })
+        }
+    }
+
+    pub fn is_frozen(&self) -> bool {
+        match self.validated_client_state() {
+            Ok(_) => false,
+            Err(e) => e.is_frozen_error(),
+        }
+    }
+
+    pub fn is_expired(&self) -> bool {
+        match self.validated_client_state() {
+            Ok(_) => false,
+            Err(e) => e.is_expired_error(),
         }
     }
 
@@ -841,7 +904,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let refresh_rate = src_config.client_refresh_rate;
+        let refresh_rate = match src_config {
+            ChainConfig::CosmosSdk(config) => config.client_refresh_rate,
+        };
+
         let refresh_period = client_state
             .trusting_period()
             .mul_f64(refresh_rate.as_f64());
@@ -1079,6 +1145,31 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             }
         );
 
+        let consensus_state = self.dst_chain().query_consensus_state(
+            QueryConsensusStateRequest {
+                client_id: self.id().clone(),
+                consensus_height: target_height,
+                query_height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        );
+
+        if let Ok((consensus_state, _)) = consensus_state {
+            debug!("consensus state already exists at height {target_height}, skipping update");
+            trace!(?consensus_state, "consensus state");
+
+            // If the client already stores a consensus state for the target height,
+            // there is no need to update the client
+            telemetry!(
+                client_updates_skipped,
+                &self.src_chain.id(),
+                &self.dst_chain.id(),
+                &self.id,
+                1,
+            );
+            return Ok(vec![]);
+        }
+
         let src_application_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::client_create(
@@ -1097,6 +1188,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     "dst_chain": self.dst_chain().id(),
                 }
             );
+
             // Wait for the source network to produce block(s) & reach `target_height`.
             while src_application_latest_height()? < target_height {
                 thread::sleep(Duration::from_millis(100));
@@ -1477,10 +1569,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         name = "foreign_client.detect_misbehaviour",
         level = "error",
         skip_all,
-        fields(
-            client = %self,
-            update_height = ?update.as_ref().map(|ev| ev.consensus_height())
-        )
+        fields(client = %self)
     )]
     pub fn detect_misbehaviour(
         &self,
@@ -1636,7 +1725,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     #[instrument(
         name = "foreign_client.submit_evidence",
         level = "error",
-        skip(self),
+        skip_all,
         fields(client = %self)
     )]
     fn submit_evidence(
@@ -1653,6 +1742,17 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
+        let chain_config = self.src_chain().config().map_err(|e| {
+            ForeignClientError::misbehaviour(
+                format!("failed querying configuration of src chain {}", self.id),
+                e,
+            )
+        })?;
+
+        let is_ccv_consumer_chain = match chain_config {
+            ChainConfig::CosmosSdk(config) => config.ccv_consumer_chain,
+        };
+
         let mut msgs = vec![];
 
         for header in evidence.supporting_headers {
@@ -1661,6 +1761,30 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     header: header.into(),
                     client_id: self.id.clone(),
                     signer: signer.clone(),
+                }
+                .to_any(),
+            );
+        }
+
+        let tm_misbehaviour = match &evidence.misbehaviour {
+            AnyMisbehaviour::Tendermint(tm_misbehaviour) => Some(tm_misbehaviour.clone()),
+            #[cfg(test)]
+            _ => None,
+        }
+        .ok_or_else(|| {
+            ForeignClientError::misbehaviour_desc(format!(
+                "underlying evidence is not a Tendermint misbehaviour: {:?}",
+                evidence.misbehaviour
+            ))
+        })?;
+
+        // If the misbehaving chain is a CCV consumer chain, we need to add
+        // the corresponding CCV message for the provider.
+        if is_ccv_consumer_chain {
+            msgs.push(
+                MsgSubmitIcsConsumerMisbehaviour {
+                    submitter: signer.clone(),
+                    misbehaviour: tm_misbehaviour,
                 }
                 .to_any(),
             );
@@ -1696,7 +1820,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     #[instrument(
         name = "foreign_client.detect_misbehaviour_and_submit_evidence",
         level = "error",
-        skip(self),
+        skip_all,
         fields(client = %self)
     )]
     pub fn detect_misbehaviour_and_submit_evidence(
@@ -1743,23 +1867,28 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
             Err(e) => match e.detail() {
                 ForeignClientErrorDetail::MisbehaviourExit(s) => {
-                    error!("misbehaviour checking is being disabled, reason: {}", s);
+                    error!("misbehaviour checking is being disabled, reason: {s}");
 
                     MisbehaviourResults::CannotExecute
                 }
 
                 ForeignClientErrorDetail::ExpiredOrFrozen(_) => {
-                    error!("cannot check misbehavior on frozen or expired client",);
+                    error!("cannot check misbehavior on frozen or expired client");
 
                     MisbehaviourResults::CannotExecute
                 }
 
                 // FIXME: This is fishy
-                _ if update_event.is_some() => MisbehaviourResults::CannotExecute,
+                e if update_event.is_some() => {
+                    error!("encountered unexpected error while checking misbehaviour: {e}");
+                    debug!("update event: {}", update_event.unwrap());
+
+                    MisbehaviourResults::CannotExecute
+                }
 
                 // FIXME: This is fishy
                 _ => {
-                    warn!("misbehaviour checking result: {}", e);
+                    warn!("misbehaviour checking result: {e}");
 
                     MisbehaviourResults::ValidClient
                 }

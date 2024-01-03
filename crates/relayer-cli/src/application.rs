@@ -18,7 +18,6 @@ use ibc_relayer::{
 use crate::{
     commands::CliCmd,
     components::{JsonTracing, PrettyTracing},
-    config::validate_config,
     entry::EntryPoint,
     tracing_handle::{spawn_reload_handler, ReloadHandle},
 };
@@ -134,13 +133,13 @@ impl Application for CliApp {
     /// time in app lifecycle when configuration would be loaded if
     /// possible.
     fn after_config(&mut self, config: Self::Cfg) -> Result<(), FrameworkError> {
-        use crate::config::Diagnostic;
+        use ibc_relayer::config::Diagnostic;
 
         // Configure components
         let mut components = self.state.components_mut();
         components.after_config(&config)?;
 
-        if let Err(diagnostic) = validate_config(&config) {
+        if let Err(diagnostic) = config.validate_config() {
             match diagnostic {
                 Diagnostic::Warning(e) => {
                     tracing::warn!("relayer may be misconfigured: {}", e);

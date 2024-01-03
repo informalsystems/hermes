@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::utils::pretty::PrettySlice;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use crate::core::ics03_connection::error::Error;
@@ -19,7 +19,7 @@ pub struct Version {
 }
 
 impl Version {
-    /// Checks whether or not the given feature is supported in this versin
+    /// Checks whether or not the given feature is supported in this version
     pub fn is_supported_feature(&self, feature: String) -> bool {
         self.features.contains(&feature)
     }

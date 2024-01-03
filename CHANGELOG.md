@@ -1,5 +1,182 @@
 # CHANGELOG
 
+## v1.7.4
+
+*December 15th, 2023*
+
+Special thanks to Yun Yeo (@beer-1) for his contributions ([#3697] and [#3703]).
+
+This release improves the monitoring of Hermes instances by fixing the `broadcast_errors` metric so
+that it correctly batches the same errors together. It also improves the metrics `backlog_*` by
+updating them whenever Hermes queries pending packets.
+
+This release also improves the reliability of the idle worker clean-up and 
+fixes a bug within the `evidence` command which would sometimes prevent
+the misbehaviour evidence from being reported.
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Fix a bug in the `evidence` command which would sometimes
+    prevent the detected misbehaviour evidence from being submitted,
+    instead erroring out with a validator set hash mismatch.
+    ([\#3697](https://github.com/informalsystems/hermes/pull/3697))
+- [Relayer Library](relayer)
+  - Avoid retrieving a worker which is being removed by the idle worker clean-up
+    process. ([\#3703](https://github.com/informalsystems/hermes/issues/3703))
+- [Telemetry & Metrics](telemetry)
+  - Fix the issue where `broadcast_errors` metric would not correctly batch
+    the same errors together.([\#3720](https://github.com/informalsystems/hermes/issues/3720))
+  - Update the values of `backlog` metrics when clearing packets.
+    Change the `backlog_oldest_timestamp` to `backlog_latest_update_timestamp`
+    which shows the last time the `backlog` metrics have been updated.
+    ([\#3723](https://github.com/informalsystems/hermes/issues/3723))
+
+[#3697]: https://github.com/informalsystems/hermes/issues/3697
+[#3703]: https://github.com/informalsystems/hermes/issues/3703
+
+## v1.7.3
+
+*November 29th, 2023*
+
+This release improves the reliability of the `evidence` command and 
+fixes a bug that was preventing evidence to be reported,
+as seen on the Gaia RS testnet.
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Improve reliability of `evidence` command and fix a bug that was
+    preventing evidence to be reported, as seen on the Gaia RS testnet
+    ([\#3702](https://github.com/informalsystems/hermes/pull/3702))
+
+## v1.7.2
+
+*November 28th, 2023*
+
+This patch release of Hermes adds a metric to improve monitoring errors and one
+to measure the efficiency of the client update skip feature released in patch v1.7.1.
+
+* `broadcast_errors` records the number of times a specific error is observed by Hermes when broadcasting transactions.
+* `client_updates_skipped` records the number of client updates skipped due to the consensus states already existing.
+
+### FEATURES
+
+- [Telemetry & Metrics](telemetry)
+  - Added metric `client_updates_skipped` to track the number of client
+    update messages skipped due to the conscensus state existing already.
+    ([\#3707](https://github.com/informalsystems/hermes/issues/3707))
+  - Add a new metric `broadcast_errors` which
+    records the number of times a specific error is observed by Hermes when broadcasting transactions
+    ([\#3708](https://github.com/informalsystems/hermes/issues/3708))
+
+## v1.7.1
+
+*November 13th, 2023*
+
+This patch release of Hermes now allows operators to set the clearing interval
+at a different value for each chain, using the new per-chain `clear_interval` setting.
+The global `clear_interval` setting is used as a default value if the per-chain
+setting is not defined.
+
+Additionally, operators can now override the CometBFT compatibility mode to be used
+for a chain by using the new `compat_mode` per-chain setting. The main use case for this
+is to override the automatically detected compatibility mode in case Hermes gets it wrong
+or encounters a non-standard version number and falls back on the wrong CometBFT version.
+
+On top of that, Hermes will now attempt to save on fees by not building a client update
+for a given height if the consensus state for that height is already present on chain.
+
+### FEATURES
+
+- Add an optional per-chain setting `compat_mode`, which can be
+used to specify which CometBFT compatibility mode is used for interacting with the node over RPC.
+([\#3623](https://github.com/informalsystems/hermes/issues/3623))
+- Add a configuration which allows to override the `clear_interval` for specific
+chains ([\#3691](https://github.com/informalsystems/hermes/issues/3691))
+
+### IMPROVEMENTS
+
+- Hermes now saves on fees by not including a client update if the
+consensus state at desired height is already present on chain.
+([\#3521](https://github.com/informalsystems/hermes/issues/3521))
+
+## v1.7.0
+
+*October 20th, 2023*
+
+This v1.7 release introduces new features and improvements to Hermes.
+
+One of the key highlights is the addition of new misbehavior detection features.
+
+- Hermes now includes a new command called `evidence`, which monitors the blocks emitted by a chain for any presence of misbehavior evidence.
+- If misbehavior is detected, the CLI will report that evidence to all counterparty clients of that chain.
+On top of that, misbehavior evidence detected on a chain that is a CCV (Cross-Chain Validation) consumer 
+is now sent to its provider chain, alerting it directly of the misbehaving consumer chain.
+- Furthermore, when misbehavior is detected from an on-chain client, such as a light client attack or a double-sign,
+the evidence is now submitted to all counterparty clients of the misbehaving chain, rather than just the 
+counterparty client of the misbehaving client.
+
+In addition, the REST server of Hermes now has a `/clear_packets` endpoint which allows triggering 
+packet clearing for a specific chain or all chains if no specific chain is provided.
+
+Another notable improvement is the ability to change `tracing` directives at runtime.
+This feature lets users adjust tracing settings dynamically as needed, providing a more 
+customizable and efficient debugging experience.
+
+Overall, the new misbehavior detection features in Hermes contribute to a more robust and secure environment,
+enabling timely identification and response to potential misbehaving actors.
+
+### FEATURES
+
+- [Relayer CLI](relayer-cli)
+  - Add a new `evidence` command for monitoring the blocks emitted
+    by a chain for the presence of a misbehaviour evidence, and
+    report that evidence to all counteparty clients of that chain.
+    ([\#3456](https://github.com/informalsystems/hermes/pull/3456))
+  - Add a `/clear_packets?chain=CHAIN_ID` endpoint to the built-in
+    REST server to trigger packet clear for the chain specified in the
+    chain query param or for all chains if the query param is omitted.
+    ([\#3398](https://github.com/informalsystems/hermes/issues/3398))
+  - Add support for changing `tracing` directives at runtime.
+    Please see the [corresponding page in the Hermes guide][tracing-guide] for more information.
+    ([\#3564](https://github.com/informalsystems/hermes/issues/3564))
+    
+    [tracing-guide]: https://hermes.informal.systems/advanced/troubleshooting/log-level.html
+
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - When Hermes detects a misbehaviour on a chain that is CCV
+    consumer, it will now send the misbehaviour evidence to the
+    provider chain using the new `IcsConsumerMisbehaviour` message.
+    ([\#3219](https://github.com/informalsystems/hermes/issues/3219))
+  - When Hermes detects a misbehaviour from a on-chain client, eg. a light
+    client attack or a double-sign, it will now submit the misbehaviour
+    evidence to all counterparty clients of the misbehaving chain
+    instead of to the counterparty client of the misbehaving client only.
+    ([\#3223](https://github.com/informalsystems/hermes/issues/3223))
+  - Improve error message when scanning unsupported client
+    ([\#3531](https://github.com/informalsystems/hermes/issues/3531))
+  - Regard the `finalize_block_events` field of the `block_results` RPC endpoint, added in CometBFT 0.38
+    ([\#3548](https://github.com/informalsystems/hermes/issues/3548))
+  - Change fallback compatibility version for CometBFT from v0.37 to v0.34
+    ([\#3666](https://github.com/informalsystems/hermes/issues/3666))
+- [Relayer CLI](relayer-cli)
+  - The `listen` command now works with both `push` and `pull` event sources
+    ([\#3501](https://github.com/informalsystems/hermes/issues/3501))
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Revert Docker image to Ubuntu LTS and set the UID and GID explicitly
+    ([\#3580](https://github.com/informalsystems/hermes/issues/3580))
+- [IBC Data structures](relayer-types)
+  - Fix build of `ibc-relayer-types` documentation on docs.rs
+    ([\#3549](https://github.com/informalsystems/hermes/issues/3549))
+
+
 ## v1.6.0
 
 *July 19th, 2023*
@@ -288,21 +465,21 @@ This patch release adds support for CometBFT in version checks.
 *March 27th, 2023*
 
 Hermes v1.4.0 brings compatibility with chains based on Tendermint/CometBFT 0.37,
-while retaining compatiblity with Tendermint/CometBFT 0.34. This is transparent
+while retaining compatibility with Tendermint/CometBFT 0.34. This is transparent
 and does not require any additional configuration.
 
 The relayer now supports ICS consumer chains, which only requires operators
 to specify the `unbonding_period` parameter in the chain settings. This is only
-a temporary requirement, in the future Hermes will seamlessy support consumer
+a temporary requirement, in the future Hermes will seamlessly support consumer
 chains with minimal changes to the configuration.
 
 This release also deprecates support for chains based on Cosmos SDK 0.43.x and lower,
-and bumps the compatiblity to Cosmos SDK 0.47.x.
+and bumps the compatibility to Cosmos SDK 0.47.x.
 
 The relayer now also allows operators to filter out packets to relay based on whether
 or not they contain a fee, and the minimal amount of such fee.
 Please check the relevant [documentation in the Hermes guide](fee-guide) for more information.
-Additionnaly, Hermes now also tracks [metrics for ICS29 fees](fee-metrics).
+Additionally, Hermes now also tracks [metrics for ICS29 fees](fee-metrics).
 
 This release includes a new `query client status` CLI to quickly check whether a client is active, expired or frozen.
 
@@ -886,7 +1063,7 @@ This is the third release candidate for Hermes v1.0.0 🎉
 
 - Release version 0.18.0 of `ibc-telemetry`
 
-#### IMROVEMENTS
+#### IMPROVEMENTS
 
 - Improve the metrics
   - Renamed `oldest_sequence` metric to `backlog_oldest_sequence`
@@ -1591,7 +1768,7 @@ Before running Hermes v0.11.0, make sure you remove the `mode.packets.filter` op
     and consensus states ([#1481](https://github.com/informalsystems/hermes/issues/1481))
   - More structural logging in relayer, using tracing spans and key-value pairs.
     ([#1491](https://github.com/informalsystems/hermes/pull/1491))
-  - Improved documention w.r.t. keys for Ethermint-based chains
+  - Improved documentation w.r.t. keys for Ethermint-based chains
     ([#1785](https://github.com/informalsystems/hermes/issues/1785))
 - [Relayer CLI](crates/relayer-cli)
   - Add custom options to the `create client` command.
@@ -1984,7 +2161,7 @@ This release also fixes a bug where the chain runtime within the relayer would c
 
 This release of Hermes is the first to be compatible with the development version of Cosmos SDK 0.43.
 Hermes 0.7.0 also improves the performance and reliability of the relayer, notably by waiting asynchronously for transactions to be confirmed.
-Additionnally, Hermes now includes a REST server which exposes the relayer's internal state over HTTP.
+Additionally, Hermes now includes a REST server which exposes the relayer's internal state over HTTP.
 
 ### BUG FIXES
 
@@ -2583,7 +2760,7 @@ This release also finalizes the initial implementation of all the ICS 004 handle
   - Fix for chains that don't have `cosmos` account prefix ([#416])
   - Fix for building the `trusted_validator_set` for the header used in client updates ([#770])
   - Don't send `MsgAcknowledgment` if channel is closed ([#675])
-  - Fix a bug where the keys addresses had their account prefix overriden by the prefix in the configuration ([#751])
+  - Fix a bug where the keys addresses had their account prefix overridden by the prefix in the configuration ([#751])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
@@ -2721,7 +2898,7 @@ Noteworthy changes in this release include:
 
 ### FEATURES
 
-- Continous Integration (CI) end-to-end (e2e) testing with gaia v4 ([#32], [#582], [#602])
+- Continuous Integration (CI) end-to-end (e2e) testing with gaia v4 ([#32], [#582], [#602])
 - Add support for streamlining releases ([#507])
 
 - [ibc-relayer-cli]
@@ -2878,7 +3055,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#102], [#
     - CLI for client update message ([#277])
     - Implement the relayer CLI for connection handshake messages ([#358], [#359], [#360])
     - Implement the relayer CLI for channel handshake messages ([#371], [#372], [#373], [#374])
-    - Added basic client, connection, and channel lifecyle in relayer v0 ([#376], [#377], [#378])
+    - Added basic client, connection, and channel lifecycle in relayer v0 ([#376], [#377], [#378])
     - Implement commands to add and list keys for a chain ([#363])
     - Allow overriding of peer_id, height and hash in light add command ([#428])
 - [proto-compiler]

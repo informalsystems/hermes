@@ -49,6 +49,7 @@ pub fn transfer_from_chain(
     src_channel: &str,
     recipient: &str,
     token: &str,
+    fees: &str,
     timeout_height: &str,
 ) -> Result<(), Error> {
     simple_exec(
@@ -73,7 +74,7 @@ pub fn transfer_from_chain(
             "--keyring-backend",
             "test",
             "--fees",
-            "1200stake",
+            fees,
             "--timeout-height",
             timeout_height,
             "--yes",

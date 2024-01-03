@@ -56,8 +56,8 @@ pub fn bootstrap_chains_with_full_nodes(
 > {
     let mut config = Config::default();
 
-    add_chain_config(&mut config, &node_a, test_config)?;
-    add_chain_config(&mut config, &node_b, test_config)?;
+    add_chain_config(&mut config, &node_a, test_config, 0)?;
+    add_chain_config(&mut config, &node_b, test_config, 1)?;
 
     config_modifier(&mut config);
 
@@ -165,7 +165,7 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
    [`FullNode`].
 
    The function accepts a proxy type `Seed` that should be unique
-   accross multiple calls so that the returned [`ChainHandle`]
+   across multiple calls so that the returned [`ChainHandle`]
    have a unique type.
 
    For example, the following test should fail to compile:
@@ -257,9 +257,13 @@ pub fn add_chain_config(
     config: &mut Config,
     running_node: &FullNode,
     test_config: &TestConfig,
+    chain_number: usize,
 ) -> Result<(), Error> {
-    let chain_config =
-        running_node.generate_chain_config(&running_node.chain_driver.chain_type, test_config)?;
+    let chain_config = running_node.generate_chain_config(
+        &running_node.chain_driver.chain_type,
+        test_config,
+        chain_number,
+    )?;
 
     config.chains.push(chain_config);
     Ok(())

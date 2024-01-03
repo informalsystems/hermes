@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use ibc_relayer::config::ChainConfig;
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
@@ -27,15 +28,23 @@ struct ClientOptionsTest;
 
 impl TestOverrides for ClientDefaultsTest {
     fn modify_relayer_config(&self, config: &mut Config) {
-        config.chains[0].clock_drift = Duration::from_secs(3);
-        config.chains[0].max_block_time = Duration::from_secs(5);
-        config.chains[0].trusting_period = Some(Duration::from_secs(120_000));
-        config.chains[0].trust_threshold = TrustThreshold::new(13, 23).unwrap().try_into().unwrap();
+        match &mut config.chains[0] {
+            ChainConfig::CosmosSdk(chain_config_a) => {
+                chain_config_a.clock_drift = Duration::from_secs(3);
+                chain_config_a.max_block_time = Duration::from_secs(5);
+                chain_config_a.trusting_period = Some(Duration::from_secs(120_000));
+                chain_config_a.trust_threshold = TrustThreshold::new(13, 23).unwrap().into();
+            }
+        }
 
-        config.chains[1].clock_drift = Duration::from_secs(6);
-        config.chains[1].max_block_time = Duration::from_secs(15);
-        config.chains[1].trusting_period = Some(Duration::from_secs(340_000));
-        config.chains[1].trust_threshold = TrustThreshold::TWO_THIRDS.try_into().unwrap();
+        match &mut config.chains[1] {
+            ChainConfig::CosmosSdk(chain_config_b) => {
+                chain_config_b.clock_drift = Duration::from_secs(6);
+                chain_config_b.max_block_time = Duration::from_secs(15);
+                chain_config_b.trusting_period = Some(Duration::from_secs(340_000));
+                chain_config_b.trust_threshold = TrustThreshold::TWO_THIRDS.into();
+            }
+        }
     }
 }
 

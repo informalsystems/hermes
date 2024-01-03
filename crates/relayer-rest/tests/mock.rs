@@ -64,7 +64,7 @@ async fn version() {
 
     let rest_api_version = VersionInfo {
         name: "ibc-relayer-rest".to_string(),
-        version: "0.25.0".to_string(),
+        version: "0.26.4".to_string(),
     };
 
     let result: JsonResult<_, ()> = JsonResult::Success(vec![version.clone(), rest_api_version]);
@@ -96,6 +96,7 @@ async fn get_chains() {
 
 const MOCK_CHAIN_CONFIG: &str = r#"
 id = 'mock-0'
+type = 'CosmosSdk'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }

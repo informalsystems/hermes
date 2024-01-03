@@ -9,6 +9,7 @@
 use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use toml::Value;
+use tracing::debug;
 
 /// Set the `rpc` field in the full node config.
 pub fn set_rpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
@@ -18,6 +19,17 @@ pub fn set_rpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
         .insert("laddr".to_string(), format!("tcp://0.0.0.0:{port}").into());
+
+    Ok(())
+}
+
+pub fn enable_grpc(config: &mut Value) -> Result<(), Error> {
+    config
+        .get_mut("grpc")
+        .ok_or_else(|| eyre!("expect grpc section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("enable".to_string(), true.into());
 
     Ok(())
 }
@@ -149,6 +161,17 @@ pub fn set_mode(config: &mut Value, mode: &str) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn set_indexer(config: &mut Value, mode: &str) -> Result<(), Error> {
+    config
+        .get_mut("tx_index")
+        .ok_or_else(|| eyre!("expect tx_index section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("indexer".to_string(), mode.into());
+
+    Ok(())
+}
+
 pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> Result<(), Error> {
     let max_deposit_period = genesis
         .get_mut("app_state")
@@ -163,6 +186,31 @@ pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> 
             serde_json::Value::String(period.to_string()),
         )
         .ok_or_else(|| eyre!("failed to update max_deposit_period in genesis file"))?;
+
+    Ok(())
+}
+
+pub fn set_min_deposit_amount(
+    genesis: &mut serde_json::Value,
+    min_deposit_amount: u64,
+) -> Result<(), Error> {
+    let min_deposit = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("gov"))
+        .and_then(|gov| get_mut_with_fallback(gov, "params", "deposit_params"))
+        .and_then(|deposit_params| deposit_params.get_mut("min_deposit"))
+        .and_then(|min_deposit| min_deposit.as_array_mut())
+        .ok_or_else(|| eyre!("failed to find min_deposit in genesis file"))?
+        .get_mut(0)
+        .and_then(|min_deposit_entry| min_deposit_entry.as_object_mut())
+        .ok_or_else(|| eyre!("failed to find first entry of min_deposit in genesis file"))?;
+
+    min_deposit
+        .insert(
+            "amount".to_owned(),
+            serde_json::Value::String(min_deposit_amount.to_string()),
+        )
+        .ok_or_else(|| eyre!("failed to update deposit_params amount in genesis file"))?;
 
     Ok(())
 }
@@ -242,7 +290,10 @@ pub fn set_crisis_denom(genesis: &mut serde_json::Value, crisis_denom: &str) -> 
     Ok(())
 }
 
-pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Result<(), Error> {
+pub fn set_voting_period(genesis: &mut serde_json::Value, period: u64) -> Result<(), Error> {
+    // Expedited voting period must be strictly less that the regular voting period
+    let regular_period = format!("{period}s");
+    let expedited_period = format!("{}s", period - 1);
     let voting_period = genesis
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
@@ -253,9 +304,33 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
     voting_period
         .insert(
             "voting_period".to_owned(),
-            serde_json::Value::String(period.to_string()),
+            serde_json::Value::String(regular_period),
         )
         .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
+
+    let maybe_expedited_voting_period = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("gov"))
+        .and_then(|gov| get_mut_with_fallback(gov, "params", "expedited_voting_period"));
+
+    if let Some(expedited_voting_period) = maybe_expedited_voting_period {
+        let expedited_voting_period = expedited_voting_period
+            .as_object_mut()
+            .ok_or_else(|| eyre!("failed to get voting_params in genesis file"))?;
+
+        // Only insert `expedited_voting_period` if it already exists in order to avoid adding an unknown configuration in
+        // chains using Cosmos SDK pre v0.50
+        match expedited_voting_period.get("expedited_voting_period") {
+            Some(_) => {
+                expedited_voting_period
+                .insert(
+                    "expedited_voting_period".to_owned(),
+                    serde_json::Value::String(expedited_period),
+                ).ok_or_else(|| eyre!("failed to update expedited_voting_period in genesis file"))?;
+            },
+            None => debug!("`expedited_voting_period` was not updated, this configuration was introduced in Cosmos SDK v0.50"),
+        }
+    }
 
     Ok(())
 }
@@ -276,6 +351,48 @@ pub fn set_soft_opt_out_threshold(
         "soft_opt_out_threshold".to_owned(),
         serde_json::Value::String(threshold.to_string()),
     );
+
+    Ok(())
+}
+
+pub fn consensus_params_max_gas(
+    genesis: &mut serde_json::Value,
+    max_gas: &str,
+) -> Result<(), Error> {
+    let block = genesis
+        .get_mut("consensus_params")
+        .and_then(|consensus_params| consensus_params.get_mut("block"))
+        .and_then(|block| block.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get `block` field in genesis file"))?;
+
+    block.insert(
+        "max_gas".to_owned(),
+        serde_json::Value::String(max_gas.to_string()),
+    );
+
+    Ok(())
+}
+
+pub fn globalfee_minimum_gas_prices(
+    genesis: &mut serde_json::Value,
+    minimum_gas_prices: serde_json::Value,
+) -> Result<(), Error> {
+    let globalfee = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("globalfee"));
+
+    // Only update `minimum_gas_prices` if `globalfee` is enabled
+    match globalfee {
+        Some(globalfee) => {
+            let params = globalfee
+                .get_mut("params")
+                .and_then(|params| params.as_object_mut())
+                .ok_or_else(|| eyre!("failed to get `params` fields in genesis file"))?;
+
+            params.insert("minimum_gas_prices".to_owned(), minimum_gas_prices);
+        }
+        None => debug!("chain doesn't have `globalfee`"),
+    }
 
     Ok(())
 }

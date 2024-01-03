@@ -42,7 +42,7 @@ info "Update client on ibc-0 against the forked chain ibc-1-f"
 $HERMES --config config_fork.toml update client --client 07-tendermint-0 --host-chain ibc-0
 
 info "Wait for chain ibc-1 to stop..."
-sleep 5
+sleep 10
 
 info "Killing Hermes"
 kill -9 "$HERMES_PID"
@@ -55,11 +55,11 @@ cat "$HERMES_LOG"
 info "--------------------------------------------------"
 echo ""
 
-if grep -q "Evidence succesfully submitted" "$HERMES_LOG"; then
+if grep -q "Evidence successfully submitted" "$HERMES_LOG"; then
+    info "Misbehaviour detected and submitted successfully!"
+else
     warn "Misbehaviour detection failed!"
     exit 1
-else
-    info "Misbehaviour detected and submitted successfully!"
 fi
 
 STOPPED_HEIGHT="$(curl -s http://localhost:$IBC_1_RPC_PORT/status | jq -r .result.sync_info.latest_block_height)"

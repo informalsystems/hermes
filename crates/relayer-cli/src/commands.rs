@@ -4,6 +4,7 @@ mod clear;
 mod completions;
 mod config;
 mod create;
+mod evidence;
 mod fee;
 mod health;
 mod keys;
@@ -19,9 +20,9 @@ mod version;
 
 use self::{
     clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
-    fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd, logs::LogsCmd,
-    misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
-    upgrade::UpgradeCmds, version::VersionCmd,
+    evidence::EvidenceCmd, fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd,
+    logs::LogsCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
+    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
 };
 
 use core::time::Duration;
@@ -32,7 +33,7 @@ use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Run
 use tracing::{error, info};
 
 use crate::DEFAULT_CONFIG_PATH;
-use ibc_relayer::config::Config;
+use ibc_relayer::config::{ChainConfig, Config};
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
@@ -86,12 +87,15 @@ pub enum CliCmd {
     /// Listen to and display IBC events emitted by a chain
     Listen(ListenCmd),
 
+    /// Listen to client update IBC events and handle misbehaviour
+    Misbehaviour(MisbehaviourCmd),
+
     /// Update tracing log directives
     #[clap(subcommand)]
     Logs(LogsCmd),
 
-    /// Listen to client update IBC events and handles misbehaviour
-    Misbehaviour(MisbehaviourCmd),
+    /// Listen to block events and handles evidence
+    Evidence(EvidenceCmd),
 
     /// The `version` subcommand, retained for backward compatibility.
     Version(VersionCmd),
@@ -145,14 +149,20 @@ impl Configurable<Config> for CliCmd {
         let web = "https://hermes.informal.systems";
         let suffix = format!("{} {} ({})", CliCmd::name(), clap::crate_version!(), web);
         for ccfg in config.chains.iter_mut() {
-            ccfg.memo_prefix.apply_suffix(&suffix);
+            #[allow(irrefutable_let_patterns)]
+            if let ChainConfig::CosmosSdk(ref mut cosmos_ccfg) = ccfg {
+                cosmos_ccfg.memo_prefix.apply_suffix(&suffix);
+            }
         }
 
         // For all commands except for `start` Hermes retries
         // for a prolonged period of time.
         if !matches!(self, CliCmd::Start(_)) {
             for c in config.chains.iter_mut() {
-                c.rpc_timeout = Duration::from_secs(120);
+                #[allow(irrefutable_let_patterns)]
+                if let ChainConfig::CosmosSdk(ref mut cosmos_ccfg) = c {
+                    cosmos_ccfg.rpc_timeout = Duration::from_secs(120);
+                }
             }
         }
 

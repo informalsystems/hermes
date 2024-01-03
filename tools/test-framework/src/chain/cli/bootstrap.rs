@@ -64,20 +64,36 @@ pub fn add_genesis_account(
     amounts: &[String],
 ) -> Result<(), Error> {
     let amounts_str = itertools::join(amounts, ",");
-
-    simple_exec(
+    // Cosmos SDK v0.47.0 introduced the `genesis` subcommand, this match is required to
+    // support pre and post SDK v0.47.0. https://github.com/cosmos/cosmos-sdk/pull/14149
+    match simple_exec(
         chain_id,
         command_path,
         &[
             "--home",
             home_path,
+            "genesis",
             "add-genesis-account",
             wallet_address,
             &amounts_str,
         ],
-    )?;
-
-    Ok(())
+    ) {
+        Ok(_) => Ok(()),
+        Err(_) => {
+            simple_exec(
+                chain_id,
+                command_path,
+                &[
+                    "--home",
+                    home_path,
+                    "add-genesis-account",
+                    wallet_address,
+                    &amounts_str,
+                ],
+            )?;
+            Ok(())
+        }
+    }
 }
 
 pub fn add_genesis_validator(
@@ -87,12 +103,15 @@ pub fn add_genesis_validator(
     wallet_id: &str,
     amount: &str,
 ) -> Result<(), Error> {
-    simple_exec(
+    // Cosmos SDK v0.47.0 introduced the `genesis` subcommand, this match is required to
+    // support pre and post SDK v0.47.0. https://github.com/cosmos/cosmos-sdk/pull/14149
+    match simple_exec(
         chain_id,
         command_path,
         &[
             "--home",
             home_path,
+            "genesis",
             "gentx",
             wallet_id,
             "--keyring-backend",
@@ -101,19 +120,47 @@ pub fn add_genesis_validator(
             chain_id,
             amount,
         ],
-    )?;
-
-    Ok(())
+    ) {
+        Ok(_) => Ok(()),
+        Err(_) => {
+            simple_exec(
+                chain_id,
+                command_path,
+                &[
+                    "--home",
+                    home_path,
+                    "gentx",
+                    wallet_id,
+                    "--keyring-backend",
+                    "test",
+                    "--chain-id",
+                    chain_id,
+                    amount,
+                ],
+            )?;
+            Ok(())
+        }
+    }
 }
 
 pub fn collect_gen_txs(chain_id: &str, command_path: &str, home_path: &str) -> Result<(), Error> {
-    simple_exec(
+    // Cosmos SDK v0.47.0 introduced the `genesis` subcommand, this match is required to
+    // support pre and post SDK v0.47.0. https://github.com/cosmos/cosmos-sdk/pull/14149
+    match simple_exec(
         chain_id,
         command_path,
-        &["--home", home_path, "collect-gentxs"],
-    )?;
-
-    Ok(())
+        &["--home", home_path, "genesis", "collect-gentxs"],
+    ) {
+        Ok(_) => Ok(()),
+        Err(_) => {
+            simple_exec(
+                chain_id,
+                command_path,
+                &["--home", home_path, "collect-gentxs"],
+            )?;
+            Ok(())
+        }
+    }
 }
 
 pub fn start_chain(

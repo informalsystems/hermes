@@ -10,7 +10,7 @@ use ibc_proto::ibc::apps::fee::v1::{
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
-        ics02_client::events::UpdateClient,
+        ics02_client::{events::UpdateClient, header::AnyHeader},
         ics03_connection::{
             connection::{ConnectionEnd, IdentifiedConnectionEnd},
             version::Version,
@@ -40,12 +40,12 @@ use crate::{
         IbcEventWithHeight,
     },
     keyring::AnySigningKeyPair,
-    light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
 
 use super::{
     client::ClientSettings,
+    cosmos::version::Specs,
     endpoint::{ChainStatus, HealthCheck},
     requests::*,
     tracking::TrackedMsgs,
@@ -141,8 +141,8 @@ pub enum ChainRequest {
         reply_to: ReplyTo<()>,
     },
 
-    IbcVersion {
-        reply_to: ReplyTo<Option<semver::Version>>,
+    VersionSpecs {
+        reply_to: ReplyTo<Specs>,
     },
 
     QueryBalance {
@@ -367,6 +367,10 @@ pub enum ChainRequest {
         request: QueryIncentivizedPacketRequest,
         reply_to: ReplyTo<QueryIncentivizedPacketResponse>,
     },
+
+    QueryConsumerChains {
+        reply_to: ReplyTo<Vec<(ChainId, ClientId)>>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -409,7 +413,7 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     fn add_key(&self, key_name: String, key: AnySigningKeyPair) -> Result<(), Error>;
 
     /// Return the version of the IBC protocol that this chain is running, if known.
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
+    fn version_specs(&self) -> Result<Specs, Error>;
 
     /// Query the balance of the given account for the given denom.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
@@ -678,4 +682,6 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         &self,
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
 }

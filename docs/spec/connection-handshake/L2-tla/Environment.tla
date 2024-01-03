@@ -183,7 +183,7 @@ InitEnv ==
 
     This is part of the RelayNextEnv sub-action of the environment.
     This performs a basic relaying step, that is, passing a message from the
-    output buffer of one of the chains (paramter 'from') into the input buffer
+    output buffer of one of the chains (parameter 'from') into the input buffer
     of another chain (parameter 'to').
 
  *)
@@ -199,7 +199,7 @@ RelayMessage(from, to) ==
     This step may change (non-deterministically) either of the store of chain A
     or B, by advancing the height of that chain. This can only enable if the
     respective chain has ample steps left, i.e., the chain height is not within 4 steps
-    of the maximum height. This precondition disallow continuos advancing of chain heights,
+    of the maximum height. This precondition disallow continuous advancing of chain heights,
     and therefore allows chains to take meaningful steps (executing the ICS3 protocol to
     completion).
 
@@ -273,7 +273,7 @@ RelayNextEnv ==
     the chains unless the chain has just a few (namely, `4`) heights left.
 
     3. The environment may perform a relaying step, that is:
-    if there is a message in the ougoing buffer of a chain, the relayer
+    if there is a message in the outgoing buffer of a chain, the relayer
     moves this message to the ingoing buffer of the other chain, and also
     updates the client on the latter chain.
 
@@ -299,7 +299,7 @@ ICS3ReachedOpenConnection ==
 (* Enables when both chains are stuck, i.e., unable to progress while
     their connection is not opened.
 
-    State predicate signaling that the protocol terminated unsucessfully.
+    State predicate signaling that the protocol terminated unsuccessfully.
 
  *)
 ICS3ImpossibleToAdvance ==
@@ -328,7 +328,7 @@ Init ==
 
 (* The two ICS3 modules and the environment alternate their steps
     non-deterministically. Eventually, the execution ends with either
-    successful (ICS3ReachedOpenConnection sub-action) or unsuccesfull
+    successful (ICS3ReachedOpenConnection sub-action) or unsuccessful
     (ICS3ImpossibleToAdvance sub-action) termination.
 *)
 Next ==

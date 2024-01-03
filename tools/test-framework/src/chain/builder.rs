@@ -2,9 +2,11 @@
    Builder construct that spawn new chains with some common parameters.
 */
 
+use eyre::eyre;
 use std::str::FromStr;
 
 use alloc::sync::Arc;
+use ibc_relayer::config::compat_mode::CompatMode;
 use tokio::runtime::Runtime;
 
 use crate::chain::driver::ChainDriver;
@@ -39,6 +41,10 @@ pub struct ChainBuilder {
 
     pub account_prefixes: Vec<String>,
 
+    pub native_tokens: Vec<String>,
+
+    pub compat_modes: Option<Vec<String>>,
+
     pub runtime: Arc<Runtime>,
 }
 
@@ -50,12 +56,16 @@ impl ChainBuilder {
         command_paths: Vec<String>,
         base_store_dir: &str,
         account_prefixes: Vec<String>,
+        native_tokens: Vec<String>,
+        compat_modes: Option<Vec<String>>,
         runtime: Arc<Runtime>,
     ) -> Self {
         Self {
             command_paths,
             base_store_dir: base_store_dir.to_string(),
             account_prefixes,
+            native_tokens,
+            compat_modes,
             runtime,
         }
     }
@@ -68,6 +78,8 @@ impl ChainBuilder {
             config.chain_command_paths.clone(),
             &format!("{}", config.chain_store_dir.display()),
             config.account_prefixes.clone(),
+            config.native_tokens.clone(),
+            config.compat_modes.clone(),
             runtime,
         )
     }
@@ -77,7 +89,7 @@ impl ChainBuilder {
        given prefix.
 
        Note that this only configures the [`ChainDriver`] without
-       the actual chain being intitialized or spawned.
+       the actual chain being initialized or spawned.
 
        The `ChainBuilder` will configure the [`ChainDriver`] with random
        unused ports, and add a random suffix to the chain ID.
@@ -96,6 +108,17 @@ impl ChainBuilder {
         // the number of chain binaries given. Same for account prefix.
         let chain_number = chain_number % self.command_paths.len();
         let account_number = chain_number % self.account_prefixes.len();
+        let native_token_number = chain_number % self.native_tokens.len();
+        let compat_mode = if let Some(modes) = &self.compat_modes {
+            let mode_str = &modes[chain_number % modes.len()];
+            Some(CompatMode::from_str(mode_str).map_err(|e| {
+                Error::generic(eyre!(
+                    "Invalid CompatMode environment variable `{mode_str}`: {e}"
+                ))
+            })?)
+        } else {
+            None
+        };
 
         let chain_type = ChainType::from_str(&self.command_paths[chain_number])?;
 
@@ -121,6 +144,8 @@ impl ChainBuilder {
             p2p_port,
             pprof_port,
             self.runtime.clone(),
+            self.native_tokens[native_token_number].clone(),
+            compat_mode,
         )?;
 
         Ok(driver)

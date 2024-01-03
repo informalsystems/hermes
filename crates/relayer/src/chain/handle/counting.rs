@@ -10,6 +10,7 @@ use ibc_proto::ibc::apps::fee::v1::{
 };
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics02_client::header::AnyHeader;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::version::Version;
@@ -27,6 +28,7 @@ use ibc_relayer_types::Height;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::version::Specs;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::*;
@@ -39,7 +41,6 @@ use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::keyring::AnySigningKeyPair;
-use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::lock::LockExt;
 
@@ -150,9 +151,9 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().add_key(key_name, key)
     }
 
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+    fn version_specs(&self) -> Result<Specs, Error> {
         self.inc_metric("ibc_version");
-        self.inner().ibc_version()
+        self.inner().version_specs()
     }
 
     fn query_balance(
@@ -502,5 +503,10 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     ) -> Result<QueryIncentivizedPacketResponse, Error> {
         self.inc_metric("query_incentivized_packet");
         self.inner.query_incentivized_packet(request)
+    }
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+        self.inc_metric("query_consumer_chains");
+        self.inner.query_consumer_chains()
     }
 }

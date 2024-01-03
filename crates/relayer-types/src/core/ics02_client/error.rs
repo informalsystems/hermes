@@ -1,5 +1,5 @@
 use flex_error::{define_error, TraceError};
-use ibc_proto::protobuf::Error as TendermintProtoError;
+use tendermint_proto::Error as TendermintProtoError;
 
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::height::HeightError;
@@ -62,6 +62,13 @@ define_error! {
         UnknownClientStateType
             { client_state_type: String }
             | e | { format_args!("unknown client state type: {0}", e.client_state_type) },
+
+        UnexpectedClientStateType
+            {
+                expected: String,
+                got: String,
+            }
+            | e | { format_args!("unexpected client state type, expected: {0}, got: {1}", e.expected, e.got) },
 
         EmptyClientStateResponse
             | _ | { "the client state was not found" },
@@ -154,7 +161,7 @@ define_error! {
         InvalidStringAsHeight
             { value: String }
             [ HeightError ]
-            | e | { format_args!("String {0} cannnot be converted to height", e.value) },
+            | e | { format_args!("String {0} cannot be converted to height", e.value) },
 
         InvalidHeight
             | _ | { "revision height cannot be zero" },
@@ -239,7 +246,7 @@ define_error! {
                 update_time: Timestamp,
             }
             | e | {
-                format_args!("header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
+                format_args!("header not within trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
             },
 
         MissingLocalConsensusState

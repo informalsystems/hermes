@@ -5,7 +5,7 @@
 use std::convert::TryFrom;
 use std::fmt::{Display, Error as FmtError, Formatter};
 
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use num_rational::Ratio;
 use serde::{Deserialize, Serialize};
 

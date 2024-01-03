@@ -10,7 +10,7 @@ use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryRespons
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics02_client::header::Header;
+use ibc_relayer_types::core::ics02_client::header::{AnyHeader, Header};
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd, State,
 };
@@ -33,6 +33,7 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::version::Specs;
 use crate::chain::handle::Subscription;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
@@ -44,7 +45,6 @@ use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{AnySigningKeyPair, KeyRing, SigningKeyPairSized};
-use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 
 /// The result of a health check.
@@ -82,12 +82,10 @@ pub trait ChainEndpoint: Sized {
     type SigningKeyPair: SigningKeyPairSized + Into<AnySigningKeyPair>;
 
     /// Returns the chain's identifier
-    fn id(&self) -> &ChainId {
-        &self.config().id
-    }
+    fn id(&self) -> &ChainId;
 
     /// Returns the chain configuration
-    fn config(&self) -> &ChainConfig;
+    fn config(&self) -> ChainConfig;
 
     // Life cycle
 
@@ -114,15 +112,7 @@ pub trait ChainEndpoint: Sized {
     fn get_signer(&self) -> Result<Signer, Error>;
 
     /// Get the signing key pair
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
-        // Get the key from key seed file
-        let key_pair = self
-            .keybase()
-            .get_key(&self.config().key_name)
-            .map_err(|e| Error::key_not_found(self.config().key_name.clone(), e))?;
-
-        Ok(key_pair)
-    }
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error>;
 
     fn add_key(&mut self, key_name: &str, key_pair: Self::SigningKeyPair) -> Result<(), Error> {
         self.keybase_mut()
@@ -135,7 +125,7 @@ pub trait ChainEndpoint: Sized {
     // Versioning
 
     /// Return the version of the IBC protocol that this chain is running, if known.
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
+    fn version_specs(&self) -> Result<Specs, Error>;
 
     // Send transactions
 
@@ -695,4 +685,6 @@ pub trait ChainEndpoint: Sized {
         &self,
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
+
+    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
 }

@@ -12,7 +12,7 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 
 use flex_error::{define_error, TraceError};
-use ibc_proto::protobuf::Error as TendermintError;
+use tendermint_proto::Error as TendermintError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -100,7 +100,7 @@ define_error! {
             | _ | { "missing channel end" },
 
         InvalidVersionLengthConnection
-            | _ | { "single version must be negociated on connection before opening channel" },
+            | _ | { "single version must be negotiated on connection before opening channel" },
 
         ChannelFeatureNotSuportedByConnection
             | _ | { "the channel ordering is not supported by connection" },
