@@ -147,7 +147,12 @@ impl Serialize for TrustThreshold {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&format!("{}/{}", self.numerator(), self.denominator()))
+        use serde::ser::SerializeStruct;
+
+        let mut s = serializer.serialize_struct("TrustThreshold", 2)?;
+        s.serialize_field("numerator", &self.numerator())?;
+        s.serialize_field("denominator", &self.denominator())?;
+        s.end()
     }
 }
 
@@ -170,7 +175,9 @@ impl<'de> Deserialize<'de> for TrustThreshold {
             type Value = TrustThreshold;
 
             fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-                formatter.write_str("string or map")
+                formatter.write_str(
+                    "string (eg. '1/3') or map `{ numerator = <int>, denominator = <int> }`",
+                )
             }
 
             fn visit_str<E>(self, value: &str) -> Result<TrustThreshold, E>
