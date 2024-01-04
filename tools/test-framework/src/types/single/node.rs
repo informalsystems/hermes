@@ -178,6 +178,7 @@ impl FullNode {
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             max_grpc_decoding_size: config::default::max_grpc_decoding_size(),
+            query_packets_chunk_size: config::default::query_packets_chunk_size(),
             max_block_time: Duration::from_secs(30),
             clock_drift: Duration::from_secs(5),
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),

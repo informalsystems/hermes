@@ -61,12 +61,19 @@ pub struct CosmosSdkConfig {
     pub gas_multiplier: Option<GasMultiplier>,
 
     pub fee_granter: Option<String>,
+
     #[serde(default)]
     pub max_msg_num: MaxMsgNum,
+
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
+
     #[serde(default = "default::max_grpc_decoding_size")]
     pub max_grpc_decoding_size: Byte,
+
+    /// How many packets to fetch at once from the chain when clearing packets
+    #[serde(default = "default::query_packets_chunk_size")]
+    pub query_packets_chunk_size: usize,
 
     /// A correction parameter that helps deal with clocks that are only approximately synchronized
     /// between the source and destination chains for a client.

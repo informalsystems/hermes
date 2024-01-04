@@ -160,6 +160,10 @@ pub mod default {
         100
     }
 
+    pub fn query_packets_chunk_size() -> usize {
+        50
+    }
+
     pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
     }
@@ -648,6 +652,12 @@ impl ChainConfig {
     pub fn clear_interval(&self) -> Option<u64> {
         match self {
             Self::CosmosSdk(config) => config.clear_interval,
+        }
+    }
+
+    pub fn query_packets_chunk_size(&self) -> usize {
+        match self {
+            Self::CosmosSdk(config) => config.query_packets_chunk_size,
         }
     }
 }

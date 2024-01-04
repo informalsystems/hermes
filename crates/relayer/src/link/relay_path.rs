@@ -418,9 +418,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let tracking_id = TrackingId::new_cleared_uuid();
         telemetry!(received_event_batch, tracking_id);
 
+        let src_config = self.src_chain().config().map_err(LinkError::relayer)?;
+        let chunk_size = src_config.query_packets_chunk_size();
+
         for i in 1..=MAX_RETRIES {
-            let cleared_recv = self.schedule_recv_packet_and_timeout_msgs(height, tracking_id);
-            let cleared_ack = self.schedule_packet_ack_msgs(height, tracking_id);
+            let cleared_recv =
+                self.schedule_recv_packet_and_timeout_msgs(height, chunk_size, tracking_id);
+
+            let cleared_ack = self.schedule_packet_ack_msgs(height, chunk_size, tracking_id);
 
             match cleared_recv.and(cleared_ack) {
                 Ok(()) => return Ok(()),
@@ -1094,6 +1099,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn schedule_recv_packet_and_timeout_msgs(
         &self,
         opt_query_height: Option<Height>,
+        chunk_size: usize,
         tracking_id: TrackingId,
     ) -> Result<(), LinkError> {
         let _span = span!(
@@ -1130,6 +1136,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Qualified::SmallerEqual(query_height),
             self.src_chain(),
             &self.path_id,
+            chunk_size,
             query_send_packet_events,
         ) {
             // Update telemetry info
@@ -1153,6 +1160,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn schedule_packet_ack_msgs(
         &self,
         opt_query_height: Option<Height>,
+        chunk_size: usize,
         tracking_id: TrackingId,
     ) -> Result<(), LinkError> {
         let _span = span!(
@@ -1191,6 +1199,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Qualified::SmallerEqual(query_height),
             self.src_chain(),
             &self.path_id,
+            chunk_size,
             query_write_ack_events,
         ) {
             telemetry!(self.record_cleared_acknowledgments(events_chunk.iter()));

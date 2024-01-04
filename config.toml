@@ -296,6 +296,10 @@ max_msg_num = 30
 # Default: 2097152 (2 MiB)
 max_tx_size = 2097152
 
+# How many packets to fetch at once from the chain when clearing packets.
+# Default: 50
+query_packets_chunk_size = 50
+
 # Specify the maximum amount of time to tolerate a clock drift.
 # The clock drift parameter defines how much new (untrusted) header's time
 # can drift into the future. Default: 5s
