@@ -177,15 +177,16 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1703188858,
-        "narHash": "sha256-14HOyQe5E/8tYKNh3FQ1k/mBUpl+7j2lG9wj4GC09Tk=",
+        "lastModified": 1704352834,
+        "narHash": "sha256-JHU192vizkigjJZ6rK4Mhmnmm0NJSVP462y/9nF+AOU=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "a348d622ca25dc2e2d3a36487886c5d8130faf44",
+        "rev": "e0100c80b524789208466b538ec2945919c0cab4",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "luca_joss/expose-namada-repository",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -605,16 +606,16 @@
     "hermes-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1689751768,
-        "narHash": "sha256-yq+jdHSwUejMA1hURSHWHJ8QSyhDdnhpKE+tejgWSSE=",
+        "lastModified": 1702629809,
+        "narHash": "sha256-JTZMp4By/pGsMdKzfi4H1LQS1RKYQHBq5NEju5ADX/s=",
         "owner": "informalsystems",
         "repo": "hermes",
-        "rev": "1c1cf02988db67507de7d484e1a7f317fe494d6c",
+        "rev": "ab732666fe35de129ada98731280d03411f6375f",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
-        "ref": "v1.6.0",
+        "ref": "v1.7.4",
         "repo": "hermes",
         "type": "github"
       }
@@ -1023,11 +1024,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1703134684,
-        "narHash": "sha256-SQmng1EnBFLzS7WSRyPM9HgmZP2kLJcPAz+Ug/nug6o=",
+        "lastModified": 1704161960,
+        "narHash": "sha256-QGua89Pmq+FBAro8NriTuoO/wNaUtugt29/qqA8zeeM=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "d6863cbcbbb80e71cecfc03356db1cda38919523",
+        "rev": "63143ac2c9186be6d9da6035fa22620018c85932",
         "type": "github"
       },
       "original": {
@@ -1040,16 +1041,16 @@
     "osmosis-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1700576443,
-        "narHash": "sha256-UE3XEgdSp8mlgIKQRrBfb4wiPEeagB/wNWfDvDq4up4=",
+        "lastModified": 1702398856,
+        "narHash": "sha256-4uLO7izIZ8JvKTfUXbYkxQFpIjwMEcO81WvhklrzI9E=",
         "owner": "osmosis-labs",
         "repo": "osmosis",
-        "rev": "d9965b09d3e8690c77050bb095bc5b69772ebdfb",
+        "rev": "b0aee0006ce55d0851773084bd7880db7e32ad70",
         "type": "github"
       },
       "original": {
         "owner": "osmosis-labs",
-        "ref": "v20.4.0",
+        "ref": "v21.0.0",
         "repo": "osmosis",
         "type": "github"
       }
