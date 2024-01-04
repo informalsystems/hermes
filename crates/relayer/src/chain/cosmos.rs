@@ -941,7 +941,7 @@ impl ChainEndpoint for CosmosSdkChain {
         &mut self.keybase
     }
 
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error> {
         // Get the key from key seed file
         let key_pair = self
             .keybase()
