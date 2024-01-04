@@ -394,11 +394,12 @@ jobs:
             account_prefix: evmos
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-        with: 
-          extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
+      - uses: cachix/install-nix-action@v22
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
       - uses: cachix/cachix-action@v12
         with:
           name: cosmos
@@ -735,12 +736,11 @@ jobs:
             native_token: stake,nam
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v22
+      - uses: DeterminateSystems/nix-installer-action@main
         with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
+          extra-conf: |
+            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
       - uses: cachix/cachix-action@v12
         with:
           name: cosmos
