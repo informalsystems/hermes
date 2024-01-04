@@ -52,6 +52,7 @@
           neutron
           celestia
           namada
+          namada-src
           ;
 
         python = nixpkgs.python3.withPackages (p: [
