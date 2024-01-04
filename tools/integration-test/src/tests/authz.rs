@@ -1,3 +1,13 @@
+//! This test tests relaying messages from authz:
+//!
+//! - The `AuthzTest` will grant authorization for `MsgTransfer` from `user2` (granter)
+//!   to `user1` (grantee). It will then execute an IBC transfer using the chain's
+//!   `tx authz exec` command and assert that the transfer succesfully completes.
+//!
+//! - The `NoAuthzTest` will skip granting authorization and assert that the
+//!   `MsgTransfer` is not authorized and that the chain's `tx authz exec`
+//!   command fails.
+
 use std::thread;
 
 use ibc_test_framework::chain::ext::authz::AuthzMethodsExt;

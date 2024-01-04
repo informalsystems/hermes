@@ -42,6 +42,7 @@ interchain-security = []
 celestia = []
 async-icq = []
 juno = []
+authz = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
