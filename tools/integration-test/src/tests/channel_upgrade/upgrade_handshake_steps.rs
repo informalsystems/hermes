@@ -18,6 +18,7 @@
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_relayer_types::events::IbcEventType;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
@@ -777,7 +778,14 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
 
         info!("Will run ChanUpgradeCancel step...");
 
-        channel.build_chan_upgrade_cancel_and_send()?;
+        // Since the following assertion checks that the fields of channel ends
+        // have not been updated, asserting there is a `UpgradeCancelChannel` event
+        // avoids having a passing test due to the Upgrade Init step failing
+        let cancel_event = channel.build_chan_upgrade_cancel_and_send()?;
+        assert_eq!(
+            cancel_event.event_type(),
+            IbcEventType::UpgradeCancelChannel
+        );
 
         info!("Check that the step ChanUpgradeCancel was correctly executed...");
 

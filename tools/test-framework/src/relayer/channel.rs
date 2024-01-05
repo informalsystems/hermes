@@ -519,15 +519,11 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
         )));
     }
 
-    if !channel_end_a
-        .value()
-        .upgraded_sequence
-        .eq(upgrade_attrs.upgrade_sequence_a())
-    {
+    if !channel_end_a.value().ordering.eq(upgrade_attrs.ordering()) {
         return Err(Error::generic(eyre!(
-            "expected channel end A upgrade sequence to be `{}`, but it is instead `{}`",
+            "expected channel end A ordering to be `{}`, but it is instead `{}`",
             upgrade_attrs.ordering(),
-            channel_end_a.value().upgraded_sequence
+            channel_end_a.value().ordering
         )));
     }
 
@@ -539,6 +535,18 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
             "expected channel end A connection hops to be `{:?}`, but it is instead `{:?}`",
             upgrade_attrs.connection_hops_a(),
             channel_end_a.value().connection_hops()
+        )));
+    }
+
+    if !channel_end_a
+        .value()
+        .upgraded_sequence
+        .eq(upgrade_attrs.upgrade_sequence_a())
+    {
+        return Err(Error::generic(eyre!(
+            "expected channel end A upgrade sequence to be `{}`, but it is instead `{}`",
+            upgrade_attrs.upgrade_sequence_a(),
+            channel_end_a.value().upgraded_sequence
         )));
     }
 
@@ -588,6 +596,18 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
             "expected channel end B connection hops to be `{:?}`, but it is instead `{:?}`",
             upgrade_attrs.connection_hops_b(),
             channel_end_b.value().connection_hops()
+        )));
+    }
+
+    if !channel_end_b
+        .value()
+        .upgraded_sequence
+        .eq(upgrade_attrs.upgrade_sequence_b())
+    {
+        return Err(Error::generic(eyre!(
+            "expected channel end B upgrade sequence to be `{}`, but it is instead `{}`",
+            upgrade_attrs.upgrade_sequence_b(),
+            channel_end_a.value().upgraded_sequence
         )));
     }
 
