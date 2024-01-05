@@ -9,7 +9,7 @@
    This is the case for creating N-ary chains, because we cannot rely on the
    existential type encapsulation of `impl ChainHandle` to turn the
    [`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle) to turn
-   them into unqiue types.
+   them into unique types.
 
    A workaround for this is to add a unique tag to `CountingAndCachingChainHandle` itself,
    so that the type `MonoTagged<Tag, CountingAndCachingChainHandle>` becomes a unique chain

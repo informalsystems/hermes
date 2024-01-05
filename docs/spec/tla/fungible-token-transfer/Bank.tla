@@ -30,7 +30,7 @@ AddCoins(accounts, accountID, amount) ==
          ]
 
 
-\* Transfer coins from senderAccounts to receiverAccounts, depeding on 
+\* Transfer coins from senderAccounts to receiverAccounts, depending on 
 \* the sender addressees, receiver addressees and denomination 
 \*      - senderAccounts is a map from sender addresses and denominations 
 \*        to account balances

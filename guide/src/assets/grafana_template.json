@@ -1715,7 +1715,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Indicates the number of  `event` observed via the websocket subcription.",
+      "description": "Indicates the number of  `event` observed via the websocket subscription.",
       "fieldConfig": {
         "defaults": {
           "color": {
