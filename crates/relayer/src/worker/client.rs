@@ -43,7 +43,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
         ),
         Some(REFRESH_CHECK_INTERVAL),
         move || {
-            // Try to refresh the client, but only if the refresh window as expired.
+            // Try to refresh the client, but only if the refresh window has expired.
             // If the refresh fails, retry according to the given strategy.
             let res = retry_with_index(refresh_strategy(), |_| client.refresh());
 
