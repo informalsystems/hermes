@@ -199,7 +199,7 @@ pub mod default {
     }
 
     pub fn trust_threshold() -> TrustThreshold {
-        TrustThreshold::ONE_THIRD
+        TrustThreshold::TWO_THIRDS
     }
 
     pub fn client_refresh_rate() -> RefreshRate {
