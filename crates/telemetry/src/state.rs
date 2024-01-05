@@ -1045,7 +1045,7 @@ impl TelemetryState {
                     self.backlog_size
                         .observe(&cx, path_backlog.len() as u64, labels);
                 } else {
-                    // No mimimum found, update the metrics to reflect an empty backlog
+                    // No minimum found, update the metrics to reflect an empty backlog
                     self.backlog_oldest_sequence
                         .observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
                     self.backlog_size.observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);

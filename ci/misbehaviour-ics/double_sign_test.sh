@@ -330,7 +330,7 @@ do
     interchain-security-cd genesis add-genesis-account $CONS_ACCOUNT_ADDR2 $USER_COINS --home ${CONS_NODE_DIR}
     sleep 10
 
-    ### this probably doesnt have to be done for each node
+    ### this probably does not have to be done for each node
     # Add consumer genesis states to genesis file
     RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
     RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}

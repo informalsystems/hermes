@@ -100,7 +100,7 @@ impl PartialOrd for GasPrice {
 /// the parsing of other prices.
 pub fn parse_gas_prices(prices: String) -> Vec<GasPrice> {
     prices
-        .split(';')
+        .split(|c| c == ',' || c == ';')
         .filter_map(|gp| GasPrice::from_str(gp).ok())
         .collect()
 }
@@ -811,9 +811,6 @@ mod tests {
 
     #[test]
     fn parse_multiple_gas_prices() {
-        let gas_prices = "0.25token1;0.0001token2";
-        let parsed = parse_gas_prices(gas_prices.to_string());
-
         let expected = vec![
             GasPrice {
                 price: 0.25,
@@ -825,7 +822,15 @@ mod tests {
             },
         ];
 
-        assert_eq!(expected, parsed);
+        let test_cases = vec![
+            ("0.25token1;0.0001token2", expected.clone()),
+            ("0.25token1,0.0001token2", expected.clone()),
+        ];
+
+        for (input, expected) in test_cases {
+            let parsed = parse_gas_prices(input.to_string());
+            assert_eq!(expected, parsed);
+        }
     }
 
     #[test]
@@ -838,14 +843,18 @@ mod tests {
 
     #[test]
     fn malformed_gas_prices_do_not_get_parsed() {
-        let malformed_prices = "token1;.token2;0.25token3";
-        let parsed = parse_gas_prices(malformed_prices.to_string());
-
         let expected = vec![GasPrice {
             price: 0.25,
             denom: "token3".to_owned(),
         }];
+        let test_cases = vec![
+            ("token1;.token2;0.25token3", expected.clone()),
+            ("token1,.token2,0.25token3", expected.clone()),
+        ];
 
-        assert_eq!(expected, parsed);
+        for (input, expected) in test_cases {
+            let parsed = parse_gas_prices(input.to_string());
+            assert_eq!(expected, parsed);
+        }
     }
 }

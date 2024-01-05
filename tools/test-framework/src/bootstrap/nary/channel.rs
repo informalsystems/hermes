@@ -1,5 +1,5 @@
 /*!
-   Functions for bootstrapping N-ary number of chanels.
+   Functions for bootstrapping N-ary number of channels.
 */
 
 use core::convert::TryInto;
@@ -100,7 +100,7 @@ pub fn bootstrap_channels_with_connections<Handle: ChainHandle, const SIZE: usiz
 }
 
 /**
-   Boostrap a dynamic number of channels together with the
+   Bootstrap a dynamic number of channels together with the
    underlying connections based on the number of chain handles
    in `DynamicConnectedChains`.
 */

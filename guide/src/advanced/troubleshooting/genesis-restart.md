@@ -1,4 +1,4 @@
-# Updating a client after a Genesis restart withtout IBC upgrade proposal
+# Updating a client after a Genesis restart without IBC upgrade proposal
 
 If a chain went through a genesis restart without an IBC upgrade proposal updating the client can result in an error due to blocks at lower heights not being available.
 

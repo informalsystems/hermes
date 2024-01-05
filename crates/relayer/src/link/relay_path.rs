@@ -513,7 +513,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         .entered();
 
         let input = events.events();
-        let src_height = match input.get(0) {
+        let src_height = match input.first() {
             None => return Ok((None, None)),
             Some(ev) => ev.height,
         };
@@ -988,7 +988,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             // All updates were successful, no errors and no misbehaviour.
             (None, Some(update_event_height), None) => Ok(update_event_height),
             (Some(chain_error), _, _) => {
-                // Atleast one chain-error so retry if possible.
+                // At least one chain-error so retry if possible.
                 if retries_left == 0 {
                     Err(LinkError::client(ForeignClientError::chain_error_event(
                         self.dst_chain().id(),
@@ -1012,7 +1012,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     _ => Err(LinkError::update_client_failed()),
                 }
             }
-            // Atleast one misbehaviour event, so don't retry.
+            // At least one misbehaviour event, so don't retry.
             (_, _, Some(_misbehaviour)) => Err(LinkError::update_client_failed()),
         }
     }
@@ -1055,7 +1055,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             // All updates were successful, no errors and no misbehaviour.
             (None, Some(update_event_height), None) => Ok(update_event_height),
             (Some(chain_error), _, _) => {
-                // Atleast one chain-error so retry if possible.
+                // At least one chain-error so retry if possible.
                 if retries_left == 0 {
                     Err(LinkError::client(ForeignClientError::chain_error_event(
                         self.src_chain().id(),

@@ -273,7 +273,7 @@ RelayNextEnv ==
     the chains unless the chain has just a few (namely, `4`) heights left.
 
     3. The environment may perform a relaying step, that is:
-    if there is a message in the ougoing buffer of a chain, the relayer
+    if there is a message in the outgoing buffer of a chain, the relayer
     moves this message to the ingoing buffer of the other chain, and also
     updates the client on the latter chain.
 
@@ -328,7 +328,7 @@ Init ==
 
 (* The two ICS3 modules and the environment alternate their steps
     non-deterministically. Eventually, the execution ends with either
-    successful (ICS3ReachedOpenConnection sub-action) or unsuccesfull
+    successful (ICS3ReachedOpenConnection sub-action) or unsuccessful
     (ICS3ImpossibleToAdvance sub-action) termination.
 *)
 Next ==
