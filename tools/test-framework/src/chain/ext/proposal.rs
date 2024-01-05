@@ -126,6 +126,7 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
         Ok(())
     }
 
+    // The timestamp is in nanoseconds
     fn update_channel_params(
         &self,
         timestamp: u64,

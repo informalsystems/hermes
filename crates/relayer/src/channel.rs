@@ -813,16 +813,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             // Channel Upgrade handshake steps
             (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::NotUpgrading)) => {
-                self.build_chan_upgrade_try_and_send()?
+                match self.build_chan_upgrade_try_and_send()? {
+                    Some(event) => Some(event),
+                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
+                }
             }
             (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::Upgrading)) => {
-                self.flipped().build_chan_upgrade_try_and_send()?
+                match self.flipped().build_chan_upgrade_try_and_send()? {
+                    Some(event) => Some(event),
+                    None => Some(self.build_chan_upgrade_cancel_and_send()?),
+                }
             }
             (State::Flushing, State::Open(UpgradeState::Upgrading)) => {
-                self.build_chan_upgrade_ack_and_send()?
+                match self.build_chan_upgrade_ack_and_send()? {
+                    Some(event) => Some(event),
+                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
+                }
             }
             (State::Flushcomplete, State::Flushing) => {
-                self.build_chan_upgrade_confirm_and_send()?
+                match self.build_chan_upgrade_confirm_and_send()? {
+                    Some(event) => Some(event),
+                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
+                }
             }
             (State::Flushcomplete, State::Open(UpgradeState::Upgrading)) => {
                 Some(self.flipped().build_chan_upgrade_open_and_send()?)

@@ -712,7 +712,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
         info!("Will update channel params to set a short upgrade timeout...");
 
         chains.node_b.chain_driver().update_channel_params(
-            245,
+            5000000000,
             chains.handle_b().get_signer().unwrap().as_ref(),
             "1",
         )?;
