@@ -145,6 +145,7 @@ where
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),
         max_grpc_decoding_size: default::max_grpc_decoding_size(),
+        query_packets_chunk_size: default::query_packets_chunk_size(),
         clock_drift: default::clock_drift(),
         max_block_time: default::max_block_time(),
         trusting_period: None,
