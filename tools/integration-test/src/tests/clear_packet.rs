@@ -96,7 +96,7 @@ impl BinaryChannelTest for ClearPacketTest {
 
         sleep(Duration::from_secs(1));
 
-        // Spawn the supervisor only after the first IBC trasnfer
+        // Spawn the supervisor only after the first IBC transfer
         relayer.with_supervisor(|| {
             sleep(Duration::from_secs(1));
 

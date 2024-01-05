@@ -144,7 +144,7 @@ id = 'ibc-0'
 type = "CosmosSdk"
 
 # Whether or not this is a CCV consumer chain. Default: false
-# Only specifiy true for CCV consumer chain, but NOT for sovereign chains.
+# Only specify true for CCV consumer chain, but NOT for sovereign chains.
 ccv_consumer_chain = false
 
 # Specify the RPC address and port where the chain RPC server listens on. Required
@@ -374,7 +374,7 @@ memo_prefix = ''
 # [chains.packet_filter.min_fees.'channel-0']
 # recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
 
-# Specify that the transaction fees should be payed from this fee granter's account.
+# Specify that the transaction fees should be paid from this fee granter's account.
 # Optional. If unspecified (the default behavior), then no fee granter is used, and
 # the account specified in `key_name` will pay the tx fees for all transactions
 # submitted to this chain.
