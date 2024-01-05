@@ -5,18 +5,18 @@ pub mod error;
 pub mod filter;
 pub mod gas_multiplier;
 pub mod proof_specs;
+pub mod refresh_rate;
 pub mod types;
 
 use alloc::collections::BTreeMap;
-use byte_unit::Byte;
-use core::{
-    cmp::Ordering,
-    fmt::{Display, Error as FmtError, Formatter},
-    str::FromStr,
-    time::Duration,
-};
-use serde_derive::{Deserialize, Serialize};
+use core::cmp::Ordering;
+use core::fmt::{Display, Error as FmtError, Formatter};
+use core::str::FromStr;
+use core::time::Duration;
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
+
+use byte_unit::Byte;
+use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height as BlockHeight;
 use tendermint_rpc::Url;
 use tendermint_rpc::WebSocketClientUrl;
@@ -25,10 +25,11 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
+use crate::chain::cosmos::config::CosmosSdkConfig;
+use crate::config::types::TrustThreshold;
+use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
-use crate::keyring::Store;
-use crate::keyring::{AnySigningKeyPair, KeyRing};
-use crate::{chain::cosmos::config::CosmosSdkConfig, error::Error as RelayerError};
+use crate::keyring::{AnySigningKeyPair, KeyRing, Store};
 
 use crate::keyring;
 
@@ -36,6 +37,7 @@ pub use crate::config::Error as ConfigError;
 pub use error::Error;
 
 pub use filter::PacketFilter;
+pub use refresh_rate::RefreshRate;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -198,6 +200,15 @@ pub mod default {
 
     pub fn max_grpc_decoding_size() -> Byte {
         Byte::from_bytes(33554432)
+    }
+
+    pub fn trust_threshold() -> TrustThreshold {
+        TrustThreshold::TWO_THIRDS
+    }
+
+    pub fn client_refresh_rate() -> RefreshRate {
+        // Refresh the client three times per trusting period
+        RefreshRate::new(1, 3)
     }
 
     pub fn latency_submitted() -> HistogramConfig {
@@ -646,6 +657,7 @@ impl ChainConfig {
                     .collect()
             }
         };
+
         Ok(keys)
     }
 

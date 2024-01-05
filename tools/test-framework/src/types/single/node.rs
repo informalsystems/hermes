@@ -182,6 +182,7 @@ impl FullNode {
             max_block_time: Duration::from_secs(30),
             clock_drift: Duration::from_secs(5),
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
+            client_refresh_rate: config::default::client_refresh_rate(),
             ccv_consumer_chain: false,
             trust_threshold: Default::default(),
             gas_price,
