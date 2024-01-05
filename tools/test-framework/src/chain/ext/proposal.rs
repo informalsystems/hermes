@@ -23,7 +23,7 @@ pub trait ChainProposalMethodsExt {
         proposal_id: u64,
     ) -> Result<u64, Error>;
 
-    fn vote_proposal(&self, fees: &str) -> Result<(), Error>;
+    fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error>;
 
     fn initialise_channel_upgrade(
         &self,
@@ -33,9 +33,15 @@ pub trait ChainProposalMethodsExt {
         connection_hops: &str,
         version: &str,
         signer: &str,
+        proposal_id: &str,
     ) -> Result<(), Error>;
 
-    fn update_channel_params(&self, timestamp: u64, signer: &str) -> Result<(), Error>;
+    fn update_channel_params(
+        &self,
+        timestamp: u64,
+        signer: &str,
+        proposal_id: &str,
+    ) -> Result<(), Error>;
 }
 
 impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDriver> {
@@ -49,13 +55,14 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             .block_on(query_upgrade_proposal_height(grpc_address, proposal_id))
     }
 
-    fn vote_proposal(&self, fees: &str) -> Result<(), Error> {
+    fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error> {
         vote_proposal(
             self.value().chain_id.as_str(),
             &self.value().command_path,
             &self.value().home_path,
             &self.value().rpc_listen_address(),
             fees,
+            proposal_id,
         )?;
         Ok(())
     }
@@ -68,6 +75,7 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
         connection_hops: &str,
         version: &str,
         signer: &str,
+        proposal_id: &str,
     ) -> Result<(), Error> {
         let gov_address = self.query_auth_module("gov")?;
         let channel_upgrade_proposal = create_channel_upgrade_proposal(
@@ -94,7 +102,7 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &self.value().home_path,
             &self.value().rpc_listen_address(),
             ProposalStatus::VotingPeriod,
-            "1",
+            proposal_id,
         )?;
 
         vote_proposal(
@@ -103,6 +111,7 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &self.value().home_path,
             &self.value().rpc_listen_address(),
             "1200stake",
+            proposal_id,
         )?;
 
         self.value().assert_proposal_status(
@@ -111,13 +120,18 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &self.value().home_path,
             &self.value().rpc_listen_address(),
             ProposalStatus::Passed,
-            "1",
+            proposal_id,
         )?;
 
         Ok(())
     }
 
-    fn update_channel_params(&self, timestamp: u64, signer: &str) -> Result<(), Error> {
+    fn update_channel_params(
+        &self,
+        timestamp: u64,
+        signer: &str,
+        proposal_id: &str,
+    ) -> Result<(), Error> {
         let gov_address = self.query_auth_module("gov")?;
         let channel_update_params_proposal =
             create_channel_update_params_proposal(self.value(), timestamp, &gov_address)?;
@@ -136,7 +150,7 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &self.value().home_path,
             &self.value().rpc_listen_address(),
             ProposalStatus::VotingPeriod,
-            "1",
+            proposal_id,
         )?;
 
         vote_proposal(
@@ -145,6 +159,7 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &self.value().home_path,
             &self.value().rpc_listen_address(),
             "1200stake",
+            proposal_id,
         )?;
 
         self.value().assert_proposal_status(
@@ -153,7 +168,7 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &self.value().home_path,
             &self.value().rpc_listen_address(),
             ProposalStatus::Passed,
-            "1",
+            proposal_id,
         )?;
 
         Ok(())
@@ -292,6 +307,8 @@ fn create_channel_update_params_proposal(
     let proposal = raw_proposal.replace("{timestamp}", &timestamp.to_string());
     let proposal = proposal.replace("{signer}", gov_address);
 
-    chain_driver.write_file("channel_update_params_proposal.json", &proposal)?;
-    Ok("channel_upgrade_proposal.json".to_owned())
+    let output_file = "channel_update_params_proposal.json";
+
+    chain_driver.write_file(output_file, &proposal)?;
+    Ok(output_file.to_owned())
 }

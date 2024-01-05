@@ -6,6 +6,7 @@
 use std::thread::sleep;
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
 use ibc_test_framework::prelude::*;
@@ -97,6 +98,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshake {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         info!("Will initialise upgrade handshake with governance proposal...");
@@ -108,6 +111,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshake {
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
             chains.handle_a().get_signer().unwrap().as_ref(),
+            "1",
         )?;
 
         info!("Check that the channel upgrade successfully upgraded the version...");
@@ -202,6 +206,8 @@ impl BinaryChannelTest for ChannelUpgradeClearHandshake {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         info!("Will initialise upgrade handshake with governance proposal...");
@@ -213,6 +219,7 @@ impl BinaryChannelTest for ChannelUpgradeClearHandshake {
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
             chains.handle_a().get_signer().unwrap().as_ref(),
+            "1",
         )?;
 
         // After the governance proposal, wait a few blocks before starting the Hermes instance

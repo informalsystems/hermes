@@ -78,7 +78,7 @@ impl TryFrom<RawMsgChannelUpgradeCancel> for MsgChannelUpgradeCancel {
         Ok(MsgChannelUpgradeCancel {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
-            error_receipt: error_receipt,
+            error_receipt,
             proof_error_receipt: raw_msg
                 .proof_error_receipt
                 .try_into()
@@ -105,9 +105,7 @@ impl From<MsgChannelUpgradeCancel> for RawMsgChannelUpgradeCancel {
 #[cfg(test)]
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::ErrorReceipt as RawErrorReceipt;
-    use ibc_proto::ibc::core::channel::v1::{
-        ErrorReceipt, MsgChannelUpgradeCancel as RawMsgChannelUpgradeCancel,
-    };
+    use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeCancel as RawMsgChannelUpgradeCancel;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
@@ -218,7 +216,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = RawMsgChannelUpgradeCancel::try_from(test.raw.clone());
+            let res = MsgChannelUpgradeCancel::try_from(test.raw.clone());
 
             assert_eq!(
                 test.want_pass,

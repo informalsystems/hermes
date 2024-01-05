@@ -10,6 +10,7 @@ pub fn vote_proposal(
     home_path: &str,
     rpc_listen_address: &str,
     fees: &str,
+    proposal_id: &str,
 ) -> Result<(), Error> {
     simple_exec(
         chain_id,
@@ -20,7 +21,7 @@ pub fn vote_proposal(
             "tx",
             "gov",
             "vote",
-            "1",
+            proposal_id,
             "yes",
             "--chain-id",
             chain_id,

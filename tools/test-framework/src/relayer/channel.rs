@@ -44,6 +44,8 @@ pub struct ChannelUpgradableAttributes {
     ordering: Ordering,
     connection_hops_a: Vec<ConnectionId>,
     connection_hops_b: Vec<ConnectionId>,
+    upgrade_sequence_a: Sequence,
+    upgrade_sequence_b: Sequence,
 }
 
 impl ChannelUpgradableAttributes {
@@ -53,6 +55,8 @@ impl ChannelUpgradableAttributes {
         ordering: Ordering,
         connection_hops_a: Vec<ConnectionId>,
         connection_hops_b: Vec<ConnectionId>,
+        upgrade_sequence_a: Sequence,
+        upgrade_sequence_b: Sequence,
     ) -> Self {
         Self {
             version_a,
@@ -60,6 +64,8 @@ impl ChannelUpgradableAttributes {
             ordering,
             connection_hops_a,
             connection_hops_b,
+            upgrade_sequence_a,
+            upgrade_sequence_b,
         }
     }
 
@@ -70,6 +76,8 @@ impl ChannelUpgradableAttributes {
             ordering: self.ordering,
             connection_hops_a: self.connection_hops_b.clone(),
             connection_hops_b: self.connection_hops_a.clone(),
+            upgrade_sequence_a: self.upgrade_sequence_b,
+            upgrade_sequence_b: self.upgrade_sequence_a,
         }
     }
 
@@ -91,6 +99,14 @@ impl ChannelUpgradableAttributes {
 
     pub fn connection_hops_b(&self) -> &Vec<ConnectionId> {
         &self.connection_hops_b
+    }
+
+    pub fn upgrade_sequence_a(&self) -> &Sequence {
+        &self.upgrade_sequence_a
+    }
+
+    pub fn upgrade_sequence_b(&self) -> &Sequence {
+        &self.upgrade_sequence_b
     }
 }
 
@@ -506,7 +522,7 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     if !channel_end_a
         .value()
         .upgraded_sequence
-        .eq(&Sequence::from(5))
+        .eq(upgrade_attrs.upgrade_sequence_a())
     {
         return Err(Error::generic(eyre!(
             "expected channel end A upgrade sequence to be `{}`, but it is instead `{}`",

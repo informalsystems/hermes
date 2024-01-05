@@ -134,7 +134,7 @@ const CHANNEL_UPGRADE_TRY_EVENT: &str = "channel_upgrade_try";
 const CHANNEL_UPGRADE_ACK_EVENT: &str = "channel_upgrade_ack";
 const CHANNEL_UPGRADE_CONFIRM_EVENT: &str = "channel_upgrade_confirm";
 const CHANNEL_UPGRADE_OPEN_EVENT: &str = "channel_upgrade_open";
-const CHANNEL_UPGRADE_CANCEL_EVENT: &str = "channel_upgrade_cancel";
+const CHANNEL_UPGRADE_CANCEL_EVENT: &str = "channel_upgrade_cancelled";
 /// Packet event types
 const SEND_PACKET_EVENT: &str = "send_packet";
 const RECEIVE_PACKET_EVENT: &str = "receive_packet";
@@ -251,6 +251,7 @@ impl FromStr for IbcEventType {
             CHANNEL_UPGRADE_ACK_EVENT => Ok(IbcEventType::UpgradeAckChannel),
             CHANNEL_UPGRADE_CONFIRM_EVENT => Ok(IbcEventType::UpgradeConfirmChannel),
             CHANNEL_UPGRADE_OPEN_EVENT => Ok(IbcEventType::UpgradeOpenChannel),
+            CHANNEL_UPGRADE_CANCEL_EVENT => Ok(IbcEventType::UpgradeCancelChannel),
             SEND_PACKET_EVENT => Ok(IbcEventType::SendPacket),
             RECEIVE_PACKET_EVENT => Ok(IbcEventType::ReceivePacket),
             WRITE_ACK_EVENT => Ok(IbcEventType::WriteAck),
@@ -464,6 +465,7 @@ impl IbcEvent {
             IbcEvent::UpgradeAckChannel(ev) => Some(ev.into()),
             IbcEvent::UpgradeConfirmChannel(ev) => Some(ev.into()),
             IbcEvent::UpgradeOpenChannel(ev) => Some(ev.into()),
+            IbcEvent::UpgradeCancelChannel(ev) => Some(ev.into()),
             _ => None,
         }
     }

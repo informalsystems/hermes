@@ -16,6 +16,7 @@
 //!   cancel the upgrade handshake if the Ack step fails due to an upgrade timeout.
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
 use ibc_test_framework::prelude::*;
@@ -131,6 +132,8 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         let interm_attrs = ChannelUpgradableAttributes::new(
@@ -139,6 +142,8 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
@@ -147,6 +152,8 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         info!("Will initialise upgrade handshake with governance proposal...");
@@ -158,6 +165,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
             chains.handle_a().get_signer().unwrap().as_ref(),
+            "1",
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
@@ -292,6 +300,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromTry {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
@@ -300,6 +310,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromTry {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         info!("Will initialise upgrade handshake with governance proposal...");
@@ -311,6 +323,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromTry {
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
             chains.handle_a().get_signer().unwrap().as_ref(),
+            "1",
         )?;
 
         info!("Will run ChanUpgradeTry step...");
@@ -405,6 +418,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromAck {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
@@ -413,6 +428,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromAck {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         info!("Will initialise upgrade handshake with governance proposal...");
@@ -424,6 +441,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromAck {
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
             chains.handle_a().get_signer().unwrap().as_ref(),
+            "1",
         )?;
 
         info!("Will run ChanUpgradeTry step...");
@@ -531,6 +549,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromConfirm {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         let interm_attrs = ChannelUpgradableAttributes::new(
@@ -539,6 +559,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromConfirm {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
@@ -547,6 +569,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromConfirm {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         info!("Will initialise upgrade handshake with governance proposal...");
@@ -558,6 +582,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromConfirm {
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
             chains.handle_a().get_signer().unwrap().as_ref(),
+            "1",
         )?;
 
         info!("Will run ChanUpgradeTry step...");
@@ -680,14 +705,17 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
+            Sequence::from(1),
+            Sequence::from(1),
         );
 
         info!("Will update channel params to set a short upgrade timeout...");
 
-        chains
-            .node_a
-            .chain_driver()
-            .update_channel_params(5000000000, chains.handle_a().get_signer().unwrap().as_ref())?;
+        chains.node_b.chain_driver().update_channel_params(
+            245,
+            chains.handle_b().get_signer().unwrap().as_ref(),
+            "1",
+        )?;
 
         info!("Will initialise upgrade handshake with governance proposal...");
 
@@ -698,6 +726,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
             chains.handle_a().get_signer().unwrap().as_ref(),
+            "1",
         )?;
 
         info!("Check that the step ChanUpgradeInit was correctly executed...");
@@ -734,13 +763,17 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
         info!("Check that the step ChanUpgradeAck was correctly executed...");
 
         // ACK should fail because the upgrade has timed out
-        assert_eventually_channel_upgrade_ack(
-            &chains.handle_a,
-            &chains.handle_b,
-            &channels.channel_id_a.as_ref(),
-            &channels.port_a.as_ref(),
-            &old_attrs,
-        )?;
+        assert!(
+            assert_eventually_channel_upgrade_ack(
+                &chains.handle_a,
+                &chains.handle_b,
+                &channels.channel_id_a.as_ref(),
+                &channels.port_a.as_ref(),
+                &old_attrs,
+            )
+            .is_err(),
+            "channel upgrade ack should have failed due to timeout"
+        );
 
         info!("Will run ChanUpgradeCancel step...");
 
