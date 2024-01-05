@@ -1,4 +1,4 @@
-//! Tests channel upgrade fetures:
+//! Tests channel upgrade features:
 //!
 //! - `ChannelUpgradeICS29` tests that only after the upgrade handshake is completed
 //!   and the channel version has been updated to ICS29 can Incentivized packets be
