@@ -763,6 +763,12 @@ jobs:
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: echo "NAMADA_REPO_PATH=$(nix build .#namada-src --print-out-paths)" >> "$GITHUB_OUTPUT"
+      - name: Generate Namada files
+        run: |
+          set -e
+          cd ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}
+          make build
+          make build-wasm-scripts
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
