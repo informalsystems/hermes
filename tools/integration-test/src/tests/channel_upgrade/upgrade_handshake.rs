@@ -36,8 +36,8 @@ fn test_channel_upgrade_timeout_ack_handshake() -> Result<(), Error> {
     run_binary_channel_test(&ChannelUpgradeTimeoutAckHandshake)
 }
 
-//#[test]
-fn _test_channel_upgrade_timeout_confirm_handshake() -> Result<(), Error> {
+#[test]
+fn test_channel_upgrade_timeout_confirm_handshake() -> Result<(), Error> {
     run_binary_channel_test(&ChannelUpgradeTimeoutConfirmHandshake)
 }
 
@@ -595,9 +595,9 @@ impl BinaryChannelTest for ChannelUpgradeTimeoutConfirmHandshake {
 
         info!("Will update channel params to set a short upgrade timeout...");
 
-        chains.node_b.chain_driver().update_channel_params(
+        chains.node_a.chain_driver().update_channel_params(
             5000000000,
-            chains.handle_b().get_signer().unwrap().as_ref(),
+            chains.handle_a().get_signer().unwrap().as_ref(),
             "1",
         )?;
 
@@ -610,7 +610,7 @@ impl BinaryChannelTest for ChannelUpgradeTimeoutConfirmHandshake {
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
             chains.handle_a().get_signer().unwrap().as_ref(),
-            "1",
+            "2",
         )?;
 
         info!("Will run ChanUpgradeTry step...");
