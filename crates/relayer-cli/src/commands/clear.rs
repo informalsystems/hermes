@@ -6,6 +6,7 @@ use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::events::IbcEvent;
 
@@ -51,6 +52,13 @@ pub struct ClearPacketsCmd {
         help = "Identifier of the channel"
     )]
     channel_id: ChannelId,
+
+    #[clap(
+        long = "packet-sequences",
+        help = "Sequences of packets to be cleared",
+        value_delimiter = ','
+    )]
+    packet_sequences: Vec<Sequence>,
 
     #[clap(
         long = "key-name",
@@ -134,18 +142,18 @@ impl Runnable for ClearPacketsCmd {
         // Schedule RecvPacket messages for pending packets in both directions.
         // This may produce pending acks which will be processed in the next phase.
         run_and_collect_events("forward recv and timeout", &mut ev_list, || {
-            fwd_link.relay_recv_packet_and_timeout_messages()
+            fwd_link.relay_recv_packet_and_timeout_messages(self.packet_sequences.clone())
         });
         run_and_collect_events("reverse recv and timeout", &mut ev_list, || {
-            rev_link.relay_recv_packet_and_timeout_messages()
+            rev_link.relay_recv_packet_and_timeout_messages(self.packet_sequences.clone())
         });
 
         // Schedule AckPacket messages in both directions.
         run_and_collect_events("forward ack", &mut ev_list, || {
-            fwd_link.relay_ack_packet_messages()
+            fwd_link.relay_ack_packet_messages(self.packet_sequences.clone())
         });
         run_and_collect_events("reverse ack", &mut ev_list, || {
-            rev_link.relay_ack_packet_messages()
+            rev_link.relay_ack_packet_messages(self.packet_sequences.clone())
         });
 
         Output::success(ev_list).exit()
@@ -178,6 +186,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap(),
+                packet_sequences: vec![],
                 key_name: None,
                 counterparty_key_name: None,
             },
@@ -200,6 +209,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap(),
+                packet_sequences: vec![],
                 key_name: None,
                 counterparty_key_name: None
             },
@@ -222,6 +232,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap(),
+                packet_sequences: vec![],
                 key_name: Some("key_name".to_owned()),
                 counterparty_key_name: None,
             },
@@ -246,6 +257,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap(),
+                packet_sequences: vec![],
                 key_name: None,
                 counterparty_key_name: Some("counterparty_key_name".to_owned()),
             },

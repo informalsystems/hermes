@@ -82,6 +82,7 @@ impl Runnable for TxPacketRecvCmd {
 
         let res: Result<Vec<IbcEvent>, Error> = link
             .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
+                vec![],
                 packet_data_query_height,
             )
             .map_err(Error::link);
@@ -162,7 +163,10 @@ impl Runnable for TxPacketAckCmd {
             .map(|height| Height::new(link.a_to_b.src_chain().id().version(), height).unwrap());
 
         let res: Result<Vec<IbcEvent>, Error> = link
-            .relay_ack_packet_messages_with_packet_data_query_height(packet_data_query_height)
+            .relay_ack_packet_messages_with_packet_data_query_height(
+                vec![],
+                packet_data_query_height,
+            )
             .map_err(Error::link);
 
         match res {

@@ -275,9 +275,10 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
         )?;
 
         let events_returned: Vec<IbcEvent> = chain_a_link
-            .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(Some(
-                clear_height,
-            ))
+            .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
+                vec![],
+                Some(clear_height),
+            )
             .unwrap();
 
         info!("recv packets sent, chain events: {:?}", events_returned);
