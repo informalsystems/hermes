@@ -4,7 +4,7 @@ This section includes a summary of the supported and planned features. It also i
 
 > **Cosmos SDK & IBC compatibility:**
 > Hermes supports Cosmos SDK chains implementing the [IBC protocol v1][ibcv1-proto] protocol specification.
-> Cosmos SDK versions `0.44.0` through `0.50.x` are officially supported.
+> Cosmos SDK versions `0.45.0` through `0.50.x` are officially supported.
 > IBC-go versions `4.1.1` through `8.x` are officially supported.
 > In case Hermes finds an incompatible SDK or IBC-go version, it will output a log warning upon initialization as part of the `start` command or upon `health-check` command.
 
