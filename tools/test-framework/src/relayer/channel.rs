@@ -519,11 +519,14 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
         )));
     }
 
-    if !channel_end_a.value().ordering.eq(upgrade_attrs.ordering()) {
+    if !channel_end_a
+        .value()
+        .order_matches(upgrade_attrs.ordering())
+    {
         return Err(Error::generic(eyre!(
             "expected channel end A ordering to be `{}`, but it is instead `{}`",
             upgrade_attrs.ordering(),
-            channel_end_a.value().ordering
+            channel_end_a.value().ordering()
         )));
     }
 
