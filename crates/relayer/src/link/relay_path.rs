@@ -418,9 +418,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let tracking_id = TrackingId::new_packet_clearing();
         telemetry!(received_event_batch, tracking_id);
 
+        let src_config = self.src_chain().config().map_err(LinkError::relayer)?;
+        let chunk_size = src_config.query_packets_chunk_size();
+
         for i in 1..=MAX_RETRIES {
-            let cleared_recv = self.schedule_recv_packet_and_timeout_msgs(height, tracking_id);
-            let cleared_ack = self.schedule_packet_ack_msgs(height, tracking_id);
+            let cleared_recv =
+                self.schedule_recv_packet_and_timeout_msgs(height, chunk_size, tracking_id);
+
+            let cleared_ack = self.schedule_packet_ack_msgs(height, chunk_size, tracking_id);
 
             match cleared_recv.and(cleared_ack) {
                 Ok(()) => return Ok(()),
@@ -513,7 +518,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         .entered();
 
         let input = events.events();
-        let src_height = match input.get(0) {
+        let src_height = match input.first() {
             None => return Ok((None, None)),
             Some(ev) => ev.height,
         };
@@ -1001,7 +1006,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             // All updates were successful, no errors and no misbehaviour.
             (None, Some(update_event_height), None) => Ok(update_event_height),
             (Some(chain_error), _, _) => {
-                // Atleast one chain-error so retry if possible.
+                // At least one chain-error so retry if possible.
                 if retries_left == 0 {
                     Err(LinkError::client(ForeignClientError::chain_error_event(
                         self.dst_chain().id(),
@@ -1025,7 +1030,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     _ => Err(LinkError::update_client_failed()),
                 }
             }
-            // Atleast one misbehaviour event, so don't retry.
+            // At least one misbehaviour event, so don't retry.
             (_, _, Some(_misbehaviour)) => Err(LinkError::update_client_failed()),
         }
     }
@@ -1068,7 +1073,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             // All updates were successful, no errors and no misbehaviour.
             (None, Some(update_event_height), None) => Ok(update_event_height),
             (Some(chain_error), _, _) => {
-                // Atleast one chain-error so retry if possible.
+                // At least one chain-error so retry if possible.
                 if retries_left == 0 {
                     Err(LinkError::client(ForeignClientError::chain_error_event(
                         self.src_chain().id(),
@@ -1107,6 +1112,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn schedule_recv_packet_and_timeout_msgs(
         &self,
         opt_query_height: Option<Height>,
+        chunk_size: usize,
         tracking_id: TrackingId,
     ) -> Result<(), LinkError> {
         let _span = span!(
@@ -1143,6 +1149,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Qualified::SmallerEqual(query_height),
             self.src_chain(),
             &self.path_id,
+            chunk_size,
             query_send_packet_events,
         ) {
             // Update telemetry info
@@ -1166,6 +1173,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn schedule_packet_ack_msgs(
         &self,
         opt_query_height: Option<Height>,
+        chunk_size: usize,
         tracking_id: TrackingId,
     ) -> Result<(), LinkError> {
         let _span = span!(
@@ -1204,6 +1212,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Qualified::SmallerEqual(query_height),
             self.src_chain(),
             &self.path_id,
+            chunk_size,
             query_write_ack_events,
         ) {
             telemetry!(self.record_cleared_acknowledgments(events_chunk.iter()));

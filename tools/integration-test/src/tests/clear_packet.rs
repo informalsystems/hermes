@@ -96,7 +96,7 @@ impl BinaryChannelTest for ClearPacketTest {
 
         sleep(Duration::from_secs(1));
 
-        // Spawn the supervisor only after the first IBC trasnfer
+        // Spawn the supervisor only after the first IBC transfer
         relayer.with_supervisor(|| {
             sleep(Duration::from_secs(1));
 
@@ -279,7 +279,7 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
                 &channel.port_a.0,
                 &channel.channel_id_a.0,
                 &denom_a.with_amount(amount1).as_ref(),
-                &fee_denom_a.with_amount(1200u64).as_ref(),
+                &fee_denom_a.with_amount(381000000u64).as_ref(),
                 &dst_height,
             )?;
 
@@ -400,7 +400,7 @@ impl BinaryChannelTest for ClearPacketOverrideTest {
                 &channel.port_a.0,
                 &channel.channel_id_a.0,
                 &denom_a.with_amount(amount1).as_ref(),
-                &fee_denom_a.with_amount(1200u64).as_ref(),
+                &fee_denom_a.with_amount(381000000u64).as_ref(),
                 &dst_height,
             )?;
 

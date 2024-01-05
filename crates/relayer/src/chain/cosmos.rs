@@ -941,7 +941,7 @@ impl ChainEndpoint for CosmosSdkChain {
         &mut self.keybase
     }
 
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error> {
         // Get the key from key seed file
         let key_pair = self
             .keybase()
@@ -2029,7 +2029,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
     ///    sequence (the query conditions can only be AND-ed).
     ///    There is a possibility to include "<=" and ">=" conditions but it doesn't work with
-    ///    string attributes (sequence is emmitted as a string).
+    ///    string attributes (sequence is emitted as a string).
     ///    Therefore, for packets we perform one tx_search for each sequence.
     ///    Alternatively, a single query for all packets could be performed but it would return all
     ///    packets ever sent.

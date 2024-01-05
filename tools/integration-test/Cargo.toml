@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-integration-test"
-version      = "0.26.1"
+version      = "0.26.4"
 edition      = "2021"
 rust-version = "1.71"
 license      = "Apache-2.0"
@@ -40,6 +40,8 @@ clean-workers = []
 fee-grant = []
 interchain-security = []
 celestia = []
+async-icq = []
+juno = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
@@ -47,3 +49,10 @@ doc = true
 
 [dev-dependencies]
 tempfile = "3.6.0"
+
+[dependencies.tendermint]
+version = "0.34.0"
+
+[dependencies.tendermint-rpc]
+version = "0.34.0"
+features = ["http-client"]

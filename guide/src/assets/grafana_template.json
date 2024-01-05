@@ -958,7 +958,7 @@
           },
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "backlog_oldest_timestamp{job=\"hermes\"}",
+          "expr": "backlog_latest_update_timestamp{job=\"hermes\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -1715,7 +1715,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Indicates the number of  `event` observed via the websocket subcription.",
+      "description": "Indicates the number of  `event` observed via the websocket subscription.",
       "fieldConfig": {
         "defaults": {
           "color": {
