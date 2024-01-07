@@ -200,6 +200,7 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
+    use ibc_relayer_types::core::ics04_channel::packet::Sequence;
     use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
     #[test]
@@ -246,6 +247,34 @@ mod tests {
                 "port_id",
                 "--chan",
                 "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_clear_packets_sequences() {
+        assert_eq!(
+            ClearPacketsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                packet_sequences: vec![Sequence::from(1), Sequence::from(2)],
+                key_name: Some("key_name".to_owned()),
+                counterparty_key_name: None,
+                query_packets_chunk_size: None
+            },
+            ClearPacketsCmd::parse_from([
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07",
+                "--packet-sequences",
+                "1,2",
+                "--key-name",
+                "key_name"
             ])
         )
     }
@@ -309,6 +338,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap(),
+                packet_sequences: vec![],
                 key_name: None,
                 counterparty_key_name: Some("counterparty_key_name".to_owned()),
                 query_packets_chunk_size: Some(100),
