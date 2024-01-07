@@ -122,9 +122,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             None => Qualified::SmallerEqual(src_response_height),
         };
 
+        let chunk_size = self
+            .a_to_b
+            .src_chain()
+            .config()
+            .map_or(50, |cfg| cfg.query_packets_chunk_size());
+
         self.relay_packet_messages(
             sequences,
             query_height,
+            chunk_size,
             query_send_packet_events,
             TrackingId::new_static("packet-recv"),
         )
@@ -184,9 +191,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             None => Qualified::SmallerEqual(src_response_height),
         };
 
+        let chunk_size = self
+            .a_to_b
+            .src_chain()
+            .config()
+            .map_or(50, |cfg| cfg.query_packets_chunk_size());
+
         self.relay_packet_messages(
             sequences,
             query_height,
+            chunk_size,
             query_write_ack_events,
             TrackingId::new_static("packet-ack"),
         )
@@ -196,6 +210,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         &self,
         sequences: Vec<Sequence>,
         query_height: Qualified<Height>,
+        chunk_size: usize,
         query_fn: QueryFn,
         tracking_id: TrackingId,
     ) -> Result<Vec<IbcEvent>, LinkError>
@@ -212,6 +227,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             query_height,
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
+            chunk_size,
             query_fn,
         );
 

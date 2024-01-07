@@ -10,7 +10,7 @@ use super::version;
 /// # Note: Should be consistent with [features] guide page.
 ///
 /// [features]: https://hermes.informal.systems/advanced/features.html
-const SDK_MODULE_VERSION_REQ: &str = ">=0.44, <0.48";
+const SDK_MODULE_VERSION_REQ: &str = ">=0.45, <0.51";
 
 /// Specifies the IBC-go module version requirement.
 /// At the moment, we support both chains with and without
@@ -20,7 +20,7 @@ const SDK_MODULE_VERSION_REQ: &str = ">=0.44, <0.48";
 /// # Note: Should be consistent with [features] guide page.
 ///
 /// [features]: https://hermes.informal.systems/advanced/features.html
-const IBC_GO_MODULE_VERSION_REQ: &str = ">=1.1, <=7";
+const IBC_GO_MODULE_VERSION_REQ: &str = ">=4.1.1, <9";
 
 #[derive(Error, Debug)]
 pub enum Diagnostic {

@@ -71,6 +71,12 @@ pub struct ClearPacketsCmd {
         help = "use the given signing key for the counterparty chain (default: `counterparty_key_name` config)"
     )]
     counterparty_key_name: Option<String>,
+
+    #[clap(
+        long = "query-packets-chunk-size",
+        help = "number of packets to fetch at once from the chain (default: `query_packets_chunk_size` config)"
+    )]
+    query_packets_chunk_size: Option<usize>,
 }
 
 impl Override<Config> for ClearPacketsCmd {
@@ -115,6 +121,17 @@ impl Runnable for ClearPacketsCmd {
             match chains.dst.config() {
                 Ok(mut dst_chain_cfg) => {
                     dst_chain_cfg.set_key_name(counterparty_key_name.to_string());
+                }
+                Err(e) => Output::error(e).exit(),
+            }
+        }
+
+        // If `query_packets_chunk_size` is provided, overwrite the chain's
+        // `query_packets_chunk_size` parameter
+        if let Some(chunk_size) = self.query_packets_chunk_size {
+            match chains.src.config() {
+                Ok(mut src_chain_cfg) => {
+                    src_chain_cfg.set_query_packets_chunk_size(chunk_size);
                 }
                 Err(e) => Output::error(e).exit(),
             }
@@ -195,6 +212,7 @@ mod tests {
                 packet_sequences: vec![],
                 key_name: None,
                 counterparty_key_name: None,
+                query_packets_chunk_size: None
             },
             ClearPacketsCmd::parse_from([
                 "test",
@@ -217,7 +235,8 @@ mod tests {
                 channel_id: ChannelId::from_str("channel-07").unwrap(),
                 packet_sequences: vec![],
                 key_name: None,
-                counterparty_key_name: None
+                counterparty_key_name: None,
+                query_packets_chunk_size: None
             },
             ClearPacketsCmd::parse_from([
                 "test",
@@ -241,6 +260,7 @@ mod tests {
                 packet_sequences: vec![],
                 key_name: Some("key_name".to_owned()),
                 counterparty_key_name: None,
+                query_packets_chunk_size: None
             },
             ClearPacketsCmd::parse_from([
                 "test",
@@ -266,6 +286,7 @@ mod tests {
                 packet_sequences: vec![],
                 key_name: None,
                 counterparty_key_name: Some("counterparty_key_name".to_owned()),
+                query_packets_chunk_size: None
             },
             ClearPacketsCmd::parse_from([
                 "test",
@@ -277,6 +298,33 @@ mod tests {
                 "channel-07",
                 "--counterparty-key-name",
                 "counterparty_key_name"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_clear_packets_query_packets_chunk_size() {
+        assert_eq!(
+            ClearPacketsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                key_name: None,
+                counterparty_key_name: Some("counterparty_key_name".to_owned()),
+                query_packets_chunk_size: Some(100),
+            },
+            ClearPacketsCmd::parse_from([
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07",
+                "--counterparty-key-name",
+                "counterparty_key_name",
+                "--query-packets-chunk-size",
+                "100"
             ])
         )
     }

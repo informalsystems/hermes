@@ -16,6 +16,10 @@ OPTIONS:
         --key-name <KEY_NAME>
             use the given signing key for the specified chain (default: `key_name` config)
 
+        --query-packets-chunk-size <QUERY_PACKETS_CHUNK_SIZE>
+            number of packets to fetch at once from the chain (default: `query_packets_chunk_size`
+            config)
+
 REQUIRED:
         --chain <CHAIN_ID>        Identifier of the chain
         --channel <CHANNEL_ID>    Identifier of the channel

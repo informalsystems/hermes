@@ -296,6 +296,10 @@ max_msg_num = 30
 # Default: 2097152 (2 MiB)
 max_tx_size = 2097152
 
+# How many packets to fetch at once from the chain when clearing packets.
+# Default: 50
+query_packets_chunk_size = 50
+
 # Specify the maximum amount of time to tolerate a clock drift.
 # The clock drift parameter defines how much new (untrusted) header's time
 # can drift into the future. Default: 5s
@@ -314,14 +318,23 @@ max_block_time = '30s'
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period
 # (e.g. unbonding period = 3 weeks, trusting period = 2 weeks).
+#
 # Default: 2/3 of the `unbonding period` for Cosmos SDK chains
 trusting_period = '14days'
 
+# The rate at which to refresh the client referencing this chain,
+# expressed as a fraction of the trusting period.
+#
+# Default: 1/3 (ie. three times per trusting period)
+client_refresh_rate = '1/3'
+
 # Specify the trust threshold for the light client, ie. the minimum fraction of validators
 # which must overlap across two blocks during light client verification.
-# Default: { numerator = '2', denominator = '3' }, ie. 2/3.
+#
 # Warning: This is an advanced feature! Modify with caution.
-trust_threshold = { numerator = '2', denominator = '3' }
+#
+# Default: 2/3
+trust_threshold = '2/3'
 
 # Specify a string that Hermes will use as a memo for each transaction it submits
 # to this chain. The string is limited to 50 characters. Default: '' (empty).
@@ -413,5 +426,5 @@ max_tx_size = 2097152
 clock_drift = '5s'
 max_block_time = '30s'
 trusting_period = '14days'
-trust_threshold = { numerator = '2', denominator = '3' }
+trust_threshold = '2/3'
 address_type = { derivation = 'cosmos' }

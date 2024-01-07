@@ -3,6 +3,8 @@
 //! Implements defaults, as well as serializing and
 //! deserializing with upper-bound verification.
 
+pub use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
+
 pub use max_msg_num::MaxMsgNum;
 
 pub mod max_msg_num {
