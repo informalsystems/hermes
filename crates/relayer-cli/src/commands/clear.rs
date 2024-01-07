@@ -55,7 +55,7 @@ pub struct ClearPacketsCmd {
 
     #[clap(
         long = "packet-sequences",
-        help = "Sequences of packets to be cleared",
+        help = "Sequences of packets to be cleared on the specified chain",
         value_delimiter = ','
     )]
     packet_sequences: Vec<Sequence>,
@@ -139,22 +139,28 @@ impl Runnable for ClearPacketsCmd {
             Err(e) => Output::error(e).exit(),
         };
 
-        // Schedule RecvPacket messages for pending packets in both directions.
+        // Schedule RecvPacket messages for pending packets in both directions or,
+        // if packet sequences are provided, only on the specified chain.
         // This may produce pending acks which will be processed in the next phase.
         run_and_collect_events("forward recv and timeout", &mut ev_list, || {
             fwd_link.relay_recv_packet_and_timeout_messages(self.packet_sequences.clone())
         });
-        run_and_collect_events("reverse recv and timeout", &mut ev_list, || {
-            rev_link.relay_recv_packet_and_timeout_messages(self.packet_sequences.clone())
-        });
+        if self.packet_sequences.is_empty() {
+            run_and_collect_events("reverse recv and timeout", &mut ev_list, || {
+                rev_link.relay_recv_packet_and_timeout_messages(vec![])
+            });
+        }
 
-        // Schedule AckPacket messages in both directions.
-        run_and_collect_events("forward ack", &mut ev_list, || {
-            fwd_link.relay_ack_packet_messages(self.packet_sequences.clone())
-        });
+        // Schedule AckPacket messages in both directions or, if packet sequences are provided,
+        // only on the specified chain.
         run_and_collect_events("reverse ack", &mut ev_list, || {
             rev_link.relay_ack_packet_messages(self.packet_sequences.clone())
         });
+        if self.packet_sequences.is_empty() {
+            run_and_collect_events("forward ack", &mut ev_list, || {
+                fwd_link.relay_ack_packet_messages(self.packet_sequences.clone())
+            });
+        }
 
         Output::success(ev_list).exit()
     }
