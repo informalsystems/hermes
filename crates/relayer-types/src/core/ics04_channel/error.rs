@@ -12,11 +12,16 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 
 use flex_error::{define_error, TraceError};
+use prost::DecodeError;
 use tendermint_proto::Error as TendermintError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
     Error {
+        Decode
+            [ TraceError<DecodeError> ]
+            | _ | { "error decoding byte array" },
+
         Ics03Connection
             [ connection_error::Error ]
             | _ | { "ics03 connection error" },

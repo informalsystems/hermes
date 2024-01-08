@@ -2,9 +2,11 @@ use std::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
 
+use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
 use super::timeout::TimeoutHeight;
+use crate::applications::transfer::packet::PacketData as APacketData;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::timestamp::{Expiry::Expired, Timestamp};
@@ -177,6 +179,39 @@ impl Packet {
             && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired;
 
         height_timed_out || timestamp_timed_out
+    }
+
+    pub fn validate_fields(
+        &self,
+        max_memo_size: usize,
+        max_receiver_size: usize,
+    ) -> Result<(usize, usize), Error> {
+        let any_packet: RawPacketData = match serde_json::from_slice(&self.data) {
+            Ok(v) => v,
+            Err(e) => {
+                return Err(Error::app_module(e.to_string()));
+            }
+        };
+        let packet: APacketData = match any_packet.try_into() {
+            Ok(p) => p,
+            Err(e) => {
+                return Err(Error::app_module(e.to_string()));
+            }
+        };
+        let memo_size = if let Some(memo) = &packet.memo {
+            if memo.len() > max_memo_size {
+                memo.len()
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+        if packet.receiver.to_string().len() > max_receiver_size {
+            Ok((memo_size, packet.receiver.to_string().len()))
+        } else {
+            Ok((memo_size, 0))
+        }
     }
 }
 

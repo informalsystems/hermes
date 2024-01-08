@@ -108,12 +108,17 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // transactions if [`confirm_txes`] is true.
     pending_txs_src: PendingTxs<ChainA>,
     pending_txs_dst: PendingTxs<ChainB>,
+
+    pub max_memo_size: usize,
+    pub max_receiver_size: usize,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn new(
         channel: Channel<ChainA, ChainB>,
         with_tx_confirmation: bool,
+        max_memo_size: usize,
+        max_receiver_size: usize,
     ) -> Result<Self, LinkError> {
         let src_chain = channel.src_chain().clone();
         let dst_chain = channel.dst_chain().clone();
@@ -152,6 +157,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             confirm_txes: with_tx_confirmation,
             pending_txs_src: PendingTxs::new(src_chain, src_channel_id, src_port_id, dst_chain_id),
             pending_txs_dst: PendingTxs::new(dst_chain, dst_channel_id, dst_port_id, src_chain_id),
+
+            max_memo_size,
+            max_receiver_size,
         })
     }
 
@@ -1385,7 +1393,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if timeout.is_some() {
             Ok((None, timeout))
         } else {
-            Ok((self.build_recv_packet(&event.packet, height)?, None))
+            match event
+                .packet
+                .validate_fields(self.max_memo_size, self.max_receiver_size)
+            {
+                Ok((0, 0)) => Ok((self.build_recv_packet(&event.packet, height)?, None)),
+                Ok((memo_size, receiver_size)) => {
+                    warn!("memo and/or receiver fields were bigger than maximum allowed. Memo field {memo_size}, maximum allowed {}. Receiver field {receiver_size}, maximum allowed {}", self.max_memo_size, self.max_receiver_size);
+                    Ok((None, None))
+                }
+                Err(e) => {
+                    warn!("error validating fields, will simply relay message: {e}");
+                    Ok((self.build_recv_packet(&event.packet, height)?, None))
+                }
+            }
         }
     }
 

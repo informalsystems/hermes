@@ -30,11 +30,12 @@ impl BinaryChannelTest for QueryPacketPendingTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        _relayer: RelayerDriver,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
+        let packet_config = relayer.config.mode.packets;
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -59,6 +60,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.clone().into_value(),
+            max_memo_size: packet_config.max_memo_size.to_usize(),
+            max_receiver_size: packet_config.max_receiver_size.to_usize(),
         };
         let link = Link::new_from_opts(
             chains.handle_a().clone(),

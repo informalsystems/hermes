@@ -37,15 +37,18 @@ impl BinaryChannelTest for ExecuteScheduleTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        _relayer: RelayerDriver,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let amount1 = random_u128_range(1000, 5000);
+        let packet_config = relayer.config.mode.packets;
 
         let chain_a_link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.clone().into_value(),
+            max_memo_size: packet_config.max_memo_size.to_usize(),
+            max_receiver_size: packet_config.max_receiver_size.to_usize(),
         };
 
         let chain_a_link = Link::new_from_opts(

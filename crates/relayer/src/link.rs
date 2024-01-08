@@ -33,6 +33,8 @@ pub use relay_path::{RelayPath, Resubmit};
 pub struct LinkParameters {
     pub src_port_id: PortId,
     pub src_channel_id: ChannelId,
+    pub max_memo_size: usize,
+    pub max_receiver_size: usize,
 }
 
 pub struct Link<ChainA: ChainHandle, ChainB: ChainHandle> {
@@ -43,9 +45,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     pub fn new(
         channel: Channel<ChainA, ChainB>,
         with_tx_confirmation: bool,
+        max_memo_size: usize,
+        max_receiver_size: usize,
     ) -> Result<Self, LinkError> {
         Ok(Self {
-            a_to_b: RelayPath::new(channel, with_tx_confirmation)?,
+            a_to_b: RelayPath::new(
+                channel,
+                with_tx_confirmation,
+                max_memo_size,
+                max_receiver_size,
+            )?,
         })
     }
 
@@ -169,7 +178,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 .map_err(LinkError::relayer)?;
         }
 
-        Link::new(channel, with_tx_confirmation)
+        Link::new(
+            channel,
+            with_tx_confirmation,
+            opts.max_memo_size,
+            opts.max_receiver_size,
+        )
     }
 
     /// Constructs a link around the channel that is reverse to the channel
@@ -182,6 +196,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         let opts = LinkParameters {
             src_port_id: self.a_to_b.dst_port_id().clone(),
             src_channel_id: self.a_to_b.dst_channel_id().clone(),
+            max_memo_size: self.a_to_b.max_memo_size,
+            max_receiver_size: self.a_to_b.max_receiver_size,
         };
         let chain_b = self.a_to_b.dst_chain().clone();
         let chain_a = self.a_to_b.src_chain().clone();
