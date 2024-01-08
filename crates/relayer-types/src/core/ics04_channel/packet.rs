@@ -60,12 +60,19 @@ impl FromStr for Sequence {
 }
 
 impl Sequence {
+    pub const MIN: Self = Self(0);
+    pub const MAX: Self = Self(u64::MAX);
+
     pub fn is_zero(&self) -> bool {
         self.0 == 0
     }
 
     pub fn increment(&self) -> Sequence {
         Sequence(self.0 + 1)
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        self.0
     }
 }
 

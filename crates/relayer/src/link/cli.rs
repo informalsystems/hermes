@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::ops::Range;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -73,14 +74,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     pub fn relay_recv_packet_and_timeout_messages(
         &self,
-        sequences: Vec<Sequence>,
+        sequences: Vec<Range<Sequence>>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         self.relay_recv_packet_and_timeout_messages_with_packet_data_query_height(sequences, None)
     }
     /// Implements the `packet-recv` CLI
     pub fn relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
         &self,
-        maybe_sequences: Vec<Sequence>,
+        sequence_filter: Vec<Range<Sequence>>,
         packet_data_query_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
@@ -92,23 +93,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
         .entered();
 
-        let (sequences, src_response_height) = if maybe_sequences.is_empty() {
-            // Find the sequence numbers of unreceived packets
-            unreceived_packets(
-                self.a_to_b.dst_chain(),
-                self.a_to_b.src_chain(),
-                &self.a_to_b.path_id,
-            )
-            .map_err(LinkError::supervisor)?
-        } else {
-            (
-                maybe_sequences,
-                self.a_to_b.src_chain().query_latest_height().unwrap(),
-            )
-        };
+        // Find the sequence numbers of unreceived packets
+        let (mut sequences, src_response_height) = unreceived_packets(
+            self.a_to_b.dst_chain(),
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+        )
+        .map_err(LinkError::supervisor)?;
 
         if sequences.is_empty() {
             return Ok(vec![]);
+        }
+
+        if !sequence_filter.is_empty() {
+            info!("filtering unreceived packets by given sequence ranges");
+            sequences.retain(|seq| sequence_filter.iter().any(|range| range.contains(seq)));
         }
 
         info!(
@@ -139,15 +138,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
     pub fn relay_ack_packet_messages(
         &self,
-        maybe_sequences: Vec<Sequence>,
+        sequences: Vec<Range<Sequence>>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
-        self.relay_ack_packet_messages_with_packet_data_query_height(maybe_sequences, None)
+        self.relay_ack_packet_messages_with_packet_data_query_height(sequences, None)
     }
 
     /// Implements the `packet-ack` CLI
     pub fn relay_ack_packet_messages_with_packet_data_query_height(
         &self,
-        maybe_sequences: Vec<Sequence>,
+        sequence_filter: Vec<Range<Sequence>>,
         packet_data_query_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
@@ -159,25 +158,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
         .entered();
 
-        let Some((sequences, src_response_height)) = (if maybe_sequences.is_empty() {
-            // Find the sequence numbers of unreceived acknowledgements
-            unreceived_acknowledgements(
-                self.a_to_b.dst_chain(),
-                self.a_to_b.src_chain(),
-                &self.a_to_b.path_id,
-            )
-            .map_err(LinkError::supervisor)?
-        } else {
-            Some((
-                maybe_sequences,
-                self.a_to_b.src_chain().query_latest_height().unwrap(),
-            ))
-        }) else {
+        // Find the sequence numbers of unreceived acknowledgements
+        let Some((mut sequences, src_response_height)) = unreceived_acknowledgements(
+            self.a_to_b.dst_chain(),
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+        )
+        .map_err(LinkError::supervisor)?
+        else {
             return Ok(vec![]);
         };
 
         if sequences.is_empty() {
             return Ok(vec![]);
+        }
+
+        if !sequence_filter.is_empty() {
+            info!("filtering unreceived acknowledgements by given sequence ranges");
+            sequences.retain(|seq| sequence_filter.iter().any(|range| range.contains(seq)));
         }
 
         info!(
