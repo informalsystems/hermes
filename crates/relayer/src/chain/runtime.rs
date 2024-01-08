@@ -7,7 +7,7 @@ use tracing::{error, Span};
 
 use ibc_proto::ibc::{
     apps::fee::v1::{QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse},
-    core::channel::v1::QueryUpgradeRequest,
+    core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest},
 };
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
@@ -21,7 +21,7 @@ use ibc_relayer_types::{
         ics04_channel::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
-            upgrade::Upgrade,
+            upgrade::{ErrorReceipt, Upgrade},
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
@@ -359,6 +359,10 @@ where
 
                         ChainRequest::QueryUpgrade { request, height, reply_to } => {
                             self.query_upgrade(request, height, reply_to)?
+                        },
+
+                        ChainRequest::QueryUpgradeError { request, height, reply_to } => {
+                            self.query_upgrade_error(request, height, reply_to)?
                         },
                     }
                 },
@@ -879,6 +883,18 @@ where
         reply_to: ReplyTo<(Upgrade, Option<MerkleProof>)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_upgrade(request, height);
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+        reply_to: ReplyTo<(ErrorReceipt, Option<MerkleProof>)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_upgrade_error(request, height);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())

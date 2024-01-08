@@ -70,6 +70,9 @@ define_error! {
         MissingUpgradeProof
             |_| { "missing upgrade proof" },
 
+        MissingUpgradeErrorReceiptProof
+            |_| { "missing upgrade error receipt proof" },
+
         MalformedProof
             [ ProofError ]
             |_| { "malformed proof" },

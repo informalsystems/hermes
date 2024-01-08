@@ -20,7 +20,7 @@ use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
-use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
 use ibc_proto::Protobuf;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
@@ -43,13 +43,17 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
 use ibc_relayer_types::core::ics24_host::path::{
-    AcksPath, ChannelEndsPath, ChannelUpgradePath, ClientConsensusStatePath, ClientStatePath,
-    CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+    AcksPath, ChannelEndsPath, ChannelUpgradeErrorPath, ChannelUpgradePath,
+    ClientConsensusStatePath, ClientStatePath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
+    SeqRecvsPath,
 };
 use ibc_relayer_types::core::ics24_host::{
     ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
 };
-use ibc_relayer_types::core::{ics02_client::height::Height, ics04_channel::upgrade::Upgrade};
+use ibc_relayer_types::core::{
+    ics02_client::height::Height, ics04_channel::upgrade::ErrorReceipt,
+    ics04_channel::upgrade::Upgrade,
+};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 
@@ -2312,6 +2316,29 @@ impl ChainEndpoint for CosmosSdkChain {
         let upgrade = Upgrade::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok((upgrade, Some(proof)))
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        let port_id = PortId::from_str(&request.port_id)
+            .map_err(|_| Error::invalid_port_string(request.port_id))?;
+        let channel_id = ChannelId::from_str(&request.channel_id)
+            .map_err(|_| Error::invalid_channel_string(request.channel_id))?;
+        let res = self.query(
+            ChannelUpgradeErrorPath {
+                port_id,
+                channel_id,
+            },
+            QueryHeight::Specific(height),
+            true,
+        )?;
+        let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+        let error_receipt = ErrorReceipt::decode_vec(&res.value).map_err(Error::decode)?;
+
+        Ok((error_receipt, Some(proof)))
     }
 }
 
