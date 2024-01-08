@@ -1,5 +1,5 @@
 use std::convert::TryInto;
-use std::ops::Range;
+use std::ops::RangeInclusive;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -74,14 +74,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     pub fn relay_recv_packet_and_timeout_messages(
         &self,
-        sequences: Vec<Range<Sequence>>,
+        sequences: Vec<RangeInclusive<Sequence>>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         self.relay_recv_packet_and_timeout_messages_with_packet_data_query_height(sequences, None)
     }
     /// Implements the `packet-recv` CLI
     pub fn relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
         &self,
-        sequence_filter: Vec<Range<Sequence>>,
+        sequence_filter: Vec<RangeInclusive<Sequence>>,
         packet_data_query_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
@@ -138,7 +138,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
     pub fn relay_ack_packet_messages(
         &self,
-        sequences: Vec<Range<Sequence>>,
+        sequences: Vec<RangeInclusive<Sequence>>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         self.relay_ack_packet_messages_with_packet_data_query_height(sequences, None)
     }
@@ -146,7 +146,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     /// Implements the `packet-ack` CLI
     pub fn relay_ack_packet_messages_with_packet_data_query_height(
         &self,
-        sequence_filter: Vec<Range<Sequence>>,
+        sequence_filter: Vec<RangeInclusive<Sequence>>,
         packet_data_query_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(

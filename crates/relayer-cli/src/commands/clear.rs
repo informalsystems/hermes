@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::ops::RangeInclusive;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::config::Override;
@@ -63,11 +63,11 @@ pub struct ClearPacketsCmd {
                 If not provided, all pending packets will be cleared on both chains. \
                 Each element of the comma-separated list must be either a single \
                 sequence or a range of sequences. \
-                Example: `1,10..20` will clear packets with sequences 1, 10, 11, ..., 19",
+                Example: `1,10..20` will clear packets with sequences 1, 10, 11, ..., 20",
         value_delimiter = ',',
         value_parser = parse_seq_range
     )]
-    packet_sequences: Vec<Range<Sequence>>,
+    packet_sequences: Vec<RangeInclusive<Sequence>>,
 
     #[clap(
         long = "key-name",
@@ -268,8 +268,8 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap(),
                 packet_sequences: vec![
-                    Sequence::from(1)..Sequence::from(2),
-                    Sequence::from(10)..Sequence::from(20)
+                    Sequence::from(1)..=Sequence::from(1),
+                    Sequence::from(10)..=Sequence::from(20)
                 ],
                 key_name: Some("key_name".to_owned()),
                 counterparty_key_name: None,
