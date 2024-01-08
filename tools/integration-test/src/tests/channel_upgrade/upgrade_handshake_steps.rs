@@ -134,7 +134,6 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
             Sequence::from(1),
-            Sequence::from(1),
         );
 
         let interm_attrs = ChannelUpgradableAttributes::new(
@@ -144,7 +143,6 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
             Sequence::from(1),
-            Sequence::from(1),
         );
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
@@ -153,7 +151,6 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
-            Sequence::from(1),
             Sequence::from(1),
         );
 
@@ -302,7 +299,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromTry {
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
             Sequence::from(1),
-            Sequence::from(1),
         );
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
@@ -311,7 +307,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromTry {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
-            Sequence::from(1),
             Sequence::from(1),
         );
 
@@ -420,7 +415,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromAck {
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
             Sequence::from(1),
-            Sequence::from(1),
         );
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
@@ -429,7 +423,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromAck {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
-            Sequence::from(1),
             Sequence::from(1),
         );
 
@@ -551,7 +544,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromConfirm {
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
             Sequence::from(1),
-            Sequence::from(1),
         );
 
         let interm_attrs = ChannelUpgradableAttributes::new(
@@ -561,7 +553,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromConfirm {
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
             Sequence::from(1),
-            Sequence::from(1),
         );
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
@@ -570,7 +561,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromConfirm {
             old_ordering,
             old_connection_hops_a.clone(),
             old_connection_hops_b,
-            Sequence::from(1),
             Sequence::from(1),
         );
 
@@ -707,7 +697,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
             old_connection_hops_a.clone(),
             old_connection_hops_b.clone(),
             Sequence::from(1),
-            Sequence::from(1),
         );
 
         info!("Will update channel params to set a short upgrade timeout...");
@@ -759,20 +748,13 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
 
         info!("Will run ChanUpgradeAck step...");
 
-        channel.flipped().build_chan_upgrade_ack_and_send()?;
+        let ack_event = channel.flipped().build_chan_upgrade_ack_and_send()?;
 
-        info!("Check that the step ChanUpgradeAck was correctly executed...");
+        info!("Check that the step ChanUpgradeAck timed out...");
 
         // ACK should fail because the upgrade has timed out
         assert!(
-            assert_eventually_channel_upgrade_ack(
-                &chains.handle_a,
-                &chains.handle_b,
-                &channels.channel_id_a.as_ref(),
-                &channels.port_a.as_ref(),
-                &old_attrs,
-            )
-            .is_err(),
+            ack_event.is_none(),
             "channel upgrade ack should have failed due to timeout"
         );
 

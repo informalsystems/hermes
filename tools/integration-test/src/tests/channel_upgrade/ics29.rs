@@ -142,7 +142,6 @@ impl BinaryChannelTest for ChannelUpgradeICS29 {
             old_connection_hops_a.clone(),
             old_connection_hops_b,
             Sequence::from(1),
-            Sequence::from(1),
         );
 
         info!("Will initialise upgrade handshake with governance proposal...");
