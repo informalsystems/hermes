@@ -230,6 +230,14 @@ pub mod default {
             buckets: 10,
         }
     }
+
+    pub fn max_memo_size() -> MaxTxSize {
+        MaxTxSize::unsafe_new(180000)
+    }
+
+    pub fn max_receiver_size() -> MaxTxSize {
+        MaxTxSize::unsafe_new(180000)
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -400,6 +408,10 @@ pub struct Packets {
     pub tx_confirmation: bool,
     #[serde(default = "default::auto_register_counterparty_payee")]
     pub auto_register_counterparty_payee: bool,
+    #[serde(default = "default::max_memo_size")]
+    pub max_memo_size: MaxTxSize,
+    #[serde(default = "default::max_receiver_size")]
+    pub max_receiver_size: MaxTxSize,
 }
 
 impl Default for Packets {
@@ -410,6 +422,8 @@ impl Default for Packets {
             clear_on_start: default::clear_on_start(),
             tx_confirmation: default::tx_confirmation(),
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
+            max_memo_size: default::max_memo_size(),
+            max_receiver_size: default::max_receiver_size(),
         }
     }
 }
@@ -742,6 +756,8 @@ impl<E: Into<Error>> From<CosmosConfigDiagnostic<E>> for Diagnostic<Error> {
 }
 
 use crate::chain::cosmos::config::error::Error as CosmosConfigError;
+
+use self::types::MaxTxSize;
 impl From<CosmosConfigError> for Error {
     fn from(error: CosmosConfigError) -> Error {
         Error::cosmos_config_error(error.to_string())

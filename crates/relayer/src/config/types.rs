@@ -125,6 +125,10 @@ pub mod max_tx_size {
             Ok(Self(value))
         }
 
+        pub fn unsafe_new(value: usize) -> Self {
+            Self(value)
+        }
+
         pub fn max() -> Self {
             Self(Self::MAX_BOUND)
         }
