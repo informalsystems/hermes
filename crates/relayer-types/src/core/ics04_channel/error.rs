@@ -126,6 +126,9 @@ define_error! {
         MissingUpgradeFields
             | _ | { "missing upgrade fields" },
 
+        MissingUpgradeErrorReceipt
+            | _ | { "missing upgrade error receipt" },
+
         MissingProposedUpgradeChannel
             | _ | { "missing proposed upgrade channel" },
 

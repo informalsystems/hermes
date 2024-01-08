@@ -15,6 +15,7 @@ SUBCOMMANDS:
     chan-open-init          Initialize a channel (ChannelOpenInit)
     chan-open-try           Relay the channel attempt (ChannelOpenTry)
     chan-upgrade-ack        Relay the channel upgrade attempt (ChannelUpgradeAck)
+    chan-upgrade-cancel     Relay the channel upgrade cancellation (ChannelUpgradeCancel)
     chan-upgrade-confirm    Relay the channel upgrade attempt (ChannelUpgradeConfirm)
     chan-upgrade-open       Relay the channel upgrade attempt (ChannelUpgradeOpen)
     chan-upgrade-try        Relay the channel upgrade attempt (ChannelUpgradeTry)

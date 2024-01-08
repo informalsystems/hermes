@@ -7,6 +7,7 @@ use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState, UpgradeState,
 };
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 
@@ -43,6 +44,7 @@ pub struct ChannelUpgradableAttributes {
     ordering: Ordering,
     connection_hops_a: Vec<ConnectionId>,
     connection_hops_b: Vec<ConnectionId>,
+    upgrade_sequence: Sequence,
 }
 
 impl ChannelUpgradableAttributes {
@@ -52,6 +54,7 @@ impl ChannelUpgradableAttributes {
         ordering: Ordering,
         connection_hops_a: Vec<ConnectionId>,
         connection_hops_b: Vec<ConnectionId>,
+        upgrade_sequence: Sequence,
     ) -> Self {
         Self {
             version_a,
@@ -59,6 +62,7 @@ impl ChannelUpgradableAttributes {
             ordering,
             connection_hops_a,
             connection_hops_b,
+            upgrade_sequence,
         }
     }
 
@@ -69,6 +73,7 @@ impl ChannelUpgradableAttributes {
             ordering: self.ordering,
             connection_hops_a: self.connection_hops_b.clone(),
             connection_hops_b: self.connection_hops_a.clone(),
+            upgrade_sequence: self.upgrade_sequence,
         }
     }
 
@@ -90,6 +95,10 @@ impl ChannelUpgradableAttributes {
 
     pub fn connection_hops_b(&self) -> &Vec<ConnectionId> {
         &self.connection_hops_b
+    }
+
+    pub fn upgrade_sequence(&self) -> &Sequence {
+        &self.upgrade_sequence
     }
 }
 
@@ -338,6 +347,8 @@ pub fn assert_eventually_channel_upgrade_init<ChainA: ChainHandle, ChainB: Chain
                         channel_id_a,
                         port_id_a,
                         upgrade_attrs,
+                        &Sequence::from(1),
+                        &Sequence::from(0),
                     )
                 },
             )
@@ -365,6 +376,8 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
                 channel_id_a,
                 port_id_a,
                 upgrade_attrs,
+                &Sequence::from(1),
+                &Sequence::from(1),
             )
         },
     )
@@ -390,6 +403,8 @@ pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainH
                 channel_id_a,
                 port_id_a,
                 upgrade_attrs,
+                &Sequence::from(1),
+                &Sequence::from(1),
             )
         },
     )
@@ -415,6 +430,8 @@ pub fn assert_eventually_channel_upgrade_confirm<ChainA: ChainHandle, ChainB: Ch
                 channel_id_a,
                 port_id_a,
                 upgrade_attrs,
+                &Sequence::from(1),
+                &Sequence::from(1),
             )
         },
     )
@@ -440,6 +457,35 @@ pub fn assert_eventually_channel_upgrade_open<ChainA: ChainHandle, ChainB: Chain
                 channel_id_a,
                 port_id_a,
                 upgrade_attrs,
+                &Sequence::from(1),
+                &Sequence::from(1),
+            )
+        },
+    )
+}
+
+pub fn assert_eventually_channel_upgrade_cancel<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    upgrade_attrs: &ChannelUpgradableAttributes,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel upgrade cancel step should be done",
+        20,
+        Duration::from_secs(1),
+        || {
+            assert_channel_upgrade_state(
+                ChannelState::Open(UpgradeState::NotUpgrading),
+                ChannelState::Open(UpgradeState::NotUpgrading),
+                handle_a,
+                handle_b,
+                channel_id_a,
+                port_id_a,
+                upgrade_attrs,
+                &Sequence::from(1),
+                &Sequence::from(1),
             )
         },
     )
@@ -455,6 +501,8 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
     channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
     port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
     upgrade_attrs: &ChannelUpgradableAttributes,
+    upgrade_sequence_a: &Sequence,
+    upgrade_sequence_b: &Sequence,
 ) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
     let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
 
@@ -496,6 +544,18 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
             "expected channel end A connection hops to be `{:?}`, but it is instead `{:?}`",
             upgrade_attrs.connection_hops_a(),
             channel_end_a.value().connection_hops()
+        )));
+    }
+
+    if !channel_end_a
+        .value()
+        .upgraded_sequence
+        .eq(upgrade_sequence_a)
+    {
+        return Err(Error::generic(eyre!(
+            "expected channel end A upgrade sequence to be `{}`, but it is instead `{}`",
+            upgrade_sequence_a,
+            channel_end_a.value().upgraded_sequence
         )));
     }
 
@@ -545,6 +605,18 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
             "expected channel end B connection hops to be `{:?}`, but it is instead `{:?}`",
             upgrade_attrs.connection_hops_b(),
             channel_end_b.value().connection_hops()
+        )));
+    }
+
+    if !channel_end_b
+        .value()
+        .upgraded_sequence
+        .eq(upgrade_sequence_b)
+    {
+        return Err(Error::generic(eyre!(
+            "expected channel end B upgrade sequence to be `{}`, but it is instead `{}`",
+            upgrade_sequence_b,
+            channel_end_b.value().upgraded_sequence
         )));
     }
 
