@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use abscissa_core::clap::Parser;
 use abscissa_core::config::Override;
 use abscissa_core::{Command, FrameworkErrorKind, Runnable};
@@ -6,6 +8,7 @@ use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
+use ibc_relayer::util::seq_range::parse_seq_range;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::events::IbcEvent;
@@ -55,26 +58,32 @@ pub struct ClearPacketsCmd {
 
     #[clap(
         long = "packet-sequences",
-        help = "Sequences of packets to be cleared on the specified chain",
-        value_delimiter = ','
+        help = "Sequences of packets to be cleared on the specified chain. \
+                Either a single sequence or a range of sequences can be specified. \
+                If not provided, all pending packets will be cleared on both chains. \
+                Each element of the comma-separated list must be either a single \
+                sequence or a range of sequences. \
+                Example: `1,10..20` will clear packets with sequences 1, 10, 11, ..., 20",
+        value_delimiter = ',',
+        value_parser = parse_seq_range
     )]
-    packet_sequences: Vec<Sequence>,
+    packet_sequences: Vec<RangeInclusive<Sequence>>,
 
     #[clap(
         long = "key-name",
-        help = "use the given signing key for the specified chain (default: `key_name` config)"
+        help = "Use the given signing key for the specified chain (default: `key_name` config)"
     )]
     key_name: Option<String>,
 
     #[clap(
         long = "counterparty-key-name",
-        help = "use the given signing key for the counterparty chain (default: `counterparty_key_name` config)"
+        help = "Use the given signing key for the counterparty chain (default: `counterparty_key_name` config)"
     )]
     counterparty_key_name: Option<String>,
 
     #[clap(
         long = "query-packets-chunk-size",
-        help = "number of packets to fetch at once from the chain (default: `query_packets_chunk_size` config)"
+        help = "Number of packets to fetch at once from the chain (default: `query_packets_chunk_size` config)"
     )]
     query_packets_chunk_size: Option<usize>,
 }
@@ -175,7 +184,7 @@ impl Runnable for ClearPacketsCmd {
         });
         if self.packet_sequences.is_empty() {
             run_and_collect_events("forward ack", &mut ev_list, || {
-                fwd_link.relay_ack_packet_messages(self.packet_sequences.clone())
+                fwd_link.relay_ack_packet_messages(vec![])
             });
         }
 
@@ -258,7 +267,10 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap(),
-                packet_sequences: vec![Sequence::from(1), Sequence::from(2)],
+                packet_sequences: vec![
+                    Sequence::from(1)..=Sequence::from(1),
+                    Sequence::from(10)..=Sequence::from(20)
+                ],
                 key_name: Some("key_name".to_owned()),
                 counterparty_key_name: None,
                 query_packets_chunk_size: None
@@ -272,7 +284,7 @@ mod tests {
                 "--channel",
                 "channel-07",
                 "--packet-sequences",
-                "1,2",
+                "1,10..20",
                 "--key-name",
                 "key_name"
             ])
