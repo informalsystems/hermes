@@ -70,7 +70,7 @@ impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
             version: value.channel_end.version.to_string(),
             port_id: value.port_id.to_string(),
             channel_id: value.channel_id.to_string(),
-            upgrade_sequence: value.channel_end.upgraded_sequence.into(),
+            upgrade_sequence: value.channel_end.upgrade_sequence.into(),
         }
     }
 }
@@ -82,7 +82,7 @@ pub struct ChannelEnd {
     pub remote: Counterparty,
     pub connection_hops: Vec<ConnectionId>,
     pub version: Version,
-    pub upgraded_sequence: Sequence,
+    pub upgrade_sequence: Sequence,
 }
 
 impl Display for ChannelEnd {
@@ -103,7 +103,7 @@ impl Default for ChannelEnd {
             remote: Counterparty::default(),
             connection_hops: Vec::new(),
             version: Version::default(),
-            upgraded_sequence: Sequence::from(0), // The value of 0 indicates the channel has never been upgraded
+            upgrade_sequence: Sequence::from(0), // The value of 0 indicates the channel has never been upgraded
         }
     }
 }
@@ -161,7 +161,7 @@ impl From<ChannelEnd> for RawChannel {
                 .map(|v| v.as_str().to_string())
                 .collect(),
             version: value.version.to_string(),
-            upgrade_sequence: value.upgraded_sequence.into(),
+            upgrade_sequence: value.upgrade_sequence.into(),
         }
     }
 }
@@ -174,7 +174,7 @@ impl ChannelEnd {
         remote: Counterparty,
         connection_hops: Vec<ConnectionId>,
         version: Version,
-        upgraded_sequence: Sequence,
+        upgrade_sequence: Sequence,
     ) -> Self {
         Self {
             state,
@@ -182,7 +182,7 @@ impl ChannelEnd {
             remote,
             connection_hops,
             version,
-            upgraded_sequence,
+            upgrade_sequence,
         }
     }
 
@@ -266,7 +266,7 @@ impl ChannelEnd {
 
         match other {
             Some(other) => {
-                let check_sequence = self.upgraded_sequence != other.channel_end.upgraded_sequence;
+                let check_sequence = self.upgrade_sequence != other.channel_end.upgrade_sequence;
 
                 let check_state = match self.state {
                     Open(UpgradeState::NotUpgrading) => matches!(

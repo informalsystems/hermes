@@ -549,13 +549,13 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !channel_end_a
         .value()
-        .upgraded_sequence
+        .upgrade_sequence
         .eq(upgrade_sequence_a)
     {
         return Err(Error::generic(eyre!(
             "expected channel end A upgrade sequence to be `{}`, but it is instead `{}`",
             upgrade_sequence_a,
-            channel_end_a.value().upgraded_sequence
+            channel_end_a.value().upgrade_sequence
         )));
     }
 
@@ -610,13 +610,13 @@ fn assert_channel_upgrade_state<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !channel_end_b
         .value()
-        .upgraded_sequence
+        .upgrade_sequence
         .eq(upgrade_sequence_b)
     {
         return Err(Error::generic(eyre!(
             "expected channel end B upgrade sequence to be `{}`, but it is instead `{}`",
             upgrade_sequence_b,
-            channel_end_b.value().upgraded_sequence
+            channel_end_b.value().upgrade_sequence
         )));
     }
 

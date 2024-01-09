@@ -11,6 +11,7 @@ use ibc_relayer_types::core::ics02_client::events::ClientMisbehaviour as ClientM
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Ordering, State as ChannelState,
 };
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::{
     acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
@@ -339,18 +340,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Nothing to do if channel on destination is already closed
-        if self
-            .dst_channel(QueryHeight::Latest)?
-            .state_matches(&ChannelState::Closed)
-        {
+        let dst_channel = self
+            .dst_channel(QueryHeight::Latest)?;
+
+        if dst_channel.state_matches(&ChannelState::Closed) {
             return Ok(None);
         }
-
+            
         let src_channel_id = self.src_channel_id();
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, event.height)
             .map_err(|e| LinkError::channel(ChannelError::channel_proof(e)))?;
+
+        let counterparty_upgrade_sequence = dst_channel.upgrade_sequence;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
@@ -358,6 +361,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             channel_id: self.dst_channel_id().clone(),
             proofs,
             signer: self.dst_signer()?,
+            counterparty_upgrade_sequence,
         };
 
         Ok(Some(new_msg.to_any()))
@@ -1336,11 +1340,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             )
             .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;
 
+        let counterparty_upgrade_sequence = self
+            .dst_channel(QueryHeight::Latest)
+            .map_or_else(|_| Sequence::default(), |channel_end| channel_end.upgrade_sequence);
+
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),
             next_sequence_received,
             proofs.clone(),
             self.src_signer()?,
+            counterparty_upgrade_sequence,
         );
 
         trace!(packet = %msg.packet, height = %proofs.height(), "built timeout on close msg");

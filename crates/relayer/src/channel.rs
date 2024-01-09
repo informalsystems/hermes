@@ -403,7 +403,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 )
                 .map_err(ChannelError::relayer)?;
 
-            if a_channel.upgraded_sequence > b_channel.upgraded_sequence {
+            if a_channel.upgrade_sequence > b_channel.upgrade_sequence {
                 a_channel_state = State::Open(UpgradeState::Upgrading);
             }
         }
@@ -1499,6 +1499,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
             .map_err(ChannelError::channel_proof)?;
 
+        let counterparty_upgrade_sequence = self
+            .b_channel(Some(dst_channel_id))
+            .map_or_else(|_| Sequence::default(), |channel_end| channel_end.upgrade_sequence);
+
         // Build message(s) to update client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
 
@@ -1514,6 +1518,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             channel_id: dst_channel_id.clone(),
             proofs,
             signer,
+            counterparty_upgrade_sequence,
         };
 
         msgs.push(new_msg.to_any());
@@ -1774,7 +1779,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             channel_id: dst_channel_id.clone(),
             proposed_upgrade_connection_hops: dst_channel_end.connection_hops,
             counterparty_upgrade_fields: upgrade.fields,
-            counterparty_upgrade_sequence: channel_end.upgraded_sequence,
+            counterparty_upgrade_sequence: channel_end.upgrade_sequence,
             proof_channel: src_proof.object_proof().clone(),
             proof_upgrade,
             proof_height: src_proof.height(),
