@@ -161,7 +161,7 @@ define_error! {
         InvalidStringAsHeight
             { value: String }
             [ HeightError ]
-            | e | { format_args!("String {0} cannnot be converted to height", e.value) },
+            | e | { format_args!("String {0} cannot be converted to height", e.value) },
 
         InvalidHeight
             | _ | { "revision height cannot be zero" },
@@ -246,7 +246,7 @@ define_error! {
                 update_time: Timestamp,
             }
             | e | {
-                format_args!("header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
+                format_args!("header not within trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
             },
 
         MissingLocalConsensusState

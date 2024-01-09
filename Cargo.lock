@@ -2522,7 +2522,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-chain-registry"
-version = "0.26.1"
+version = "0.26.4"
 dependencies = [
  "async-trait",
  "flex-error",
@@ -2884,7 +2884,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-integration-test"
-version = "0.26.1"
+version = "0.26.4"
 dependencies = [
  "http",
  "ibc-relayer",
@@ -2894,6 +2894,8 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "tendermint",
+ "tendermint-rpc",
  "time",
  "toml 0.7.8",
  "tonic",
@@ -2949,7 +2951,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.26.1"
+version = "0.26.4"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -3019,7 +3021,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "1.7.1"
+version = "1.7.4"
 dependencies = [
  "abscissa_core",
  "clap",
@@ -3060,7 +3062,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.26.1"
+version = "0.26.4"
 dependencies = [
  "axum",
  "crossbeam-channel 0.5.8",
@@ -3076,7 +3078,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-types"
-version = "0.26.1"
+version = "0.26.4"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3107,7 +3109,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.26.1"
+version = "0.26.4"
 dependencies = [
  "axum",
  "dashmap",
@@ -3126,7 +3128,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-test-framework"
-version = "0.26.1"
+version = "0.26.4"
 dependencies = [
  "color-eyre",
  "crossbeam-channel 0.5.8",
@@ -6567,9 +6569,9 @@ dependencies = [
 
 [[package]]
 name = "unsafe-libyaml"
-version = "0.2.9"
+version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f28467d3e1d3c6586d8f25fa243f544f5800fec42d97032474e17222c2b75cfa"
+checksum = "ab4c90930b95a82d00dc9e9ac071b4991924390d46cbd0dfe566148667605e4b"
 
 [[package]]
 name = "untrusted"

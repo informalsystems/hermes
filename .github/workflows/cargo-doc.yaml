@@ -4,7 +4,17 @@ on:
   push:
     branches:
       - master
-  pull_request: {}
+    paths:
+      - .github/workflows/cargo-doc.yml
+      - Cargo.toml
+      - Cargo.lock
+      - crates/**
+  pull_request:
+    paths:
+      - .github/workflows/cargo-doc.yml
+      - Cargo.toml
+      - Cargo.lock
+      - crates/**
 
 # Cancel previous runs of this workflow when a new commit is added to the PR, branch or tag
 concurrency:

@@ -520,7 +520,7 @@ InitConnectionEnds(Versions, channelOrdering) ==
 \*      - height is initialized to 1
 \*      - the counterparty light client is uninitialized
 \*      - the connection end is initialized to InitConnectionEnd 
-\*      - the packet committments, receipts, acknowledgements, and 
+\*      - the packet commitments, receipts, acknowledgements, and 
 \*        packets to acknowledge are empty  
 \* @type: (Set(Int), Str) => Set(CHAINSTORE);
 InitChainStore(Versions, channelOrdering) == 

@@ -834,7 +834,7 @@ impl ChainEndpoint for NamadaChain {
         let (channel_end, _) = self.query_channel(request, IncludeProof::No)?;
         let connection_id = channel_end
             .connection_hops()
-            .get(0)
+            .first()
             .ok_or_else(|| Error::query("no connection ID in the channel end".to_string()))?
             .clone();
         let request = QueryConnectionRequest {

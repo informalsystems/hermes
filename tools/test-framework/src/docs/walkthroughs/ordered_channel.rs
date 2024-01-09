@@ -135,7 +135,7 @@
 //! The logic of the test itself is defined in the `run` function of the
 //! `BinaryChannelTest` trait. In this function, we first set up the two wallets,
 //! the sending wallet, `wallet_a`, which is associated with chain A, and the
-//! receiving wallet, `wallet_b`, which is associated iwth chain B. The balance
+//! receiving wallet, `wallet_b`, which is associated with chain B. The balance
 //! of `wallet_a` is also saved. An IBC transfer is then made from chain A to chain
 //! B. At this point, because no relayer has been initialized yet, the transaction
 //! is in a pending state.

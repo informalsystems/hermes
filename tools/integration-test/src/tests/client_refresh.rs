@@ -1,10 +1,9 @@
 use std::time::Duration;
 
-use ibc_relayer::config::ChainConfig;
-use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
-
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
+use ibc_relayer::config::ChainConfig;
 use ibc_relayer::foreign_client::CreateOptions;
+use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
 use ibc_test_framework::prelude::*;
 

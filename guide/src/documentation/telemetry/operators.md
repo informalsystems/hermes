@@ -34,6 +34,7 @@ The metrics in the table below are design to answer this question on multiple di
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------------- |
 | `workers`                  | Number of workers per type                                                                                                                                                  | `i64` UpDownCounter | Corresponding workers enabled |
 | `client_updates_submitted_total` | Number of client update messages submitted, per sending chain, receiving chain and client                                                                                                            | `u64` Counter       | Client, Connection, Channel or Packet workers enabled |
+| `client_updates_skipped_total` | Number of client update messages skipped because the consensus state already exists, per sending chain, receiving chain and client                                                                                                            | `u64` Counter       | Client, Connection, Channel or Packet workers enabled |
 | `wallet_balance`           | The balance of each wallet Hermes uses per chain                                                                                                                            | `f64` ValueRecorder | None                       |
 | `tx_latency_submitted`     | Latency for all transactions submitted to a chain | `u64` ValueRecorder | None                       |
 | `messages_submitted_total` | Number of messages submitted to a specific chain                                                                                                                            | `u64` Counter       | None                       |
@@ -120,7 +121,7 @@ Since Hermes v1, we also introduced 3 metrics that sketch the backlog status of 
 | Name                       | Description                                                    | OpenTelemetry type  | Configuration Dependencies |
 | -------------------------- | -------------------------------------------------------------- | ------------------- | -------------------------- |
 | `backlog_oldest_sequence`  | Sequence number of the oldest SendPacket event in the backlog  | `u64` ValueRecorder | Packet workers enabled     |
-| `backlog_oldest_timestamp` | Local timestamp for the oldest SendPacket event in the backlog | `u64` ValueRecorder | Packet workers enabled     |
+| `backlog_latest_update_timestamp` | Local timestamp for the last time the backlog metrics have been updated | `u64` ValueRecorder | Packet workers enabled     |
 | `backlog_size`             | Total number of SendPacket events in the backlog               | `u64` ValueRecorder | Packet workers enabled     |
 
 
@@ -128,9 +129,8 @@ Notes:
 
 - The `backlog_size` defines how many IBC packets users sent and were not yet relayed (i.e., received on the destination network, or timed-out).
 If this metric is increasing, it signals that the packet queue is increasing and there may be some errors in the Hermes logs that need your attention.
-- If the `backlog_oldest_sequence` remains unchanged for more than a few minutes, that means that the packet with the respective sequence number is likely blocked
-and cannot be relayed. To understand for how long the packet is block, Hermes will populate `backlog_oldest_timestamp`  with the local time when it first observed
-the `backlog_oldest_sequence` that is blocked.
+- The `backlog_latest_update_timestamp` is used to get information on the reliability of the `backlog_*` metrics. If the timestamp doesn't change it means there might be an issue with the metrics.
+- __NOTE__: The Hermes instance might miss the acknowledgment of an observed IBC packets relayed, this will cause the `backlog_*` metrics to contain an invalid value. In order to minimise this issue, whenever the Hermes instance clears packets the `backlog_*` metrics will be updated using the queried pending packets.
 
 ## How efficient and how secure is the IBC status on each network?
 
@@ -141,6 +141,7 @@ the `backlog_oldest_sequence` that is blocked.
 | `tx_latency_submitted`         | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted), per chain, counterparty chain, channel and port | `u64` ValueRecorder | None                       |
 | `cleared_send_packet_count_total`    | Number of SendPacket events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                              | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
 | `cleared_acknowledgment_count_total` | Number of WriteAcknowledgement events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                    | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
+| `broadcast_errors_total`        | Number of errors observed by Hermes when broadcasting a Tx, per error type and account                                                                                                         | `u64` Counter       | Packet workers enabled |
 
 Notes:
 - The two metrics `cleared_send_packet_count_total` and `cleared_acknowledgment_count_total` are only populated if `tx_confirmation = true`.

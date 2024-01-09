@@ -2,7 +2,7 @@
 
 ## Overview
 
-There are two different compatibility modes for CometBFT, one for version v0.34 and one for versions v0.37 and v0.38. In order to verify the compatiblity used Hermes queries the node's `/status` endpoint, which contains the CometBFT version used. This can be an issue if a chain uses a custom version which does not output the version string Hermes expects. To still be able to relay for these chains a configuration can be set in Hermes.
+There are two different compatibility modes for CometBFT, one for version v0.34 and one for versions v0.37 and v0.38. In order to verify the compatibility used Hermes queries the node's `/status` endpoint, which contains the CometBFT version used. This can be an issue if a chain uses a custom version which does not output the version string Hermes expects. To still be able to relay for these chains a configuration can be set in Hermes.
 
 ## Configuration
 
