@@ -70,6 +70,7 @@ impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
             version: value.channel_end.version.to_string(),
             port_id: value.port_id.to_string(),
             channel_id: value.channel_id.to_string(),
+            upgrade_sequence: value.channel_end.upgraded_sequence.into(),
         }
     }
 }
