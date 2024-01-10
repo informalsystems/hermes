@@ -37,7 +37,7 @@ bytes = "1.4.0"
 prost = { version = "0.12" }
 tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 futures = "0.3.27"
-crossbeam-channel = "0.5.8"
+crossbeam-channel = "0.5.11"
 hex = "0.4"
 bitcoin = { version = "0.30.1", features = ["serde"] }
 tiny-bip39 = "1.0.0"

@@ -543,12 +543,11 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.8"
+version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a33c2bf77f2df06183c3aa30d1e96c0695a313d4f9c453cc3762a6db39f99200"
+checksum = "176dc175b78f56c0f321911d9c8eb2b77a78a4860b9c19db83835fea1a46649b"
 dependencies = [
- "cfg-if 1.0.0",
- "crossbeam-utils 0.8.16",
+ "crossbeam-utils 0.8.19",
 ]
 
 [[package]]
@@ -559,7 +558,7 @@ checksum = "ae211234986c545741a7dc064309f67ee1e5ad243d0e48335adc0484d960bcc7"
 dependencies = [
  "autocfg",
  "cfg-if 1.0.0",
- "crossbeam-utils 0.8.16",
+ "crossbeam-utils 0.8.19",
  "memoffset",
  "scopeguard",
 ]
@@ -577,12 +576,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-utils"
-version = "0.8.16"
+version = "0.8.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a22b2d63d4d1dc0b7f1b6b2747dd0088008a9be28b6ddf0b1e7d335e3037294"
-dependencies = [
- "cfg-if 1.0.0",
-]
+checksum = "248e3bacc7dc6baa3b21e405ee045c3047101a49145e7e9eca583ab4c2ca5345"
 
 [[package]]
 name = "crunchy"
@@ -1391,7 +1387,7 @@ dependencies = [
  "bs58",
  "byte-unit",
  "bytes",
- "crossbeam-channel 0.5.8",
+ "crossbeam-channel 0.5.11",
  "digest 0.10.7",
  "dirs-next",
  "ed25519",
@@ -1457,7 +1453,7 @@ dependencies = [
  "clap_complete",
  "color-eyre",
  "console",
- "crossbeam-channel 0.5.8",
+ "crossbeam-channel 0.5.11",
  "dialoguer",
  "dirs-next",
  "eyre",
@@ -1494,7 +1490,7 @@ name = "ibc-relayer-rest"
 version = "0.26.4"
 dependencies = [
  "axum",
- "crossbeam-channel 0.5.8",
+ "crossbeam-channel 0.5.11",
  "ibc-relayer",
  "ibc-relayer-types",
  "reqwest",
@@ -1559,7 +1555,7 @@ name = "ibc-test-framework"
 version = "0.26.4"
 dependencies = [
  "color-eyre",
- "crossbeam-channel 0.5.8",
+ "crossbeam-channel 0.5.11",
  "eyre",
  "flex-error",
  "hdpath",
@@ -1858,9 +1854,9 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8017ec3548ffe7d4cef7ac0e12b044c01164a74c0f3119420faeaf13490ad8b"
 dependencies = [
- "crossbeam-channel 0.5.8",
+ "crossbeam-channel 0.5.11",
  "crossbeam-epoch",
- "crossbeam-utils 0.8.16",
+ "crossbeam-utils 0.8.19",
  "once_cell",
  "parking_lot",
  "quanta",
@@ -2028,7 +2024,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b3a2a91fdbfdd4d212c0dcc2ab540de2c2bcbbd90be17de7a7daf8822d010c1"
 dependencies = [
  "async-trait",
- "crossbeam-channel 0.5.8",
+ "crossbeam-channel 0.5.11",
  "dashmap",
  "fnv",
  "futures-channel",
@@ -2304,7 +2300,7 @@ version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a17e662a7a8291a865152364c20c7abc5e60486ab2001e8ec10b24862de0b9ab"
 dependencies = [
- "crossbeam-utils 0.8.16",
+ "crossbeam-utils 0.8.19",
  "libc",
  "mach2",
  "once_cell",
