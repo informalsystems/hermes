@@ -233,13 +233,13 @@ pub mod default {
 
     /// Use limit of 32768 bytes used by ibc-go v8 as default
     /// See: https://github.com/cosmos/ibc-go/blob/04e14a7079e18323c64d4e00e12cf77708d24701/modules/apps/transfer/types/msgs.go#L17
-    pub fn max_memo_size() -> MaxTxSize {
+    pub fn ics20_max_memo_size() -> MaxTxSize {
         MaxTxSize::unsafe_new(32768)
     }
 
     /// Use limit of 2048 bytes used by ibc-go v8 as default
     /// See: https://github.com/cosmos/ibc-go/blob/04e14a7079e18323c64d4e00e12cf77708d24701/modules/apps/transfer/types/msgs.go#L16
-    pub fn max_receiver_size() -> MaxTxSize {
+    pub fn ics20_max_receiver_size() -> MaxTxSize {
         MaxTxSize::unsafe_new(2048)
     }
 }
@@ -412,10 +412,10 @@ pub struct Packets {
     pub tx_confirmation: bool,
     #[serde(default = "default::auto_register_counterparty_payee")]
     pub auto_register_counterparty_payee: bool,
-    #[serde(default = "default::max_memo_size")]
-    pub max_memo_size: MaxTxSize,
-    #[serde(default = "default::max_receiver_size")]
-    pub max_receiver_size: MaxTxSize,
+    #[serde(default = "default::ics20_max_memo_size")]
+    pub ics20_max_memo_size: MaxTxSize,
+    #[serde(default = "default::ics20_max_receiver_size")]
+    pub ics20_max_receiver_size: MaxTxSize,
 }
 
 impl Default for Packets {
@@ -426,8 +426,8 @@ impl Default for Packets {
             clear_on_start: default::clear_on_start(),
             tx_confirmation: default::tx_confirmation(),
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
-            max_memo_size: default::max_memo_size(),
-            max_receiver_size: default::max_receiver_size(),
+            ics20_max_memo_size: default::ics20_max_memo_size(),
+            ics20_max_receiver_size: default::ics20_max_receiver_size(),
         }
     }
 }

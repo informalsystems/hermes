@@ -6,7 +6,8 @@ use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPa
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
 use super::timeout::TimeoutHeight;
-use crate::applications::transfer::packet::PacketData as APacketData;
+use crate::applications::transfer::error::Error as Ics20Error;
+use crate::applications::transfer::packet::PacketData as Ics20PacketData;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::timestamp::{Expiry::Expired, Timestamp};
@@ -186,18 +187,11 @@ impl Packet {
         max_memo_size: usize,
         max_receiver_size: usize,
     ) -> Result<(usize, usize), Error> {
-        let any_packet: RawPacketData = match serde_json::from_slice(&self.data) {
-            Ok(v) => v,
-            Err(e) => {
-                return Err(Error::app_module(e.to_string()));
-            }
-        };
-        let packet: APacketData = match any_packet.try_into() {
-            Ok(p) => p,
-            Err(e) => {
-                return Err(Error::app_module(e.to_string()));
-            }
-        };
+        let any_packet: RawPacketData =
+            serde_json::from_slice(&self.data).map_err(Error::serde_json_error)?;
+        let packet: Ics20PacketData = any_packet
+            .try_into()
+            .map_err(|e: Ics20Error| Error::decode_ics20_packet(e.to_string()))?;
         let memo_size = if let Some(memo) = &packet.memo {
             if memo.len() > max_memo_size {
                 memo.len()

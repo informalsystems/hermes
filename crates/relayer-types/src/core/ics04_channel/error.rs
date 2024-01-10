@@ -348,7 +348,17 @@ define_error! {
 
         AbciConversionFailed
             { abci_event: String }
-            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)}
+            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)},
+
+        SerdeJsonError
+        [ TraceError<serde_json::error::Error> ]
+            | _ | { "error deserializing JSON" },
+
+        DecodeIcs20Packet
+        { description: String }
+        | e | {
+            format_args!("error decoding ICS20 packet from proto to domain type: {}", e.description)
+        },
     }
 }
 

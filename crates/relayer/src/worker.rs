@@ -117,8 +117,8 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 LinkParameters {
                     src_port_id: path.src_port_id.clone(),
                     src_channel_id: path.src_channel_id.clone(),
-                    max_memo_size: packets_config.max_memo_size.to_usize(),
-                    max_receiver_size: packets_config.max_receiver_size.to_usize(),
+                    max_memo_size: packets_config.ics20_max_memo_size.to_usize(),
+                    max_receiver_size: packets_config.ics20_max_receiver_size.to_usize(),
                 },
                 packets_config.tx_confirmation,
                 packets_config.auto_register_counterparty_payee,

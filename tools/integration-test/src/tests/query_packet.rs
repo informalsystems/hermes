@@ -60,8 +60,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.clone().into_value(),
-            max_memo_size: packet_config.max_memo_size.to_usize(),
-            max_receiver_size: packet_config.max_receiver_size.to_usize(),
+            max_memo_size: packet_config.ics20_max_memo_size.to_usize(),
+            max_receiver_size: packet_config.ics20_max_receiver_size.to_usize(),
         };
         let link = Link::new_from_opts(
             chains.handle_a().clone(),
