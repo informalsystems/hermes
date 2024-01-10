@@ -44,9 +44,7 @@ impl core::fmt::Display for PacketMsgType {
 }
 
 /// The sequence number of a packet enforces ordering among packets from the same source.
-#[derive(
-    Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Deserialize, Serialize,
-)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Sequence(u64);
 
 impl FromStr for Sequence {
@@ -88,9 +86,15 @@ impl From<Sequence> for u64 {
     }
 }
 
+impl core::fmt::Debug for Sequence {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        self.0.fmt(f)
+    }
+}
+
 impl core::fmt::Display for Sequence {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "{}", self.0)
+        self.0.fmt(f)
     }
 }
 
