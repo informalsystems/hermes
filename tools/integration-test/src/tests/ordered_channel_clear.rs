@@ -119,8 +119,8 @@ impl BinaryChannelTest for OrderedChannelClearTest {
         let chain_a_link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.clone().into_value(),
-            max_memo_size: packet_config.ics20_max_memo_size.get_bytes(),
-            max_receiver_size: packet_config.ics20_max_receiver_size.get_bytes(),
+            max_memo_size: packet_config.ics20_max_memo_size.get_bytes() as usize,
+            max_receiver_size: packet_config.ics20_max_receiver_size.get_bytes() as usize,
         };
 
         let chain_a_link = Link::new_from_opts(
@@ -134,8 +134,8 @@ impl BinaryChannelTest for OrderedChannelClearTest {
         let chain_b_link_opts = LinkParameters {
             src_port_id: channel.port_b.clone().into_value(),
             src_channel_id: channel.channel_id_b.clone().into_value(),
-            max_memo_size: packet_config.ics20_max_memo_size.get_bytes(),
-            max_receiver_size: packet_config.ics20_max_receiver_size.get_bytes(),
+            max_memo_size: packet_config.ics20_max_memo_size.get_bytes() as usize,
+            max_receiver_size: packet_config.ics20_max_receiver_size.get_bytes() as usize,
         };
 
         let chain_b_link = Link::new_from_opts(
@@ -270,8 +270,8 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
         let chain_a_link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.into_value(),
-            max_memo_size: packet_config.ics20_max_memo_size.get_bytes(),
-            max_receiver_size: packet_config.ics20_max_receiver_size.get_bytes(),
+            max_memo_size: packet_config.ics20_max_memo_size.get_bytes() as usize,
+            max_receiver_size: packet_config.ics20_max_receiver_size.get_bytes() as usize,
         };
 
         let chain_a_link = Link::new_from_opts(

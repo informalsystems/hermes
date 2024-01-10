@@ -182,11 +182,10 @@ impl Packet {
     /// This method will return if the memo and receiver fields are valid, e.g. not too big.
     /// If it fails to decode the ICS20 PacketData then there is no need to validate fields
     /// so the method will return true.
-    pub fn are_fields_valid(&self, max_memo_size: u64, max_receiver_size: u64) -> bool {
+    pub fn are_fields_valid(&self, max_memo_size: usize, max_receiver_size: usize) -> bool {
         match serde_json::from_slice::<RawPacketData>(&self.data) {
             Ok(packet) => {
-                packet.memo.len() <= max_memo_size as usize
-                    && packet.receiver.len() <= max_receiver_size as usize
+                packet.memo.len() <= max_memo_size && packet.receiver.len() <= max_receiver_size
             }
             Err(_) => true,
         }

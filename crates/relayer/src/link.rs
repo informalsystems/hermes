@@ -33,8 +33,8 @@ pub use relay_path::{RelayPath, Resubmit};
 pub struct LinkParameters {
     pub src_port_id: PortId,
     pub src_channel_id: ChannelId,
-    pub max_memo_size: u64,
-    pub max_receiver_size: u64,
+    pub max_memo_size: usize,
+    pub max_receiver_size: usize,
 }
 
 pub struct Link<ChainA: ChainHandle, ChainB: ChainHandle> {
