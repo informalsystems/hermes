@@ -109,16 +109,16 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     pending_txs_src: PendingTxs<ChainA>,
     pending_txs_dst: PendingTxs<ChainB>,
 
-    pub max_memo_size: usize,
-    pub max_receiver_size: usize,
+    pub max_memo_size: u64,
+    pub max_receiver_size: u64,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn new(
         channel: Channel<ChainA, ChainB>,
         with_tx_confirmation: bool,
-        max_memo_size: usize,
-        max_receiver_size: usize,
+        max_memo_size: u64,
+        max_receiver_size: u64,
     ) -> Result<Self, LinkError> {
         let src_chain = channel.src_chain().clone();
         let dst_chain = channel.dst_chain().clone();

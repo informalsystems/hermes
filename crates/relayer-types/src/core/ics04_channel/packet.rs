@@ -184,8 +184,8 @@ impl Packet {
 
     pub fn validate_fields(
         &self,
-        max_memo_size: usize,
-        max_receiver_size: usize,
+        max_memo_size: u64,
+        max_receiver_size: u64,
     ) -> Result<(usize, usize), Error> {
         let any_packet: RawPacketData =
             serde_json::from_slice(&self.data).map_err(Error::serde_json_error)?;
@@ -193,7 +193,7 @@ impl Packet {
             .try_into()
             .map_err(|e: Ics20Error| Error::decode_ics20_packet(e.to_string()))?;
         let memo_size = if let Some(memo) = &packet.memo {
-            if memo.len() > max_memo_size {
+            if memo.len() > max_memo_size as usize {
                 memo.len()
             } else {
                 0
@@ -201,7 +201,7 @@ impl Packet {
         } else {
             0
         };
-        if packet.receiver.to_string().len() > max_receiver_size {
+        if packet.receiver.to_string().len() > max_receiver_size as usize {
             Ok((memo_size, packet.receiver.to_string().len()))
         } else {
             Ok((memo_size, 0))
