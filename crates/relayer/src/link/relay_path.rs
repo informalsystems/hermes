@@ -1389,6 +1389,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         dst_info: &ChainStatus,
         height: Height,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
+        crate::time!(
+            "build_recv_or_timeout_from_send_packet_event",
+            {
+                "src_channel": event.packet.source_channel,
+                "dst_channel": event.packet.destination_channel,
+            }
+        );
         let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
         if timeout.is_some() {
             Ok((None, timeout))

@@ -231,12 +231,16 @@ pub mod default {
         }
     }
 
+    /// Use limit of 32768 bytes used by ibc-go v8 as default
+    /// See: https://github.com/cosmos/ibc-go/blob/04e14a7079e18323c64d4e00e12cf77708d24701/modules/apps/transfer/types/msgs.go#L17
     pub fn max_memo_size() -> MaxTxSize {
-        MaxTxSize::unsafe_new(180000)
+        MaxTxSize::unsafe_new(32768)
     }
 
+    /// Use limit of 2048 bytes used by ibc-go v8 as default
+    /// See: https://github.com/cosmos/ibc-go/blob/04e14a7079e18323c64d4e00e12cf77708d24701/modules/apps/transfer/types/msgs.go#L16
     pub fn max_receiver_size() -> MaxTxSize {
-        MaxTxSize::unsafe_new(180000)
+        MaxTxSize::unsafe_new(2048)
     }
 }
 
