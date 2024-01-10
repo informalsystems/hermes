@@ -56,12 +56,12 @@ pub struct TxPacketRecvCmd {
 
     #[clap(
     long = "packet-sequences",
-    help = "Sequences of packets to be cleared on the dst-chain. \
-                Either a single sequence or a range of sequences can be specified. \
-                If not provided, all pending packets will be cleared. \
-                Each element of the comma-separated list must be either a single \
-                sequence or a range of sequences. \
-                Example: `1,10..20` will clear packets with sequences 1, 10, 11, ..., 20",
+    help = "Sequences of packets to be cleared on `dst-chain`. \
+            Either a single sequence or a range of sequences can be specified. \
+            If not provided, all pending recv or timeout packets will be cleared. \
+            Each element of the comma-separated list must be either a single \
+            sequence or a range of sequences. \
+            Example: `1,10..20` will clear packets with sequences 1, 10, 11, ..., 20",
     value_delimiter = ',',
     value_parser = parse_seq_range
     )]
@@ -151,12 +151,12 @@ pub struct TxPacketAckCmd {
 
     #[clap(
         long = "packet-sequences",
-        help = "Sequences of packets to be cleared on the dst-chain. \
-                    Either a single sequence or a range of sequences can be specified. \
-                    If not provided, all pending packets will be cleared. \
-                    Each element of the comma-separated list must be either a single \
-                    sequence or a range of sequences. \
-                    Example: `1,10..20` will clear packets with sequences 1, 10, 11, ..., 20",
+        help = "Sequences of packets to be cleared on `dst-chain`. \
+                Either a single sequence or a range of sequences can be specified. \
+                If not provided, all pending ack packets will be cleared. \
+                Each element of the comma-separated list must be either a single \
+                sequence or a range of sequences. \
+                Example: `1,10..20` will clear packets with sequences 1, 10, 11, ..., 20",
         value_delimiter = ',',
         value_parser = parse_seq_range
     )]
