@@ -1399,21 +1399,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
         if timeout.is_some() {
             Ok((None, timeout))
+        } else if event
+            .packet
+            .are_fields_valid(self.max_memo_size, self.max_receiver_size)
+        {
+            Ok((self.build_recv_packet(&event.packet, height)?, None))
         } else {
-            match event
-                .packet
-                .validate_fields(self.max_memo_size, self.max_receiver_size)
-            {
-                Ok((0, 0)) => Ok((self.build_recv_packet(&event.packet, height)?, None)),
-                Ok((memo_size, receiver_size)) => {
-                    warn!("memo and/or receiver fields were bigger than maximum allowed. Memo field {memo_size}, maximum allowed {}. Receiver field {receiver_size}, maximum allowed {}", self.max_memo_size, self.max_receiver_size);
-                    Ok((None, None))
-                }
-                Err(e) => {
-                    warn!("error validating fields, will simply relay message: {e}");
-                    Ok((self.build_recv_packet(&event.packet, height)?, None))
-                }
-            }
+            debug!(
+                "memo and/or receiver field are too big for packet {:#?}",
+                event.packet
+            );
+            Ok((None, None))
         }
     }
 

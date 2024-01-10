@@ -1,13 +1,10 @@
-use std::str::FromStr;
-
 use serde_derive::{Deserialize, Serialize};
+use std::str::FromStr;
 
 use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
 use super::timeout::TimeoutHeight;
-use crate::applications::transfer::error::Error as Ics20Error;
-use crate::applications::transfer::packet::PacketData as Ics20PacketData;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::timestamp::{Expiry::Expired, Timestamp};
@@ -182,29 +179,16 @@ impl Packet {
         height_timed_out || timestamp_timed_out
     }
 
-    pub fn validate_fields(
-        &self,
-        max_memo_size: u64,
-        max_receiver_size: u64,
-    ) -> Result<(usize, usize), Error> {
-        let any_packet: RawPacketData =
-            serde_json::from_slice(&self.data).map_err(Error::serde_json_error)?;
-        let packet: Ics20PacketData = any_packet
-            .try_into()
-            .map_err(|e: Ics20Error| Error::decode_ics20_packet(e.to_string()))?;
-        let memo_size = if let Some(memo) = &packet.memo {
-            if memo.len() > max_memo_size as usize {
-                memo.len()
-            } else {
-                0
+    /// This method will return if the memo and receiver fields are valid, e.g. not too big.
+    /// If it fails to decode the ICS20 PacketData then there is no need to validate fields
+    /// so the method will return true.
+    pub fn are_fields_valid(&self, max_memo_size: u64, max_receiver_size: u64) -> bool {
+        match serde_json::from_slice::<RawPacketData>(&self.data).map_err(Error::serde_json_error) {
+            Ok(packet) => {
+                packet.memo.len() <= max_memo_size as usize
+                    || packet.receiver.to_string().len() <= max_receiver_size as usize
             }
-        } else {
-            0
-        };
-        if packet.receiver.to_string().len() > max_receiver_size as usize {
-            Ok((memo_size, packet.receiver.to_string().len()))
-        } else {
-            Ok((memo_size, 0))
+            Err(_) => true,
         }
     }
 }
