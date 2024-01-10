@@ -186,7 +186,7 @@ impl Packet {
         match serde_json::from_slice::<RawPacketData>(&self.data).map_err(Error::serde_json_error) {
             Ok(packet) => {
                 packet.memo.len() <= max_memo_size as usize
-                    || packet.receiver.to_string().len() <= max_receiver_size as usize
+                    && packet.receiver.as_ref().len() <= max_receiver_size as usize
             }
             Err(_) => true,
         }
