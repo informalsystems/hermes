@@ -12,16 +12,11 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 
 use flex_error::{define_error, TraceError};
-use prost::DecodeError;
 use tendermint_proto::Error as TendermintError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
     Error {
-        Decode
-            [ TraceError<DecodeError> ]
-            | _ | { "error decoding byte array" },
-
         Ics03Connection
             [ connection_error::Error ]
             | _ | { "ics03 connection error" },
@@ -348,17 +343,7 @@ define_error! {
 
         AbciConversionFailed
             { abci_event: String }
-            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)},
-
-        SerdeJsonError
-        [ TraceError<serde_json::error::Error> ]
-            | _ | { "error deserializing JSON" },
-
-        DecodeIcs20Packet
-        { description: String }
-        | e | {
-            format_args!("error decoding ICS20 packet from proto to domain type: {}", e.description)
-        },
+            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)}
     }
 }
 
