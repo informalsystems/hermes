@@ -45,16 +45,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     pub fn new(
         channel: Channel<ChainA, ChainB>,
         with_tx_confirmation: bool,
-        max_memo_size: u64,
-        max_receiver_size: u64,
+        link_parameters: LinkParameters,
     ) -> Result<Self, LinkError> {
         Ok(Self {
-            a_to_b: RelayPath::new(
-                channel,
-                with_tx_confirmation,
-                max_memo_size,
-                max_receiver_size,
-            )?,
+            a_to_b: RelayPath::new(channel, with_tx_confirmation, link_parameters)?,
         })
     }
 
@@ -149,7 +143,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection.client_id().clone(),
                 a_connection_id,
                 opts.src_port_id.clone(),
-                Some(opts.src_channel_id),
+                Some(opts.src_channel_id.clone()),
                 None,
             ),
             b_side: ChannelSide::new(
@@ -178,12 +172,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 .map_err(LinkError::relayer)?;
         }
 
-        Link::new(
-            channel,
-            with_tx_confirmation,
-            opts.max_memo_size,
-            opts.max_receiver_size,
-        )
+        Link::new(channel, with_tx_confirmation, opts)
     }
 
     /// Constructs a link around the channel that is reverse to the channel

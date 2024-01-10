@@ -55,6 +55,7 @@ use crate::link::packet_events::query_write_ack_events;
 use crate::link::pending::PendingTxs;
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
+use crate::link::LinkParameters;
 use crate::link::{pending, relay_sender};
 use crate::path::PathIdentifiers;
 use crate::telemetry;
@@ -117,8 +118,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn new(
         channel: Channel<ChainA, ChainB>,
         with_tx_confirmation: bool,
-        max_memo_size: u64,
-        max_receiver_size: u64,
+        link_parameters: LinkParameters,
     ) -> Result<Self, LinkError> {
         let src_chain = channel.src_chain().clone();
         let dst_chain = channel.dst_chain().clone();
@@ -158,8 +158,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             pending_txs_src: PendingTxs::new(src_chain, src_channel_id, src_port_id, dst_chain_id),
             pending_txs_dst: PendingTxs::new(dst_chain, dst_channel_id, dst_port_id, src_chain_id),
 
-            max_memo_size,
-            max_receiver_size,
+            max_memo_size: link_parameters.max_memo_size,
+            max_receiver_size: link_parameters.max_receiver_size,
         })
     }
 
