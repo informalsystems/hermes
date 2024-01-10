@@ -79,6 +79,18 @@ tx_confirmation = false
 # [Default: false]
 auto_register_counterparty_payee = false
 
+# Set the maximum size for the memo field in ICS20 packets.
+# If the size of the memo field is bigger than the configured
+# one, the packet will not be relayed.
+# [Default: 32768 (32Kb)]
+#ics20_max_memo_size = 32768
+
+# Set the maximum size for the receiver field in ICS20 packets.
+# If the size of the receiver field is bigger than the configured
+# one, the packet will not be relayed.
+# [Default: 32768 (2Kb)]
+#ics20_max_receiver_size = 2048
+
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
 [rest]

@@ -26,6 +26,8 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
 use crate::chain::cosmos::config::CosmosSdkConfig;
+use crate::config::types::ics20_max_memo_size::Ics20MaxMemoSize;
+use crate::config::types::ics20_max_receiver_size::Ics20MaxReceiverSize;
 use crate::config::types::TrustThreshold;
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
@@ -230,18 +232,6 @@ pub mod default {
             buckets: 10,
         }
     }
-
-    /// Use limit of 32768 bytes used by ibc-go v8 as default
-    /// See: https://github.com/cosmos/ibc-go/blob/04e14a7079e18323c64d4e00e12cf77708d24701/modules/apps/transfer/types/msgs.go#L17
-    pub fn ics20_max_memo_size() -> MaxTxSize {
-        MaxTxSize::unsafe_new(32768)
-    }
-
-    /// Use limit of 2048 bytes used by ibc-go v8 as default
-    /// See: https://github.com/cosmos/ibc-go/blob/04e14a7079e18323c64d4e00e12cf77708d24701/modules/apps/transfer/types/msgs.go#L16
-    pub fn ics20_max_receiver_size() -> MaxTxSize {
-        MaxTxSize::unsafe_new(2048)
-    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -412,10 +402,10 @@ pub struct Packets {
     pub tx_confirmation: bool,
     #[serde(default = "default::auto_register_counterparty_payee")]
     pub auto_register_counterparty_payee: bool,
-    #[serde(default = "default::ics20_max_memo_size")]
-    pub ics20_max_memo_size: MaxTxSize,
-    #[serde(default = "default::ics20_max_receiver_size")]
-    pub ics20_max_receiver_size: MaxTxSize,
+    #[serde(default)]
+    pub ics20_max_memo_size: Ics20MaxMemoSize,
+    #[serde(default)]
+    pub ics20_max_receiver_size: Ics20MaxReceiverSize,
 }
 
 impl Default for Packets {
@@ -426,8 +416,8 @@ impl Default for Packets {
             clear_on_start: default::clear_on_start(),
             tx_confirmation: default::tx_confirmation(),
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
-            ics20_max_memo_size: default::ics20_max_memo_size(),
-            ics20_max_receiver_size: default::ics20_max_receiver_size(),
+            ics20_max_memo_size: Ics20MaxMemoSize::default(),
+            ics20_max_receiver_size: Ics20MaxReceiverSize::default(),
         }
     }
 }
@@ -761,7 +751,6 @@ impl<E: Into<Error>> From<CosmosConfigDiagnostic<E>> for Diagnostic<Error> {
 
 use crate::chain::cosmos::config::error::Error as CosmosConfigError;
 
-use self::types::MaxTxSize;
 impl From<CosmosConfigError> for Error {
     fn from(error: CosmosConfigError) -> Error {
         Error::cosmos_config_error(error.to_string())

@@ -179,6 +179,164 @@ pub mod max_tx_size {
     }
 }
 
+pub mod ics20_max_receiver_size {
+    flex_error::define_error! {
+        Error {
+            TooBig
+                { value: usize }
+                |e| {
+                    format_args!("`ics20_max_receiver_size` must be less than or equal to {}, found {}",
+                    Ics20MaxReceiverSize::MAX_BOUND, e.value)
+                },
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct Ics20MaxReceiverSize(usize);
+
+    impl Ics20MaxReceiverSize {
+        /// Use limit of 2048 bytes used by ibc-go v8 as default
+        /// See: https://github.com/cosmos/ibc-go/blob/04e14a7079e18323c64d4e00e12cf77708d24701/modules/apps/transfer/types/msgs.go#L16
+        const DEFAULT: usize = 2048;
+        const MAX_BOUND: usize = 1048576; // 1 MBytes
+
+        pub fn new(value: usize) -> Result<Self, Error> {
+            if value > Self::MAX_BOUND {
+                return Err(Error::too_big(value));
+            }
+
+            Ok(Self(value))
+        }
+
+        pub fn max() -> Self {
+            Self(Self::MAX_BOUND)
+        }
+
+        pub fn to_usize(self) -> usize {
+            self.0
+        }
+    }
+
+    impl Default for Ics20MaxReceiverSize {
+        fn default() -> Self {
+            Self(Self::DEFAULT)
+        }
+    }
+
+    use serde::de::Unexpected;
+    use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+
+    impl<'de> Deserialize<'de> for Ics20MaxReceiverSize {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let value = usize::deserialize(deserializer)?;
+
+            Ics20MaxReceiverSize::new(value).map_err(|e| match e.detail() {
+                ErrorDetail::TooBig(_) => D::Error::invalid_value(
+                    Unexpected::Unsigned(value as u64),
+                    &format!("a usize less than or equal to {}", Self::MAX_BOUND).as_str(),
+                ),
+            })
+        }
+    }
+
+    impl Serialize for Ics20MaxReceiverSize {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.0.serialize(serializer)
+        }
+    }
+
+    impl From<Ics20MaxReceiverSize> for usize {
+        fn from(m: Ics20MaxReceiverSize) -> Self {
+            m.0
+        }
+    }
+}
+
+pub mod ics20_max_memo_size {
+    flex_error::define_error! {
+        Error {
+            TooBig
+                { value: usize }
+                |e| {
+                    format_args!("`ics20_max_memo_size` must be less than or equal to {}, found {}",
+                    Ics20MaxMemoSize::MAX_BOUND, e.value)
+                },
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct Ics20MaxMemoSize(usize);
+
+    impl Ics20MaxMemoSize {
+        /// Use limit of 32768 bytes used by ibc-go v8 as default
+        /// See: https://github.com/cosmos/ibc-go/blob/04e14a7079e18323c64d4e00e12cf77708d24701/modules/apps/transfer/types/msgs.go#L17
+        const DEFAULT: usize = 32768;
+        const MAX_BOUND: usize = 4 * 1048576; // 4 MBytes
+
+        pub fn new(value: usize) -> Result<Self, Error> {
+            if value > Self::MAX_BOUND {
+                return Err(Error::too_big(value));
+            }
+
+            Ok(Self(value))
+        }
+
+        pub fn max() -> Self {
+            Self(Self::MAX_BOUND)
+        }
+
+        pub fn to_usize(self) -> usize {
+            self.0
+        }
+    }
+
+    impl Default for Ics20MaxMemoSize {
+        fn default() -> Self {
+            Self(Self::DEFAULT)
+        }
+    }
+
+    use serde::de::Unexpected;
+    use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+
+    impl<'de> Deserialize<'de> for Ics20MaxMemoSize {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let value = usize::deserialize(deserializer)?;
+
+            Ics20MaxMemoSize::new(value).map_err(|e| match e.detail() {
+                ErrorDetail::TooBig(_) => D::Error::invalid_value(
+                    Unexpected::Unsigned(value as u64),
+                    &format!("a usize less than or equal to {}", Self::MAX_BOUND).as_str(),
+                ),
+            })
+        }
+    }
+
+    impl Serialize for Ics20MaxMemoSize {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.0.serialize(serializer)
+        }
+    }
+
+    impl From<Ics20MaxMemoSize> for usize {
+        fn from(m: Ics20MaxMemoSize) -> Self {
+            m.0
+        }
+    }
+}
+
 pub use memo::Memo;
 
 pub mod memo {
