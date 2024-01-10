@@ -16,7 +16,7 @@ use ibc_relayer_types::core::ics04_channel::msgs::{
     acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
     recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
 };
-use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType};
+use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType, ValidationResult};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::events::{IbcEvent, IbcEventType, WithBlockDataType};
 use ibc_relayer_types::signer::Signer;
@@ -1399,17 +1399,45 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
         if timeout.is_some() {
             Ok((None, timeout))
-        } else if event
-            .packet
-            .are_fields_valid(self.max_memo_size, self.max_receiver_size)
-        {
-            Ok((self.build_recv_packet(&event.packet, height)?, None))
         } else {
-            debug!(
-                "memo and/or receiver field are too big for packet {:#?}",
-                event.packet
-            );
-            Ok((None, None))
+            match event
+                .packet
+                .are_fields_valid(self.max_memo_size, self.max_receiver_size)
+            {
+                ValidationResult::Valid => {
+                    Ok((self.build_recv_packet(&event.packet, height)?, None))
+                }
+                ValidationResult::MemoTooBig { size, max } => {
+                    trace!("packet: {:#?}", event.packet);
+                    debug!("memo field of packet with sequence {} is too big. Memo field size {size}, maximum configured size {max}", event.packet.sequence);
+                    Ok((None, None))
+                }
+                ValidationResult::ReceiverTooBig { size, max } => {
+                    trace!("packet: {:#?}", event.packet);
+                    debug!("receiver field of packet with sequence {} is too big. Receiver field size {size}, maximum configured size {max}", event.packet.sequence);
+                    Ok((None, None))
+                }
+                ValidationResult::BothTooBig {
+                    memo_size,
+                    memo_max,
+                    receiver_size,
+                    receiver_max,
+                } => {
+                    trace!("packet: {:#?}", event.packet);
+                    debug!(
+                        "memo and receiver field of packet with sequence {} are too big. \
+                        Memo field size {memo_size}, maximum configured size {memo_max}, \
+                        receiver field size {receiver_size}, maximum configured size {receiver_max}",
+                        event.packet.sequence
+                    );
+                    Ok((None, None))
+                }
+                ValidationResult::DecodeFailure { details } => {
+                    trace!("packet: {:#?}", event.packet);
+                    trace!("failed to decode packet or packet isn't an ICS20 packet, details: {details}");
+                    Ok((self.build_recv_packet(&event.packet, height)?, None))
+                }
+            }
         }
     }
 
