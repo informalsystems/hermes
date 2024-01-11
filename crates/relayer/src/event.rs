@@ -329,8 +329,8 @@ fn client_extract_attributes_from_tx(event: &AbciEvent) -> Result<ClientAttribut
 pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, ClientError> {
     for tag in &event.attributes {
         if tag.key == HEADER_ATTRIBUTE_KEY {
-            let header_bytes =
-                hex::decode(&tag.value).map_err(|_| ClientError::malformed_header())?;
+            let header_bytes = hex::decode(tag.value.to_lowercase())
+                .map_err(|_| ClientError::malformed_header())?;
             return decode_header(&header_bytes);
         }
     }
@@ -434,7 +434,7 @@ pub fn extract_packet_and_write_ack_from_tx(
                 packet.timeout_timestamp = value.parse().unwrap();
             }
             channel_events::PKT_DATA_ATTRIBUTE_KEY => {
-                packet.data = hex::decode(value.as_bytes())
+                packet.data = hex::decode(value.to_lowercase())
                     .map_err(|_| ChannelError::invalid_packet_data(value.to_string()))?;
             }
             channel_events::PKT_ACK_ATTRIBUTE_KEY => {
