@@ -27,6 +27,9 @@ pub mod tendermint;
 pub mod ternary_transfer;
 pub mod transfer;
 
+#[cfg(any(doc, feature = "dynamic-gas"))]
+pub mod dynamic_gas;
+
 #[cfg(any(doc, feature = "ics29-fee"))]
 pub mod fee;
 
