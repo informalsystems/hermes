@@ -227,7 +227,6 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
             &stake_denom.with_amount(ica_fund).as_ref(),
         )?;
 
-        //
         info!("Check that the channel closed after packet timeout...");
 
         assert_eventually_channel_closed(
