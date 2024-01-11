@@ -2,8 +2,8 @@ use ibc_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
 
-use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics04_channel::error::Error;
+use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -23,13 +23,19 @@ pub struct MsgChannelCloseConfirm {
 }
 
 impl MsgChannelCloseConfirm {
-    pub fn new(port_id: PortId, channel_id: ChannelId, proofs: Proofs, signer: Signer, counterparty_upgrade_sequence: Sequence) -> Self {
+    pub fn new(
+        port_id: PortId,
+        channel_id: ChannelId,
+        proofs: Proofs,
+        signer: Signer,
+        counterparty_upgrade_sequence: Sequence,
+    ) -> Self {
         Self {
             port_id,
             channel_id,
             proofs,
             signer,
-            counterparty_upgrade_sequence
+            counterparty_upgrade_sequence,
         }
     }
 }

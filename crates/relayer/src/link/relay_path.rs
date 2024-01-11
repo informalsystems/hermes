@@ -11,12 +11,12 @@ use ibc_relayer_types::core::ics02_client::events::ClientMisbehaviour as ClientM
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Ordering, State as ChannelState,
 };
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::msgs::{
     acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
     recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
 };
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::events::{IbcEvent, IbcEventType, WithBlockDataType};
@@ -340,13 +340,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Nothing to do if channel on destination is already closed
-        let dst_channel = self
-            .dst_channel(QueryHeight::Latest)?;
+        let dst_channel = self.dst_channel(QueryHeight::Latest)?;
 
         if dst_channel.state_matches(&ChannelState::Closed) {
             return Ok(None);
         }
-            
+
         let src_channel_id = self.src_channel_id();
         let proofs = self
             .src_chain()
@@ -1340,9 +1339,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             )
             .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;
 
-        let counterparty_upgrade_sequence = self
-            .dst_channel(QueryHeight::Latest)
-            .map_or_else(|_| Sequence::default(), |channel_end| channel_end.upgrade_sequence);
+        let counterparty_upgrade_sequence = self.dst_channel(QueryHeight::Latest).map_or_else(
+            |_| Sequence::default(),
+            |channel_end| channel_end.upgrade_sequence,
+        );
 
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),

@@ -3,34 +3,34 @@
 //! - `ChannelUpgradeICACloseChannel` tests that after the upgrade handshake is completed
 //!   and the channel version has been updated to ICS29 a packet timeout closes the channel.
 
-use std::str::FromStr;
 use serde_json as json;
+use std::str::FromStr;
 
-use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
+use ibc_relayer::chain::tracking::TrackedMsgs;
 
 use ibc_relayer::event::IbcEventWithHeight;
 
+use ibc_relayer_types::applications::{
+    ics27_ica,
+    ics27_ica::{
+        cosmos_tx::CosmosTx, msgs::send_tx::MsgSendTx, packet_data::InterchainAccountPacketData,
+    },
+    transfer::{msgs::send::MsgSend, Amount, Coin},
+};
 use ibc_relayer_types::bigint::U256;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics04_channel::version::Version;
-use ibc_relayer_types::applications::{
-    ics27_ica,
-    ics27_ica::{cosmos_tx::CosmosTx, msgs::send_tx::MsgSendTx, packet_data::InterchainAccountPacketData},
-    transfer::{msgs::send::MsgSend, Amount, Coin},
-};
 
-use ibc_test_framework::chain::ext::ica::register_interchain_account;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
+use ibc_test_framework::chain::ext::ica::register_interchain_account;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
-    assert_eventually_channel_established, 
-    assert_eventually_channel_closed,
-    assert_eventually_channel_upgrade_open,
-    ChannelUpgradableAttributes,
+    assert_eventually_channel_closed, assert_eventually_channel_established,
+    assert_eventually_channel_upgrade_open, ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -80,7 +80,7 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
             &controller_channel_id.as_ref(),
             &controller_port_id.as_ref(),
         )?;
-        
+
         let channel_end_a = chains
             .handle_a
             .query_channel(
@@ -95,7 +95,10 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
             .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
 
         let host_port_id = channel_end_a.remote.port_id;
-        let host_channel_id = channel_end_a.remote.channel_id.ok_or_else(|| eyre!("expect to find counterparty channel id"))?;
+        let host_channel_id = channel_end_a
+            .remote
+            .channel_id
+            .ok_or_else(|| eyre!("expect to find counterparty channel id"))?;
 
         let channel_end_b = chains
             .handle_b
@@ -167,7 +170,7 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
             &controller_port_id.as_ref(),
             &upgraded_attrs,
         )?;
-        
+
         // Send funds to the interchain account.
         let ica_fund = 42000u64;
 
@@ -206,7 +209,7 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
         let signer = Signer::from_str(&wallet.address().to_string()).unwrap();
 
         // Send funds from the ICA account to the `user2` account on the host chain on behalf
-        // of the `user1` account on the controller chain. The timeout is set to 1s to force a 
+        // of the `user1` account on the controller chain. The timeout is set to 1s to force a
         // packet timeout that will close the channel.
         interchain_send_tx(
             chains.handle_a(),

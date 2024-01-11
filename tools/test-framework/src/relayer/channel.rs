@@ -335,10 +335,7 @@ pub fn assert_eventually_channel_closed<ChainA: ChainHandle, ChainB: ChainHandle
         || {
             let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
 
-            if !channel_end_a
-                .value()
-                .state_matches(&ChannelState::Closed)
-            {
+            if !channel_end_a.value().state_matches(&ChannelState::Closed) {
                 return Err(Error::generic(eyre!(
                     "expected channel end A to be in closed state"
                 )));
@@ -355,10 +352,7 @@ pub fn assert_eventually_channel_closed<ChainA: ChainHandle, ChainB: ChainHandle
             let channel_end_b =
                 query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
 
-            if !channel_end_b
-                .value()
-                .state_matches(&ChannelState::Closed)
-            {
+            if !channel_end_b.value().state_matches(&ChannelState::Closed) {
                 return Err(Error::generic(eyre!(
                     "expected channel end B to be in closed state"
                 )));
