@@ -1,8 +1,9 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 
-use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str;
+
+use serde_derive::{Deserialize, Serialize};
 use tendermint::abci;
 
 use crate::core::ics04_channel::error::Error;
@@ -21,7 +22,7 @@ pub const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
 
 /// Packet event attribute keys
 pub const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
-pub const PKT_DATA_ATTRIBUTE_KEY: &str = "packet_data";
+pub const PKT_DATA_ATTRIBUTE_KEY: &str = "packet_data_hex";
 pub const PKT_SRC_PORT_ATTRIBUTE_KEY: &str = "packet_src_port";
 pub const PKT_SRC_CHANNEL_ATTRIBUTE_KEY: &str = "packet_src_channel";
 pub const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
@@ -116,7 +117,8 @@ impl TryFrom<Packet> for Vec<abci::EventAttribute> {
         )
             .into();
         attributes.push(timeout_timestamp);
-        let val = str::from_utf8(&p.data).expect("hex-encoded string should always be valid UTF-8");
+        let val = String::from_utf8(subtle_encoding::hex::encode(&p.data))
+            .expect("hex-encoded string should always be valid UTF-8");
         let packet_data = (PKT_DATA_ATTRIBUTE_KEY, val).into();
         attributes.push(packet_data);
         let ack = (PKT_ACK_ATTRIBUTE_KEY, "").into();

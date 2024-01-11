@@ -69,7 +69,8 @@ macro_rules! impl_try_from_raw_obj_for_packet {
                 let data_str: String = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
 
                 let mut packet = Packet::try_from(obj)?;
-                packet.data = Vec::from(data_str.as_str().as_bytes());
+                packet.data = subtle_encoding::hex::decode(&data_str)
+                    .map_err(|_| EventError::invalid_packet_data(data_str))?;
 
                 Ok(Self { packet })
             }
@@ -95,7 +96,8 @@ impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
             .into_bytes();
 
         let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_bytes());
+        packet.data =
+            hex::decode(&data_str).map_err(|_| EventError::invalid_packet_data(data_str))?;
 
         Ok(Self { packet, ack })
     }

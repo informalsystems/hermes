@@ -1,5 +1,6 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde::Serialize;
+use subtle_encoding::hex;
 use tendermint::abci::Event as AbciEvent;
 
 use ibc_relayer_types::{
@@ -402,9 +403,11 @@ pub fn extract_packet_and_write_ack_from_tx(
 ) -> Result<(Packet, Vec<u8>), ChannelError> {
     let mut packet = Packet::default();
     let mut write_ack: Vec<u8> = Vec::new();
+
     for tag in &event.attributes {
         let key = tag.key.as_str();
         let value = tag.value.as_str();
+
         match key {
             channel_events::PKT_SRC_PORT_ATTRIBUTE_KEY => {
                 packet.source_port = value.parse().map_err(ChannelError::identifier)?;
@@ -431,7 +434,8 @@ pub fn extract_packet_and_write_ack_from_tx(
                 packet.timeout_timestamp = value.parse().unwrap();
             }
             channel_events::PKT_DATA_ATTRIBUTE_KEY => {
-                packet.data = Vec::from(value.as_bytes());
+                packet.data = hex::decode(value.as_bytes())
+                    .map_err(|_| ChannelError::invalid_packet_data(value.to_string()))?;
             }
             channel_events::PKT_ACK_ATTRIBUTE_KEY => {
                 write_ack = Vec::from(value.as_bytes());
