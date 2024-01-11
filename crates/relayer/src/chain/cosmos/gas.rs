@@ -3,11 +3,15 @@ use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use num_bigint::BigInt;
 use num_rational::BigRational;
+use tendermint_rpc::Url;
 
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::GasPrice;
+use crate::util::block_on;
 
-pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64) -> Fee {
+use super::query_eip_base_fee;
+
+pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address: &Url) -> Fee {
     let adjusted_gas_limit = adjust_estimated_gas(AdjustGas {
         gas_multiplier: config.gas_multiplier,
         max_gas: config.max_gas,
@@ -15,6 +19,7 @@ pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64) -> Fee {
     });
 
     // The fee in coins based on gas amount
+    let _dyanmic_gas_price = dynamic_gas_price(config, rpc_address);
     let amount = calculate_fee(adjusted_gas_limit, &config.gas_price);
 
     Fee {
@@ -22,6 +27,19 @@ pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64) -> Fee {
         gas_limit: adjusted_gas_limit,
         payer: "".to_string(),
         granter: config.fee_granter.clone(),
+    }
+}
+pub fn dynamic_gas_price(config: &GasConfig, rpc_address: &Url) -> GasPrice {
+    if let Some(dynamic_gas_price_multiplier) = config.dynamic_gas_price_multiplier {
+        let new_price = block_on(query_eip_base_fee(&rpc_address.to_string())).unwrap()
+            * dynamic_gas_price_multiplier;
+
+        GasPrice {
+            price: new_price,
+            denom: config.gas_price.denom.clone(),
+        }
+    } else {
+        config.gas_price.clone()
     }
 }
 

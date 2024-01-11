@@ -253,7 +253,11 @@ fn batch_messages(
     // Estimate the overhead of the transaction envelope's encoding,
     // by taking the encoded length of an empty tx with the same auth info and signatures.
     // Use the maximum possible fee to get an upper bound for varint encoding.
-    let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+    let max_fee = gas_amount_to_fee(
+        &config.gas_config,
+        config.gas_config.max_gas,
+        &config.rpc_address,
+    );
     let tx_metrics = encoded_tx_metrics(config, key_pair, account, tx_memo, &[], &max_fee)?;
     let tx_envelope_len = tx_metrics.envelope_len;
     let empty_body_len = tx_metrics.body_bytes_len;
@@ -363,7 +367,11 @@ mod tests {
     #[test]
     fn batch_does_not_exceed_max_tx_size() {
         let (config, key_pair, account) = test_fixture();
-        let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+        let max_fee = gas_amount_to_fee(
+            &config.gas_config,
+            config.gas_config.max_gas,
+            &config.rpc_address,
+        );
         let mut messages = vec![Any {
             type_url: "/example.Baz".into(),
             value: vec![0; 2],
@@ -443,7 +451,11 @@ mod tests {
         assert_eq!(batches.len(), 1);
         assert_eq!(batches[0].len(), 1);
 
-        let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+        let max_fee = gas_amount_to_fee(
+            &config.gas_config,
+            config.gas_config.max_gas,
+            &config.rpc_address,
+        );
         let tx_bytes =
             sign_and_encode_tx(&config, &key_pair, &account, &memo, &batches[0], &max_fee).unwrap();
         assert_eq!(tx_bytes.len(), MAX_TX_SIZE);
@@ -565,7 +577,11 @@ mod tests {
 
         assert_eq!(batches.len(), 5);
 
-        let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+        let max_fee = gas_amount_to_fee(
+            &config.gas_config,
+            config.gas_config.max_gas,
+            &config.rpc_address,
+        );
 
         for batch in batches {
             assert_eq!(batch.len(), 1);

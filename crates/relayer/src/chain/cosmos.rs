@@ -884,7 +884,7 @@ pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
         .as_str()
         .ok_or_else(|| Error::json_field("value".to_string()))?
         .to_string();
-    let base_fee_decoded = base64::decode(&base_fee_encoded).unwrap();
+    let base_fee_decoded = base64::decode(base_fee_encoded).unwrap();
 
     let base_fee_dec_proto: DecProto = prost::Message::decode(base_fee_decoded.as_ref())
         .map_err(|_| Error::json_field("test".to_string()))?;

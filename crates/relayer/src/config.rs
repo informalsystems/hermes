@@ -1,6 +1,7 @@
 //! Relayer configuration
 
 pub mod compat_mode;
+pub mod dynamic_gas;
 pub mod error;
 pub mod filter;
 pub mod gas_multiplier;
@@ -46,6 +47,8 @@ pub use error::Error;
 use crate::chain::cosmos::query_eip_base_fee;
 use crate::util::block_on;
 pub use filter::PacketFilter;
+
+use crate::config::dynamic_gas::DynamicGas;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -663,6 +666,8 @@ pub struct ChainConfig {
     #[serde(default)]
     pub packet_filter: PacketFilter,
 
+    pub dynamic_gas_price: DynamicGas,
+
     #[serde(default)]
     pub address_type: AddressType,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
@@ -673,24 +678,16 @@ pub struct ChainConfig {
 
 impl ChainConfig {
     pub fn dynamic_gas_price(&self) -> GasPrice {
-        match self.id.as_str() {
-            "osmosis-1" => {
-                let new_price = block_on(query_eip_base_fee(&self.rpc_addr.to_string())).unwrap()
-                    + self.gas_price_multiplier.unwrap_or(1.1);
+        if let Some(dynamic_gas_price) = self.dynamic_gas_price.dynamic_gas_price() {
+            let new_price = block_on(query_eip_base_fee(&self.rpc_addr.to_string())).unwrap()
+                * dynamic_gas_price;
 
-                let max_gas_price = self.max_gas_price.unwrap_or(0.0);
-                let final_price = if new_price > max_gas_price {
-                    max_gas_price
-                } else {
-                    new_price
-                };
-
-                GasPrice {
-                    price: final_price,
-                    denom: self.gas_price.denom.clone(),
-                }
+            GasPrice {
+                price: new_price,
+                denom: self.gas_price.denom.clone(),
             }
-            _ => self.gas_price.clone(),
+        } else {
+            self.gas_price.clone()
         }
     }
 }

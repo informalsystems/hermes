@@ -16,6 +16,7 @@ pub struct GasConfig {
     pub gas_price: GasPrice,
     pub max_fee: Fee,
     pub fee_granter: String,
+    pub dynamic_gas_price_multiplier: Option<f64>,
 }
 
 impl<'a> From<&'a ChainConfig> for GasConfig {
@@ -27,6 +28,7 @@ impl<'a> From<&'a ChainConfig> for GasConfig {
             gas_price: config.dynamic_gas_price(),
             max_fee: max_fee_from_config(config),
             fee_granter: fee_granter_from_config(config),
+            dynamic_gas_price_multiplier: config.dynamic_gas_price.dynamic_gas_price(),
         }
     }
 }

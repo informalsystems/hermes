@@ -9,6 +9,7 @@ use eyre::Report as Error;
 use ibc_relayer::chain::ChainType;
 use ibc_relayer::config;
 use ibc_relayer::config::compat_mode::CompatMode;
+use ibc_relayer::config::dynamic_gas::DynamicGas;
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -163,6 +164,7 @@ impl FullNode {
             max_gas: Some(3000000),
             gas_adjustment: None,
             gas_multiplier: Some(GasMultiplier::unsafe_new(1.2)),
+            dynamic_gas_price: DynamicGas::default(),
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
