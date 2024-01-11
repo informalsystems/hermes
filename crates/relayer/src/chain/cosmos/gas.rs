@@ -19,8 +19,8 @@ pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address: &Url)
     });
 
     // The fee in coins based on gas amount
-    let _dyanmic_gas_price = dynamic_gas_price(config, rpc_address);
-    let amount = calculate_fee(adjusted_gas_limit, &config.gas_price);
+    let dynamic_gas_price = dynamic_gas_price(config, rpc_address);
+    let amount = calculate_fee(adjusted_gas_limit, &dynamic_gas_price);
 
     Fee {
         amount: vec![amount],
