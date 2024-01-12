@@ -37,9 +37,9 @@ bytes = "1.4.0"
 prost = { version = "0.12" }
 tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 futures = "0.3.27"
-crossbeam-channel = "0.5.8"
+crossbeam-channel = "0.5.11"
 hex = "0.4"
-bitcoin = { version = "0.30.1", features = ["serde"] }
+bitcoin = { version = "0.31.1", features = ["serde"] }
 tiny-bip39 = "1.0.0"
 hdpath = "0.6.3"
 sha2 = "0.10.6"
@@ -65,10 +65,10 @@ ed25519 = "2.2.2"
 ed25519-dalek = { version = "2.0.0", features = ["serde"] }
 ed25519-dalek-bip32 = "0.3.0"
 generic-array = "0.14.7"
-secp256k1 = { version = "0.27.0", features = ["rand-std"] }
+secp256k1 = { version = "0.28.1", features = ["rand-std"] }
 strum = { version = "0.25", features = ["derive"] }
 tokio-stream = "0.1.14"
-once_cell = "1.17.1"
+once_cell = "1.19.0"
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
 
 [dependencies.byte-unit]
