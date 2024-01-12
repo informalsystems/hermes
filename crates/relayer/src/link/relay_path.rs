@@ -676,24 +676,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
                     return Ok(reply);
                 }
-                Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
-                    warn!(
-                        "Determining whether we need to retry in response to: {}",
-                        e.event
-                    );
-
-                    // if on an ordered channel, perform a packet clearing, but only if we
+                Err(LinkError(error::LinkErrorDetail::Send(_), _)) => {
+                    // If on an ordered channel, perform a packet clearing, but only if we
                     // are not in the middle of another packet clearing process
                     if self.ordered_channel() && i == 0 && !odata.tracking_id.is_clearing() {
-                        // Do we need to specify the height for the packet clearing?
-                        // Probably not, since no progress will have been made on the clearing process
+                        warn!("Failed to relay to ordered channel, attempting to recover by clearing packets");
+
+                        // We do need to specify the height for the packet clearing,
+                        // since no progress will have been made on the clearing process
                         self.relay_pending_packets(None)?;
                     }
 
                     if i + 1 == MAX_RETRIES {
-                        error!("{}/{} retries exhausted. Giving up", i + 1, MAX_RETRIES)
+                        error!("{}/{} retries exhausted, giving up", i + 1, MAX_RETRIES)
                     } else {
-                        debug!("{}/{} retries exhausted. Retrying with newly-generated operational data", i + 1, MAX_RETRIES);
+                        debug!("{}/{} retries exhausted, retrying with newly-generated operational data", i + 1, MAX_RETRIES);
 
                         // If we haven't exhausted all retries, regenerate the op. data & retry
                         match self.regenerate_operational_data(odata.clone()) {
