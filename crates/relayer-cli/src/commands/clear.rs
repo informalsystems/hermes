@@ -206,6 +206,7 @@ mod tests {
                 packet_sequences: vec![],
                 key_name: None,
                 counterparty_key_name: None,
+                query_packets_chunk_size: None,
             },
             ClearPacketsCmd::parse_from([
                 "test",
@@ -228,7 +229,8 @@ mod tests {
                 channel_id: ChannelId::from_str("channel-07").unwrap(),
                 packet_sequences: vec![],
                 key_name: None,
-                counterparty_key_name: None
+                counterparty_key_name: None,
+                query_packets_chunk_size: None,
             },
             ClearPacketsCmd::parse_from([
                 "test",
@@ -283,6 +285,7 @@ mod tests {
                 packet_sequences: vec![],
                 key_name: Some("key_name".to_owned()),
                 counterparty_key_name: None,
+                query_packets_chunk_size: None,
             },
             ClearPacketsCmd::parse_from([
                 "test",
@@ -308,6 +311,7 @@ mod tests {
                 packet_sequences: vec![],
                 key_name: None,
                 counterparty_key_name: Some("counterparty_key_name".to_owned()),
+                query_packets_chunk_size: None,
             },
             ClearPacketsCmd::parse_from([
                 "test",

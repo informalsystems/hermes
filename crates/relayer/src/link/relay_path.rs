@@ -513,7 +513,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         .entered();
 
         let input = events.events();
-        let src_height = match input.get(0) {
+        let src_height = match input.first() {
             None => return Ok((None, None)),
             Some(ev) => ev.height,
         };
