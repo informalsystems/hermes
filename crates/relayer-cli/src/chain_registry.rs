@@ -142,7 +142,7 @@ where
         max_gas: Some(400000),
         gas_adjustment: None,
         gas_multiplier: Some(GasMultiplier::new(1.1).unwrap()),
-        dynamic_gas_price: DynamicGas::default(), // TODO: check if Osmosis chain and add in that case?
+        dynamic_gas: DynamicGas::default(), // TODO: check if Osmosis chain and add in that case?
         fee_granter: None,
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),

@@ -666,7 +666,8 @@ pub struct ChainConfig {
     #[serde(default)]
     pub packet_filter: PacketFilter,
 
-    pub dynamic_gas_price: DynamicGas,
+    #[serde(default)]
+    pub dynamic_gas: DynamicGas,
 
     #[serde(default)]
     pub address_type: AddressType,
@@ -678,7 +679,7 @@ pub struct ChainConfig {
 
 impl ChainConfig {
     pub fn dynamic_gas_price(&self) -> GasPrice {
-        if let Some(dynamic_gas_price) = self.dynamic_gas_price.dynamic_gas_price() {
+        if let Some(dynamic_gas_price) = self.dynamic_gas.dynamic_gas_price() {
             let new_price = block_on(query_eip_base_fee(&self.rpc_addr.to_string())).unwrap()
                 * dynamic_gas_price;
 

@@ -164,7 +164,7 @@ impl FullNode {
             max_gas: Some(3000000),
             gas_adjustment: None,
             gas_multiplier: Some(GasMultiplier::unsafe_new(1.2)),
-            dynamic_gas_price: DynamicGas::default(),
+            dynamic_gas: DynamicGas::default(),
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
