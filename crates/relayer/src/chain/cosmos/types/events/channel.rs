@@ -75,6 +75,9 @@ fn extract_upgrade_attributes(
         upgrade_ordering: extract_attribute(object, &format!("{namespace}.upgrade_ordering"))?
             .parse()
             .map_err(|_| EventError::missing_action_string())?,
+        upgrade_timeout: extract_attribute(object, &format!("{namespace}.upgrade_timeout"))?
+            .parse()
+            .map_or_else(|_| None, |timeout| Some(timeout)),
     })
 }
 

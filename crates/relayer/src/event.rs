@@ -136,6 +136,10 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
             channel_upgrade_cancelled_try_from_abci_event(abci_event)
                 .map_err(IbcEventError::channel)?,
         )),
+        Ok(IbcEventType::UpgradeTimeoutChannel) => Ok(IbcEvent::UpgradeTimeoutChannel(
+            channel_upgrade_timeout_try_from_abci_event(abci_event)
+                .map_err(IbcEventError::channel)?,
+        )),
         Ok(IbcEventType::SendPacket) => Ok(IbcEvent::SendPacket(
             send_packet_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
         )),
@@ -332,6 +336,16 @@ pub fn channel_upgrade_cancelled_try_from_abci_event(
 ) -> Result<channel_events::UpgradeCancel, ChannelError> {
     match channel_upgrade_extract_attributes_from_tx(abci_event) {
         Ok(attrs) => channel_events::UpgradeCancel::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_timeout_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeTimeout, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeTimeout::try_from(attrs)
             .map_err(|_| ChannelError::implementation_specific()),
         Err(e) => Err(e),
     }
