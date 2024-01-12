@@ -104,9 +104,7 @@ impl From<MsgChannelUpgradeTimeout> for RawMsgChannelUpgradeTimeout {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::apps::transfer;
-    use ibc_proto::ibc::core::channel::v1::Channel;
-    use ibc_proto::ibc::core::channel::v1::ErrorReceipt as RawErrorReceipt;
+    use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeTimeout as RawMsgChannelUpgradeTimeout;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
@@ -133,10 +131,11 @@ pub mod test_util {
 mod tests {
     use test_log::test;
 
+    use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeTimeout as RawMsgChannelUpgradeTimeout;
 
-    use crate::core::ics04_channel::msgs::chan_upgrade_Timeout::test_util::get_dummy_raw_msg_chan_upgrade_Timeout;
-    use crate::core::ics04_channel::msgs::chan_upgrade_Timeout::MsgChannelUpgradeTimeout;
+    use crate::core::ics04_channel::msgs::chan_upgrade_timeout::test_util::get_dummy_raw_msg_chan_upgrade_timeout;
+    use crate::core::ics04_channel::msgs::chan_upgrade_timeout::MsgChannelUpgradeTimeout;
 
     #[test]
     fn parse_channel_upgrade_try_msg() {
@@ -146,7 +145,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_raw_msg = get_dummy_raw_msg_chan_upgrade_Timeout();
+        let default_raw_msg = get_dummy_raw_msg_chan_upgrade_timeout();
 
         let tests: Vec<Test> = vec![
             Test {
@@ -206,7 +205,7 @@ mod tests {
                 name: "Empty proof channel".to_string(),
                 raw: RawMsgChannelUpgradeTimeout {
                     proof_channel: vec![],
-                    ..default_raw_msg
+                    ..default_raw_msg.clone()
                 },
                 want_pass: false,
             },
@@ -249,7 +248,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_raw_msg_chan_upgrade_Timeout();
+        let raw = get_dummy_raw_msg_chan_upgrade_timeout();
         let msg = MsgChannelUpgradeTimeout::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgChannelUpgradeTimeout::from(msg.clone());
         let msg_back = MsgChannelUpgradeTimeout::try_from(raw_back.clone()).unwrap();
