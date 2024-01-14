@@ -3987,8 +3987,8 @@ checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
 
 [[package]]
 name = "namada_core"
-version = "0.29.0"
-source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
+version = "0.30.0"
+source = "git+https://github.com/anoma/namada?tag=v0.30.0#ec58c897e265ecdb56c5d5506c8ac8e4beaaf9d7"
 dependencies = [
  "ark-bls12-381",
  "ark-serialize",
@@ -4038,8 +4038,8 @@ dependencies = [
 
 [[package]]
 name = "namada_ethereum_bridge"
-version = "0.29.0"
-source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
+version = "0.30.0"
+source = "git+https://github.com/anoma/namada?tag=v0.30.0#ec58c897e265ecdb56c5d5506c8ac8e4beaaf9d7"
 dependencies = [
  "borsh",
  "borsh-ext",
@@ -4055,13 +4055,14 @@ dependencies = [
  "tendermint",
  "tendermint-proto",
  "tendermint-rpc",
+ "thiserror",
  "tracing",
 ]
 
 [[package]]
 name = "namada_macros"
-version = "0.29.0"
-source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
+version = "0.30.0"
+source = "git+https://github.com/anoma/namada?tag=v0.30.0#ec58c897e265ecdb56c5d5506c8ac8e4beaaf9d7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4070,8 +4071,8 @@ dependencies = [
 
 [[package]]
 name = "namada_proof_of_stake"
-version = "0.29.0"
-source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
+version = "0.30.0"
+source = "git+https://github.com/anoma/namada?tag=v0.30.0#ec58c897e265ecdb56c5d5506c8ac8e4beaaf9d7"
 dependencies = [
  "borsh",
  "data-encoding",
@@ -4085,8 +4086,8 @@ dependencies = [
 
 [[package]]
 name = "namada_sdk"
-version = "0.29.0"
-source = "git+https://github.com/anoma/namada?tag=v0.29.0#76840b5dbe1a335f45fd468ff3636825dce9df89"
+version = "0.30.0"
+source = "git+https://github.com/anoma/namada?tag=v0.30.0#ec58c897e265ecdb56c5d5506c8ac8e4beaaf9d7"
 dependencies = [
  "async-trait",
  "bimap",

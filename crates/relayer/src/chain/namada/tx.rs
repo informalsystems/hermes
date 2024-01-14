@@ -46,6 +46,18 @@ impl NamadaChain {
         let relayer_public_key = namada_key.secret_key.to_public();
         let relayer_addr = namada_key.address;
 
+        let memo = if !self.config().memo_prefix.as_str().is_empty() {
+            Some(
+                self.config()
+                    .memo_prefix
+                    .as_str()
+                    .to_string()
+                    .as_bytes()
+                    .to_vec(),
+            )
+        } else {
+            None
+        };
         let tx_args = TxArgs {
             dry_run: false,
             dry_run_wrapper: false,
@@ -68,6 +80,7 @@ impl NamadaChain {
             signatures: vec![],
             tx_reveal_code_path: PathBuf::from(tx::TX_REVEAL_PK),
             password: None,
+            memo,
             use_device: false,
         };
         let rt = self.rt.clone();
