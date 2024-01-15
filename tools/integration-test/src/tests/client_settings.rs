@@ -30,12 +30,12 @@ impl TestOverrides for ClientDefaultsTest {
         config.chains[0].clock_drift = Duration::from_secs(3);
         config.chains[0].max_block_time = Duration::from_secs(5);
         config.chains[0].trusting_period = Some(Duration::from_secs(120_000));
-        config.chains[0].trust_threshold = TrustThreshold::new(13, 23).unwrap().try_into().unwrap();
+        config.chains[0].trust_threshold = TrustThreshold::new(13, 23).unwrap().into();
 
         config.chains[1].clock_drift = Duration::from_secs(6);
         config.chains[1].max_block_time = Duration::from_secs(15);
         config.chains[1].trusting_period = Some(Duration::from_secs(340_000));
-        config.chains[1].trust_threshold = TrustThreshold::TWO_THIRDS.try_into().unwrap();
+        config.chains[1].trust_threshold = TrustThreshold::TWO_THIRDS.into();
     }
 }
 
