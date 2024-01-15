@@ -131,8 +131,8 @@ pub mod test_util {
 mod tests {
     use test_log::test;
 
-    use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::channel::v1::MsgChannelUpgradeTimeout as RawMsgChannelUpgradeTimeout;
+    use ibc_proto::ibc::core::client::v1::Height;
 
     use crate::core::ics04_channel::msgs::chan_upgrade_timeout::test_util::get_dummy_raw_msg_chan_upgrade_timeout;
     use crate::core::ics04_channel::msgs::chan_upgrade_timeout::MsgChannelUpgradeTimeout;
