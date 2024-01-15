@@ -260,10 +260,10 @@ impl FromStr for Timeout {
         }
 
         // only timeout timestamp are supported at the moment
-        return split[1]
+        split[1]
             .parse::<Timestamp>()
-            .map(|timestamp| Timeout::Timestamp(timestamp))
-            .map_err(|e| TimeoutError::invalid_timestamp(value.to_owned(), e));
+            .map(Timeout::Timestamp)
+            .map_err(|e| TimeoutError::invalid_timestamp(value.to_owned(), e))
     }
 }
 

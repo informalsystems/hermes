@@ -2278,7 +2278,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let new_msg = MsgChannelUpgradeTimeout {
             port_id: dst_port_id.clone(),
             channel_id: dst_channel_id.clone(),
-            counterparty_channel: counterparty_channel,
+            counterparty_channel,
             proof_channel: proofs.object_proof().clone(),
             proof_height: proofs.height(),
             signer,

@@ -77,7 +77,7 @@ fn extract_upgrade_attributes(
             .map_err(|_| EventError::missing_action_string())?,
         upgrade_timeout: extract_attribute(object, &format!("{namespace}.upgrade_timeout"))?
             .parse()
-            .map_or_else(|_| None, |timeout| Some(timeout)),
+            .map_or_else(|_| None, Some),
     })
 }
 
