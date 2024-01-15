@@ -1467,7 +1467,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         self.validated_expected_channel(ChannelMsgType::CloseConfirm)?;
 
         // Channel must exist on source
-        self.src_chain()
+        let (src_channel_end, _) = self
+            .src_chain()
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
@@ -1499,10 +1500,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
             .map_err(ChannelError::channel_proof)?;
 
-        let counterparty_upgrade_sequence = self.b_channel(Some(dst_channel_id)).map_or_else(
-            |_| Sequence::default(),
-            |channel_end| channel_end.upgrade_sequence,
-        );
+        let counterparty_upgrade_sequence = src_channel_end.upgrade_sequence;
 
         // Build message(s) to update client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;

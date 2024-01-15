@@ -16,7 +16,6 @@ use ibc_relayer_types::core::ics04_channel::msgs::{
     acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
     recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
 };
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::events::{IbcEvent, IbcEventType, WithBlockDataType};
@@ -1339,10 +1338,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             )
             .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;
 
-        let counterparty_upgrade_sequence = self.dst_channel(QueryHeight::Latest).map_or_else(
-            |_| Sequence::default(),
-            |channel_end| channel_end.upgrade_sequence,
-        );
+        let counterparty_upgrade_sequence = self.dst_channel(QueryHeight::Latest)?.upgrade_sequence;
 
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),
