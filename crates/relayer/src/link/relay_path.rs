@@ -1408,12 +1408,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     Ok((self.build_recv_packet(&event.packet, height)?, None))
                 }
                 ValidationResult::MemoTooBig { size, max } => {
-                    trace!("packet: {:#?}", event.packet);
+                    trace!("ICS-20 packet failed fields length check: {:#?}", event.packet);
                     debug!("memo field of packet with sequence {} is too big. Memo field size {size}, maximum configured size {max}", event.packet.sequence);
                     Ok((None, None))
                 }
                 ValidationResult::ReceiverTooBig { size, max } => {
-                    trace!("packet: {:#?}", event.packet);
+                    trace!("ICS-20 packet failed fields length check: {:#?}", event.packet);
                     debug!("receiver field of packet with sequence {} is too big. Receiver field size {size}, maximum configured size {max}", event.packet.sequence);
                     Ok((None, None))
                 }
@@ -1423,7 +1423,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     receiver_size,
                     receiver_max,
                 } => {
-                    trace!("packet: {:#?}", event.packet);
+                    trace!("ICS-20 packet failed fields length check: {:#?}", event.packet);
                     debug!(
                         "memo and receiver field of packet with sequence {} are too big. \
                         Memo field size {memo_size}, maximum configured size {memo_max}, \
