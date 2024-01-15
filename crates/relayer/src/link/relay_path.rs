@@ -4,6 +4,7 @@ use std::ops::Sub;
 use std::time::{Duration, Instant};
 
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
 use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
@@ -16,7 +17,7 @@ use ibc_relayer_types::core::ics04_channel::msgs::{
     acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
     recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
 };
-use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType, ValidationResult};
+use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc_relayer_types::events::{IbcEvent, IbcEventType, WithBlockDataType};
 use ibc_relayer_types::signer::Signer;
@@ -42,6 +43,8 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
+use crate::config::types::ics20_field_size_limit::Ics20FieldSizeLimit;
+use crate::config::types::ics20_field_size_limit::ValidationResult;
 use crate::event::source::EventBatch;
 use crate::event::IbcEventWithHeight;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
@@ -110,8 +113,8 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     pending_txs_src: PendingTxs<ChainA>,
     pending_txs_dst: PendingTxs<ChainB>,
 
-    pub max_memo_size: usize,
-    pub max_receiver_size: usize,
+    pub max_memo_size: Ics20FieldSizeLimit,
+    pub max_receiver_size: Ics20FieldSizeLimit,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
@@ -1399,45 +1402,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
         if timeout.is_some() {
             Ok((None, timeout))
+        } else if are_ics20_fields_valid(
+            &event.packet.data,
+            self.max_memo_size,
+            self.max_receiver_size,
+        ) {
+            Ok((self.build_recv_packet(&event.packet, height)?, None))
         } else {
-            match event
-                .packet
-                .are_fields_valid(self.max_memo_size, self.max_receiver_size)
-            {
-                ValidationResult::Valid => {
-                    Ok((self.build_recv_packet(&event.packet, height)?, None))
-                }
-                ValidationResult::MemoTooBig { size, max } => {
-                    trace!("ICS-20 packet failed fields length check: {:#?}", event.packet);
-                    debug!("memo field of packet with sequence {} is too big. Memo field size {size}, maximum configured size {max}", event.packet.sequence);
-                    Ok((None, None))
-                }
-                ValidationResult::ReceiverTooBig { size, max } => {
-                    trace!("ICS-20 packet failed fields length check: {:#?}", event.packet);
-                    debug!("receiver field of packet with sequence {} is too big. Receiver field size {size}, maximum configured size {max}", event.packet.sequence);
-                    Ok((None, None))
-                }
-                ValidationResult::BothTooBig {
-                    memo_size,
-                    memo_max,
-                    receiver_size,
-                    receiver_max,
-                } => {
-                    trace!("ICS-20 packet failed fields length check: {:#?}", event.packet);
-                    debug!(
-                        "memo and receiver field of packet with sequence {} are too big. \
-                        Memo field size {memo_size}, maximum configured size {memo_max}, \
-                        receiver field size {receiver_size}, maximum configured size {receiver_max}",
-                        event.packet.sequence
-                    );
-                    Ok((None, None))
-                }
-                ValidationResult::DecodeFailure { details } => {
-                    trace!("packet: {:#?}", event.packet);
-                    trace!("failed to decode packet or packet isn't an ICS20 packet, details: {details}");
-                    Ok((self.build_recv_packet(&event.packet, height)?, None))
-                }
-            }
+            trace!("packet: {:#?}", event.packet);
+            Ok((None, None))
         }
     }
 
@@ -1935,6 +1908,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     &self.dst_chain().id(),
                 );
             }
+        }
+    }
+}
+
+fn are_ics20_fields_valid(
+    data: &[u8],
+    ics20_memo_limit: Ics20FieldSizeLimit,
+    ics20_receiver_limit: Ics20FieldSizeLimit,
+) -> bool {
+    match serde_json::from_slice::<RawPacketData>(data) {
+        Ok(packet_data) => {
+            match (
+                ics20_memo_limit.is_memo_field_valid(&packet_data),
+                ics20_receiver_limit.is_memo_field_valid(&packet_data),
+            ) {
+                (ValidationResult::Valid, ValidationResult::Valid) => true,
+                (memo_validity, receiver_validity) => {
+                    debug!("memo validity: {memo_validity}");
+                    debug!("receiver validity: {receiver_validity}");
+                    false
+                }
+            }
+        }
+        Err(e) => {
+            debug!("failed to decode ICS20 packet data with error `{e}`");
+            false
         }
     }
 }

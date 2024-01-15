@@ -265,6 +265,77 @@ pub mod memo {
     }
 }
 
+pub mod ics20_field_size_limit {
+    use byte_unit::Byte;
+    use serde_derive::{Deserialize, Serialize};
+    use std::fmt::Display;
+
+    use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
+
+    pub enum ValidationResult {
+        Valid,
+        Invalid { size: usize, max: usize },
+    }
+
+    impl Display for ValidationResult {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Self::Valid => write!(f, "field is valid"),
+                Self::Invalid { size, max } => {
+                    write!(f, "field is not valid, size `{size}`, max limit `{max}`")
+                }
+            }
+        }
+    }
+
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+    pub struct Ics20FieldSizeLimit {
+        enabled: bool,
+        size: Byte,
+    }
+
+    impl Ics20FieldSizeLimit {
+        pub fn new(enabled: bool, size: Byte) -> Self {
+            Self { enabled, size }
+        }
+
+        /// If the limit is disabled consider the field as valid.
+        /// If the limit is enabled assert the field is smaller or equal
+        /// to the configured value.
+        pub fn is_memo_field_valid(&self, packet_data: &RawPacketData) -> ValidationResult {
+            if self.enabled {
+                let size_limit = self.size.get_bytes() as usize;
+                if packet_data.memo.len() <= size_limit {
+                    ValidationResult::Valid
+                } else {
+                    ValidationResult::Invalid {
+                        size: packet_data.memo.len(),
+                        max: size_limit,
+                    }
+                }
+            } else {
+                ValidationResult::Valid
+            }
+        }
+
+        pub fn is_receiver_field_valid(&self, packet_data: &RawPacketData) -> ValidationResult {
+            if self.enabled {
+                let size_limit = self.size.get_bytes() as usize;
+                if packet_data.receiver.len() <= size_limit {
+                    ValidationResult::Valid
+                } else {
+                    ValidationResult::Invalid {
+                        size: packet_data.receiver.len(),
+                        max: size_limit,
+                    }
+                }
+            } else {
+                ValidationResult::Valid
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(dead_code)] // the fields of the structs defined below are never accessed
 mod tests {

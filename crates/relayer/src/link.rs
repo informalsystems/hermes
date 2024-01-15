@@ -5,11 +5,14 @@ use ibc_relayer_types::core::{
 };
 use tracing::info;
 
-use crate::chain::requests::{QueryChannelRequest, QueryHeight};
 use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
 use crate::chain::{handle::ChainHandle, requests::IncludeProof};
 use crate::channel::{Channel, ChannelSide};
 use crate::link::error::LinkError;
+use crate::{
+    chain::requests::{QueryChannelRequest, QueryHeight},
+    config::types::ics20_field_size_limit::Ics20FieldSizeLimit,
+};
 
 pub mod cli;
 pub mod error;
@@ -33,8 +36,8 @@ pub use relay_path::{RelayPath, Resubmit};
 pub struct LinkParameters {
     pub src_port_id: PortId,
     pub src_channel_id: ChannelId,
-    pub max_memo_size: usize,
-    pub max_receiver_size: usize,
+    pub max_memo_size: Ics20FieldSizeLimit,
+    pub max_receiver_size: Ics20FieldSizeLimit,
 }
 
 pub struct Link<ChainA: ChainHandle, ChainB: ChainHandle> {

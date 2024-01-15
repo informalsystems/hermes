@@ -26,6 +26,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
 use crate::chain::cosmos::config::CosmosSdkConfig;
+use crate::config::types::ics20_field_size_limit::Ics20FieldSizeLimit;
 use crate::config::types::TrustThreshold;
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
@@ -231,12 +232,12 @@ pub mod default {
         }
     }
 
-    pub fn ics20_max_memo_size() -> Byte {
-        Byte::from_bytes(32768)
+    pub fn ics20_max_memo_size() -> Ics20FieldSizeLimit {
+        Ics20FieldSizeLimit::new(true, Byte::from_bytes(32768))
     }
 
-    pub fn ics20_max_receiver_size() -> Byte {
-        Byte::from_bytes(2048)
+    pub fn ics20_max_receiver_size() -> Ics20FieldSizeLimit {
+        Ics20FieldSizeLimit::new(true, Byte::from_bytes(2048))
     }
 }
 
@@ -409,9 +410,9 @@ pub struct Packets {
     #[serde(default = "default::auto_register_counterparty_payee")]
     pub auto_register_counterparty_payee: bool,
     #[serde(default = "default::ics20_max_memo_size")]
-    pub ics20_max_memo_size: Byte,
+    pub ics20_max_memo_size: Ics20FieldSizeLimit,
     #[serde(default = "default::ics20_max_receiver_size")]
-    pub ics20_max_receiver_size: Byte,
+    pub ics20_max_receiver_size: Ics20FieldSizeLimit,
 }
 
 impl Default for Packets {

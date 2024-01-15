@@ -1,7 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
 use super::timeout::TimeoutHeight;
@@ -103,27 +102,6 @@ impl core::ops::Add<u64> for Sequence {
     }
 }
 
-pub enum ValidationResult {
-    Valid,
-    MemoTooBig {
-        size: usize,
-        max: usize,
-    },
-    ReceiverTooBig {
-        size: usize,
-        max: usize,
-    },
-    BothTooBig {
-        memo_size: usize,
-        memo_max: usize,
-        receiver_size: usize,
-        receiver_max: usize,
-    },
-    DecodeFailure {
-        details: String,
-    },
-}
-
 #[derive(Clone, Default, Hash, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,
@@ -198,48 +176,6 @@ impl Packet {
             && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired;
 
         height_timed_out || timestamp_timed_out
-    }
-
-    /// If this packet data is an ICS-20 packet, check whether or not the memo and receiver
-    /// fields are under the given max size.
-    /// Returns `true` if this packet data is not an ICS-20 or fails to decode as an ICS-20 packet.
-    /// Return a ValidationResult::DecodeFailure this packet data is not an ICS-20 or fails to decode
-    /// as an ICS-20 packet.
-    /// Returns ValidationResult::Valid if both the memo and receiver field are valid.
-    /// Returns ValidationResult containing information on the failed fields if one or both fields fail
-    /// the validation.
-    pub fn are_fields_valid(
-        &self,
-        max_memo_size: usize,
-        max_receiver_size: usize,
-    ) -> ValidationResult {
-        match serde_json::from_slice::<RawPacketData>(&self.data) {
-            Ok(packet) => {
-                match (
-                    packet.memo.len() <= max_memo_size,
-                    packet.receiver.len() <= max_receiver_size,
-                ) {
-                    (true, true) => ValidationResult::Valid,
-                    (false, true) => ValidationResult::MemoTooBig {
-                        size: max_memo_size,
-                        max: packet.memo.len(),
-                    },
-                    (true, false) => ValidationResult::ReceiverTooBig {
-                        size: max_receiver_size,
-                        max: packet.receiver.len(),
-                    },
-                    (false, false) => ValidationResult::BothTooBig {
-                        memo_size: max_memo_size,
-                        memo_max: packet.memo.len(),
-                        receiver_size: max_receiver_size,
-                        receiver_max: packet.receiver.len(),
-                    },
-                }
-            }
-            Err(e) => ValidationResult::DecodeFailure {
-                details: e.to_string(),
-            },
-        }
     }
 }
 
