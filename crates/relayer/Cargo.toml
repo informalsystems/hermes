@@ -112,7 +112,7 @@ default-features = false
 ibc-relayer-types = { version = "0.26.4", path = "../relayer-types", features = ["mocks"] }
 serial_test = "2.0.0"
 env_logger = "0.10.0"
-test-log = { version = "0.2.10", features = ["trace"] }
+test-log = { version = "0.2.14", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
 tendermint-testgen = { version = "0.34.0" }
