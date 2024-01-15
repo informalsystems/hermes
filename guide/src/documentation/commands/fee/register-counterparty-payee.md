@@ -2,7 +2,7 @@
 
 Use this command in order to specify the address which will receive the `recv_fee` from incentivised packets relayed by the specified chain on the specified channel.
 
-__NOTE:__ If the Hermes configuration parameter `auto_register_counterpary_payee = true` is set, make sure to use the `hermes fee register-counterparty-payee` command after calling `hermes start`, otherwise `auto_register_counterparty_payee` will overwrite the address registered using `hermes fee register-counterparty-payee`.
+__NOTE:__ If the Hermes configuration parameter `auto_register_counterparty_payee = true` is set, make sure to use the `hermes fee register-counterparty-payee` command after calling `hermes start`, otherwise `auto_register_counterparty_payee` will overwrite the address registered using `hermes fee register-counterparty-payee`.
 
 ```shell
 {{#include ../../../templates/help_templates/fee/register-counterparty-payee.md}}

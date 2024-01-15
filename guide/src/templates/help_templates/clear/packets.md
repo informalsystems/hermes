@@ -7,17 +7,24 @@ USAGE:
 
 OPTIONS:
         --counterparty-key-name <COUNTERPARTY_KEY_NAME>
-            use the given signing key for the counterparty chain (default: `counterparty_key_name`
+            Use the given signing key for the counterparty chain (default: `counterparty_key_name`
             config)
 
     -h, --help
             Print help information
 
         --key-name <KEY_NAME>
-            use the given signing key for the specified chain (default: `key_name` config)
+            Use the given signing key for the specified chain (default: `key_name` config)
+
+        --packet-sequences <PACKET_SEQUENCES>
+            Sequences of packets to be cleared on the specified chain. Either a single sequence or a
+            range of sequences can be specified. If not provided, all pending packets will be
+            cleared on both chains. Each element of the comma-separated list must be either a single
+            sequence or a range of sequences. Example: `1,10..20` will clear packets with sequences
+            1, 10, 11, ..., 20
 
         --query-packets-chunk-size <QUERY_PACKETS_CHUNK_SIZE>
-            number of packets to fetch at once from the chain (default: `query_packets_chunk_size`
+            Number of packets to fetch at once from the chain (default: `query_packets_chunk_size`
             config)
 
 REQUIRED:

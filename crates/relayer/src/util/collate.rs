@@ -2,7 +2,7 @@ use std::{fmt, ops::Add};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Collated<T> {
     pub start: T,
     pub end: T,
@@ -11,6 +11,12 @@ pub struct Collated<T> {
 impl<T> Collated<T> {
     pub fn new(start: T, end: T) -> Self {
         Self { start, end }
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for Collated<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}..={:?}", self.start, self.end)
     }
 }
 
