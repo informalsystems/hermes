@@ -337,7 +337,8 @@ pub fn assert_eventually_channel_closed<ChainA: ChainHandle, ChainB: ChainHandle
 
             if !channel_end_a.value().state_matches(&ChannelState::Closed) {
                 return Err(Error::generic(eyre!(
-                    "expected channel end A to be in closed state"
+                    "expected channel end A to be in closed state, but it is instead `{}",
+                    channel_end_a.value().state()
                 )));
             }
 

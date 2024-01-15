@@ -44,7 +44,7 @@ impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
             counterparty: value.counterparty,
             connection_hops: value.connection_hops,
             version: value.version,
-            upgrade_sequence: 0, // FIXME: proto IdentifiedChannel does not have this field, should we default to 0 ?
+            upgrade_sequence: value.upgrade_sequence,
         };
 
         Ok(IdentifiedChannelEnd {
