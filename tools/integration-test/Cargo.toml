@@ -23,7 +23,7 @@ time = "0.3"
 toml = "0.7"
 prost = { version = "0.12" }
 tonic = { version = "0.10", features = ["tls", "tls-roots"] }
-serde = "1.0.166"
+serde = "1.0.195"
 
 [features]
 default = []
