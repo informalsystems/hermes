@@ -12,7 +12,7 @@ pub struct Upgrade {
     pub fields: UpgradeFields,
     // timeout can be zero, see `TryFrom<RawUpgrade>` implementation
     pub timeout: Option<UpgradeTimeout>,
-    pub latest_sequence_send: Sequence,
+    pub next_sequence_send: Sequence,
 }
 
 impl Protobuf<RawUpgrade> for Upgrade {}
@@ -29,12 +29,12 @@ impl TryFrom<RawUpgrade> for Upgrade {
             .timeout
             .filter(|tm| UpgradeTimeout::try_from(tm.clone()).is_ok())
             .map(|tm| UpgradeTimeout::try_from(tm).unwrap());
-        let latest_sequence_send = value.latest_sequence_send.into();
+        let next_sequence_send = value.next_sequence_send.into();
 
         Ok(Self {
             fields,
             timeout,
-            latest_sequence_send,
+            next_sequence_send,
         })
     }
 }
@@ -45,7 +45,7 @@ impl From<Upgrade> for RawUpgrade {
         Self {
             fields: Some(value.fields.into()),
             timeout,
-            latest_sequence_send: value.latest_sequence_send.into(),
+            next_sequence_send: value.next_sequence_send.into(),
         }
     }
 }
@@ -90,7 +90,7 @@ pub mod test_util {
         RawUpgrade {
             fields: Some(get_dummy_upgrade_fields()),
             timeout: Some(get_dummy_upgrade_timeout()),
-            latest_sequence_send: 1,
+            next_sequence_send: 1,
         }
     }
 }
