@@ -6,6 +6,7 @@
 use std::thread::sleep;
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
+use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
@@ -508,6 +509,8 @@ impl BinaryChannelTest for ChannelUpgradeTimeoutConfirmHandshake {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
+            ChannelState::Flushcomplete,
+            ChannelState::Flushing,
             &old_attrs,
         )?;
 
