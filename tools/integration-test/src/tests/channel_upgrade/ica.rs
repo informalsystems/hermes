@@ -71,6 +71,8 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
         let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
+
+        // Run the block with supervisor in order to open and then upgrade the ICA channel
         let (wallet, ica_address, controller_channel_id, controller_port_id) = relayer
             .with_supervisor(|| {
                 // Register an interchain account on behalf of
@@ -183,6 +185,9 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
                 ))
             })?;
 
+        // Create a pending ICA transfer without supervisor in order to created a timed out
+        // packet
+
         // Send funds to the interchain account.
         let ica_fund = 42000u64;
 
@@ -236,6 +241,7 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
 
         sleep(Duration::from_nanos(3000000000));
 
+        // Start the supervisor which will relay the timed out packet and close the channel
         relayer.with_supervisor(|| {
             // Check that user2 has not received the sent amount.
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
