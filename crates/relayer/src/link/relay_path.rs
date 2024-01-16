@@ -560,6 +560,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         for event_with_height in input {
             trace!(event = %event_with_height, "processing event");
 
+            if let Some(packet) = event_with_height.event.packet() {
+                // If the event is a ICS-04 packet event, and the packet contains ICS-20
+                // packet data, check that the ICS-20 fields are within the configured limits.
+                if !check_ics20_fields_size(
+                    &packet.data,
+                    self.max_memo_size,
+                    self.max_receiver_size,
+                ) {
+                    continue;
+                }
+            }
+
             let (dst_msg, src_msg) = match &event_with_height.event {
                 IbcEvent::CloseInitChannel(_) => (
                     self.build_chan_close_confirm_from_event(event_with_height)?,
@@ -1374,6 +1386,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         dst_info: &ChainStatus,
     ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
+
         if self
             .dst_channel(QueryHeight::Specific(dst_info.height))?
             .state_matches(&ChannelState::Closed)
@@ -1404,15 +1417,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         if timeout.is_some() {
             Ok((None, timeout))
-        } else if check_ics20_fields_size(
-            &event.packet.data,
-            self.max_memo_size,
-            self.max_receiver_size,
-        ) {
-            Ok((self.build_recv_packet(&event.packet, height)?, None))
         } else {
-            trace!("packet: {:#?}", event.packet);
-            Ok((None, None))
+            Ok((self.build_recv_packet(&event.packet, height)?, None))
         }
     }
 
