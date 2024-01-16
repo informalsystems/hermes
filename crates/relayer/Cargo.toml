@@ -29,7 +29,7 @@ humantime-serde = "1.1.1"
 serde = "1.0"
 serde_derive = "1.0"
 thiserror = "1.0.40"
-toml = "0.7"
+toml = "0.8"
 tracing = "0.1.36"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
@@ -58,7 +58,7 @@ semver = "1.0"
 humantime = "2.1.0"
 regex = "1"
 moka = { version = "0.12.0", features = ["sync"] }
-uuid = { version = "1.4.0", features = ["v4"] }
+uuid = { version = "1.6.1", features = ["v4"] }
 bs58 = "0.5.0"
 digest = "0.10.6"
 ed25519 = "2.2.2"
@@ -112,7 +112,7 @@ default-features = false
 ibc-relayer-types = { version = "0.26.4", path = "../relayer-types", features = ["mocks"] }
 serial_test = "2.0.0"
 env_logger = "0.10.0"
-test-log = { version = "0.2.10", features = ["trace"] }
+test-log = { version = "0.2.14", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
 tendermint-testgen = { version = "0.34.0" }
