@@ -77,12 +77,12 @@ impl BinaryChannelTest for IbcMemoFilterTest {
         )?;
 
         // The sender tokens will be escrowed since the packet will not have timed out
-        chains
-            .node_a
-            .chain_driver()
-            .assert_eventual_wallet_amount(&wallet_a.address(), &(balance_a.clone() - a_to_b_amount).as_ref())?;
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.address(),
+            &(balance_a.clone() - a_to_b_amount).as_ref(),
+        )?;
 
-        // 
+        //
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
             &denom_b.with_amount(0u64).as_ref(),
