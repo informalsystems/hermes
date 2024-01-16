@@ -1,5 +1,6 @@
-use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
+
+use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
