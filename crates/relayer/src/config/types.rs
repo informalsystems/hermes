@@ -270,8 +270,6 @@ pub mod ics20_field_size_limit {
     use serde_derive::{Deserialize, Serialize};
     use std::fmt::Display;
 
-    use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
-
     pub enum ValidationResult {
         Valid,
         Invalid { size: usize, max: usize },
@@ -280,9 +278,10 @@ pub mod ics20_field_size_limit {
     impl Display for ValidationResult {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                Self::Valid => write!(f, "field is valid"),
+                Self::Valid => write!(f, "valid"),
+
                 Self::Invalid { size, max } => {
-                    write!(f, "field is not valid, size `{size}`, max limit `{max}`")
+                    write!(f, "invalid, size `{size}` is greater than max `{max}`")
                 }
             }
         }
@@ -302,30 +301,15 @@ pub mod ics20_field_size_limit {
         /// If the limit is disabled consider the field as valid.
         /// If the limit is enabled assert the field is smaller or equal
         /// to the configured value.
-        pub fn is_memo_field_valid(&self, packet_data: &RawPacketData) -> ValidationResult {
+        pub fn check_field_size(&self, field: &str) -> ValidationResult {
             if self.enabled {
                 let size_limit = self.size.get_bytes() as usize;
-                if packet_data.memo.len() <= size_limit {
-                    ValidationResult::Valid
-                } else {
-                    ValidationResult::Invalid {
-                        size: packet_data.memo.len(),
-                        max: size_limit,
-                    }
-                }
-            } else {
-                ValidationResult::Valid
-            }
-        }
 
-        pub fn is_receiver_field_valid(&self, packet_data: &RawPacketData) -> ValidationResult {
-            if self.enabled {
-                let size_limit = self.size.get_bytes() as usize;
-                if packet_data.receiver.len() <= size_limit {
+                if field.len() <= size_limit {
                     ValidationResult::Valid
                 } else {
                     ValidationResult::Invalid {
-                        size: packet_data.receiver.len(),
+                        size: field.len(),
                         max: size_limit,
                     }
                 }

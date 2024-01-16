@@ -1399,10 +1399,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 "dst_channel": event.packet.destination_channel,
             }
         );
+
         let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
+
         if timeout.is_some() {
             Ok((None, timeout))
-        } else if are_ics20_fields_valid(
+        } else if check_ics20_fields_size(
             &event.packet.data,
             self.max_memo_size,
             self.max_receiver_size,
@@ -1912,27 +1914,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 }
 
-fn are_ics20_fields_valid(
+#[tracing::instrument(skip(data))]
+fn check_ics20_fields_size(
     data: &[u8],
-    ics20_memo_limit: Ics20FieldSizeLimit,
-    ics20_receiver_limit: Ics20FieldSizeLimit,
+    memo_limit: Ics20FieldSizeLimit,
+    receiver_limit: Ics20FieldSizeLimit,
 ) -> bool {
     match serde_json::from_slice::<RawPacketData>(data) {
         Ok(packet_data) => {
             match (
-                ics20_memo_limit.is_memo_field_valid(&packet_data),
-                ics20_receiver_limit.is_receiver_field_valid(&packet_data),
+                memo_limit.check_field_size(&packet_data.memo),
+                receiver_limit.check_field_size(&packet_data.receiver),
             ) {
                 (ValidationResult::Valid, ValidationResult::Valid) => true,
+
                 (memo_validity, receiver_validity) => {
-                    debug!("memo validity: {memo_validity}");
-                    debug!("receiver validity: {receiver_validity}");
+                    debug!("found invalid ICS-20 packet data, not relaying packet!");
+                    debug!("    ICS-20 memo:     {memo_validity}");
+                    debug!("    ICS-20 receiver: {receiver_validity}");
+
                     false
                 }
             }
         }
         Err(e) => {
-            debug!("failed to decode ICS20 packet data with error `{e}`");
+            trace!("failed to decode ICS20 packet data with error `{e}`");
+
             true
         }
     }
