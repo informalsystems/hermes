@@ -339,10 +339,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Nothing to do if channel on destination is already closed
-        if self
-            .dst_channel(QueryHeight::Latest)?
-            .state_matches(&ChannelState::Closed)
-        {
+        let dst_channel = self.dst_channel(QueryHeight::Latest)?;
+
+        if dst_channel.state_matches(&ChannelState::Closed) {
             return Ok(None);
         }
 
@@ -352,12 +351,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .build_channel_proofs(self.src_port_id(), src_channel_id, event.height)
             .map_err(|e| LinkError::channel(ChannelError::channel_proof(e)))?;
 
+        let counterparty_upgrade_sequence = dst_channel.upgrade_sequence;
+
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
             channel_id: self.dst_channel_id().clone(),
             proofs,
             signer: self.dst_signer()?,
+            counterparty_upgrade_sequence,
         };
 
         Ok(Some(new_msg.to_any()))
@@ -1336,11 +1338,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             )
             .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;
 
+        let counterparty_upgrade_sequence = self.dst_channel(QueryHeight::Latest)?.upgrade_sequence;
+
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),
             next_sequence_received,
             proofs.clone(),
             self.src_signer()?,
+            counterparty_upgrade_sequence,
         );
 
         trace!(packet = %msg.packet, height = %proofs.height(), "built timeout on close msg");

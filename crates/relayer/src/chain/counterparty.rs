@@ -310,7 +310,7 @@ pub fn channel_on_destination(
 
         if counterparty.channel_end.state_matches(&State::Open(
             ibc_relayer_types::core::ics04_channel::channel::UpgradeState::NotUpgrading,
-        )) && counterparty.channel_end.upgraded_sequence > channel.channel_end.upgraded_sequence
+        )) && counterparty.channel_end.upgrade_sequence > channel.channel_end.upgrade_sequence
         {
             counterparty.channel_end.state = State::Open(
                 ibc_relayer_types::core::ics04_channel::channel::UpgradeState::Upgrading,

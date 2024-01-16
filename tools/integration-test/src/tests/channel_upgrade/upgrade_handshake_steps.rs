@@ -27,8 +27,9 @@ use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_ack,
     assert_eventually_channel_upgrade_cancel, assert_eventually_channel_upgrade_confirm,
-    assert_eventually_channel_upgrade_init, assert_eventually_channel_upgrade_open,
-    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes,
+    assert_eventually_channel_upgrade_flushing, assert_eventually_channel_upgrade_init,
+    assert_eventually_channel_upgrade_open, assert_eventually_channel_upgrade_try,
+    ChannelUpgradableAttributes,
 };
 use ibc_test_framework::util::random::random_u128_range;
 
@@ -930,7 +931,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
 
         info!("Check that the step ChanUpgradeAck was correctly executed...");
 
-        assert_eventually_channel_upgrade_ack(
+        assert_eventually_channel_upgrade_flushing(
             &chains.handle_a,
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
@@ -939,7 +940,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
         )?;
 
         // wait enough time so that timeout expires while chain a is in FLUSHING
-        sleep(Duration::from_secs(20));
+        sleep(Duration::from_nanos(35000000000));
 
         info!("Will run ChanUpgradeTimeout step...");
 
@@ -950,6 +951,12 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
         assert_eq!(
             timeout_event.event_type(),
             IbcEventType::UpgradeTimeoutChannel
+        );
+
+        let cancel_event = channel.flipped().build_chan_upgrade_cancel_and_send()?;
+        assert_eq!(
+            cancel_event.event_type(),
+            IbcEventType::UpgradeCancelChannel
         );
 
         info!("Check that the step ChanUpgradeTimeout was correctly executed...");
