@@ -29,7 +29,7 @@ humantime-serde = "1.1.1"
 serde = "1.0"
 serde_derive = "1.0"
 thiserror = "1.0.40"
-toml = "0.7"
+toml = "0.8"
 tracing = "0.1.36"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
