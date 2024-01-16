@@ -82,7 +82,8 @@ impl BinaryChannelTest for IbcMemoFilterTest {
             &(balance_a.clone() - a_to_b_amount).as_ref(),
         )?;
 
-        //
+        // The receiver will not have received the tokens since the packet should be
+        // filtered
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
             &denom_b.with_amount(0u64).as_ref(),
