@@ -1921,7 +1921,7 @@ fn are_ics20_fields_valid(
         Ok(packet_data) => {
             match (
                 ics20_memo_limit.is_memo_field_valid(&packet_data),
-                ics20_receiver_limit.is_memo_field_valid(&packet_data),
+                ics20_receiver_limit.is_receiver_field_valid(&packet_data),
             ) {
                 (ValidationResult::Valid, ValidationResult::Valid) => true,
                 (memo_validity, receiver_validity) => {
@@ -1933,7 +1933,7 @@ fn are_ics20_fields_valid(
         }
         Err(e) => {
             debug!("failed to decode ICS20 packet data with error `{e}`");
-            false
+            true
         }
     }
 }

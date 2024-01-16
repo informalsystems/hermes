@@ -56,3 +56,8 @@ version = "0.34.0"
 [dependencies.tendermint-rpc]
 version = "0.34.0"
 features = ["http-client"]
+
+[dependencies.byte-unit]
+version = "4.0.19"
+default-features = false
+features = ["serde"]
