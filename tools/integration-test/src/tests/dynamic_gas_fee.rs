@@ -144,7 +144,8 @@ impl BinaryChannelTest for DynamicGasTest {
     ) -> Result<(), Error> {
         let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
 
-        let driver_a = chains.node_a.chain_driver().value().clone();
+        let driver_a = chains.node_a.chain_driver();
+        let driver_a = driver_a.value();
 
         // Create a separate chain driver to try and avoid the block_on panic.
         // And enable dynamic gas
