@@ -204,7 +204,8 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             provider: self.peer_id,
         };
 
-        let trusted_block = self.fetch(update_header.trusted_height)?;
+        // Get the light block at trusted_height + 1 from chain.
+        let trusted_block = self.fetch(update_header.trusted_height.increment())?;
         if trusted_block.validators.hash() != update_header.trusted_validator_set.hash() {
             return Err(Error::misbehaviour(format!(
                 "mismatch between the trusted validator set of the update \

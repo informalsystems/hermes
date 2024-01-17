@@ -5,6 +5,7 @@ pub mod error;
 pub mod filter;
 pub mod gas_multiplier;
 pub mod proof_specs;
+pub mod refresh_rate;
 pub mod types;
 
 use alloc::collections::BTreeMap;
@@ -41,6 +42,7 @@ use ibc_relayer_types::{
     },
     timestamp::ZERO_DURATION,
 };
+pub use refresh_rate::RefreshRate;
 use serde_derive::{
     Deserialize,
     Serialize,
@@ -54,6 +56,10 @@ use tendermint_rpc::{
 pub use crate::config::Error as ConfigError;
 use crate::{
     chain::cosmos::config::CosmosSdkConfig,
+    config::types::{
+        ics20_field_size_limit::Ics20FieldSizeLimit,
+        TrustThreshold,
+    },
     error::Error as RelayerError,
     extension_options::ExtensionOptionDynamicFeeTx,
     keyring,
@@ -127,7 +133,7 @@ impl PartialOrd for GasPrice {
 /// the parsing of other prices.
 pub fn parse_gas_prices(prices: String) -> Vec<GasPrice> {
     prices
-        .split(';')
+        .split(|c| c == ',' || c == ';')
         .filter_map(|gp| GasPrice::from_str(gp).ok())
         .collect()
 }
@@ -187,6 +193,10 @@ pub mod default {
         100
     }
 
+    pub fn query_packets_chunk_size() -> usize {
+        50
+    }
+
     pub fn rpc_timeout() -> Duration {
         Duration::from_secs(60)
     }
@@ -223,6 +233,15 @@ pub mod default {
         Byte::from_bytes(33554432)
     }
 
+    pub fn trust_threshold() -> TrustThreshold {
+        TrustThreshold::TWO_THIRDS
+    }
+
+    pub fn client_refresh_rate() -> RefreshRate {
+        // Refresh the client three times per trusting period
+        RefreshRate::new(1, 3)
+    }
+
     pub fn latency_submitted() -> HistogramConfig {
         HistogramConfig {
             range: Range {
@@ -241,6 +260,14 @@ pub mod default {
             },
             buckets: 10,
         }
+    }
+
+    pub fn ics20_max_memo_size() -> Ics20FieldSizeLimit {
+        Ics20FieldSizeLimit::new(true, Byte::from_bytes(32768))
+    }
+
+    pub fn ics20_max_receiver_size() -> Ics20FieldSizeLimit {
+        Ics20FieldSizeLimit::new(true, Byte::from_bytes(2048))
     }
 }
 
@@ -413,6 +440,10 @@ pub struct Packets {
     pub tx_confirmation: bool,
     #[serde(default = "default::auto_register_counterparty_payee")]
     pub auto_register_counterparty_payee: bool,
+    #[serde(default = "default::ics20_max_memo_size")]
+    pub ics20_max_memo_size: Ics20FieldSizeLimit,
+    #[serde(default = "default::ics20_max_receiver_size")]
+    pub ics20_max_receiver_size: Ics20FieldSizeLimit,
 }
 
 impl Default for Packets {
@@ -423,6 +454,8 @@ impl Default for Packets {
             clear_on_start: default::clear_on_start(),
             tx_confirmation: default::tx_confirmation(),
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
+            ics20_max_memo_size: default::ics20_max_memo_size(),
+            ics20_max_receiver_size: default::ics20_max_receiver_size(),
         }
     }
 }
@@ -698,6 +731,7 @@ impl ChainConfig {
                     .collect()
             }
         };
+
         Ok(keys)
     }
 
@@ -726,6 +760,20 @@ impl ChainConfig {
         match self {
             Self::CosmosSdk(config) => &config.event_source,
             Self::Astria(config) => &config.event_source,
+        }
+    }
+
+    pub fn query_packets_chunk_size(&self) -> usize {
+        match self {
+            Self::CosmosSdk(config) => config.query_packets_chunk_size,
+            Self::Astria(config) => config.query_packets_chunk_size,
+        }
+    }
+
+    pub fn set_query_packets_chunk_size(&mut self, query_packets_chunk_size: usize) {
+        match self {
+            Self::CosmosSdk(config) => config.query_packets_chunk_size = query_packets_chunk_size,
+            Self::Astria(config) => config.query_packets_chunk_size = query_packets_chunk_size,
         }
     }
 }
@@ -792,6 +840,7 @@ impl<E: Into<Error>> From<CosmosConfigDiagnostic<E>> for Diagnostic<Error> {
 }
 
 use crate::chain::cosmos::config::error::Error as CosmosConfigError;
+
 impl From<CosmosConfigError> for Error {
     fn from(error: CosmosConfigError) -> Error {
         Error::cosmos_config_error(error.to_string())
@@ -894,9 +943,6 @@ mod tests {
 
     #[test]
     fn parse_multiple_gas_prices() {
-        let gas_prices = "0.25token1;0.0001token2";
-        let parsed = parse_gas_prices(gas_prices.to_string());
-
         let expected = vec![
             GasPrice {
                 price: 0.25,
@@ -908,7 +954,15 @@ mod tests {
             },
         ];
 
-        assert_eq!(expected, parsed);
+        let test_cases = vec![
+            ("0.25token1;0.0001token2", expected.clone()),
+            ("0.25token1,0.0001token2", expected.clone()),
+        ];
+
+        for (input, expected) in test_cases {
+            let parsed = parse_gas_prices(input.to_string());
+            assert_eq!(expected, parsed);
+        }
     }
 
     #[test]
@@ -921,14 +975,18 @@ mod tests {
 
     #[test]
     fn malformed_gas_prices_do_not_get_parsed() {
-        let malformed_prices = "token1;.token2;0.25token3";
-        let parsed = parse_gas_prices(malformed_prices.to_string());
-
         let expected = vec![GasPrice {
             price: 0.25,
             denom: "token3".to_owned(),
         }];
+        let test_cases = vec![
+            ("token1;.token2;0.25token3", expected.clone()),
+            ("token1,.token2,0.25token3", expected.clone()),
+        ];
 
-        assert_eq!(expected, parsed);
+        for (input, expected) in test_cases {
+            let parsed = parse_gas_prices(input.to_string());
+            assert_eq!(expected, parsed);
+        }
     }
 }

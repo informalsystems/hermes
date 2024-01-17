@@ -33,6 +33,7 @@ use ibc_relayer::{
             MaxMsgNum,
             MaxTxSize,
             Memo,
+            TrustThreshold,
         },
         AddressType,
         ChainConfig,
@@ -41,7 +42,6 @@ use ibc_relayer::{
     },
     keyring::Store,
 };
-use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
 use tokio::task::{
     JoinError,
@@ -168,9 +168,11 @@ where
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),
         max_grpc_decoding_size: default::max_grpc_decoding_size(),
+        query_packets_chunk_size: default::query_packets_chunk_size(),
         clock_drift: default::clock_drift(),
         max_block_time: default::max_block_time(),
         trusting_period: None,
+        client_refresh_rate: default::client_refresh_rate(),
         ccv_consumer_chain: false,
         memo_prefix: Memo::default(),
         proof_specs: Default::default(),

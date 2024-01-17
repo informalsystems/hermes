@@ -171,7 +171,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChains<Cha
    Note that we cannot stop the chain on drop for
    [`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle)
    itself, as the chain handles can be cloned. But for testing purposes,
-   we alway stop the chain handle when this "canonical" chain handle
+   we always stop the chain handle when this "canonical" chain handle
    is dropped.
 
    This is necessary as otherwise the chain handle will display error

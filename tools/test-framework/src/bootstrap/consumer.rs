@@ -81,8 +81,16 @@ pub fn bootstrap_consumer_node(
     chain_driver.update_genesis_file("genesis.json", genesis_modifier)?;
     // The configuration `soft_opt_out_threshold` might be missing and is required
     // for chains such as Neutron
+    let globalfee_minimum_gas = serde_json::json!([
+        {
+            "denom": "stake",
+            "amount": "0",
+        }
+    ]);
     chain_driver.update_genesis_file("genesis.json", |genesis| {
         config::set_soft_opt_out_threshold(genesis, "0.05")?;
+        config::consensus_params_max_gas(genesis, "3000000")?;
+        config::globalfee_minimum_gas_prices(genesis, globalfee_minimum_gas)?;
         Ok(())
     })?;
 

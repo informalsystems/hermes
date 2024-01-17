@@ -186,7 +186,7 @@ pub fn extract_events(
                         if matches!(ibc_event, IbcEvent::SendPacket(_)) {
                             // Should be the same as the hash of tx_result.tx?
                             if let Some(hash) =
-                                events.get("tx.hash").and_then(|values| values.get(0))
+                                events.get("tx.hash").and_then(|values| values.first())
                             {
                                 tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
                             }

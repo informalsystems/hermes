@@ -42,7 +42,7 @@ impl Settings {
 
         let trust_threshold = options
             .trust_threshold
-            .unwrap_or_else(|| src_chain_config.trust_threshold.into());
+            .unwrap_or(src_chain_config.trust_threshold);
 
         Settings {
             max_clock_drift,

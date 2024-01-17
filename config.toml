@@ -79,6 +79,20 @@ tx_confirmation = false
 # [Default: false]
 auto_register_counterparty_payee = false
 
+# Set the maximum size for the memo field in ICS20 packets.
+# If the size of the memo field is bigger than the configured
+# one, the packet will not be relayed.
+# The filter can be disabled by setting `enabled = false`.
+# [Default: "32KiB"]
+#ics20_max_memo_size = { enabled = true, size = "32KiB" }
+
+# Set the maximum size for the receiver field in ICS20 packets.
+# If the size of the receiver field is bigger than the configured
+# one, the packet will not be relayed.
+# The filter can be disabled by setting `enabled = false`.
+# [Default: "2KiB"]
+#ics20_max_receiver_size = { enabled = true, size = "2KiB" }
+
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
 [rest]
@@ -144,7 +158,7 @@ id = 'ibc-0'
 type = "CosmosSdk"
 
 # Whether or not this is a CCV consumer chain. Default: false
-# Only specifiy true for CCV consumer chain, but NOT for sovereign chains.
+# Only specify true for CCV consumer chain, but NOT for sovereign chains.
 ccv_consumer_chain = false
 
 # Specify the RPC address and port where the chain RPC server listens on. Required
@@ -209,7 +223,7 @@ account_prefix = 'cosmos'
 
 # Specify the name of the private key to use for signing transactions. Required
 # See the Adding Keys chapter for more information about managing signing keys:
-#   https://hermes.informal.systems/commands/keys/index.html#adding-keys
+#   https://hermes.informal.systems/documentation/commands/keys/index.html#adding-keys
 key_name = 'testkey'
 
 # Specify the folder used to store the keys. Optional
@@ -261,7 +275,7 @@ default_gas = 100000
 # Specify the maximum amount of gas to be used as the gas limit for a transaction.
 # If `default_gas` is unspecified, then `max_gas` will be used as `default_gas`.
 # Default: 400 000
-max_gas = 400000
+max_gas = 4000000
 
 # Specify the price per gas used of the fee to submit a transaction and
 # the denomination of the fee. 
@@ -296,6 +310,10 @@ max_msg_num = 30
 # Default: 2097152 (2 MiB)
 max_tx_size = 2097152
 
+# How many packets to fetch at once from the chain when clearing packets.
+# Default: 50
+query_packets_chunk_size = 50
+
 # Specify the maximum amount of time to tolerate a clock drift.
 # The clock drift parameter defines how much new (untrusted) header's time
 # can drift into the future. Default: 5s
@@ -314,14 +332,23 @@ max_block_time = '30s'
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period
 # (e.g. unbonding period = 3 weeks, trusting period = 2 weeks).
+#
 # Default: 2/3 of the `unbonding period` for Cosmos SDK chains
 trusting_period = '14days'
 
+# The rate at which to refresh the client referencing this chain,
+# expressed as a fraction of the trusting period.
+#
+# Default: 1/3 (ie. three times per trusting period)
+client_refresh_rate = '1/3'
+
 # Specify the trust threshold for the light client, ie. the minimum fraction of validators
 # which must overlap across two blocks during light client verification.
-# Default: { numerator = '2', denominator = '3' }, ie. 2/3.
+#
 # Warning: This is an advanced feature! Modify with caution.
-trust_threshold = { numerator = '2', denominator = '3' }
+#
+# Default: 2/3
+trust_threshold = '2/3'
 
 # Specify a string that Hermes will use as a memo for each transaction it submits
 # to this chain. The string is limited to 50 characters. Default: '' (empty).
@@ -374,7 +401,7 @@ memo_prefix = ''
 # [chains.packet_filter.min_fees.'channel-0']
 # recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
 
-# Specify that the transaction fees should be payed from this fee granter's account.
+# Specify that the transaction fees should be paid from this fee granter's account.
 # Optional. If unspecified (the default behavior), then no fee granter is used, and
 # the account specified in `key_name` will pay the tx fees for all transactions
 # submitted to this chain.
@@ -405,7 +432,7 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 default_gas = 100000
-max_gas = 400000
+max_gas = 4000000
 gas_price = { price = 0.025, denom = 'stake' }
 gas_multiplier = 1.1
 max_msg_num = 30
@@ -413,5 +440,5 @@ max_tx_size = 2097152
 clock_drift = '5s'
 max_block_time = '30s'
 trusting_period = '14days'
-trust_threshold = { numerator = '2', denominator = '3' }
+trust_threshold = '2/3'
 address_type = { derivation = 'cosmos' }

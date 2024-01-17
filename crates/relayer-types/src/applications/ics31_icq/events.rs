@@ -113,7 +113,7 @@ fn fetch_first_element_from_events(
     let res = block_events
         .get(key)
         .ok_or_else(|| Error::event(format!("attribute not found for key: {key}")))?
-        .get(0)
+        .first()
         .ok_or_else(|| {
             Error::event(format!(
                 "element at position 0, of attribute with key `{key}`, not found"

@@ -90,7 +90,7 @@ impl ChainBuilder {
        given prefix.
 
        Note that this only configures the [`ChainDriver`] without
-       the actual chain being intitialized or spawned.
+       the actual chain being initialized or spawned.
 
        The `ChainBuilder` will configure the [`ChainDriver`] with random
        unused ports, and add a random suffix to the chain ID.

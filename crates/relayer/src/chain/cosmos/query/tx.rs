@@ -74,7 +74,7 @@ pub async fn query_txs(
 
             // query the first Tx that includes the event matching the client request
             // Note: it is possible to have multiple Tx-es for same client and consensus height.
-            // In this case it must be true that the client updates were performed with tha
+            // In this case it must be true that the client updates were performed with the
             // same header as the first one, otherwise a subsequent transaction would have
             // failed on chain. Therefore only one Tx is of interest and current API returns
             // the first one.
@@ -133,7 +133,7 @@ pub async fn query_txs(
 ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
 ///    sequence (the query conditions can only be AND-ed).
 ///    There is a possibility to include "<=" and ">=" conditions but it doesn't work with
-///    string attributes (sequence is emmitted as a string).
+///    string attributes (sequence is emitted as a string).
 ///    Therefore, for packets we perform one tx_search for each sequence.
 ///    Alternatively, a single query for all packets could be performed but it would return all
 ///    packets ever sent.

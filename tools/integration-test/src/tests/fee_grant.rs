@@ -36,7 +36,7 @@ impl TestOverrides for FeeGrantTest {}
 impl BinaryChannelTest for FeeGrantTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
@@ -44,6 +44,7 @@ impl BinaryChannelTest for FeeGrantTest {
         let denom_a = chains.node_a.denom();
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
+        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
 
         let a_to_b_amount = 12345u64;
         let granter = chains
@@ -61,10 +62,11 @@ impl BinaryChannelTest for FeeGrantTest {
             .value()
             .to_string();
 
-        chains
-            .node_a
-            .chain_driver()
-            .feegrant_grant(&granter, &grantee)?;
+        chains.node_a.chain_driver().feegrant_grant(
+            &granter,
+            &grantee,
+            &fee_denom_a.with_amount(381000000u64).as_ref(),
+        )?;
 
         // Wait for the feegrant to be processed
         thread::sleep(Duration::from_secs(5));
@@ -75,7 +77,16 @@ impl BinaryChannelTest for FeeGrantTest {
             &denom_a,
         )?;
 
-        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base("stake".to_owned()));
+        let gas_denom_str = match relayer
+            .config
+            .chains
+            .first()
+            .ok_or_else(|| eyre!("chain configuration is empty"))?
+        {
+            ChainConfig::CosmosSdk(chain_config) => chain_config.gas_price.denom.clone(),
+        };
+
+        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base(gas_denom_str));
 
         let balance_user1_before = chains
             .node_a
@@ -167,8 +178,8 @@ impl TestOverrides for NoFeeGrantTest {}
 impl BinaryChannelTest for NoFeeGrantTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
-        _relayer: RelayerDriver,
+        config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -176,6 +187,7 @@ impl BinaryChannelTest for NoFeeGrantTest {
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_a2 = chains.node_a.wallets().user2().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
+        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
 
         let a_to_b_amount = 12345u64;
         let granter = chains
@@ -193,10 +205,11 @@ impl BinaryChannelTest for NoFeeGrantTest {
             .value()
             .to_string();
 
-        chains
-            .node_a
-            .chain_driver()
-            .feegrant_grant(&granter, &grantee)?;
+        chains.node_a.chain_driver().feegrant_grant(
+            &granter,
+            &grantee,
+            &fee_denom_a.with_amount(381000000u64).as_ref(),
+        )?;
 
         // Wait for the feegrant to be processed
         thread::sleep(Duration::from_secs(5));
@@ -207,7 +220,16 @@ impl BinaryChannelTest for NoFeeGrantTest {
             &denom_a,
         )?;
 
-        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base("stake".to_owned()));
+        let gas_denom_str = match relayer
+            .config
+            .chains
+            .first()
+            .ok_or_else(|| eyre!("chain configuration is empty"))?
+        {
+            ChainConfig::CosmosSdk(chain_config) => chain_config.gas_price.denom.clone(),
+        };
+
+        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base(gas_denom_str));
 
         let balance_user1_before = chains
             .node_a

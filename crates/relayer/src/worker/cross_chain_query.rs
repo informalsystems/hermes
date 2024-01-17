@@ -116,7 +116,7 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                 let target_height = Height::new(
                     chain_b_handle.id().version(),
-                    cross_chain_query_responses.get(0).unwrap().height as u64,
+                    cross_chain_query_responses.first().unwrap().height as u64,
                 )
                 .map_err(|_| TaskError::Fatal(RunError::query()))?
                 .increment();

@@ -99,7 +99,7 @@ pub fn build_transfer_message<SrcChain, DstChain>(
    for testing. During test, all chains should have the same local clock.
    We are also not really interested in setting a timeout for most tests,
    so we just put an approximate 1 minute timeout as the timeout
-   field is compulsary, and we want to avoid IBC timeout on CI.
+   field is compulsory, and we want to avoid IBC timeout on CI.
 
    The other reason we do not allow precise timeout to be specified is
    because it requires accessing the counterparty chain to query for

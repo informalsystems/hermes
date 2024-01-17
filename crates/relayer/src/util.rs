@@ -14,5 +14,6 @@ pub mod pretty;
 pub mod profiling;
 pub mod queue;
 pub mod retry;
+pub mod seq_range;
 pub mod stream;
 pub mod task;

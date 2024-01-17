@@ -75,7 +75,7 @@ define_error! {
             }
             | e | {
                 format_args!(
-                    "Expected task to eventually succeeed, but failed after {} attempts: {}",
+                    "Expected task to eventually succeed, but failed after {} attempts: {}",
                     e.attempts,
                     e.task_name
                 )

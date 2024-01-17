@@ -168,7 +168,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 
             if is_new_batch {
                 idle_worker_timer = 0;
-                trace!("packet worker processed an event batch, reseting idle timer");
+                trace!("packet worker processed an event batch, resetting idle timer");
             } else {
                 idle_worker_timer += 1;
                 trace!("packet worker has not processed an event batch after {idle_worker_timer} blocks, incrementing idle timer");

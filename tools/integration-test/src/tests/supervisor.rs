@@ -241,7 +241,7 @@ impl BinaryChannelTest for SupervisorScanTest {
             &channels.port_a.0,
             &channels.channel_id_a.0,
             &denom_a.with_amount(1000u64).as_ref(),
-            &fee_denom_a.with_amount(1200u64).as_ref(),
+            &fee_denom_a.with_amount(381000000u64).as_ref(),
             &dst_height,
         )?;
 

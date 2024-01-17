@@ -5,7 +5,7 @@
 //!
 //! - The `MisspelledMemoFieldsIbcForwardTransferTest` tests the case where the
 //!   fields inside the memo are misspelled:
-//!    - Misspelled `forward`: The intemediary chain will not understand the transfer
+//!    - Misspelled `forward`: The intermediary chain will not understand the transfer
 //!      must be forwarded, and will thus keep the tokens.
 //!    - Misspelled `receiver`: The intermediary chain will not find the receiver field
 //!      and will thus refund the sender.
@@ -391,7 +391,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
                 )?;
 
             info!(
-                "check that only the sender lost {} tokens and the intemediary chain received {} tokens",
+                "check that only the sender lost {} tokens and the intermediary chain received {} tokens",
                 a_to_c_amount,
                 a_to_c_amount
             );

@@ -32,6 +32,7 @@ use ibc_test_framework::{
     chain::{
         config::{
             set_max_deposit_period,
+            set_min_deposit_amount,
             set_voting_period,
         },
         ext::bootstrap::ChainBootstrapMethodsExt,
@@ -44,6 +45,7 @@ const MAX_DEPOSIT_PERIOD: &str = "10s";
 const VOTING_PERIOD: u64 = 10;
 const DELTA_HEIGHT: u64 = 15;
 const WAIT_CHAIN_UPGRADE: Duration = Duration::from_secs(4);
+const MIN_DEPOSIT: u64 = 10000000u64;
 
 #[test]
 fn test_client_upgrade() -> Result<(), Error> {
@@ -74,6 +76,9 @@ impl TestOverrides for ClientUpgradeTestOverrides {
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
         set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
         set_voting_period(genesis, VOTING_PERIOD)?;
+        // Set the min deposit amount the same as the deposit of the Upgrade proposal to
+        // assure that the proposal will go to voting period
+        set_min_deposit_amount(genesis, MIN_DEPOSIT)?;
         Ok(())
     }
 }
@@ -129,7 +134,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(1200u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
 
         info!("Assert that the chain upgrade proposal is eventually passed");
 
@@ -275,7 +280,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(1200u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         client_upgrade_height.increment();
@@ -372,7 +377,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(1200u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         client_upgrade_height
@@ -436,7 +441,7 @@ fn create_upgrade_plan<ChainA: ChainHandle, ChainB: ChainHandle>(
     // Create and send an chain upgrade proposal
     Ok(UpgradePlanOptions {
         src_client_id,
-        amount: 10000000u64,
+        amount: MIN_DEPOSIT,
         denom: fee_denom_a.to_string(),
         height_offset: DELTA_HEIGHT,
         upgraded_chain_id: upgraded_chain_id.clone(),

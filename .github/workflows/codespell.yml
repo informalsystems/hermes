@@ -1,0 +1,22 @@
+name: Codespell
+on:
+  pull_request:
+  push:
+    branches: master
+
+# Cancel previous runs of this workflow when a new commit is added to the PR, branch or tag
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codespell:
+    name: Check spelling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: codespell-project/actions-codespell@v2
+        with:
+          skip: '*.js,*.ts,*.css,*.svg,*.html,*.json,./target,./tools/integration-test/data,./tools/check-guide/target,./ci/misbehaviour/data'
+          ignore_words_file: .github/codespell/words.txt
+

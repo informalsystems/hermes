@@ -27,7 +27,7 @@ pub struct Version {
 }
 
 impl Version {
-    /// Checks whether or not the given feature is supported in this versin
+    /// Checks whether or not the given feature is supported in this version
     pub fn is_supported_feature(&self, feature: String) -> bool {
         self.features.contains(&feature)
     }

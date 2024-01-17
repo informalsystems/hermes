@@ -33,7 +33,7 @@ Finally, Hermes is designed to relay without any intervention, however, you migh
 
 ## Next steps
 
-Visit the [Telemetry](../../documentation/telemetry/index.md) section to learn how to use the metrics and the [Avanced](../../advanced/index.md) section to learn about Hermes' features and general guidelines for troubleshooting.
+Visit the [Telemetry](../../documentation/telemetry/index.md) section to learn how to use the metrics and the [Advanced](../../advanced/index.md) section to learn about Hermes' features and general guidelines for troubleshooting.
 
 You can also learn more about [Grafana's features](https://grafana.com/tutorials/grafana-fundamentals/) and learn how to create a [Grafana Managed Alert](https://grafana.com/docs/grafana/latest/alerting/alerting-rules/create-grafana-managed-rule/). 
 

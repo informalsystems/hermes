@@ -188,7 +188,7 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
    [`FullNode`].
 
    The function accepts a proxy type `Seed` that should be unique
-   accross multiple calls so that the returned [`ChainHandle`]
+   across multiple calls so that the returned [`ChainHandle`]
    have a unique type.
 
    For example, the following test should fail to compile:

@@ -45,7 +45,7 @@ use crate::{
    a chain with an ID  like `"ibc-alpha-f5a2a988"`
 
    The bootstrap function also tries to use as many random parameters
-   when intitializing the chain, such as using random denomination
+   when initializing the chain, such as using random denomination
    and wallets. This is to help ensure that the test is written to
    only work with specific hardcoded parameters.
 
@@ -132,6 +132,7 @@ pub fn bootstrap_single_node(
     let minimum_gas = format!("0{}", native_token);
     chain_driver.update_chain_config("app.toml", |config| {
         config::set_grpc_port(config, chain_driver.grpc_port)?;
+        config::enable_grpc(config)?;
         config::disable_grpc_web(config)?;
         config::disable_api(config)?;
         config::set_minimum_gas_price(config, &minimum_gas)?;

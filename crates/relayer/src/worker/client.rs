@@ -2,7 +2,6 @@ use core::{
     convert::Infallible,
     time::Duration,
 };
-use std::time::Instant;
 
 use crossbeam_channel::Receiver;
 use ibc_relayer_types::{
@@ -39,8 +38,8 @@ use crate::{
     },
 };
 
-const REFRESH_INTERVAL: Duration = Duration::from_secs(2); // 2 seconds
-const INITIAL_BACKOFF: Duration = Duration::from_secs(1); // 1 second
+const REFRESH_CHECK_INTERVAL: Duration = Duration::from_secs(5); // 5 seconds
+const INITIAL_BACKOFF: Duration = Duration::from_secs(5); // 5 seconds
 const MAX_REFRESH_DELAY: Duration = Duration::from_secs(60 * 60); // 1 hour
 const MAX_REFRESH_TOTAL_DELAY: Duration = Duration::from_secs(60 * 60 * 24); // 1 day
 
@@ -56,9 +55,6 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
         return None;
     }
 
-    // Compute the refresh interval as a fraction of the client's trusting period
-    // If the trusting period or the client state is not retrieved, fallback to a default value.
-    let mut next_refresh = Instant::now() + REFRESH_INTERVAL;
     Some(spawn_background_task(
         error_span!(
             "worker.client.refresh",
@@ -66,24 +62,16 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
             src_chain = %client.src_chain.id(),
             dst_chain = %client.dst_chain.id(),
         ),
-        Some(Duration::from_secs(1)),
+        Some(REFRESH_CHECK_INTERVAL),
         move || {
-            // This is used for integration tests until `spawn_background_task`
-            // uses async instead of threads
-            if Instant::now() < next_refresh {
-                return Ok(Next::Continue);
-            }
-
-            // Use retry mechanism only if `client.refresh()` fails.
+            // Try to refresh the client, but only if the refresh window has expired.
+            // If the refresh fails, retry according to the given strategy.
             let res = retry_with_index(refresh_strategy(), |_| client.refresh());
 
             match res {
-                // If `client.refresh()` was successful, update the `next_refresh` call.
-                Ok(_) => {
-                    next_refresh = Instant::now() + REFRESH_INTERVAL;
+                // If `client.refresh()` was successful, continue
+                Ok(_) => Ok(Next::Continue),
 
-                    Ok(Next::Continue)
-                }
                 // If `client.refresh()` failed and the retry mechanism
                 // exceeded the maximum delay, return a fatal error.
                 Err(e) => Err(TaskError::Fatal(e)),

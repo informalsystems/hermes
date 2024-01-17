@@ -77,7 +77,7 @@ pub fn spawn_chain_runtime(config: &Config, chain_id: &ChainId) -> Result<impl C
     spawn_chain_runtime_generic::<BaseChainHandle>(config, chain_id)
 }
 
-/// Spawns a chain runtime for the chain in the configuraiton identified by the given chain identifier.
+/// Spawns a chain runtime for the chain in the configuration identified by the given chain identifier.
 ///
 /// The `Handle` type parameter allows choosing which kind of [`ChainHandle`] implementation to use.
 ///

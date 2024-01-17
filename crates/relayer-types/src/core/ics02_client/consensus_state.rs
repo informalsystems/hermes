@@ -18,7 +18,7 @@ use crate::{
 /// to verify new commits & state roots.
 ///
 /// Users are not expected to implement sealed::ErasedPartialEqConsensusState.
-/// Effectively, that trait bound mandates implementors to derive PartialEq,
+/// Effectively, that trait bound mandates implementers to derive PartialEq,
 /// after which our blanket implementation will implement
 /// `ErasedPartialEqConsensusState` for their type.
 pub trait ConsensusState: Clone + Debug + Send + Sync // Any: From<Self>,

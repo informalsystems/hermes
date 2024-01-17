@@ -28,15 +28,13 @@ use crate::{
     util::collate::CollatedIterExt,
 };
 
-/// Limit on how many query results should be expected.
-pub const CHUNK_LENGTH: usize = 50;
-
 /// Returns an iterator on batches of packet events.
 pub fn query_packet_events_with<'a, ChainA, QueryFn>(
     sequences: &'a [Sequence],
     query_height: Qualified<Height>,
     src_chain: &'a ChainA,
     path: &'a PathIdentifiers,
+    chunk_size: usize,
     query_fn: QueryFn,
 ) -> impl Iterator<Item = Vec<IbcEventWithHeight>> + 'a
 where
@@ -52,7 +50,7 @@ where
     let events_total = sequences.len();
     let mut events_left = events_total;
 
-    sequences.chunks(CHUNK_LENGTH).map_while(move |chunk| {
+    sequences.chunks(chunk_size).map_while(move |chunk| {
         match query_fn(src_chain, path, chunk, query_height) {
             Ok(events) => {
                 events_left -= chunk.len();

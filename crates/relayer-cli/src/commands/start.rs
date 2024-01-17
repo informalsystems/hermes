@@ -180,7 +180,7 @@ fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
                 );
 
                 if let Err(e) = handle.await {
-                    error!("REST service crashed with errror: {e}");
+                    error!("REST service crashed with error: {e}");
                 }
             }
             Err(e) => {
@@ -235,7 +235,7 @@ fn spawn_telemetry_server(config: &Config) {
                 info!("telemetry service running, exposing metrics at http://{addr}/metrics");
 
                 if let Err(e) = handle.await {
-                    error!("telemetry service crashed with errror: {e}");
+                    error!("telemetry service crashed with error: {e}");
                 }
             }
             Err(e) => error!("telemetry service failed to start: {e}"),

@@ -107,6 +107,15 @@ impl AnyClientState {
         }
     }
 
+    pub fn trusting_period(&self) -> Duration {
+        match self {
+            AnyClientState::Tendermint(state) => state.trusting_period,
+
+            #[cfg(test)]
+            AnyClientState::Mock(_) => Duration::from_secs(14 * 24 * 60 * 60), // 2 weeks
+        }
+    }
+
     pub fn max_clock_drift(&self) -> Duration {
         match self {
             AnyClientState::Tendermint(state) => state.max_clock_drift,
@@ -122,15 +131,6 @@ impl AnyClientState {
 
             #[cfg(test)]
             Self::Mock(state) => state.client_type(),
-        }
-    }
-
-    pub fn refresh_period(&self) -> Option<Duration> {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.refresh_time(),
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
         }
     }
 }

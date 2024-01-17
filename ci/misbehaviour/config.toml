@@ -136,7 +136,7 @@ account_prefix = 'cosmos'
 
 # Specify the name of the private key to use for signing transactions. Required
 # See the Adding Keys chapter for more information about managing signing keys:
-#   https://hermes.informal.systems/commands/keys/index.html#adding-keys
+#   https://hermes.informal.systems/documentation/commands/keys/index.html#adding-keys
 key_name = 'testkey'
 
 # Specify the address type which determines:
@@ -294,7 +294,7 @@ memo_prefix = ''
 # [chains.packet_filter.min_fees.'channel-0']
 # recv = [ { amount = 20, denom = 'stake' }, { amount = 10, denom = 'uatom' } ]
 
-# Specify that the transaction fees should be payed from this fee granter's account.
+# Specify that the transaction fees should be paid from this fee granter's account.
 # Optional. If unspecified (the default behavior), then no fee granter is used, and
 # the account specified in `key_name` will pay the tx fees for all transactions
 # submitted to this chain.

@@ -118,5 +118,5 @@ pub fn register_interchain_account<Chain: ChainHandle, Counterparty: ChainHandle
         }
     }
 
-    Err(Error::generic(eyre!("could not retrieve an OpenInitChannel event resonse after sending MsgRegisterInterchainAccount")))
+    Err(Error::generic(eyre!("could not retrieve an OpenInitChannel event response after sending MsgRegisterInterchainAccount")))
 }

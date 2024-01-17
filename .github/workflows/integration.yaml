@@ -48,49 +48,63 @@ jobs:
           - package: gaia13
             command: gaiad
             account_prefix: cosmos
+            native_token: stake
+            features: forward-packet,clean-workers
           - package: gaia14
             command: gaiad
             account_prefix: cosmos
-          - package: ibc-go-v4-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: ibc-go-v5-simapp
-            command: simd
-            account_prefix: cosmos
+            native_token: stake
+            features: forward-packet,clean-workers
           - package: ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
+            native_token: stake
+            features: ica,ics29-fee
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
+            native_token: stake
+            features: ica,ics29-fee
           - package: ibc-go-v8-simapp
             command: simd
             account_prefix: cosmos
+            native_token: stake
+            features: ica,ics29-fee
           - package: wasmd
             command: wasmd
             account_prefix: wasm
-          - package: evmos
-            command: evmosd
-            account_prefix: evmos
+            native_token: stake
+            features: ''
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
-          - package: stride
-            command: strided
-            account_prefix: stride
+            native_token: stake
+            features: ''
           - package: juno
             command: junod
             account_prefix: juno
+            native_token: stake
+            features: juno,forward-packet
+          - package: provenance
+            command: provenanced
+            account_prefix: pb
+            native_token: nhash
+            features: fee-grant,async-icq
+          - package: migaloo
+            command: migalood
+            account_prefix: migaloo
+            native_token: stake
+            features: ''
 
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v25
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
+      - uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - uses: actions-rs/toolchain@v1
@@ -101,7 +115,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p ibc-integration-test --no-fail-fast --no-run
+          args: -p ibc-integration-test --features=${{ matrix.chain.features }} --no-fail-fast --no-run
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - name: Run integration test
@@ -112,22 +126,24 @@ jobs:
           NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+          NATIVE_TOKENS: ${{ matrix.chain.native_token }}
         run: |
             nix shell .#python .#${{ matrix.chain.package }} -c \
-              cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2
+              cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+              --features=${{ matrix.chain.features }}
 
   ordered-channel-test:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v25
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
+      - uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - uses: actions-rs/toolchain@v1
@@ -151,296 +167,6 @@ jobs:
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features ordered test_ordered_channel
 
-  ica-filter-test:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        chain:
-          - package: ibc-go-v6-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: ibc-go-v7-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: ibc-go-v8-simapp
-            command: simd
-            account_prefix: cosmos
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --no-fail-fast --no-run
-      - name: Install cargo-nextest
-        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - env:
-          RUST_LOG: info
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          NEXTEST_RETRIES: 2
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-            --features ica test_ica_filter
-
-  ics29-fee-test:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        chain:
-          - package: ibc-go-v5-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: ibc-go-v6-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: ibc-go-v7-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: ibc-go-v8-simapp
-            command: simd
-            account_prefix: cosmos
-          - package: migaloo
-            command: migalood
-            account_prefix: migaloo
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --features ics29-fee --no-fail-fast --no-run
-      - name: Install cargo-nextest
-        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - env:
-          RUST_LOG: info
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          NEXTEST_RETRIES: 2
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-            --features ics29-fee fee::
-
-  forward-packet:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        chain:
-          - package: gaia13
-            command: gaiad
-            account_prefix: cosmos
-          - package: gaia14
-            command: gaiad
-            account_prefix: cosmos
-          - package: juno
-            command: junod
-            account_prefix: juno
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --features forward-packet --no-fail-fast --no-run
-      - name: Install cargo-nextest
-        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - env:
-          RUST_LOG: info
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          NEXTEST_RETRIES: 2
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-            --features forward-packet forward::
-
-  ics31:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        chain:
-          - package: .#gaia13 .#stride-no-admin
-            command: gaiad,strided
-            account_prefix: cosmos,stride
-          - package: .#gaia14 .#stride-no-admin
-            command: gaiad,strided
-            account_prefix: cosmos,stride
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --features ics31 --no-fail-fast --no-run
-      - name: Install cargo-nextest
-        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - env:
-          RUST_LOG: info
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          NEXTEST_RETRIES: 2
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell ${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-            --features ics31 ics31::
-
-  fee-grant:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        chain:
-          - package: stride
-            command: strided
-            account_prefix: stride
-          - package: evmos
-            command: evmosd
-            account_prefix: evmos
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --features fee-grant --no-fail-fast --no-run
-      - name: Install cargo-nextest
-        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - env:
-          RUST_LOG: info
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-            --features fee-grant fee_grant::
-
-  clean-workers:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        chain:
-          - package: gaia13
-            command: gaiad
-            account_prefix: cosmos
-          - package: gaia14
-            command: gaiad
-            account_prefix: cosmos
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --features ics31 --no-fail-fast --no-run
-      - name: Install cargo-nextest
-        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - env:
-          RUST_LOG: info
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          NEXTEST_RETRIES: 2
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell .#${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-            --features clean-workers clean_workers::
-
   interchain-security-no-ica:
     runs-on: ubuntu-20.04
     strategy:
@@ -455,13 +181,13 @@ jobs:
             account_prefix: cosmos,neutron
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v25
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
+      - uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - uses: actions-rs/toolchain@v1
@@ -501,13 +227,13 @@ jobs:
             account_prefix: cosmos,stride
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v25
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
+      - uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - uses: actions-rs/toolchain@v1
@@ -547,13 +273,13 @@ jobs:
             account_prefix: cosmos,stride
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v25
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
+      - uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - uses: actions-rs/toolchain@v1
@@ -594,13 +320,13 @@ jobs:
             native_token: utia,stake
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v25
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
+      - uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - uses: actions-rs/toolchain@v1
@@ -611,7 +337,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
+          args: -p ibc-integration-test --features celestia --no-fail-fast --no-run
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
@@ -636,13 +362,13 @@ jobs:
           - gaia6
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v25
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
+      - uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - uses: actions-rs/toolchain@v1

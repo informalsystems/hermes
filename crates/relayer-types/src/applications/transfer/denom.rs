@@ -213,7 +213,7 @@ pub fn is_receiver_chain_source(
     // A: sender chain in this transfer, port "transfer" and channel "c2b" (to B)
     // B: receiver chain in this transfer, port "transfer" and channel "c2a" (to A)
     //
-    // If B had originally sent the token in a previous tranfer, then A would have stored the token as
+    // If B had originally sent the token in a previous transfer, then A would have stored the token as
     // "transfer/c2b/{token_denom}". Now, A is sending to B, so to check if B is the source of the token,
     // we need to check if the token starts with "transfer/c2b".
     let prefix = TracePrefix::new(source_port, source_channel);

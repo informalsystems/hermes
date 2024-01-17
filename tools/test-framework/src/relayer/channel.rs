@@ -12,6 +12,7 @@ use ibc_relayer::{
     },
     channel::{
         extract_channel_id,
+        version::Version,
         Channel,
         ChannelSide,
     },
@@ -88,6 +89,45 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
             dst_port_id.cloned_value(),
             None,
             None,
+        ),
+    };
+
+    let event = channel.build_chan_open_init_and_send()?;
+    let channel_id = extract_channel_id(&event)?.clone();
+    let channel2 = Channel::restore_from_event(handle_b.clone(), handle_a.clone(), event)?;
+
+    Ok((DualTagged::new(channel_id), channel2))
+}
+
+pub fn init_channel_version<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    client_id_a: &TaggedClientIdRef<ChainA, ChainB>,
+    client_id_b: &TaggedClientIdRef<ChainB, ChainA>,
+    connection_id_a: &TaggedConnectionIdRef<ChainA, ChainB>,
+    connection_id_b: &TaggedConnectionIdRef<ChainB, ChainA>,
+    src_port_id: &TaggedPortIdRef<ChainA, ChainB>,
+    dst_port_id: &TaggedPortIdRef<ChainB, ChainA>,
+    version: Version,
+) -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainB, ChainA>), Error> {
+    let channel = Channel {
+        connection_delay: Default::default(),
+        ordering: Ordering::Unordered,
+        a_side: ChannelSide::new(
+            handle_a.clone(),
+            client_id_a.cloned_value(),
+            connection_id_a.cloned_value(),
+            src_port_id.cloned_value(),
+            None,
+            Some(version.clone()),
+        ),
+        b_side: ChannelSide::new(
+            handle_b.clone(),
+            client_id_b.cloned_value(),
+            connection_id_b.cloned_value(),
+            dst_port_id.cloned_value(),
+            None,
+            Some(version),
         ),
     };
 
@@ -203,7 +243,7 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
     assert_eventually_succeed(
         "channel should eventually established",
         20,
-        Duration::from_secs(1),
+        Duration::from_secs(2),
         || {
             let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
 
@@ -227,6 +267,48 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
             if !channel_end_b.value().state_matches(&ChannelState::Open) {
                 return Err(Error::generic(eyre!(
                     "expected channel end B to be in open state"
+                )));
+            }
+
+            Ok(channel_id_b)
+        },
+    )
+}
+
+pub fn assert_eventually_channel_closed<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel should eventually closed",
+        20,
+        Duration::from_secs(2),
+        || {
+            let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
+
+            if !channel_end_a.value().state_matches(&ChannelState::Closed) {
+                return Err(Error::generic(eyre!(
+                    "expected channel end A to be in closed state, but it is instead `{}",
+                    channel_end_a.value().state()
+                )));
+            }
+
+            let channel_id_b = channel_end_a
+                .tagged_counterparty_channel_id()
+                .ok_or_else(|| {
+                    eyre!("expected counterparty channel id to present on closed channel")
+                })?;
+
+            let port_id_b = channel_end_a.tagged_counterparty_port_id();
+
+            let channel_end_b =
+                query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
+
+            if !channel_end_b.value().state_matches(&ChannelState::Closed) {
+                return Err(Error::generic(eyre!(
+                    "expected channel end B to be in closed state"
                 )));
             }
 

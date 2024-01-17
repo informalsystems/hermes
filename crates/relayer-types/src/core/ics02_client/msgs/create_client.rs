@@ -102,7 +102,7 @@ mod tests {
 
         let msg = MsgCreateClient::new(
             tm_client_state,
-            TmConsensusState::try_from(tm_header).unwrap().into(),
+            TmConsensusState::from(tm_header).into(),
             signer,
         )
         .unwrap();

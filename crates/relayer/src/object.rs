@@ -379,12 +379,6 @@ impl Object {
             )
             .map_err(ObjectError::relayer)?;
 
-        if client_state.refresh_period().is_none() {
-            return Err(ObjectError::refresh_not_required(
-                e.client_id().clone(),
-                dst_chain.id(),
-            ));
-        }
         let src_chain_id = client_state.chain_id();
 
         Ok(Client {
@@ -407,13 +401,6 @@ impl Object {
         let client = channel_connection_client(chain, e.port_id(), channel_id)
             .map_err(ObjectError::supervisor)?
             .client;
-
-        if client.client_state.refresh_period().is_none() {
-            return Err(ObjectError::refresh_not_required(
-                client.client_id,
-                chain.id(),
-            ));
-        }
 
         Ok(Client {
             dst_client_id: client.client_id.clone(),

@@ -76,7 +76,7 @@ where
 
 /**
     Runs a test case that implements [`NaryChainTest`], with one self-connected chain used
-    to emulate many connnections.
+    to emulate many connections.
 
     This works because IBC allows a chain to connect back to itself without the chain
     knowing it. Using this, we can emulate N-ary chain tests using only one chain

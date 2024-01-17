@@ -62,12 +62,12 @@ pub fn hang_on_error<R>(
         }
         Ok(Err(e)) => {
             if hang_on_fail {
-                error!("test failure occured with HANG_ON_FAIL=1, suspending the test to allow debugging: {:?}",
+                error!("test failure occurred with HANG_ON_FAIL=1, suspending the test to allow debugging: {:?}",
                     e);
 
                 suspend()
             } else {
-                error!("test failure occured. set HANG_ON_FAIL=1 to suspend the test on failure for debugging: {:?}",
+                error!("test failure occurred. set HANG_ON_FAIL=1 to suspend the test on failure for debugging: {:?}",
                     e);
 
                 Err(e)

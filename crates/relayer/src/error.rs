@@ -348,7 +348,7 @@ define_error! {
 
         ChannelReceiveTimeout
             [ TraceError<crossbeam_channel::RecvTimeoutError> ]
-            |_| { "timeout when waiting for reponse over inter-thread channel" },
+            |_| { "timeout when waiting for response over inter-thread channel" },
 
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },
@@ -692,7 +692,7 @@ impl GrpcStatusSubdetail {
     /// ## Note
     /// This error may happen even when packets are submitted in order when the `simulate_tx`
     /// gRPC endpoint is allowed to be called after a block is created and before
-    /// Tendermint/mempool finishes `recheck_tx`, similary to the issue described in
+    /// Tendermint/mempool finishes `recheck_tx`, similarly to the issue described in
     /// <https://github.com/informalsystems/hermes/issues/2249>.
     ///
     /// See <https://github.com/informalsystems/hermes/issues/2670> for more info.

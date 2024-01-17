@@ -92,7 +92,7 @@ impl BinaryChannelTest for ConnectionDelayTest {
 
             assert_gt(
                 &format!(
-                    "Expect IBC transfer to only be successfull after {}s",
+                    "Expect IBC transfer to only be successful after {}s",
                     CONNECTION_DELAY.as_secs()
                 ),
                 &(time2 - time1).try_into().unwrap(),

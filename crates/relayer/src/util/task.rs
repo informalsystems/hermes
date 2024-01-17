@@ -53,14 +53,14 @@ struct DropJoinHandle(Option<thread::JoinHandle<()>>);
 */
 pub enum TaskError<E> {
     /**
-       Inform the background task runner that an ignorable error has occured,
+       Inform the background task runner that an ignorable error has occurred,
        and the background task runner should log the error and then continue
        execution.
     */
     Ignore(E),
 
     /**
-       Inform the background task runner that a fatal error has occured,
+       Inform the background task runner that a fatal error has occurred,
        and the background task runner should log the error and then abort
        execution.
     */
@@ -76,7 +76,7 @@ pub enum Next {
    Spawn a long-running background task with the given step runner.
 
    The step runner is a `FnMut` closure that is called repeatedly and
-   returns a `Result<(), TaskError<E>>`. If the step is executed successfuly,
+   returns a `Result<(), TaskError<E>>`. If the step is executed successfully,
    the step runner should return `Ok(())` so that it will be called again.
 
    Otherwise if errors occurred or of the task needs to be aborted,

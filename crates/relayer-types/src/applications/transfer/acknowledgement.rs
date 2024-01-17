@@ -71,8 +71,8 @@ mod test {
     #[test]
     fn test_ack_ser() {
         fn ser_json_assert_eq(ack: Acknowledgement, json_str: &str) {
-            let ser = serde_json::to_string(&ack).unwrap();
-            assert_eq!(ser, json_str)
+            let set = serde_json::to_string(&ack).unwrap();
+            assert_eq!(set, json_str)
         }
 
         ser_json_assert_eq(Acknowledgement::success(), r#"{"result":"AQ=="}"#);

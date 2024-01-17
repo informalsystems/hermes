@@ -318,6 +318,14 @@ impl PortId {
         Self("transfer".to_string())
     }
 
+    pub fn oracle() -> Self {
+        Self("oracle".to_string())
+    }
+
+    pub fn icqhost() -> Self {
+        Self("icqhost".to_string())
+    }
+
     /// Get this identifier as a borrowed `&str`
     pub fn as_str(&self) -> &str {
         &self.0

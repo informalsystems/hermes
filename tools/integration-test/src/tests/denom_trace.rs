@@ -13,7 +13,7 @@ pub struct IbcDenomTraceTest;
 impl TestOverrides for IbcDenomTraceTest {}
 
 /// In order to test the denom_trace at first transfer IBC tokens from Chain A
-/// to Chain B, and then retrieving the trace hash of the transfered tokens.
+/// to Chain B, and then retrieving the trace hash of the transferred tokens.
 /// The trace hash is used to query the denom_trace and the result is verified.
 impl BinaryChannelTest for IbcDenomTraceTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(

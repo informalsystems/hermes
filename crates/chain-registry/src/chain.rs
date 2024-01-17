@@ -157,8 +157,8 @@ pub struct Grpc {
 }
 
 impl Fetchable for ChainData {
-    fn path(ressource: &str) -> PathBuf {
-        [ressource, "chain.json"].iter().collect()
+    fn path(resource: &str) -> PathBuf {
+        [resource, "chain.json"].iter().collect()
     }
 }
 

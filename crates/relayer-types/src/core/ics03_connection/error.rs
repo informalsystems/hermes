@@ -99,7 +99,7 @@ define_error! {
 
         VerifyConnectionState
             [ client_error::Error ]
-            | _ | { "error verifying connnection state" },
+            | _ | { "error verifying connection state" },
 
         Signer
             [ SignerError ]

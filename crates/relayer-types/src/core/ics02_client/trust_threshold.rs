@@ -9,6 +9,7 @@ use std::{
         Error as FmtError,
         Formatter,
     },
+    str::FromStr,
 };
 
 use ibc_proto::{
@@ -131,23 +132,37 @@ impl Display for TrustThreshold {
     }
 }
 
+impl FromStr for TrustThreshold {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split('/').collect();
+
+        if parts.len() != 2 {
+            return Err(format!("invalid trust threshold, must be a fraction: {s}"));
+        }
+
+        let (num, denom) = (parts[0].parse(), parts[1].parse());
+
+        if let (Ok(num), Ok(denom)) = (num, denom) {
+            TrustThreshold::new(num, denom).map_err(|e| e.to_string())
+        } else {
+            Err(format!("invalid trust threshold, must be a fraction: {s}",))
+        }
+    }
+}
+
 impl Serialize for TrustThreshold {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        #[derive(Serialize)]
-        struct TrustThreshold {
-            numerator: u64,
-            denominator: u64,
-        }
+        use serde::ser::SerializeStruct;
 
-        let tt = TrustThreshold {
-            numerator: self.numerator(),
-            denominator: self.denominator(),
-        };
-
-        tt.serialize(serializer)
+        let mut s = serializer.serialize_struct("TrustThreshold", 2)?;
+        s.serialize_field("numerator", &self.numerator())?;
+        s.serialize_field("denominator", &self.denominator())?;
+        s.end()
     }
 }
 
@@ -156,13 +171,99 @@ impl<'de> Deserialize<'de> for TrustThreshold {
     where
         D: serde::Deserializer<'de>,
     {
-        #[derive(Deserialize)]
-        struct TrustThreshold {
-            numerator: u64,
-            denominator: u64,
+        use std::fmt;
+
+        use serde::de::{
+            self,
+            Visitor,
+        };
+
+        // This is a Visitor that forwards string types to T's `FromStr` impl and
+        // forwards map types to T's `Deserialize` impl. The `PhantomData` is to
+        // keep the compiler from complaining about T being an unused generic type
+        // parameter. We need T in order to know the Value type for the Visitor
+        // impl.
+        struct StringOrStruct;
+
+        impl<'de> Visitor<'de> for StringOrStruct {
+            type Value = TrustThreshold;
+
+            fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+                formatter.write_str(
+                    "string (eg. '1/3') or map `{ numerator = <int>, denominator = <int> }`",
+                )
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<TrustThreshold, E>
+            where
+                E: de::Error,
+            {
+                Ok(FromStr::from_str(value).unwrap())
+            }
+
+            fn visit_map<M>(self, map: M) -> Result<TrustThreshold, M::Error>
+            where
+                M: de::MapAccess<'de>,
+            {
+                #[derive(Deserialize)]
+                struct TT {
+                    #[serde(deserialize_with = "string_or_int")]
+                    numerator: u64,
+                    #[serde(deserialize_with = "string_or_int")]
+                    denominator: u64,
+                }
+
+                let tt = TT::deserialize(de::value::MapAccessDeserializer::new(map))?;
+
+                TrustThreshold::new(tt.numerator, tt.denominator).map_err(de::Error::custom)
+            }
         }
 
-        let tt = TrustThreshold::deserialize(deserializer)?;
-        Self::new(tt.numerator, tt.denominator).map_err(serde::de::Error::custom)
+        deserializer.deserialize_any(StringOrStruct)
     }
+}
+
+fn string_or_int<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use std::fmt;
+
+    use serde::de::{
+        self,
+        Visitor,
+    };
+
+    struct StringOrInt;
+
+    impl<'de> Visitor<'de> for StringOrInt {
+        type Value = u64;
+
+        fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+            formatter.write_str("string or int")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<u64, E>
+        where
+            E: de::Error,
+        {
+            FromStr::from_str(value).map_err(de::Error::custom)
+        }
+
+        fn visit_i64<E>(self, value: i64) -> Result<u64, E>
+        where
+            E: de::Error,
+        {
+            Ok(value as u64)
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<u64, E>
+        where
+            E: de::Error,
+        {
+            Ok(value)
+        }
+    }
+
+    deserializer.deserialize_any(StringOrInt)
 }

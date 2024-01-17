@@ -10,7 +10,7 @@ mdBook is a utility to create modern online books from Markdown files.
 This guide should be permanently deployed at its latest stable version at
 [hermes.informal.systems](https://hermes.informal.systems).
 
-Current version: `v1.7.3`.
+Current version: `v1.7.4`.
 
 The version of this guide is aligned with the [versioning of the ibc crates](../README.md).
 
@@ -72,4 +72,4 @@ Basically if you want to add new content to the guide, just add an entry to the 
 If you are adding content using your favorite IDE and have a terminal opened running `mdbook serve`, it provides a convenient watch functionality, so any changes detected on local files will trigger another build and if you refresh the guide on your browser they will be shown there.
 
 #### Submit your changes
-Once you finish adding the new content just commit your changes (`git commit`) and push them to the respository (`git push`).
+Once you finish adding the new content just commit your changes (`git commit`) and push them to the repository (`git push`).

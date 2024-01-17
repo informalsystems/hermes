@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use abscissa_core::{
     clap::Parser,
     Command,
@@ -9,10 +11,12 @@ use ibc_relayer::{
         Link,
         LinkParameters,
     },
+    util::seq_range::parse_seq_range,
 };
 use ibc_relayer_types::{
     core::{
         ics02_client::height::Height,
+        ics04_channel::packet::Sequence,
         ics24_host::identifier::{
             ChainId,
             ChannelId,
@@ -69,6 +73,19 @@ pub struct TxPacketRecvCmd {
     src_channel_id: ChannelId,
 
     #[clap(
+    long = "packet-sequences",
+    help = "Sequences of packets to be cleared on `dst-chain`. \
+            Either a single sequence or a range of sequences can be specified. \
+            If not provided, all pending recv or timeout packets will be cleared. \
+            Each element of the comma-separated list must be either a single \
+            sequence or a range of sequences. \
+            Example: `1,10..20` will clear packets with sequences 1, 10, 11, ..., 20",
+    value_delimiter = ',',
+    value_parser = parse_seq_range
+    )]
+    packet_sequences: Vec<RangeInclusive<Sequence>>,
+
+    #[clap(
         long = "packet-data-query-height",
         help = "Exact height at which the packet data is queried via block_results RPC"
     )]
@@ -87,6 +104,8 @@ impl Runnable for TxPacketRecvCmd {
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
+            max_memo_size: config.mode.packets.ics20_max_memo_size,
+            max_receiver_size: config.mode.packets.ics20_max_receiver_size,
         };
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,
@@ -99,6 +118,7 @@ impl Runnable for TxPacketRecvCmd {
 
         let res: Result<Vec<IbcEvent>, Error> = link
             .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
+                self.packet_sequences.clone(),
                 packet_data_query_height,
             )
             .map_err(Error::link);
@@ -150,6 +170,19 @@ pub struct TxPacketAckCmd {
     src_channel_id: ChannelId,
 
     #[clap(
+        long = "packet-sequences",
+        help = "Sequences of packets to be cleared on `dst-chain`. \
+                Either a single sequence or a range of sequences can be specified. \
+                If not provided, all pending ack packets will be cleared. \
+                Each element of the comma-separated list must be either a single \
+                sequence or a range of sequences. \
+                Example: `1,10..20` will clear packets with sequences 1, 10, 11, ..., 20",
+        value_delimiter = ',',
+        value_parser = parse_seq_range
+    )]
+    packet_sequences: Vec<RangeInclusive<Sequence>>,
+
+    #[clap(
         long = "packet-data-query-height",
         help = "Exact height at which the packet data is queried via block_results RPC"
     )]
@@ -168,6 +201,8 @@ impl Runnable for TxPacketAckCmd {
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
+            max_memo_size: config.mode.packets.ics20_max_memo_size,
+            max_receiver_size: config.mode.packets.ics20_max_receiver_size,
         };
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,
@@ -179,7 +214,10 @@ impl Runnable for TxPacketAckCmd {
             .map(|height| Height::new(link.a_to_b.src_chain().id().version(), height).unwrap());
 
         let res: Result<Vec<IbcEvent>, Error> = link
-            .relay_ack_packet_messages_with_packet_data_query_height(packet_data_query_height)
+            .relay_ack_packet_messages_with_packet_data_query_height(
+                self.packet_sequences.clone(),
+                packet_data_query_height,
+            )
             .map_err(Error::link);
 
         match res {
@@ -213,6 +251,7 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
+                packet_sequences: vec![],
                 packet_data_query_height: None
             },
             TxPacketRecvCmd::parse_from([
@@ -237,6 +276,7 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
+                packet_sequences: vec![],
                 packet_data_query_height: None
             },
             TxPacketRecvCmd::parse_from([
@@ -260,6 +300,7 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
+                packet_sequences: vec![],
                 packet_data_query_height: Some(5),
             },
             TxPacketRecvCmd::parse_from([
@@ -342,6 +383,7 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
+                packet_sequences: vec![],
                 packet_data_query_height: None
             },
             TxPacketAckCmd::parse_from([
@@ -366,6 +408,7 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
+                packet_sequences: vec![],
                 packet_data_query_height: None
             },
             TxPacketAckCmd::parse_from([

@@ -1,9 +1,6 @@
 use std::{
     borrow::Cow,
-    convert::{
-        TryFrom,
-        TryInto,
-    },
+    convert::TryFrom,
     fmt::{
         Display,
         Error as FmtError,
@@ -356,42 +353,6 @@ impl Display for IbcEvent {
 
             IbcEvent::ChainError(ev) => write!(f, "ChainError({ev})"),
         }
-    }
-}
-
-impl TryFrom<IbcEvent> for abci::Event {
-    type Error = Error;
-
-    fn try_from(event: IbcEvent) -> Result<Self, Self::Error> {
-        Ok(match event {
-            IbcEvent::CreateClient(event) => event.into(),
-            IbcEvent::UpdateClient(event) => event.into(),
-            IbcEvent::UpgradeClient(event) => event.into(),
-            IbcEvent::ClientMisbehaviour(event) => event.into(),
-            IbcEvent::OpenInitConnection(event) => event.into(),
-            IbcEvent::OpenTryConnection(event) => event.into(),
-            IbcEvent::OpenAckConnection(event) => event.into(),
-            IbcEvent::OpenConfirmConnection(event) => event.into(),
-            IbcEvent::OpenInitChannel(event) => event.into(),
-            IbcEvent::OpenTryChannel(event) => event.into(),
-            IbcEvent::OpenAckChannel(event) => event.into(),
-            IbcEvent::OpenConfirmChannel(event) => event.into(),
-            IbcEvent::CloseInitChannel(event) => event.into(),
-            IbcEvent::CloseConfirmChannel(event) => event.into(),
-            IbcEvent::SendPacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::ReceivePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::WriteAcknowledgement(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::IncentivizedPacket(event) => event.into(),
-            IbcEvent::CrossChainQueryPacket(event) => event.into(),
-            IbcEvent::DistributeFeePacket(event) => event.into(),
-            IbcEvent::AppModule(event) => event.try_into()?,
-            IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
-                return Err(Error::incorrect_event_type(event.to_string()));
-            }
-        })
     }
 }
 

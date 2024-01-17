@@ -157,11 +157,6 @@ impl ClientState {
         })
     }
 
-    /// Get the refresh time to ensure the state does not expire
-    pub fn refresh_time(&self) -> Option<Duration> {
-        Some(2 * self.trusting_period / 3)
-    }
-
     /// Helper method to produce a [`Options`] struct for use in
     /// Tendermint-specific light client verification.
     pub fn as_light_client_options(&self) -> Options {

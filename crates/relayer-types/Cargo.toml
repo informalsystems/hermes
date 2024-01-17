@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-types"
-version      = "0.26.3"
+version      = "0.26.4"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -60,6 +60,6 @@ optional = true
 env_logger = "0.10.0"
 tracing = { version = "0.1.36", default-features = false }
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
-test-log = { version = "0.2.10", features = ["trace"] }
+test-log = { version = "0.2.14", features = ["trace"] }
 tendermint-rpc = { version = "0.34.0", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "0.34.0" } # Needed for generating (synthetic) light blocks.

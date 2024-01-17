@@ -127,7 +127,7 @@ pub struct PrettyFee<'a>(pub &'a Fee);
 
 impl Display for PrettyFee<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        let amount = match self.0.amount.get(0) {
+        let amount = match self.0.amount.first() {
             Some(coin) => format!("{}{}", coin.amount, coin.denom),
             None => "<no amount specified>".to_string(),
         };

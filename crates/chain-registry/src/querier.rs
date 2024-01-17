@@ -50,7 +50,7 @@ pub trait QueryTypes {
 #[async_trait]
 /// `QueryContext` represents the basic expectations for a query
 pub trait QueryContext: QueryTypes {
-    /// Return an error specific to the query which is retured when `query_healthy` fails
+    /// Return an error specific to the query which is returned when `query_healthy` fails
     ///
     /// # Arguments
     ///

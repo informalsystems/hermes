@@ -115,7 +115,7 @@ define_error! {
             | _ | { "missing channel end" },
 
         InvalidVersionLengthConnection
-            | _ | { "single version must be negociated on connection before opening channel" },
+            | _ | { "single version must be negotiated on connection before opening channel" },
 
         ChannelFeatureNotSuportedByConnection
             | _ | { "the channel ordering is not supported by connection" },
