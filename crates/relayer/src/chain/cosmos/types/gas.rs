@@ -25,7 +25,7 @@ impl<'a> From<&'a ChainConfig> for GasConfig {
             default_gas: default_gas_from_config(config),
             max_gas: max_gas_from_config(config),
             gas_multiplier: gas_multiplier_from_config(config),
-            gas_price: config.dynamic_gas_price(),
+            gas_price: config.gas_price.clone(),
             max_fee: max_fee_from_config(config),
             fee_granter: fee_granter_from_config(config),
             dynamic_gas_price_multiplier: config.dynamic_gas.dynamic_gas_price(),
@@ -64,7 +64,7 @@ fn max_fee_from_config(config: &ChainConfig) -> Fee {
     let max_gas = max_gas_from_config(config);
 
     // The maximum fee the relayer pays for a transaction
-    let max_fee_in_coins = calculate_fee(max_gas, &config.dynamic_gas_price());
+    let max_fee_in_coins = calculate_fee(max_gas, &config.gas_price);
 
     let fee_granter = fee_granter_from_config(config);
 

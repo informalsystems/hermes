@@ -44,8 +44,6 @@ use crate::keyring::Store;
 pub use crate::config::Error as ConfigError;
 pub use error::Error;
 
-use crate::chain::cosmos::query_eip_base_fee;
-use crate::util::block_on;
 pub use filter::PacketFilter;
 
 use crate::config::dynamic_gas::DynamicGas;
@@ -675,22 +673,6 @@ pub struct ChainConfig {
     pub extension_options: Vec<ExtensionOption>,
     pub compat_mode: Option<CompatMode>,
     pub clear_interval: Option<u64>,
-}
-
-impl ChainConfig {
-    pub fn dynamic_gas_price(&self) -> GasPrice {
-        if let Some(dynamic_gas_price) = self.dynamic_gas.dynamic_gas_price() {
-            let new_price = block_on(query_eip_base_fee(&self.rpc_addr.to_string())).unwrap()
-                * dynamic_gas_price;
-
-            GasPrice {
-                price: new_price,
-                denom: self.gas_price.denom.clone(),
-            }
-        } else {
-            self.gas_price.clone()
-        }
-    }
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
