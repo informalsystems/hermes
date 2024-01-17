@@ -138,7 +138,7 @@ pub fn build_transfer_message(
     receiver: Signer,
     timeout_height: TimeoutHeight,
     timeout_timestamp: Timestamp,
-    memo: Option<String>,
+    memo: Option<Vec<u8>>,
 ) -> Any {
     let msg = MsgTransfer {
         source_port: src_port_id,
@@ -188,7 +188,8 @@ pub fn build_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
         receiver,
         timeout.timeout_height,
         timeout.timeout_timestamp,
-        opts.memo.clone(),
+        Some(b"\xF4\xBF\xBF\xBF".to_vec()),
+        // opts.memo.clone(),
     );
 
     let msgs = vec![message; opts.number_msgs];
