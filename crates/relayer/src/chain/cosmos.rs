@@ -108,6 +108,7 @@ use cosmwasm_std::{Decimal, Uint128};
 use osmosis_std::types::cosmos::base::v1beta1::DecProto;
 
 use self::types::app_state::GenesisAppState;
+use self::{gas::dynamic_gas_price, types::gas::GasConfig};
 
 pub mod batch;
 pub mod client;
@@ -488,6 +489,13 @@ impl CosmosSdkChain {
             });
 
         Ok(min_gas_price)
+    }
+
+    pub fn dynamic_gas_price(&self) -> GasPrice {
+        let gas_config = GasConfig::from(self.config());
+
+        self.rt
+            .block_on(dynamic_gas_price(&gas_config, &self.config.rpc_addr))
     }
 
     /// The unbonding period of this chain
@@ -2384,7 +2392,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         );
     }
 
-    let relayer_gas_price = &chain.config.dynamic_gas_price();
+    let relayer_gas_price = &chain.dynamic_gas_price();
     let node_min_gas_prices = chain.min_gas_price()?;
 
     if !node_min_gas_prices.is_empty() {
