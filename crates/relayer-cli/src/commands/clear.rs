@@ -152,6 +152,8 @@ impl Runnable for ClearPacketsCmd {
         let opts = LinkParameters {
             src_port_id: self.port_id.clone(),
             src_channel_id: self.channel_id.clone(),
+            max_memo_size: config.mode.packets.ics20_max_memo_size,
+            max_receiver_size: config.mode.packets.ics20_max_receiver_size,
         };
 
         let fwd_link = match Link::new_from_opts(chains.src.clone(), chains.dst, opts, false, false)

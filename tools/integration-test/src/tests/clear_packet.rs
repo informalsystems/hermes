@@ -441,11 +441,12 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        _relayer: RelayerDriver,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         const NUM_TRANSFERS: usize = 20;
+        let packet_config = relayer.config.mode.packets;
 
         let denom_a = chains.node_a.denom();
 
@@ -484,6 +485,8 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
         let opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.clone().into_value(),
+            max_memo_size: packet_config.ics20_max_memo_size,
+            max_receiver_size: packet_config.ics20_max_receiver_size,
         };
 
         // Clear all even packets

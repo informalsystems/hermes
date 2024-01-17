@@ -86,6 +86,8 @@ impl Runnable for TxPacketRecvCmd {
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
+            max_memo_size: config.mode.packets.ics20_max_memo_size,
+            max_receiver_size: config.mode.packets.ics20_max_receiver_size,
         };
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,
@@ -181,6 +183,8 @@ impl Runnable for TxPacketAckCmd {
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
+            max_memo_size: config.mode.packets.ics20_max_memo_size,
+            max_receiver_size: config.mode.packets.ics20_max_receiver_size,
         };
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,

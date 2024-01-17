@@ -1361,6 +1361,7 @@ dependencies = [
 name = "ibc-integration-test"
 version = "0.26.4"
 dependencies = [
+ "byte-unit",
  "http",
  "ibc-relayer",
  "ibc-relayer-types",
