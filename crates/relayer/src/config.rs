@@ -31,10 +31,13 @@ pub use error::Error;
 pub use filter::PacketFilter;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::{
-    core::ics24_host::identifier::{
-        ChainId,
-        ChannelId,
-        PortId,
+    core::{
+        ics23_commitment::specs::ProofSpecs,
+        ics24_host::identifier::{
+            ChainId,
+            ChannelId,
+            PortId,
+        },
     },
     timestamp::ZERO_DURATION,
 };
@@ -185,7 +188,7 @@ pub mod default {
     }
 
     pub fn rpc_timeout() -> Duration {
-        Duration::from_secs(10)
+        Duration::from_secs(60)
     }
 
     pub fn poll_interval() -> Duration {
@@ -307,10 +310,11 @@ impl Config {
             }
 
             match chain_config {
-                ChainConfig::CosmosSdk(cosmos_config) => {
-                    cosmos_config
-                        .validate()
-                        .map_err(Into::<Diagnostic<Error>>::into)?;
+                ChainConfig::CosmosSdk(config) => {
+                    config.validate().map_err(Into::<Diagnostic<Error>>::into)?;
+                }
+                ChainConfig::Astria(config) => {
+                    config.validate().map_err(Into::<Diagnostic<Error>>::into)?;
                 }
             }
         }
@@ -568,10 +572,11 @@ impl Default for RestConfig {
 #[derive(Default)]
 pub enum AddressType {
     #[default]
-    Cosmos,
+    Cosmos, // secp256k1?
     Ethermint {
         pk_type: String,
     },
+    Astria, // ed25519
 }
 
 impl Display for AddressType {
@@ -579,6 +584,7 @@ impl Display for AddressType {
         match self {
             AddressType::Cosmos => write!(f, "cosmos"),
             AddressType::Ethermint { .. } => write!(f, "ethermint"),
+            AddressType::Astria => write!(f, "astria"),
         }
     }
 }
@@ -617,36 +623,49 @@ pub enum EventSourceMode {
 #[serde(tag = "type")]
 pub enum ChainConfig {
     CosmosSdk(CosmosSdkConfig),
+    Astria(CosmosSdkConfig), // TODO: if the config is the cometbft config, it's the same
 }
 
 impl ChainConfig {
     pub fn id(&self) -> &ChainId {
         match self {
             Self::CosmosSdk(config) => &config.id,
+            Self::Astria(config) => &config.id,
+        }
+    }
+
+    pub fn rpc_addr(&self) -> &Url {
+        match self {
+            Self::CosmosSdk(config) => &config.rpc_addr,
+            Self::Astria(config) => &config.rpc_addr,
         }
     }
 
     pub fn packet_filter(&self) -> &PacketFilter {
         match self {
             Self::CosmosSdk(config) => &config.packet_filter,
+            Self::Astria(config) => &config.packet_filter,
         }
     }
 
     pub fn max_block_time(&self) -> Duration {
         match self {
             Self::CosmosSdk(config) => config.max_block_time,
+            Self::Astria(config) => config.max_block_time,
         }
     }
 
     pub fn key_name(&self) -> &String {
         match self {
             Self::CosmosSdk(config) => &config.key_name,
+            Self::Astria(config) => &config.key_name,
         }
     }
 
     pub fn set_key_name(&mut self, key_name: String) {
         match self {
             Self::CosmosSdk(config) => config.key_name = key_name,
+            Self::Astria(config) => config.key_name = key_name,
         }
     }
 
@@ -665,6 +684,19 @@ impl ChainConfig {
                     .map(|(key_name, keys)| (key_name, keys.into()))
                     .collect()
             }
+            ChainConfig::Astria(config) => {
+                let keyring = KeyRing::new_ed25519(
+                    Store::Test,
+                    &config.account_prefix,
+                    &config.id,
+                    &config.key_store_folder,
+                )?;
+                keyring
+                    .keys()?
+                    .into_iter()
+                    .map(|(key_name, keys)| (key_name, keys.into()))
+                    .collect()
+            }
         };
         Ok(keys)
     }
@@ -672,6 +704,28 @@ impl ChainConfig {
     pub fn clear_interval(&self) -> Option<u64> {
         match self {
             Self::CosmosSdk(config) => config.clear_interval,
+            Self::Astria(config) => config.clear_interval,
+        }
+    }
+
+    pub fn max_grpc_decoding_size(&self) -> Byte {
+        match self {
+            Self::CosmosSdk(config) => config.max_grpc_decoding_size,
+            Self::Astria(config) => config.max_grpc_decoding_size,
+        }
+    }
+
+    pub fn proof_specs(&self) -> &Option<ProofSpecs> {
+        match self {
+            Self::CosmosSdk(config) => &config.proof_specs,
+            Self::Astria(config) => &config.proof_specs,
+        }
+    }
+
+    pub fn event_source_mode(&self) -> &EventSourceMode {
+        match self {
+            Self::CosmosSdk(config) => &config.event_source,
+            Self::Astria(config) => &config.event_source,
         }
     }
 }

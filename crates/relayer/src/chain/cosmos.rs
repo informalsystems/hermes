@@ -996,6 +996,7 @@ impl ChainEndpoint for CosmosSdkChain {
         #[allow(irrefutable_let_patterns)]
         let ChainConfig::CosmosSdk(config) = config
         else {
+            println!("Wrong chain configuration type in CosmosSdkChain::bootstrap");
             return Err(Error::config(ConfigError::wrong_type()));
         };
 
@@ -1057,7 +1058,7 @@ impl ChainEndpoint for CosmosSdkChain {
         &mut self.keybase
     }
 
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error> {
         // Get the key from key seed file
         let key_pair = self
             .keybase()
@@ -2406,7 +2407,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 }
 
-fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
+pub(crate) fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
     events.sort_by(|a, b| {
         a.event
             .packet()
@@ -2416,7 +2417,7 @@ fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
     });
 }
 
-async fn fetch_node_info(
+pub(crate) async fn fetch_node_info(
     rpc_client: &HttpClient,
     config: &config::CosmosSdkConfig,
 ) -> Result<node::Info, Error> {
@@ -2435,7 +2436,7 @@ async fn fetch_node_info(
 /// Returns the suffix counter for a CosmosSDK client id.
 /// Returns `None` if the client identifier is malformed
 /// and the suffix could not be parsed.
-fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
+pub(crate) fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
     client_id
         .as_str()
         .split('-')

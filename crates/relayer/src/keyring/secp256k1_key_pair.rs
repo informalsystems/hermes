@@ -120,6 +120,10 @@ impl TryFrom<&AddressType> for Secp256k1AddressType {
                 Ok(Self::Ethermint)
             }
             AddressType::Cosmos | AddressType::Ethermint { pk_type: _ } => Ok(Self::Cosmos),
+            AddressType::Astria => Err(Error::unsupported_address_type(
+                address_type.clone(),
+                Secp256k1KeyPair::KEY_TYPE,
+            )),
         }
     }
 }

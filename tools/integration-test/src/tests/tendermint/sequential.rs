@@ -40,14 +40,14 @@ impl TestOverrides for SequentialCommitTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         // Use sequential batching for chain A, and default parallel batching for chain B
         match &mut config.chains[0] {
-            ChainConfig::CosmosSdk(chain_config_a) => {
+            ChainConfig::CosmosSdk(chain_config_a) | ChainConfig::Astria(chain_config_a) => {
                 chain_config_a.max_msg_num = MaxMsgNum::new(MESSAGES_PER_BATCH).unwrap();
                 chain_config_a.sequential_batch_tx = true;
             }
         };
 
         match &mut config.chains[1] {
-            ChainConfig::CosmosSdk(chain_config_b) => {
+            ChainConfig::CosmosSdk(chain_config_b) | ChainConfig::Astria(chain_config_b) => {
                 chain_config_b.max_msg_num = MaxMsgNum::new(MESSAGES_PER_BATCH).unwrap();
                 chain_config_b.sequential_batch_tx = false;
             }

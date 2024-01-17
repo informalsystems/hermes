@@ -64,6 +64,7 @@ fn standard_path_to_derivation_path(path: &StandardHDPath) -> DerivationPath {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Ed25519AddressType {
     Solana,
+    Astria,
 }
 
 impl TryFrom<&AddressType> for Ed25519AddressType {
@@ -74,6 +75,7 @@ impl TryFrom<&AddressType> for Ed25519AddressType {
             AddressType::Cosmos | AddressType::Ethermint { .. } => Err(
                 Error::unsupported_address_type(address_type.clone(), Ed25519KeyPair::KEY_TYPE),
             ),
+            AddressType::Astria => Ok(Self::Astria),
         }
     }
 }
@@ -98,6 +100,10 @@ impl Ed25519KeyPair {
             address_type,
         })
     }
+
+    pub(crate) fn signing_key(&self) -> &SigningKey {
+        &self.signing_key
+    }
 }
 
 impl SigningKeyPair for Ed25519KeyPair {
@@ -108,7 +114,7 @@ impl SigningKeyPair for Ed25519KeyPair {
         use ed25519_dalek::PUBLIC_KEY_LENGTH;
 
         // TODO: Derive this from something in `key_file`
-        let address_type = Ed25519AddressType::Solana;
+        let address_type = Ed25519AddressType::Astria;
         let key_pair = Self::from_mnemonic_internal(&key_file.mnemonic, hd_path, address_type)?;
 
         let public_key_vec = &bs58::decode(key_file.pubkey)
@@ -121,7 +127,7 @@ impl SigningKeyPair for Ed25519KeyPair {
             })?;
 
         let public_key_from_file = match address_type {
-            Ed25519AddressType::Solana => {
+            Ed25519AddressType::Solana | Ed25519AddressType::Astria => {
                 VerifyingKey::from_bytes(public_key_bytes).map_err(Error::invalid_public_key)?
             }
         };
@@ -151,6 +157,14 @@ impl SigningKeyPair for Ed25519KeyPair {
             Ed25519AddressType::Solana => {
                 bs58::encode(&self.signing_key.verifying_key()).into_string()
             }
+            Ed25519AddressType::Astria => hex::encode(
+                astria_core::sequencer::v1alpha1::Address::from_verification_key(
+                    ed25519_consensus::VerificationKey::try_from(
+                        self.signing_key.verifying_key().to_bytes(),
+                    )
+                    .expect("can convert between ed25519 keys"),
+                ),
+            ),
         }
     }
 

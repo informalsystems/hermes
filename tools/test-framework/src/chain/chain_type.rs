@@ -18,6 +18,7 @@ const EVMOS_HD_PATH: &str = "m/44'/60'/0'/0/0";
 pub enum ChainType {
     Cosmos,
     Evmos,
+    Astria,
 }
 
 impl ChainType {
@@ -25,6 +26,7 @@ impl ChainType {
         match self {
             Self::Cosmos => COSMOS_HD_PATH,
             Self::Evmos => EVMOS_HD_PATH,
+            Self::Astria => todo!("Astria HD path not yet implemented"),
         }
     }
 
@@ -38,6 +40,7 @@ impl ChainType {
                 }
             }
             Self::Evmos => ChainId::from_string(&format!("evmos_9000-{prefix}")),
+            Self::Astria => todo!("Astria chain id not yet implemented"),
         }
     }
 
@@ -51,6 +54,7 @@ impl ChainType {
                 res.push("--json-rpc.address".to_owned());
                 res.push(format!("localhost:{json_rpc_port}"));
             }
+            Self::Astria => todo!("Astria extra start args not yet implemented"),
         }
         res
     }
@@ -61,6 +65,7 @@ impl ChainType {
             Self::Evmos => AddressType::Ethermint {
                 pk_type: "/ethermint.crypto.v1.ethsecp256k1.PubKey".to_string(),
             },
+            Self::Astria => AddressType::Astria,
         }
     }
 }
@@ -75,6 +80,7 @@ impl FromStr for ChainType {
             name if name.contains("wasmd") => Ok(ChainType::Cosmos),
             name if name.contains("icad") => Ok(ChainType::Cosmos),
             name if name.contains("evmosd") => Ok(ChainType::Evmos),
+            name if name.contains("astria") => Ok(ChainType::Astria),
             _ => Ok(ChainType::Cosmos),
         }
     }

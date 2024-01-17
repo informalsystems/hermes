@@ -6,6 +6,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::{
     chain::{
+        astria::AstriaEndpoint,
         cosmos::CosmosSdkChain,
         handle::ChainHandle,
         runtime::ChainRuntime,
@@ -88,6 +89,7 @@ pub fn spawn_chain_runtime_with_config<Handle: ChainHandle>(
 ) -> Result<Handle, SpawnError> {
     let handle = match config {
         ChainConfig::CosmosSdk(_) => ChainRuntime::<CosmosSdkChain>::spawn(config, rt),
+        ChainConfig::Astria(_) => ChainRuntime::<AstriaEndpoint>::spawn(config, rt),
     }
     .map_err(SpawnError::relayer)?;
 

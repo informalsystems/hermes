@@ -21,6 +21,7 @@ use ibc_relayer::{
     },
     keyring::{
         AnySigningKeyPair,
+        Ed25519KeyPair,
         KeyRing,
         Secp256k1KeyPair,
         SigningKeyPair,
@@ -235,6 +236,23 @@ pub fn add_key(
             keyring.add_key(key_name, key_pair.clone())?;
             key_pair.into()
         }
+        ChainConfig::Astria(config) => {
+            let mut keyring = KeyRing::new_ed25519(
+                Store::Test,
+                &config.account_prefix,
+                &config.id,
+                &config.key_store_folder,
+            )?;
+
+            check_key_exists(&keyring, key_name, overwrite);
+
+            let key_contents =
+                fs::read_to_string(file).map_err(|_| eyre!("error reading the key file"))?;
+            let key_pair = Ed25519KeyPair::from_seed_file(&key_contents, hd_path)?;
+
+            keyring.add_key(key_name, key_pair.clone())?;
+            key_pair.into()
+        }
     };
 
     Ok(key_pair)
@@ -262,6 +280,26 @@ pub fn restore_key(
             check_key_exists(&keyring, key_name, overwrite);
 
             let key_pair = Secp256k1KeyPair::from_mnemonic(
+                &mnemonic_content,
+                hdpath,
+                &config.address_type,
+                keyring.account_prefix(),
+            )?;
+
+            keyring.add_key(key_name, key_pair.clone())?;
+            key_pair.into()
+        }
+        ChainConfig::Astria(config) => {
+            let mut keyring = KeyRing::new_ed25519(
+                Store::Test,
+                &config.account_prefix,
+                &config.id,
+                &config.key_store_folder,
+            )?;
+
+            check_key_exists(&keyring, key_name, overwrite);
+
+            let key_pair = Ed25519KeyPair::from_mnemonic(
                 &mnemonic_content,
                 hdpath,
                 &config.address_type,

@@ -388,7 +388,7 @@ impl LightClient {
     ) -> Result<(TmHeader, Vec<TmHeader>), Error> {
         use super::LightClient;
 
-        trace!(
+        tracing::info!(
             trusted = %trusted_height, target = %target.height(),
             "adjusting headers with {} supporting headers", supporting.len()
         );

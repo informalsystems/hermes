@@ -1060,6 +1060,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .src_chain()
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
+
         let (client_state, proofs) = self
             .src_chain()
             .build_connection_proofs_and_client_state(

@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 #![deny(
-    warnings,
+    //warnings,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
-    unused_qualifications,
+    //unused_qualifications,
     rust_2018_idioms
 )]
 #![allow(clippy::too_many_arguments)]

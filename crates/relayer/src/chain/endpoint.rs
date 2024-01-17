@@ -156,7 +156,7 @@ pub trait ChainEndpoint: Sized {
     fn get_signer(&self) -> Result<Signer, Error>;
 
     /// Get the signing key pair
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error>;
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error>;
 
     fn add_key(&mut self, key_name: &str, key_pair: Self::SigningKeyPair) -> Result<(), Error> {
         self.keybase_mut()
@@ -429,12 +429,12 @@ pub trait ChainEndpoint: Sized {
         message_type: ConnectionMsgType,
         connection_id: &ConnectionId,
         client_id: &ClientId,
-        height: ICSHeight,
+        query_height: ICSHeight,
     ) -> Result<(Option<AnyClientState>, Proofs), Error> {
         let (connection_end, maybe_connection_proof) = self.query_connection(
             QueryConnectionRequest {
                 connection_id: connection_id.clone(),
-                height: QueryHeight::Specific(height),
+                height: QueryHeight::Specific(query_height),
             },
             IncludeProof::Yes,
         )?;
@@ -475,7 +475,7 @@ pub trait ChainEndpoint: Sized {
                 let (client_state_value, maybe_client_state_proof) = self.query_client_state(
                     QueryClientStateRequest {
                         client_id: client_id.clone(),
-                        height: QueryHeight::Specific(height),
+                        height: QueryHeight::Specific(query_height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -494,7 +494,7 @@ pub trait ChainEndpoint: Sized {
                         QueryConsensusStateRequest {
                             client_id: client_id.clone(),
                             consensus_height: client_state_value.latest_height(),
-                            query_height: QueryHeight::Specific(height),
+                            query_height: QueryHeight::Specific(query_height),
                         },
                         IncludeProof::Yes,
                     )?;
@@ -528,7 +528,7 @@ pub trait ChainEndpoint: Sized {
                 consensus_proof,
                 None, // TODO: Retrieve host consensus proof when available
                 None,
-                height.increment(),
+                query_height.increment(),
             )
             .map_err(Error::malformed_proof)?,
         ))

@@ -813,7 +813,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             } => {
                 error!(
                     latest_height = %client_state.latest_height(),
-                    network_timestmap = %network_timestamp,
+                    network_timestamp = %network_timestamp,
                     consensus_state_timestamp = %consensus_state_timestmap,
                     elapsed = ?elapsed,
                     "client state is not valid: latest height is outside of trusting period!",
@@ -1781,6 +1781,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         let is_ccv_consumer_chain = match chain_config {
             ChainConfig::CosmosSdk(config) => config.ccv_consumer_chain,
+            ChainConfig::Astria(config) => config.ccv_consumer_chain,
         };
 
         let mut msgs = vec![];

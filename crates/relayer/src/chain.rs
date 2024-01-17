@@ -1,3 +1,4 @@
+pub mod astria;
 pub mod client;
 pub mod cosmos;
 pub mod counterparty;
