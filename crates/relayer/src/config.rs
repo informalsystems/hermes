@@ -776,18 +776,6 @@ impl ChainConfig {
             Self::Astria(config) => config.query_packets_chunk_size = query_packets_chunk_size,
         }
     }
-
-    pub fn query_packets_chunk_size(&self) -> usize {
-        match self {
-            Self::CosmosSdk(config) => config.query_packets_chunk_size,
-        }
-    }
-
-    pub fn set_query_packets_chunk_size(&mut self, query_packets_chunk_size: usize) {
-        match self {
-            Self::CosmosSdk(config) => config.query_packets_chunk_size = query_packets_chunk_size,
-        }
-    }
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
