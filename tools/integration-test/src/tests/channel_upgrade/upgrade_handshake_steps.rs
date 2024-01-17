@@ -14,10 +14,15 @@
 //!
 //! - `ChannelUpgradeHandshakeTimeoutOnAck` tests that the channel worker will finish the
 //!   cancel the upgrade handshake if the Ack step fails due to an upgrade timeout.
+//! 
+//! - `ChannelUpgradeHandshakeInitiateNewUpgrade` tests that the channel workder will
+//!   finish the upgrade handshake if the counparty that moved to `OPEN` initiates a
+//!   new upgrade.
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_relayer_types::core::ics04_channel::channel::{State as ChannelState, UpgradeState};
 use ibc_relayer_types::events::IbcEventType;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
 use ibc_test_framework::prelude::*;
@@ -51,6 +56,11 @@ fn test_channel_upgrade_handshake_from_confirm() -> Result<(), Error> {
 #[test]
 fn test_channel_upgrade_handshake_timeout_on_ack() -> Result<(), Error> {
     run_binary_channel_test(&ChannelUpgradeHandshakeTimeoutOnAck)
+}
+
+#[test]
+fn test_channel_upgrade_handshake_initiate_new_upgrade() -> Result<(), Error> {
+    run_binary_channel_test(&ChannelUpgradeHandshakeInitiateNewUpgrade)
 }
 
 const MAX_DEPOSIT_PERIOD: &str = "10s";
@@ -783,6 +793,253 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
     }
 }
 
+struct ChannelUpgradeHandshakeInitiateNewUpgrade;
+
+impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        _relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        info!("Check that channels are both in OPEN State");
+
+        assert_eventually_channel_established(
+            &chains.handle_b,
+            &chains.handle_a,
+            &channels.channel_id_b.as_ref(),
+            &channels.port_b.as_ref(),
+        )?;
+
+        let mut channel_end_a = chains
+            .handle_a
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channels.port_a.0.clone(),
+                    channel_id: channels.channel_id_a.0.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+
+        let mut channel_end_b = chains
+            .handle_b
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channels.port_b.0.clone(),
+                    channel_id: channels.channel_id_b.0.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd B: {e}"))?;
+
+        let pre_upgrade_1_version = channel_end_a.version;
+        let pre_upgrade_1_ordering = channel_end_a.ordering;
+        let pre_upgrade_1_connection_hops_a = channel_end_a.connection_hops.clone();
+        let pre_upgrade_1_connection_hops_b = channel_end_b.connection_hops.clone();
+
+        let channel = channels.channel;
+        let post_upgrade_1_version = Version::ics20_with_fee();
+
+        let pre_upgrade_1_attrs = ChannelUpgradableAttributes::new(
+            pre_upgrade_1_version.clone(),
+            pre_upgrade_1_version.clone(),
+            pre_upgrade_1_ordering,
+            pre_upgrade_1_connection_hops_a.clone(),
+            pre_upgrade_1_connection_hops_b.clone(),
+            Sequence::from(1),
+        );
+
+        let interm_upgrade_1_attrs = ChannelUpgradableAttributes::new(
+            pre_upgrade_1_version,
+            post_upgrade_1_version.clone(),
+            pre_upgrade_1_ordering,
+            pre_upgrade_1_connection_hops_a.clone(),
+            pre_upgrade_1_connection_hops_b.clone(),
+            Sequence::from(1),
+        );
+
+        // let post_upgrade_1_attrs = ChannelUpgradableAttributes::new(
+        //     post_upgrade_1_version.clone(),
+        //     post_upgrade_1_version.clone(),
+        //     pre_upgrade_1_ordering,
+        //     pre_upgrade_1_connection_hops_a.clone(),
+        //     pre_upgrade_1_connection_hops_b,
+        //     Sequence::from(1),
+        // );
+        
+        info!("Will initialise on chain A upgrade handshake with governance proposal...");
+
+        chains.node_a.chain_driver().initialise_channel_upgrade(
+            channel.src_port_id().as_str(),
+            channel.src_channel_id().unwrap().as_str(),
+            pre_upgrade_1_ordering.as_str(),
+            pre_upgrade_1_connection_hops_a.first().unwrap().as_str(),
+            &serde_json::to_string(&post_upgrade_1_version.0).unwrap(),
+            chains.handle_a().get_signer().unwrap().as_ref(),
+            "1",
+        )?;
+
+        info!("Check that the step ChanUpgradeInit was correctly executed...");
+
+        assert_eventually_channel_upgrade_init(
+            &chains.handle_a,
+            &chains.handle_b,
+            &channels.channel_id_a.as_ref(),
+            &channels.port_a.as_ref(),
+            ChannelState::Open(UpgradeState::NotUpgrading),
+            ChannelState::Open(UpgradeState::NotUpgrading),
+            &pre_upgrade_1_attrs,
+        )?;
+
+        info!("Will run ChanUpgradeTry step...");
+
+        channel.build_chan_upgrade_try_and_send()?;
+
+        info!("Check that the step ChanUpgradeTry was correctly executed...");
+
+        assert_eventually_channel_upgrade_try(
+            &chains.handle_b,
+            &chains.handle_a,
+            &channels.channel_id_b.as_ref(),
+            &channels.port_b.as_ref(),
+            &pre_upgrade_1_attrs.flipped(),
+        )?;
+
+        info!("Will run ChanUpgradeAck step...");
+
+        channel.flipped().build_chan_upgrade_ack_and_send()?;
+
+        info!("Check that the step ChanUpgradeAck was correctly executed...");
+
+        assert_eventually_channel_upgrade_ack(
+            &chains.handle_a,
+            &chains.handle_b,
+            &channels.channel_id_a.as_ref(),
+            &channels.port_a.as_ref(),
+            &pre_upgrade_1_attrs,
+        )?;
+
+        info!("Will run ChanUpgradeConfirm step...");
+
+        channel.build_chan_upgrade_confirm_and_send()?;
+
+        info!("Check that the step ChanUpgradeConfirm was correctly executed...");
+
+        assert_eventually_channel_upgrade_confirm(
+            &chains.handle_b,
+            &chains.handle_a,
+            &channels.channel_id_b.as_ref(),
+            &channels.port_b.as_ref(),
+            &interm_upgrade_1_attrs.flipped(),
+        )?;
+
+
+        // ChannelEnd B is now `OPEN`
+        // Initialise a new upgrade handshake on chain B before ChannelEnd A moves to `OPEN`
+
+        let pre_upgrade_2_version = Version::ics20_with_fee();
+        let pre_upgrade_2_ordering = channel_end_a.ordering;
+        let pre_upgrade_2_connection_hops_a = channel_end_a.connection_hops.clone();
+        let pre_upgrade_2_connection_hops_b = channel_end_b.connection_hops.clone();
+
+        let post_upgrade_2_version = Version::ics20();
+
+        // let pre_upgrade_2_attrs = ChannelUpgradableAttributes::new(
+        //     pre_upgrade_2_version.clone(),
+        //     pre_upgrade_2_version.clone(),
+        //     pre_upgrade_2_ordering,
+        //     pre_upgrade_2_connection_hops_a.clone(),
+        //     pre_upgrade_2_connection_hops_a.clone(),
+        //     Sequence::from(2),
+        // );
+
+        info!("Will initialise on chain B upgrade handshake with governance proposal...");
+
+        chains.node_b.chain_driver().initialise_channel_upgrade(
+            channel.dst_port_id().as_str(),
+            channel.dst_channel_id().unwrap().as_str(),
+            pre_upgrade_2_ordering.as_str(),
+            pre_upgrade_2_connection_hops_b.first().unwrap().as_str(),
+            &serde_json::to_string(&post_upgrade_2_version.0).unwrap(),
+            chains.handle_b().get_signer().unwrap().as_ref(),
+            "1",
+        )?;
+
+        info!("Check that the step ChanUpgradeInit was correctly executed...");
+
+        channel_end_b = chains
+            .handle_b
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channels.port_b.0.clone(),
+                    channel_id: channels.channel_id_b.0.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd B: {e}"))?;
+
+        let upgrade_sequence_b = Sequence::from(2);
+        if !channel_end_b.upgrade_sequence.eq(&upgrade_sequence_b)
+        {
+            return Err(Error::generic(eyre!(
+                "expected channel end B upgrade sequence to be `{}`, but it is instead `{}`",
+                upgrade_sequence_b,
+                channel_end_b.upgrade_sequence
+            )));
+        }
+
+        // assert_eventually_channel_upgrade_init(
+        //     &chains.handle_b,
+        //     &chains.handle_a,
+        //     &channels.channel_id_b.as_ref(),
+        //     &channels.port_b.as_ref(),
+        //     ChannelState::Flushcomplete,
+        //     ChannelState::Open(UpgradeState::NotUpgrading),
+        //     &pre_upgrade_2_attrs,
+        // )?;
+
+        // Finish upgrade 1 on ChannelEnd A
+
+        info!("Will run ChanUpgradeOpen step...");
+
+        channel.flipped().build_chan_upgrade_open_and_send()?;
+
+        info!("Check that the ChanUpgradeOpen steps were correctly executed...");
+
+        channel_end_a = chains
+            .handle_a
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channels.port_a.0.clone(),
+                    channel_id: channels.channel_id_a.0.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+
+        let state_a = ChannelState::Open(UpgradeState::NotUpgrading);
+        if !channel_end_a.state_matches(&state_a) {
+            return Err(Error::generic(eyre!(
+                "expected channel end A state to be `{}`, but is instead `{}`",
+                state_a,
+                channel_end_a.state()
+            )));
+        }
+
+        Ok(())
+    }
+}
+
 impl HasOverrides for ChannelUpgradeManualHandshake {
     type Overrides = ChannelUpgradeTestOverrides;
 
@@ -816,6 +1073,14 @@ impl HasOverrides for ChannelUpgradeHandshakeFromConfirm {
 }
 
 impl HasOverrides for ChannelUpgradeHandshakeTimeoutOnAck {
+    type Overrides = ChannelUpgradeTestOverrides;
+
+    fn get_overrides(&self) -> &ChannelUpgradeTestOverrides {
+        &ChannelUpgradeTestOverrides
+    }
+}
+
+impl HasOverrides for ChannelUpgradeHandshakeInitiateNewUpgrade {
     type Overrides = ChannelUpgradeTestOverrides;
 
     fn get_overrides(&self) -> &ChannelUpgradeTestOverrides {

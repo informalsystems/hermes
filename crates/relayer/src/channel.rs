@@ -2063,6 +2063,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
+        // let counterparty_upgrade_sequence = src_channel_end.upgrade_sequence;
+
         // Building the channel proof at the queried height
         let proofs = self
             .src_chain()
