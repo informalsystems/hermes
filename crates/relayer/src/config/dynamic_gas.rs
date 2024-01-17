@@ -1,17 +1,21 @@
-use serde_derive::{Deserialize, Serialize};
+use serde::de::Error as DeserializeError;
+use serde::de::Unexpected;
+use serde::Deserialize;
+use serde::Deserializer;
+use serde_derive::Serialize;
 
 flex_error::define_error! {
     Error {
         TooSmall
             { value: f64 }
             |e| {
-                format_args!("`gas_multiplier` in dynamic_gas configuration must be greater than or equal to {}, found {}",
+                format_args!("`gas_price_multiplier` in dynamic_gas configuration must be greater than or equal to {}, found {}",
                 DynamicGas::MIN_BOUND, e.value)
             },
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, PartialOrd, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize)]
 pub struct DynamicGas {
     pub enabled: bool,
     pub gas_price_multiplier: f64,
@@ -57,6 +61,30 @@ impl Default for DynamicGas {
     }
 }
 
+impl<'de> Deserialize<'de> for DynamicGas {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value: serde_json::Value = Deserialize::deserialize(deserializer)?;
+
+        let enabled = value["enabled"].as_bool().ok_or_else(|| {
+            D::Error::invalid_value(Unexpected::Other("missing field"), &"enabled")
+        })?;
+
+        let gas_price_multiplier = value["gas_price_multiplier"].as_f64().ok_or_else(|| {
+            D::Error::invalid_value(Unexpected::Other("missing field"), &"gas_price_multiplier")
+        })?;
+
+        DynamicGas::new(enabled, gas_price_multiplier).map_err(|e| match e.detail() {
+            ErrorDetail::TooSmall(_) => D::Error::invalid_value(
+                Unexpected::Float(gas_price_multiplier),
+                &format!("a floating-point value less than {}", Self::MIN_BOUND).as_str(),
+            ),
+        })
+    }
+}
+
 #[cfg(test)]
 #[allow(dead_code)] // the field of the struct `DummyConfig` defined below is never accessed
 mod tests {
@@ -69,28 +97,32 @@ mod tests {
     fn parse_invalid_gas_multiplier() {
         #[derive(Debug, Deserialize)]
         struct DummyConfig {
-            gas_multiplier: DynamicGas,
+            dynamic_gas: DynamicGas,
         }
 
-        let err = toml::from_str::<DummyConfig>("gas_multiplier = 0.9")
-            .unwrap_err()
-            .to_string();
+        let err = toml::from_str::<DummyConfig>(
+            "dynamic_gas = { enabled = true, gas_price_multiplier = 0.9 }",
+        )
+        .unwrap_err()
+        .to_string();
+
+        println!("err: {err}");
 
         assert!(err.contains("expected a floating-point value less than"));
     }
 
     #[test]
     fn safe_gas_multiplier() {
-        let gas_multiplier = DynamicGas::new(true, 0.6);
+        let dynamic_gas = DynamicGas::new(true, 0.6);
         assert!(
-            gas_multiplier.is_err(),
-            "Gas multiplier should be an error if value is lower than 1.0: {gas_multiplier:?}"
+            dynamic_gas.is_err(),
+            "Gas multiplier should be an error if value is lower than 1.0: {dynamic_gas:?}"
         );
     }
 
     #[test]
     fn unsafe_gas_multiplier() {
-        let gas_multiplier = DynamicGas::unsafe_new(true, 0.6);
-        assert_eq!(gas_multiplier.gas_price_multiplier, 0.6);
+        let dynamic_gas = DynamicGas::unsafe_new(true, 0.6);
+        assert_eq!(dynamic_gas.gas_price_multiplier, 0.6);
     }
 }
