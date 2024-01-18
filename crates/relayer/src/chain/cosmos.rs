@@ -109,6 +109,7 @@ use crate::{chain::client::ClientSettings, config::Error as ConfigError};
 
 use self::types::app_state::GenesisAppState;
 use self::version::Specs;
+use self::{gas::dynamic_gas_price, types::gas::GasConfig};
 
 pub mod batch;
 pub mod client;
@@ -490,6 +491,13 @@ impl CosmosSdkChain {
             });
 
         Ok(min_gas_price)
+    }
+
+    pub fn dynamic_gas_price(&self) -> GasPrice {
+        let gas_config = GasConfig::from(self.config());
+
+        self.rt
+            .block_on(dynamic_gas_price(&gas_config, &self.config.rpc_addr))
     }
 
     /// The unbonding period of this chain

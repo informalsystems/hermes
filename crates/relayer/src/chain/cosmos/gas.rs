@@ -5,13 +5,11 @@ use num_bigint::BigInt;
 use num_rational::BigRational;
 use tendermint_rpc::Url;
 
+use super::query_eip_base_fee;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::GasPrice;
-use crate::util::block_on;
 
-use super::query_eip_base_fee;
-
-pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address: &Url) -> Fee {
+pub async fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address: &Url) -> Fee {
     let adjusted_gas_limit = adjust_estimated_gas(AdjustGas {
         gas_multiplier: config.gas_multiplier,
         max_gas: config.max_gas,
@@ -19,7 +17,7 @@ pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address: &Url)
     });
 
     // The fee in coins based on gas amount
-    let dynamic_gas_price = dynamic_gas_price(config, rpc_address);
+    let dynamic_gas_price = dynamic_gas_price(config, rpc_address).await;
     let amount = calculate_fee(adjusted_gas_limit, &dynamic_gas_price);
 
     Fee {
@@ -29,15 +27,17 @@ pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address: &Url)
         granter: config.fee_granter.clone(),
     }
 }
-pub fn dynamic_gas_price(config: &GasConfig, rpc_address: &Url) -> GasPrice {
-    if let Some(dynamic_gas_price_multiplier) = config.dynamic_gas_price_multiplier {
-        let new_price = block_on(query_eip_base_fee(&rpc_address.to_string())).unwrap()
-            * dynamic_gas_price_multiplier;
 
-        GasPrice {
-            price: new_price,
-            denom: config.gas_price.denom.clone(),
-        }
+pub async fn dynamic_gas_price(config: &GasConfig, rpc_address: &Url) -> GasPrice {
+    if let Some(dynamic_gas_price_multiplier) = config.dynamic_gas_price_multiplier {
+        query_eip_base_fee(&rpc_address.to_string())
+            .await
+            .map(|base_fee| base_fee * dynamic_gas_price_multiplier)
+            .map(|new_price| GasPrice {
+                price: new_price,
+                denom: config.gas_price.denom.clone(),
+            })
+            .unwrap_or_else(|_| config.gas_price.clone())
     } else {
         config.gas_price.clone()
     }

@@ -29,7 +29,7 @@ impl<'a> From<&'a CosmosSdkConfig> for GasConfig {
             gas_price: config.gas_price.clone(),
             max_fee: max_fee_from_config(config),
             fee_granter: fee_granter_from_config(config),
-            dynamic_gas_price_multiplier: None,
+            dynamic_gas_price_multiplier: config.dynamic_gas.dynamic_gas_price(),
         }
     }
 }
