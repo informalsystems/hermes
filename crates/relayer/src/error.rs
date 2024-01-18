@@ -610,6 +610,14 @@ define_error! {
         ParseFloat
             [ TraceError<std::num::ParseFloatError> ]
             |_| { "Error parsing float" },
+
+        ParseInt
+            [ TraceError<std::num::ParseIntError> ]
+            |_| { "Error parsing integer" },
+
+        Base64Decode
+            [ TraceError<subtle_encoding::Error> ]
+            |_| { "Error decoding base64-encoded data" },
     }
 }
 

@@ -2,17 +2,19 @@ use core::fmt;
 use std::ops::Div;
 use std::str::FromStr;
 
-use tracing::info;
+use serde::Deserialize;
+use subtle_encoding::base64;
+use tracing::debug;
+
+use ibc_proto::cosmos::base::v1beta1::DecProto;
 
 use crate::error::Error;
 
 pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
-    info!("Querying Omosis EIP-1559 base fee from {}", rpc_address);
+    debug!("Querying Omosis EIP-1559 base fee from {rpc_address}");
 
-    let url = format!(
-        "{}/abci_query?path=\"/osmosis.txfees.v1beta1.Query/GetEipBaseFee\"",
-        rpc_address
-    );
+    let url =
+        format!("{rpc_address}/abci_query?path=\"/osmosis.txfees.v1beta1.Query/GetEipBaseFee\"");
 
     let response = reqwest::get(&url).await.map_err(Error::http_request)?;
 
@@ -20,37 +22,32 @@ pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
         return Err(Error::http_response(response.status()));
     }
 
-    let body = response.text().await.map_err(Error::http_response_body)?;
-    let json: serde_json::Value = serde_json::from_str(&body).map_err(Error::json_deserialize)?;
-    let base_fee_encoded = json["result"]["response"]["value"]
-        .as_str()
-        .ok_or_else(|| Error::json_field("value".to_string()))?
-        .to_string();
+    #[derive(Deserialize)]
+    struct EipBaseFeeResult {
+        response: EipBaseFeeResponse,
+    }
 
-    let base_fee_decoded = subtle_encoding::base64::decode(base_fee_encoded).unwrap();
+    #[derive(Deserialize)]
+    struct EipBaseFeeResponse {
+        value: String,
+    }
 
-    let base_fee_dec_proto: DecProto = prost::Message::decode(base_fee_decoded.as_ref())
-        .map_err(|_| Error::json_field("test".to_string()))?;
+    let result: EipBaseFeeResult = response.json().await.map_err(Error::http_response_body)?;
 
-    let base_fee_uint128 = Uint128::from_str(&base_fee_dec_proto.dec)
-        .map_err(|_| Error::json_field("test".to_string()))?;
+    let encoded = result.response.value;
+    let decoded = base64::decode(encoded).map_err(Error::base64_decode)?;
 
-    let base_fee_dec = Decimal::new(base_fee_uint128);
+    let dec_proto: DecProto = prost::Message::decode(decoded.as_ref())
+        .map_err(|e| Error::protobuf_decode("cosmos.base.v1beta1.DecProto".to_string(), e))?;
 
-    let base_fee = f64::from_str(base_fee_dec.to_string().as_str()).unwrap();
+    let base_fee_uint128 = Uint128::from_str(&dec_proto.dec).map_err(Error::parse_int)?;
 
-    info!("Omosis EIP-1559 base fee is {}", base_fee);
+    let dec = Decimal::new(base_fee_uint128);
+    let base_fee = f64::from_str(dec.to_string().as_str()).map_err(Error::parse_float)?;
+
+    debug!("Omosis EIP-1559 base fee is {}", base_fee);
 
     Ok(base_fee)
-}
-
-/// Extracted from `osmosis-std`
-///
-/// <https://docs.rs/osmosis-std/latest/osmosis_std/types/cosmos/base/v1beta1/struct.DecProto.html>
-#[derive(prost::Message)]
-pub struct DecProto {
-    #[prost(string, tag = "1")]
-    pub dec: String,
 }
 
 /// Extracted from `cosmwasm-std`
