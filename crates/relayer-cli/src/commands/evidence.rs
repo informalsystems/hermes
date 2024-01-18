@@ -344,9 +344,9 @@ fn submit_duplicate_vote_evidence(
 
     let Some(trusted_height) = consensus_state_height_before_infraction_height else {
         error!(
-                "cannot build infraction block header for client `{counterparty_client_id}` on chain `{counterparty_chain_id}`,\
-                reason: could not find consensus state at highest height smaller than infraction height {infraction_height}"
-            );
+            "cannot build infraction block header for client `{counterparty_client_id}` on chain `{counterparty_chain_id}`,\
+            reason: could not find consensus state at highest height smaller than infraction height {infraction_height}"
+        );
 
         return Ok(ControlFlow::Continue(()));
     };
@@ -372,8 +372,8 @@ fn submit_duplicate_vote_evidence(
             info!("successfully submitted double voting evidence to chain `{counterparty_chain_id}`, tx hash: {}", response.hash);
         } else {
             error!(
-                    "failed to submit double voting evidence to chain `{counterparty_chain_id}`: {response:?}"
-                );
+                "failed to submit double voting evidence to chain `{counterparty_chain_id}`: {response:?}"
+            );
         }
     }
 
