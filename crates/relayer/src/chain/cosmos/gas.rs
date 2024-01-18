@@ -5,9 +5,10 @@ use num_bigint::BigInt;
 use num_rational::BigRational;
 use tendermint_rpc::Url;
 
-use super::query_eip_base_fee;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::GasPrice;
+
+use super::eip_base_fee::query_eip_base_fee;
 
 pub async fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address: &Url) -> Fee {
     let adjusted_gas_limit = adjust_estimated_gas(AdjustGas {
