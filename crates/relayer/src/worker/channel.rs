@@ -61,7 +61,6 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                         chains.a.clone(),
                                         chains.b.clone(),
                                         channel.clone(),
-                                        event_with_height.height,
                                     ) {
                                         Ok((mut handshake_channel, _)) => handshake_channel
                                             .step_event(&event_with_height.event, index),
@@ -94,10 +93,6 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                     } if complete_handshake_on_new_block => {
                         debug!("starts processing block event at {:#?}", current_height);
 
-                        let height = current_height
-                            .decrement()
-                            .map_err(|e| TaskError::Fatal(RunError::ics02(e)))?;
-
                         complete_handshake_on_new_block = false;
                         retry_with_index(
                             channel_handshake_retry::default_strategy(max_block_times),
@@ -105,7 +100,6 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                 chains.a.clone(),
                                 chains.b.clone(),
                                 channel.clone(),
-                                height,
                             ) {
                                 Ok((mut handshake_channel, state)) => {
                                     handshake_channel.step_state(state, index)

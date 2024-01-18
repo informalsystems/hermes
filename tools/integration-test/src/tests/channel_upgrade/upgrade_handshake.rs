@@ -13,8 +13,9 @@ use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_perio
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_ack,
-    assert_eventually_channel_upgrade_cancel, assert_eventually_channel_upgrade_open,
-    assert_eventually_channel_upgrade_try, ChannelUpgradableAttributes, assert_eventually_channel_upgrade_flushing,
+    assert_eventually_channel_upgrade_cancel, assert_eventually_channel_upgrade_flushing,
+    assert_eventually_channel_upgrade_open, assert_eventually_channel_upgrade_try,
+    ChannelUpgradableAttributes,
 };
 
 #[test]
@@ -628,9 +629,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushingHandshake {
         )?;
 
         info!("Will initialise upgrade handshake with governance proposal...");
-        warn!("id : {}", chains.node_a.chain_driver().chain_id());
-        warn!("port id: {}", channel.src_port_id());
-        warn!("channel id: {}", channel.src_channel_id().unwrap());
 
         chains.node_a.chain_driver().initialise_channel_upgrade(
             channel.src_port_id().as_str(),
@@ -708,7 +706,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushingHandshake {
             IbcEventType::UpgradeTimeoutChannel
         );
 
-        relayer.with_supervisor(||{
+        relayer.with_supervisor(|| {
             info!("Check that the step ChanUpgradeTimeout was correctly executed...");
 
             assert_eventually_channel_upgrade_cancel(
@@ -718,7 +716,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushingHandshake {
                 &channels.port_b.as_ref(),
                 &old_attrs.flipped(),
             )?;
-    
+
             Ok(())
         })
     }
