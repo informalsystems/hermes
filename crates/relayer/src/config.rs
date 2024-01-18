@@ -824,6 +824,18 @@ mod tests {
     }
 
     #[test]
+    fn parse_default_chain_type() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_default_chain_type.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
+    }
+
+    #[test]
     fn serialize_valid_config() {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
