@@ -763,6 +763,7 @@ mod tests {
 
     use super::{load, parse_gas_prices, store_writer};
     use crate::config::GasPrice;
+    use monostate::MustBe;
     use test_log::test;
 
     #[test]
@@ -832,7 +833,11 @@ mod tests {
 
         let config = load(path).expect("could not parse config");
 
-        dbg!(config);
+        match config.chains[0] {
+            super::ChainConfig::CosmosSdk(ref config) => {
+                assert_eq!(config.r#type, MustBe!("CosmosSdk"));
+            }
+        }
     }
 
     #[test]
