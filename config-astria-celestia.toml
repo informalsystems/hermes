@@ -1,0 +1,67 @@
+
+[global]
+log_level = 'debug'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = false
+
+[mode.connections]
+enabled = true
+
+[mode.channels]
+enabled = true
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+tx_confirmation = true
+
+[telemetry]
+enabled = false
+host = '127.0.0.1'
+port = 3001
+
+[[chains]]
+id = 'astria'
+type = 'Astria'
+rpc_addr = 'http://localhost:26657'
+grpc_addr = 'http://localhost:8080'
+event_source = { mode = 'pull', interval = '1s' }
+rpc_timeout = '15s'
+account_prefix = 'fake'                                  # not used
+key_name = 'astria-wallet'
+store_prefix = 'ibc-data'                                        
+gas_price = { price = 1, denom = 'nria' }           # not used
+max_gas = 10000000                                       # not used
+clock_drift = '5s'
+trusting_period = '2h'                                   # this should be changed in the future
+trust_threshold = { numerator = '1', denominator = '3' }
+
+[[chains]]
+id = 'celestia'
+type = 'CosmosSdk'
+rpc_addr = 'http://localhost:27050'
+grpc_addr = 'http://localhost:9090'
+event_source = { mode = 'push', url = 'ws://localhost:27050/websocket', batch_delay = '200ms' }
+rpc_timeout = '15s'
+trusted_node = true
+account_prefix = 'celestia'
+key_name = 'wallet'
+store_prefix = 'ibc'
+gas_price = { price = 0.0026, denom = 'utia' }
+gas_multiplier = 1.2
+default_gas = 1000000
+max_gas = 10000000
+max_msg_num = 30
+max_tx_size = 2097152
+clock_drift = '5s'
+max_block_time = '30s'
+trusting_period = '14days'
+trust_threshold = { numerator = '2', denominator = '3' }
+memo_prefix = 'astriawashere'
+compat_mode = "0.34"
