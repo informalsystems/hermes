@@ -18,6 +18,7 @@ SUBCOMMANDS:
     chan-upgrade-cancel     Relay the channel upgrade cancellation (ChannelUpgradeCancel)
     chan-upgrade-confirm    Relay the channel upgrade attempt (ChannelUpgradeConfirm)
     chan-upgrade-open       Relay the channel upgrade attempt (ChannelUpgradeOpen)
+    chan-upgrade-timeout    Relay the channel upgrade timeout (ChannelUpgradeTimeout)
     chan-upgrade-try        Relay the channel upgrade attempt (ChannelUpgradeTry)
     conn-ack                Relay acknowledgment of a connection attempt (ConnectionOpenAck)
     conn-confirm            Confirm opening of a connection (ConnectionOpenConfirm)
