@@ -453,6 +453,33 @@ pub fn assert_eventually_channel_upgrade_ack<ChainA: ChainHandle, ChainB: ChainH
     )
 }
 
+pub fn assert_eventually_channel_upgrade_flushing<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+    upgrade_attrs: &ChannelUpgradableAttributes,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel upgrade ack step should be done",
+        20,
+        Duration::from_secs(1),
+        || {
+            assert_channel_upgrade_state(
+                ChannelState::Flushing,
+                ChannelState::Flushing,
+                handle_a,
+                handle_b,
+                channel_id_a,
+                port_id_a,
+                upgrade_attrs,
+                &Sequence::from(1),
+                &Sequence::from(1),
+            )
+        },
+    )
+}
+
 pub fn assert_eventually_channel_upgrade_confirm<ChainA: ChainHandle, ChainB: ChainHandle>(
     handle_a: &ChainA,
     handle_b: &ChainB,

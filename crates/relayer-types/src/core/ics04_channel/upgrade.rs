@@ -4,14 +4,14 @@ use ibc_proto::Protobuf;
 
 use crate::core::ics04_channel::error::Error as ChannelError;
 use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics04_channel::timeout::UpgradeTimeout;
+use crate::core::ics04_channel::timeout::Timeout;
 use crate::core::ics04_channel::upgrade_fields::UpgradeFields;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Upgrade {
     pub fields: UpgradeFields,
     // timeout can be zero, see `TryFrom<RawUpgrade>` implementation
-    pub timeout: Option<UpgradeTimeout>,
+    pub timeout: Option<Timeout>,
     pub next_sequence_send: Sequence,
 }
 
@@ -27,8 +27,8 @@ impl TryFrom<RawUpgrade> for Upgrade {
             .try_into()?;
         let timeout = value
             .timeout
-            .filter(|tm| UpgradeTimeout::try_from(tm.clone()).is_ok())
-            .map(|tm| UpgradeTimeout::try_from(tm).unwrap());
+            .filter(|tm| Timeout::try_from(tm.clone()).is_ok())
+            .map(|tm| Timeout::try_from(tm).unwrap());
         let next_sequence_send = value.next_sequence_send.into();
 
         Ok(Self {
