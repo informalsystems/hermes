@@ -3,6 +3,7 @@ use crossbeam_channel::Receiver;
 use ibc_relayer_types::events::IbcEventType;
 use tracing::{debug, error_span};
 
+use crate::chain::requests::QueryHeight;
 use crate::channel::{channel_handshake_retry, Channel as RelayChannel};
 use crate::util::retry::RetryResult;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
@@ -61,6 +62,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                         chains.a.clone(),
                                         chains.b.clone(),
                                         channel.clone(),
+                                        QueryHeight::Latest,
                                     ) {
                                         Ok((mut handshake_channel, _)) => handshake_channel
                                             .step_event(&event_with_height.event, index),
@@ -100,6 +102,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                 chains.a.clone(),
                                 chains.b.clone(),
                                 channel.clone(),
+                                QueryHeight::Latest,
                             ) {
                                 Ok((mut handshake_channel, state)) => {
                                     handshake_channel.step_state(state, index)

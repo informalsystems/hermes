@@ -301,13 +301,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         chain: ChainA,
         counterparty_chain: ChainB,
         channel: WorkerChannelObject,
+        height: QueryHeight,
     ) -> Result<(Channel<ChainA, ChainB>, State), ChannelError> {
         let (a_channel, _) = chain
             .query_channel(
                 QueryChannelRequest {
                     port_id: channel.src_port_id.clone(),
                     channel_id: channel.src_channel_id.clone(),
-                    height: QueryHeight::Latest,
+                    height,
                 },
                 // IncludeProof::Yes forces a new query when the CachingChainHandle
                 // is used.
@@ -393,7 +394,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     QueryChannelRequest {
                         port_id: a_channel.remote.port_id.clone(),
                         channel_id: a_channel.remote.channel_id.clone().unwrap(),
-                        height: QueryHeight::Latest,
+                        height,
                     },
                     // IncludeProof::Yes forces a new query when the CachingChainHandle
                     // is used.
