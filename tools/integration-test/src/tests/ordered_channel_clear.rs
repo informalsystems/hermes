@@ -1,4 +1,4 @@
-use ibc_relayer::config::types::MaxMsgNum;
+use ibc_relayer::config::{types::MaxMsgNum, ChainConfig};
 use ibc_relayer::link::{Link, LinkParameters};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 use ibc_relayer_types::events::IbcEvent;
@@ -48,8 +48,21 @@ impl OrderedChannelClearTest {
 impl TestOverrides for OrderedChannelClearTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.tx_confirmation = self.tx_confirmation;
-        config.chains[0].sequential_batch_tx = self.sequential_batch_tx;
-        config.chains[1].sequential_batch_tx = self.sequential_batch_tx;
+        {
+            let chain_a = &mut config.chains[0];
+            match chain_a {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.sequential_batch_tx = self.sequential_batch_tx;
+                }
+            }
+        }
+
+        let chain_b = &mut config.chains[1];
+        match chain_b {
+            ChainConfig::CosmosSdk(chain_config) => {
+                chain_config.sequential_batch_tx = self.sequential_batch_tx;
+            }
+        }
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -65,11 +78,12 @@ impl BinaryChannelTest for OrderedChannelClearTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        _relayer: RelayerDriver,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
+        let packet_config = relayer.config.mode.packets;
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -105,6 +119,8 @@ impl BinaryChannelTest for OrderedChannelClearTest {
         let chain_a_link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.clone().into_value(),
+            max_memo_size: packet_config.ics20_max_memo_size,
+            max_receiver_size: packet_config.ics20_max_receiver_size,
         };
 
         let chain_a_link = Link::new_from_opts(
@@ -118,6 +134,8 @@ impl BinaryChannelTest for OrderedChannelClearTest {
         let chain_b_link_opts = LinkParameters {
             src_port_id: channel.port_b.clone().into_value(),
             src_channel_id: channel.channel_id_b.clone().into_value(),
+            max_memo_size: packet_config.ics20_max_memo_size,
+            max_receiver_size: packet_config.ics20_max_receiver_size,
         };
 
         let chain_b_link = Link::new_from_opts(
@@ -171,12 +189,23 @@ pub struct OrderedChannelClearEqualCLITest;
 impl TestOverrides for OrderedChannelClearEqualCLITest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.tx_confirmation = true;
+        {
+            let chain_a = &mut config.chains[0];
+            match chain_a {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.sequential_batch_tx = true;
+                    chain_config.max_msg_num = MaxMsgNum::new(3).unwrap();
+                }
+            }
+        }
 
-        config.chains[0].sequential_batch_tx = true;
-        config.chains[0].max_msg_num = MaxMsgNum::new(3).unwrap();
-
-        config.chains[1].sequential_batch_tx = true;
-        config.chains[1].max_msg_num = MaxMsgNum::new(3).unwrap();
+        let chain_b = &mut config.chains[1];
+        match chain_b {
+            ChainConfig::CosmosSdk(chain_config) => {
+                chain_config.sequential_batch_tx = true;
+                chain_config.max_msg_num = MaxMsgNum::new(3).unwrap();
+            }
+        }
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -200,11 +229,12 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        _relayer: RelayerDriver,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let num_msgs = 5_usize;
+        let packet_config = relayer.config.mode.packets;
 
         info!(
             "Performing {} IBC transfers on an ordered channel",
@@ -240,6 +270,8 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
         let chain_a_link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.into_value(),
+            max_memo_size: packet_config.ics20_max_memo_size,
+            max_receiver_size: packet_config.ics20_max_receiver_size,
         };
 
         let chain_a_link = Link::new_from_opts(
@@ -251,9 +283,10 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
         )?;
 
         let events_returned: Vec<IbcEvent> = chain_a_link
-            .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(Some(
-                clear_height,
-            ))
+            .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
+                vec![],
+                Some(clear_height),
+            )
             .unwrap();
 
         info!("recv packets sent, chain events: {:?}", events_returned);

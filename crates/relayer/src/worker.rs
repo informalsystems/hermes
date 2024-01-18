@@ -117,6 +117,8 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 LinkParameters {
                     src_port_id: path.src_port_id.clone(),
                     src_channel_id: path.src_channel_id.clone(),
+                    max_memo_size: packets_config.ics20_max_memo_size,
+                    max_receiver_size: packets_config.ics20_max_receiver_size,
                 },
                 packets_config.tx_confirmation,
                 packets_config.auto_register_counterparty_payee,
@@ -131,17 +133,19 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
                     let link = Arc::new(Mutex::new(link));
 
-                    let src_chain_config =
-                        config.chains.iter().find(|chain| chain.id == chains.a.id());
+                    let src_chain_config = config
+                        .chains
+                        .iter()
+                        .find(|chain| *chain.id() == chains.a.id());
 
                     let (fee_filter, clear_interval) = match src_chain_config {
                         Some(chain_config) => {
                             let chain_clear_interval = chain_config
-                                .clear_interval
+                                .clear_interval()
                                 .unwrap_or(packets_config.clear_interval);
 
                             let fee_filter = chain_config
-                                .packet_filter
+                                .packet_filter()
                                 .min_fees
                                 .iter()
                                 .find(|(channel, _)| channel.matches(&path.src_channel_id))

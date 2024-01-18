@@ -101,7 +101,7 @@ HandlePacketAck(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance
     LET packet == packetDatagram.packet IN
     \* get acknowledgement
     LET ack == packetDatagram.acknowledgement IN
-    \* get packet committment that should be in chain store
+    \* get packet commitment that should be in chain store
     LET packetCommitment == [
                                 portID |-> packet.srcPortID, 
                                 channelID |-> packet.srcChannelID, 
@@ -141,7 +141,7 @@ HandlePacketAck(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance
           escrowAccounts |-> escrowAccounts] 
     
     
-\* write packet committments to chain store
+\* write packet commitments to chain store
 \* @type: (CHAINSTORE, PACKET) => CHAINSTORE;
 WritePacketCommitment(chain, packet) ==
     \* get channel end
@@ -245,7 +245,7 @@ TimeoutPacket(chain, counterpartyChain, accounts, escrowAccounts,
               packet, proofHeight, maxBalance) ==
     \* get channel end
     LET channelEnd == chain.channelEnd IN
-    \* get packet committment that should be in chain store
+    \* get packet commitment that should be in chain store
     LET packetCommitment == [
                                 portID |-> packet.srcPortID,
                                 channelID |-> packet.srcChannelID, 
@@ -303,7 +303,7 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
     \* get counterparty channel end
     LET counterpartyChannelEnd == counterpartyChain.channelEnd IN
     
-    \* get packet committment that should be in chain store
+    \* get packet commitment that should be in chain store
     LET packetCommitment == [
                                 portID |-> packet.srcPortID,
                                 channelID |-> packet.srcChannelID, 

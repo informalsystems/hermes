@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use ibc_relayer::config::{ChainConfig, Config};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint::block::Height as TendermintHeight;
@@ -18,8 +19,6 @@ use ibc_relayer::chain::endpoint::ChainEndpoint;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{IncludeProof, PageRequest, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer::chain::ChainType;
-use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::spawn::spawn_chain_runtime_with_modified_config;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
@@ -77,7 +76,7 @@ impl Runnable for EvidenceCmd {
                 .exit()
             });
 
-        if chain_config.r#type != ChainType::CosmosSdk {
+        if !matches!(chain_config, ChainConfig::CosmosSdk(_)) {
             Output::error(format!(
                 "chain `{}` is not a Cosmos SDK chain",
                 self.chain_id
@@ -86,7 +85,7 @@ impl Runnable for EvidenceCmd {
         }
 
         if let Some(ref key_name) = self.key_name {
-            chain_config.key_name = key_name.to_string();
+            chain_config.set_key_name(key_name.to_string());
         }
 
         let rt = Arc::new(
@@ -239,7 +238,7 @@ fn spawn_runtime(
             rt,
             |chain_config| {
                 if let Some(key_name) = key_name {
-                    chain_config.key_name = key_name.to_string();
+                    chain_config.set_key_name(key_name.to_string());
                 }
             },
         )?;
@@ -345,9 +344,9 @@ fn submit_duplicate_vote_evidence(
 
     let Some(trusted_height) = consensus_state_height_before_infraction_height else {
         error!(
-            "cannot build infraction block header for client `{counterparty_client_id}` on chain `{counterparty_chain_id}`,\
-            reason: could not find consensus state at highest height smaller than infraction height {infraction_height}"
-        );
+                "cannot build infraction block header for client `{counterparty_client_id}` on chain `{counterparty_chain_id}`,\
+                reason: could not find consensus state at highest height smaller than infraction height {infraction_height}"
+            );
 
         return Ok(ControlFlow::Continue(()));
     };
@@ -373,8 +372,8 @@ fn submit_duplicate_vote_evidence(
             info!("successfully submitted double voting evidence to chain `{counterparty_chain_id}`, tx hash: {}", response.hash);
         } else {
             error!(
-                "failed to submit double voting evidence to chain `{counterparty_chain_id}`: {response:?}"
-            );
+                    "failed to submit double voting evidence to chain `{counterparty_chain_id}`: {response:?}"
+                );
         }
     }
 

@@ -6,8 +6,10 @@ use core::{
     str::FromStr,
     time::Duration,
 };
+use cosmwasm_std::{Decimal, Uint128};
 use futures::future::join_all;
 use num_bigint::BigInt;
+use osmosis_std::types::cosmos::base::v1beta1::DecProto;
 use std::{cmp::Ordering, thread};
 
 use tokio::runtime::Runtime as TokioRuntime;
@@ -61,7 +63,6 @@ use tendermint_rpc::endpoint::status;
 use tendermint_rpc::{Client, HttpClient, Order};
 
 use crate::account::Balance;
-use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
     sequential_send_batched_messages_and_wait_commit,
@@ -104,14 +105,15 @@ use crate::util::compat_mode::compat_mode_from_version;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
-use cosmwasm_std::{Decimal, Uint128};
-use osmosis_std::types::cosmos::base::v1beta1::DecProto;
+use crate::{chain::client::ClientSettings, config::Error as ConfigError};
 
 use self::types::app_state::GenesisAppState;
+use self::version::Specs;
 
 pub mod batch;
 pub mod client;
 pub mod compatibility;
+pub mod config;
 pub mod encode;
 pub mod estimate;
 pub mod fee;
@@ -140,7 +142,7 @@ pub mod wait;
 /// [tm-37-max]: https://github.com/tendermint/tendermint/blob/v0.37.0-rc1/types/params.go#L79
 pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 pub struct CosmosSdkChain {
-    config: ChainConfig,
+    config: config::CosmosSdkConfig,
     tx_config: TxConfig,
     pub rpc_client: HttpClient,
     compat_mode: CompatMode,
@@ -157,7 +159,7 @@ pub struct CosmosSdkChain {
 
 impl CosmosSdkChain {
     /// Get a reference to the configuration for this chain.
-    pub fn config(&self) -> &ChainConfig {
+    pub fn config(&self) -> &config::CosmosSdkConfig {
         &self.config
     }
 
@@ -908,7 +910,17 @@ impl ChainEndpoint for CosmosSdkChain {
     type Time = TmTime;
     type SigningKeyPair = Secp256k1KeyPair;
 
+    fn id(&self) -> &ChainId {
+        &self.config.id
+    }
+
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
+        #[allow(irrefutable_let_patterns)]
+        let ChainConfig::CosmosSdk(config) = config
+        else {
+            return Err(Error::config(ConfigError::wrong_type()));
+        };
+
         let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
@@ -917,7 +929,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let compat_mode = compat_mode_from_version(&config.compat_mode, node_info.version)?.into();
         rpc_client.set_compat_mode(compat_mode);
 
-        let light_client = TmLightClient::from_config(&config, node_info.id)?;
+        let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_info.id)?;
 
         // Initialize key store and load key
         let keybase = KeyRing::new_secp256k1(
@@ -965,6 +977,16 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn keybase_mut(&mut self) -> &mut KeyRing<Self::SigningKeyPair> {
         &mut self.keybase
+    }
+
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error> {
+        // Get the key from key seed file
+        let key_pair = self
+            .keybase()
+            .get_key(&self.config.key_name)
+            .map_err(|e| Error::key_not_found(self.config().key_name.clone(), e))?;
+
+        Ok(key_pair)
     }
 
     fn subscribe(&mut self) -> Result<Subscription, Error> {
@@ -1091,13 +1113,13 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     /// Get the chain configuration
-    fn config(&self) -> &ChainConfig {
-        &self.config
+    fn config(&self) -> ChainConfig {
+        ChainConfig::CosmosSdk(self.config.clone())
     }
 
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+    fn version_specs(&self) -> Result<Specs, Error> {
         let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
-        Ok(version_specs.ibc_go)
+        Ok(version_specs)
     }
 
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
@@ -2045,7 +2067,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
     ///    sequence (the query conditions can only be AND-ed).
     ///    There is a possibility to include "<=" and ">=" conditions but it doesn't work with
-    ///    string attributes (sequence is emmitted as a string).
+    ///    string attributes (sequence is emitted as a string).
     ///    Therefore, for packets we perform one tx_search for each sequence.
     ///    Alternatively, a single query for all packets could be performed but it would return all
     ///    packets ever sent.
@@ -2318,7 +2340,7 @@ fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
 
 async fn fetch_node_info(
     rpc_client: &HttpClient,
-    config: &ChainConfig,
+    config: &config::CosmosSdkConfig,
 ) -> Result<node::Info, Error> {
     crate::time!("fetch_node_info",
     {
@@ -2384,7 +2406,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         );
     }
 
-    let relayer_gas_price = &chain.config.dynamic_gas_price();
+    let relayer_gas_price = &chain.config.gas_price;
     let node_min_gas_prices = chain.min_gas_price()?;
 
     if !node_min_gas_prices.is_empty() {

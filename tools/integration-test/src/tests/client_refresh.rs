@@ -1,9 +1,9 @@
 use std::time::Duration;
 
-use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
-
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
+use ibc_relayer::config::ChainConfig;
 use ibc_relayer::foreign_client::CreateOptions;
+use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
 use ibc_test_framework::prelude::*;
 
@@ -127,8 +127,13 @@ impl BinaryChainTest for ClientFailsTest {
         let chains2 = override_connected_chains(
             chains,
             |config| {
-                config.chains[0].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
-                config.chains[1].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
+                {
+                    let ChainConfig::CosmosSdk(config_chain_a) = &mut config.chains[0];
+                    config_chain_a.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
+                }
+
+                let ChainConfig::CosmosSdk(config_chain_b) = &mut config.chains[1];
+                config_chain_b.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
             },
             config,
         )?;

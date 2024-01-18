@@ -6,8 +6,9 @@ use tracing::warn;
 
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
-use crate::config::ChainConfig;
+use crate::chain::cosmos::config::CosmosSdkConfig;
 use crate::foreign_client::CreateOptions;
+
 use crate::util::pretty::PrettyDuration;
 
 /// Cosmos-specific client parameters for the `build_client_state` operation.
@@ -21,8 +22,8 @@ pub struct Settings {
 impl Settings {
     pub fn for_create_command(
         options: CreateOptions,
-        src_chain_config: &ChainConfig,
-        dst_chain_config: &ChainConfig,
+        src_chain_config: &CosmosSdkConfig,
+        dst_chain_config: &CosmosSdkConfig,
     ) -> Self {
         let max_clock_drift = match options.max_clock_drift {
             None => calculate_client_state_drift(src_chain_config, dst_chain_config),
@@ -41,7 +42,7 @@ impl Settings {
 
         let trust_threshold = options
             .trust_threshold
-            .unwrap_or_else(|| src_chain_config.trust_threshold.into());
+            .unwrap_or(src_chain_config.trust_threshold);
 
         Settings {
             max_clock_drift,
@@ -55,8 +56,8 @@ impl Settings {
 /// chain block frequency and clock drift on source and dest.
 /// https://github.com/informalsystems/hermes/issues/1445
 fn calculate_client_state_drift(
-    src_chain_config: &ChainConfig,
-    dst_chain_config: &ChainConfig,
+    src_chain_config: &CosmosSdkConfig,
+    dst_chain_config: &CosmosSdkConfig,
 ) -> Duration {
     src_chain_config.clock_drift + dst_chain_config.clock_drift + dst_chain_config.max_block_time
 }

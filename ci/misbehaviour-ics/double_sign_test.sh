@@ -330,7 +330,7 @@ do
     interchain-security-cd genesis add-genesis-account $CONS_ACCOUNT_ADDR2 $USER_COINS --home ${CONS_NODE_DIR}
     sleep 10
 
-    ### this probably doesnt have to be done for each node
+    ### this probably does not have to be done for each node
     # Add consumer genesis states to genesis file
     RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
     RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
@@ -494,6 +494,7 @@ enabled = true
 
 [[chains]]
 id = "consumer"
+type = "CosmosSdk"
 rpc_addr = "http://${NODE_IP}:${CRPC_LADDR_PORT}"
 event_source = { mode = 'push', url = 'ws://${NODE_IP}:${CRPC_LADDR_PORT}/websocket' , batch_delay = '50ms' }
 grpc_addr = "tcp://${NODE_IP}:${CGRPC_LADDR_PORT}"
@@ -517,6 +518,7 @@ ccv_consumer_chain = true
 
 [[chains]]
 id = "provider"
+type = "CosmosSdk"
 rpc_addr = "http://${NODE_IP}:${PRPC_LADDR_PORT}"
 event_source = { mode = 'push', url = 'ws://${NODE_IP}:${PRPC_LADDR_PORT}/websocket' , batch_delay = '50ms' }
 grpc_addr = "tcp://${NODE_IP}:${PGRPC_LADDR_PORT}"

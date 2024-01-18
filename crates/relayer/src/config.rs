@@ -6,49 +6,40 @@ pub mod error;
 pub mod filter;
 pub mod gas_multiplier;
 pub mod proof_specs;
+pub mod refresh_rate;
 pub mod types;
 
 use alloc::collections::BTreeMap;
+use core::cmp::Ordering;
+use core::fmt::{Display, Error as FmtError, Formatter};
+use core::str::FromStr;
+use core::time::Duration;
+use std::{fs, fs::File, io::Write, ops::Range, path::Path};
+
 use byte_unit::Byte;
-use core::{
-    cmp::Ordering,
-    fmt::{Display, Error as FmtError, Formatter},
-    str::FromStr,
-    time::Duration,
-};
 use serde_derive::{Deserialize, Serialize};
-use std::{
-    fs,
-    fs::File,
-    io::Write,
-    ops::Range,
-    path::{Path, PathBuf},
-};
 use tendermint::block::Height as BlockHeight;
-use tendermint_light_client::verifier::types::TrustThreshold;
-use tendermint_rpc::{Url, WebSocketClientUrl};
+use tendermint_rpc::Url;
+use tendermint_rpc::WebSocketClientUrl;
 
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
-use crate::chain::ChainType;
-use crate::config::compat_mode::CompatMode;
-use crate::config::gas_multiplier::GasMultiplier;
-use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::chain::cosmos::config::CosmosSdkConfig;
+use crate::config::types::ics20_field_size_limit::Ics20FieldSizeLimit;
+use crate::config::types::TrustThreshold;
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
-use crate::keyring::Store;
+use crate::keyring::{AnySigningKeyPair, KeyRing, Store};
+
+use crate::keyring;
 
 pub use crate::config::Error as ConfigError;
 pub use error::Error;
 
-use crate::chain::cosmos::query_eip_base_fee;
-use crate::util::block_on;
 pub use filter::PacketFilter;
-
-use crate::config::dynamic_gas::DynamicGas;
+pub use refresh_rate::RefreshRate;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -113,7 +104,7 @@ impl PartialOrd for GasPrice {
 /// the parsing of other prices.
 pub fn parse_gas_prices(prices: String) -> Vec<GasPrice> {
     prices
-        .split(';')
+        .split(|c| c == ',' || c == ';')
         .filter_map(|gp| GasPrice::from_str(gp).ok())
         .collect()
 }
@@ -157,10 +148,6 @@ impl Display for ExtensionOption {
 pub mod default {
     use super::*;
 
-    pub fn chain_type() -> ChainType {
-        ChainType::CosmosSdk
-    }
-
     pub fn ccv_consumer_chain() -> bool {
         false
     }
@@ -175,6 +162,10 @@ pub mod default {
 
     pub fn clear_packets_interval() -> u64 {
         100
+    }
+
+    pub fn query_packets_chunk_size() -> usize {
+        50
     }
 
     pub fn rpc_timeout() -> Duration {
@@ -213,6 +204,15 @@ pub mod default {
         Byte::from_bytes(33554432)
     }
 
+    pub fn trust_threshold() -> TrustThreshold {
+        TrustThreshold::TWO_THIRDS
+    }
+
+    pub fn client_refresh_rate() -> RefreshRate {
+        // Refresh the client three times per trusting period
+        RefreshRate::new(1, 3)
+    }
+
     pub fn latency_submitted() -> HistogramConfig {
         HistogramConfig {
             range: Range {
@@ -231,6 +231,14 @@ pub mod default {
             },
             buckets: 10,
         }
+    }
+
+    pub fn ics20_max_memo_size() -> Ics20FieldSizeLimit {
+        Ics20FieldSizeLimit::new(true, Byte::from_bytes(32768))
+    }
+
+    pub fn ics20_max_receiver_size() -> Ics20FieldSizeLimit {
+        Ics20FieldSizeLimit::new(true, Byte::from_bytes(2048))
     }
 }
 
@@ -253,15 +261,15 @@ pub struct Config {
 
 impl Config {
     pub fn has_chain(&self, id: &ChainId) -> bool {
-        self.chains.iter().any(|c| c.id == *id)
+        self.chains.iter().any(|c| c.id() == id)
     }
 
     pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
-        self.chains.iter().find(|c| c.id == *id)
+        self.chains.iter().find(|c| c.id() == id)
     }
 
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
-        self.chains.iter_mut().find(|c| c.id == *id)
+        self.chains.iter_mut().find(|c| c.id() == id)
     }
 
     /// Returns true if filtering is disabled or if packets are allowed on
@@ -275,7 +283,7 @@ impl Config {
     ) -> bool {
         match self.find_chain(chain_id) {
             Some(chain_config) => chain_config
-                .packet_filter
+                .packet_filter()
                 .channel_policy
                 .is_allowed(port_id, channel_id),
             None => false,
@@ -283,7 +291,35 @@ impl Config {
     }
 
     pub fn chains_map(&self) -> BTreeMap<&ChainId, &ChainConfig> {
-        self.chains.iter().map(|c| (&c.id, c)).collect()
+        self.chains.iter().map(|c| (c.id(), c)).collect()
+    }
+
+    /// Method for syntactic validation of the input configuration file.
+    pub fn validate_config(&self) -> Result<(), Diagnostic<Error>> {
+        use alloc::collections::BTreeSet;
+        // Check for duplicate chain configuration and invalid trust thresholds
+        let mut unique_chain_ids = BTreeSet::new();
+        for chain_config in self.chains.iter() {
+            let already_present = !unique_chain_ids.insert(chain_config.id().clone());
+            if already_present {
+                return Err(Diagnostic::Error(Error::duplicate_chains(
+                    chain_config.id().clone(),
+                )));
+            }
+
+            match chain_config {
+                ChainConfig::CosmosSdk(cosmos_config) => {
+                    cosmos_config
+                        .validate()
+                        .map_err(Into::<Diagnostic<Error>>::into)?;
+                }
+            }
+        }
+
+        // Check for invalid mode config
+        self.mode.validate()?;
+
+        Ok(())
     }
 }
 
@@ -302,6 +338,22 @@ impl ModeConfig {
             && !self.connections.enabled
             && !self.channels.enabled
             && !self.packets.enabled
+    }
+
+    fn validate(&self) -> Result<(), Diagnostic<Error>> {
+        if self.all_disabled() {
+            return Err(Diagnostic::Warning(Error::invalid_mode(
+                "all operation modes of Hermes are disabled, relayer won't perform any action aside from subscribing to events".to_string(),
+            )));
+        }
+
+        if self.clients.enabled && !self.clients.refresh && !self.clients.misbehaviour {
+            return Err(Diagnostic::Error(Error::invalid_mode(
+                "either `refresh` or `misbehaviour` must be set to true if `clients.enabled` is set to true".to_string(),
+            )));
+        }
+
+        Ok(())
     }
 }
 
@@ -358,6 +410,10 @@ pub struct Packets {
     pub tx_confirmation: bool,
     #[serde(default = "default::auto_register_counterparty_payee")]
     pub auto_register_counterparty_payee: bool,
+    #[serde(default = "default::ics20_max_memo_size")]
+    pub ics20_max_memo_size: Ics20FieldSizeLimit,
+    #[serde(default = "default::ics20_max_receiver_size")]
+    pub ics20_max_receiver_size: Ics20FieldSizeLimit,
 }
 
 impl Default for Packets {
@@ -368,6 +424,8 @@ impl Default for Packets {
             clear_on_start: default::clear_on_start(),
             tx_confirmation: default::tx_confirmation(),
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
+            ics20_max_memo_size: default::ics20_max_memo_size(),
+            ics20_max_receiver_size: default::ics20_max_receiver_size(),
         }
     }
 }
@@ -563,132 +621,77 @@ pub enum EventSourceMode {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct ChainConfig {
-    /// The chain's network identifier
-    pub id: ChainId,
-
-    /// The chain type
-    #[serde(default = "default::chain_type")]
-    pub r#type: ChainType,
-
-    /// The RPC URL to connect to
-    pub rpc_addr: Url,
-
-    /// The gRPC URL to connect to
-    pub grpc_addr: Url,
-
-    /// The type of event source and associated settings
-    pub event_source: EventSourceMode,
-
-    /// Timeout used when issuing RPC queries
-    #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
-    pub rpc_timeout: Duration,
-
-    /// Whether or not the full node Hermes connects to is trusted
-    #[serde(default = "default::trusted_node")]
-    pub trusted_node: bool,
-
-    pub account_prefix: String,
-    pub key_name: String,
-    #[serde(default)]
-    pub key_store_type: Store,
-    pub key_store_folder: Option<PathBuf>,
-    pub store_prefix: String,
-    pub default_gas: Option<u64>,
-    pub max_gas: Option<u64>,
-
-    // This field is only meant to be set via the `update client` command,
-    // for when we need to ugprade a client across a genesis restart and
-    // therefore need and archive node to fetch blocks from.
-    pub genesis_restart: Option<GenesisRestart>,
-
-    // This field is deprecated, use `gas_multiplier` instead
-    pub gas_adjustment: Option<f64>,
-    pub gas_multiplier: Option<GasMultiplier>,
-
-    pub fee_granter: Option<String>,
-    #[serde(default)]
-    pub max_msg_num: MaxMsgNum,
-    #[serde(default)]
-    pub max_tx_size: MaxTxSize,
-    #[serde(default = "default::max_grpc_decoding_size")]
-    pub max_grpc_decoding_size: Byte,
-
-    /// A correction parameter that helps deal with clocks that are only approximately synchronized
-    /// between the source and destination chains for a client.
-    /// This parameter is used when deciding to accept or reject a new header
-    /// (originating from the source chain) for any client with the destination chain
-    /// that uses this configuration, unless it is overridden by the client-specific
-    /// clock drift option.
-    #[serde(default = "default::clock_drift", with = "humantime_serde")]
-    pub clock_drift: Duration,
-
-    #[serde(default = "default::max_block_time", with = "humantime_serde")]
-    pub max_block_time: Duration,
-
-    /// The trusting period specifies how long a validator set is trusted for
-    /// (must be shorter than the chain's unbonding period).
-    #[serde(default, with = "humantime_serde")]
-    pub trusting_period: Option<Duration>,
-
-    /// CCV consumer chain
-    #[serde(default = "default::ccv_consumer_chain")]
-    pub ccv_consumer_chain: bool,
-
-    #[serde(default)]
-    pub memo_prefix: Memo,
-
-    // This is an undocumented and hidden config to make the relayer wait for
-    // DeliverTX before sending the next transaction when sending messages in
-    // multiple batches. We will instruct relayer operators to turn this on
-    // in case relaying failed in a chain with priority mempool enabled.
-    // Warning: turning this on may cause degradation in performance.
-    #[serde(default)]
-    pub sequential_batch_tx: bool,
-
-    // Note: These last few need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML.
-    //       That's because these are all tables and have to come last when serializing.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "self::proof_specs"
-    )]
-    pub proof_specs: Option<ProofSpecs>,
-
-    // These last few need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
-    /// The trust threshold defines what fraction of the total voting power of a known
-    /// and trusted validator set is sufficient for a commit to be accepted going forward.
-    #[serde(default)]
-    pub trust_threshold: TrustThreshold,
-
-    pub gas_price: GasPrice,
-
-    #[serde(default)]
-    pub packet_filter: PacketFilter,
-
-    #[serde(default)]
-    pub dynamic_gas: DynamicGas,
-
-    #[serde(default)]
-    pub address_type: AddressType,
-    #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
-    pub extension_options: Vec<ExtensionOption>,
-    pub compat_mode: Option<CompatMode>,
-    pub clear_interval: Option<u64>,
+#[serde(tag = "type")]
+pub enum ChainConfig {
+    CosmosSdk(CosmosSdkConfig),
 }
 
 impl ChainConfig {
-    pub fn dynamic_gas_price(&self) -> GasPrice {
-        if let Some(dynamic_gas_price) = self.dynamic_gas.dynamic_gas_price() {
-            let new_price = block_on(query_eip_base_fee(&self.rpc_addr.to_string())).unwrap()
-                * dynamic_gas_price;
+    pub fn id(&self) -> &ChainId {
+        match self {
+            Self::CosmosSdk(config) => &config.id,
+        }
+    }
 
-            GasPrice {
-                price: new_price,
-                denom: self.gas_price.denom.clone(),
+    pub fn packet_filter(&self) -> &PacketFilter {
+        match self {
+            Self::CosmosSdk(config) => &config.packet_filter,
+        }
+    }
+
+    pub fn max_block_time(&self) -> Duration {
+        match self {
+            Self::CosmosSdk(config) => config.max_block_time,
+        }
+    }
+
+    pub fn key_name(&self) -> &String {
+        match self {
+            Self::CosmosSdk(config) => &config.key_name,
+        }
+    }
+
+    pub fn set_key_name(&mut self, key_name: String) {
+        match self {
+            Self::CosmosSdk(config) => config.key_name = key_name,
+        }
+    }
+
+    pub fn list_keys(&self) -> Result<Vec<(String, AnySigningKeyPair)>, keyring::errors::Error> {
+        let keys = match self {
+            ChainConfig::CosmosSdk(config) => {
+                let keyring = KeyRing::new_secp256k1(
+                    Store::Test,
+                    &config.account_prefix,
+                    &config.id,
+                    &config.key_store_folder,
+                )?;
+                keyring
+                    .keys()?
+                    .into_iter()
+                    .map(|(key_name, keys)| (key_name, keys.into()))
+                    .collect()
             }
-        } else {
-            self.gas_price.clone()
+        };
+
+        Ok(keys)
+    }
+
+    pub fn clear_interval(&self) -> Option<u64> {
+        match self {
+            Self::CosmosSdk(config) => config.clear_interval,
+        }
+    }
+
+    pub fn query_packets_chunk_size(&self) -> usize {
+        match self {
+            Self::CosmosSdk(config) => config.query_packets_chunk_size,
+        }
+    }
+
+    pub fn set_query_packets_chunk_size(&mut self, query_packets_chunk_size: usize) {
+        match self {
+            Self::CosmosSdk(config) => config.query_packets_chunk_size = query_packets_chunk_size,
         }
     }
 }
@@ -735,6 +738,30 @@ impl Default for TracingServerConfig {
             enabled: false,
             port: 5555,
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum Diagnostic<E> {
+    Warning(E),
+    Error(E),
+}
+
+use crate::chain::cosmos::config::Diagnostic as CosmosConfigDiagnostic;
+impl<E: Into<Error>> From<CosmosConfigDiagnostic<E>> for Diagnostic<Error> {
+    fn from(value: CosmosConfigDiagnostic<E>) -> Self {
+        match value {
+            CosmosConfigDiagnostic::Warning(e) => Diagnostic::Warning(e.into()),
+            CosmosConfigDiagnostic::Error(e) => Diagnostic::Error(e.into()),
+        }
+    }
+}
+
+use crate::chain::cosmos::config::error::Error as CosmosConfigError;
+
+impl From<CosmosConfigError> for Error {
+    fn from(error: CosmosConfigError) -> Error {
+        Error::cosmos_config_error(error.to_string())
     }
 }
 
@@ -829,9 +856,6 @@ mod tests {
 
     #[test]
     fn parse_multiple_gas_prices() {
-        let gas_prices = "0.25token1;0.0001token2";
-        let parsed = parse_gas_prices(gas_prices.to_string());
-
         let expected = vec![
             GasPrice {
                 price: 0.25,
@@ -843,7 +867,15 @@ mod tests {
             },
         ];
 
-        assert_eq!(expected, parsed);
+        let test_cases = vec![
+            ("0.25token1;0.0001token2", expected.clone()),
+            ("0.25token1,0.0001token2", expected.clone()),
+        ];
+
+        for (input, expected) in test_cases {
+            let parsed = parse_gas_prices(input.to_string());
+            assert_eq!(expected, parsed);
+        }
     }
 
     #[test]
@@ -856,14 +888,18 @@ mod tests {
 
     #[test]
     fn malformed_gas_prices_do_not_get_parsed() {
-        let malformed_prices = "token1;.token2;0.25token3";
-        let parsed = parse_gas_prices(malformed_prices.to_string());
-
         let expected = vec![GasPrice {
             price: 0.25,
             denom: "token3".to_owned(),
         }];
+        let test_cases = vec![
+            ("token1;.token2;0.25token3", expected.clone()),
+            ("token1,.token2,0.25token3", expected.clone()),
+        ];
 
-        assert_eq!(expected, parsed);
+        for (input, expected) in test_cases {
+            let parsed = parse_gas_prices(input.to_string());
+            assert_eq!(expected, parsed);
+        }
     }
 }

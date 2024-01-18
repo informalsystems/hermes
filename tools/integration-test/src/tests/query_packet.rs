@@ -30,11 +30,12 @@ impl BinaryChannelTest for QueryPacketPendingTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        _relayer: RelayerDriver,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
+        let packet_config = relayer.config.mode.packets;
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -59,6 +60,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.clone().into_value(),
+            max_memo_size: packet_config.ics20_max_memo_size,
+            max_receiver_size: packet_config.ics20_max_receiver_size,
         };
         let link = Link::new_from_opts(
             chains.handle_a().clone(),
@@ -81,7 +84,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         assert!(summary.unreceived_acks.is_empty());
 
         // Receive the packet on the destination chain
-        link.relay_recv_packet_and_timeout_messages()?;
+        link.relay_recv_packet_and_timeout_messages(vec![])?;
 
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
@@ -91,7 +94,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
 
         // Acknowledge the packet on the source chain
         let link = link.reverse(false, false)?;
-        link.relay_ack_packet_messages()?;
+        link.relay_ack_packet_messages(vec![])?;
 
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;

@@ -110,7 +110,7 @@ Used by Hermes to gather telemetry data and expose it via a Prometheus endpoint.
 
 Most of the components in the `ibc` crate (i.e. the `modules` directory) have basic unit testing coverage. These unit tests make use of mocked up chain components in order to ensure that message payloads are being sent and received as expected. 
 
-We also run end-to-end tests to more thoroughly test IBC modules in a more heterogenous fashion. 
+We also run end-to-end tests to more thoroughly test IBC modules in a more heterogeneous fashion. 
 
 ### Error Handling 
 

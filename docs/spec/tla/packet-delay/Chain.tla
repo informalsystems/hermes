@@ -90,7 +90,7 @@ SendPacket ==
         srcChannelID |-> chainStore.channelEnd.channelID,
         dstPortID |-> chainStore.channelEnd.counterpartyPortID,
         dstChannelID |-> chainStore.channelEnd.counterpartyChannelID] IN
-        \* update chain store with packet committment
+        \* update chain store with packet commitment
         /\ chainStore' = WritePacketCommitment(chainStore, packet)
         \* log sent packet
         /\ packetLog' = Append(packetLog, 

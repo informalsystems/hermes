@@ -336,7 +336,11 @@ mod tests {
         );
         let config = config::load(path).expect("could not parse config");
         let chain_id = ChainId::from_string("chain_A");
-        let chain_config = config.find_chain(&chain_id).unwrap();
+
+        #[allow(irrefutable_let_patterns)]
+        let config::ChainConfig::CosmosSdk(chain_config) = config.find_chain(&chain_id).unwrap() else {
+            panic!("should be a cosmos sdk chain config");
+        };
 
         let tx_config = TxConfig::try_from(chain_config).expect("could not obtain tx config");
 

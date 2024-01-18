@@ -55,7 +55,7 @@
   [`NthChainHandle`](aliases::NthChainHandle) and
   [`NthForeignClient`](foreign_client::NthForeignClient).
   This would still result in overly verbose messages in type errors involving
-  these types. If necessary, we will refactor these defintions as newtypes
+  these types. If necessary, we will refactor these definitions as newtypes
   so that they can be used and shown in a cleaner form.
 */
 

@@ -93,7 +93,7 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
     LET channelEnd == GetChannelEnd(chain) IN
     \* get packet
     LET packet == packetDatagram.packet IN
-    \* get packet committment that should be in chain store
+    \* get packet commitment that should be in chain store
     LET packetCommitment == [
                                 portID |-> packet.srcPortID,
                                 channelID |-> packet.srcChannelID, 
@@ -135,7 +135,7 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
     ELSE [chainStore |-> chain, packetLog |-> log] 
     
     
-\* write packet committments to chain store
+\* write packet commitments to chain store
 \* @type: (CHAINSTORE, PACKET) => CHAINSTORE;
 WritePacketCommitment(chain, packet) ==
     \* get chainID's connection end
@@ -158,7 +158,7 @@ WritePacketCommitment(chain, packet) ==
        /\ \/ packet.timeoutHeight = 0 
           \/ latestClientHeight < packet.timeoutHeight
     THEN IF \* if the channel is ordered, check if packetSeq is nextSendSeq, 
-            \* add a packet committment in the chain store, and increase nextSendSeq
+            \* add a packet commitment in the chain store, and increase nextSendSeq
             /\ channelEnd.order = "ORDERED"
             /\ packet.sequence = channelEnd.nextSendSeq
          THEN [chain EXCEPT 
@@ -171,7 +171,7 @@ WritePacketCommitment(chain, packet) ==
               ]
          \* otherwise, do not update the chain store
          ELSE IF \* if the channel is unordered, 
-                 \* add a packet committment in the chain store
+                 \* add a packet commitment in the chain store
                  /\ channelEnd.order = "UNORDERED"
               THEN [chain EXCEPT 
                     !.packetCommitments =  
@@ -248,7 +248,7 @@ TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
     \* get counterparty channel end
     LET counterpartyChannelEnd == GetChannelEnd(counterpartyChain) IN
     
-    \* get packet committment that should be in chain store
+    \* get packet commitment that should be in chain store
     LET packetCommitment == [
                                 portID |-> packet.srcPortID,
                                 channelID |-> packet.srcChannelID, 
@@ -310,7 +310,7 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
     \* get counterparty channel end
     LET counterpartyChannelEnd == GetChannelEnd(counterpartyChain) IN
     
-    \* get packet committment that should be in chain store
+    \* get packet commitment that should be in chain store
     LET packetCommitment == [
                                 portID |-> packet.srcPortID,
                                 channelID |-> packet.srcChannelID, 

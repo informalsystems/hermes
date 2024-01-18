@@ -201,7 +201,7 @@ gaiad version --log_level error --long | head -n4
     - wallet1 (cosmos1csdnmydggcyvjd7z8l64z9lpdgmgyr4v7hw5r8)
     ```
 
-3. (Optional) Check the balance of the wallets before transfering tokens:
+3. (Optional) Check the balance of the wallets before transferring tokens:
 
     ```shell
     {{#template ../../templates/commands/hermes/keys/balance_1.md CHAIN_ID=ibc-0 OPTIONS= --all}}
