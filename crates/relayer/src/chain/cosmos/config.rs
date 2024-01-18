@@ -1,20 +1,21 @@
+use core::time::Duration;
+use std::path::PathBuf;
+
+use byte_unit::Byte;
+use serde_derive::{Deserialize, Serialize};
+use tendermint_rpc::Url;
+
+use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+
 use crate::chain::cosmos::config::error::Error as ConfigError;
 use crate::config::compat_mode::CompatMode;
-use crate::config::default;
 use crate::config::gas_multiplier::GasMultiplier;
-use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::config::types::{MaxMsgNum, MaxTxSize, Memo, TrustThreshold};
 use crate::config::{
     self, AddressType, EventSourceMode, ExtensionOption, GasPrice, GenesisRestart, PacketFilter,
 };
-use byte_unit::Byte;
-use core::time::Duration;
-use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use serde_derive::{Deserialize, Serialize};
-use std::path::PathBuf;
-use tendermint_light_client::verifier::types::TrustThreshold;
-use tendermint_rpc::Url;
-
+use crate::config::{default, RefreshRate};
 use crate::keyring::Store;
 
 pub mod error;
@@ -61,12 +62,19 @@ pub struct CosmosSdkConfig {
     pub gas_multiplier: Option<GasMultiplier>,
 
     pub fee_granter: Option<String>,
+
     #[serde(default)]
     pub max_msg_num: MaxMsgNum,
+
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
+
     #[serde(default = "default::max_grpc_decoding_size")]
     pub max_grpc_decoding_size: Byte,
+
+    /// How many packets to fetch at once from the chain when clearing packets
+    #[serde(default = "default::query_packets_chunk_size")]
+    pub query_packets_chunk_size: usize,
 
     /// A correction parameter that helps deal with clocks that are only approximately synchronized
     /// between the source and destination chains for a client.
@@ -84,6 +92,11 @@ pub struct CosmosSdkConfig {
     /// (must be shorter than the chain's unbonding period).
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
+
+    /// The rate at which to refresh the client referencing this chain,
+    /// expressed as a fraction of the trusting period.
+    #[serde(default = "default::client_refresh_rate")]
+    pub client_refresh_rate: RefreshRate,
 
     /// CCV consumer chain
     #[serde(default = "default::ccv_consumer_chain")]
