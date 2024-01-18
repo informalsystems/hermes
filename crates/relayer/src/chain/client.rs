@@ -24,10 +24,18 @@ impl ClientSettings {
         // Currently, only Tendermint chain pairs are supported by
         // ForeignClient::build_create_client_and_send. Support for
         // heterogeneous chains is left for future revisions.
-        ClientSettings::Tendermint(cosmos::client::Settings::for_create_command(
-            options,
-            src_chain_config,
-            dst_chain_config,
-        ))
+        //
+        // TODO: extract Tendermint-related configs into a separate substructure
+        // that can be used both by CosmosSdkConfig and configs for nonSDK chains.
+        use ChainConfig::CosmosSdk as Csdk;
+        match (src_chain_config, dst_chain_config) {
+            (Csdk(src_chain_config), Csdk(dst_chain_config)) => {
+                ClientSettings::Tendermint(cosmos::client::Settings::for_create_command(
+                    options,
+                    src_chain_config,
+                    dst_chain_config,
+                ))
+            }
+        }
     }
 }

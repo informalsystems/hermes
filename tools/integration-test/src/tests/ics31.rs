@@ -51,7 +51,7 @@ impl TestOverrides for ICS31Test {
                     *duration = serde_json::Value::String("20s".to_owned());
                 }
             }
-            set_voting_period(genesis, "20s")?;
+            set_voting_period(genesis, 20)?;
             set_staking_max_entries(genesis, "10")?;
             set_staking_bond_denom(genesis, "stake")?;
             set_mint_mint_denom(genesis, "stake")?;

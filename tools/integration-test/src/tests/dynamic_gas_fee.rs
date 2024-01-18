@@ -11,10 +11,11 @@
 //! disabled.
 //!
 //! The [`DynamicGasTest`] test can be configured to disable the dynamic gas
-//! price on both chains in order to ensures that the first IBC transfer will
+//! price on both chains in order to ensure that the first IBC transfer will
 //! cost more if dynamic gas is disabled.
 
 use ibc_relayer::config::dynamic_gas::DynamicGas;
+use ibc_relayer::config::ChainConfig;
 use ibc_relayer::config::GasPrice;
 use ibc_test_framework::prelude::*;
 
@@ -45,10 +46,21 @@ impl TestOverrides for DynamicGasTest {
         config.mode.clients.refresh = false;
         config.mode.packets.clear_interval = 0;
 
-        config.chains[0].gas_price = GasPrice::new(0.1, config.chains[0].gas_price.denom.clone());
-        config.chains[1].gas_price = GasPrice::new(0.1, config.chains[1].gas_price.denom.clone());
-        config.chains[0].dynamic_gas = DynamicGas::unsafe_new(false, 1.1);
-        config.chains[1].dynamic_gas = DynamicGas::unsafe_new(self.dynamic_gas_enabled, 1.1);
+        match &mut config.chains[0] {
+            ChainConfig::CosmosSdk(chain_config_a) => {
+                chain_config_a.gas_price =
+                    GasPrice::new(0.1, chain_config_a.gas_price.denom.clone());
+                chain_config_a.dynamic_gas = DynamicGas::unsafe_new(false, 1.1);
+            }
+        }
+
+        match &mut config.chains[1] {
+            ChainConfig::CosmosSdk(chain_config_b) => {
+                chain_config_b.gas_price =
+                    GasPrice::new(0.1, chain_config_b.gas_price.denom.clone());
+                chain_config_b.dynamic_gas = DynamicGas::unsafe_new(self.dynamic_gas_enabled, 1.1);
+            }
+        }
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -182,7 +194,6 @@ impl BinaryChannelTest for DynamicGasTest {
             Ok(paid_fees_relayer_a.unwrap())
         })?;
 
-        info!("");
         info!("paid gas fees for Tx with memo `{tx1_paid_gas_relayer}`, without memo `{tx2_paid_gas_relayer}`");
 
         if self.dynamic_gas_enabled {

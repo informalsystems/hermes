@@ -58,38 +58,38 @@ jobs:
       fail-fast: false
       matrix:
         first-package:
-          - package: gaia12
+          - package: gaia13
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia14
             command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
-          - package: wasmd
-            command: wasmd
-            account_prefix: wasm
+          - package: ibc-go-v8-simapp
+            command: simd
+            account_prefix: cosmos
         second-package:
-          - package: evmos
-            command: evmosd
-            account_prefix: evmos
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
-          - package: stride
-            command: strided
-            account_prefix: stride
-          - package: juno
-            command: junod
-            account_prefix: juno
+          - package: migaloo
+            command: migalood
+            account_prefix: migaloo
+          - package: wasmd
+            command: wasmd
+            account_prefix: wasm
 
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v25
         with:
           install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
           install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v12
+      - uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - uses: actions-rs/toolchain@v1

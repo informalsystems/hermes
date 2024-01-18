@@ -41,11 +41,12 @@ pub fn submit_consumer_chain_proposal(
     Ok(())
 }
 
-pub fn query_consumer_proposal(
+pub fn query_gov_proposal(
     chain_id: &str,
     command_path: &str,
     home_path: &str,
     rpc_listen_address: &str,
+    proposal_id: &str,
 ) -> Result<ExecOutput, Error> {
     simple_exec(
         chain_id,
@@ -58,7 +59,7 @@ pub fn query_consumer_proposal(
             "query",
             "gov",
             "proposal",
-            "1",
+            proposal_id,
             "--output",
             "json",
         ],

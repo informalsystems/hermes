@@ -91,7 +91,7 @@ setting `clear_on_start` to `false` under the `mode.packets` section, Hermes wil
 relay packets on active channels, provided they match the packet filter, if present. Otherwise Hermes will relay on all
 active channels.
 
-Please note that because these settings are globa, they will affect the behaviour of Hermes for all chains listed in its configuration.
+Please note that because these settings are global, they will affect the behaviour of Hermes for all chains listed in its configuration.
 
 Here is how the configuration file should look like in order to disable scanning altogether.
 
@@ -103,7 +103,7 @@ enabled = false
 
 # ...
 
-[mode.connnections]
+[mode.connections]
 enabled = false
 
 # ...

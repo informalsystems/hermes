@@ -481,12 +481,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .a_chain()
             .config()
             .map_err(ChannelError::relayer)?
-            .max_block_time;
+            .max_block_time();
         let b_block_time = self
             .b_chain()
             .config()
             .map_err(ChannelError::relayer)?
-            .max_block_time;
+            .max_block_time();
         Ok(a_block_time.max(b_block_time))
     }
 
@@ -1020,7 +1020,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        // Re-use the version that was either set on ChanOpenInit or overwritten by the application.
+        // Reuse the version that was either set on ChanOpenInit or overwritten by the application.
         let version = src_channel.version().clone();
 
         let channel = ChannelEnd::new(

@@ -9,7 +9,7 @@
    This is the case for creating N-ary chains, because we cannot rely on the
    existential type encapsulation of `impl ChainHandle` to turn the
    [`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle) to turn
-   them into unqiue types.
+   them into unique types.
 
    A workaround for this is to add a unique tag to `CountingAndCachingChainHandle` itself,
    so that the type `MonoTagged<Tag, CountingAndCachingChainHandle>` becomes a unique chain
@@ -21,6 +21,7 @@
 */
 
 use crossbeam_channel as channel;
+use ibc_relayer::chain::cosmos::version::Specs;
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::{
@@ -121,8 +122,8 @@ where
         self.value().add_key(key_name, key)
     }
 
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
-        self.value().ibc_version()
+    fn version_specs(&self) -> Result<Specs, Error> {
+        self.value().version_specs()
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

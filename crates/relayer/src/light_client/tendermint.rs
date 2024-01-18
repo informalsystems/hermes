@@ -31,9 +31,9 @@ use ibc_relayer_types::Height as ICSHeight;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 
 use crate::{
+    chain::cosmos::config::CosmosSdkConfig,
     chain::cosmos::CosmosSdkChain,
     client_state::AnyClientState,
-    config::ChainConfig,
     error::Error,
     misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
 };
@@ -269,7 +269,10 @@ fn io_for_addr(
 }
 
 impl LightClient {
-    pub fn from_config(config: &ChainConfig, peer_id: PeerId) -> Result<Self, Error> {
+    pub fn from_cosmos_sdk_config(
+        config: &CosmosSdkConfig,
+        peer_id: PeerId,
+    ) -> Result<Self, Error> {
         let live_io = io_for_addr(&config.rpc_addr, peer_id, Some(config.rpc_timeout))?;
 
         let io = match &config.genesis_restart {

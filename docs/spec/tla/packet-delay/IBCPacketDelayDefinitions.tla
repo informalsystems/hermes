@@ -396,7 +396,7 @@ InitChannelEnd(ChainID, ChannelOrdering) ==
 \*      - timestamp is initialized to 1
 \*      - there are no installed client heights
 \*      - the channel end is initialized to InitChannelEnd 
-\*      - the packet committments, receipts, acknowledgements, and packets  
+\*      - the packet commitments, receipts, acknowledgements, and packets  
 \*        to acknowledge are empty
 \* @type: (Str, Set(Int), Str, Int) => CHAINSTORE;
 InitChainStore(ChainID, Heights, ChannelOrdering, MaxDelay) == 

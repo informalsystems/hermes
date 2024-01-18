@@ -102,7 +102,7 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
-#[instrument(skip_all, level = "error", fields(chain = %config.id))]
+#[instrument(skip_all, level = "error", fields(chain = %config.id()))]
 pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()> {
     let rt = Arc::new(TokioRuntime::new()?);
     let compat_mode = detect_compatibility_mode(config, rt.clone())?;
@@ -144,36 +144,49 @@ fn subscribe(
     compat_mode: CompatMode,
     rt: Arc<TokioRuntime>,
 ) -> eyre::Result<Subscription> {
-    let (event_source, monitor_tx) = match &chain_config.event_source {
-        EventSourceMode::Push { url, batch_delay } => EventSource::websocket(
-            chain_config.id.clone(),
-            url.clone(),
-            compat_mode,
-            *batch_delay,
-            rt,
-        ),
-        EventSourceMode::Pull { interval } => EventSource::rpc(
-            chain_config.id.clone(),
-            HttpClient::new(chain_config.rpc_addr.clone())?,
-            *interval,
-            rt,
-        ),
-    }?;
+    // Q: Should this be restricted only to backends that support it,
+    // or are all backends expected to support subscriptions?
+    match chain_config {
+        ChainConfig::CosmosSdk(config) => {
+            let (event_source, monitor_tx) = match &config.event_source {
+                EventSourceMode::Push { url, batch_delay } => EventSource::websocket(
+                    chain_config.id().clone(),
+                    url.clone(),
+                    compat_mode,
+                    *batch_delay,
+                    rt,
+                ),
+                EventSourceMode::Pull { interval } => EventSource::rpc(
+                    chain_config.id().clone(),
+                    HttpClient::new(config.rpc_addr.clone())?,
+                    *interval,
+                    rt,
+                ),
+            }?;
 
-    thread::spawn(move || event_source.run());
+            thread::spawn(move || event_source.run());
 
-    let subscription = monitor_tx.subscribe()?;
-    Ok(subscription)
+            let subscription = monitor_tx.subscribe()?;
+            Ok(subscription)
+        }
+    }
 }
 
 fn detect_compatibility_mode(
     config: &ChainConfig,
     rt: Arc<TokioRuntime>,
 ) -> eyre::Result<CompatMode> {
-    let client = HttpClient::new(config.rpc_addr.clone())?;
+    // TODO(erwan): move this to the cosmos sdk endpoint implementation
+    let rpc_addr = match config {
+        ChainConfig::CosmosSdk(config) => config.rpc_addr.clone(),
+    };
+    let client = HttpClient::new(rpc_addr)?;
     let status = rt.block_on(client.status())?;
-    let compat_mode =
-        compat_mode_from_version(&config.compat_mode, status.node_info.version)?.into();
+    let compat_mode = match config {
+        ChainConfig::CosmosSdk(config) => {
+            compat_mode_from_version(&config.compat_mode, status.node_info.version)?.into()
+        }
+    };
     Ok(compat_mode)
 }
 

@@ -187,7 +187,7 @@ fn calculate_non_existence_root(proof: &NonExistenceProof) -> Result<Vec<u8>, Er
 // Merkle Proof serialization notes:
 // "Proof" id currently defined in a number of forms and included in a number of places
 // - TmProof: in tendermint-rs/src/merkle/proof.rs:Proof
-// - RawProofOps: in tendermint-proto/tendermint.cyrpto.rs:ProofOps
+// - RawProofOps: in tendermint-proto/tendermint.crypto.rs:ProofOps
 // - RawMerkleProof: in ibc-proto/ibc.core.commitment.v1.rs:MerkleProof
 //     - structure that includes a RawProofOps in its only `proof` field.
 //         #[derive(Clone, PartialEq, ::prost::Message)]

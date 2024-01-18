@@ -43,18 +43,18 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia12
+          - package: gaia14
             command: gaiad
             account_prefix: cosmos
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
-        uses: cachix/install-nix-action@v22
+        uses: cachix/install-nix-action@v25
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
       - name: Use cachix cache
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - name: Install sconfig
@@ -103,12 +103,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
-        uses: cachix/install-nix-action@v22
+        uses: cachix/install-nix-action@v25
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
       - name: Use cachix cache
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - name: Install sconfig
@@ -157,12 +157,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
-        uses: cachix/install-nix-action@v22
+        uses: cachix/install-nix-action@v25
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
       - name: Use cachix cache
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - name: Install sconfig
@@ -212,12 +212,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
-        uses: cachix/install-nix-action@v22
+        uses: cachix/install-nix-action@v25
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
       - name: Use cachix cache
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - name: Install sconfig
