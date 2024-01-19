@@ -37,8 +37,6 @@ use ibc_test_framework::relayer::channel::{
 };
 use ibc_test_framework::util::random::random_u128_range;
 
-use ibc_test_framework::util::random::random_u128_range;
-
 #[test]
 fn test_channel_upgrade_manual_handshake() -> Result<(), Error> {
     run_binary_channel_test(&ChannelUpgradeManualHandshake)
@@ -1052,6 +1050,15 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFlushPackets {
             Sequence::from(1),
         );
 
+        let upgraded_attrs = ChannelUpgradableAttributes::new(
+            new_version.clone(),
+            new_version.clone(),
+            old_ordering,
+            old_connection_hops_a.clone(),
+            old_connection_hops_b,
+            Sequence::from(1),
+        );
+        
         info!("Will initialise upgrade handshake with governance proposal...");
 
         chains.node_a.chain_driver().initialise_channel_upgrade(
@@ -1102,8 +1109,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFlushPackets {
         // so that we have an in-flight packet and chain a
         // will move to `FLUSHING` during Try
         let denom_b = chains.node_b.denom();
-        let wallet_b = chains.node_b.wallets().user1().cloned();
-        let wallet_a = chains.node_a.wallets().user1().cloned();
         let b_to_a_amount = random_u128_range(1000, 5000);
 
         info!(
@@ -1154,6 +1159,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFlushPackets {
             &old_attrs,
         )?;
 
+        info!("Check that the channel upgrade successfully upgraded the version...");
+
         // start supervisor to clear in-flight packets
         // and move channel ends to `FLUSH_COMPLETE`
         relayer.with_supervisor(|| {
@@ -1179,41 +1186,19 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFlushPackets {
                 &ibc_denom_b.with_amount(a_to_b_amount).as_ref(),
             )?;
 
+            // This will assert that both channel ends are eventually
+            // in Open state, and that the fields targeted by the upgrade
+            // have been correctly updated.
+            assert_eventually_channel_upgrade_open(
+                &chains.handle_a,
+                &chains.handle_b,
+                &channels.channel_id_a.as_ref(),
+                &channels.port_a.as_ref(),
+                &upgraded_attrs,
+            )?;
+
             Ok(())
-        })?;
-
-        info!("Will run ChanUpgradeConfirm step...");
-
-        channel.build_chan_upgrade_confirm_and_send()?;
-
-        info!("Check that the step ChanUpgradeConfirm was correctly executed...");
-
-        assert_eventually_channel_upgrade_confirm(
-            &chains.handle_b,
-            &chains.handle_a,
-            &channels.channel_id_b.as_ref(),
-            &channels.port_b.as_ref(),
-            &interm_attrs.flipped(),
-        )?;
-
-        info!("Will run ChanUpgradeOpen step...");
-
-        channel.flipped().build_chan_upgrade_open_and_send()?;
-
-        info!("Check that the ChanUpgradeOpen steps were correctly executed...");
-
-        // This will assert that both channel ends are eventually
-        // in Open state, and that the fields targeted by the upgrade
-        // have been correctly updated.
-        assert_eventually_channel_upgrade_open(
-            &chains.handle_a,
-            &chains.handle_b,
-            &channels.channel_id_a.as_ref(),
-            &channels.port_a.as_ref(),
-            &upgraded_attrs,
-        )?;
-
-        Ok(())
+        })
     }
 }
 
