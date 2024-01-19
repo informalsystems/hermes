@@ -230,9 +230,7 @@ impl From<UpgradeAttributes> for Vec<abci::EventAttribute> {
 
         let upgrade_timeout_height = (
             UPGRADE_TIMEOUT_HEIGHT,
-            a.upgrade_timeout_height
-                .map_or_else(|| Height::default(), |height| height)
-                .to_string(),
+            a.upgrade_timeout_height.unwrap_or_default().to_string(),
         )
             .into();
         attributes.push(upgrade_timeout_height);
@@ -240,7 +238,7 @@ impl From<UpgradeAttributes> for Vec<abci::EventAttribute> {
         let upgrade_timeout_timestamp = (
             UPGRADE_TIMEOUT_TIMESTAMP,
             a.upgrade_timeout_timestamp
-                .map_or_else(|| Timestamp::default(), |timestamp: Timestamp| timestamp)
+                .unwrap_or_default()
                 .nanoseconds()
                 .to_string(),
         )
@@ -1307,12 +1305,8 @@ impl TryFrom<UpgradeAttributes> for UpgradeTimeout {
             upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
             upgrade_ordering: attrs.upgrade_ordering,
-            upgrade_timeout_height: attrs
-                .upgrade_timeout_height
-                .map_or_else(|| Height::default(), |height| height),
-            upgrade_timeout_timestamp: attrs
-                .upgrade_timeout_timestamp
-                .map_or_else(|| Timestamp::default(), |timestamp| timestamp),
+            upgrade_timeout_height: attrs.upgrade_timeout_height.unwrap_or_default(),
+            upgrade_timeout_timestamp: attrs.upgrade_timeout_timestamp.unwrap_or_default(),
         })
     }
 }
