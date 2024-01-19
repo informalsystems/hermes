@@ -4,6 +4,7 @@ use ibc_proto::cosmos::tx::v1beta1::Fee;
 use num_bigint::BigInt;
 use num_rational::BigRational;
 use tendermint_rpc::Url;
+use tracing::warn;
 
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::GasPrice;
@@ -37,14 +38,24 @@ pub async fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address:
 
 pub async fn dynamic_gas_price(config: &GasConfig, rpc_address: &Url) -> GasPrice {
     if let Some(dynamic_gas_price_multiplier) = config.dynamic_gas_price_multiplier {
-        query_eip_base_fee(&rpc_address.to_string())
+        let dynamic_gas_price = match query_eip_base_fee(&rpc_address.to_string())
             .await
             .map(|base_fee| base_fee * dynamic_gas_price_multiplier)
             .map(|new_price| GasPrice {
                 price: new_price,
                 denom: config.gas_price.denom.clone(),
-            })
-            .unwrap_or_else(|_| config.gas_price.clone())
+            }) {
+            Ok(dynamic_gas_price) => dynamic_gas_price,
+            Err(e) => {
+                warn!("failed to query EIP base fee, will fallback to configured `gas_price`: {e}");
+                config.gas_price.clone()
+            }
+        };
+        if dynamic_gas_price.price > config.max_dynamic_gas_price {
+            warn!("queried EIP gas is higher than configured max gas price, will fallback to configured max gas price. Queried: {}, maximum: {}", dynamic_gas_price.price, config.max_dynamic_gas_price);
+            return GasPrice::new(config.max_dynamic_gas_price, dynamic_gas_price.denom);
+        }
+        dynamic_gas_price
     } else {
         config.gas_price.clone()
     }
