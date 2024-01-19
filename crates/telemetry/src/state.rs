@@ -201,7 +201,7 @@ pub struct TelemetryState {
     /// Number of errors observed by Hermes when broadcasting a Tx
     broadcast_errors: Counter<u64>,
 
-    /// Number of Packets filtered because the memo and/or the receiver were too big
+    /// Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits
     filtered_packets: Counter<u64>,
 }
 
@@ -387,7 +387,7 @@ impl TelemetryState {
 
                 filtered_packets: meter
                 .u64_counter("filtered_packets")
-                .with_description("Number of Packets filtered because the memo and/or the receiver were too big")
+                .with_description("Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits")
                 .init(),
         }
     }
