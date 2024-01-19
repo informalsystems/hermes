@@ -232,7 +232,7 @@ impl From<UpgradeAttributes> for Vec<abci::EventAttribute> {
             UPGRADE_TIMEOUT_HEIGHT,
             a.upgrade_timeout_height
                 .map_or_else(|| Height::default(), |height| height)
-                .as_str(),
+                .to_string(),
         )
             .into();
         attributes.push(upgrade_timeout_height);
@@ -241,7 +241,8 @@ impl From<UpgradeAttributes> for Vec<abci::EventAttribute> {
             UPGRADE_TIMEOUT_TIMESTAMP,
             a.upgrade_timeout_timestamp
                 .map_or_else(|| Timestamp::default(), |timestamp: Timestamp| timestamp)
-                .as_str(),
+                .nanoseconds()
+                .to_string(),
         )
             .into();
         attributes.push(upgrade_timeout_timestamp);

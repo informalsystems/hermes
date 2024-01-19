@@ -153,11 +153,6 @@ impl Timestamp {
             _ => false,
         }
     }
-
-    /// Yields the Timestamp as a string.
-    pub fn as_str(&self) -> String {
-        format!("{}", self.nanoseconds())
-    }
 }
 
 impl Display for Timestamp {

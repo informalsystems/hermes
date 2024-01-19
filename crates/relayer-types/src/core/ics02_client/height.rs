@@ -32,11 +32,6 @@ impl Height {
         })
     }
 
-    /// Yields the Height as a string.
-    pub fn as_str(&self) -> String {
-        format!("{}-{}", self.revision_number, self.revision_height)
-    }
-
     pub fn from_tm(height: tendermint::block::Height, chain_id: &ChainId) -> Self {
         Self {
             revision_number: chain_id.version(),
