@@ -94,7 +94,7 @@ impl<'de> Deserialize<'de> for DynamicGas {
         })?;
 
         let max_gas_price = value["max_gas_price"].as_f64().ok_or_else(|| {
-            D::Error::invalid_value(Unexpected::Other("missing field"), &"gas_price_multiplier")
+            D::Error::invalid_value(Unexpected::Other("missing field"), &"max_gas_price")
         })?;
 
         DynamicGas::new(enabled, gas_price_multiplier, max_gas_price).map_err(|e| {
