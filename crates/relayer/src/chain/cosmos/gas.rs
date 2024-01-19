@@ -7,6 +7,7 @@ use tendermint_rpc::Url;
 
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::GasPrice;
+use crate::telemetry;
 
 use super::eip_base_fee::query_eip_base_fee;
 
@@ -19,6 +20,11 @@ pub async fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address:
 
     // The fee in coins based on gas amount
     let dynamic_gas_price = dynamic_gas_price(config, rpc_address).await;
+    telemetry!(
+        dynamic_gas_fees,
+        &rpc_address.to_string(),
+        dynamic_gas_price.price
+    );
     let amount = calculate_fee(adjusted_gas_limit, &dynamic_gas_price);
 
     Fee {
