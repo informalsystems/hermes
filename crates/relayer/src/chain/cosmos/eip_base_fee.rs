@@ -23,6 +23,11 @@ pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
     }
 
     #[derive(Deserialize)]
+    struct EipBaseFeeHTTPResult {
+        result: EipBaseFeeResult,
+    }
+
+    #[derive(Deserialize)]
     struct EipBaseFeeResult {
         response: EipBaseFeeResponse,
     }
@@ -32,9 +37,9 @@ pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
         value: String,
     }
 
-    let result: EipBaseFeeResult = response.json().await.map_err(Error::http_response_body)?;
+    let result: EipBaseFeeHTTPResult = response.json().await.map_err(Error::http_response_body)?;
 
-    let encoded = result.response.value;
+    let encoded = result.result.response.value;
     let decoded = base64::decode(encoded).map_err(Error::base64_decode)?;
 
     let dec_proto: DecProto = prost::Message::decode(decoded.as_ref())
