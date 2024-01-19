@@ -496,8 +496,11 @@ impl CosmosSdkChain {
     pub fn dynamic_gas_price(&self) -> GasPrice {
         let gas_config = GasConfig::from(self.config());
 
-        self.rt
-            .block_on(dynamic_gas_price(&gas_config, &self.config.rpc_addr))
+        self.rt.block_on(dynamic_gas_price(
+            &gas_config,
+            &self.config.id,
+            &self.config.rpc_addr,
+        ))
     }
 
     /// The unbonding period of this chain

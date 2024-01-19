@@ -6,11 +6,18 @@ use serde_derive::Serialize;
 
 flex_error::define_error! {
     Error {
-        TooSmall
+        MultiplierTooSmall
             { value: f64 }
             |e| {
                 format_args!("`gas_price_multiplier` in dynamic_gas configuration must be greater than or equal to {}, found {}",
                 DynamicGas::MIN_BOUND, e.value)
+            },
+
+        MaxPriceTooSmall
+            { value: f64 }
+            |e| {
+                format_args!("`max_gas_price` in dynamic_gas configuration must be greater than or equal to {}, found {}",
+                DynamicGas::CHAIN_MIN_PRICE, e.value)
             },
     }
 }
@@ -19,27 +26,36 @@ flex_error::define_error! {
 pub struct DynamicGas {
     pub enabled: bool,
     pub gas_price_multiplier: f64,
+    pub max_gas_price: f64,
 }
 
 impl DynamicGas {
     const DEFAULT: f64 = 1.1;
+    const DEFAULT_MAX_PRICE: f64 = 0.6;
     const MIN_BOUND: f64 = 1.0;
+    // Using Osmosis min https://github.com/osmosis-labs/osmosis/blob/v21.2.1/x/txfees/keeper/mempool-1559/code.go#L45
+    const CHAIN_MIN_PRICE: f64 = 0.0025;
 
-    pub fn new(enabled: bool, value: f64) -> Result<Self, Error> {
-        if value < Self::MIN_BOUND {
-            return Err(Error::too_small(value));
+    pub fn new(enabled: bool, multiplier: f64, max_price: f64) -> Result<Self, Error> {
+        if multiplier < Self::MIN_BOUND {
+            return Err(Error::multiplier_too_small(multiplier));
+        }
+        if max_price < Self::CHAIN_MIN_PRICE {
+            return Err(Error::max_price_too_small(max_price));
         }
         Ok(Self {
             enabled,
-            gas_price_multiplier: value,
+            gas_price_multiplier: multiplier,
+            max_gas_price: max_price,
         })
     }
 
     // Unsafe GasMultiplier used for test cases only.
-    pub fn unsafe_new(enabled: bool, value: f64) -> Self {
+    pub fn unsafe_new(enabled: bool, multiplier: f64, max_price: f64) -> Self {
         Self {
             enabled,
-            gas_price_multiplier: value,
+            gas_price_multiplier: multiplier,
+            max_gas_price: max_price,
         }
     }
 
@@ -57,6 +73,7 @@ impl Default for DynamicGas {
         Self {
             enabled: false,
             gas_price_multiplier: Self::DEFAULT,
+            max_gas_price: Self::DEFAULT_MAX_PRICE,
         }
     }
 }
@@ -76,11 +93,29 @@ impl<'de> Deserialize<'de> for DynamicGas {
             D::Error::invalid_value(Unexpected::Other("missing field"), &"gas_price_multiplier")
         })?;
 
-        DynamicGas::new(enabled, gas_price_multiplier).map_err(|e| match e.detail() {
-            ErrorDetail::TooSmall(_) => D::Error::invalid_value(
-                Unexpected::Float(gas_price_multiplier),
-                &format!("a floating-point value less than {}", Self::MIN_BOUND).as_str(),
-            ),
+        let max_gas_price = value["max_gas_price"].as_f64().ok_or_else(|| {
+            D::Error::invalid_value(Unexpected::Other("missing field"), &"max_gas_price")
+        })?;
+
+        DynamicGas::new(enabled, gas_price_multiplier, max_gas_price).map_err(|e| {
+            match e.detail() {
+                ErrorDetail::MultiplierTooSmall(_) => D::Error::invalid_value(
+                    Unexpected::Float(gas_price_multiplier),
+                    &format!(
+                        "a floating-point value less than {} for multiplier",
+                        Self::MIN_BOUND
+                    )
+                    .as_str(),
+                ),
+                ErrorDetail::MaxPriceTooSmall(_) => D::Error::invalid_value(
+                    Unexpected::Float(gas_price_multiplier),
+                    &format!(
+                        "a floating-point value less than {} for max gas price",
+                        Self::CHAIN_MIN_PRICE
+                    )
+                    .as_str(),
+                ),
+            }
         })
     }
 }
@@ -101,7 +136,7 @@ mod tests {
         }
 
         let err = toml::from_str::<DummyConfig>(
-            "dynamic_gas = { enabled = true, gas_price_multiplier = 0.9 }",
+            "dynamic_gas = { enabled = true, gas_price_multiplier = 0.9, max_gas_price = 0.6 }",
         )
         .unwrap_err()
         .to_string();
@@ -113,7 +148,7 @@ mod tests {
 
     #[test]
     fn safe_gas_multiplier() {
-        let dynamic_gas = DynamicGas::new(true, 0.6);
+        let dynamic_gas = DynamicGas::new(true, 0.6, 0.6);
         assert!(
             dynamic_gas.is_err(),
             "Gas multiplier should be an error if value is lower than 1.0: {dynamic_gas:?}"
@@ -122,7 +157,8 @@ mod tests {
 
     #[test]
     fn unsafe_gas_multiplier() {
-        let dynamic_gas = DynamicGas::unsafe_new(true, 0.6);
+        let dynamic_gas = DynamicGas::unsafe_new(true, 0.6, 0.4);
         assert_eq!(dynamic_gas.gas_price_multiplier, 0.6);
+        assert_eq!(dynamic_gas.max_gas_price, 0.4);
     }
 }

@@ -256,6 +256,7 @@ async fn batch_messages(
     let max_fee = gas_amount_to_fee(
         &config.gas_config,
         config.gas_config.max_gas,
+        &config.chain_id,
         &config.rpc_address,
     )
     .await;
@@ -376,6 +377,7 @@ mod tests {
         let max_fee = gas_amount_to_fee(
             &config.gas_config,
             config.gas_config.max_gas,
+            &config.chain_id,
             &config.rpc_address,
         )
         .await;
@@ -463,6 +465,7 @@ mod tests {
         let max_fee = gas_amount_to_fee(
             &config.gas_config,
             config.gas_config.max_gas,
+            &config.chain_id,
             &config.rpc_address,
         )
         .await;
@@ -593,6 +596,7 @@ mod tests {
         let max_fee = gas_amount_to_fee(
             &config.gas_config,
             config.gas_config.max_gas,
+            &config.chain_id,
             &config.rpc_address,
         )
         .await;

@@ -18,6 +18,7 @@ pub struct GasConfig {
     pub max_fee: Fee,
     pub fee_granter: String,
     pub dynamic_gas_price_multiplier: Option<f64>,
+    pub max_dynamic_gas_price: f64,
 }
 
 impl<'a> From<&'a CosmosSdkConfig> for GasConfig {
@@ -30,6 +31,7 @@ impl<'a> From<&'a CosmosSdkConfig> for GasConfig {
             max_fee: max_fee_from_config(config),
             fee_granter: fee_granter_from_config(config),
             dynamic_gas_price_multiplier: config.dynamic_gas.dynamic_gas_price(),
+            max_dynamic_gas_price: config.dynamic_gas.max_gas_price,
         }
     }
 }

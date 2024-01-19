@@ -4,13 +4,14 @@ use std::str::FromStr;
 
 use serde::Deserialize;
 use subtle_encoding::base64;
+use tendermint_rpc::Url;
 use tracing::debug;
 
 use ibc_proto::cosmos::base::v1beta1::DecProto;
 
 use crate::error::Error;
 
-pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
+pub async fn query_eip_base_fee(rpc_address: &Url) -> Result<f64, Error> {
     debug!("Querying Omosis EIP-1559 base fee from {rpc_address}");
 
     let url =
@@ -23,6 +24,11 @@ pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
     }
 
     #[derive(Deserialize)]
+    struct EipBaseFeeHTTPResult {
+        result: EipBaseFeeResult,
+    }
+
+    #[derive(Deserialize)]
     struct EipBaseFeeResult {
         response: EipBaseFeeResponse,
     }
@@ -32,9 +38,9 @@ pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
         value: String,
     }
 
-    let result: EipBaseFeeResult = response.json().await.map_err(Error::http_response_body)?;
+    let result: EipBaseFeeHTTPResult = response.json().await.map_err(Error::http_response_body)?;
 
-    let encoded = result.response.value;
+    let encoded = result.result.response.value;
     let decoded = base64::decode(encoded).map_err(Error::base64_decode)?;
 
     let dec_proto: DecProto = prost::Message::decode(decoded.as_ref())
