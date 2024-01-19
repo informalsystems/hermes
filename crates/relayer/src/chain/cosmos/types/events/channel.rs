@@ -75,10 +75,16 @@ fn extract_upgrade_attributes(
         upgrade_ordering: extract_attribute(object, &format!("{namespace}.upgrade_ordering"))?
             .parse()
             .map_err(|_| EventError::missing_action_string())?,
-        upgrade_timeout_height: maybe_extract_attribute(object, &format!("{namespace}.upgrade_timeout_height"))
-            .and_then(|v| v.parse().ok()),
-        upgrade_timeout_timestamp: maybe_extract_attribute(object, &format!("{namespace}.upgrade_timeout_timestamp"))
-            .and_then(|v| v.parse().ok()),    
+        upgrade_timeout_height: maybe_extract_attribute(
+            object,
+            &format!("{namespace}.upgrade_timeout_height"),
+        )
+        .and_then(|v| v.parse().ok()),
+        upgrade_timeout_timestamp: maybe_extract_attribute(
+            object,
+            &format!("{namespace}.upgrade_timeout_timestamp"),
+        )
+        .and_then(|v| v.parse().ok()),
     })
 }
 

@@ -4,7 +4,6 @@ use std::str::FromStr;
 use tendermint::abci::Event as AbciEvent;
 
 use ibc_relayer_types::{
-    timestamp::Timestamp,
     applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
     applications::ics31_icq::events::CrossChainQueryPacket,
     core::ics03_connection::{
@@ -31,7 +30,7 @@ use ibc_relayer_types::{
         ics24_host::identifier::ConnectionId,
     },
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
-    
+    timestamp::Timestamp,
 };
 
 pub mod bus;

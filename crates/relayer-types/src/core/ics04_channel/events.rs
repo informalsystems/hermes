@@ -228,13 +228,22 @@ impl From<UpgradeAttributes> for Vec<abci::EventAttribute> {
         let upgrade_sequence = (UPGRADE_SEQUENCE, a.upgrade_sequence.to_string().as_str()).into();
         attributes.push(upgrade_sequence);
 
-        let upgrade_timeout_height =
-            (UPGRADE_TIMEOUT_HEIGHT, a.upgrade_timeout_height.map_or_else(|| Height::default(), |height| height).as_str()).into();
+        let upgrade_timeout_height = (
+            UPGRADE_TIMEOUT_HEIGHT,
+            a.upgrade_timeout_height
+                .map_or_else(|| Height::default(), |height| height)
+                .as_str(),
+        )
+            .into();
         attributes.push(upgrade_timeout_height);
 
         let upgrade_timeout_timestamp = (
             UPGRADE_TIMEOUT_TIMESTAMP,
-            a.upgrade_timeout_timestamp.map_or_else(|| Timestamp::default(), |timestamp: Timestamp| timestamp).as_str()).into();
+            a.upgrade_timeout_timestamp
+                .map_or_else(|| Timestamp::default(), |timestamp: Timestamp| timestamp)
+                .as_str(),
+        )
+            .into();
         attributes.push(upgrade_timeout_timestamp);
 
         attributes
