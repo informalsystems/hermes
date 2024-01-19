@@ -16,7 +16,7 @@ use core::time::Duration;
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
 
 use byte_unit::Byte;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use tendermint::block::Height as BlockHeight;
 use tendermint_rpc::Url;
 use tendermint_rpc::WebSocketClientUrl;
@@ -618,9 +618,18 @@ pub enum EventSourceMode {
     },
 }
 
+// NOTE:
+// To work around a limitation of serde, which does not allow
+// to specify a default variant if not tag is present,
+// every underlying chain config MUST have a field `r#type` of
+// type `monotstate::MustBe!("VariantName")`.
+//
+// For chains other than CosmosSdk, this field MUST NOT be annotated
+// with `#[serde(default)]`.
+//
+// See https://github.com/serde-rs/serde/issues/2231
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-#[serde(tag = "type")]
+#[serde(untagged)]
 pub enum ChainConfig {
     CosmosSdk(CosmosSdkConfig),
 }
@@ -770,6 +779,7 @@ mod tests {
 
     use super::{load, parse_gas_prices, store_writer};
     use crate::config::GasPrice;
+    use monostate::MustBe;
     use test_log::test;
 
     #[test]
@@ -828,6 +838,22 @@ mod tests {
         );
 
         assert!(load(path).is_err());
+    }
+
+    #[test]
+    fn parse_default_chain_type() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_default_chain_type.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        match config.chains[0] {
+            super::ChainConfig::CosmosSdk(ref config) => {
+                assert_eq!(config.r#type, MustBe!("CosmosSdk"));
+            }
+        }
     }
 
     #[test]
