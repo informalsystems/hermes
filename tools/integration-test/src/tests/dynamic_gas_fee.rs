@@ -50,7 +50,7 @@ impl TestOverrides for DynamicGasTest {
             ChainConfig::CosmosSdk(chain_config_a) => {
                 chain_config_a.gas_price =
                     GasPrice::new(0.1, chain_config_a.gas_price.denom.clone());
-                chain_config_a.dynamic_gas = DynamicGas::unsafe_new(false, 1.1);
+                chain_config_a.dynamic_gas = DynamicGas::unsafe_new(false, 1.1, 0.6);
             }
         }
 
@@ -58,7 +58,8 @@ impl TestOverrides for DynamicGasTest {
             ChainConfig::CosmosSdk(chain_config_b) => {
                 chain_config_b.gas_price =
                     GasPrice::new(0.1, chain_config_b.gas_price.denom.clone());
-                chain_config_b.dynamic_gas = DynamicGas::unsafe_new(self.dynamic_gas_enabled, 1.1);
+                chain_config_b.dynamic_gas =
+                    DynamicGas::unsafe_new(self.dynamic_gas_enabled, 1.1, 0.6);
             }
         }
     }
