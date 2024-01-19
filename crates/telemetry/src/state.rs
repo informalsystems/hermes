@@ -209,6 +209,9 @@ pub struct TelemetryState {
 
     /// The EIP-1559 base fee successfully queried
     dynamic_gas_queried_success_fees: ObservableGauge<f64>,
+
+    /// Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits
+    filtered_packets: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -404,6 +407,11 @@ impl TelemetryState {
             dynamic_gas_queried_success_fees: meter
                 .f64_observable_gauge("dynamic_gas_queried_fees")
                 .with_description("The EIP-1559 base fee successfully queried")
+                .init(),
+
+            filtered_packets: meter
+                .u64_counter("filtered_packets")
+                .with_description("Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits")
                 .init(),
         }
     }
@@ -1175,6 +1183,34 @@ impl TelemetryState {
 
         self.dynamic_gas_queried_success_fees
             .observe(&cx, amount, labels);
+    }
+
+    /// Increment number of packets filtered because the memo field is too big
+    #[allow(clippy::too_many_arguments)]
+    pub fn filtered_packets(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        src_channel: &ChannelId,
+        dst_channel: &ChannelId,
+        src_port: &PortId,
+        dst_port: &PortId,
+        count: u64,
+    ) {
+        let cx = Context::current();
+
+        if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
+            ];
+
+            self.filtered_packets.add(&cx, count, labels);
+        }
     }
 }
 

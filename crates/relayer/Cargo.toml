@@ -71,6 +71,7 @@ strum = { version = "0.25", features = ["derive"] }
 tokio-stream = "0.1.14"
 once_cell = "1.19.0"
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
+monostate = "0.1.11"
 
 [dependencies.byte-unit]
 version = "4.0.19"

@@ -568,6 +568,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     self.max_memo_size,
                     self.max_receiver_size,
                 ) {
+                    telemetry!(
+                        filtered_packets,
+                        &self.src_chain().id(),
+                        &self.dst_chain().id(),
+                        &packet.source_channel,
+                        &packet.destination_channel,
+                        &packet.source_port,
+                        &packet.destination_port,
+                        1
+                    );
                     continue;
                 }
             }
