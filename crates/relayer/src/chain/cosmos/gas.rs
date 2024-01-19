@@ -21,11 +21,6 @@ pub async fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64, rpc_address:
 
     // The fee in coins based on gas amount
     let dynamic_gas_price = dynamic_gas_price(config, rpc_address).await;
-    telemetry!(
-        dynamic_gas_fees,
-        &rpc_address.to_string(),
-        dynamic_gas_price.price
-    );
     let amount = calculate_fee(adjusted_gas_limit, &dynamic_gas_price);
 
     Fee {
@@ -45,16 +40,33 @@ pub async fn dynamic_gas_price(config: &GasConfig, rpc_address: &Url) -> GasPric
                 price: new_price,
                 denom: config.gas_price.denom.clone(),
             }) {
-            Ok(dynamic_gas_price) => dynamic_gas_price,
+            Ok(dynamic_gas_price) => {
+                telemetry!(
+                    dynamic_gas_queried_success_fees,
+                    &rpc_address.to_string(),
+                    dynamic_gas_price.price
+                );
+                dynamic_gas_price
+            }
             Err(e) => {
                 warn!("failed to query EIP base fee, will fallback to configured `gas_price`: {e}");
                 config.gas_price.clone()
             }
         };
+        telemetry!(
+            dynamic_gas_queried_fees,
+            &rpc_address.to_string(),
+            dynamic_gas_price.price
+        );
         if dynamic_gas_price.price > config.max_dynamic_gas_price {
             warn!("queried EIP gas is higher than configured max gas price, will fallback to configured max gas price. Queried: {}, maximum: {}", dynamic_gas_price.price, config.max_dynamic_gas_price);
             return GasPrice::new(config.max_dynamic_gas_price, dynamic_gas_price.denom);
         }
+        telemetry!(
+            dynamic_gas_paid_fees,
+            &rpc_address.to_string(),
+            dynamic_gas_price.price
+        );
         dynamic_gas_price
     } else {
         config.gas_price.clone()

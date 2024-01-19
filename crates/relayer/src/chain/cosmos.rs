@@ -99,7 +99,6 @@ use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
-use crate::telemetry;
 use crate::util::compat_mode::compat_mode_from_version;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
@@ -497,16 +496,8 @@ impl CosmosSdkChain {
     pub fn dynamic_gas_price(&self) -> GasPrice {
         let gas_config = GasConfig::from(self.config());
 
-        let dynamic_gas_price = self
-            .rt
-            .block_on(dynamic_gas_price(&gas_config, &self.config.rpc_addr));
-
-        telemetry!(
-            dynamic_gas_fees,
-            &self.config().id.to_string(),
-            dynamic_gas_price.price
-        );
-        dynamic_gas_price
+        self.rt
+            .block_on(dynamic_gas_price(&gas_config, &self.config.rpc_addr))
     }
 
     /// The unbonding period of this chain
