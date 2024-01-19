@@ -4,13 +4,14 @@ use std::str::FromStr;
 
 use serde::Deserialize;
 use subtle_encoding::base64;
+use tendermint_rpc::Url;
 use tracing::debug;
 
 use ibc_proto::cosmos::base::v1beta1::DecProto;
 
 use crate::error::Error;
 
-pub async fn query_eip_base_fee(rpc_address: &str) -> Result<f64, Error> {
+pub async fn query_eip_base_fee(rpc_address: &Url) -> Result<f64, Error> {
     debug!("Querying Omosis EIP-1559 base fee from {rpc_address}");
 
     let url =

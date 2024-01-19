@@ -88,7 +88,7 @@ async fn estimate_fee_with_tx(
         ));
     }
 
-    let adjusted_fee = gas_amount_to_fee(gas_config, estimated_gas, rpc_address).await;
+    let adjusted_fee = gas_amount_to_fee(gas_config, estimated_gas, chain_id, rpc_address).await;
 
     debug!(
         id = %chain_id,

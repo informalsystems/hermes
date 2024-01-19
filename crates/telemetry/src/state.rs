@@ -1152,26 +1152,26 @@ impl TelemetryState {
         self.broadcast_errors.add(&cx, 1, labels);
     }
 
-    pub fn dynamic_gas_queried_fees(&self, chain_id: &String, amount: f64) {
+    pub fn dynamic_gas_queried_fees(&self, chain_id: &ChainId, amount: f64) {
         let cx = Context::current();
 
-        let labels = &[KeyValue::new("identifier", chain_id.to_owned())];
+        let labels = &[KeyValue::new("identifier", chain_id.to_string())];
 
         self.dynamic_gas_queried_fees.observe(&cx, amount, labels);
     }
 
-    pub fn dynamic_gas_paid_fees(&self, chain_id: &String, amount: f64) {
+    pub fn dynamic_gas_paid_fees(&self, chain_id: &ChainId, amount: f64) {
         let cx = Context::current();
 
-        let labels = &[KeyValue::new("identifier", chain_id.to_owned())];
+        let labels = &[KeyValue::new("identifier", chain_id.to_string())];
 
         self.dynamic_gas_paid_fees.observe(&cx, amount, labels);
     }
 
-    pub fn dynamic_gas_queried_success_fees(&self, chain_id: &String, amount: f64) {
+    pub fn dynamic_gas_queried_success_fees(&self, chain_id: &ChainId, amount: f64) {
         let cx = Context::current();
 
-        let labels = &[KeyValue::new("identifier", chain_id.to_owned())];
+        let labels = &[KeyValue::new("identifier", chain_id.to_string())];
 
         self.dynamic_gas_queried_success_fees
             .observe(&cx, amount, labels);
