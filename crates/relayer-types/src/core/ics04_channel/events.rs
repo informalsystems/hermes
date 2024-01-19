@@ -5,11 +5,11 @@ use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str;
 use tendermint::abci;
 
+use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::channel::Ordering;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics04_channel::timeout::Timeout;
 use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::{Error as EventError, IbcEvent, IbcEventType};
@@ -22,6 +22,9 @@ pub const CHANNEL_ID_ATTRIBUTE_KEY: &str = "channel_id";
 pub const PORT_ID_ATTRIBUTE_KEY: &str = "port_id";
 pub const COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY: &str = "counterparty_channel_id";
 pub const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
+pub const VERSION: &str = "version";
+pub const CONNECTION_HOPS: &str = "connection_hops";
+pub const ORDERING: &str = "ordering";
 
 /// Packet event attribute keys
 pub const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
@@ -35,10 +38,9 @@ pub const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp"
 pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
 /// Channel upgrade attribute keys
-pub const UPGRADE_CONNECTION_HOPS: &str = "upgrade_connection_hops";
-pub const UPGRADE_VERSION: &str = "upgrade_version";
 pub const UPGRADE_SEQUENCE: &str = "upgrade_sequence";
-pub const UPGRADE_ORDERING: &str = "upgrade_ordering";
+pub const UPGRADE_TIMEOUT_HEIGHT: &str = "timeout_height";
+pub const UPGRADE_TIMEOUT_TIMESTAMP: &str = "timeout_timestamp";
 pub const CHANNEL_FLUSH_STATUS: &str = "channel_flush_status";
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
@@ -147,7 +149,8 @@ pub struct UpgradeAttributes {
     pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
     pub upgrade_ordering: Ordering,
-    pub upgrade_timeout: Option<Timeout>,
+    pub upgrade_timeout_height: Option<Height>,
+    pub upgrade_timeout_timestamp: Option<Timestamp>,
 }
 
 impl UpgradeAttributes {
@@ -213,17 +216,26 @@ impl From<UpgradeAttributes> for Vec<abci::EventAttribute> {
             }
         }
 
-        let upgrade_connection_hops = (UPGRADE_CONNECTION_HOPS, hops.as_str()).into();
+        let upgrade_version = (VERSION, a.upgrade_version.0.as_str()).into();
+        attributes.push(upgrade_version);
+
+        let upgrade_connection_hops = (CONNECTION_HOPS, hops.as_str()).into();
         attributes.push(upgrade_connection_hops);
 
-        let upgrade_version = (UPGRADE_VERSION, a.upgrade_version.0.as_str()).into();
-        attributes.push(upgrade_version);
+        let upgrade_ordering = (ORDERING, a.upgrade_ordering.as_str()).into();
+        attributes.push(upgrade_ordering);
 
         let upgrade_sequence = (UPGRADE_SEQUENCE, a.upgrade_sequence.to_string().as_str()).into();
         attributes.push(upgrade_sequence);
 
-        let upgrade_ordering = (UPGRADE_ORDERING, a.upgrade_ordering.as_str()).into();
-        attributes.push(upgrade_ordering);
+        let upgrade_timeout_height =
+            (UPGRADE_TIMEOUT_HEIGHT, a.upgrade_timeout_height.map_or_else(|| Height::default(), |height| height).as_str()).into();
+        attributes.push(upgrade_timeout_height);
+
+        let upgrade_timeout_timestamp = (
+            UPGRADE_TIMEOUT_TIMESTAMP,
+            a.upgrade_timeout_timestamp.map_or_else(|| Timestamp::default(), |timestamp: Timestamp| timestamp).as_str()).into();
+        attributes.push(upgrade_timeout_timestamp);
 
         attributes
     }
@@ -612,7 +624,8 @@ impl From<UpgradeInit> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -715,7 +728,8 @@ impl From<UpgradeTry> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -818,7 +832,8 @@ impl From<UpgradeAck> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -921,7 +936,8 @@ impl From<UpgradeConfirm> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -1024,7 +1040,8 @@ impl From<UpgradeOpen> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -1127,7 +1144,8 @@ impl From<UpgradeCancel> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -1199,7 +1217,8 @@ pub struct UpgradeTimeout {
     pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
     pub upgrade_ordering: Ordering,
-    pub upgrade_timeout: Timeout,
+    pub upgrade_timeout_height: Height,
+    pub upgrade_timeout_timestamp: Timestamp,
 }
 
 impl Display for UpgradeTimeout {
@@ -1214,8 +1233,8 @@ impl Display for UpgradeTimeout {
         }
         write!(
             f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {}, upgrade_timeout: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering, self.upgrade_timeout,
+            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {}, upgrade_timeout_height: {}, upgrade_timeout_timestamp: {} }}",
+            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering, self.upgrade_timeout_height, self.upgrade_timeout_timestamp
         )
     }
 }
@@ -1231,7 +1250,8 @@ impl From<UpgradeTimeout> for UpgradeAttributes {
             upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: Some(ev.upgrade_timeout),
+            upgrade_timeout_height: Some(ev.upgrade_timeout_height),
+            upgrade_timeout_timestamp: Some(ev.upgrade_timeout_timestamp),
         }
     }
 }
@@ -1277,10 +1297,12 @@ impl TryFrom<UpgradeAttributes> for UpgradeTimeout {
             upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
             upgrade_ordering: attrs.upgrade_ordering,
-            upgrade_timeout: attrs.upgrade_timeout.map_or_else(
-                || Timeout::Timestamp(Timestamp::default()),
-                |timeout| timeout,
-            ),
+            upgrade_timeout_height: attrs
+                .upgrade_timeout_height
+                .map_or_else(|| Height::default(), |height| height),
+            upgrade_timeout_timestamp: attrs
+                .upgrade_timeout_timestamp
+                .map_or_else(|| Timestamp::default(), |timestamp| timestamp),
         })
     }
 }

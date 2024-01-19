@@ -11,7 +11,7 @@ use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics24_host::identifier::ChainId;
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
     /// Previously known as "epoch"
     revision_number: u64,
@@ -30,6 +30,11 @@ impl Height {
             revision_number,
             revision_height,
         })
+    }
+
+    /// Yields the Height as a string.
+    pub fn as_str(&self) -> String {
+        format!("{}-{}", self.revision_number, self.revision_height)
     }
 
     pub fn from_tm(height: tendermint::block::Height, chain_id: &ChainId) -> Self {

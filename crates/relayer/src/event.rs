@@ -4,6 +4,7 @@ use std::str::FromStr;
 use tendermint::abci::Event as AbciEvent;
 
 use ibc_relayer_types::{
+    timestamp::Timestamp,
     applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
     applications::ics31_icq::events::CrossChainQueryPacket,
     core::ics03_connection::{
@@ -24,13 +25,13 @@ use ibc_relayer_types::{
             error::Error as ClientError,
             events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
             header::{decode_header, AnyHeader},
-            height::HeightErrorDetail,
+            height::{Height, HeightErrorDetail},
         },
         ics04_channel::{channel::Ordering, packet::Sequence, version::Version},
         ics24_host::identifier::ConnectionId,
     },
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
-    Height,
+    
 };
 
 pub mod bus;
@@ -520,7 +521,10 @@ fn channel_upgrade_extract_attributes_from_tx(
             channel_events::COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_channel_id = value.parse().ok();
             }
-            channel_events::UPGRADE_CONNECTION_HOPS => {
+            channel_events::VERSION => {
+                attr.upgrade_version = Version(value.to_string());
+            }
+            channel_events::CONNECTION_HOPS => {
                 let mut hops = vec![];
                 for hop_str in value.trim().split(',') {
                     let hop = ConnectionId::from_str(hop_str).map_err(ChannelError::identifier)?;
@@ -528,8 +532,8 @@ fn channel_upgrade_extract_attributes_from_tx(
                 }
                 attr.upgrade_connection_hops = hops;
             }
-            channel_events::UPGRADE_VERSION => {
-                attr.upgrade_version = Version(value.to_string());
+            channel_events::ORDERING => {
+                attr.upgrade_ordering = Ordering::from_str(value)?;
             }
             channel_events::UPGRADE_SEQUENCE => {
                 attr.upgrade_sequence =
@@ -537,8 +541,11 @@ fn channel_upgrade_extract_attributes_from_tx(
                         ChannelError::invalid_string_as_sequence(value.to_string(), e)
                     })?);
             }
-            channel_events::UPGRADE_ORDERING => {
-                attr.upgrade_ordering = Ordering::from_str(value)?;
+            channel_events::UPGRADE_TIMEOUT_HEIGHT => {
+                attr.upgrade_timeout_height = Height::from_str(value).ok();
+            }
+            channel_events::UPGRADE_TIMEOUT_TIMESTAMP => {
+                attr.upgrade_timeout_timestamp = Timestamp::from_str(value).ok();
             }
             _ => {}
         }
