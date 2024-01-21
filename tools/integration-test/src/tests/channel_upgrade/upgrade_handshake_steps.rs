@@ -17,7 +17,7 @@
 //!
 //! - `ChannelUpgradeHandshakeTimeoutWhenFlushing` tests that the channel worker will timeout the
 //!   upgrade handshake if the counterparty does not finish flushing the packets before the upgrade timeout.
-//! 
+//!
 //! - `ChannelUpgradeHandshakeFlushPackets` tests that the channel worker will complete the
 //!   upgrade handshake when packets need to be flushed during the handshake.
 
@@ -1058,7 +1058,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFlushPackets {
             old_connection_hops_b,
             Sequence::from(1),
         );
-        
+
         info!("Will initialise upgrade handshake with governance proposal...");
 
         chains.node_a.chain_driver().initialise_channel_upgrade(
