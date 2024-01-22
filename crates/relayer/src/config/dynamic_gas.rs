@@ -64,19 +64,18 @@ impl<'de> Deserialize<'de> for DynamicGas {
     where
         D: Deserializer<'de>,
     {
-        let value: serde_json::Value = Deserialize::deserialize(deserializer)?;
+        #[derive(Deserialize)]
+        struct DynGas {
+            enabled: bool,
+            gas_price_multiplier: f64,
+            max_gas_price: f64,
+        }
 
-        let enabled = value["enabled"].as_bool().ok_or_else(|| {
-            D::Error::invalid_value(Unexpected::Other("missing field"), &"enabled")
-        })?;
-
-        let gas_price_multiplier = value["gas_price_multiplier"].as_f64().ok_or_else(|| {
-            D::Error::invalid_value(Unexpected::Other("missing field"), &"gas_price_multiplier")
-        })?;
-
-        let max_gas_price = value["max_gas_price"].as_f64().ok_or_else(|| {
-            D::Error::invalid_value(Unexpected::Other("missing field"), &"max_gas_price")
-        })?;
+        let DynGas {
+            enabled,
+            gas_price_multiplier,
+            max_gas_price,
+        } = DynGas::deserialize(deserializer)?;
 
         DynamicGas::new(enabled, gas_price_multiplier, max_gas_price).map_err(|e| {
             match e.detail() {
