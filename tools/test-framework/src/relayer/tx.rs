@@ -7,6 +7,7 @@ use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
+use ibc_relayer::config::dynamic_gas::DynamicGas;
 use ibc_relayer::config::{AddressType, GasPrice};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_rpc::Url;
@@ -43,8 +44,11 @@ pub fn gas_config_for_test(native_token: String) -> GasConfig {
         gas_price,
         max_fee,
         fee_granter,
-        dynamic_gas_price_multiplier: None,
-        max_dynamic_gas_price: 0.6,
+        dynamic_gas: DynamicGas {
+            enabled: false,
+            gas_price_multiplier: 1.0,
+            max_gas_price: 0.6,
+        },
     }
 }
 
