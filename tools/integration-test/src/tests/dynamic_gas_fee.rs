@@ -3,7 +3,7 @@
 //! gas price for the second chain.
 //!
 //! To test dynamic gas configuration, it will enable dynamic gas price on the
-//! second chain only. It will then create and relay first IBC transfer with a
+//! second chain only. It will then create and relay a first IBC transfer with a
 //! big memo. The gas fee paid is then recorded.
 //! A second IBC transfer without memo will then be relayed. The gas fee paid
 //! will also be recorded. The test will assert that the Tx with a big memo
