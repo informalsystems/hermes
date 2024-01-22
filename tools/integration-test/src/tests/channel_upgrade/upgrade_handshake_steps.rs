@@ -86,6 +86,8 @@ impl TestOverrides for ChannelUpgradeTestOverrides {
 
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
+
+        config.mode.clients.misbehaviour = false;
     }
 
     fn should_spawn_supervisor(&self) -> bool {
