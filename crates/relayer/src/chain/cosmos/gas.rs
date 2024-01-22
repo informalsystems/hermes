@@ -75,7 +75,7 @@ pub async fn dynamic_gas_price(
         if dynamic_gas_price.price > config.dynamic_gas.max_gas_price {
             warn!(
                 "queried EIP gas price is higher than configured max gas price, \
-                will fallback to configured `max_dynamic_gas_price`. Queried: {}, maximum: {}",
+                will fallback to configured `max_gas_price`. Queried: {}, maximum: {}",
                 dynamic_gas_price.price, config.dynamic_gas.max_gas_price
             );
 

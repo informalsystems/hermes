@@ -1,7 +1,7 @@
 - Add a new per-chain configuration table `dynamic_gas` which enables
   querying the current gas price from the chain instead of the static `gas_price`, 
   when the chain has [EIP-1559][eip]-like dynamic gas price. 
-  New new configuration setting can be configured per-chain as follows:
+  The new configuration setting can be configured per-chain as follows:
   ```toml
   dynamic_gas = { enabled = true, gas_price_multiplier = 1.1, max_gas_price = 0.6 }
   ```

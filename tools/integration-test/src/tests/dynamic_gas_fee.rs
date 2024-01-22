@@ -10,9 +10,9 @@
 //! and dynamic gas enabled is lower than the Tx without memo and dynamic gas
 //! disabled.
 //!
-//! The [`DynamicGasTest`] test can be configured to disable the dynamic gas
-//! price on both chains in order to ensure that the first IBC transfer will
-//! cost more if dynamic gas is disabled.
+//! The second test disables the dynamic gas price on both chains in
+//! order to ensure that the first IBC transfer will cost more if dynamic
+//! gas is disabled.
 
 use ibc_relayer::config::dynamic_gas::DynamicGas;
 use ibc_relayer::config::ChainConfig;
