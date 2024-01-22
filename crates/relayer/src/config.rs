@@ -618,18 +618,16 @@ pub enum EventSourceMode {
     },
 }
 
-// NOTE:
-// To work around a limitation of serde, which does not allow
+// NOTE: To work around a limitation of serde, which does not allow
 // to specify a default variant if not tag is present,
-// every underlying chain config MUST have a field `r#type` of
-// type `monotstate::MustBe!("VariantName")`.
+// every underlying chain config struct  MUST have a field `r#type` with
+// type `monotstate::MustBe!("VariantName")`, eg. the `CosmosSdkConfig`
+// struct has a field `r#type: MustBe!("CosmosSdk")`.
 //
-// For chains other than CosmosSdk, this field MUST NOT be annotated
-// with `#[serde(default)]`.
-//
-// See https://github.com/serde-rs/serde/issues/2231
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-#[serde(untagged)]
+// IMPORTANT: Do not forget to update the `Deserializer` impl
+// below when adding a new chain type.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(tag = "type")]
 pub enum ChainConfig {
     CosmosSdk(CosmosSdkConfig),
 }
@@ -700,6 +698,38 @@ impl ChainConfig {
     pub fn set_query_packets_chunk_size(&mut self, query_packets_chunk_size: usize) {
         match self {
             Self::CosmosSdk(config) => config.query_packets_chunk_size = query_packets_chunk_size,
+        }
+    }
+}
+
+// /!\ Update me when adding a new chain type!
+impl<'de> Deserialize<'de> for ChainConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = toml::Value::deserialize(deserializer)?;
+
+        let type_value = value
+            .get("type")
+            .cloned()
+            .unwrap_or_else(|| toml::Value::String("CosmosSdk".to_string()));
+
+        let type_str = type_value
+            .as_str()
+            .ok_or_else(|| serde::de::Error::custom("invalid chain type, must be a string"))?;
+
+        match type_str {
+            "CosmosSdk" => CosmosSdkConfig::deserialize(value)
+                .map(Self::CosmosSdk)
+                .map_err(|e| serde::de::Error::custom(format!("invalid CosmosSdk config: {e}"))),
+
+            //
+            // <-- Add new chain types here -->
+            //
+            chain_type => Err(serde::de::Error::custom(format!(
+                "unknown chain type: {chain_type}",
+            ))),
         }
     }
 }
