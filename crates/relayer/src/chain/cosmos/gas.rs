@@ -42,10 +42,10 @@ pub async fn dynamic_gas_price(
     chain_id: &ChainId,
     rpc_address: &Url,
 ) -> GasPrice {
-    if let Some(dynamic_gas_price_multiplier) = config.dynamic_gas_price_multiplier {
+    if config.dynamic_gas.enabled {
         let dynamic_gas_price = query_eip_base_fee(rpc_address)
             .await
-            .map(|base_fee| base_fee * dynamic_gas_price_multiplier)
+            .map(|base_fee| base_fee * config.dynamic_gas.gas_price_multiplier)
             .map(|new_price| GasPrice {
                 price: new_price,
                 denom: config.gas_price.denom.clone(),
@@ -69,14 +69,14 @@ pub async fn dynamic_gas_price(
 
         telemetry!(dynamic_gas_queried_fees, chain_id, dynamic_gas_price.price);
 
-        if dynamic_gas_price.price > config.max_dynamic_gas_price {
+        if dynamic_gas_price.price > config.dynamic_gas.max_gas_price {
             warn!(
                 "queried EIP gas price is higher than configured max gas price, \
                 will fallback to configured `max_dynamic_gas_price`. Queried: {}, maximum: {}",
-                dynamic_gas_price.price, config.max_dynamic_gas_price
+                dynamic_gas_price.price, config.dynamic_gas.max_gas_price
             );
 
-            return GasPrice::new(config.max_dynamic_gas_price, dynamic_gas_price.denom);
+            return GasPrice::new(config.dynamic_gas.max_gas_price, dynamic_gas_price.denom);
         }
 
         telemetry!(dynamic_gas_paid_fees, chain_id, dynamic_gas_price.price);

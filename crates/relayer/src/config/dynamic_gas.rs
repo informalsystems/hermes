@@ -47,14 +47,6 @@ impl DynamicGas {
             max_gas_price: max_price,
         }
     }
-
-    pub fn dynamic_gas_price(self) -> Option<f64> {
-        if self.enabled {
-            Some(self.gas_price_multiplier)
-        } else {
-            None
-        }
-    }
 }
 
 impl Default for DynamicGas {
