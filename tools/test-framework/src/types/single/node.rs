@@ -155,7 +155,6 @@ impl FullNode {
         };
 
         Ok(config::ChainConfig::CosmosSdk(CosmosSdkConfig {
-            r#type: Default::default(),
             id: self.chain_driver.chain_id.clone(),
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,

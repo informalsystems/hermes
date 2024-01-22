@@ -2,7 +2,6 @@ use core::time::Duration;
 use std::path::PathBuf;
 
 use byte_unit::Byte;
-use monostate::MustBe;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_rpc::Url;
 
@@ -24,11 +23,6 @@ pub mod error;
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct CosmosSdkConfig {
-    /// The type of this chain, must be "CosmosSdk"
-    /// This is the default if not specified.
-    #[serde(default)]
-    pub r#type: MustBe!("CosmosSdk"),
-
     /// The chain's network identifier
     pub id: ChainId,
 

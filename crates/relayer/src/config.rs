@@ -619,10 +619,8 @@ pub enum EventSourceMode {
 }
 
 // NOTE: To work around a limitation of serde, which does not allow
-// to specify a default variant if not tag is present,
-// every underlying chain config struct  MUST have a field `r#type` with
-// type `monotstate::MustBe!("VariantName")`, eg. the `CosmosSdkConfig`
-// struct has a field `r#type: MustBe!("CosmosSdk")`.
+// to specify a default variant if not tag is present, we use
+// a custom Deserializer impl.
 //
 // IMPORTANT: Do not forget to update the `Deserializer` impl
 // below when adding a new chain type.
@@ -708,11 +706,14 @@ impl<'de> Deserialize<'de> for ChainConfig {
     where
         D: serde::Deserializer<'de>,
     {
-        let value = toml::Value::deserialize(deserializer)?;
+        let mut value = toml::Value::deserialize(deserializer)?;
 
+        // Remove the `type` key from the TOML value in order for deserialization to work,
+        // otherwise it would fail with: `unknown field `type`.
         let type_value = value
-            .get("type")
-            .cloned()
+            .as_table_mut()
+            .ok_or_else(|| serde::de::Error::custom("invalid chain config, must be a table"))?
+            .remove("type")
             .unwrap_or_else(|| toml::Value::String("CosmosSdk".to_string()));
 
         let type_str = type_value
@@ -809,7 +810,6 @@ mod tests {
 
     use super::{load, parse_gas_prices, store_writer};
     use crate::config::GasPrice;
-    use monostate::MustBe;
     use test_log::test;
 
     #[test]
@@ -880,8 +880,8 @@ mod tests {
         let config = load(path).expect("could not parse config");
 
         match config.chains[0] {
-            super::ChainConfig::CosmosSdk(ref config) => {
-                assert_eq!(config.r#type, MustBe!("CosmosSdk"));
+            super::ChainConfig::CosmosSdk(_) => {
+                // all good
             }
         }
     }
