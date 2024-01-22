@@ -26,7 +26,7 @@
 //!   new upgrade before the counterparty moved to `OPEN`.
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
-use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
+use ibc_relayer_types::core::ics04_channel::channel::{State as ChannelState, UpgradeState};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::events::IbcEventType;
@@ -1331,6 +1331,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
+            ChannelState::Flushcomplete,
+            ChannelState::Flushing,
             &pre_upgrade_1_attrs,
         )?;
 
@@ -1351,9 +1353,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
         // ChannelEnd B is now `OPEN` (because both ends did not have in-flight packets)
         // Initialise a new upgrade handshake on chain B before ChannelEnd A moves to `OPEN`
 
-        let pre_upgrade_2_version = Version::ics20_with_fee();
         let pre_upgrade_2_ordering = channel_end_a.ordering;
-        let pre_upgrade_2_connection_hops_a = channel_end_a.connection_hops.clone();
         let pre_upgrade_2_connection_hops_b = channel_end_b.connection_hops.clone();
 
         let post_upgrade_2_version = Version::ics20();
