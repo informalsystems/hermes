@@ -46,7 +46,7 @@ fn extract_upgrade_attributes(
     namespace: &str,
 ) -> Result<UpgradeAttributes, EventError> {
     let connection_hops: ConnectionId =
-        extract_attribute(object, &format!("{namespace}.upgrade_connection_hops"))?
+        extract_attribute(object, &format!("{namespace}.connection_hops"))?
             .parse()
             .map_err(EventError::parse)?;
     Ok(UpgradeAttributes {
@@ -68,13 +68,15 @@ fn extract_upgrade_attributes(
         )
         .and_then(|v| v.parse().ok()),
         upgrade_connection_hops: vec![connection_hops],
-        upgrade_version: extract_attribute(object, &format!("{namespace}.upgrade_version"))?.into(),
+        upgrade_version: extract_attribute(object, &format!("{namespace}.version"))?.into(),
         upgrade_sequence: extract_attribute(object, &format!("{namespace}.upgrade_sequence"))?
             .parse()
             .map_err(|_| EventError::missing_action_string())?,
-        upgrade_ordering: extract_attribute(object, &format!("{namespace}.upgrade_ordering"))?
+        upgrade_ordering: extract_attribute(object, &format!("{namespace}.ordering"))?
             .parse()
             .map_err(|_| EventError::missing_action_string())?,
+        upgrade_timeout: maybe_extract_attribute(object, &format!("{namespace}.timeout"))
+            .and_then(|v| v.parse().ok()),
     })
 }
 

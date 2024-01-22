@@ -281,6 +281,12 @@ impl ChannelEnd {
             None => false,
         }
     }
+
+    pub fn is_flushing(&self) -> bool {
+        use State::*;
+
+        matches!(self.state, Flushing)
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

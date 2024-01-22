@@ -249,10 +249,12 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             .channel_end
             .is_upgrading(&channel_scan.counterparty);
 
+        let is_flushing = channel_scan.channel.channel_end.is_flushing();
+
         if (mode.clients.enabled || mode.packets.enabled)
             && chan_state_src.is_open()
             && (chan_state_dst.is_open() || chan_state_dst.is_closed())
-            && !is_channel_upgrading
+            && !is_flushing
         {
             if mode.clients.enabled {
                 // Spawn the client worker
@@ -309,7 +311,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             }
 
             Ok(mode.clients.enabled)
-        } else if mode.channels.enabled {
+        } else if mode.channels.enabled && !is_flushing {
             let has_packets = || {
                 !channel_scan
                     .unreceived_packets_on_counterparty(&counterparty_chain, &chain)
@@ -345,6 +347,35 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             } else {
                 Ok(false)
             }
+        } else if is_flushing {
+            let path_object = Object::Packet(Packet {
+                dst_chain_id: counterparty_chain.id(),
+                src_chain_id: chain.id(),
+                src_channel_id: channel_scan.channel.channel_id.clone(),
+                src_port_id: channel_scan.channel.port_id.clone(),
+            });
+
+            self.workers
+                .spawn(
+                    chain.clone(),
+                    counterparty_chain.clone(),
+                    &path_object,
+                    self.config,
+                )
+                .then(|| info!("spawned packet worker: {}", path_object.short_name()));
+
+            let channel_object = Object::Channel(Channel {
+                dst_chain_id: counterparty_chain.id(),
+                src_chain_id: chain.id(),
+                src_channel_id: channel_scan.channel.channel_id,
+                src_port_id: channel_scan.channel.port_id,
+            });
+
+            self.workers
+                .spawn(chain, counterparty_chain, &channel_object, self.config)
+                .then(|| info!("spawned channel worker: {}", channel_object.short_name()));
+
+            Ok(true)
         } else {
             Ok(false)
         }

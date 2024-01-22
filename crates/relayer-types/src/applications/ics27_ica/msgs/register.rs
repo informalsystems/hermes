@@ -4,8 +4,8 @@ use ibc_proto::ibc::applications::interchain_accounts::controller::v1::MsgRegist
 use ibc_proto::Protobuf;
 
 use crate::applications::ics27_ica::error::Error;
-use crate::core::ics04_channel::version::Version;
 use crate::core::ics04_channel::channel::Ordering;
+use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ConnectionId;
 use crate::signer::Signer;
