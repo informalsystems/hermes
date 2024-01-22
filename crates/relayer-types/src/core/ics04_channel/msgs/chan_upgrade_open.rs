@@ -3,6 +3,7 @@ use ibc_proto::Protobuf;
 
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::error::Error;
+use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
@@ -18,6 +19,7 @@ pub struct MsgChannelUpgradeOpen {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub counterparty_channel_state: State,
+    pub counterparty_upgrade_sequence: Sequence,
     /// The proof of the counterparty channel
     pub proof_channel: CommitmentProofBytes,
     /// The height at which the proofs were queried.
@@ -31,6 +33,7 @@ impl MsgChannelUpgradeOpen {
         port_id: PortId,
         channel_id: ChannelId,
         counterparty_channel_state: State,
+        counterparty_upgrade_sequence: Sequence,
         proof_channel: CommitmentProofBytes,
         proof_height: Height,
         signer: Signer,
@@ -39,6 +42,7 @@ impl MsgChannelUpgradeOpen {
             port_id,
             channel_id,
             counterparty_channel_state,
+            counterparty_upgrade_sequence,
             proof_channel,
             proof_height,
             signer,
@@ -75,6 +79,7 @@ impl TryFrom<RawMsgChannelUpgradeOpen> for MsgChannelUpgradeOpen {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             counterparty_channel_state: State::from_i32(raw_msg.counterparty_channel_state)?,
+            counterparty_upgrade_sequence: raw_msg.counterparty_upgrade_sequence.into(),
             proof_channel: raw_msg
                 .proof_channel
                 .try_into()
@@ -91,6 +96,7 @@ impl From<MsgChannelUpgradeOpen> for RawMsgChannelUpgradeOpen {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
             counterparty_channel_state: domain_msg.counterparty_channel_state.as_i32(),
+            counterparty_upgrade_sequence: domain_msg.counterparty_upgrade_sequence.into(),
             proof_channel: domain_msg.proof_channel.into(),
             proof_height: Some(domain_msg.proof_height.into()),
             signer: domain_msg.signer.to_string(),
@@ -112,6 +118,7 @@ pub mod test_util {
             port_id: PortId::default().to_string(),
             channel_id: ChannelId::default().to_string(),
             counterparty_channel_state: 6, // Flushcomplete
+            counterparty_upgrade_sequence: 1,
             proof_channel: get_dummy_proof(),
             proof_height: Some(RawHeight {
                 revision_number: 1,

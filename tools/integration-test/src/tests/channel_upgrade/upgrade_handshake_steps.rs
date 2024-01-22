@@ -15,9 +15,9 @@
 //! - `ChannelUpgradeHandshakeTimeoutOnAck` tests that the channel worker will finish the
 //!   cancel the upgrade handshake if the Ack step fails due to an upgrade timeout.
 //! 
-//! - `ChannelUpgradeHandshakeInitiateNewUpgrade` tests that the channel workder will
-//!   finish the upgrade handshake if the counparty that moved to `OPEN` initiates a
-//!   new upgrade.
+//! - `ChannelUpgradeHandshakeInitiateNewUpgrade` tests that the channel worker will
+//!   finish the upgrade handshake if the side that moved to `OPEN` initiates a
+//!   new upgrade before the counterparty moved to `OPEN`.
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -863,15 +863,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
             pre_upgrade_1_connection_hops_b.clone(),
             Sequence::from(1),
         );
-
-        // let post_upgrade_1_attrs = ChannelUpgradableAttributes::new(
-        //     post_upgrade_1_version.clone(),
-        //     post_upgrade_1_version.clone(),
-        //     pre_upgrade_1_ordering,
-        //     pre_upgrade_1_connection_hops_a.clone(),
-        //     pre_upgrade_1_connection_hops_b,
-        //     Sequence::from(1),
-        // );
         
         info!("Will initialise on chain A upgrade handshake with governance proposal...");
 
@@ -892,8 +883,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            ChannelState::Open(UpgradeState::NotUpgrading),
-            ChannelState::Open(UpgradeState::NotUpgrading),
             &pre_upgrade_1_attrs,
         )?;
 
@@ -939,8 +928,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
             &interm_upgrade_1_attrs.flipped(),
         )?;
 
-
-        // ChannelEnd B is now `OPEN`
+        // ChannelEnd B is now `OPEN` (because both ends did not have in-flight packets)
         // Initialise a new upgrade handshake on chain B before ChannelEnd A moves to `OPEN`
 
         let pre_upgrade_2_version = Version::ics20_with_fee();
@@ -949,15 +937,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
         let pre_upgrade_2_connection_hops_b = channel_end_b.connection_hops.clone();
 
         let post_upgrade_2_version = Version::ics20();
-
-        // let pre_upgrade_2_attrs = ChannelUpgradableAttributes::new(
-        //     pre_upgrade_2_version.clone(),
-        //     pre_upgrade_2_version.clone(),
-        //     pre_upgrade_2_ordering,
-        //     pre_upgrade_2_connection_hops_a.clone(),
-        //     pre_upgrade_2_connection_hops_a.clone(),
-        //     Sequence::from(2),
-        // );
 
         info!("Will initialise on chain B upgrade handshake with governance proposal...");
 
@@ -986,6 +965,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
             .map(|(channel_end, _)| channel_end)
             .map_err(|e| eyre!("Error querying ChannelEnd B: {e}"))?;
 
+        // upgrade sequence should have been incremented
         let upgrade_sequence_b = Sequence::from(2);
         if !channel_end_b.upgrade_sequence.eq(&upgrade_sequence_b)
         {
@@ -996,23 +976,13 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
             )));
         }
 
-        // assert_eventually_channel_upgrade_init(
-        //     &chains.handle_b,
-        //     &chains.handle_a,
-        //     &channels.channel_id_b.as_ref(),
-        //     &channels.port_b.as_ref(),
-        //     ChannelState::Flushcomplete,
-        //     ChannelState::Open(UpgradeState::NotUpgrading),
-        //     &pre_upgrade_2_attrs,
-        // )?;
-
         // Finish upgrade 1 on ChannelEnd A
 
         info!("Will run ChanUpgradeOpen step...");
 
         channel.flipped().build_chan_upgrade_open_and_send()?;
 
-        info!("Check that the ChanUpgradeOpen steps were correctly executed...");
+        info!("Check that the step ChanUpgradeOpen was correctly executed...");
 
         channel_end_a = chains
             .handle_a

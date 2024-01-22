@@ -5,6 +5,7 @@ use ibc_proto::Protobuf;
 
 use crate::applications::ics27_ica::error::Error;
 use crate::core::ics04_channel::version::Version;
+use crate::core::ics04_channel::channel::Ordering;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ConnectionId;
 use crate::signer::Signer;
@@ -18,6 +19,7 @@ pub struct MsgRegisterInterchainAccount {
     pub owner: Signer,
     pub connection_id: ConnectionId,
     pub version: Version,
+    pub order: Ordering,
 }
 
 impl Msg for MsgRegisterInterchainAccount {
@@ -46,6 +48,7 @@ impl TryFrom<RawMsgRegisterInterchainAccount> for MsgRegisterInterchainAccount {
                 .parse()
                 .map_err(Error::invalid_connection_identifier)?,
             version: value.version.into(),
+            order: Ordering::from_i32(value.order).unwrap_or_else(|_| Ordering::Ordered),
         })
     }
 }
@@ -56,6 +59,7 @@ impl From<MsgRegisterInterchainAccount> for RawMsgRegisterInterchainAccount {
             owner: value.owner.to_string(),
             connection_id: value.connection_id.to_string(),
             version: value.version.to_string(),
+            order: value.order as i32,
         }
     }
 }

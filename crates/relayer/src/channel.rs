@@ -2063,7 +2063,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-        // let counterparty_upgrade_sequence = src_channel_end.upgrade_sequence;
+        let counterparty_upgrade_sequence = src_channel_end.upgrade_sequence;
 
         // Building the channel proof at the queried height
         let proofs = self
@@ -2088,6 +2088,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             port_id: dst_port_id.clone(),
             channel_id: dst_channel_id.clone(),
             counterparty_channel_state: src_channel_end.state,
+            counterparty_upgrade_sequence: counterparty_upgrade_sequence,
             proof_channel: proofs.object_proof().clone(),
             proof_height: proofs.height(),
             signer,
