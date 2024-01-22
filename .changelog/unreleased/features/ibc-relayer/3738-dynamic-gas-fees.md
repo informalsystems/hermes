@@ -3,10 +3,7 @@
   when the chain has [EIP-1559][eip]-like dynamic gas price. 
   New new configuration setting can be configured per-chain as follows:
   ```toml
-  [dynamic_gas]
-  enabled = true
-  gas_price_multiplier = 1.1
-  max_gas_price = 0.6
+  dynamic_gas = { enabled = true, gas_price_multiplier = 1.1, max_gas_price = 0.6 }
   ```
   At the moment, only chains which support the `osmosis.txfees.v1beta1.Query/GetEipBaseFee`
   query can be used with dynamic gas price enabled.
