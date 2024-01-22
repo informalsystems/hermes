@@ -41,7 +41,7 @@ where
         Err(e) => panic!("got an error: {e}"),
     });
 
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
 
     let response = reqwest::get(&format!("http://127.0.0.1:{port}{path}"))
         .await

@@ -706,15 +706,15 @@ impl<'de> Deserialize<'de> for ChainConfig {
     where
         D: serde::Deserializer<'de>,
     {
-        let mut value = toml::Value::deserialize(deserializer)?;
+        let mut value = serde_json::Value::deserialize(deserializer)?;
 
         // Remove the `type` key from the TOML value in order for deserialization to work,
         // otherwise it would fail with: `unknown field `type`.
         let type_value = value
-            .as_table_mut()
+            .as_object_mut()
             .ok_or_else(|| serde::de::Error::custom("invalid chain config, must be a table"))?
             .remove("type")
-            .unwrap_or_else(|| toml::Value::String("CosmosSdk".to_string()));
+            .unwrap_or_else(|| serde_json::json!("CosmosSdk"));
 
         let type_str = type_value
             .as_str()
