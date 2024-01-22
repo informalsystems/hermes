@@ -27,6 +27,18 @@ impl DynamicGas {
     const DEFAULT_MAX_PRICE: f64 = 0.6;
     const MIN_MULTIPLIER: f64 = 1.0;
 
+    pub fn enabled(multiplier: f64, max_price: f64) -> Result<Self, Error> {
+        Self::new(true, multiplier, max_price)
+    }
+
+    pub fn disabled() -> Self {
+        Self {
+            enabled: false,
+            gas_price_multiplier: Self::DEFAULT_MULTIPLIER,
+            max_gas_price: Self::DEFAULT_MAX_PRICE,
+        }
+    }
+
     pub fn new(enabled: bool, multiplier: f64, max_price: f64) -> Result<Self, Error> {
         if multiplier < Self::MIN_MULTIPLIER {
             return Err(Error::multiplier_too_small(multiplier));
@@ -51,11 +63,7 @@ impl DynamicGas {
 
 impl Default for DynamicGas {
     fn default() -> Self {
-        Self {
-            enabled: false,
-            gas_price_multiplier: Self::DEFAULT_MULTIPLIER,
-            max_gas_price: Self::DEFAULT_MAX_PRICE,
-        }
+        Self::disabled()
     }
 }
 

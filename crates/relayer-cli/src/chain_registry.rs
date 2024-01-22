@@ -121,6 +121,13 @@ where
         0.1
     };
 
+    // Use EIP-1559 dynamic gas price for Osmosis
+    let dynamic_gas = if chain_data.chain_id.as_str() == "osmosis-1" {
+        DynamicGas::unsafe_new(true, 1.1, 0.6)
+    } else {
+        DynamicGas::disabled()
+    };
+
     Ok(ChainConfig::CosmosSdk(CosmosSdkConfig {
         r#type: Default::default(),
         id: chain_data.chain_id,
@@ -142,7 +149,7 @@ where
         max_gas: Some(400000),
         gas_adjustment: None,
         gas_multiplier: Some(GasMultiplier::new(1.1).unwrap()),
-        dynamic_gas: DynamicGas::default(), // TODO: check if Osmosis chain and add in that case?
+        dynamic_gas,
         fee_granter: None,
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),
