@@ -10,14 +10,7 @@ flex_error::define_error! {
             { value: f64 }
             |e| {
                 format_args!("`gas_price_multiplier` in dynamic_gas configuration must be greater than or equal to {}, found {}",
-                DynamicGas::MIN_BOUND, e.value)
-            },
-
-        MaxPriceTooSmall
-            { value: f64 }
-            |e| {
-                format_args!("`max_gas_price` in dynamic_gas configuration must be greater than or equal to {}, found {}",
-                DynamicGas::CHAIN_MIN_PRICE, e.value)
+                DynamicGas::MIN_MULTIPLIER, e.value)
             },
     }
 }
@@ -30,19 +23,15 @@ pub struct DynamicGas {
 }
 
 impl DynamicGas {
-    const DEFAULT: f64 = 1.1;
+    const DEFAULT_MULTIPLIER: f64 = 1.1;
     const DEFAULT_MAX_PRICE: f64 = 0.6;
-    const MIN_BOUND: f64 = 1.0;
-    // Using Osmosis min https://github.com/osmosis-labs/osmosis/blob/v21.2.1/x/txfees/keeper/mempool-1559/code.go#L45
-    const CHAIN_MIN_PRICE: f64 = 0.0025;
+    const MIN_MULTIPLIER: f64 = 1.0;
 
     pub fn new(enabled: bool, multiplier: f64, max_price: f64) -> Result<Self, Error> {
-        if multiplier < Self::MIN_BOUND {
+        if multiplier < Self::MIN_MULTIPLIER {
             return Err(Error::multiplier_too_small(multiplier));
         }
-        if max_price < Self::CHAIN_MIN_PRICE {
-            return Err(Error::max_price_too_small(max_price));
-        }
+
         Ok(Self {
             enabled,
             gas_price_multiplier: multiplier,
@@ -72,7 +61,7 @@ impl Default for DynamicGas {
     fn default() -> Self {
         Self {
             enabled: false,
-            gas_price_multiplier: Self::DEFAULT,
+            gas_price_multiplier: Self::DEFAULT_MULTIPLIER,
             max_gas_price: Self::DEFAULT_MAX_PRICE,
         }
     }
@@ -103,15 +92,7 @@ impl<'de> Deserialize<'de> for DynamicGas {
                     Unexpected::Float(gas_price_multiplier),
                     &format!(
                         "a floating-point value less than {} for multiplier",
-                        Self::MIN_BOUND
-                    )
-                    .as_str(),
-                ),
-                ErrorDetail::MaxPriceTooSmall(_) => D::Error::invalid_value(
-                    Unexpected::Float(gas_price_multiplier),
-                    &format!(
-                        "a floating-point value less than {} for max gas price",
-                        Self::CHAIN_MIN_PRICE
+                        Self::MIN_MULTIPLIER
                     )
                     .as_str(),
                 ),
