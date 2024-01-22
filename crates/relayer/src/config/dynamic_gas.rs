@@ -82,7 +82,7 @@ impl<'de> Deserialize<'de> for DynamicGas {
                 ErrorDetail::MultiplierTooSmall(_) => D::Error::invalid_value(
                     Unexpected::Float(gas_price_multiplier),
                     &format!(
-                        "a floating-point value less than {} for multiplier",
+                        "a floating-point value greater than {}",
                         Self::MIN_MULTIPLIER
                     )
                     .as_str(),
@@ -115,7 +115,7 @@ mod tests {
 
         println!("err: {err}");
 
-        assert!(err.contains("expected a floating-point value less than"));
+        assert!(err.contains("expected a floating-point value greater than"));
     }
 
     #[test]
