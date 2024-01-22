@@ -16,7 +16,7 @@
 //!
 //! For the IBC relayer binary, please see [Hermes] (`ibc-relayer-cli` crate).
 //!
-//! [Hermes]: https://docs.rs/ibc-relayer-cli/1.7.4/
+//! [Hermes]: https://docs.rs/ibc-relayer-cli/1.8.0/
 
 extern crate alloc;
 
