@@ -67,7 +67,10 @@ pub async fn dynamic_gas_price(
             }
         };
 
-        telemetry!(dynamic_gas_queried_fees, chain_id, dynamic_gas_price.price);
+        {
+            telemetry!(dynamic_gas_queried_fees, chain_id, dynamic_gas_price.price);
+            let _ = chain_id;
+        }
 
         if dynamic_gas_price.price > config.dynamic_gas.max_gas_price {
             warn!(
