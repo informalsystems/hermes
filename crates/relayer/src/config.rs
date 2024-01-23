@@ -1,6 +1,7 @@
 //! Relayer configuration
 
 pub mod compat_mode;
+pub mod dynamic_gas;
 pub mod error;
 pub mod filter;
 pub mod gas_multiplier;

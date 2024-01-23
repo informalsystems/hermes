@@ -63,3 +63,6 @@ pub mod fee_grant;
 
 #[cfg(any(doc, feature = "interchain-security"))]
 pub mod interchain_security;
+
+#[cfg(any(doc, feature = "dynamic-gas-fee"))]
+pub mod dynamic_gas_fee;
