@@ -11,29 +11,19 @@ Compatibility check has been updated to reflect the new versions.
 
 Additional configuration has been added:
 The configurations ics20_max_memo_size and ics20_max_receiver_size allow users to specify a limit for the memo and receiver field size for ICS20 packets. Any packet with one or both fields higher than the configured values will not be relayed.
-The new configuration `query_packets_chunk_size allows users to specify how many packets are queried at once when clearing pending packets.
-The new configuration client_refresh_rate can be set per-chain to specify how often the clients referencing this chain should be refreshed.
-TODO: dynamic fee configuration
+- The new configuration `query_packets_chunk_size allows users to specify how many packets are queried at once when clearing pending packets.
+- The new configuration `client_refresh_rate` can be set per-chain to specify how often the clients referencing this chain should be refreshed.
+- The new configuration `dynamic_gas_price` can be enabled to have the relayer query and use the dynamic gas price instead of using the static gas price. This should only be used for chains which have [EIP-1559][eip]-like dynamic gas price.
 Please note that the chain configurations now take different types of chains, with the default being CosmosSdk.
 
 The telemetry has new metrics allowing:
-Monitoring the ICS20 packets filtered due to the memo and/or receiver field size
-TODO: dynamic fee metrics
+- Monitoring the ICS20 packets filtered due to the memo and/or receiver field size
+- Monitoring the dynamic gas fees queried and used if it is enabled
 
 ### BREAKING CHANGES
 
-- General
-  - Bump MSRV to 1.71
-    ([\#3688](https://github.com/informalsystems/hermes/issues/3688))
-- [Relayer CLI](relayer-cli)
-  - The `type` key in the `[[chains]]` section is now required. ([\#3636](https://github.com/informalsystems/hermes/issues/3636))
-    If you previously did not specify that key, you must now set it to `type = "CosmosSdk"`, eg.
-
-    ```rust
-    [[chains]]
-    id   = "osmosis-1"
-    type = "CosmosSdk"
-    ```
+- Bump MSRV to 1.71
+  ([\#3688](https://github.com/informalsystems/hermes/issues/3688))
 
 ### FEATURES
 
@@ -46,6 +36,18 @@ TODO: dynamic fee metrics
   - Use legacy `UpgradeProposal` or newer `MsgIbcSoftwareUpgrade` message when upgrading
     a chain depending on whether the chain is running IBC-Go v8 or older.
     ([\#3696](https://github.com/informalsystems/hermes/issues/3696))
+  - Add a new per-chain configuration table `dynamic_gas_price` which enables
+    querying the current gas price from the chain instead of the static `gas_price`,
+    when the chain has [EIP-1559][eip]-like dynamic gas price.
+    The new configuration setting can be configured per-chain as follows:
+    ```toml
+    dynamic_gas_price = { enabled = true, multiplier = 1.1, max = 0.6 }
+    ```
+    At the moment, only chains which support the `osmosis.txfees.v1beta1.Query/GetEipBaseFee`
+    query can be used with dynamic gas price enabled.
+    ([\#3738](https://github.com/informalsystems/hermes/issues/3738))
+
+    [eip]: https://metamask.io/1559/
   - Add two new packet configurations:
   * `ics20_max_memo_size` which filters ICS20 packets with memo
     field bigger than the configured value
@@ -84,6 +86,14 @@ TODO: dynamic fee metrics
     trying to clear are huge and make the packet query time out or fail.
     ([\#3743](https://github.com/informalsystems/hermes/issues/3743))
 - [Telemetry & Metrics](telemetry)
+  - Add three metrics related to EIP gas price:
+  - `dynamic_gas_queried_fees` contains data on the queried values
+    before applying any filter
+  - `dynamic_gas_queried_success_fees` contains data on the queried
+    values if the query was successful and before applying any filter
+  - `dynamic_gas_paid_fees` contains data on the queried values after
+    applying the `max` filter
+    ([\#3738](https://github.com/informalsystems/hermes/issues/3738))
   - Add a new metric `filtered_packets` which counts the number of
     packets filtered due to having a memo or receiver field too big
     ([\#3794](https://github.com/informalsystems/hermes/issues/3794))
