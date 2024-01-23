@@ -1,5 +1,98 @@
 # CHANGELOG
 
+## v1.8.0
+
+*January 23rd, 2024*
+
+This v1.8.0 release introduces new features and improvements to Hermes.
+
+One key feature is that Hermes is now compatible with both the legacy `UpgradeProposal` and the newer `MsgIbcSoftwareUpgrade` message when upgrading a chain.
+This allows Hermes to be compatible with ibc-go v8.0.0. The compatibility check that Hermes performs on startup has been updated to reflect this.
+
+Additional configuration settings have been added:
+
+- The new global settings `ics20_max_memo_size` and `ics20_max_receiver_size` allow users to specify a limit for the size of the memo and receiver fields for ICS20 packets. Any packet with either field having a size exceeding the configured values will not be relayed.
+- The new per-chain setting `query_packets_chunk_size` allows users to specify how many packets are queried at once from the chain when clearing pending packets. This is useful to tweak when there are many large pending packets and the RPC endpoints times out or refuses to answer the pending packets query.
+- The new per-chain setting `client_refresh_rate` can be use to specify how often the clients referencing this chain should be refreshed. The rate is expressed as a fraction of the trusting period.
+- The new per-chain setting `dynamic_gas_price` can be enabled to have the relayer query for and use a dynamic gas price instead of using the static `gas_price` specified in the config. This should only be used for chains which have a [EIP-1559][eip-1559]-like fee market enabled and support the `osmosis.txfees.v1beta1.Query/GetEipBaseFee` gRPC query.
+
+Telemetry now features new metrics:
+- Monitoring the ICS20 packets filtered due to the memo and/or receiver field size exceeding the configured limits.
+- Monitoring the distribution of dynamic gas fees queried from the chain, if enabled.
+
+[eip-1559]: https://metamask.io/1559/
+
+### BREAKING CHANGES
+
+- Bump MSRV to 1.71 ([\#3688](https://github.com/informalsystems/hermes/issues/3688))
+
+### FEATURES
+
+- Relayer
+  - Use legacy `UpgradeProposal` or newer `MsgIbcSoftwareUpgrade` message when upgrading
+    a chain depending on whether the chain is running IBC-Go v8 or older.
+    ([\#3696](https://github.com/informalsystems/hermes/issues/3696))
+  - Add a new per-chain configuration table `dynamic_gas_price` which enables
+    querying the current gas price from the chain instead of the static `gas_price`,
+    when the chain has [EIP-1559][eip]-like dynamic gas price.
+    The new configuration setting can be configured per-chain as follows:
+    ```toml
+    dynamic_gas_price = { enabled = true, multiplier = 1.1, max = 0.6 }
+    ```
+    At the moment, only chains which support the `osmosis.txfees.v1beta1.Query/GetEipBaseFee`
+    query can be used with dynamic gas price enabled.
+    ([\#3738](https://github.com/informalsystems/hermes/issues/3738))
+
+    [eip]: https://metamask.io/1559/
+  - Add two new packet configurations:
+    * `ics20_max_memo_size` which filters ICS20 packets with memo field bigger than the configured value
+    * `ics20_max_receiver_size` which filters ICS20 packets with receiver field bigger than the configured value
+      ([\#3766](https://github.com/informalsystems/hermes/issues/3766))
+  - Add a `client_refresh_rate` setting to specify the rate at which to refresh clients referencing this chain, relative to its trusting period.
+    ([\#3402](https://github.com/informalsystems/hermes/issues/3402))
+  - Add a `--packet-sequences` flag to the `clear packets`, `tx packet-recv`, and `tx packet-ack` commands.
+    When this flag is specified, these commands will only clear the packets with the specified sequence numbers
+    on the given chain. If not provided, all pending packets will be cleared on both chains, as before.
+    ([\#3672](https://github.com/informalsystems/hermes/issues/3672))
+
+    This flag takes either a single sequence number or a range of sequences numbers.
+    Each element of the comma-separated list must be either a single sequence number or
+    a range of sequence numbers.
+
+    Examples:
+    - `10` will clear a single packet with sequence number `10`
+    - `1,2,3` will clear packets with sequence numbers `1, 2, 3`
+    - `1..5` will clear packets with sequence numbers `1, 2, 3, 4, 5`
+    - `..5` will clear packets with sequence numbers `1, 2, 3, 4, 5`
+    - `5..` will clear packets with sequence numbers greater than or equal to `5`
+    - `..5,10..20,25,30..` will clear packets with sequence numbers `1, 2, 3, 4, 5, 10, 11, ..., 20, 25, 30, 31, ...`
+    - `..5,10..20,25,30..` will clear packets with sequence numbers `1, 2, 3, 4, 5, 10, 11, ..., 20, 25, 30, 31, ...`
+  - Add a `--gov-account` option to `hermes tx upgrade-chain` to specify the authority account used to sign upgrade proposal for chains running IBC-Go v8+.
+    ([\#3696](https://github.com/informalsystems/hermes/issues/3696))
+  - Add a `query_packets_chunk_size` config option and a `--query-packets-chunk-size` flag to the `clear packets` CLI to configure how
+    many packets to query at once from the chain when clearing pending packets. Lower this setting if one or more of packets you are
+    trying to clear are huge and make the packet query time out or fail.
+    ([\#3743](https://github.com/informalsystems/hermes/issues/3743))
+- Telemetry & Metrics
+  - Add three metrics related to EIP gas price:
+  - `dynamic_gas_queried_fees` contains data on the queried values before applying any filter
+  - `dynamic_gas_queried_success_fees` contains data on the queried values if the query was successful and before applying any filter
+  - `dynamic_gas_paid_fees` contains data on the queried values after applying the `max` filter
+    ([\#3738](https://github.com/informalsystems/hermes/issues/3738))
+  - Add a new metric `filtered_packets` which counts the number of packets filtered due to having a memo or receiver field too big
+    ([\#3794](https://github.com/informalsystems/hermes/issues/3794))
+- Integration Test Framework
+  - Add a test for asynchronous Interchain Query relaying
+    ([\#3455](https://github.com/informalsystems/hermes/issues/3455))
+  - Add an ICA test to assert a channel correctly closes after a packet time-outs
+    ([\#3778](https://github.com/informalsystems/hermes/issues/3778))
+
+### IMPROVEMENTS
+
+- Relayer CLI
+  - Update compatibility check to allow IBC-Go 4.1.1 to 8.x and SDK 0.45.x to 0.50.x.
+    ([\#3745](https://github.com/informalsystems/hermes/issues/3745))
+
 ## v1.7.4
 
 *December 15th, 2023*
