@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use ibc_proto::ibc::applications::interchain_accounts::controller::v1::MsgRegisterInterchainAccount as RawMsgRegisterInterchainAccount;
 use ibc_proto::Protobuf;
 
 use crate::applications::ics27_ica::error::Error;
@@ -12,20 +13,6 @@ use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str =
     "/ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccount";
-
-// TODO: Temporary fix until `RawMsgRegisterInterchainAccount` is updated ibc-proto-rs
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RawMsgRegisterInterchainAccount {
-    #[prost(string, tag = "1")]
-    pub owner: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub connection_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
-    pub version: ::prost::alloc::string::String,
-    #[prost(enumeration = "ibc_proto::ibc::core::channel::v1::Order", tag = "4")]
-    pub order: i32,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgRegisterInterchainAccount {
