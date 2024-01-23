@@ -121,7 +121,6 @@ where
     };
 
     Ok(ChainConfig::CosmosSdk(CosmosSdkConfig {
-        r#type: Default::default(),
         id: chain_data.chain_id,
         rpc_addr: rpc_data.rpc_address,
         grpc_addr: grpc_address,
