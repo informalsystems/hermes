@@ -213,16 +213,21 @@ where
 /// Returns a vector of handles that need to be awaited in order to access the fetched data, or the
 /// error that occurred while fetching.
 async fn get_handles<T: Fetchable + Send + 'static>(
-    resources: &[String],
+    chain_ids: &[String],
     commit: &Option<String>,
 ) -> Vec<(String, JoinHandle<Result<T, RegistryError>>)> {
-    let handles = resources
+    let handles = chain_ids
         .iter()
-        .map(|res| {
-            let resource = res.to_string();
+        .map(|chain_id| {
             let commit = commit.clone();
-            let handle = tokio::spawn(async move { T::fetch(resource, commit).await });
-            (res.to_string(), handle)
+            let handle = {
+                let chain_id = chain_id.to_string();
+                tokio::spawn(async move {
+                    tracing::info!("{chain_id}: Fetching {}...", T::DESC);
+                    T::fetch(chain_id, commit).await
+                })
+            };
+            (chain_id.to_string(), handle)
         })
         .collect();
     handles
