@@ -2,7 +2,7 @@ use ibc_proto::cosmos::tx::v1beta1::Fee;
 
 use crate::chain::cosmos::calculate_fee;
 use crate::chain::cosmos::config::CosmosSdkConfig;
-use crate::config::dynamic_gas::DynamicGas;
+use crate::config::dynamic_gas::DynamicGasPrice;
 use crate::config::GasPrice;
 
 /// Default gas limit when submitting a transaction.
@@ -18,7 +18,7 @@ pub struct GasConfig {
     pub gas_price: GasPrice,
     pub max_fee: Fee,
     pub fee_granter: String,
-    pub dynamic_gas: DynamicGas,
+    pub dynamic_gas_price: DynamicGasPrice,
 }
 
 impl<'a> From<&'a CosmosSdkConfig> for GasConfig {
@@ -30,7 +30,7 @@ impl<'a> From<&'a CosmosSdkConfig> for GasConfig {
             gas_price: config.gas_price.clone(),
             max_fee: max_fee_from_config(config),
             fee_granter: fee_granter_from_config(config),
-            dynamic_gas: config.dynamic_gas,
+            dynamic_gas_price: config.dynamic_gas_price,
         }
     }
 }

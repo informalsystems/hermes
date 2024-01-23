@@ -1,10 +1,10 @@
 # Dynamic Gas Fees
 
-Some chains use a dynamic gas price system instead of static gas price. By configuring the `dynamic_gas` for those chains, Hermes will query the gas price and apply the configured multiplier instead of using the configured static gas price:
+Some chains use a dynamic gas price system instead of static gas price. By configuring the `dynamic_gas_price` for those chains, Hermes will query the gas price and apply the configured multiplier instead of using the configured static gas price:
 
 ```toml
 ...
-[<chain_id>.dynamic_gas]
+[<chain_id>.dynamic_gas_price]
 enabled = true
 gas_price_multiplier = 1.1
 max_gas_price = 0.6

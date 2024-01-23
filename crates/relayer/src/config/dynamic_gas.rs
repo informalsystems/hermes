@@ -10,19 +10,19 @@ flex_error::define_error! {
             { value: f64 }
             |e| {
                 format_args!("`gas_price_multiplier` in dynamic_gas configuration must be greater than or equal to {}, found {}",
-                DynamicGas::MIN_MULTIPLIER, e.value)
+                DynamicGasPrice::MIN_MULTIPLIER, e.value)
             },
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize)]
-pub struct DynamicGas {
+pub struct DynamicGasPrice {
     pub enabled: bool,
     pub gas_price_multiplier: f64,
     pub max_gas_price: f64,
 }
 
-impl DynamicGas {
+impl DynamicGasPrice {
     const DEFAULT_MULTIPLIER: f64 = 1.1;
     const DEFAULT_MAX_PRICE: f64 = 0.6;
     const MIN_MULTIPLIER: f64 = 1.0;
@@ -61,13 +61,13 @@ impl DynamicGas {
     }
 }
 
-impl Default for DynamicGas {
+impl Default for DynamicGasPrice {
     fn default() -> Self {
         Self::disabled()
     }
 }
 
-impl<'de> Deserialize<'de> for DynamicGas {
+impl<'de> Deserialize<'de> for DynamicGasPrice {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -85,7 +85,7 @@ impl<'de> Deserialize<'de> for DynamicGas {
             max_gas_price,
         } = DynGas::deserialize(deserializer)?;
 
-        DynamicGas::new(enabled, gas_price_multiplier, max_gas_price).map_err(|e| {
+        DynamicGasPrice::new(enabled, gas_price_multiplier, max_gas_price).map_err(|e| {
             match e.detail() {
                 ErrorDetail::MultiplierTooSmall(_) => D::Error::invalid_value(
                     Unexpected::Float(gas_price_multiplier),
@@ -112,7 +112,7 @@ mod tests {
     fn parse_invalid_gas_multiplier() {
         #[derive(Debug, Deserialize)]
         struct DummyConfig {
-            dynamic_gas: DynamicGas,
+            dynamic_gas: DynamicGasPrice,
         }
 
         let err = toml::from_str::<DummyConfig>(
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn safe_gas_multiplier() {
-        let dynamic_gas = DynamicGas::new(true, 0.6, 0.6);
+        let dynamic_gas = DynamicGasPrice::new(true, 0.6, 0.6);
         assert!(
             dynamic_gas.is_err(),
             "Gas multiplier should be an error if value is lower than 1.0: {dynamic_gas:?}"
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn unsafe_gas_multiplier() {
-        let dynamic_gas = DynamicGas::unsafe_new(true, 0.6, 0.4);
+        let dynamic_gas = DynamicGasPrice::unsafe_new(true, 0.6, 0.4);
         assert_eq!(dynamic_gas.gas_price_multiplier, 0.6);
         assert_eq!(dynamic_gas.max_gas_price, 0.4);
     }

@@ -6,7 +6,7 @@ use std::marker::Send;
 
 use futures::future::join_all;
 use http::Uri;
-use ibc_relayer::config::dynamic_gas::DynamicGas;
+use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::trace;
 
@@ -122,10 +122,10 @@ where
     };
 
     // Use EIP-1559 dynamic gas price for Osmosis
-    let dynamic_gas = if chain_data.chain_id.as_str() == "osmosis-1" {
-        DynamicGas::unsafe_new(true, 1.1, 0.6)
+    let dynamic_gas_price = if chain_data.chain_id.as_str() == "osmosis-1" {
+        DynamicGasPrice::unsafe_new(true, 1.1, 0.6)
     } else {
-        DynamicGas::disabled()
+        DynamicGasPrice::disabled()
     };
 
     Ok(ChainConfig::CosmosSdk(CosmosSdkConfig {
@@ -149,7 +149,7 @@ where
         max_gas: Some(400000),
         gas_adjustment: None,
         gas_multiplier: Some(GasMultiplier::new(1.1).unwrap()),
-        dynamic_gas,
+        dynamic_gas_price,
         fee_granter: None,
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),

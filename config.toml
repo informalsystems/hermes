@@ -313,7 +313,7 @@ gas_multiplier = 1.1
 # https://hermes.informal.systems/documentation/configuration/dynamic-gas-fees.html
 # 
 # Default: { enabled = false, gas_price_multiplier = 1.1, max_gas_price = 0.6 }
-dynamic_gas = { enabled = false, gas_price_multiplier = 1.1, max_gas_price = 0.6 }
+dynamic_gas_price = { enabled = false, gas_price_multiplier = 1.1, max_gas_price = 0.6 }
 
 # Specify how many IBC messages at most to include in a single transaction.
 # Default: 30
