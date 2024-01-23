@@ -73,7 +73,7 @@ Telemetry now features new metrics:
     many packets to query at once from the chain when clearing pending packets. Lower this setting if one or more of packets you are
     trying to clear are huge and make the packet query time out or fail.
     ([\#3743](https://github.com/informalsystems/hermes/issues/3743))
-- [Telemetry & Metrics](telemetry)
+- Telemetry & Metrics
   - Add three metrics related to EIP gas price:
   - `dynamic_gas_queried_fees` contains data on the queried values before applying any filter
   - `dynamic_gas_queried_success_fees` contains data on the queried values if the query was successful and before applying any filter
@@ -81,7 +81,7 @@ Telemetry now features new metrics:
     ([\#3738](https://github.com/informalsystems/hermes/issues/3738))
   - Add a new metric `filtered_packets` which counts the number of packets filtered due to having a memo or receiver field too big
     ([\#3794](https://github.com/informalsystems/hermes/issues/3794))
-- [Integration Test Framework](tools/test-framework)
+- Integration Test Framework
   - Add a test for asynchronous Interchain Query relaying
     ([\#3455](https://github.com/informalsystems/hermes/issues/3455))
   - Add an ICA test to assert a channel correctly closes after a packet time-outs
@@ -89,7 +89,7 @@ Telemetry now features new metrics:
 
 ### IMPROVEMENTS
 
-- [Relayer CLI](relayer-cli)
+- Relayer CLI
   - Update compatibility check to allow IBC-Go 4.1.1 to 8.x and SDK 0.45.x to 0.50.x.
     ([\#3745](https://github.com/informalsystems/hermes/issues/3745))
 
