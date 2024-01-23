@@ -2176,7 +2176,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             port_id: dst_port_id.clone(),
             channel_id: dst_channel_id.clone(),
             counterparty_channel_state: src_channel_end.state,
-            counterparty_upgrade_sequence: counterparty_upgrade_sequence,
+            counterparty_upgrade_sequence,
             proof_channel: proofs.object_proof().clone(),
             proof_height: proofs.height(),
             signer,
