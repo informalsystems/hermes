@@ -6,8 +6,8 @@ Some chains use a dynamic gas price system instead of static gas price. By confi
 ...
 [<chain_id>.dynamic_gas_price]
 enabled = true
-gas_price_multiplier = 1.1
-max_gas_price = 0.6
+multiplier = 1.1
+max = 0.6
 ...
 ```
 

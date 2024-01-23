@@ -46,8 +46,8 @@ pub fn gas_config_for_test(native_token: String) -> GasConfig {
         fee_granter,
         dynamic_gas_price: DynamicGasPrice {
             enabled: false,
-            gas_price_multiplier: 1.0,
-            max_gas_price: 0.6,
+            multiplier: 1.0,
+            max: 0.6,
         },
     }
 }
