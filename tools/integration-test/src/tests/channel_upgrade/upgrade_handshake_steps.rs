@@ -1380,7 +1380,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
                     channel_id: channels.channel_id_b.0.clone(),
                     height: QueryHeight::Latest,
                 },
-                IncludeProof::No,
+                IncludeProof::Yes,
             )
             .map(|(channel_end, _)| channel_end)
             .map_err(|e| eyre!("Error querying ChannelEnd B: {e}"))?;
@@ -1409,26 +1409,25 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
                     channel_id: channels.channel_id_a.0.clone(),
                     height: QueryHeight::Latest,
                 },
-                IncludeProof::No,
+                IncludeProof::Yes,
             )
             .map(|(channel_end, _)| channel_end)
             .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
 
-        let state_a = ChannelState::Open(UpgradeState::NotUpgrading);
-        if channel_end_a.state_matches(&state_a) {
+        if !channel_end_a.is_open() {
             return Err(Error::generic(eyre!(
                 "expected channel end A state to be `{}`, but is instead `{}`",
-                state_a,
+                ChannelState::Open(UpgradeState::NotUpgrading),
                 channel_end_a.state()
             )));
         }
 
         assert_eq!(
-            channel_end_a.version(),
+            channel_end_a.version,
             post_upgrade_1_version,
             "expected channel end A version to be `{}`, but is instead `{}`",
             post_upgrade_1_version,
-            channel_end_a.version()
+            channel_end_a.version
         );
 
         Ok(())
