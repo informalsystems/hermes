@@ -1387,13 +1387,11 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
 
         // upgrade sequence should have been incremented
         let upgrade_sequence_b = Sequence::from(2);
-        if assert_eq!(channel_end_b.upgrade_sequence, upgrade_sequence_b) {
-            return Err(Error::generic(eyre!(
-                "expected channel end B upgrade sequence to be `{}`, but it is instead `{}`",
-                upgrade_sequence_b,
-                channel_end_b.upgrade_sequence
-            )));
-        }
+        assert_eq!(
+            channel_end_b.upgrade_sequence, upgrade_sequence_b,
+            "expected channel end B upgrade sequence to be `{}`, but it is instead `{}`",
+            upgrade_sequence_b, channel_end_b.upgrade_sequence
+        );
 
         // Finish upgrade 1 on ChannelEnd A
 
@@ -1425,13 +1423,13 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
             )));
         }
 
-        if assert_eq!(channel_end_a.version(), post_upgrade_1_version) {
-            return Err(Error::generic(eyre!(
-                "expected channel end A version to be `{}`, but is instead `{}`",
-                post_upgrade_1_version,
-                channel_end_a.version()
-            )));
-        }
+        assert_eq!(
+            channel_end_a.version(),
+            post_upgrade_1_version,
+            "expected channel end A version to be `{}`, but is instead `{}`",
+            post_upgrade_1_version,
+            channel_end_a.version()
+        );
 
         Ok(())
     }
