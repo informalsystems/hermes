@@ -178,11 +178,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1705315275,
-        "narHash": "sha256-XnjvjdTdXkwWFWx1nRflbsDyazSBV09QOmr/aiAuZ1M=",
+        "lastModified": 1705996063,
+        "narHash": "sha256-l4MU/4TQtTYGnO1lvSxkSVmLCIWA2nuJK2OkQ1lw1tw=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "04ef5159b4262b7dd445544838468a84a1d987cf",
+        "rev": "ff87fb375ff70c6e90ef022c575c8395575f7345",
         "type": "github"
       },
       "original": {
@@ -742,16 +742,16 @@
     "ibc-go-v8-channel-upgrade-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1703189903,
-        "narHash": "sha256-vxzv+b40TKqCIN4FAkeIu+jmlPP5XRLR+P0uEIjr7AE=",
+        "lastModified": 1705917317,
+        "narHash": "sha256-o+dg+AjhzRPKcv+gbIV01qqFfuwsTRDXc2oBG7KuENQ=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "7a89e5d5b5ebb7643ce3992c34008c35373ecf34",
+        "rev": "4e3d164e4f9a5986bbe6595138feb49160e27215",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "04-channel-upgrades-rc.0",
+        "ref": "04-channel-upgrades-hermes-integration.1",
         "repo": "ibc-go",
         "type": "github"
       }
@@ -1041,11 +1041,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1705303754,
-        "narHash": "sha256-loWkd7lUzSvGBU9xnva37iPB2rr5ulq1qBLT44KjzGA=",
+        "lastModified": 1705883077,
+        "narHash": "sha256-ByzHHX3KxpU1+V0erFy8jpujTufimh6KaS/Iv3AciHk=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "e0629618b4b419a47e2c8a3cab223e2a7f3a8f97",
+        "rev": "5f5210aa20e343b7e35f40c033000db0ef80d7b9",
         "type": "github"
       },
       "original": {
