@@ -2,7 +2,7 @@
 
 ## v1.8.0
 
-*January 22nd, 2024*
+*January 23rd, 2024*
 
 This v1.8.0 release introduces new features and improvements to Hermes.
 
