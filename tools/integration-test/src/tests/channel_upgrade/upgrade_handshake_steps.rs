@@ -1423,11 +1423,9 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
         }
 
         assert_eq!(
-            channel_end_a.version,
-            post_upgrade_1_version,
+            channel_end_a.version, post_upgrade_1_version,
             "expected channel end A version to be `{}`, but is instead `{}`",
-            post_upgrade_1_version,
-            channel_end_a.version
+            post_upgrade_1_version, channel_end_a.version
         );
 
         Ok(())
