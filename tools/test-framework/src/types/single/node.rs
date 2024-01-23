@@ -9,6 +9,7 @@ use eyre::Report as Error;
 use ibc_relayer::chain::cosmos::config::CosmosSdkConfig;
 use ibc_relayer::config;
 use ibc_relayer::config::compat_mode::CompatMode;
+use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -155,7 +156,6 @@ impl FullNode {
         };
 
         Ok(config::ChainConfig::CosmosSdk(CosmosSdkConfig {
-            r#type: Default::default(),
             id: self.chain_driver.chain_id.clone(),
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
@@ -175,6 +175,7 @@ impl FullNode {
             max_gas: Some(3000000),
             gas_adjustment: None,
             gas_multiplier: Some(GasMultiplier::unsafe_new(1.5)),
+            dynamic_gas_price: DynamicGasPrice::default(),
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),

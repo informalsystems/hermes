@@ -2,7 +2,6 @@ use core::time::Duration;
 use std::path::PathBuf;
 
 use byte_unit::Byte;
-use monostate::MustBe;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_rpc::Url;
 
@@ -11,6 +10,7 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::chain::cosmos::config::error::Error as ConfigError;
 use crate::config::compat_mode::CompatMode;
+use crate::config::dynamic_gas::DynamicGasPrice;
 use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo, TrustThreshold};
 use crate::config::{
@@ -24,11 +24,6 @@ pub mod error;
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct CosmosSdkConfig {
-    /// The type of this chain, must be "CosmosSdk"
-    /// This is the default if not specified.
-    #[serde(default)]
-    pub r#type: MustBe!("CosmosSdk"),
-
     /// The chain's network identifier
     pub id: ChainId,
 
@@ -138,6 +133,9 @@ pub struct CosmosSdkConfig {
 
     #[serde(default)]
     pub packet_filter: PacketFilter,
+
+    #[serde(default)]
+    pub dynamic_gas_price: DynamicGasPrice,
 
     #[serde(default)]
     pub address_type: AddressType,

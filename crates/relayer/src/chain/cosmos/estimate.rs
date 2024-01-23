@@ -1,6 +1,7 @@
 use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx};
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use tendermint_rpc::Url;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, span, warn, Level};
 
@@ -44,8 +45,14 @@ pub async fn estimate_tx_fees(
         signatures: signed_tx.signatures,
     };
 
-    let estimated_fee =
-        estimate_fee_with_tx(gas_config, &config.grpc_address, &config.chain_id, tx).await?;
+    let estimated_fee = estimate_fee_with_tx(
+        gas_config,
+        &config.grpc_address,
+        &config.rpc_address,
+        &config.chain_id,
+        tx,
+    )
+    .await?;
 
     Ok(estimated_fee)
 }
@@ -53,6 +60,7 @@ pub async fn estimate_tx_fees(
 async fn estimate_fee_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,
+    rpc_address: &Url,
     chain_id: &ChainId,
     tx: Tx,
 ) -> Result<Fee, Error> {
@@ -80,7 +88,7 @@ async fn estimate_fee_with_tx(
         ));
     }
 
-    let adjusted_fee = gas_amount_to_fee(gas_config, estimated_gas);
+    let adjusted_fee = gas_amount_to_fee(gas_config, estimated_gas, chain_id, rpc_address).await;
 
     debug!(
         id = %chain_id,
