@@ -1433,7 +1433,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
             )));
         }
 
-
         Ok(())
     }
 }
