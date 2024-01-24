@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.26.4"
+version      = "0.27.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -21,14 +21,14 @@ telemetry = ["ibc-telemetry"]
 
 [dependencies]
 ibc-proto         = { version = "0.39.0", features = ["serde"] }
-ibc-telemetry     = { version = "0.26.4", path = "../telemetry", optional = true }
-ibc-relayer-types = { version = "0.26.4", path = "../relayer-types", features = ["mocks"] }
+ibc-telemetry     = { version = "0.27.0", path = "../telemetry", optional = true }
+ibc-relayer-types = { version = "0.27.0", path = "../relayer-types", features = ["mocks"] }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
 serde = "1.0"
 serde_derive = "1.0"
-thiserror = "1.0.40"
+thiserror = "1.0.56"
 toml = "0.8"
 tracing = "0.1.36"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
@@ -51,6 +51,7 @@ dirs-next = "2.0.0"
 retry = { version = "2.0.0", default-features = false }
 async-stream = "0.3.5"
 http = "0.2.9"
+reqwest = { version = "0.11", features = ["rustls-tls-native-roots", "json"], default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 signature = "2.1.0"
 anyhow = "1.0"
@@ -58,7 +59,7 @@ semver = "1.0"
 humantime = "2.1.0"
 regex = "1"
 moka = { version = "0.12.0", features = ["sync"] }
-uuid = { version = "1.6.1", features = ["v4"] }
+uuid = { version = "1.7.0", features = ["v4"] }
 bs58 = "0.5.0"
 digest = "0.10.6"
 ed25519 = "2.2.2"
@@ -109,7 +110,7 @@ version = "0.34.0"
 default-features = false
 
 [dev-dependencies]
-ibc-relayer-types = { version = "0.26.4", path = "../relayer-types", features = ["mocks"] }
+ibc-relayer-types = { version = "0.27.0", path = "../relayer-types", features = ["mocks"] }
 serial_test = "2.0.0"
 env_logger = "0.10.0"
 test-log = { version = "0.2.14", features = ["trace"] }

@@ -154,7 +154,8 @@ port = 5555
 # Specify the chain ID. Required
 id = 'ibc-0'
 
-# Specify the chain type, currently only `"CosmosSdk"` is supported.
+# Specify the chain type, currently only `CosmosSdk` is supported.
+# Default: CosmosSdk
 type = "CosmosSdk"
 
 # Whether or not this is a CCV consumer chain. Default: false
@@ -302,6 +303,18 @@ gas_price = { price = 0.025, denom = 'stake' }
 # Minimum value: 1.0
 gas_multiplier = 1.1
 
+# Query the current gas price from the chain instead of using the static `gas_price` from the config.
+# Useful for chains which have [EIP-1559][eip]-like dynamic gas price. 
+#
+# At the moment, only chains which support the `osmosis.txfees.v1beta1.Query/GetEipBaseFee`
+# query can be used with dynamic gas price enabled.
+#
+# See this page in the Hermes guide for more information:
+# https://hermes.informal.systems/documentation/configuration/dynamic-gas-fees.html
+# 
+# Default: { enabled = false, multiplier = 1.1, max = 0.6 }
+dynamic_gas_price = { enabled = false, multiplier = 1.1, max = 0.6 }
+
 # Specify how many IBC messages at most to include in a single transaction.
 # Default: 30
 max_msg_num = 30
@@ -422,7 +435,6 @@ memo_prefix = ''
 
 [[chains]]
 id = 'ibc-1'
-type = "CosmosSdk"
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }

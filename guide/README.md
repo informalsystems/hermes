@@ -10,7 +10,7 @@ mdBook is a utility to create modern online books from Markdown files.
 This guide should be permanently deployed at its latest stable version at
 [hermes.informal.systems](https://hermes.informal.systems).
 
-Current version: `v1.7.4`.
+Current version: `v1.8.0`.
 
 The version of this guide is aligned with the [versioning of the ibc crates](../README.md).
 

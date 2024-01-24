@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-telemetry"
-version      = "0.26.4"
+version      = "0.27.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -13,7 +13,7 @@ description  = """
 """
 
 [dependencies]
-ibc-relayer-types = { version = "0.26.4", path = "../relayer-types" }
+ibc-relayer-types = { version = "0.27.0", path = "../relayer-types" }
 
 once_cell                = "1.19.0"
 opentelemetry            = { version = "0.19.0", features = ["metrics"] }
@@ -21,7 +21,7 @@ opentelemetry-prometheus = "0.12.0"
 prometheus               = "0.13.2"
 moka                     = { version = "0.12.0", features = ["sync"] }
 dashmap                  = "5.4.0"
-serde_json               = "1.0.94"
+serde_json               = "1.0.111"
 serde                    = "1.0.195"
 axum                     = "0.6.18"
 tokio                    = "1.26.0"
