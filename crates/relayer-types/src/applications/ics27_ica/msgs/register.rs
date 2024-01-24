@@ -19,7 +19,7 @@ pub struct MsgRegisterInterchainAccount {
     pub owner: Signer,
     pub connection_id: ConnectionId,
     pub version: Version,
-    pub order: Ordering,
+    pub ordering: Ordering,
 }
 
 impl Msg for MsgRegisterInterchainAccount {
@@ -41,7 +41,7 @@ impl TryFrom<RawMsgRegisterInterchainAccount> for MsgRegisterInterchainAccount {
     type Error = Error;
 
     fn try_from(value: RawMsgRegisterInterchainAccount) -> Result<Self, Self::Error> {
-        let chan_ordering = Ordering::from_i32(value.order).map_err(Error::ics04_channel)?;
+        let chan_ordering = Ordering::from_i32(value.ordering).map_err(Error::ics04_channel)?;
 
         Ok(MsgRegisterInterchainAccount {
             owner: value.owner.parse().map_err(Error::owner)?,
@@ -50,7 +50,7 @@ impl TryFrom<RawMsgRegisterInterchainAccount> for MsgRegisterInterchainAccount {
                 .parse()
                 .map_err(Error::invalid_connection_identifier)?,
             version: value.version.into(),
-            order: chan_ordering,
+            ordering: chan_ordering,
         })
     }
 }
@@ -61,7 +61,7 @@ impl From<MsgRegisterInterchainAccount> for RawMsgRegisterInterchainAccount {
             owner: value.owner.to_string(),
             connection_id: value.connection_id.to_string(),
             version: value.version.to_string(),
-            order: value.order as i32,
+            ordering: value.ordering as i32,
         }
     }
 }

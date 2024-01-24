@@ -84,7 +84,7 @@ pub fn register_interchain_account<Chain: ChainHandle, Counterparty: ChainHandle
         owner,
         connection_id: connection.connection_id_a.0.clone(),
         version: Version::new(version_str),
-        order: Ordering::Ordered,
+        ordering: Ordering::Ordered,
     };
 
     let msg_any = msg.to_any();
