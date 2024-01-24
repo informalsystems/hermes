@@ -1358,7 +1358,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.39.0"
-source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=romac/channel-upgrade-only#b0fa2ebf5143d61d95e29bd01714aadb4d91c1c4"
+source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=romac/channel-upgrade-only#8cdd310f906cdef060227d98723029760c060f10"
 dependencies = [
  "base64 0.21.7",
  "bytes",
