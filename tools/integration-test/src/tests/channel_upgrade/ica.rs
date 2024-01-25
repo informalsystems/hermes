@@ -2,13 +2,20 @@
 //!
 //! - `ChannelUpgradeICACloseChannel` tests that after the upgrade handshake is completed
 //!   and the channel version has been updated to ICS29 a packet timeout closes the channel.
+//! 
+//! - `ChannelUpgradeICAUnordered` tests that after the after sending a packet on an ordered
+//!   ICA channel, the upgrade handshake is completed when the channel is upgraded to unordered.
 
 use serde_json as json;
 use std::str::FromStr;
+use std::collections::HashMap;
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
-
+use ibc_relayer::config::{
+    filter::{ChannelFilters, ChannelPolicy, FilterPattern},
+    ChainConfig, PacketFilter,
+};
 use ibc_relayer::event::IbcEventWithHeight;
 
 use ibc_relayer_types::applications::{
@@ -36,6 +43,17 @@ use ibc_test_framework::relayer::channel::{
 #[test]
 fn test_channel_upgrade_ica_close_channel() -> Result<(), Error> {
     run_binary_connection_test(&ChannelUpgradeICACloseChannel)
+}
+
+#[test]
+fn test_channel_upgrade_ica_unordered() -> Result<(), Error> {
+    run_binary_connection_test(&ChannelUpgradeICAUnordered::new(PacketFilter::new(
+        ChannelPolicy::Allow(ChannelFilters::new(vec![(
+            FilterPattern::Wildcard("ica*".parse().unwrap()),
+            FilterPattern::Wildcard("*".parse().unwrap()),
+        )])),
+        HashMap::new(),
+    )))
 }
 
 const MAX_DEPOSIT_PERIOD: &str = "10s";
@@ -267,6 +285,223 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
 
             Ok(())
         })
+    }
+}
+
+pub struct ChannelUpgradeICAUnordered {
+    packet_filter: PacketFilter,
+}
+
+impl ChannelUpgradeICAUnordered {
+    pub fn new(packet_filter: PacketFilter) -> Self {
+        Self { packet_filter }
+    }
+}
+
+impl TestOverrides for ChannelUpgradeICAUnordered {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.channels.enabled = true;
+
+        config.mode.clients.misbehaviour = false;
+
+        for chain in &mut config.chains {
+            match chain {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.packet_filter = self.packet_filter.clone();
+                }
+            }
+        }
+    }
+
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
+        use serde_json::Value;
+
+        let allow_messages = genesis
+            .get_mut("app_state")
+            .and_then(|app_state| app_state.get_mut("interchainaccounts"))
+            .and_then(|ica| ica.get_mut("host_genesis_state"))
+            .and_then(|state| state.get_mut("params"))
+            .and_then(|params| params.get_mut("allow_messages"))
+            .and_then(|allow_messages| allow_messages.as_array_mut());
+
+        if let Some(allow_messages) = allow_messages {
+            allow_messages.push(Value::String("/cosmos.bank.v1beta1.MsgSend".to_string()));
+        } else {
+            return Err(Error::generic(eyre!("failed to update genesis file")))
+        }
+
+        set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
+        set_voting_period(genesis, VOTING_PERIOD)?;
+
+        Ok(())
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        true
+    }
+}
+
+impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
+    fn run<Controller: ChainHandle, Host: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        _relayer: RelayerDriver,
+        chains: ConnectedChains<Controller, Host>,
+        connection: ConnectedConnection<Controller, Host>,
+    ) -> Result<(), Error> {
+        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
+
+        info!("Will register interchain account...");
+
+        // Register an interchain account on behalf of
+        // controller wallet `user1` where the counterparty chain is the interchain accounts host.
+        let (wallet, controller_channel_id, controller_port_id) =
+            register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
+
+        // Check that the corresponding ICA channel is eventually established.
+        let _counterparty_channel_id = assert_eventually_channel_established(
+            chains.handle_a(),
+            chains.handle_b(),
+            &controller_channel_id.as_ref(),
+            &controller_port_id.as_ref(),
+        )?;
+
+        // Query the controller chain for the address of the ICA wallet on the host chain.
+        let ica_address = chains.node_a.chain_driver().query_interchain_account(
+            &wallet.address(),
+            &connection.connection_id_a.as_ref(),
+        )?;
+
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(0u64).as_ref(),
+        )?;
+
+        info!("Will send a message to te interchain account...");
+
+        // Send funds to the interchain account.
+        let ica_fund = 42000u64;
+
+        chains.node_b.chain_driver().local_transfer_token(
+            &chains.node_b.wallets().user1(),
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(ica_fund).as_ref(),
+        )?;
+
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(ica_fund).as_ref(),
+        )?;
+
+        let amount = 12345u64;
+
+        let msg = MsgSend {
+            from_address: ica_address.to_string(),
+            to_address: chains.node_b.wallets().user2().address().to_string(),
+            amount: vec![Coin {
+                denom: stake_denom.to_string(),
+                amount: Amount(U256::from(amount)),
+            }],
+        };
+
+        let raw_msg = msg.to_any();
+
+        let cosmos_tx = CosmosTx {
+            messages: vec![raw_msg],
+        };
+
+        let raw_cosmos_tx = cosmos_tx.to_any();
+
+        let interchain_account_packet_data = InterchainAccountPacketData::new(raw_cosmos_tx.value);
+
+        let signer = Signer::from_str(&wallet.address().to_string()).unwrap();
+
+        interchain_send_tx(
+            chains.handle_a(),
+            &signer,
+            &connection.connection_id_a.0,
+            interchain_account_packet_data.clone(),
+            Timestamp::from_nanoseconds(1000000000).unwrap(),
+        )?;
+
+        // Check that the ICA account's balance has been debited the sent amount.
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            &stake_denom.with_amount(ica_fund - amount).as_ref(),
+        )?;
+
+        let channel_end_a = chains
+            .handle_a
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: controller_port_id.value().clone(),
+                    channel_id: controller_channel_id.value().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd A: {e}"))?;
+
+        let host_port_id = channel_end_a.remote.port_id;
+        let host_channel_id = channel_end_a
+            .remote
+            .channel_id
+            .ok_or_else(|| eyre!("expect to find counterparty channel id"))?;
+
+        let channel_end_b = chains
+            .handle_b
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: host_port_id.clone(),
+                    channel_id: host_channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
+            .map_err(|e| eyre!("Error querying ChannelEnd B: {e}"))?;
+
+        let old_version_a = channel_end_a.version;
+        let old_version_b = channel_end_b.version;
+        let old_connection_hops_a = channel_end_a.connection_hops;
+        let old_connection_hops_b = channel_end_b.connection_hops;
+
+        let new_ordering = Ordering::Unordered;
+
+        let upgraded_attrs = ChannelUpgradableAttributes::new(
+            old_version_a.clone(),
+            old_version_b.clone(),
+            new_ordering,
+            old_connection_hops_a.clone(),
+            old_connection_hops_b.clone(),
+            Sequence::from(1),
+        );
+
+        info!("Will initialise upgrade handshake with governance proposal...");
+
+        chains.node_a.chain_driver().initialise_channel_upgrade(
+            controller_port_id.to_string().as_str(),
+            controller_channel_id.to_string().as_str(),
+            new_ordering.as_str(),
+            old_connection_hops_a.first().unwrap().as_str(),
+            &serde_json::to_string(&old_version_a.0).unwrap(),
+            chains.handle_a().get_signer().unwrap().as_ref(),
+            "1",
+        )?;
+
+        info!("Check that the channel upgrade successfully upgraded the ordering...");
+
+        assert_eventually_channel_upgrade_open(
+            &chains.handle_a,
+            &chains.handle_b,
+            &controller_channel_id.as_ref(),
+            &controller_port_id.as_ref(),
+            &upgraded_attrs,
+        )?;
+        sleep(Duration::from_secs(5));
+
+        Ok(())
     }
 }
 
