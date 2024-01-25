@@ -128,7 +128,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshake {
             old_ordering.as_str(),
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
-            chains.handle_a().get_signer().unwrap().as_ref(),
+            &chains.node_a.wallets().user2().address().to_string(),
             "1",
         )?;
 
