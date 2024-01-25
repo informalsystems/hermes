@@ -351,7 +351,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .build_channel_proofs(self.src_port_id(), src_channel_id, event.height)
             .map_err(|e| LinkError::channel(ChannelError::channel_proof(e)))?;
 
-        let counterparty_upgrade_sequence = dst_channel.upgrade_sequence;
+        let counterparty_upgrade_sequence = self.src_channel(QueryHeight::Latest)?.upgrade_sequence;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
@@ -1338,7 +1338,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             )
             .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;
 
-        let counterparty_upgrade_sequence = self.dst_channel(QueryHeight::Latest)?.upgrade_sequence;
+        let counterparty_upgrade_sequence = self.src_channel(QueryHeight::Latest)?.upgrade_sequence;
 
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),
