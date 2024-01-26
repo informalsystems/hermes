@@ -173,7 +173,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: ibc-go-v8-channel-upgrade-simapp
+          - package: ibc-go-v8-simapp
             command: simd
             account_prefix: cosmos
     steps:

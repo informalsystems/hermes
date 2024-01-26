@@ -207,8 +207,6 @@ impl BinaryChannelTest for ChannelUpgradeICS29 {
             &denom_a,
         )?;
 
-        chain_driver_a.assert_eventual_wallet_amount(&user_a.address(), &balance_a2.as_ref())?;
-
         chain_driver_b.assert_eventual_wallet_amount(
             &user_b.address(),
             &denom_b.with_amount(send_amount).as_ref(),

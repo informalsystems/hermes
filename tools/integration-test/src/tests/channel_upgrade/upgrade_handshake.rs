@@ -6,6 +6,7 @@
 use std::thread::sleep;
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
+use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::events::IbcEventType;
@@ -127,7 +128,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshake {
             old_ordering.as_str(),
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
-            chains.handle_a().get_signer().unwrap().as_ref(),
+            &chains.node_a.wallets().user2().address().to_string(),
             "1",
         )?;
 
@@ -515,6 +516,8 @@ impl BinaryChannelTest for ChannelUpgradeTimeoutConfirmHandshake {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
+            ChannelState::Flushcomplete,
+            ChannelState::Flushing,
             &old_attrs,
         )?;
 
