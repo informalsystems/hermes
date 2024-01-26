@@ -421,7 +421,7 @@ impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
             &signer,
             &connection.connection_id_a.0,
             interchain_account_packet_data.clone(),
-            Timestamp::from_nanoseconds(1000000000).unwrap(),
+            Timestamp::from_nanoseconds(10000000000).unwrap(),
         )?;
 
         // Check that the ICA account's balance has been debited the sent amount.
