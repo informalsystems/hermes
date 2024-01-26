@@ -789,6 +789,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         &mut self,
         state: State,
     ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
+        debug!(
+            "channel end state: {state:#}, counterparty state: {:#?}",
+            self.counterparty_state()?
+        );
         let event = match (state, self.counterparty_state()?) {
             // Open handshake steps
             (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),

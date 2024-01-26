@@ -2,13 +2,13 @@
 //!
 //! - `ChannelUpgradeICACloseChannel` tests that after the upgrade handshake is completed
 //!   and the channel version has been updated to ICS29 a packet timeout closes the channel.
-//! 
+//!
 //! - `ChannelUpgradeICAUnordered` tests that after the after sending a packet on an ordered
 //!   ICA channel, the upgrade handshake is completed when the channel is upgraded to unordered.
 
 use serde_json as json;
-use std::str::FromStr;
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
@@ -327,7 +327,7 @@ impl TestOverrides for ChannelUpgradeICAUnordered {
         if let Some(allow_messages) = allow_messages {
             allow_messages.push(Value::String("/cosmos.bank.v1beta1.MsgSend".to_string()));
         } else {
-            return Err(Error::generic(eyre!("failed to update genesis file")))
+            return Err(Error::generic(eyre!("failed to update genesis file")));
         }
 
         set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
@@ -367,17 +367,17 @@ impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
         )?;
 
         // Query the controller chain for the address of the ICA wallet on the host chain.
-        let ica_address = chains.node_a.chain_driver().query_interchain_account(
-            &wallet.address(),
-            &connection.connection_id_a.as_ref(),
-        )?;
+        let ica_address = chains
+            .node_a
+            .chain_driver()
+            .query_interchain_account(&wallet.address(), &connection.connection_id_a.as_ref())?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &ica_address.as_ref(),
             &stake_denom.with_amount(0u64).as_ref(),
         )?;
 
-        info!("Will send a message to te interchain account...");
+        info!("Will send a message to the interchain account...");
 
         // Send funds to the interchain account.
         let ica_fund = 42000u64;
@@ -421,7 +421,7 @@ impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
             &signer,
             &connection.connection_id_a.0,
             interchain_account_packet_data.clone(),
-            Timestamp::from_nanoseconds(1000000000).unwrap(),
+            Timestamp::from_nanoseconds(10000000000).unwrap(),
         )?;
 
         // Check that the ICA account's balance has been debited the sent amount.
