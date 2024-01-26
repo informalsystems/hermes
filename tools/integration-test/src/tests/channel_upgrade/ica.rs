@@ -486,7 +486,7 @@ impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
             new_ordering.as_str(),
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&old_version_a.0).unwrap(),
-            chains.handle_a().get_signer().unwrap().as_ref(),
+            &chains.node_a.wallets().user2().address().to_string(),
             "1",
         )?;
 
