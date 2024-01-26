@@ -285,7 +285,10 @@ impl ChannelEnd {
     pub fn is_flushing(&self) -> bool {
         use State::*;
 
-        matches!(self.state, Flushing)
+        matches!(
+            self.state,
+            Open(UpgradeState::Upgrading) | Flushing | Flushcomplete
+        )
     }
 }
 
