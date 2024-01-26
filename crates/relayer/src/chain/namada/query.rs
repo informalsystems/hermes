@@ -3,12 +3,12 @@ use ibc_relayer_types::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height as ICSHeight;
+use namada_ibc::storage::{ibc_denom_key_prefix, is_ibc_denom_key};
 use namada_sdk::borsh::BorshDeserialize;
-use namada_sdk::core::ledger::ibc::storage::{ibc_denom_key_prefix, is_ibc_denom_key};
-use namada_sdk::core::types::address::{Address, InternalAddress};
-use namada_sdk::core::types::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::queries::{Client as SdkClient, RPC};
 use namada_sdk::rpc;
+use namada_sdk::types::address::{Address, InternalAddress};
+use namada_sdk::types::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::Namada;
 use tendermint::block::Height as TmHeight;
 

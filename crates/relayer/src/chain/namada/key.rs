@@ -1,7 +1,7 @@
 use core::any::Any;
 
-use namada_sdk::core::types::address::Address;
-use namada_sdk::core::types::key::common::SecretKey;
+use namada_sdk::types::address::Address;
+use namada_sdk::types::key::common::SecretKey;
 
 use crate::config::AddressType;
 use crate::keyring::errors::Error;

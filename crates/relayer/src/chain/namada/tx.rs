@@ -5,12 +5,12 @@ use std::thread;
 use std::time::Instant;
 
 use ibc_proto::google::protobuf::Any;
+use namada_parameters::storage as parameter_storage;
 use namada_sdk::args::{Tx as TxArgs, TxCustom};
 use namada_sdk::borsh::BorshDeserialize;
-use namada_sdk::core::ledger::parameters::storage as parameter_storage;
-use namada_sdk::core::types::address::{Address, ImplicitAddress};
-use namada_sdk::core::types::chain::ChainId;
-use namada_sdk::core::types::transaction::GasLimit;
+use namada_sdk::tx::data::GasLimit;
+use namada_sdk::types::address::{Address, ImplicitAddress};
+use namada_sdk::types::chain::ChainId;
 use namada_sdk::{signing, tx, Namada};
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
