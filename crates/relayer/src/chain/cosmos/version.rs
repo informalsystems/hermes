@@ -22,7 +22,7 @@ use ibc_proto::cosmos::base::tendermint::v1beta1::VersionInfo;
 ///    sum: "h1:yaD4PyOx0LnyfiWasC5egg1U76lT83GRxjJjupPo7Gk=",
 /// },
 /// ```
-const SDK_MODULE_NAME: &str = "cosmos/cosmos-sdk";
+const SDK_MODULE_NAMES: [&'static str; 2] = ["cosmos/cosmos-sdk", "Finschia/finschia-sdk"];
 const IBC_GO_MODULE_NAME: &str = "cosmos/ibc-go";
 const TENDERMINT_MODULE_NAME: &str = "tendermint/tendermint";
 const COMET_MODULE_NAME: &str = "cometbft/cometbft";
@@ -141,9 +141,13 @@ fn parse_sdk_version(version_info: &VersionInfo) -> Result<semver::Version, Erro
     let module = version_info
         .build_deps
         .iter()
-        .find(|&m| m.path.contains(SDK_MODULE_NAME))
+        .find(|&m| -> bool {
+            SDK_MODULE_NAMES
+                .iter()
+                .any(|sdk_module| m.path.contains(sdk_module))
+        })
         .ok_or_else(|| {
-            Error::sdk_module_not_found(SDK_MODULE_NAME.to_string(), AppInfo::from(version_info))
+            Error::sdk_module_not_found(SDK_MODULE_NAMES.join(" OR "), AppInfo::from(version_info))
         })?;
 
     // The raw version number has a leading 'v', trim it out;

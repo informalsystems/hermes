@@ -1,0 +1,6 @@
+#!/bin/bash -e
+
+git clone https://github.com/Finschia/hermes.git
+cd hermes
+git checkout v1.8.0-fnsa
+cargo install --bin hermes --locked --path ./crates/relayer-cli --force
