@@ -389,22 +389,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         } else if a_channel.state_matches(&State::Open(UpgradeState::NotUpgrading))
             && a_channel.remote.channel_id.is_some()
         {
-            let (b_channel, _) = counterparty_chain
-                .query_channel(
-                    QueryChannelRequest {
-                        port_id: a_channel.remote.port_id.clone(),
-                        channel_id: a_channel.remote.channel_id.clone().unwrap(),
-                        height,
-                    },
-                    // IncludeProof::Yes forces a new query when the CachingChainHandle
-                    // is used.
-                    // TODO: Pass the BaseChainHandle instead of the CachingChainHandle
-                    // to the channel worker to avoid querying for a Proof .
-                    IncludeProof::Yes,
-                )
-                .map_err(ChannelError::relayer)?;
+            let src_channel_id = handshake_channel
+                .src_channel_id()
+                .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
-            if a_channel.upgrade_sequence > b_channel.upgrade_sequence {
+            let src_latest_height = handshake_channel
+                .src_chain()
+                .query_latest_height()
+                .map_err(|e| ChannelError::chain_query(handshake_channel.src_chain().id(), e))?;
+
+            // In order to determine if the channel is Open upgrading or not the Upgrade is queried.
+            // If an upgrade is ongoing then the query will succeed in finding an Upgrade.
+            if handshake_channel
+                .src_chain()
+                .query_upgrade(
+                    QueryUpgradeRequest {
+                        port_id: handshake_channel.src_port_id().to_string(),
+                        channel_id: src_channel_id.to_string(),
+                    },
+                    src_latest_height,
+                )
+                .is_ok()
+            {
                 a_channel_state = State::Open(UpgradeState::Upgrading);
             }
         }
