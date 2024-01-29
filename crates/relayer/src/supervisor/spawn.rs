@@ -251,6 +251,18 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
 
         let is_flushing = channel_scan.channel.channel_end.is_flushing();
 
+        match &channel_scan.counterparty {
+            Some(counterparty) => {
+                tracing::debug!("counterparty state: {:#?}", counterparty.channel_end.state)
+            }
+            None => {}
+        }
+
+        tracing::debug!(
+            "channel `{}` is flushing: {is_flushing}",
+            channel_scan.channel.channel_id
+        );
+
         if (mode.clients.enabled || mode.packets.enabled)
             && chan_state_src.is_open()
             && (chan_state_dst.is_open() || chan_state_dst.is_closed())

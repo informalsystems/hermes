@@ -285,6 +285,8 @@ impl ChannelEnd {
     pub fn is_flushing(&self) -> bool {
         use State::*;
 
+        tracing::debug!("is_flushing: channel state {:#?}", self.state);
+
         matches!(
             self.state,
             Open(UpgradeState::Upgrading) | Flushing | Flushcomplete
