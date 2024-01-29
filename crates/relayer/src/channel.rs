@@ -835,6 +835,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     None => Some(self.build_chan_upgrade_cancel_and_send()?),
                 }
             }
+            (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::Upgrading)) => {
+                match self.build_chan_upgrade_try_and_send()? {
+                    Some(event) => Some(event),
+                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
+                }
+            }
             (State::Flushing, State::Flushing) => match self.build_chan_upgrade_ack_and_send()? {
                 Some(event) => Some(event),
                 None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
