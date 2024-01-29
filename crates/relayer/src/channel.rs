@@ -796,7 +796,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         state: State,
     ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
         debug!(
-            "channel end state: {state:#}, counterparty state: {:#?}",
+            "channel end state: {state:#?}, counterparty state: {:#?}",
             self.counterparty_state()?
         );
         let event = match (state, self.counterparty_state()?) {
@@ -824,18 +824,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             // Channel Upgrade handshake steps
             (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::NotUpgrading)) => {
+                debug!("Got Open upgrading/not upgrading");
                 match self.build_chan_upgrade_try_and_send()? {
                     Some(event) => Some(event),
                     None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
                 }
             }
             (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::Upgrading)) => {
+                debug!("Got Open not upgrading/upgrading");
                 match self.flipped().build_chan_upgrade_try_and_send()? {
                     Some(event) => Some(event),
                     None => Some(self.build_chan_upgrade_cancel_and_send()?),
                 }
             }
             (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::Upgrading)) => {
+                debug!("Got Open upgrading/upgrading");
                 match self.build_chan_upgrade_try_and_send()? {
                     Some(event) => Some(event),
                     None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
