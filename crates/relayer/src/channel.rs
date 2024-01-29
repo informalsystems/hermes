@@ -1726,7 +1726,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
-        if channel_end.state != State::Open(UpgradeState::NotUpgrading) {
+        if channel_end.state != State::Open(UpgradeState::NotUpgrading)
+            && channel_end.state != State::Open(UpgradeState::Upgrading)
+        {
             return Err(ChannelError::invalid_channel_upgrade_state(
                 State::Open(UpgradeState::NotUpgrading).to_string(),
                 channel_end.state.to_string(),
@@ -1905,7 +1907,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ));
         }
 
-        if channel_end.state != State::Open(UpgradeState::NotUpgrading) {
+        if channel_end.state != State::Open(UpgradeState::NotUpgrading)
+            && channel_end.state != State::Open(UpgradeState::Upgrading)
+        {
             return Err(ChannelError::invalid_channel_upgrade_state(
                 State::Open(UpgradeState::NotUpgrading).to_string(),
                 channel_end.state.to_string(),
