@@ -27,7 +27,7 @@ __Example__
 
 Use `config auto` to generate a configuration file that is able to relay between `cosmoshub` and `osmosis`. This command assumes the existence of a key file for `cosmoshub-4` and `osmosis-1` in `$HOME/.hermes/keys`.
 ```
-{{#template ../../templates/commands/hermes/config/auto_1.md PATH=~/example_config.toml CHAIN_NAME:OPTIONAL_KEY_NAME=cosmoshub osmosis}}
+{{#template ../../templates/commands/hermes/config/auto_1.md PATH=~/example_config.toml CHAIN1_NAME:OPTIONAL_KEY_NAME=cosmoshub osmosis}}
 
 2022-08-16T17:27:26.966233Z  INFO ThreadId(01) using default configuration from '~/.hermes/config.toml'
 2022-08-16T17:27:27.800213Z  INFO ThreadId(01) cosmoshub-4: uses key "key_cosmoshub"
@@ -38,7 +38,7 @@ SUCCESS Config file written successfully at '~/example_config.toml'
 
 It is also possible to manually specify a key name for any chain.
 ```
-{{#template ../../templates/commands/hermes/config/auto_1.md PATH=~/example_config.toml CHAIN_NAME:OPTIONAL_KEY_NAME=cosmoshub:random_key osmosis}}
+{{#template ../../templates/commands/hermes/config/auto_1.md PATH=~/example_config.toml CHAIN1_NAME:OPTIONAL_KEY_NAME=cosmoshub:random_key osmosis}}
 
 2022-08-16T17:29:56.902499Z  INFO ThreadId(01) using default configuration from '~/.hermes/config.toml'
 2022-08-16T17:29:57.288874Z  INFO ThreadId(01) cosmoshub-4: uses key "random_key"

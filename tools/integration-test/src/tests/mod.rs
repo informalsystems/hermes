@@ -18,6 +18,7 @@ pub mod denom_trace;
 pub mod error_events;
 pub mod execute_schedule;
 pub mod handshake_on_start;
+pub mod ics20_filter;
 pub mod memo;
 pub mod python;
 pub mod query_packet;
@@ -65,3 +66,6 @@ pub mod fee_grant;
 
 #[cfg(any(doc, feature = "interchain-security"))]
 pub mod interchain_security;
+
+#[cfg(any(doc, feature = "dynamic-gas-fee"))]
+pub mod dynamic_gas_fee;

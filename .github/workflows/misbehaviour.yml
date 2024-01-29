@@ -49,12 +49,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
-        uses: cachix/install-nix-action@v24
+        uses: cachix/install-nix-action@v25
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
       - name: Use cachix cache
-        uses: cachix/cachix-action@v13
+        uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - name: Install sconfig
@@ -103,12 +103,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
-        uses: cachix/install-nix-action@v24
+        uses: cachix/install-nix-action@v25
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
       - name: Use cachix cache
-        uses: cachix/cachix-action@v13
+        uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - name: Install sconfig
@@ -157,12 +157,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
-        uses: cachix/install-nix-action@v24
+        uses: cachix/install-nix-action@v25
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
       - name: Use cachix cache
-        uses: cachix/cachix-action@v13
+        uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - name: Install sconfig
@@ -212,12 +212,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
-        uses: cachix/install-nix-action@v24
+        uses: cachix/install-nix-action@v25
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
       - name: Use cachix cache
-        uses: cachix/cachix-action@v13
+        uses: cachix/cachix-action@v14
         with:
           name: cosmos
       - name: Install sconfig
