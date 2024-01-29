@@ -23,7 +23,6 @@ use ibc_proto::ibc::apps::fee::v1::{
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
 use ibc_proto::Protobuf;
-use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
@@ -56,6 +55,10 @@ use ibc_relayer_types::core::{
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
+use ibc_relayer_types::{
+    applications::ics31_icq::response::CrossChainQueryResponse,
+    core::ics04_channel::channel::{State, UpgradeState},
+};
 
 use tendermint::block::Height as TmHeight;
 use tendermint::node::{self, info::TxIndexStatus};
@@ -1662,12 +1665,33 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_channel");
 
         let res = self.query(
-            ChannelEndsPath(request.port_id, request.channel_id),
+            ChannelEndsPath(request.port_id.clone(), request.channel_id.clone()),
             request.height,
             matches!(include_proof, IncludeProof::Yes),
         )?;
 
-        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+        let mut channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+
+        if channel_end.state_matches(&State::Open(UpgradeState::NotUpgrading)) {
+            let height = match request.height {
+                QueryHeight::Latest => self.query_chain_latest_height()?,
+                QueryHeight::Specific(height) => height,
+            };
+            // In order to determine if the channel is Open upgrading or not the Upgrade is queried.
+            // If an upgrade is ongoing then the query will succeed in finding an Upgrade.
+            if self
+                .query_upgrade(
+                    QueryUpgradeRequest {
+                        port_id: request.port_id.to_string(),
+                        channel_id: request.channel_id.to_string(),
+                    },
+                    height,
+                )
+                .is_ok()
+            {
+                channel_end.state = State::Open(UpgradeState::Upgrading);
+            }
+        }
 
         match include_proof {
             IncludeProof::Yes => {
