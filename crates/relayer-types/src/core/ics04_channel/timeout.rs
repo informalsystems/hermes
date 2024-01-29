@@ -256,7 +256,7 @@ impl From<UpgradeTimeout> for RawUpgradeTimeout {
     fn from(value: UpgradeTimeout) -> Self {
         match value {
             UpgradeTimeout::Height(height) => Self {
-                height: RawHeight::try_from(height).ok(),
+                height: Some(RawHeight::from(height)),
                 timestamp: 0,
             },
             UpgradeTimeout::Timestamp(timestamp) => Self {
@@ -264,7 +264,7 @@ impl From<UpgradeTimeout> for RawUpgradeTimeout {
                 timestamp: timestamp.nanoseconds(),
             },
             UpgradeTimeout::Both(height, timestamp) => Self {
-                height: RawHeight::try_from(height).ok(),
+                height: Some(RawHeight::from(height)),
                 timestamp: timestamp.nanoseconds(),
             },
         }

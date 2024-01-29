@@ -102,7 +102,7 @@ pub async fn send_batched_messages_and_wait_check_tx(
         return Ok(Vec::new());
     }
 
-    let batches = batch_messages(config, key_pair, account, tx_memo, messages)?;
+    let batches = batch_messages(config, key_pair, account, tx_memo, messages).await?;
 
     let mut responses = Vec::new();
 
@@ -132,7 +132,7 @@ async fn send_messages_as_batches(
 
     let message_count = messages.len();
 
-    let batches = batch_messages(config, key_pair, account, tx_memo, messages)?;
+    let batches = batch_messages(config, key_pair, account, tx_memo, messages).await?;
 
     debug!(
         "sending {} messages as {} batches to chain {} in parallel",
@@ -173,7 +173,7 @@ async fn sequential_send_messages_as_batches(
 
     let message_count = messages.len();
 
-    let batches = batch_messages(config, key_pair, account, tx_memo, messages)?;
+    let batches = batch_messages(config, key_pair, account, tx_memo, messages).await?;
 
     debug!(
         "sending {} messages as {} batches to chain {} in serial",
@@ -238,7 +238,7 @@ fn response_to_tx_sync_result(
     }
 }
 
-fn batch_messages(
+async fn batch_messages(
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     account: &Account,
@@ -253,7 +253,14 @@ fn batch_messages(
     // Estimate the overhead of the transaction envelope's encoding,
     // by taking the encoded length of an empty tx with the same auth info and signatures.
     // Use the maximum possible fee to get an upper bound for varint encoding.
-    let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+    let max_fee = gas_amount_to_fee(
+        &config.gas_config,
+        config.gas_config.max_gas,
+        &config.chain_id,
+        &config.rpc_address,
+    )
+    .await;
+
     let tx_metrics = encoded_tx_metrics(config, key_pair, account, tx_memo, &[], &max_fee)?;
     let tx_envelope_len = tx_metrics.envelope_len;
     let empty_body_len = tx_metrics.body_bytes_len;
@@ -364,10 +371,16 @@ mod tests {
         (tx_config, key_pair, account)
     }
 
-    #[test]
-    fn batch_does_not_exceed_max_tx_size() {
+    #[tokio::test]
+    async fn batch_does_not_exceed_max_tx_size() {
         let (config, key_pair, account) = test_fixture();
-        let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+        let max_fee = gas_amount_to_fee(
+            &config.gas_config,
+            config.gas_config.max_gas,
+            &config.chain_id,
+            &config.rpc_address,
+        )
+        .await;
         let mut messages = vec![Any {
             type_url: "/example.Baz".into(),
             value: vec![0; 2],
@@ -404,6 +417,7 @@ mod tests {
                 &memo,
                 messages.clone(),
             )
+            .await
             .unwrap();
 
             assert_eq!(batches.len(), 2);
@@ -420,8 +434,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn batch_error_on_oversized_message() {
+    #[tokio::test]
+    async fn batch_error_on_oversized_message() {
         const MAX_TX_SIZE: usize = 203;
 
         let (config, key_pair, account) = test_fixture();
@@ -442,25 +456,32 @@ mod tests {
             &memo,
             messages.clone(),
         )
+        .await
         .unwrap();
 
         assert_eq!(batches.len(), 1);
         assert_eq!(batches[0].len(), 1);
 
-        let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+        let max_fee = gas_amount_to_fee(
+            &config.gas_config,
+            config.gas_config.max_gas,
+            &config.chain_id,
+            &config.rpc_address,
+        )
+        .await;
         let tx_bytes =
             sign_and_encode_tx(&config, &key_pair, &account, &memo, &batches[0], &max_fee).unwrap();
         assert_eq!(tx_bytes.len(), MAX_TX_SIZE);
 
         limited_config.max_tx_size = MaxTxSize::new(MAX_TX_SIZE - 1).unwrap();
 
-        let res = batch_messages(&limited_config, &key_pair, &account, &memo, messages);
+        let res = batch_messages(&limited_config, &key_pair, &account, &memo, messages).await;
 
         assert!(res.is_err());
     }
 
-    #[test]
-    fn test_batches_are_structured_appropriately_per_max_msg_num() {
+    #[tokio::test]
+    async fn test_batches_are_structured_appropriately_per_max_msg_num() {
         let (config, key_pair, account) = test_fixture();
 
         // Ensure that when MaxMsgNum is 1, the resulting batch
@@ -499,6 +520,7 @@ mod tests {
             &Memo::new("").unwrap(),
             messages.clone(),
         )
+        .await
         .unwrap();
 
         assert_eq!(batches.len(), 5);
@@ -517,14 +539,15 @@ mod tests {
             &Memo::new("").unwrap(),
             messages,
         )
+        .await
         .unwrap();
 
         assert_eq!(batches.len(), 1);
         assert_eq!(batches[0].len(), 5);
     }
 
-    #[test]
-    fn test_batches_are_structured_appropriately_per_max_tx_size() {
+    #[tokio::test]
+    async fn test_batches_are_structured_appropriately_per_max_tx_size() {
         const MAX_TX_SIZE: usize = 198;
 
         let (config, key_pair, account) = test_fixture();
@@ -565,11 +588,18 @@ mod tests {
             &memo,
             messages.clone(),
         )
+        .await
         .unwrap();
 
         assert_eq!(batches.len(), 5);
 
-        let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+        let max_fee = gas_amount_to_fee(
+            &config.gas_config,
+            config.gas_config.max_gas,
+            &config.chain_id,
+            &config.rpc_address,
+        )
+        .await;
 
         for batch in batches {
             assert_eq!(batch.len(), 1);
@@ -589,15 +619,16 @@ mod tests {
             &Memo::new("").unwrap(),
             messages,
         )
+        .await
         .unwrap();
 
         assert_eq!(batches.len(), 1);
         assert_eq!(batches[0].len(), 5);
     }
 
-    #[test]
+    #[tokio::test]
     #[should_panic(expected = "`max_msg_num` must be greater than or equal to 1, found 0")]
-    fn test_max_msg_num_of_zero_panics() {
+    async fn test_max_msg_num_of_zero_panics() {
         let (mut config, key_pair, account) = test_fixture();
         config.max_msg_num = MaxMsgNum::new(0).unwrap();
         let _batches = batch_messages(
@@ -606,6 +637,7 @@ mod tests {
             &account,
             &Memo::new("").unwrap(),
             vec![],
-        );
+        )
+        .await;
     }
 }

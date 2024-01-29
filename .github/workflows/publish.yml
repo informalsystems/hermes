@@ -1,13 +1,13 @@
-name: Publish (dry-run)
+name: Publish
 
 on:
   push:
-    branches:
-      - 'release/*'
+    tags:
+      - v[0-9]+.*
 
 jobs:
-  publish:
-    name: Publish (dry-run)
+  publish_dry_run:
+    name: Publish to crates.io
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,5 +17,6 @@ jobs:
           override: true
       - uses: katyo/publish-crates@v2
         with:
-          dry-run: true
+          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
 

@@ -2,8 +2,8 @@ use core::any::Any;
 
 use bip39::{Language, Mnemonic, Seed};
 use bitcoin::{
-    bip32::{ChildNumber, DerivationPath, ExtendedPrivKey, ExtendedPubKey},
-    network::constants::Network,
+    bip32::{ChildNumber, DerivationPath, Xpriv, Xpub},
+    network::Network,
 };
 use digest::Digest;
 use generic_array::{typenum::U32, GenericArray};
@@ -25,16 +25,15 @@ use crate::config::AddressType;
 pub fn private_key_from_mnemonic(
     mnemonic_words: &str,
     hd_path: &StandardHDPath,
-) -> Result<ExtendedPrivKey, Error> {
+) -> Result<Xpriv, Error> {
     let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
         .map_err(Error::invalid_mnemonic)?;
 
     let seed = Seed::new(&mnemonic, "");
 
-    let base_key =
-        ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes()).map_err(|err| {
-            Error::bip32_key_generation_failed(Secp256k1KeyPair::KEY_TYPE, err.into())
-        })?;
+    let base_key = Xpriv::new_master(Network::Bitcoin, seed.as_bytes()).map_err(|err| {
+        Error::bip32_key_generation_failed(Secp256k1KeyPair::KEY_TYPE, err.into())
+    })?;
 
     let private_key = base_key
         .derive_priv(
@@ -145,8 +144,8 @@ pub struct Secp256k1KeyPair {
 // The old `KeyEntry` type
 #[derive(Debug, Deserialize)]
 struct KeyPairV1 {
-    public_key: ExtendedPubKey,
-    private_key: ExtendedPrivKey,
+    public_key: Xpub,
+    private_key: Xpriv,
     account: String,
     address: Vec<u8>,
 }
@@ -217,7 +216,7 @@ impl Secp256k1KeyPair {
         account_prefix: &str,
     ) -> Result<Self, Error> {
         let private_key = private_key_from_mnemonic(mnemonic, hd_path)?;
-        let public_key = ExtendedPubKey::from_priv(&Secp256k1::signing_only(), &private_key);
+        let public_key = Xpub::from_priv(&Secp256k1::signing_only(), &private_key);
         let address = get_address(&public_key.public_key, address_type);
         let account = encode_address(account_prefix, &address)?;
 
@@ -244,7 +243,7 @@ impl SigningKeyPair for Secp256k1KeyPair {
 
         // Decode the private key from the mnemonic
         let private_key = private_key_from_mnemonic(&key_file.mnemonic, hd_path)?;
-        let derived_pubkey = ExtendedPubKey::from_priv(&Secp256k1::signing_only(), &private_key);
+        let derived_pubkey = Xpub::from_priv(&Secp256k1::signing_only(), &private_key);
         let derived_pubkey_bytes = derived_pubkey.public_key.serialize().to_vec();
         assert!(derived_pubkey_bytes.len() <= keyfile_pubkey_bytes.len());
 
@@ -303,9 +302,10 @@ impl SigningKeyPair for Secp256k1KeyPair {
             Secp256k1AddressType::Cosmos => Sha256::digest(message),
         };
 
-        // SAFETY: hashed_message is 32 bytes, as expected in `Message::from_slice`,
-        // so `unwrap` is safe.
-        let message = Message::from_slice(&hashed_message).unwrap();
+        assert!(hashed_message.len() == 32);
+
+        // SAFETY: hashed_message is 32 bytes, as expected in `Message::from_slice`.
+        let message = Message::from_digest_slice(&hashed_message).unwrap();
 
         Ok(Secp256k1::signing_only()
             .sign_ecdsa(&message, &self.private_key)

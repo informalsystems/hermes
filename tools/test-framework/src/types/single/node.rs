@@ -9,6 +9,7 @@ use eyre::Report as Error;
 use ibc_relayer::chain::cosmos::config::CosmosSdkConfig;
 use ibc_relayer::config;
 use ibc_relayer::config::compat_mode::CompatMode;
+use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -174,13 +175,16 @@ impl FullNode {
             max_gas: Some(3000000),
             gas_adjustment: None,
             gas_multiplier: Some(GasMultiplier::unsafe_new(1.5)),
+            dynamic_gas_price: DynamicGasPrice::default(),
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             max_grpc_decoding_size: config::default::max_grpc_decoding_size(),
+            query_packets_chunk_size: config::default::query_packets_chunk_size(),
             max_block_time: Duration::from_secs(30),
             clock_drift: Duration::from_secs(5),
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
+            client_refresh_rate: config::default::client_refresh_rate(),
             ccv_consumer_chain: false,
             trust_threshold: Default::default(),
             gas_price,
