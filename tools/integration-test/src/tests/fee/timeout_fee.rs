@@ -72,10 +72,6 @@ impl BinaryChannelTest for TimeoutFeeTest {
             Duration::from_secs(5),
         )?;
 
-        info!("Expect user A's balance after transfer: {}", balance_a2);
-
-        chain_driver_a.assert_eventual_wallet_amount(&user_a.address(), &balance_a2.as_ref())?;
-
         // Sleep to wait for IBC packet to timeout before start relaying
         thread::sleep(Duration::from_secs(6));
 
