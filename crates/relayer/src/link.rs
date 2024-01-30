@@ -84,6 +84,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             })?;
 
         if !a_channel.state_matches(&ChannelState::Open(UpgradeState::NotUpgrading))
+            && !a_channel.state_matches(&ChannelState::Open(UpgradeState::Upgrading))
             && !a_channel.state_matches(&ChannelState::Closed)
         {
             return Err(LinkError::invalid_channel_state(
