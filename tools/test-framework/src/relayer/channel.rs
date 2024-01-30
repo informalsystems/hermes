@@ -383,7 +383,7 @@ pub fn assert_eventually_channel_upgrade_init<ChainA: ChainHandle, ChainB: Chain
                 Duration::from_secs(1),
                 || {
                     assert_channel_upgrade_state(
-                        ChannelState::Open(UpgradeState::NotUpgrading),
+                        ChannelState::Open(UpgradeState::Upgrading),
                         ChannelState::Open(UpgradeState::NotUpgrading),
                         handle_a,
                         handle_b,
@@ -413,7 +413,7 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
         || {
             assert_channel_upgrade_state(
                 ChannelState::Flushing,
-                ChannelState::Open(UpgradeState::NotUpgrading),
+                ChannelState::Open(UpgradeState::Upgrading),
                 handle_a,
                 handle_b,
                 channel_id_a,
