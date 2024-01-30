@@ -586,8 +586,9 @@ impl ChainEndpoint for AstriaEndpoint {
     fn query_balance(
         &self,
         _key_name: Option<&str>,
-        _denom: Option<&str>,
+        denom: Option<&str>,
     ) -> Result<Balance, Error> {
+        use astria_core::sequencer::v1alpha1::account::AssetBalance;
         use astria_sequencer_client::{
             Address,
             SequencerClientExt as _,
@@ -600,9 +601,25 @@ impl ChainEndpoint for AstriaEndpoint {
             .block_on(self.sequencer_client.get_latest_balance(address))
             .map_err(|e| Error::other(Box::new(e)))?;
 
+        let denom =
+            denom.unwrap_or(astria_core::sequencer::v1alpha1::asset::DEFAULT_NATIVE_ASSET_DENOM);
+
+        let balance: Vec<AssetBalance> = balance
+            .balances
+            .into_iter()
+            .filter(|b| b.denom.to_string() == denom)
+            .collect();
+
+        if balance.is_empty() {
+            return Ok(Balance {
+                amount: 0.to_string(),
+                denom: denom.to_string(),
+            });
+        }
+
         Ok(Balance {
-            amount: balance.balance.to_string(),
-            denom: astria_core::sequencer::v1alpha1::asset::DEFAULT_NATIVE_ASSET_DENOM.to_string(),
+            amount: balance[0].balance.to_string(),
+            denom: denom.to_string(),
         })
     }
 
