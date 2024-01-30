@@ -36,7 +36,7 @@ clap_complete            = "3.2"
 color-eyre               = "0.6"
 console                  = "0.15.5"
 crossbeam-channel        = "0.5.11"
-dialoguer                = "0.10.3"
+dialoguer                = "0.11.0"
 dirs-next                = "2.0.0"
 eyre                     = "0.6.8"
 flex-error               = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
