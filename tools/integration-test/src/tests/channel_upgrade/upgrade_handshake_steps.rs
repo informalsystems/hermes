@@ -24,7 +24,7 @@
 //! - `ChannelUpgradeHandshakeInitiateNewUpgrade` tests that the channel worker will
 //!   finish the upgrade handshake if the side that moved to `OPEN` initiates a
 //!   new upgrade before the counterparty moved to `OPEN`.
-//! 
+//!
 //! - `ChannelUpgradeHandshakeTimeoutOnPacketAck` tests that the channel worker will cancel the
 //!   upgrade handshake if the chain acknowledges a packet after the upgrade timeout expired.
 
@@ -1550,15 +1550,18 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
             denom_a
         );
 
-        chains.node_a.chain_driver().ibc_transfer_token_with_memo_and_timeout(
-            &channels.port_a.as_ref(),
-            &channels.channel_id_a.as_ref(),
-            &wallet_a.as_ref(),
-            &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
-            None,
-            Some(Duration::from_secs(600)),
-        )?;
+        chains
+            .node_a
+            .chain_driver()
+            .ibc_transfer_token_with_memo_and_timeout(
+                &channels.port_a.as_ref(),
+                &channels.channel_id_a.as_ref(),
+                &wallet_a.as_ref(),
+                &wallet_b.address(),
+                &denom_a.with_amount(a_to_b_amount).as_ref(),
+                None,
+                Some(Duration::from_secs(600)),
+            )?;
 
         info!("Will run ChanUpgradeTry step...");
 
