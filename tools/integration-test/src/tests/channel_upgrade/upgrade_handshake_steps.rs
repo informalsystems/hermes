@@ -1598,7 +1598,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
         // wait enough time so that timeout expires while chain a is in FLUSHING
         // and when packet lifecycle completes with acknowledge packet on chain a
         // it will abort the upgrade
-        sleep(Duration::from_nanos(60000000000));
+        sleep(Duration::from_nanos(80000000000));
 
         info!("Check that the channel upgrade aborted...");
 
