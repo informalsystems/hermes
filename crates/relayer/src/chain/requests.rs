@@ -117,6 +117,7 @@ impl PageRequest {
 
         PageRequest {
             limit: u32::MAX as u64,
+            reverse: true,
             ..Default::default()
         }
     }
