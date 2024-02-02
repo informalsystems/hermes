@@ -3190,8 +3190,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc2294fa667c8b548ee27a9ba59115472d0a09c2ba255771092a7f1dcf03a789"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/fix-block-results-serde#205ba794d2505beb83d1205881fbd2df73109cf4"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -3221,8 +3220,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a25dbe8b953e80f3d61789fbdb83bf9ad6c0ef16df5ca6546f49912542cc137"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/fix-block-results-serde#205ba794d2505beb83d1205881fbd2df73109cf4"
 dependencies = [
  "flex-error",
  "serde",
@@ -3235,8 +3233,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94aecbdccbc4b557649b2d1b1a4bfc27ec85205e00fb8020fce044245a4c9e3f"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/fix-block-results-serde#205ba794d2505beb83d1205881fbd2df73109cf4"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3260,8 +3257,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-detector"
 version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea83654b03e3ddc6782c9704a3fefd4d0671bd6c5e3f09d29e31fcb45e75636c"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/fix-block-results-serde#205ba794d2505beb83d1205881fbd2df73109cf4"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3284,8 +3280,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74994da9de4b1144837a367ca2c60c650f5526a7c1a54760a3020959b522e474"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/fix-block-results-serde#205ba794d2505beb83d1205881fbd2df73109cf4"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3297,8 +3292,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cc728a4f9e891d71adf66af6ecaece146f9c7a11312288a3107b3e1d6979aaf"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/fix-block-results-serde#205ba794d2505beb83d1205881fbd2df73109cf4"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3315,8 +3309,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfbf0a4753b46a190f367337e0163d0b552a2674a6bac54e74f9f2cdcde2969b"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/fix-block-results-serde#205ba794d2505beb83d1205881fbd2df73109cf4"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3348,8 +3341,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a19d4f02b7e38ce790da973fdc9edc71a0e35340ac57737bf278c8379037c1f5"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/fix-block-results-serde#205ba794d2505beb83d1205881fbd2df73109cf4"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
