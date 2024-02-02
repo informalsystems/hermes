@@ -1749,6 +1749,7 @@ name = "ibc-telemetry"
 version = "0.27.0"
 dependencies = [
  "axum",
+ "cometbft",
  "dashmap",
  "ibc-relayer-types",
  "moka",
@@ -1758,7 +1759,6 @@ dependencies = [
  "prometheus",
  "serde",
  "serde_json",
- "tendermint",
  "tokio",
  "tracing",
 ]
