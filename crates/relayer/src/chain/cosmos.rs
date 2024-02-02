@@ -991,17 +991,17 @@ impl ChainEndpoint for CosmosSdkChain {
     /// further checks.
     fn health_check(&mut self) -> Result<HealthCheck, Error> {
         if let Err(e) = do_health_check(self) {
-            warn!("Health checkup for chain '{}' failed", self.id());
-            warn!("    Reason: {}", e.detail());
-            warn!("    Some Hermes features may not work in this mode!");
+            warn!("health check failed for chain '{}'", self.id());
+            warn!("reason: {}", e.detail());
+            warn!("some Hermes features may not work in this mode!");
 
             return Ok(HealthCheck::Unhealthy(Box::new(e)));
         }
 
         if let Err(e) = self.validate_params() {
-            warn!("Hermes might be misconfigured for chain '{}'", self.id());
-            warn!("    Reason: {}", e.detail());
-            warn!("    Some Hermes features may not work in this mode!");
+            warn!("found potential misconfiguration for chain '{}'", self.id());
+            warn!("reason: {}", e.detail());
+            warn!("some Hermes features may not work in this mode!");
 
             return Ok(HealthCheck::Unhealthy(Box::new(e)));
         }
@@ -2400,7 +2400,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
         if !found_matching_denom {
             warn!(
-                "Chain '{}' has no minimum gas price of denomination '{}' \
+                "chain '{}' has no minimum gas price of denomination '{}' \
                 that is strictly less than the `gas_price` specified for \
                 that chain in the Hermes configuration. \
                 This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
@@ -2409,7 +2409,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         }
     } else {
         warn!(
-            "Chain '{}' has no minimum gas price value configured for denomination '{}'. \
+            "chain '{}' has no minimum gas price value configured for denomination '{}'. \
             This is usually a sign of misconfiguration, please check your chain and \
             relayer configurations",
             chain_id, relayer_gas_price.denom
