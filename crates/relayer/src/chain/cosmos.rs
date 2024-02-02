@@ -2419,7 +2419,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
 
     if let Err(diagnostic) = compatibility::run_diagnostic(&version_specs) {
-        return Err(Error::sdk_module_version(
+        return Err(Error::compat_check_failed(
             chain_id.clone(),
             grpc_address,
             diagnostic.to_string(),

@@ -494,14 +494,14 @@ define_error! {
                 format!("semantic config validation failed for option `gas_multiplier` of chain '{}', reason: gas multiplier ({}) is smaller than `1.1`, which could trigger gas fee errors in production", e.chain_id, e.gas_multiplier)
             },
 
-        SdkModuleVersion
+        CompatCheckFailed
             {
                 chain_id: ChainId,
                 address: String,
                 cause: String
             }
             |e| {
-                format!("Hermes health check failed while verifying the application compatibility for chain {0}:{1}; caused by: {2}",
+                format!("compatibility check failed for chain '{0}' at '{1}': {2}",
                     e.chain_id, e.address, e.cause)
             },
 
