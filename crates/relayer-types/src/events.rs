@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
-use tendermint::abci;
+use cometbft::abci;
 
 use crate::applications::ics29_fee::error::Error as FeeError;
 use crate::applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket};
@@ -87,7 +87,7 @@ define_error! {
     }
 }
 
-/// Events whose data is not included in the app state and must be extracted using tendermint RPCs
+/// Events whose data is not included in the app state and must be extracted using CometBFT RPCs
 /// (i.e. /tx_search or /block_search)
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum WithBlockDataType {

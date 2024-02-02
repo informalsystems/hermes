@@ -3,7 +3,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str;
-use tendermint::abci;
+use cometbft::abci;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
@@ -59,7 +59,7 @@ impl Display for Attributes {
     }
 }
 
-/// Convert attributes to Tendermint ABCI tags
+/// Convert attributes to CometBFT ABCI tags
 impl From<Attributes> for Vec<abci::EventAttribute> {
     fn from(a: Attributes) -> Self {
         let mut attributes = vec![];

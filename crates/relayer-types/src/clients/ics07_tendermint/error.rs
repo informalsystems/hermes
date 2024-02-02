@@ -6,10 +6,10 @@ use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::{Timestamp, TimestampOverflowError};
 
 use crate::Height;
-use tendermint::account::Id;
-use tendermint::hash::Hash;
-use tendermint::Error as TendermintError;
-use tendermint_light_client_verifier::errors::VerificationErrorDetail as LightClientErrorDetail;
+use cometbft::account::Id;
+use cometbft::hash::Hash;
+use cometbft::Error as CometbftError;
+use cometbft_light_client_verifier::errors::VerificationErrorDetail as LightClientErrorDetail;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -27,7 +27,7 @@ define_error! {
 
         InvalidHeader
             { reason: String }
-            [ TendermintError ]
+            [ CometbftError ]
             |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },
 
         InvalidTrustThreshold
@@ -99,7 +99,7 @@ define_error! {
             | e | { format_args!("invalid raw client consensus state: {}", e.reason) },
 
         InvalidRawHeader
-            [ TendermintError ]
+            [ CometbftError ]
             | _ | { "invalid raw header" },
 
         InvalidRawMisbehaviour

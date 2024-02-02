@@ -602,6 +602,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cometbft-light-client-verifier"
+version = "0.1.0-alpha.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8833008de443fbc949d507e041f44c29edc1189d3da3ba16c47c7720bf968f6"
+dependencies = [
+ "cometbft",
+ "derive_more",
+ "flex-error",
+ "serde",
+ "time",
+]
+
+[[package]]
 name = "cometbft-proto"
 version = "0.1.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -651,6 +664,22 @@ dependencies = [
  "url",
  "uuid 1.7.0",
  "walkdir",
+]
+
+[[package]]
+name = "cometbft-testgen"
+version = "0.1.0-alpha.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e629613cf20c20d8b517f57efbc315373696515350f554d3eb8b3fed938eeab2"
+dependencies = [
+ "cometbft",
+ "ed25519-consensus",
+ "gumdrop",
+ "serde",
+ "serde_json",
+ "simple-error 0.3.0",
+ "tempfile",
+ "time",
 ]
 
 [[package]]
@@ -1718,6 +1747,11 @@ name = "ibc-relayer-types"
 version = "0.27.0"
 dependencies = [
  "bytes",
+ "cometbft",
+ "cometbft-light-client-verifier",
+ "cometbft-proto",
+ "cometbft-rpc",
+ "cometbft-testgen",
  "derive_more",
  "env_logger 0.11.1",
  "flex-error",
@@ -1732,11 +1766,6 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "subtle-encoding",
- "tendermint",
- "tendermint-light-client-verifier",
- "tendermint-proto",
- "tendermint-rpc",
- "tendermint-testgen",
  "test-log",
  "time",
  "tracing",
@@ -3212,6 +3241,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc47a29ce97772ca5c927f75bac34866b16d64e07f330c3248e2d7226623901b"
 
 [[package]]
+name = "simple-error"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8542b68b8800c3cda649d2c72d688b6907b30f1580043135d61669d4aad1c175"
+
+[[package]]
 name = "skeptic"
 version = "0.13.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3570,7 +3605,7 @@ dependencies = [
  "gumdrop",
  "serde",
  "serde_json",
- "simple-error",
+ "simple-error 0.2.3",
  "tempfile",
  "tendermint",
  "time",

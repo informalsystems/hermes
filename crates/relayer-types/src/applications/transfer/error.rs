@@ -4,7 +4,7 @@ use std::string::FromUtf8Error;
 
 use flex_error::{define_error, DisplayOnly, TraceError};
 use subtle_encoding::Error as EncodingError;
-use tendermint_proto::Error as TendermintProtoError;
+use cometbft_proto::Error as CometbftProtoError;
 use uint::FromDecStrErr;
 
 use crate::core::ics04_channel::channel::Ordering;
@@ -127,7 +127,7 @@ define_error! {
             | _ | { "no trace associated with specified hash" },
 
         DecodeRawMsg
-            [ TraceError<TendermintProtoError> ]
+            [ TraceError<CometbftProtoError> ]
             | _ | { "error decoding raw msg" },
 
         UnknownMsgType

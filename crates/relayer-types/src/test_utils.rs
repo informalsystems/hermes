@@ -1,4 +1,4 @@
-use tendermint::{block, consensus, evidence, public_key::Algorithm};
+use cometbft::{block, consensus, evidence, public_key::Algorithm};
 
 use crate::signer::Signer;
 

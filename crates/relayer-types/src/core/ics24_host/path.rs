@@ -14,7 +14,7 @@ use flex_error::define_error;
 pub const IBC_QUERY_PATH: &str = "store/ibc/key";
 
 /// ABCI Query path for the upgrade sub-store
-/// ## Note: This is SDK/Tendermint specific!
+/// ## Note: This is SDK/CometBFT specific!
 pub const SDK_UPGRADE_QUERY_PATH: &str = "store/upgrade/key";
 
 /// ABCI client upgrade keys

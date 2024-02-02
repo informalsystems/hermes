@@ -6,8 +6,8 @@ use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 use ibc_proto::Protobuf;
 use prost::Message;
 use serde_derive::{Deserialize, Serialize};
-use tendermint::block::signed_header::SignedHeader;
-use tendermint::validator::Set as ValidatorSet;
+use cometbft::block::signed_header::SignedHeader;
+use cometbft::validator::Set as ValidatorSet;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
@@ -47,7 +47,7 @@ impl Header {
             ChainId::chain_version(self.signed_header.header.chain_id.as_str()),
             u64::from(self.signed_header.header.height),
         )
-        .expect("malformed tendermint header domain type has an illegal height of 0")
+        .expect("malformed cometbft header domain type has an illegal height of 0")
     }
 }
 
@@ -151,15 +151,15 @@ impl From<Header> for RawHeader {
 pub mod test_util {
 
     use subtle_encoding::hex;
-    use tendermint::block::signed_header::SignedHeader;
-    use tendermint::validator::Info as ValidatorInfo;
-    use tendermint::validator::Set as ValidatorSet;
-    use tendermint::PublicKey;
+    use cometbft::block::signed_header::SignedHeader;
+    use cometbft::validator::Info as ValidatorInfo;
+    use cometbft::validator::Set as ValidatorSet;
+    use cometbft::PublicKey;
 
     use crate::clients::ics07_tendermint::header::Header;
     use crate::Height;
 
-    pub fn get_dummy_tendermint_header() -> tendermint::block::Header {
+    pub fn get_dummy_tendermint_header() -> cometbft::block::Header {
         serde_json::from_str::<SignedHeader>(include_str!(
             "../../../tests/support/signed_header.json"
         ))

@@ -12,7 +12,7 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 
 use flex_error::{define_error, TraceError};
-use tendermint_proto::Error as TendermintError;
+use cometbft_proto::Error as CometbftError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -50,7 +50,7 @@ define_error! {
             },
 
         InvalidVersion
-            [ TraceError<TendermintError> ]
+            [ TraceError<CometbftError> ]
             | _ | { "invalid version" },
 
         Signer

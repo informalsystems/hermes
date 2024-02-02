@@ -32,7 +32,7 @@ impl Height {
         })
     }
 
-    pub fn from_tm(height: tendermint::block::Height, chain_id: &ChainId) -> Self {
+    pub fn from_tm(height: cometbft::block::Height, chain_id: &ChainId) -> Self {
         Self {
             revision_number: chain_id.version(),
             revision_height: height.value(),
@@ -123,9 +123,9 @@ impl From<Height> for RawHeight {
     }
 }
 
-impl From<Height> for tendermint::block::Height {
+impl From<Height> for cometbft::block::Height {
     fn from(height: Height) -> Self {
-        tendermint::block::Height::try_from(height.revision_height)
+        cometbft::block::Height::try_from(height.revision_height)
             .expect("revision height is a valid height")
     }
 }

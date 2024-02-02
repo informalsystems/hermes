@@ -2,8 +2,8 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 use ibc_proto::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint::{hash::Algorithm, time::Time, Hash};
-use tendermint_proto::google::protobuf as tpb;
+use cometbft::{hash::Algorithm, time::Time, Hash};
+use cometbft_proto::google::protobuf as tpb;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
@@ -128,8 +128,8 @@ impl From<ConsensusState> for Any {
     }
 }
 
-impl From<tendermint::block::Header> for ConsensusState {
-    fn from(header: tendermint::block::Header) -> Self {
+impl From<cometbft::block::Header> for ConsensusState {
+    fn from(header: cometbft::block::Header) -> Self {
         Self {
             root: CommitmentRoot::from_bytes(header.app_hash.as_ref()),
             timestamp: header.time,
@@ -146,7 +146,7 @@ impl From<Header> for ConsensusState {
 
 #[cfg(test)]
 mod tests {
-    use tendermint_rpc::endpoint::abci_query::AbciQuery;
+    use cometbft_rpc::endpoint::abci_query::AbciQuery;
     use test_log::test;
 
     use crate::test::test_serialization_roundtrip;

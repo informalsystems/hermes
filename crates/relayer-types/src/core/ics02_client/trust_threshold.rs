@@ -11,7 +11,7 @@ use num_rational::Ratio;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Fraction;
-use tendermint::trust_threshold::TrustThresholdFraction;
+use cometbft::trust_threshold::TrustThresholdFraction;
 
 use crate::core::ics02_client::error::Error;
 
@@ -76,7 +76,7 @@ impl TrustThreshold {
     }
 }
 
-/// Conversion from Tendermint domain type into IBC domain type.
+/// Conversion from Tendermint consensus client domain type into IBC domain type.
 impl From<TrustThresholdFraction> for TrustThreshold {
     fn from(t: TrustThresholdFraction) -> Self {
         Self(Ratio::new_raw(t.numerator(), t.denominator()))

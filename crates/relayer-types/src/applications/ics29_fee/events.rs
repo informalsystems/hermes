@@ -2,7 +2,7 @@ use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
-use tendermint::abci;
+use cometbft::abci;
 
 use super::error::Error;
 use crate::applications::transfer::coin::RawCoin;

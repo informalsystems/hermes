@@ -16,9 +16,9 @@ use super::validate::*;
 ///       `is_epoch_format` will most likely be replaced by validate_chain_id()-style function.
 ///       See: <https://github.com/informalsystems/hermes/pull/304#discussion_r503917283>.
 ///
-/// Also, contrast with tendermint-rs `ChainId` type.
+/// Also, contrast with cometbft-rs `ChainId` type.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(from = "tendermint::chain::Id", into = "tendermint::chain::Id")]
+#[serde(from = "cometbft::chain::Id", into = "cometbft::chain::Id")]
 pub struct ChainId {
     id: String,
     version: u64,
@@ -122,14 +122,14 @@ impl Display for ChainId {
     }
 }
 
-impl From<ChainId> for tendermint::chain::Id {
+impl From<ChainId> for cometbft::chain::Id {
     fn from(id: ChainId) -> Self {
-        tendermint::chain::Id::from_str(id.as_str()).unwrap()
+        cometbft::chain::Id::from_str(id.as_str()).unwrap()
     }
 }
 
-impl From<tendermint::chain::Id> for ChainId {
-    fn from(id: tendermint::chain::Id) -> Self {
+impl From<cometbft::chain::Id> for ChainId {
+    fn from(id: cometbft::chain::Id) -> Self {
         ChainId::from_str(id.as_str()).unwrap()
     }
 }
