@@ -13,7 +13,7 @@ use tokio::time::Duration;
 use tracing::{debug, info};
 
 use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
-use tendermint_rpc::{Client, SubscriptionClient, Url, WebSocketClient};
+use cometbft_rpc::{Client, SubscriptionClient, Url, WebSocketClient};
 
 use crate::error::RegistryError;
 use crate::formatter::{SimpleWebSocketFormatter, UriFormatter};
@@ -138,7 +138,7 @@ impl QueryContext for SimpleHermesRpcQuerier {
 
         Ok(HermesConfigData {
             rpc_address: Url::from_str(&rpc)
-                .map_err(|e| RegistryError::tendermint_url_parse_error(rpc, e))?,
+                .map_err(|e| RegistryError::cometbft_url_parse_error(rpc, e))?,
             max_block_size: latest_consensus_params,
             websocket: websocket_addr,
         })
@@ -167,17 +167,17 @@ impl QueryContext for GrpcHealthCheckQuerier {
 
     /// Query the endpoint and return the GRPC url
     async fn query(uri: Self::QueryInput) -> Result<Self::QueryOutput, Self::QueryError> {
-        let tendermint_url = uri
+        let cometbft_url = uri
             .to_string()
             .parse()
-            .map_err(|e| RegistryError::tendermint_url_parse_error(uri.to_string(), e))?;
+            .map_err(|e| RegistryError::cometbft_url_parse_error(uri.to_string(), e))?;
 
-        info!("Querying gRPC server at {tendermint_url}");
+        info!("Querying gRPC server at {cometbft_url}");
 
         QueryClient::connect(uri)
             .await
             .map_err(|_| RegistryError::unable_to_connect_with_grpc())?;
 
-        Ok(tendermint_url)
+        Ok(cometbft_url)
     }
 }
