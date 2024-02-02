@@ -693,8 +693,7 @@ impl CosmosSdkChain {
 
     /// Query the chain status of the RPC and gRPC nodes.
     ///
-    /// Returns an error if any of the node is still syncing and has not caught up,
-    /// ie. if `sync_info.catching_up` is `true`.
+    /// Returns an error if any of the node is still syncing and has not caught up.
     fn chain_status(&self) -> Result<status::Response, Error> {
         crate::time!(
             "chain_status",
