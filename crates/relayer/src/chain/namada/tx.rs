@@ -33,6 +33,11 @@ impl NamadaChain {
 
         let chain_id = ChainId::from_str(self.config.id.as_str()).expect("invalid chain ID");
 
+        let url = &self.config().rpc_addr;
+        let rpc_addr = format!("{}:{}{}", url.host(), url.port(), url.path());
+        let ledger_address =
+            tendermint_config::net::Address::from_str(&rpc_addr).expect("invalid rpc address");
+
         let fee_token = &self.config.gas_price.denom;
         let fee_token = Address::decode(fee_token)
             .map_err(|_| NamadaError::address_decode(fee_token.to_string()))?;
@@ -65,7 +70,7 @@ impl NamadaChain {
             force: false,
             output_folder: None,
             broadcast_only: true,
-            ledger_address: (),
+            ledger_address,
             initialized_account_alias: None,
             wallet_alias_force: false,
             wrapper_fee_payer: Some(relayer_public_key.clone()),
