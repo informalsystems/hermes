@@ -21,7 +21,7 @@ opentelemetry-prometheus = "0.12.0"
 prometheus               = "0.13.2"
 moka                     = { version = "0.12.0", features = ["sync"] }
 dashmap                  = "5.4.0"
-serde_json               = "1.0.111"
+serde_json               = "1.0.113"
 serde                    = "1.0.195"
 axum                     = "0.6.18"
 tokio                    = "1.26.0"
