@@ -15,6 +15,8 @@ pub trait Fetchable
 where
     Self: DeserializeOwned,
 {
+    const DESC: &'static str;
+
     /// The path of the fetchable resource.
     fn path(resource: &str) -> PathBuf;
 
