@@ -795,10 +795,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         &mut self,
         state: State,
     ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
-        debug!(
-            "channel end state: {state:#}, counterparty state: {:#?}",
-            self.counterparty_state()?
-        );
         let event = match (state, self.counterparty_state()?) {
             // Open handshake steps
             (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),
@@ -829,29 +825,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
                 }
             }
-            (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::Upgrading)) => {
-                match self.flipped().build_chan_upgrade_try_and_send()? {
-                    Some(event) => Some(event),
-                    None => Some(self.build_chan_upgrade_cancel_and_send()?),
-                }
-            }
             (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::Upgrading)) => {
                 match self.build_chan_upgrade_try_and_send()? {
                     Some(event) => Some(event),
                     None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
                 }
             }
-            (State::Flushing, State::Flushing) => match self.build_chan_upgrade_ack_and_send()? {
-                Some(event) => Some(event),
-                None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
-            },
-            (State::Flushcomplete, State::Flushcomplete) => {
-                Some(self.build_chan_upgrade_open_and_send()?)
-            }
-            (State::Flushcomplete, State::Flushing) => {
-                match self.build_chan_upgrade_confirm_and_send()? {
+            (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::Upgrading)) => {
+                match self.flipped().build_chan_upgrade_try_and_send()? {
                     Some(event) => Some(event),
-                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
+                    None => Some(self.build_chan_upgrade_cancel_and_send()?),
                 }
             }
             (State::Flushing, State::Open(UpgradeState::Upgrading)) => {
@@ -860,95 +843,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
                 }
             }
-            (State::Open(UpgradeState::Upgrading), State::Flushing) => {
-                match self.flipped().build_chan_upgrade_ack_and_send()? {
+            (State::Flushing, State::Flushing) => match self.build_chan_upgrade_ack_and_send()? {
+                Some(event) => Some(event),
+                None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
+            },
+            (State::Flushcomplete, State::Flushing) => {
+                match self.build_chan_upgrade_confirm_and_send()? {
                     Some(event) => Some(event),
-                    None => Some(self.build_chan_upgrade_cancel_and_send()?),
-                }
-            }
-            (State::Open(UpgradeState::NotUpgrading), State::Flushing) => {
-                let dst_latest_height = self
-                    .dst_chain()
-                    .query_latest_height()
-                    .map_err(|e| ChannelError::chain_query(self.dst_chain().id(), e))?;
-                let src_latest_height = self
-                    .src_chain()
-                    .query_latest_height()
-                    .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
-                let (error_receipt, _) = self
-                    .src_chain()
-                    .query_upgrade_error(
-                        QueryUpgradeErrorRequest {
-                            port_id: self.src_port_id().to_string(),
-                            channel_id: self.src_channel_id().unwrap().to_string(),
-                        },
-                        src_latest_height,
-                    )
-                    .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
-
-                let (channel_end, _) = self
-                    .dst_chain()
-                    .query_channel(
-                        QueryChannelRequest {
-                            port_id: self.dst_port_id().clone(),
-                            channel_id: self.dst_channel_id().unwrap().clone(),
-                            height: QueryHeight::Specific(dst_latest_height),
-                        },
-                        IncludeProof::Yes,
-                    )
-                    .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
-
-                if error_receipt.sequence == channel_end.upgrade_sequence {
-                    Some(self.build_chan_upgrade_cancel_and_send()?)
-                } else {
-                    match self.flipped().build_chan_upgrade_ack_and_send()? {
-                        Some(event) => Some(event),
-                        None => Some(self.build_chan_upgrade_cancel_and_send()?),
-                    }
+                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
                 }
             }
             (State::Flushing, State::Open(UpgradeState::NotUpgrading)) => {
-                let src_latest_height = self
-                    .src_chain()
-                    .query_latest_height()
-                    .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
-                let dst_latest_height = self
-                    .dst_chain()
-                    .query_latest_height()
-                    .map_err(|e| ChannelError::chain_query(self.dst_chain().id(), e))?;
-                let (error_receipt, _) = self
-                    .dst_chain()
-                    .query_upgrade_error(
-                        QueryUpgradeErrorRequest {
-                            port_id: self.dst_port_id().to_string(),
-                            channel_id: self.dst_channel_id().unwrap().to_string(),
-                        },
-                        dst_latest_height,
-                    )
-                    .map_err(|e| ChannelError::chain_query(self.dst_chain().id(), e))?;
-
-                let (channel_end, _) = self
-                    .src_chain()
-                    .query_channel(
-                        QueryChannelRequest {
-                            port_id: self.src_port_id().clone(),
-                            channel_id: self.src_channel_id().unwrap().clone(),
-                            height: QueryHeight::Specific(src_latest_height),
-                        },
-                        IncludeProof::Yes,
-                    )
-                    .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
-
-                if error_receipt.sequence == channel_end.upgrade_sequence {
-                    Some(self.flipped().build_chan_upgrade_cancel_and_send()?)
-                } else {
-                    match self.build_chan_upgrade_ack_and_send()? {
-                        Some(event) => Some(event),
-                        None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
-                    }
-                }
+                Some(self.flipped().build_chan_upgrade_cancel_and_send()?)
             }
-            (State::Open(UpgradeState::Upgrading), State::Flushcomplete) => {
+
+            (State::Flushcomplete, State::Flushcomplete) => {
                 Some(self.build_chan_upgrade_open_and_send()?)
             }
             (State::Open(UpgradeState::NotUpgrading), State::Flushcomplete) => {
@@ -1003,7 +912,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             IbcEvent::UpgradeTryChannel(_) => State::Flushing,
             IbcEvent::UpgradeAckChannel(_) => State::Flushcomplete,
             IbcEvent::UpgradeConfirmChannel(_) => State::Flushcomplete,
-            IbcEvent::UpgradeOpenChannel(_) => State::Open(UpgradeState::Upgrading),
+            IbcEvent::UpgradeOpenChannel(_) => State::Open(UpgradeState::NotUpgrading),
             _ => State::Uninitialized,
         };
 

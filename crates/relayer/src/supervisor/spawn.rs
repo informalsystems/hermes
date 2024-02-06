@@ -239,7 +239,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             chain = %chain.id(),
             counterparty_chain = %counterparty_chain.id(),
             channel = %channel_scan.id(),
-            "channel is {}, state on destination chain is {}",
+            "channel is {:#?}, state on destination chain is {:#?}",
             chan_state_src,
             chan_state_dst
         );

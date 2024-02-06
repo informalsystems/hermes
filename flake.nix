@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
     flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix/luca_joss/update-simapp-v8;
+    cosmos-nix.url = github:informalsystems/cosmos.nix;
   };
 
   outputs = inputs: let
@@ -41,7 +41,6 @@
           ibc-go-v6-simapp
           ibc-go-v7-simapp
           ibc-go-v8-simapp
-          ibc-go-v8-channel-upgrade-simapp
           interchain-security
           migaloo
           neutron

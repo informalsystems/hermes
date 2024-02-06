@@ -1595,7 +1595,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::grpc_status(e, "query_connection_channels".to_owned()))?
             .into_inner();
 
-        let channels = response
+        let mut channels: Vec<IdentifiedChannelEnd> = response
             .channels
             .into_iter()
             .filter_map(|ch| {
@@ -1610,6 +1610,22 @@ impl ChainEndpoint for CosmosSdkChain {
                     .ok()
             })
             .collect();
+
+        let height = self.query_chain_latest_height()?;
+        for channel in channels.iter_mut() {
+            if self
+                .query_upgrade(
+                    QueryUpgradeRequest {
+                        port_id: channel.port_id.to_string(),
+                        channel_id: channel.channel_id.to_string(),
+                    },
+                    height,
+                )
+                .is_ok()
+            {
+                channel.channel_end.state = State::Open(UpgradeState::Upgrading);
+            };
+        }
         Ok(channels)
     }
 

@@ -54,8 +54,6 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             match event_with_height.event.event_type() {
                                 IbcEventType::UpgradeInitChannel
                                 | IbcEventType::UpgradeTryChannel
-                                | IbcEventType::UpgradeAckChannel
-                                | IbcEventType::UpgradeConfirmChannel
                                 | IbcEventType::UpgradeOpenChannel => retry_with_index(
                                     channel_handshake_retry::default_strategy(max_block_times),
                                     |index| match RelayChannel::restore_from_state(
@@ -66,6 +64,24 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                     ) {
                                         Ok((mut handshake_channel, _)) => handshake_channel
                                             .step_event(&event_with_height.event, index),
+                                        Err(_) => RetryResult::Retry(index),
+                                    },
+                                )
+                                .map_err(|e| TaskError::Fatal(RunError::retry(e))),
+                                // After processing Upgrade Ack or Confirm the channel can be either in Flushing
+                                // or Flushcomplete state, so the step_state method is used instead of step_event.
+                                IbcEventType::UpgradeAckChannel
+                                | IbcEventType::UpgradeConfirmChannel => retry_with_index(
+                                    channel_handshake_retry::default_strategy(max_block_times),
+                                    |index| match RelayChannel::restore_from_state(
+                                        chains.a.clone(),
+                                        chains.b.clone(),
+                                        channel.clone(),
+                                        QueryHeight::Latest,
+                                    ) {
+                                        Ok((mut handshake_channel, state)) => {
+                                            handshake_channel.step_state(state, index)
+                                        }
                                         Err(_) => RetryResult::Retry(index),
                                     },
                                 )

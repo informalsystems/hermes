@@ -138,7 +138,6 @@
         "ibc-go-v5-src": "ibc-go-v5-src",
         "ibc-go-v6-src": "ibc-go-v6-src",
         "ibc-go-v7-src": "ibc-go-v7-src",
-        "ibc-go-v8-channel-upgrade-src": "ibc-go-v8-channel-upgrade-src",
         "ibc-go-v8-src": "ibc-go-v8-src",
         "ibc-rs-src": "ibc-rs-src",
         "ica-src": "ica-src",
@@ -178,16 +177,15 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1706108410,
-        "narHash": "sha256-Yntv4LABe5kXtjk2pz8VauHdwHC6+KN2reYh1B6r8W0=",
+        "lastModified": 1707228682,
+        "narHash": "sha256-USzPme0JWq2frYdOd6oJGHqveP/jaGiCMZVozcMiNd8=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "f80490c31bdedb31b0dba53aea437126f85b193d",
+        "rev": "0be6eb961b3ca6583689dabefa0ff108d1cefd55",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
-        "ref": "luca_joss/update-simapp-v8",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -740,36 +738,19 @@
         "type": "github"
       }
     },
-    "ibc-go-v8-channel-upgrade-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1705917317,
-        "narHash": "sha256-o+dg+AjhzRPKcv+gbIV01qqFfuwsTRDXc2oBG7KuENQ=",
-        "owner": "cosmos",
-        "repo": "ibc-go",
-        "rev": "4e3d164e4f9a5986bbe6595138feb49160e27215",
-        "type": "github"
-      },
-      "original": {
-        "owner": "cosmos",
-        "ref": "04-channel-upgrades-hermes-integration.1",
-        "repo": "ibc-go",
-        "type": "github"
-      }
-    },
     "ibc-go-v8-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1706086871,
-        "narHash": "sha256-n9yshPUw2RYpcnO7yDgO5Pq0xyf2m305q6myjJ8PJlg=",
+        "lastModified": 1706691043,
+        "narHash": "sha256-eS+X4bT7vp1+LyIPd0mOnAJahAONr+Syton3v3rSkGI=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "e638546626361e83cdb75a5307e929fea551d36a",
+        "rev": "7e01c9149149b9d4b1d871e58eb88a22f15bdb3c",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "v8.1.0-rc.0",
+        "ref": "v8.1.0",
         "repo": "ibc-go",
         "type": "github"
       }
@@ -994,11 +975,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1701040486,
-        "narHash": "sha256-vawYwoHA5CwvjfqaT3A5CT9V36Eq43gxdwpux32Qkjw=",
+        "lastModified": 1706683685,
+        "narHash": "sha256-FtPPshEpxH/ewBOsdKBNhlsL2MLEFv1hEnQ19f/bFsQ=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "45827faa2132b8eade424f6bdd48d8828754341a",
+        "rev": "5ad9903c16126a7d949101687af0aa589b1d7d3d",
         "type": "github"
       },
       "original": {
@@ -1042,11 +1023,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1706367331,
-        "narHash": "sha256-AqgkGHRrI6h/8FWuVbnkfFmXr4Bqsr4fV23aISqj/xg=",
+        "lastModified": 1707171055,
+        "narHash": "sha256-7ZiKRdhrScsDfhDkGy8yJWAT6BfHqa8PYMX04roU03k=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "160b762eda6d139ac10ae081f8f78d640dd523eb",
+        "rev": "4b1aab22192b787355733c9495d47f4c66af084c",
         "type": "github"
       },
       "original": {
