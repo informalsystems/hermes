@@ -81,18 +81,17 @@ impl Runnable for AutoCmd {
 
         // Extract keys and sort chains by name
         let names_and_keys = extract_chains_and_keys(&self.chain_names);
-        let sorted_names = names_and_keys
+
+        let chain_names = names_and_keys
             .iter()
-            .map(|n| &n.0)
+            .map(|(n, _)| n)
             .cloned()
             .collect::<Vec<_>>();
-
-        let sorted_names_set: HashSet<String> = HashSet::from_iter(sorted_names.iter().cloned());
 
         let commit = self.commit.clone();
 
         // Fetch chain configs from the chain registry
-        let config_results = runtime.block_on(get_configs(&sorted_names, commit));
+        let config_results = runtime.block_on(get_configs(&chain_names, commit));
 
         if let Err(e) = config_results {
             let config = Config::default();
@@ -113,22 +112,26 @@ impl Runnable for AutoCmd {
             }
         };
 
-        let mut chain_configs: Vec<ChainConfig> = config_results
+        let mut chain_configs: Vec<(String, ChainConfig)> = config_results
             .unwrap()
             .into_iter()
-            .filter_map(|r| r.ok())
+            .filter_map(|(name, config)| config.ok().map(|c| (name, c)))
             .collect();
 
         // Determine which chains were not fetched
-        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id().name()));
-        let missing_chains_set: HashSet<_> =
-            sorted_names_set.difference(&fetched_chains_set).collect();
+        let fetched_chains_set: HashSet<_> =
+            HashSet::from_iter(chain_configs.iter().map(|(name, _)| name).cloned());
+        let expected_chains_set: HashSet<_> = HashSet::from_iter(chain_names.iter().cloned());
+
+        let missing_chains_set: HashSet<_> = expected_chains_set
+            .difference(&fetched_chains_set)
+            .collect();
 
         let configs_and_keys = chain_configs
             .iter_mut()
-            .zip(names_and_keys.iter().map(|n| &n.1).cloned());
+            .zip(names_and_keys.iter().map(|(_, keys)| keys).cloned());
 
-        for (chain_config, key_option) in configs_and_keys {
+        for ((_name, chain_config), key_option) in configs_and_keys {
             // If a key is provided, use it
             if let Some(key_name) = key_option {
                 info!("{}: uses key \"{}\"", &chain_config.id(), &key_name);
@@ -148,7 +151,7 @@ impl Runnable for AutoCmd {
         }
 
         let config = Config {
-            chains: chain_configs,
+            chains: chain_configs.into_iter().map(|(_, c)| c).collect(),
             ..Config::default()
         };
 
