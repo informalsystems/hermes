@@ -261,28 +261,7 @@ impl ChannelEnd {
 
     /// Returns whether or not the channel with this state is
     /// being upgraded.
-    pub fn is_upgrading(&self, other: &Option<IdentifiedChannelEnd>) -> bool {
-        use State::*;
-
-        match other {
-            Some(other) => {
-                let check_sequence = self.upgrade_sequence != other.channel_end.upgrade_sequence;
-
-                let check_state = match self.state {
-                    Open(UpgradeState::NotUpgrading) => matches!(
-                        other.channel_end.state,
-                        Open(UpgradeState::Upgrading) | Flushing | Flushcomplete
-                    ),
-                    Open(UpgradeState::Upgrading) | Flushing | Flushcomplete => true,
-                    _ => false,
-                };
-                check_sequence || check_state
-            }
-            None => false,
-        }
-    }
-
-    pub fn is_flushing(&self) -> bool {
+    pub fn is_upgrading(&self) -> bool {
         use State::*;
 
         matches!(

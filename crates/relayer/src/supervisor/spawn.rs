@@ -239,22 +239,17 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             chain = %chain.id(),
             counterparty_chain = %counterparty_chain.id(),
             channel = %channel_scan.id(),
-            "channel is {:#?}, state on destination chain is {:#?}",
+            "channel is {}, state on destination chain is {}",
             chan_state_src,
             chan_state_dst
         );
 
-        let is_channel_upgrading = channel_scan
-            .channel
-            .channel_end
-            .is_upgrading(&channel_scan.counterparty);
-
-        let is_flushing = channel_scan.channel.channel_end.is_flushing();
+        let is_channel_upgrading = channel_scan.channel.channel_end.is_upgrading();
 
         if (mode.clients.enabled || mode.packets.enabled)
             && chan_state_src.is_open()
             && (chan_state_dst.is_open() || chan_state_dst.is_closed())
-            && !is_flushing
+            && !is_channel_upgrading
         {
             if mode.clients.enabled {
                 // Spawn the client worker
@@ -311,7 +306,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             }
 
             Ok(mode.clients.enabled)
-        } else if mode.channels.enabled && !is_flushing {
+        } else if mode.channels.enabled && !is_channel_upgrading {
             let has_packets = || {
                 !channel_scan
                     .unreceived_packets_on_counterparty(&counterparty_chain, &chain)
@@ -330,7 +325,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             let close_handshake =
                 chan_state_src.is_closed() && !chan_state_dst.is_closed() && !has_packets();
 
-            if open_handshake || is_channel_upgrading || close_handshake {
+            if open_handshake || close_handshake {
                 // create worker for channel handshake that will advance the counterparty state
                 let channel_object = Object::Channel(Channel {
                     dst_chain_id: counterparty_chain.id(),
@@ -347,7 +342,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             } else {
                 Ok(false)
             }
-        } else if is_flushing {
+        } else if is_channel_upgrading {
             let path_object = Object::Packet(Packet {
                 dst_chain_id: counterparty_chain.id(),
                 src_chain_id: chain.id(),

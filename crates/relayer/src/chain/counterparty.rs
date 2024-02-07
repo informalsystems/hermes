@@ -288,7 +288,7 @@ pub fn channel_on_destination(
     counterparty_chain: &impl ChainHandle,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     if let Some(remote_channel_id) = channel.channel_end.counterparty().channel_id() {
-        let mut counterparty = counterparty_chain
+        let counterparty = counterparty_chain
             .query_channel(
                 QueryChannelRequest {
                     port_id: channel.channel_end.counterparty().port_id().clone(),
@@ -307,15 +307,6 @@ pub fn channel_on_destination(
                 channel_end: c,
             })
             .map_err(Error::relayer)?;
-
-        if counterparty.channel_end.state_matches(&State::Open(
-            ibc_relayer_types::core::ics04_channel::channel::UpgradeState::NotUpgrading,
-        )) && counterparty.channel_end.upgrade_sequence > channel.channel_end.upgrade_sequence
-        {
-            counterparty.channel_end.state = State::Open(
-                ibc_relayer_types::core::ics04_channel::channel::UpgradeState::Upgrading,
-            );
-        }
 
         Ok(Some(counterparty))
     } else if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
