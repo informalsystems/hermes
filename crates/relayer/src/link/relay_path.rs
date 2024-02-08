@@ -369,6 +369,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             channel_id: self.dst_channel_id().clone(),
             proofs,
             signer: self.dst_signer()?,
+            counterparty_upgrade_sequence: 0,
         };
 
         Ok(Some(new_msg.to_any()))
