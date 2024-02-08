@@ -577,16 +577,6 @@ impl From<UpgradeInit> for UpgradeAttributes {
     }
 }
 
-impl From<UpgradeInit> for abci::Event {
-    fn from(value: UpgradeInit) -> Self {
-        let kind = UpgradeInit::event_type().as_str().to_owned();
-        Self {
-            kind,
-            attributes: UpgradeAttributes::from(value).into(),
-        }
-    }
-}
-
 impl UpgradeInit {
     pub fn channel_id(&self) -> &ChannelId {
         &self.channel_id
@@ -676,16 +666,6 @@ impl From<UpgradeTry> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
             upgrade_timeout: None,
-        }
-    }
-}
-
-impl From<UpgradeTry> for abci::Event {
-    fn from(value: UpgradeTry) -> Self {
-        let kind = UpgradeTry::event_type().as_str().to_owned();
-        Self {
-            kind,
-            attributes: UpgradeAttributes::from(value).into(),
         }
     }
 }
@@ -783,16 +763,6 @@ impl From<UpgradeAck> for UpgradeAttributes {
     }
 }
 
-impl From<UpgradeAck> for abci::Event {
-    fn from(value: UpgradeAck) -> Self {
-        let kind = UpgradeAck::event_type().as_str().to_owned();
-        Self {
-            kind,
-            attributes: UpgradeAttributes::from(value).into(),
-        }
-    }
-}
-
 impl UpgradeAck {
     pub fn channel_id(&self) -> &ChannelId {
         &self.channel_id
@@ -882,16 +852,6 @@ impl From<UpgradeConfirm> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
             upgrade_timeout: None,
-        }
-    }
-}
-
-impl From<UpgradeConfirm> for abci::Event {
-    fn from(value: UpgradeConfirm) -> Self {
-        let kind = UpgradeConfirm::event_type().as_str().to_owned();
-        Self {
-            kind,
-            attributes: UpgradeAttributes::from(value).into(),
         }
     }
 }
@@ -989,16 +949,6 @@ impl From<UpgradeOpen> for UpgradeAttributes {
     }
 }
 
-impl From<UpgradeOpen> for abci::Event {
-    fn from(value: UpgradeOpen) -> Self {
-        let kind = UpgradeOpen::event_type().as_str().to_owned();
-        Self {
-            kind,
-            attributes: UpgradeAttributes::from(value).into(),
-        }
-    }
-}
-
 impl UpgradeOpen {
     pub fn channel_id(&self) -> &ChannelId {
         &self.channel_id
@@ -1088,16 +1038,6 @@ impl From<UpgradeCancel> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
             upgrade_timeout: None,
-        }
-    }
-}
-
-impl From<UpgradeCancel> for abci::Event {
-    fn from(value: UpgradeCancel) -> Self {
-        let kind = UpgradeCancel::event_type().as_str().to_owned();
-        Self {
-            kind,
-            attributes: UpgradeAttributes::from(value).into(),
         }
     }
 }
@@ -1192,16 +1132,6 @@ impl From<UpgradeTimeout> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_ordering: ev.upgrade_ordering,
             upgrade_timeout: Some(ev.upgrade_timeout),
-        }
-    }
-}
-
-impl From<UpgradeTimeout> for abci::Event {
-    fn from(value: UpgradeTimeout) -> Self {
-        let kind = UpgradeTimeout::event_type().as_str().to_owned();
-        Self {
-            kind,
-            attributes: UpgradeAttributes::from(value).into(),
         }
     }
 }
