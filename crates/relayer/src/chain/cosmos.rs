@@ -2651,24 +2651,29 @@ mod tests {
 
     #[test]
     fn sort_clients_id_suffix() {
+        // 14 days in seconds
+        let trusting_period = 1209600u64;
         let mut clients: Vec<IdentifiedAnyClientState> = vec![
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 4).unwrap(),
-                AnyClientState::Mock(MockClientState::new(MockHeader::new(
-                    Height::new(0, 1).unwrap(),
-                ))),
+                AnyClientState::Mock(MockClientState::new(
+                    MockHeader::new(Height::new(0, 1).unwrap()),
+                    trusting_period,
+                )),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 1).unwrap(),
-                AnyClientState::Mock(MockClientState::new(MockHeader::new(
-                    Height::new(0, 1).unwrap(),
-                ))),
+                AnyClientState::Mock(MockClientState::new(
+                    MockHeader::new(Height::new(0, 1).unwrap()),
+                    trusting_period,
+                )),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 7).unwrap(),
-                AnyClientState::Mock(MockClientState::new(MockHeader::new(
-                    Height::new(0, 1).unwrap(),
-                ))),
+                AnyClientState::Mock(MockClientState::new(
+                    MockHeader::new(Height::new(0, 1).unwrap()),
+                    trusting_period,
+                )),
             ),
         ];
         clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));

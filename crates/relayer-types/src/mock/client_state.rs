@@ -25,13 +25,15 @@ pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 pub struct MockClientState {
     pub header: MockHeader,
     pub frozen_height: Option<Height>,
+    pub trusting_period: u64,
 }
 
 impl MockClientState {
-    pub fn new(header: MockHeader) -> Self {
+    pub fn new(header: MockHeader, trusting_period: u64) -> Self {
         Self {
             header,
             frozen_height: None,
+            trusting_period,
         }
     }
 
@@ -46,17 +48,23 @@ impl TryFrom<RawMockClientState> for MockClientState {
     type Error = Error;
 
     fn try_from(raw: RawMockClientState) -> Result<Self, Self::Error> {
-        Ok(Self::new(raw.header.unwrap().try_into()?))
+        Ok(Self::new(
+            raw.header.unwrap().try_into()?,
+            raw.trusting_period,
+        ))
     }
 }
 
 impl From<MockClientState> for RawMockClientState {
     fn from(value: MockClientState) -> Self {
+        let frozen = value.frozen_height.is_some();
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.header.height().into()),
                 timestamp: value.header.timestamp.nanoseconds(),
             }),
+            frozen,
+            trusting_period: value.trusting_period,
         }
     }
 }
@@ -128,6 +136,8 @@ impl ClientState for MockClientState {
 
 impl From<MockConsensusState> for MockClientState {
     fn from(cs: MockConsensusState) -> Self {
-        Self::new(cs.header)
+        // 14 days in seconds
+        let trusting_period = 1209600u64;
+        Self::new(cs.header, trusting_period)
     }
 }

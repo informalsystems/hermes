@@ -139,7 +139,7 @@ pub mod test_util {
     pub fn get_dummy_raw_msg_upgrade_client(height: Height) -> RawMsgUpgradeClient {
         RawMsgUpgradeClient {
             client_id: "tendermint".parse().unwrap(),
-            client_state: Some(MockClientState::new(MockHeader::new(height)).into()),
+            client_state: Some(MockClientState::new(MockHeader::new(height), 1209600u64).into()),
             consensus_state: Some(MockConsensusState::new(MockHeader::new(height)).into()),
             proof_upgrade_client: get_dummy_proof(),
             proof_upgrade_consensus_state: get_dummy_proof(),
@@ -172,7 +172,9 @@ mod tests {
 
         let height = Height::new(1, 1).unwrap();
 
-        let client_state = MockClientState::new(MockHeader::new(height));
+        // 14 days in seconds
+        let trusting_period = 1209600u64;
+        let client_state = MockClientState::new(MockHeader::new(height), trusting_period);
         let consensus_state = MockConsensusState::new(MockHeader::new(height));
 
         let proof = get_dummy_merkle_proof();
