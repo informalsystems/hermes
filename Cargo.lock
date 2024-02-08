@@ -1483,8 +1483,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.41.0"
-source = "git+https://github.com/cosmos/ibc-proto-rs?branch=romac/event-attribute-bytes#4713208b04b25b1151132ce7233d283c511aff92"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80701a1b0e0ade6f28071d7d2d6412e01869f22bb7039f52722161ecdeb083e0"
 dependencies = [
  "base64",
  "bytes",
