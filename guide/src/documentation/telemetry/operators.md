@@ -142,6 +142,7 @@ If this metric is increasing, it signals that the packet queue is increasing and
 | `cleared_send_packet_count_total`    | Number of SendPacket events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                              | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
 | `cleared_acknowledgment_count_total` | Number of WriteAcknowledgement events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                    | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
 | `broadcast_errors_total`        | Number of errors observed by Hermes when broadcasting a Tx, per error type and account                                                                                                         | `u64` Counter       | Packet workers enabled |
+| `filtered_packets`        | Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits | `u64` Counter | Packet workers enabled, and `ics20_max_memo_size` and/or `ics20_max_receiver_size` enabled |
 
 Notes:
 - The two metrics `cleared_send_packet_count_total` and `cleared_acknowledgment_count_total` are only populated if `tx_confirmation = true`.
@@ -162,3 +163,19 @@ Note that this metrics is disabled if `misbehaviour = false` in your Hermes conf
 | ------------------- | --------------------------------------------------------------------------- | ------------------- | -------------------------- |
 | `ics29_fee_amounts_total` | Total amount received from ICS29 fees                                       | `u64` Counter       | None                       |
 | `ics29_period_fees` | Amount of ICS29 fees rewarded over the past 7 days type                     | `u64` ValueRecorder | None                       |
+
+## Dynamic gas fees
+
+The introduction of dynamic gas fees adds additional configuration which can be delicate to handle correctly. The following metrics can help correctly configure your relayer.
+
+| Name                               | Description                                                          | OpenTelemetry type  | Configuration Dependencies |
+| ---------------------------------- | -------------------------------------------------------------------- | ------------------- | -------------------------- |
+| `dynamic_gas_queried_fees`         | The EIP-1559 base fee queried                                        | `u64` ValueRecorder | None                       |
+| `dynamic_gas_queried_success_fees` | The EIP-1559 base fee successfully queried                           | `u64` ValueRecorder | None                       |
+| `dynamic_gas_paid_fees`            | The EIP-1559 base fee paid                                           | `u64` ValueRecorder | None                       |
+
+Notes:
+
+- The `dynamic_gas_queried_fees` contains the gas price used after the query but before filtering by configured `max`. This means that this metric might contain the static gas price if the query failed.
+- The `dynamic_gas_queried_success_fees` will only contain the gas price when the query succeeds, if this metric doesn't contain values or less values that the `dynamic_gas_queried_fees` this could indicate an issue with the endpoint used to query the fees.
+- `dynamic_gas_paid_fees` will contain the price used by the relayer, the maximum value for this metric is `max`. If there are multiple values in the same bucket as the `max` it could indicate that the gas price queried is often higher than the configured `max`.

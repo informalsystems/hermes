@@ -1,6 +1,7 @@
 //! Relayer configuration
 
 pub mod compat_mode;
+pub mod dynamic_gas;
 pub mod error;
 pub mod filter;
 pub mod gas_multiplier;
@@ -16,7 +17,7 @@ use core::time::Duration;
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
 
 use byte_unit::Byte;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use tendermint::block::Height as BlockHeight;
 use tendermint_rpc::Url;
 use tendermint_rpc::WebSocketClientUrl;
@@ -26,6 +27,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
 use crate::chain::cosmos::config::CosmosSdkConfig;
+use crate::config::types::ics20_field_size_limit::Ics20FieldSizeLimit;
 use crate::config::types::TrustThreshold;
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
@@ -230,6 +232,14 @@ pub mod default {
             buckets: 10,
         }
     }
+
+    pub fn ics20_max_memo_size() -> Ics20FieldSizeLimit {
+        Ics20FieldSizeLimit::new(true, Byte::from_bytes(32768))
+    }
+
+    pub fn ics20_max_receiver_size() -> Ics20FieldSizeLimit {
+        Ics20FieldSizeLimit::new(true, Byte::from_bytes(2048))
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -400,6 +410,10 @@ pub struct Packets {
     pub tx_confirmation: bool,
     #[serde(default = "default::auto_register_counterparty_payee")]
     pub auto_register_counterparty_payee: bool,
+    #[serde(default = "default::ics20_max_memo_size")]
+    pub ics20_max_memo_size: Ics20FieldSizeLimit,
+    #[serde(default = "default::ics20_max_receiver_size")]
+    pub ics20_max_receiver_size: Ics20FieldSizeLimit,
 }
 
 impl Default for Packets {
@@ -410,6 +424,8 @@ impl Default for Packets {
             clear_on_start: default::clear_on_start(),
             tx_confirmation: default::tx_confirmation(),
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
+            ics20_max_memo_size: default::ics20_max_memo_size(),
+            ics20_max_receiver_size: default::ics20_max_receiver_size(),
         }
     }
 }
@@ -603,8 +619,13 @@ pub enum EventSourceMode {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
+// NOTE: To work around a limitation of serde, which does not allow
+// to specify a default variant if not tag is present, we use
+// a custom Deserializer impl.
+//
+// IMPORTANT: Do not forget to update the `Deserializer` impl
+// below when adding a new chain type.
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type")]
 pub enum ChainConfig {
     CosmosSdk(CosmosSdkConfig),
@@ -680,6 +701,41 @@ impl ChainConfig {
     }
 }
 
+// /!\ Update me when adding a new chain type!
+impl<'de> Deserialize<'de> for ChainConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let mut value = serde_json::Value::deserialize(deserializer)?;
+
+        // Remove the `type` key from the TOML value in order for deserialization to work,
+        // otherwise it would fail with: `unknown field `type`.
+        let type_value = value
+            .as_object_mut()
+            .ok_or_else(|| serde::de::Error::custom("invalid chain config, must be a table"))?
+            .remove("type")
+            .unwrap_or_else(|| serde_json::json!("CosmosSdk"));
+
+        let type_str = type_value
+            .as_str()
+            .ok_or_else(|| serde::de::Error::custom("invalid chain type, must be a string"))?;
+
+        match type_str {
+            "CosmosSdk" => CosmosSdkConfig::deserialize(value)
+                .map(Self::CosmosSdk)
+                .map_err(|e| serde::de::Error::custom(format!("invalid CosmosSdk config: {e}"))),
+
+            //
+            // <-- Add new chain types here -->
+            //
+            chain_type => Err(serde::de::Error::custom(format!(
+                "unknown chain type: {chain_type}",
+            ))),
+        }
+    }
+}
+
 /// Attempt to load and parse the TOML config file as a `Config`.
 pub fn load(path: impl AsRef<Path>) -> Result<Config, Error> {
     let config_toml = std::fs::read_to_string(&path).map_err(Error::io)?;
@@ -742,6 +798,7 @@ impl<E: Into<Error>> From<CosmosConfigDiagnostic<E>> for Diagnostic<Error> {
 }
 
 use crate::chain::cosmos::config::error::Error as CosmosConfigError;
+
 impl From<CosmosConfigError> for Error {
     fn from(error: CosmosConfigError) -> Error {
         Error::cosmos_config_error(error.to_string())
@@ -812,6 +869,22 @@ mod tests {
         );
 
         assert!(load(path).is_err());
+    }
+
+    #[test]
+    fn parse_default_chain_type() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_default_chain_type.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        match config.chains[0] {
+            super::ChainConfig::CosmosSdk(_) => {
+                // all good
+            }
+        }
     }
 
     #[test]

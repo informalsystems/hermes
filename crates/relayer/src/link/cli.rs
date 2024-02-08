@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::ops::RangeInclusive;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -71,12 +72,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
-    pub fn relay_recv_packet_and_timeout_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
-        self.relay_recv_packet_and_timeout_messages_with_packet_data_query_height(None)
+    pub fn relay_recv_packet_and_timeout_messages(
+        &self,
+        sequences: Vec<RangeInclusive<Sequence>>,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
+        self.relay_recv_packet_and_timeout_messages_with_packet_data_query_height(sequences, None)
     }
     /// Implements the `packet-recv` CLI
     pub fn relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
         &self,
+        sequence_filter: Vec<RangeInclusive<Sequence>>,
         packet_data_query_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
@@ -89,7 +94,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         .entered();
 
         // Find the sequence numbers of unreceived packets
-        let (sequences, src_response_height) = unreceived_packets(
+        let (mut sequences, src_response_height) = unreceived_packets(
             self.a_to_b.dst_chain(),
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
@@ -98,6 +103,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         if sequences.is_empty() {
             return Ok(vec![]);
+        }
+
+        if !sequence_filter.is_empty() {
+            info!("filtering unreceived packets by given sequence ranges");
+            sequences.retain(|seq| sequence_filter.iter().any(|range| range.contains(seq)));
         }
 
         info!(
@@ -126,13 +136,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
     }
 
-    pub fn relay_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
-        self.relay_ack_packet_messages_with_packet_data_query_height(None)
+    pub fn relay_ack_packet_messages(
+        &self,
+        sequences: Vec<RangeInclusive<Sequence>>,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
+        self.relay_ack_packet_messages_with_packet_data_query_height(sequences, None)
     }
 
     /// Implements the `packet-ack` CLI
     pub fn relay_ack_packet_messages_with_packet_data_query_height(
         &self,
+        sequence_filter: Vec<RangeInclusive<Sequence>>,
         packet_data_query_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
@@ -145,7 +159,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         .entered();
 
         // Find the sequence numbers of unreceived acknowledgements
-        let Some((sequences, src_response_height)) = unreceived_acknowledgements(
+        let Some((mut sequences, src_response_height)) = unreceived_acknowledgements(
             self.a_to_b.dst_chain(),
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
@@ -157,6 +171,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         if sequences.is_empty() {
             return Ok(vec![]);
+        }
+
+        if !sequence_filter.is_empty() {
+            info!("filtering unreceived acknowledgements by given sequence ranges");
+            sequences.retain(|seq| sequence_filter.iter().any(|range| range.contains(seq)));
         }
 
         info!(

@@ -247,3 +247,45 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
         },
     )
 }
+
+pub fn assert_eventually_channel_closed<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &TaggedChannelIdRef<ChainA, ChainB>,
+    port_id_a: &TaggedPortIdRef<ChainA, ChainB>,
+) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "channel should eventually closed",
+        20,
+        Duration::from_secs(2),
+        || {
+            let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
+
+            if !channel_end_a.value().state_matches(&ChannelState::Closed) {
+                return Err(Error::generic(eyre!(
+                    "expected channel end A to be in closed state, but it is instead `{}",
+                    channel_end_a.value().state()
+                )));
+            }
+
+            let channel_id_b = channel_end_a
+                .tagged_counterparty_channel_id()
+                .ok_or_else(|| {
+                    eyre!("expected counterparty channel id to present on closed channel")
+                })?;
+
+            let port_id_b = channel_end_a.tagged_counterparty_port_id();
+
+            let channel_end_b =
+                query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
+
+            if !channel_end_b.value().state_matches(&ChannelState::Closed) {
+                return Err(Error::generic(eyre!(
+                    "expected channel end B to be in closed state"
+                )));
+            }
+
+            Ok(channel_id_b)
+        },
+    )
+}
