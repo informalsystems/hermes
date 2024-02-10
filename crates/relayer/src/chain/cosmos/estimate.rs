@@ -14,8 +14,8 @@ use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::Secp256k1KeyPair;
-use crate::util::pretty::PrettyFee;
 use crate::telemetry;
+use crate::util::pretty::PrettyFee;
 
 pub async fn estimate_tx_fees(
     config: &TxConfig,
@@ -194,7 +194,6 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
         _ => false,
     }
 }
-
 
 fn get_error_text(e: &Error) -> String {
     use crate::error::ErrorDetail::*;
