@@ -201,6 +201,9 @@ pub struct TelemetryState {
     /// Number of errors observed by Hermes when broadcasting a Tx
     broadcast_errors: Counter<u64>,
 
+    /// Number of errors observed by Hermes when simulating a Tx
+    simulate_errors: Counter<u64>,
+
     /// The EIP-1559 base fee queried
     dynamic_gas_queried_fees: ObservableGauge<f64>,
 
@@ -391,6 +394,13 @@ impl TelemetryState {
                 .u64_counter("broadcast_errors")
                 .with_description(
                     "Number of errors observed by Hermes when broadcasting a Tx",
+                )
+                .init(),
+
+            simulate_errors: meter
+                .u64_counter("simulate_errors")
+                .with_description(
+                    "Number of errors observed by Hermes when simulating a Tx",
                 )
                 .init(),
 
@@ -1158,6 +1168,19 @@ impl TelemetryState {
         ];
 
         self.broadcast_errors.add(&cx, 1, labels);
+    }
+
+    /// Add an error and its description to the list of errors observed after simulating
+    /// a Tx with a specific account.
+    pub fn simulate_errors(&self, address: &String, recoverable: bool) {
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("account", address.to_string()),
+            KeyValue::new("recoverable", recoverable.to_string()),
+        ];
+
+        self.simulate_errors.add(&cx, 1, labels);
     }
 
     pub fn dynamic_gas_queried_fees(&self, chain_id: &ChainId, amount: f64) {

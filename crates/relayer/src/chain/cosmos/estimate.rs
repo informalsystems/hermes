@@ -15,6 +15,7 @@ use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::Secp256k1KeyPair;
 use crate::util::pretty::PrettyFee;
+use crate::telemetry;
 
 pub async fn estimate_tx_fees(
     config: &TxConfig,
@@ -51,6 +52,7 @@ pub async fn estimate_tx_fees(
         &config.rpc_address,
         &config.chain_id,
         tx,
+        account,
     )
     .await?;
 
@@ -63,6 +65,7 @@ async fn estimate_fee_with_tx(
     rpc_address: &Url,
     chain_id: &ChainId,
     tx: Tx,
+    account: &Account,
 ) -> Result<Fee, Error> {
     let estimated_gas = {
         crate::time!(
@@ -72,7 +75,7 @@ async fn estimate_fee_with_tx(
             }
 
         );
-        estimate_gas_with_tx(gas_config, grpc_address, tx).await
+        estimate_gas_with_tx(gas_config, grpc_address, tx, account).await
     }?;
 
     if estimated_gas > gas_config.max_gas {
@@ -112,6 +115,7 @@ async fn estimate_gas_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,
     tx: Tx,
+    account: &Account,
 ) -> Result<u64, Error> {
     let simulated_gas = send_tx_simulate(grpc_address, tx)
         .await
@@ -147,6 +151,12 @@ async fn estimate_gas_with_tx(
                 e.detail()
             );
 
+            telemetry!(
+                simulate_errors,
+                &account.address.to_string(),
+                true,
+            );
+
             Ok(gas_config.default_gas)
         }
 
@@ -155,6 +165,13 @@ async fn estimate_gas_with_tx(
                 "failed to simulate tx. propagating error to caller: {}",
                 e.detail()
             );
+
+            telemetry!(
+                simulate_errors,
+                &account.address.to_string(),
+                false,
+            );
+
             // Propagate the error, the retrying mechanism at caller may catch & retry.
             Err(e)
         }
