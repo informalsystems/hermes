@@ -155,6 +155,7 @@ async fn estimate_gas_with_tx(
                 simulate_errors,
                 &account.address.to_string(),
                 true,
+                get_error_text(&e),
             );
 
             Ok(gas_config.default_gas)
@@ -170,6 +171,7 @@ async fn estimate_gas_with_tx(
                 simulate_errors,
                 &account.address.to_string(),
                 false,
+                get_error_text(&e),
             );
 
             // Propagate the error, the retrying mechanism at caller may catch & retry.
@@ -190,5 +192,15 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
                 || detail.is_out_of_order_packet_sequence_error()
         }
         _ => false,
+    }
+}
+
+
+fn get_error_text(e: &Error) -> String {
+    use crate::error::ErrorDetail::*;
+
+    match e.detail() {
+        GrpcStatus(detail) => detail.status.code().to_string(),
+        detail => detail.to_string(),
     }
 }

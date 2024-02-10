@@ -1172,12 +1172,13 @@ impl TelemetryState {
 
     /// Add an error and its description to the list of errors observed after simulating
     /// a Tx with a specific account.
-    pub fn simulate_errors(&self, address: &String, recoverable: bool) {
+    pub fn simulate_errors(&self, address: &String, recoverable: bool, error_description: String) {
         let cx = Context::current();
 
         let labels = &[
             KeyValue::new("account", address.to_string()),
             KeyValue::new("recoverable", recoverable.to_string()),
+            KeyValue::new("error_description", error_description.to_owned()),
         ];
 
         self.simulate_errors.add(&cx, 1, labels);
