@@ -30,5 +30,5 @@ large, then this becomes a security vulnerability.
 For a more concrete example of what could happen when clock drift is mis-configured, take a look
 at the [Mishandling Clock Drift][mishandling-clock-drift] troubleshooting section.
 
-[forward-lunatic]: https://github.com/cometbft/cometbft/blob/main/docs/architecture/tendermint-core/adr-047-handling-evidence-from-light-client.md#appendix-b
+[forward-lunatic]: https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/tendermint-core/adr-047-handling-evidence-from-light-client.md#appendix-b
 [mishandling-clock-drift]: ./cross-comp-config.md#mishandling-clock-drift
