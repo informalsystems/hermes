@@ -122,9 +122,9 @@ The [flex-error][flex-error] library is the main tool used to handle errors in t
 [flex-error-demo]: https://github.com/informalsystems/flex-error/blob/master/flex-error-demo-full/src/main.rs
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
 [ics-standards]: https://github.com/cosmos/ibc#standardisation
-[ibc-client]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics02_client
-[ibc-connection]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics03_connection
-[ibc-channel]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics04_channel
+[ibc-client]: https://github.com/cosmos/ibc-rs/tree/main/ibc-testkit/tests/core/ics02_client
+[ibc-connection]: https://github.com/cosmos/ibc-rs/tree/main/ibc-testkit/tests/core/ics03_connection
+[ibc-channel]: https://github.com/cosmos/ibc-rs/tree/main/ibc-testkit/tests/core/ics04_channel
 [ics02]: https://github.com/cosmos/ibc/blob/master/spec/core/ics-002-client-semantics/README.md
 [layout-image]: assets/ibc-rs-layout.png
 [relayer-errors]: https://github.com/informalsystems/hermes/blob/master/crates/relayer/src/error.rs
