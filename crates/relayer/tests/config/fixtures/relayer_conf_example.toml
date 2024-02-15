@@ -19,6 +19,8 @@ enabled = true
 clear_interval = 100
 clear_on_start = true
 tx_confirmation = true
+ics20_max_memo_size = { enabled = true, size = "32KiB" }
+ics20_max_receiver_size = { enabled = true, size = "2KiB" }
 
 [[chains]]
 type = "CosmosSdk"

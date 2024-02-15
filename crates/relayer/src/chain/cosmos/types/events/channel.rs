@@ -66,11 +66,7 @@ macro_rules! impl_try_from_raw_obj_for_packet {
             type Error = EventError;
 
             fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-                let data_str: String = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
-
-                let mut packet = Packet::try_from(obj)?;
-                packet.data = Vec::from(data_str.as_str().as_bytes());
-
+                let packet = Packet::try_from(obj)?;
                 Ok(Self { packet })
             }
         })+
@@ -89,13 +85,10 @@ impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
     type Error = EventError;
 
     fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-        let data_str: String =
-            extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
         let ack = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_ACK_ATTRIBUTE_KEY))?
             .into_bytes();
 
-        let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_bytes());
+        let packet = Packet::try_from(obj)?;
 
         Ok(Self { packet, ack })
     }
@@ -117,7 +110,14 @@ pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, Error> {
 
 impl TryFrom<RawObject<'_>> for Packet {
     type Error = EventError;
+
     fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
+        let data_str =
+            extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
+
+        let data = hex::decode(data_str.to_lowercase())
+            .map_err(|_| EventError::invalid_packet_data(data_str))?;
+
         Ok(Packet {
             sequence: extract_attribute(
                 &obj,
@@ -125,31 +125,37 @@ impl TryFrom<RawObject<'_>> for Packet {
             )?
             .parse()
             .map_err(EventError::channel)?,
+
             source_port: extract_attribute(
                 &obj,
                 &format!("{}.{}", obj.action, PKT_SRC_PORT_ATTRIBUTE_KEY),
             )?
             .parse()
             .map_err(EventError::parse)?,
+
             source_channel: extract_attribute(
                 &obj,
                 &format!("{}.{}", obj.action, PKT_SRC_CHANNEL_ATTRIBUTE_KEY),
             )?
             .parse()
             .map_err(EventError::parse)?,
+
             destination_port: extract_attribute(
                 &obj,
                 &format!("{}.{}", obj.action, PKT_DST_PORT_ATTRIBUTE_KEY),
             )?
             .parse()
             .map_err(EventError::parse)?,
+
             destination_channel: extract_attribute(
                 &obj,
                 &format!("{}.{}", obj.action, PKT_DST_CHANNEL_ATTRIBUTE_KEY),
             )?
             .parse()
             .map_err(EventError::parse)?,
-            data: vec![],
+
+            data,
+
             timeout_height: {
                 let timeout_height_str = extract_attribute(
                     &obj,

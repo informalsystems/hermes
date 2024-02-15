@@ -74,7 +74,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
       - The official GitHub repository for Hermes.
   - [IBC GitHub repository](https://github.com/cosmos/ics)
       - The official repository for the Inter-blockchain protocol (IBC).
-  - [IBC Protocol](https://ibcprotocol.org)
+  - [IBC Protocol](https://www.ibcprotocol.dev)
       - The official IBC protocol page.
 
 ## Contact

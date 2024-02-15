@@ -57,6 +57,8 @@ impl From<MockClientState> for RawMockClientState {
                 height: Some(value.header.height().into()),
                 timestamp: value.header.timestamp.nanoseconds(),
             }),
+            frozen: false,
+            trusting_period: 14 * 24 * 60 * 60,
         }
     }
 }

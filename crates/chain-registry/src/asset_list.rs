@@ -45,6 +45,8 @@ pub struct LogoURIs {
 }
 
 impl Fetchable for AssetList {
+    const DESC: &'static str = "asset list";
+
     fn path(resource: &str) -> PathBuf {
         [resource, "assetlist.json"].iter().collect()
     }

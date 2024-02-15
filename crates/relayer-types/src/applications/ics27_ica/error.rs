@@ -8,11 +8,15 @@ define_error! {
     Error {
         Owner
         [ SignerError ]
-            | _ | { "failed to parse owner" },
+        | _ | { "failed to parse owner" },
 
         InvalidConnectionIdentifier
         [ ValidationError ]
-            | _ | { "connection identifier error" },
+        | _ | { "connection identifier error" },
+
+        InvalidOrdering
+        { ordering: i32 }
+        | e | { format_args!("invalid ordering: {}", e.ordering) },
 
         InvalidPacketData
         | _ | { "packet data is None" },

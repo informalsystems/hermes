@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-types"
-version      = "0.26.4"
+version      = "0.27.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -24,8 +24,8 @@ mocks = ["tendermint-testgen", "clock"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.39.0", features = ["serde"] }
-ics23 = { version = "0.11.0", features = ["std", "host-functions"] }
+ibc-proto = { version = "0.42.0", features = ["serde"] }
+ics23 = { version = "0.11.1", features = ["std", "host-functions"] }
 time = { version = "0.3" }
 serde_derive = { version = "1.0.104" }
 serde = { version = "1.0" }
@@ -57,9 +57,9 @@ version = "0.34.0"
 optional = true
 
 [dev-dependencies]
-env_logger = "0.10.0"
+env_logger = "0.11.1"
 tracing = { version = "0.1.36", default-features = false }
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
-test-log = { version = "0.2.10", features = ["trace"] }
+test-log = { version = "0.2.14", features = ["trace"] }
 tendermint-rpc = { version = "0.34.0", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "0.34.0" } # Needed for generating (synthetic) light blocks.

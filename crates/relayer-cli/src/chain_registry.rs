@@ -6,8 +6,9 @@ use std::marker::Send;
 
 use futures::future::join_all;
 use http::Uri;
+use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use tokio::task::{JoinError, JoinHandle};
-use tracing::trace;
+use tracing::{error, trace};
 
 use ibc_chain_registry::asset_list::AssetList;
 use ibc_chain_registry::chain::ChainData;
@@ -120,6 +121,13 @@ where
         0.1
     };
 
+    // Use EIP-1559 dynamic gas price for Osmosis
+    let dynamic_gas_price = if chain_data.chain_id.as_str() == "osmosis-1" {
+        DynamicGasPrice::unsafe_new(true, 1.1, 0.6)
+    } else {
+        DynamicGasPrice::disabled()
+    };
+
     Ok(ChainConfig::CosmosSdk(CosmosSdkConfig {
         id: chain_data.chain_id,
         rpc_addr: rpc_data.rpc_address,
@@ -140,6 +148,7 @@ where
         max_gas: Some(400000),
         gas_adjustment: None,
         gas_multiplier: Some(GasMultiplier::new(1.1).unwrap()),
+        dynamic_gas_price,
         fee_granter: None,
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),
@@ -204,15 +213,21 @@ where
 /// Returns a vector of handles that need to be awaited in order to access the fetched data, or the
 /// error that occurred while fetching.
 async fn get_handles<T: Fetchable + Send + 'static>(
-    resources: &[String],
+    chain_ids: &[String],
     commit: &Option<String>,
-) -> Vec<JoinHandle<Result<T, RegistryError>>> {
-    let handles = resources
+) -> Vec<(String, JoinHandle<Result<T, RegistryError>>)> {
+    let handles = chain_ids
         .iter()
-        .map(|resource| {
-            let resource = resource.to_string();
+        .map(|chain_id| {
             let commit = commit.clone();
-            tokio::spawn(async move { T::fetch(resource, commit).await })
+            let handle = {
+                let chain_id = chain_id.to_string();
+                tokio::spawn(async move {
+                    tracing::info!("{chain_id}: Fetching {}...", T::DESC);
+                    T::fetch(chain_id, commit).await
+                })
+            };
+            (chain_id.to_string(), handle)
         })
         .collect();
     handles
@@ -221,14 +236,18 @@ async fn get_handles<T: Fetchable + Send + 'static>(
 /// Given a vector of handles, awaits them and returns a vector of results. Any errors
 /// that occurred are mapped to a `RegistryError`.
 async fn get_data_from_handles<T>(
-    handles: Vec<JoinHandle<Result<T, RegistryError>>>,
+    handles: Vec<(String, JoinHandle<Result<T, RegistryError>>)>,
     error_task: &str,
-) -> Result<Vec<Result<T, RegistryError>>, RegistryError> {
-    join_all(handles)
+) -> Result<Vec<(String, Result<T, RegistryError>)>, RegistryError> {
+    let (names, tasks): (Vec<_>, Vec<_>) = handles.into_iter().unzip();
+
+    let results = join_all(tasks)
         .await
         .into_iter()
         .collect::<Result<Vec<_>, JoinError>>()
-        .map_err(|e| RegistryError::join_error(error_task.to_string(), e))
+        .map_err(|e| RegistryError::join_error(error_task.to_string(), e))?;
+
+    Ok(names.into_iter().zip(results).collect())
 }
 
 /// Fetches a list of ChainConfigs specified by the given slice of chain names. These
@@ -251,16 +270,16 @@ async fn get_data_from_handles<T>(
 pub async fn get_configs(
     chains: &[String],
     commit: Option<String>,
-) -> Result<Vec<Result<ChainConfig, RegistryError>>, RegistryError> {
-    let n = chains.len();
-
-    if n == 0 {
-        return Ok(Vec::new());
+) -> Result<HashMap<String, Result<ChainConfig, RegistryError>>, RegistryError> {
+    if chains.is_empty() {
+        return Ok(HashMap::new());
     }
 
     // Spawn tasks to fetch data from the chain-registry
     let chain_data_handle = get_handles::<ChainData>(chains, &commit).await;
     let asset_lists_handle = get_handles::<AssetList>(chains, &commit).await;
+
+    let n = chains.len();
 
     let mut path_handles = Vec::with_capacity(n * (n - 1) / 2);
 
@@ -281,43 +300,65 @@ pub async fn get_configs(
     let asset_list_results =
         get_data_from_handles::<AssetList>(asset_lists_handle, "asset_handle_join").await?;
 
-    let chain_data_array: Vec<ChainData> = chain_data_results
+    let chain_data_array: Vec<(String, ChainData)> = chain_data_results
         .into_iter()
-        .filter_map(|chain_data| chain_data.ok())
+        .filter_map(|(name, data)| match data {
+            Ok(data) => Some((name, data)),
+            Err(e) => {
+                error!("Error while fetching chain data for chain {name}: {e}");
+                None
+            }
+        })
         .collect();
-    let asset_lists: Vec<AssetList> = asset_list_results
+
+    let asset_lists: Vec<(String, AssetList)> = asset_list_results
         .into_iter()
-        .filter_map(|asset_list| asset_list.ok())
+        .filter_map(|(name, assets)| match assets {
+            Ok(assets) => Some((name, assets)),
+            Err(e) => {
+                error!("Error while fetching asset list for chain {name}: {e}");
+                None
+            }
+        })
         .collect();
 
     let path_data: Result<Vec<_>, JoinError> = join_all(path_handles).await.into_iter().collect();
-    let path_data: Vec<IBCPath> = path_data
+    let path_data: Vec<_> = path_data
         .map_err(|e| RegistryError::join_error("path_handle_join".to_string(), e))?
         .into_iter()
-        .filter_map(|path| path.ok())
+        .filter_map(|path| match path {
+            Ok(path) => Some(path),
+            Err(e) => {
+                error!("Error while fetching path data: {e}");
+                None
+            }
+        })
         .collect();
 
     let mut packet_filters = construct_packet_filters(path_data);
 
     // Construct ChainConfig
-    let config_handles: Vec<JoinHandle<Result<ChainConfig, RegistryError>>> = chain_data_array
+    let config_handles: Vec<_> = chain_data_array
         .into_iter()
         .zip(asset_lists.into_iter())
-        .zip(chains.iter())
-        .map(|((chain_data, assets), chain_name)| {
-            let packet_filter = packet_filters.remove(chain_name);
-            tokio::spawn(async move {
-                hermes_config::<
-                        GrpcHealthCheckQuerier,
-                        SimpleHermesRpcQuerier,
-                        SimpleGrpcFormatter,
-                    >(chain_data, assets, packet_filter)
-                    .await
-            })
+        .map(|((chain_name, chain_data), (_, assets))| {
+            let packet_filter = packet_filters.remove(&chain_name);
+            let handle = tokio::spawn(hermes_config::<
+                GrpcHealthCheckQuerier,
+                SimpleHermesRpcQuerier,
+                SimpleGrpcFormatter,
+            >(chain_data, assets, packet_filter));
+
+            (chain_name, handle)
         })
         .collect();
 
-    get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
+    let result = get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join")
+        .await?
+        .into_iter()
+        .collect();
+
+    Ok(result)
 }
 
 /// Concurrent RPC and GRPC queries are likely to fail.
@@ -341,7 +382,7 @@ mod tests {
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
         let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
 
-        for config in configs {
+        for (_name, config) in configs {
             match config {
                 Ok(config) => {
                     assert_eq!(
@@ -349,10 +390,7 @@ mod tests {
                         ChannelPolicy::AllowAll
                     );
                 }
-                Err(e) => panic!(
-                    "Encountered an unexpected error in chain registry test: {}",
-                    e
-                ),
+                Err(e) => panic!("Encountered an unexpected error in chain registry test: {e}"),
             }
         }
 
@@ -371,7 +409,7 @@ mod tests {
 
         let configs = get_configs(test_chains, Some(TEST_COMMIT.to_owned())).await?;
 
-        for config in configs {
+        for (_name, config) in configs {
             match config {
                 Ok(config) => match &config.packet_filter().channel_policy {
                     ChannelPolicy::Allow(channel_filter) => {

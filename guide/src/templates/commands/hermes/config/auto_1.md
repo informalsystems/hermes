@@ -1,1 +1,1 @@
-[[#BINARY hermes]][[#GLOBALOPTIONS]] config auto[[#OPTIONS]] --output [[#PATH]] --chains [[#CHAIN_NAME:OPTIONAL_KEY_NAME]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] config auto[[#OPTIONS]] --output [[#PATH]] --chain [[#CHAIN1_NAME:OPTIONAL_KEY_NAME]] --chain [[#CHAIN2_NAME:OPTIONAL_KEY_NAME]]
