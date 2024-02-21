@@ -1,6 +1,7 @@
 use crate::chain_registry::get_configs;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use itertools::Itertools;
 
 use crate::conclude::Output;
 
@@ -25,7 +26,7 @@ fn find_key(chain_config: &ChainConfig) -> Option<String> {
 /// If a is specified then it will be used without verifying that it exists.
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 #[clap(
-    override_usage = "hermes config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME:OPTIONAL_KEY_NAME>"
+    override_usage = "hermes config auto [OPTIONS] --output <PATH> --chain <CHAIN1_NAME:OPTIONAL_KEY_NAME> --chain <CHAIN2_NAME:OPTIONAL_KEY_NAME>"
 )]
 pub struct AutoCmd {
     #[clap(
@@ -39,11 +40,14 @@ pub struct AutoCmd {
 
     #[clap(
         long = "chains",
+        alias = "chain",
         required = true,
         multiple = true,
         value_name = "CHAIN_NAME:OPTIONAL_KEY_NAME",
         help_heading = "REQUIRED",
-        help = "Names of the chains to include in the config. Every chain must be in the chain registry."
+        help = "Names of the chains to include in the configuration, together with an optional key name. \
+                Either repeat this argument for every chain or pass a space-separated list of chains. \
+                Every chain must be found in the chain registry."
     )]
     chain_names: Vec<String>,
 
@@ -77,18 +81,17 @@ impl Runnable for AutoCmd {
 
         // Extract keys and sort chains by name
         let names_and_keys = extract_chains_and_keys(&self.chain_names);
-        let sorted_names = names_and_keys
+
+        let chain_names = names_and_keys
             .iter()
-            .map(|n| &n.0)
+            .map(|(n, _)| n)
             .cloned()
             .collect::<Vec<_>>();
-
-        let sorted_names_set: HashSet<String> = HashSet::from_iter(sorted_names.iter().cloned());
 
         let commit = self.commit.clone();
 
         // Fetch chain configs from the chain registry
-        let config_results = runtime.block_on(get_configs(&sorted_names, commit));
+        let config_results = runtime.block_on(get_configs(&chain_names, commit));
 
         if let Err(e) = config_results {
             let config = Config::default();
@@ -109,22 +112,26 @@ impl Runnable for AutoCmd {
             }
         };
 
-        let mut chain_configs: Vec<ChainConfig> = config_results
+        let mut chain_configs: Vec<(String, ChainConfig)> = config_results
             .unwrap()
             .into_iter()
-            .filter_map(|r| r.ok())
+            .filter_map(|(name, config)| config.ok().map(|c| (name, c)))
             .collect();
 
         // Determine which chains were not fetched
-        let fetched_chains_set = HashSet::from_iter(chain_configs.iter().map(|c| c.id().name()));
-        let missing_chains_set: HashSet<_> =
-            sorted_names_set.difference(&fetched_chains_set).collect();
+        let fetched_chains_set: HashSet<_> =
+            HashSet::from_iter(chain_configs.iter().map(|(name, _)| name).cloned());
+        let expected_chains_set: HashSet<_> = HashSet::from_iter(chain_names.iter().cloned());
+
+        let missing_chains_set: HashSet<_> = expected_chains_set
+            .difference(&fetched_chains_set)
+            .collect();
 
         let configs_and_keys = chain_configs
             .iter_mut()
-            .zip(names_and_keys.iter().map(|n| &n.1).cloned());
+            .zip(names_and_keys.iter().map(|(_, keys)| keys).cloned());
 
-        for (chain_config, key_option) in configs_and_keys {
+        for ((_name, chain_config), key_option) in configs_and_keys {
             // If a key is provided, use it
             if let Some(key_name) = key_option {
                 info!("{}: uses key \"{}\"", &chain_config.id(), &key_name);
@@ -144,28 +151,27 @@ impl Runnable for AutoCmd {
         }
 
         let config = Config {
-            chains: chain_configs,
+            chains: chain_configs.into_iter().map(|(_, c)| c).collect(),
             ..Config::default()
         };
 
         match store(&config, &self.path) {
+            Ok(_) if missing_chains_set.is_empty() => {
+                Output::success_msg(format!(
+                    "Config file written successfully at '{}'",
+                    self.path.display()
+                ))
+                .exit()
+            },
             Ok(_) => {
-                if missing_chains_set.is_empty() {
-                    Output::success_msg(format!(
-                        "Config file written successfully at '{}'",
-                        self.path.display()
-                    ))
-                    .exit()
-                } else {
-                    Output::success_msg(format!(
-                        "Config file written successfully at '{}'.
-                        However, configurations for the following chains were not able to be generated: {:?}",
-                        self.path.display(),
-                        missing_chains_set,
-                    ))
-                    .exit()
-                }
-            }
+                Output::success_msg(format!(
+                    "Config file written successfully at '{}'. \
+                    However, configurations for the following chains were not able to be generated: {}",
+                    self.path.display(),
+                    missing_chains_set.iter().join(", "),
+                ))
+                .exit()
+            },
             Err(e) => Output::error(format!(
                 "An error occurred while attempting to write the config file: {}",
                 e

@@ -859,6 +859,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             version,
+            0,
         );
 
         // Build the domain type message
@@ -938,6 +939,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             Version::empty(),
+            0,
         );
 
         // Retrieve existing channel
@@ -1020,7 +1022,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        // Re-use the version that was either set on ChanOpenInit or overwritten by the application.
+        // Reuse the version that was either set on ChanOpenInit or overwritten by the application.
         let version = src_channel.version().clone();
 
         let channel = ChannelEnd::new(
@@ -1029,6 +1031,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             version,
+            0,
         );
 
         // Get signer
@@ -1428,6 +1431,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             channel_id: dst_channel_id.clone(),
             proofs,
             signer,
+            counterparty_upgrade_sequence: 0,
         };
 
         msgs.push(new_msg.to_any());

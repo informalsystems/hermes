@@ -100,7 +100,7 @@ define_error! {
             | _ | { "missing channel end" },
 
         InvalidVersionLengthConnection
-            | _ | { "single version must be negociated on connection before opening channel" },
+            | _ | { "single version must be negotiated on connection before opening channel" },
 
         ChannelFeatureNotSuportedByConnection
             | _ | { "the channel ordering is not supported by connection" },
@@ -189,6 +189,14 @@ define_error! {
                 format_args!(
                     "Invalid packet sequence {0} ≠ next send sequence {1}",
                     e.given_sequence, e.next_sequence)
+            },
+
+        InvalidPacketData
+            {
+                data: String,
+            }
+            | e | {
+                format_args!("Invalid packet data, not a valid hex-encoded string: {}", e.data)
             },
 
         LowPacketHeight

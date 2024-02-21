@@ -7,6 +7,7 @@ use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
+use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use ibc_relayer::config::{AddressType, GasPrice};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_rpc::Url;
@@ -15,8 +16,16 @@ use crate::error::{handle_generic_error, Error};
 
 pub fn gas_config_for_test(native_token: String) -> GasConfig {
     let max_gas = 3000000;
-    let gas_multiplier = 1.1;
-    let gas_price = GasPrice::new(0.003, native_token);
+    let gas_multiplier = 1.5;
+
+    // Provenance requires a high gas price
+    let price = if native_token == "nhash" {
+        5000.0
+    } else {
+        0.003
+    };
+
+    let gas_price = GasPrice::new(price, native_token);
 
     let default_gas = max_gas;
     let fee_granter = "".to_string();
@@ -35,6 +44,11 @@ pub fn gas_config_for_test(native_token: String) -> GasConfig {
         gas_price,
         max_fee,
         fee_granter,
+        dynamic_gas_price: DynamicGasPrice {
+            enabled: false,
+            multiplier: 1.0,
+            max: 0.6,
+        },
     }
 }
 

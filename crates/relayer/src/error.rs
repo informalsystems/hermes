@@ -310,7 +310,7 @@ define_error! {
 
         ChannelReceiveTimeout
             [ TraceError<crossbeam_channel::RecvTimeoutError> ]
-            |_| { "timeout when waiting for reponse over inter-thread channel" },
+            |_| { "timeout when waiting for response over inter-thread channel" },
 
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },
@@ -588,6 +588,38 @@ define_error! {
             [ TendermintRpcError ]
             |_| { "Invalid CompatMode queried from chain and no `compat_mode` configured in Hermes. This can be fixed by specifying a `compat_mode` in Hermes config.toml" },
 
+        HttpRequest
+            [ TraceError<reqwest::Error> ]
+            |_| { "HTTP request error" },
+
+        HttpResponse
+            { status: reqwest::StatusCode }
+            |e| { format!("HTTP response error with status code {}", e.status) },
+
+        HttpResponseBody
+            [ TraceError<reqwest::Error> ]
+            |_| { "HTTP response body error" },
+
+        JsonDeserialize
+            [ TraceError<serde_json::Error> ]
+            |_| { "JSON deserialization error" },
+
+        JsonField
+            { field: String }
+            |e| { format!("Missing or invalid JSON field: {}", e.field) },
+
+        ParseFloat
+            [ TraceError<std::num::ParseFloatError> ]
+            |_| { "Error parsing float" },
+
+        ParseInt
+            [ TraceError<std::num::ParseIntError> ]
+            |_| { "Error parsing integer" },
+
+        Base64Decode
+            [ TraceError<subtle_encoding::Error> ]
+            |_| { "Error decoding base64-encoded data" },
+
         Namada
             [ NamadaError ]
             |_| { "Namada error" },
@@ -653,7 +685,7 @@ impl GrpcStatusSubdetail {
     /// ## Note
     /// This error may happen even when packets are submitted in order when the `simulate_tx`
     /// gRPC endpoint is allowed to be called after a block is created and before
-    /// Tendermint/mempool finishes `recheck_tx`, similary to the issue described in
+    /// Tendermint/mempool finishes `recheck_tx`, similarly to the issue described in
     /// <https://github.com/informalsystems/hermes/issues/2249>.
     ///
     /// See <https://github.com/informalsystems/hermes/issues/2670> for more info.

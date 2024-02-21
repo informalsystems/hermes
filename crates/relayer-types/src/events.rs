@@ -1,11 +1,10 @@
-use crate::utils::pretty::PrettySlice;
+use std::borrow::Cow;
+use std::convert::TryFrom;
+use std::fmt::{Display, Error as FmtError, Formatter};
+use std::str::FromStr;
 
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
-use std::borrow::Cow;
-use std::convert::{TryFrom, TryInto};
-use std::fmt::{Display, Error as FmtError, Formatter};
-use std::str::FromStr;
 use tendermint::abci;
 
 use crate::applications::ics29_fee::error::Error as FeeError;
@@ -24,6 +23,7 @@ use crate::core::ics04_channel::events::Attributes as ChannelAttributes;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::error::ValidationError;
 use crate::timestamp::ParseTimestampError;
+use crate::utils::pretty::PrettySlice;
 
 define_error! {
     Error {
@@ -66,9 +66,9 @@ define_error! {
             [ TraceError<prost::DecodeError> ]
             | _ | { "error decoding protobuf" },
 
-        SubtleEncoding
-            [ TraceError<subtle_encoding::Error> ]
-            | _ | { "error decoding hex" },
+        InvalidPacketData
+            { data: String }
+            | e | { format_args!("error decoding hex-encoded packet data: {}", e.data) },
 
         MissingActionString
             | _ | { "missing action string" },
@@ -322,42 +322,6 @@ impl Display for IbcEvent {
 
             IbcEvent::ChainError(ev) => write!(f, "ChainError({ev})"),
         }
-    }
-}
-
-impl TryFrom<IbcEvent> for abci::Event {
-    type Error = Error;
-
-    fn try_from(event: IbcEvent) -> Result<Self, Self::Error> {
-        Ok(match event {
-            IbcEvent::CreateClient(event) => event.into(),
-            IbcEvent::UpdateClient(event) => event.into(),
-            IbcEvent::UpgradeClient(event) => event.into(),
-            IbcEvent::ClientMisbehaviour(event) => event.into(),
-            IbcEvent::OpenInitConnection(event) => event.into(),
-            IbcEvent::OpenTryConnection(event) => event.into(),
-            IbcEvent::OpenAckConnection(event) => event.into(),
-            IbcEvent::OpenConfirmConnection(event) => event.into(),
-            IbcEvent::OpenInitChannel(event) => event.into(),
-            IbcEvent::OpenTryChannel(event) => event.into(),
-            IbcEvent::OpenAckChannel(event) => event.into(),
-            IbcEvent::OpenConfirmChannel(event) => event.into(),
-            IbcEvent::CloseInitChannel(event) => event.into(),
-            IbcEvent::CloseConfirmChannel(event) => event.into(),
-            IbcEvent::SendPacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::ReceivePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::WriteAcknowledgement(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::IncentivizedPacket(event) => event.into(),
-            IbcEvent::CrossChainQueryPacket(event) => event.into(),
-            IbcEvent::DistributeFeePacket(event) => event.into(),
-            IbcEvent::AppModule(event) => event.try_into()?,
-            IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
-                return Err(Error::incorrect_event_type(event.to_string()));
-            }
-        })
     }
 }
 

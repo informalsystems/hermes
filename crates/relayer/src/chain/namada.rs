@@ -280,7 +280,7 @@ impl ChainEndpoint for NamadaChain {
         &mut self.keybase
     }
 
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error> {
         self.keybase
             .get_key(&self.config.key_name)
             .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))
@@ -822,7 +822,7 @@ impl ChainEndpoint for NamadaChain {
         let (channel_end, _) = self.query_channel(request, IncludeProof::No)?;
         let connection_id = channel_end
             .connection_hops()
-            .get(0)
+            .first()
             .ok_or_else(|| Error::query("no connection ID in the channel end".to_string()))?
             .clone();
         let request = QueryConnectionRequest {

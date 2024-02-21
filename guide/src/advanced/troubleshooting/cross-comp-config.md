@@ -42,7 +42,7 @@ __Hermes vs other configuration parameters that may cause Hermes failures__
 ## Recheck
 When relaying packets, Hermes may send up multiple transactions to the full node's mempool. Hermes uses the  `broadcast_tx_sync` RPC which does some basic verification and then returns the Tx hash back. 
 
-Unless configured with `sequential_batch_tx = true`, Hermes does not wait for a transaction to be included in a block before sending the next transaction. For this to be possible, Hermes keeps track of the account sequence number locally, incrementing it after each succesfull `broadcast_tx_sync` RPC.
+Unless configured with `sequential_batch_tx = true`, Hermes does not wait for a transaction to be included in a block before sending the next transaction. For this to be possible, Hermes keeps track of the account sequence number locally, incrementing it after each successful `broadcast_tx_sync` RPC.
 
 During peak periods, it is possible that not all Tx-es in the mempool are included in a block. In order for new transactions to be accepted along with the pending Tx-es, the full node must be configured with `recheck = true`. Otherwise, Hermes may get the following error:
 ```
@@ -284,9 +284,9 @@ Set `ccv_consumer_chain = true` in `config.toml`.
 
 If Hermes is set to query CometBFT's `/block_results` RPC endpoint (which is the case when Hermes is set to use the [pull-based event source][pull-based-event-source]), you may encounter an `Internal error: node is not persisting abci responses (code: -32603)` when clearing packets. 
 
-This is likely due to the underlying CometBFT node being configured to discard ABCI responses via the `discard_abci_responses` configuration paramter being set to `true` in the Comet config. When this option is set to `true`, Hermes will not be able to clear any packets that were sent in either a `begin_block` or an `end_block`; transactions sent using `/tx_search` should still be cleared though. In addition, Hermes will not be able to relay using the pull-based event source if ABCI responses are being discarded. 
+This is likely due to the underlying CometBFT node being configured to discard ABCI responses via the `discard_abci_responses` configuration parameter being set to `true` in the Comet config. When this option is set to `true`, Hermes will not be able to clear any packets that were sent in either a `begin_block` or an `end_block`; transactions sent using `/tx_search` should still be cleared though. In addition, Hermes will not be able to relay using the pull-based event source if ABCI responses are being discarded. 
 
 ### Fix
-Set the Comet node's `discard_abci_resonses = false` in the Comet configuration file. 
+Set the Comet node's `discard_abci_responses = false` in the Comet configuration file. 
 
 [pull-based-event-source]: ./../../documentation/configuration/configure-hermes.md#configuring-support-for-wasm-relaying

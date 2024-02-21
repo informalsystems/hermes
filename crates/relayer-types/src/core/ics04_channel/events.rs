@@ -1,8 +1,9 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 
-use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str;
+
+use serde_derive::{Deserialize, Serialize};
 use tendermint::abci;
 
 use crate::core::ics04_channel::error::Error;
@@ -21,7 +22,7 @@ pub const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
 
 /// Packet event attribute keys
 pub const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
-pub const PKT_DATA_ATTRIBUTE_KEY: &str = "packet_data";
+pub const PKT_DATA_ATTRIBUTE_KEY: &str = "packet_data_hex";
 pub const PKT_SRC_PORT_ATTRIBUTE_KEY: &str = "packet_src_port";
 pub const PKT_SRC_CHANNEL_ATTRIBUTE_KEY: &str = "packet_src_channel";
 pub const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
@@ -82,46 +83,6 @@ impl From<Attributes> for Vec<abci::EventAttribute> {
             attributes.push(channel_id);
         }
         attributes
-    }
-}
-
-/// Convert attributes to Tendermint ABCI tags
-impl TryFrom<Packet> for Vec<abci::EventAttribute> {
-    type Error = Error;
-    fn try_from(p: Packet) -> Result<Self, Self::Error> {
-        let mut attributes = vec![];
-        let src_port = (PKT_SRC_PORT_ATTRIBUTE_KEY, p.source_port.to_string()).into();
-        attributes.push(src_port);
-        let src_channel = (PKT_SRC_CHANNEL_ATTRIBUTE_KEY, p.source_channel.to_string()).into();
-        attributes.push(src_channel);
-        let dst_port = (PKT_DST_PORT_ATTRIBUTE_KEY, p.destination_port.to_string()).into();
-        attributes.push(dst_port);
-        let dst_channel = (
-            PKT_DST_CHANNEL_ATTRIBUTE_KEY,
-            p.destination_channel.to_string(),
-        )
-            .into();
-        attributes.push(dst_channel);
-        let sequence = (PKT_SEQ_ATTRIBUTE_KEY, p.sequence.to_string()).into();
-        attributes.push(sequence);
-        let timeout_height = (
-            PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY,
-            p.timeout_height.to_event_attribute_value(),
-        )
-            .into();
-        attributes.push(timeout_height);
-        let timeout_timestamp = (
-            PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY,
-            p.timeout_timestamp.nanoseconds().to_string(),
-        )
-            .into();
-        attributes.push(timeout_timestamp);
-        let val = str::from_utf8(&p.data).expect("hex-encoded string should always be valid UTF-8");
-        let packet_data = (PKT_DATA_ATTRIBUTE_KEY, val).into();
-        attributes.push(packet_data);
-        let ack = (PKT_ACK_ATTRIBUTE_KEY, "").into();
-        attributes.push(ack);
-        Ok(attributes)
     }
 }
 
@@ -546,17 +507,6 @@ impl From<SendPacket> for IbcEvent {
     }
 }
 
-impl TryFrom<SendPacket> for abci::Event {
-    type Error = Error;
-
-    fn try_from(v: SendPacket) -> Result<Self, Self::Error> {
-        Ok(Self {
-            kind: IbcEventType::SendPacket.as_str().to_owned(),
-            attributes: v.packet.try_into()?,
-        })
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ReceivePacket {
     pub packet: Packet,
@@ -586,17 +536,6 @@ impl Display for ReceivePacket {
 impl From<ReceivePacket> for IbcEvent {
     fn from(v: ReceivePacket) -> Self {
         IbcEvent::ReceivePacket(v)
-    }
-}
-
-impl TryFrom<ReceivePacket> for abci::Event {
-    type Error = Error;
-
-    fn try_from(v: ReceivePacket) -> Result<Self, Self::Error> {
-        Ok(Self {
-            kind: IbcEventType::ReceivePacket.as_str().to_owned(),
-            attributes: v.packet.try_into()?,
-        })
     }
 }
 
@@ -639,21 +578,6 @@ impl From<WriteAcknowledgement> for IbcEvent {
     }
 }
 
-impl TryFrom<WriteAcknowledgement> for abci::Event {
-    type Error = Error;
-
-    fn try_from(v: WriteAcknowledgement) -> Result<Self, Self::Error> {
-        let mut attributes: Vec<_> = v.packet.try_into()?;
-        let val = str::from_utf8(&v.ack).expect("hex-encoded string should always be valid UTF-8");
-        let ack = (PKT_ACK_ATTRIBUTE_KEY, val).into();
-        attributes.push(ack);
-        Ok(Self {
-            kind: IbcEventType::WriteAck.as_str().to_owned(),
-            attributes,
-        })
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AcknowledgePacket {
     pub packet: Packet,
@@ -677,17 +601,6 @@ impl Display for AcknowledgePacket {
 impl From<AcknowledgePacket> for IbcEvent {
     fn from(v: AcknowledgePacket) -> Self {
         IbcEvent::AcknowledgePacket(v)
-    }
-}
-
-impl TryFrom<AcknowledgePacket> for abci::Event {
-    type Error = Error;
-
-    fn try_from(v: AcknowledgePacket) -> Result<Self, Self::Error> {
-        Ok(Self {
-            kind: IbcEventType::AckPacket.as_str().to_owned(),
-            attributes: v.packet.try_into()?,
-        })
     }
 }
 
@@ -723,17 +636,6 @@ impl From<TimeoutPacket> for IbcEvent {
     }
 }
 
-impl TryFrom<TimeoutPacket> for abci::Event {
-    type Error = Error;
-
-    fn try_from(v: TimeoutPacket) -> Result<Self, Self::Error> {
-        Ok(Self {
-            kind: IbcEventType::Timeout.as_str().to_owned(),
-            attributes: v.packet.try_into()?,
-        })
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct TimeoutOnClosePacket {
     pub packet: Packet,
@@ -763,16 +665,5 @@ impl Display for TimeoutOnClosePacket {
 impl From<TimeoutOnClosePacket> for IbcEvent {
     fn from(v: TimeoutOnClosePacket) -> Self {
         IbcEvent::TimeoutOnClosePacket(v)
-    }
-}
-
-impl TryFrom<TimeoutOnClosePacket> for abci::Event {
-    type Error = Error;
-
-    fn try_from(v: TimeoutOnClosePacket) -> Result<Self, Self::Error> {
-        Ok(Self {
-            kind: IbcEventType::TimeoutOnClose.as_str().to_owned(),
-            attributes: v.packet.try_into()?,
-        })
     }
 }
