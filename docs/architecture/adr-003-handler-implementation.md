@@ -309,7 +309,7 @@ pub fn keep(
 
 > This section is very much a work in progress, as further investigation into what
 > a production-ready implementation of the `ctx` parameter of the top-level dispatcher
-> is required. As such, implementors should feel free to disregard the recommendations
+> is required. As such, implementers should feel free to disregard the recommendations
 > below, and are encouraged to come up with amendments to this ADR to better capture
 > the actual requirements.
 
@@ -552,7 +552,7 @@ pub trait ClientKeeper {
 
 This way, only one implementation of the `ClientReader` and `ClientKeeper` trait is required,
 as it can delegate eg. the serialization of the underlying datatypes to the `Serialize` bound
-of the `Any...` wrappper.
+of the `Any...` wrapper.
 
 Both the `process` and `keep` function are defined to take a message generic over
 the actual client type:

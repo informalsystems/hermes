@@ -38,10 +38,6 @@ impl MockClientState {
     pub fn latest_height(&self) -> Height {
         self.header.height()
     }
-
-    pub fn refresh_time(&self) -> Option<Duration> {
-        None
-    }
 }
 
 impl Protobuf<RawMockClientState> for MockClientState {}
@@ -61,6 +57,8 @@ impl From<MockClientState> for RawMockClientState {
                 height: Some(value.header.height().into()),
                 timestamp: value.header.timestamp.nanoseconds(),
             }),
+            frozen: false,
+            trusting_period: 14 * 24 * 60 * 60,
         }
     }
 }

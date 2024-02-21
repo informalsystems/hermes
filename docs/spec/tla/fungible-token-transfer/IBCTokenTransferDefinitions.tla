@@ -406,7 +406,7 @@ InitUnorderedChannelEnd(ChainID) ==
 \*      - height is initialized to 1
 \*      - counterpartyClientHeights is the set of installed client heights 
 \*      - the channelEnd is initialized to InitUnorderedChannelEnd
-\*      - the packet committments, receipts, acknowledgements, and packets  
+\*      - the packet commitments, receipts, acknowledgements, and packets  
 \*        to acknowledge are empty
 ICS20InitChainStore(ChainID) == 
     [

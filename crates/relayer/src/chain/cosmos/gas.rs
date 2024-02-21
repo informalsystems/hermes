@@ -1,13 +1,24 @@
 use core::cmp::min;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use num_bigint::BigInt;
 use num_rational::BigRational;
+use tendermint_rpc::Url;
+use tracing::warn;
 
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::GasPrice;
+use crate::telemetry;
 
-pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64) -> Fee {
+use super::eip_base_fee::query_eip_base_fee;
+
+pub async fn gas_amount_to_fee(
+    config: &GasConfig,
+    gas_amount: u64,
+    chain_id: &ChainId,
+    rpc_address: &Url,
+) -> Fee {
     let adjusted_gas_limit = adjust_estimated_gas(AdjustGas {
         gas_multiplier: config.gas_multiplier,
         max_gas: config.max_gas,
@@ -15,13 +26,67 @@ pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64) -> Fee {
     });
 
     // The fee in coins based on gas amount
-    let amount = calculate_fee(adjusted_gas_limit, &config.gas_price);
+    let dynamic_gas_price = dynamic_gas_price(config, chain_id, rpc_address).await;
+    let amount = calculate_fee(adjusted_gas_limit, &dynamic_gas_price);
 
     Fee {
         amount: vec![amount],
         gas_limit: adjusted_gas_limit,
         payer: "".to_string(),
         granter: config.fee_granter.clone(),
+    }
+}
+
+pub async fn dynamic_gas_price(
+    config: &GasConfig,
+    chain_id: &ChainId,
+    rpc_address: &Url,
+) -> GasPrice {
+    if config.dynamic_gas_price.enabled {
+        let dynamic_gas_price = query_eip_base_fee(rpc_address)
+            .await
+            .map(|base_fee| base_fee * config.dynamic_gas_price.multiplier)
+            .map(|new_price| GasPrice {
+                price: new_price,
+                denom: config.gas_price.denom.clone(),
+            });
+
+        let dynamic_gas_price = match dynamic_gas_price {
+            Ok(dynamic_gas_price) => {
+                telemetry!(
+                    dynamic_gas_queried_success_fees,
+                    chain_id,
+                    dynamic_gas_price.price
+                );
+
+                dynamic_gas_price
+            }
+            Err(e) => {
+                warn!("failed to query EIP base fee, will fallback to configured `gas_price`: {e}");
+                config.gas_price.clone()
+            }
+        };
+
+        {
+            telemetry!(dynamic_gas_queried_fees, chain_id, dynamic_gas_price.price);
+            let _ = chain_id;
+        }
+
+        if dynamic_gas_price.price > config.dynamic_gas_price.max {
+            warn!(
+                "queried EIP gas price is higher than configured max gas price, \
+                will fallback to configured `max`. Queried: {}, maximum: {}",
+                dynamic_gas_price.price, config.dynamic_gas_price.max
+            );
+
+            return GasPrice::new(config.dynamic_gas_price.max, dynamic_gas_price.denom);
+        }
+
+        telemetry!(dynamic_gas_paid_fees, chain_id, dynamic_gas_price.price);
+
+        dynamic_gas_price
+    } else {
+        config.gas_price.clone()
     }
 }
 

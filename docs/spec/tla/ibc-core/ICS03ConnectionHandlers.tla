@@ -58,7 +58,7 @@ HandleConnOpenTry(chainID, chain, datagrams) ==
     THEN LET connOpenTryDgr == CHOOSE dgr \in connOpenTryDgrs : TRUE IN
          LET versionIntersection == chain.connectionEnd.versions \intersect connOpenTryDgr.versions IN
        
-         \* if the versions from the datagram overlap with the supported versions of the connnection end
+         \* if the versions from the datagram overlap with the supported versions of the connection end
          IF /\ versionIntersection /= {}
          \* if the connection end is uninitialized
             /\ \/ chain.connectionEnd.state = "UNINIT"

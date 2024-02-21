@@ -34,6 +34,7 @@ The metrics in the table below are design to answer this question on multiple di
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------------- |
 | `workers`                  | Number of workers per type                                                                                                                                                  | `i64` UpDownCounter | Corresponding workers enabled |
 | `client_updates_submitted_total` | Number of client update messages submitted, per sending chain, receiving chain and client                                                                                                            | `u64` Counter       | Client, Connection, Channel or Packet workers enabled |
+| `client_updates_skipped_total` | Number of client update messages skipped because the consensus state already exists, per sending chain, receiving chain and client                                                                                                            | `u64` Counter       | Client, Connection, Channel or Packet workers enabled |
 | `wallet_balance`           | The balance of each wallet Hermes uses per chain                                                                                                                            | `f64` ValueRecorder | None                       |
 | `tx_latency_submitted`     | Latency for all transactions submitted to a chain | `u64` ValueRecorder | None                       |
 | `messages_submitted_total` | Number of messages submitted to a specific chain                                                                                                                            | `u64` Counter       | None                       |
@@ -120,7 +121,7 @@ Since Hermes v1, we also introduced 3 metrics that sketch the backlog status of 
 | Name                       | Description                                                    | OpenTelemetry type  | Configuration Dependencies |
 | -------------------------- | -------------------------------------------------------------- | ------------------- | -------------------------- |
 | `backlog_oldest_sequence`  | Sequence number of the oldest SendPacket event in the backlog  | `u64` ValueRecorder | Packet workers enabled     |
-| `backlog_oldest_timestamp` | Local timestamp for the oldest SendPacket event in the backlog | `u64` ValueRecorder | Packet workers enabled     |
+| `backlog_latest_update_timestamp` | Local timestamp for the last time the backlog metrics have been updated | `u64` ValueRecorder | Packet workers enabled     |
 | `backlog_size`             | Total number of SendPacket events in the backlog               | `u64` ValueRecorder | Packet workers enabled     |
 
 
@@ -128,9 +129,8 @@ Notes:
 
 - The `backlog_size` defines how many IBC packets users sent and were not yet relayed (i.e., received on the destination network, or timed-out).
 If this metric is increasing, it signals that the packet queue is increasing and there may be some errors in the Hermes logs that need your attention.
-- If the `backlog_oldest_sequence` remains unchanged for more than a few minutes, that means that the packet with the respective sequence number is likely blocked
-and cannot be relayed. To understand for how long the packet is block, Hermes will populate `backlog_oldest_timestamp`  with the local time when it first observed
-the `backlog_oldest_sequence` that is blocked.
+- The `backlog_latest_update_timestamp` is used to get information on the reliability of the `backlog_*` metrics. If the timestamp doesn't change it means there might be an issue with the metrics.
+- __NOTE__: The Hermes instance might miss the acknowledgment of an observed IBC packets relayed, this will cause the `backlog_*` metrics to contain an invalid value. In order to minimise this issue, whenever the Hermes instance clears packets the `backlog_*` metrics will be updated using the queried pending packets.
 
 ## How efficient and how secure is the IBC status on each network?
 
@@ -141,6 +141,8 @@ the `backlog_oldest_sequence` that is blocked.
 | `tx_latency_submitted`         | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted), per chain, counterparty chain, channel and port | `u64` ValueRecorder | None                       |
 | `cleared_send_packet_count_total`    | Number of SendPacket events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                              | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
 | `cleared_acknowledgment_count_total` | Number of WriteAcknowledgement events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                    | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
+| `broadcast_errors_total`        | Number of errors observed by Hermes when broadcasting a Tx, per error type and account                                                                                                         | `u64` Counter       | Packet workers enabled |
+| `filtered_packets`        | Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits | `u64` Counter | Packet workers enabled, and `ics20_max_memo_size` and/or `ics20_max_receiver_size` enabled |
 
 Notes:
 - The two metrics `cleared_send_packet_count_total` and `cleared_acknowledgment_count_total` are only populated if `tx_confirmation = true`.
@@ -161,3 +163,19 @@ Note that this metrics is disabled if `misbehaviour = false` in your Hermes conf
 | ------------------- | --------------------------------------------------------------------------- | ------------------- | -------------------------- |
 | `ics29_fee_amounts_total` | Total amount received from ICS29 fees                                       | `u64` Counter       | None                       |
 | `ics29_period_fees` | Amount of ICS29 fees rewarded over the past 7 days type                     | `u64` ValueRecorder | None                       |
+
+## Dynamic gas fees
+
+The introduction of dynamic gas fees adds additional configuration which can be delicate to handle correctly. The following metrics can help correctly configure your relayer.
+
+| Name                               | Description                                                          | OpenTelemetry type  | Configuration Dependencies |
+| ---------------------------------- | -------------------------------------------------------------------- | ------------------- | -------------------------- |
+| `dynamic_gas_queried_fees`         | The EIP-1559 base fee queried                                        | `u64` ValueRecorder | None                       |
+| `dynamic_gas_queried_success_fees` | The EIP-1559 base fee successfully queried                           | `u64` ValueRecorder | None                       |
+| `dynamic_gas_paid_fees`            | The EIP-1559 base fee paid                                           | `u64` ValueRecorder | None                       |
+
+Notes:
+
+- The `dynamic_gas_queried_fees` contains the gas price used after the query but before filtering by configured `max`. This means that this metric might contain the static gas price if the query failed.
+- The `dynamic_gas_queried_success_fees` will only contain the gas price when the query succeeds, if this metric doesn't contain values or less values that the `dynamic_gas_queried_fees` this could indicate an issue with the endpoint used to query the fees.
+- `dynamic_gas_paid_fees` will contain the price used by the relayer, the maximum value for this metric is `max`. If there are multiple values in the same bucket as the `max` it could indicate that the gas price queried is often higher than the configured `max`.
