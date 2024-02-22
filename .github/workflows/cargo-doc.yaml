@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2023-07-13
+          toolchain: nightly
           override: true
       - name: Install Protoc
         uses: heliaxdev/setup-protoc@v2

@@ -1,5 +1,6 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde::Serialize;
+use subtle_encoding::hex;
 use tendermint::abci::Event as AbciEvent;
 
 use ibc_relayer_types::{
@@ -328,8 +329,8 @@ fn client_extract_attributes_from_tx(event: &AbciEvent) -> Result<ClientAttribut
 pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, ClientError> {
     for tag in &event.attributes {
         if tag.key == HEADER_ATTRIBUTE_KEY {
-            let header_bytes =
-                hex::decode(&tag.value).map_err(|_| ClientError::malformed_header())?;
+            let header_bytes = hex::decode(tag.value.to_lowercase())
+                .map_err(|_| ClientError::malformed_header())?;
             return decode_header(&header_bytes);
         }
     }
@@ -402,9 +403,11 @@ pub fn extract_packet_and_write_ack_from_tx(
 ) -> Result<(Packet, Vec<u8>), ChannelError> {
     let mut packet = Packet::default();
     let mut write_ack: Vec<u8> = Vec::new();
+
     for tag in &event.attributes {
         let key = tag.key.as_str();
         let value = tag.value.as_str();
+
         match key {
             channel_events::PKT_SRC_PORT_ATTRIBUTE_KEY => {
                 packet.source_port = value.parse().map_err(ChannelError::identifier)?;
@@ -431,7 +434,8 @@ pub fn extract_packet_and_write_ack_from_tx(
                 packet.timeout_timestamp = value.parse().unwrap();
             }
             channel_events::PKT_DATA_ATTRIBUTE_KEY => {
-                packet.data = Vec::from(value.as_bytes());
+                packet.data = hex::decode(value.to_lowercase())
+                    .map_err(|_| ChannelError::invalid_packet_data(value.to_string()))?;
             }
             channel_events::PKT_ACK_ATTRIBUTE_KEY => {
                 write_ack = Vec::from(value.as_bytes());
@@ -465,8 +469,6 @@ mod tests {
     use ibc_proto::Protobuf;
     use ibc_relayer_types::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
     use ibc_relayer_types::core::ics02_client::header::{decode_header, AnyHeader};
-    use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-    use ibc_relayer_types::timestamp::Timestamp;
 
     #[test]
     fn extract_header() {
@@ -556,52 +558,6 @@ mod tests {
                     IbcEvent::CloseConfirmChannel(e) => {
                         assert_eq!(ChannelAttributes::from(e), close_confirm.clone().into())
                     }
-                    _ => panic!("unexpected event type"),
-                },
-                None => panic!("converted event was wrong"),
-            }
-        }
-    }
-
-    #[test]
-    fn packet_event_to_abci_event() {
-        let packet = Packet {
-            sequence: Sequence::from(10),
-            source_port: "a_test_port".parse().unwrap(),
-            source_channel: "channel-0".parse().unwrap(),
-            destination_port: "b_test_port".parse().unwrap(),
-            destination_channel: "channel-1".parse().unwrap(),
-            data: "test_data".as_bytes().to_vec(),
-            timeout_height: Height::new(1, 10).unwrap().into(),
-            timeout_timestamp: Timestamp::now(),
-        };
-        let mut abci_events = vec![];
-        let send_packet = channel_events::SendPacket {
-            packet: packet.clone(),
-        };
-        abci_events.push(AbciEvent::try_from(send_packet.clone()).unwrap());
-        let write_ack = channel_events::WriteAcknowledgement {
-            packet: packet.clone(),
-            ack: "test_ack".as_bytes().to_vec(),
-        };
-        abci_events.push(AbciEvent::try_from(write_ack.clone()).unwrap());
-        let ack_packet = channel_events::AcknowledgePacket {
-            packet: packet.clone(),
-        };
-        abci_events.push(AbciEvent::try_from(ack_packet.clone()).unwrap());
-        let timeout_packet = channel_events::TimeoutPacket { packet };
-        abci_events.push(AbciEvent::try_from(timeout_packet.clone()).unwrap());
-
-        for abci_event in abci_events {
-            match ibc_event_try_from_abci_event(&abci_event).ok() {
-                Some(ibc_event) => match ibc_event {
-                    IbcEvent::SendPacket(e) => assert_eq!(e.packet, send_packet.packet),
-                    IbcEvent::WriteAcknowledgement(e) => {
-                        assert_eq!(e.packet, write_ack.packet);
-                        assert_eq!(e.ack, write_ack.ack);
-                    }
-                    IbcEvent::AcknowledgePacket(e) => assert_eq!(e.packet, ack_packet.packet),
-                    IbcEvent::TimeoutPacket(e) => assert_eq!(e.packet, timeout_packet.packet),
                     _ => panic!("unexpected event type"),
                 },
                 None => panic!("converted event was wrong"),

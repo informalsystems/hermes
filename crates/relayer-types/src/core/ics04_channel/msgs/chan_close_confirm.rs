@@ -20,6 +20,7 @@ pub struct MsgChannelCloseConfirm {
     pub channel_id: ChannelId,
     pub proofs: Proofs,
     pub signer: Signer,
+    pub counterparty_upgrade_sequence: u64,
 }
 
 impl MsgChannelCloseConfirm {
@@ -29,6 +30,7 @@ impl MsgChannelCloseConfirm {
             channel_id,
             proofs,
             signer,
+            counterparty_upgrade_sequence: 0,
         }
     }
 }
@@ -73,6 +75,7 @@ impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             proofs,
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
+            counterparty_upgrade_sequence: raw_msg.counterparty_upgrade_sequence,
         })
     }
 }
@@ -85,6 +88,7 @@ impl From<MsgChannelCloseConfirm> for RawMsgChannelCloseConfirm {
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: domain_msg.signer.to_string(),
+            counterparty_upgrade_sequence: domain_msg.counterparty_upgrade_sequence,
         }
     }
 }
@@ -109,6 +113,7 @@ pub mod test_util {
                 revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),
+            counterparty_upgrade_sequence: 0,
         }
     }
 }

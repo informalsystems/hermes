@@ -79,7 +79,7 @@ jobs:
             command: osmosisd
             account_prefix: osmo
             native_token: stake
-            features: ''
+            features: dynamic-gas-fee
           - package: juno
             command: junod
             account_prefix: juno
@@ -98,15 +98,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with: 
+          extra-conf: |
+            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -142,15 +139,12 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with: 
+          extra-conf: |
+            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -191,15 +185,12 @@ jobs:
             account_prefix: cosmos,neutron
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with: 
+          extra-conf: |
+            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -242,15 +233,12 @@ jobs:
             account_prefix: cosmos,stride
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with: 
+          extra-conf: |
+            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -293,15 +281,12 @@ jobs:
             account_prefix: cosmos,stride
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with: 
+          extra-conf: |
+            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -345,15 +330,12 @@ jobs:
             native_token: utia,stake
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with: 
+          extra-conf: |
+            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -392,15 +374,12 @@ jobs:
           - gaia6
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v24
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v13
-        with:
-          name: cosmos
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with: 
+          extra-conf: |
+            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable

@@ -43,6 +43,7 @@ impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
             counterparty: value.counterparty,
             connection_hops: value.connection_hops,
             version: value.version,
+            upgrade_sequence: value.upgrade_sequence,
         };
 
         Ok(IdentifiedChannelEnd {
@@ -68,6 +69,7 @@ impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
             version: value.channel_end.version.to_string(),
             port_id: value.port_id.to_string(),
             channel_id: value.channel_id.to_string(),
+            upgrade_sequence: value.channel_end.upgrade_sequence,
         }
     }
 }
@@ -79,14 +81,15 @@ pub struct ChannelEnd {
     pub remote: Counterparty,
     pub connection_hops: Vec<ConnectionId>,
     pub version: Version,
+    pub upgrade_sequence: u64,
 }
 
 impl Display for ChannelEnd {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(
             f,
-            "ChannelEnd {{ state: {}, ordering: {}, remote: {}, connection_hops: {}, version: {} }}",
-            self.state, self.ordering, self.remote, PrettySlice(&self.connection_hops), self.version
+            "ChannelEnd {{ state: {}, ordering: {}, remote: {}, connection_hops: {}, version: {}, upgrade_sequence: {} }}",
+            self.state, self.ordering, self.remote, PrettySlice(&self.connection_hops), self.version, self.upgrade_sequence
         )
     }
 }
@@ -99,6 +102,7 @@ impl Default for ChannelEnd {
             remote: Counterparty::default(),
             connection_hops: Vec::new(),
             version: Version::default(),
+            upgrade_sequence: 0,
         }
     }
 }
@@ -139,6 +143,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             remote,
             connection_hops,
             version,
+            value.upgrade_sequence,
         ))
     }
 }
@@ -155,6 +160,7 @@ impl From<ChannelEnd> for RawChannel {
                 .map(|v| v.as_str().to_string())
                 .collect(),
             version: value.version.to_string(),
+            upgrade_sequence: value.upgrade_sequence,
         }
     }
 }
@@ -167,6 +173,7 @@ impl ChannelEnd {
         remote: Counterparty,
         connection_hops: Vec<ConnectionId>,
         version: Version,
+        upgrade_sequence: u64,
     ) -> Self {
         Self {
             state,
@@ -174,6 +181,7 @@ impl ChannelEnd {
             remote,
             connection_hops,
             version,
+            upgrade_sequence,
         }
     }
 
@@ -459,6 +467,7 @@ pub mod test_util {
             counterparty: Some(get_dummy_raw_counterparty()),
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
+            upgrade_sequence: 0,
         }
     }
 }

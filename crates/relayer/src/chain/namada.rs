@@ -43,7 +43,7 @@ use namada_sdk::core::types::token;
 use namada_sdk::io::NullIo;
 use namada_sdk::masp::fs::FsShieldedUtils;
 use namada_sdk::masp::ShieldedContext;
-use namada_sdk::proof_of_stake::storage as pos_storage;
+use namada_sdk::proof_of_stake::storage_key as pos_storage_key;
 use namada_sdk::proof_of_stake::OwnedPosParams;
 use namada_sdk::queries::Client as SdkClient;
 use namada_sdk::wallet::Store;
@@ -140,7 +140,7 @@ impl NamadaChain {
     }
 
     fn get_unbonding_time(&self) -> Result<Duration, Error> {
-        let key = pos_storage::params_key();
+        let key = pos_storage_key::params_key();
         let (value, _) = self.query(key, QueryHeight::Latest, IncludeProof::No)?;
         let pos_params =
             OwnedPosParams::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
@@ -280,7 +280,7 @@ impl ChainEndpoint for NamadaChain {
         &mut self.keybase
     }
 
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error> {
         self.keybase
             .get_key(&self.config.key_name)
             .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))
@@ -422,17 +422,11 @@ impl ChainEndpoint for NamadaChain {
         let denom_key = token::denom_key(&token);
         let (value, _) = self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
         let denominated_amount = if value.is_empty() {
-            token::DenominatedAmount {
-                amount,
-                denom: 0.into(),
-            }
+            token::DenominatedAmount::new(amount, 0.into())
         } else {
             let token_denom = token::Denomination::try_from_slice(&value[..])
                 .map_err(NamadaError::borsh_decode)?;
-            token::DenominatedAmount {
-                amount,
-                denom: token_denom,
-            }
+            token::DenominatedAmount::new(amount, token_denom)
         };
 
         Ok(Balance {
@@ -458,17 +452,11 @@ impl ChainEndpoint for NamadaChain {
                     let (value, _) =
                         self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
                     let denominated_amount = if value.is_empty() {
-                        token::DenominatedAmount {
-                            amount,
-                            denom: 0.into(),
-                        }
+                        token::DenominatedAmount::new(amount, 0.into())
                     } else {
                         let namada_denom = token::Denomination::try_from_slice(&value[..])
                             .map_err(NamadaError::borsh_decode)?;
-                        token::DenominatedAmount {
-                            amount,
-                            denom: namada_denom,
-                        }
+                        token::DenominatedAmount::new(amount, namada_denom)
                     };
                     let balance = Balance {
                         amount: denominated_amount.to_string(),

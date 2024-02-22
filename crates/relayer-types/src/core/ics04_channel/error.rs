@@ -191,6 +191,14 @@ define_error! {
                     e.given_sequence, e.next_sequence)
             },
 
+        InvalidPacketData
+            {
+                data: String,
+            }
+            | e | {
+                format_args!("Invalid packet data, not a valid hex-encoded string: {}", e.data)
+            },
+
         LowPacketHeight
             {
                 chain_height: Height,

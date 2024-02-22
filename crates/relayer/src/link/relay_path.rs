@@ -4,6 +4,7 @@ use std::ops::Sub;
 use std::time::{Duration, Instant};
 
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
 use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
@@ -42,6 +43,8 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
+use crate::config::types::ics20_field_size_limit::Ics20FieldSizeLimit;
+use crate::config::types::ics20_field_size_limit::ValidationResult;
 use crate::event::source::EventBatch;
 use crate::event::IbcEventWithHeight;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
@@ -55,6 +58,7 @@ use crate::link::packet_events::query_write_ack_events;
 use crate::link::pending::PendingTxs;
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
+use crate::link::LinkParameters;
 use crate::link::{pending, relay_sender};
 use crate::path::PathIdentifiers;
 use crate::telemetry;
@@ -108,12 +112,16 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // transactions if [`confirm_txes`] is true.
     pending_txs_src: PendingTxs<ChainA>,
     pending_txs_dst: PendingTxs<ChainB>,
+
+    pub max_memo_size: Ics20FieldSizeLimit,
+    pub max_receiver_size: Ics20FieldSizeLimit,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn new(
         channel: Channel<ChainA, ChainB>,
         with_tx_confirmation: bool,
+        link_parameters: LinkParameters,
     ) -> Result<Self, LinkError> {
         let src_chain = channel.src_chain().clone();
         let dst_chain = channel.dst_chain().clone();
@@ -152,6 +160,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             confirm_txes: with_tx_confirmation,
             pending_txs_src: PendingTxs::new(src_chain, src_channel_id, src_port_id, dst_chain_id),
             pending_txs_dst: PendingTxs::new(dst_chain, dst_channel_id, dst_port_id, src_chain_id),
+
+            max_memo_size: link_parameters.max_memo_size,
+            max_receiver_size: link_parameters.max_receiver_size,
         })
     }
 
@@ -358,6 +369,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             channel_id: self.dst_channel_id().clone(),
             proofs,
             signer: self.dst_signer()?,
+            counterparty_upgrade_sequence: 0,
         };
 
         Ok(Some(new_msg.to_any()))
@@ -548,6 +560,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         for event_with_height in input {
             trace!(event = %event_with_height, "processing event");
+
+            if let Some(packet) = event_with_height.event.packet() {
+                // If the event is a ICS-04 packet event, and the packet contains ICS-20
+                // packet data, check that the ICS-20 fields are within the configured limits.
+                if !check_ics20_fields_size(
+                    &packet.data,
+                    self.max_memo_size,
+                    self.max_receiver_size,
+                ) {
+                    telemetry!(
+                        filtered_packets,
+                        &self.src_chain().id(),
+                        &self.dst_chain().id(),
+                        &packet.source_channel,
+                        &packet.destination_channel,
+                        &packet.source_port,
+                        &packet.destination_port,
+                        1
+                    );
+                    continue;
+                }
+            }
 
             let (dst_msg, src_msg) = match &event_with_height.event {
                 IbcEvent::CloseInitChannel(_) => (
@@ -1363,6 +1397,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         dst_info: &ChainStatus,
     ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
+
         if self
             .dst_channel(QueryHeight::Specific(dst_info.height))?
             .state_matches(&ChannelState::Closed)
@@ -1381,7 +1416,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         dst_info: &ChainStatus,
         height: Height,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
+        crate::time!(
+            "build_recv_or_timeout_from_send_packet_event",
+            {
+                "src_channel": event.packet.source_channel,
+                "dst_channel": event.packet.destination_channel,
+            }
+        );
+
         let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
+
         if timeout.is_some() {
             Ok((None, timeout))
         } else {
@@ -1883,6 +1927,37 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     &self.dst_chain().id(),
                 );
             }
+        }
+    }
+}
+
+#[tracing::instrument(skip(data))]
+fn check_ics20_fields_size(
+    data: &[u8],
+    memo_limit: Ics20FieldSizeLimit,
+    receiver_limit: Ics20FieldSizeLimit,
+) -> bool {
+    match serde_json::from_slice::<RawPacketData>(data) {
+        Ok(packet_data) => {
+            match (
+                memo_limit.check_field_size(&packet_data.memo),
+                receiver_limit.check_field_size(&packet_data.receiver),
+            ) {
+                (ValidationResult::Valid, ValidationResult::Valid) => true,
+
+                (memo_validity, receiver_validity) => {
+                    debug!("found invalid ICS-20 packet data, not relaying packet!");
+                    debug!("    ICS-20 memo:     {memo_validity}");
+                    debug!("    ICS-20 receiver: {receiver_validity}");
+
+                    false
+                }
+            }
+        }
+        Err(e) => {
+            trace!("failed to decode ICS20 packet data with error `{e}`");
+
+            true
         }
     }
 }

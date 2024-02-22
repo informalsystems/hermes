@@ -62,7 +62,7 @@ Then if the IBC packet forward middleware is active, Chain A can send a packet t
 Before the packet forward middleware `v3.0.0` the receiver address was used to forward packets. In order for Chain A to send a packet to Chain C, the receiver of the packet had to be set as following:
 
 ```
-{intermediate_refund_address}|{foward_port}/{forward_channel}:{final_destination_address}
+{intermediate_refund_address}|{forward_port}/{forward_channel}:{final_destination_address}
 ```
 
 As specified in the packet-forward-middleware module implementation, [packet-forward-middleware](https://github.com/strangelove-ventures/packet-forward-middleware/tree/v2.1.3#example).

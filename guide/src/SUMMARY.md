@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes v1.7.4
+# Hermes v1.8.0
 
 ---
 - [Introduction](./index.md)
@@ -28,12 +28,13 @@
       - [Start relaying](./tutorials/production/start-relaying.md)
 
 - [Configuration](./documentation/configuration/index.md)
+    - [CometBFT Compatibility modes](./documentation/configuration/comet-compat-mode.md)
     - [Configure Hermes](./documentation/configuration/configure-hermes.md)
     - [Description of the parameters](./documentation/configuration/description.md)
+    - [Dynamic gas fees](./documentation/configuration/dynamic-gas-fees.md)
     - [Filter incentivized packets](./documentation/configuration/filter-incentivized.md)
     - [Packet clearing](./documentation/configuration/packet-clearing.md)
     - [Performance tuning](./documentation/configuration/performance.md)
-    - [CometBFT Compatibility modes](./documentation/configuration/comet-compat-mode.md)
 
 - [Telemetry](./documentation/telemetry/index.md)
     - [Operators guide](./documentation/telemetry/operators.md)

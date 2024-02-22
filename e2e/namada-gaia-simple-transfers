@@ -86,7 +86,7 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --new-client-connection --yes
 
 echo "~~ Transfer 100 samoleans from Gaia to Namada ~~"
-namada_receiver=$(${NAMADAW} --base-dir ${base_dir} address find --alias relayer | awk '{print $4}')
+namada_receiver=$(${NAMADAW} --base-dir ${base_dir} find --alias relayer | awk '/"relayer":/{print $3}')
 cargo run --bin hermes -- --config config_for_namada.toml \
   tx ft-transfer \
   --dst-chain ${chain_id} \

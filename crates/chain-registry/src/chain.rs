@@ -152,6 +152,8 @@ pub struct Grpc {
 }
 
 impl Fetchable for ChainData {
+    const DESC: &'static str = "chain data";
+
     fn path(resource: &str) -> PathBuf {
         [resource, "chain.json"].iter().collect()
     }

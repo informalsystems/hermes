@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-test-framework"
-version    = "0.26.4"
+version    = "0.27.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -14,31 +14,31 @@ description = """
 """
 
 [dependencies]
-ibc-relayer-types = { version = "=0.26.4",     path = "../../crates/relayer-types" }
-ibc-relayer       = { version = "=0.26.4",     path = "../../crates/relayer" }
-ibc-relayer-cli   = { version = "=1.7.4",      path = "../../crates/relayer-cli" }
-ibc-proto         = { version = "0.39.0", features = ["serde"] }
+ibc-relayer-types = { version = "=0.27.0",     path = "../../crates/relayer-types" }
+ibc-relayer       = { version = "=0.27.0",     path = "../../crates/relayer" }
+ibc-relayer-cli   = { version = "=1.8.0",      path = "../../crates/relayer-cli" }
+ibc-proto         = { version = "0.42.0", features = ["serde"] }
 tendermint-rpc    = { version = "0.34.0", features = ["http-client", "websocket-client"] }
 
 http = "0.2.9"
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.36"
 tracing-subscriber = "0.3.14"
-eyre = "0.6.8"
+eyre = "0.6.12"
 color-eyre = "0.6"
 rand = "0.8.5"
 hex = "0.4.3"
 serde = "1.0"
 serde_json = "1"
-serde_yaml = "0.9.16"
+serde_yaml = "0.9.31"
 itertools = "0.10"
-toml = "0.7"
+toml = "0.8"
 subtle-encoding = "0.5.1"
 sha2 = "0.10.6"
-crossbeam-channel = "0.5.8"
-semver = "1.0.16"
+crossbeam-channel = "0.5.11"
+semver = "1.0.21"
 flex-error = "0.4.4"
 prost = { version = "0.12" }
 tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 hdpath = "0.6.3"
-once_cell = "1.18.0"
+once_cell = "1.19.0"

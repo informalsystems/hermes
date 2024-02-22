@@ -16,6 +16,8 @@ use tonic::metadata::AsciiMetadataValue;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
+use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
+use ibc_proto::cosmos::base::tendermint::v1beta1::{GetSyncingRequest, GetSyncingResponse};
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
@@ -105,13 +107,16 @@ use crate::util::pretty::{
 };
 use crate::{chain::client::ClientSettings, config::Error as ConfigError};
 
+use self::gas::dynamic_gas_price;
 use self::types::app_state::GenesisAppState;
+use self::types::gas::GasConfig;
 use self::version::Specs;
 
 pub mod batch;
 pub mod client;
 pub mod compatibility;
 pub mod config;
+pub mod eip_base_fee;
 pub mod encode;
 pub mod estimate;
 pub mod fee;
@@ -490,6 +495,16 @@ impl CosmosSdkChain {
         Ok(min_gas_price)
     }
 
+    pub fn dynamic_gas_price(&self) -> GasPrice {
+        let gas_config = GasConfig::from(self.config());
+
+        self.rt.block_on(dynamic_gas_price(
+            &gas_config,
+            &self.config.id,
+            &self.config.rpc_addr,
+        ))
+    }
+
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!(
@@ -615,6 +630,70 @@ impl CosmosSdkChain {
     ///
     /// Returns an error if the node is still syncing and has not caught up,
     /// ie. if `sync_info.catching_up` is `true`.
+    fn chain_rpc_status(&self) -> Result<status::Response, Error> {
+        crate::time!(
+            "chain_rpc_status",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
+        crate::telemetry!(query, self.id(), "rpc_status");
+
+        let status = self
+            .block_on(self.rpc_client.status())
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+        if status.sync_info.catching_up {
+            Err(Error::chain_not_caught_up(
+                self.config.rpc_addr.to_string(),
+                self.config().id.clone(),
+            ))
+        } else {
+            Ok(status)
+        }
+    }
+
+    /// Query the chain syncing status via a gRPC query.
+    ///
+    /// Returns an error if the node is still syncing and has not caught up,
+    /// ie. if `sync_info.syncing` is `true`.
+    fn chain_grpc_status(&self) -> Result<GetSyncingResponse, Error> {
+        crate::time!(
+            "chain_grpc_status",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
+        crate::telemetry!(query, self.id(), "grpc_status");
+
+        let grpc_addr = self.grpc_addr.clone();
+        let grpc_addr_string = grpc_addr.to_string();
+
+        let mut client = self
+            .block_on(ServiceClient::connect(grpc_addr.clone()))
+            .map_err(Error::grpc_transport)
+            .unwrap();
+
+        let request = tonic::Request::new(GetSyncingRequest {});
+
+        let sync_info = self
+            .block_on(client.get_syncing(request))
+            .map_err(|e| Error::grpc_status(e, "get_syncing".to_string()))?
+            .into_inner();
+
+        if sync_info.syncing {
+            Err(Error::chain_not_caught_up(
+                grpc_addr_string,
+                self.config().id.clone(),
+            ))
+        } else {
+            Ok(sync_info)
+        }
+    }
+
+    /// Query the chain status of the RPC and gRPC nodes.
+    ///
+    /// Returns an error if any of the node is still syncing and has not caught up.
     fn chain_status(&self) -> Result<status::Response, Error> {
         crate::time!(
             "chain_status",
@@ -624,18 +703,25 @@ impl CosmosSdkChain {
         );
         crate::telemetry!(query, self.id(), "status");
 
-        let status = self
-            .block_on(self.rpc_client.status())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        let rpc_status = self.chain_rpc_status()?;
 
-        if status.sync_info.catching_up {
+        if rpc_status.sync_info.catching_up {
             return Err(Error::chain_not_caught_up(
                 self.config.rpc_addr.to_string(),
                 self.config().id.clone(),
             ));
         }
 
-        Ok(status)
+        let grpc_status = self.chain_grpc_status()?;
+
+        if grpc_status.syncing {
+            return Err(Error::chain_not_caught_up(
+                self.config.grpc_addr.to_string(),
+                self.config().id.clone(),
+            ));
+        }
+
+        Ok(rpc_status)
     }
 
     /// Query the chain's latest height
@@ -941,7 +1027,7 @@ impl ChainEndpoint for CosmosSdkChain {
         &mut self.keybase
     }
 
-    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
+    fn get_key(&self) -> Result<Self::SigningKeyPair, Error> {
         // Get the key from key seed file
         let key_pair = self
             .keybase()

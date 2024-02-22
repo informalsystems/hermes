@@ -41,7 +41,7 @@ where
         Err(e) => panic!("got an error: {e}"),
     });
 
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
 
     let response = reqwest::get(&format!("http://127.0.0.1:{port}{path}"))
         .await
@@ -67,7 +67,7 @@ async fn version() {
 
     let rest_api_version = VersionInfo {
         name: "ibc-relayer-rest".to_string(),
-        version: "0.26.4".to_string(),
+        version: "0.27.0".to_string(),
     };
 
     let result: JsonResult<_, ()> = JsonResult::Success(vec![version.clone(), rest_api_version]);

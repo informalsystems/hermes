@@ -121,7 +121,7 @@ function init_relayer_acc() {
   local base_dir=${DATA_DIR}/namada
 
   ${NAMADAW} --base-dir ${base_dir} \
-    key gen --alias relayer --unsafe-dont-encrypt
+    gen --alias relayer --unsafe-dont-encrypt
 }
 
 function fund_relayer_acc() {
@@ -165,7 +165,7 @@ sleep 10
 
 fund_relayer_acc "albert" ${LEDGER_ADDR}
 
-nam_addr=$(${NAMADAW} --base-dir ${DATA_DIR}/namada address find --alias nam | awk '{print $4}')
+nam_addr=$(${NAMADAW} --base-dir ${DATA_DIR}/namada find --alias nam | awk '/"nam":/{print $3}')
 
 # for the relayer
 cd ${HERMES_DIR}

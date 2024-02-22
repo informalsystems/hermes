@@ -316,7 +316,7 @@ fn extract_block_events(
     );
     append_events::<ChannelEvents::SendPacket>(
         &mut events,
-        extract_events(height, block_events, "send_packet", "packet_data"),
+        extract_events(height, block_events, "send_packet", "packet_data_hex"),
         height,
     );
     append_events::<ChannelEvents::WriteAcknowledgement>(
