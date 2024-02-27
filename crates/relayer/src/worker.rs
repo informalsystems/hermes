@@ -219,7 +219,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
 }
 
 fn should_clear_on_start(config: &crate::config::Packets, channel_ordering: Ordering) -> bool {
-    if config.force_disable_clear_on_start() {
+    if config.force_disable_clear_on_start {
         false
     } else {
         config.clear_on_start || channel_ordering == Ordering::Ordered

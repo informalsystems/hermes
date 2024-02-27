@@ -65,6 +65,8 @@ impl TestOverrides for IcaOrderedChannelTest {
         config.mode.packets.enabled = true;
         config.mode.packets.clear_on_start = false;
         config.mode.packets.clear_interval = 0;
+        // This is needed for ordered channels
+        config.mode.packets.force_disable_clear_on_start = true;
 
         update_relayer_config_for_consumer_chain(config);
     }

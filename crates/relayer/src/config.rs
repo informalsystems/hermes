@@ -415,23 +415,8 @@ pub struct Packets {
     #[serde(default = "default::ics20_max_receiver_size")]
     pub ics20_max_receiver_size: Ics20FieldSizeLimit,
 
-    #[cfg(test)]
-    #[serde(default)]
+    #[serde(skip)]
     pub force_disable_clear_on_start: bool,
-}
-
-impl Packets {
-    pub fn force_disable_clear_on_start(&self) -> bool {
-        #[cfg(test)]
-        {
-            self.force_disable_clear_on_start
-        }
-
-        #[cfg(not(test))]
-        {
-            false
-        }
-    }
 }
 
 impl Default for Packets {
@@ -444,8 +429,6 @@ impl Default for Packets {
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
             ics20_max_memo_size: default::ics20_max_memo_size(),
             ics20_max_receiver_size: default::ics20_max_receiver_size(),
-
-            #[cfg(test)]
             force_disable_clear_on_start: false,
         }
     }
