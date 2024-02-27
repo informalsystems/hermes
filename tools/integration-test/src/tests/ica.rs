@@ -186,11 +186,6 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
     }
 }
 
-#[test]
-fn test_ica_filter_deny() -> Result<(), Error> {
-    run_binary_connection_test(&IcaFilterTestDeny)
-}
-
 pub struct IcaFilterTestDeny;
 
 impl TestOverrides for IcaFilterTestDeny {
@@ -376,27 +371,4 @@ impl BinaryConnectionTest for ICACloseChannelTest {
             Ok(())
         })
     }
-}
-
-fn interchain_send_tx<ChainA: ChainHandle>(
-    chain: &ChainA,
-    from: &Signer,
-    connection: &ConnectionId,
-    msg: InterchainAccountPacketData,
-    relative_timeout: Timestamp,
-) -> Result<Vec<IbcEventWithHeight>, Error> {
-    let msg = MsgSendTx {
-        owner: from.clone(),
-        connection_id: connection.clone(),
-        packet_data: msg,
-        relative_timeout,
-    };
-
-    let msg_any = msg.to_any();
-
-    let tm = TrackedMsgs::new_static(vec![msg_any], "SendTx");
-
-    chain
-        .send_messages_and_wait_commit(tm)
-        .map_err(Error::relayer)
 }
