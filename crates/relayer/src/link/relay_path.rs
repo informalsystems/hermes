@@ -711,16 +711,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     return Ok(reply);
                 }
                 Err(LinkError(error::LinkErrorDetail::Send(_), _)) => {
-                    // If on an ordered channel, perform a packet clearing, but only if we
-                    // are not in the middle of another packet clearing process
-                    if self.ordered_channel() && i == 0 && !odata.tracking_id.is_clearing() {
-                        warn!("Failed to relay to ordered channel, attempting to recover by clearing packets");
-
-                        // We do need to specify the height for the packet clearing,
-                        // since no progress will have been made on the clearing process
-                        self.relay_pending_packets(None)?;
-                    }
-
                     if i + 1 == MAX_RETRIES {
                         error!("{}/{} retries exhausted, giving up", i + 1, MAX_RETRIES)
                     } else {
