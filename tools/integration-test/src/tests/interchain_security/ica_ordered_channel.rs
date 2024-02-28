@@ -58,6 +58,8 @@ impl TestOverrides for IcaOrderedChannelTest {
     }
 
     fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.clients.misbehaviour = false;
+
         config.mode.channels.enabled = true;
 
         // Disable packet clearing so that packets sent without the supervisor
@@ -156,11 +158,12 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
 
         let signer = Signer::from_str(&wallet.address().to_string()).unwrap();
 
-        sleep(Duration::from_secs(5));
+        let user2_balance = chains.node_a.chain_driver().query_balance(
+            &chains.node_a.wallets().user2().address(),
+            &stake_denom.as_ref(),
+        )?;
 
         relayer.with_supervisor(|| {
-            sleep(Duration::from_secs(1));
-
             let ica_events = interchain_send_tx(
                 chains.handle_b(),
                 &signer,
@@ -169,14 +172,21 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
                 Timestamp::from_nanoseconds(120000000000).unwrap(),
             )?;
 
-            info!("First ICA transfer made with supervisor: {ica_events:#?}");
+            // Check that the ICA account's balance has been debited the sent amount.
+            chains.node_a.chain_driver().assert_eventual_wallet_amount(
+                &ica_address.as_ref(),
+                &stake_denom.with_amount(ica_fund - amount).as_ref(),
+            )?;
 
-            sleep(Duration::from_secs(5));
+            chains.node_a.chain_driver().assert_eventual_wallet_amount(
+                &chains.node_a.wallets().user2().address(),
+                &(user2_balance.clone() + amount).as_ref(),
+            )?;
+
+            info!("First ICA transfer made with supervisor: {ica_events:#?}");
 
             Ok(())
         })?;
-
-        sleep(Duration::from_secs(1));
 
         let ica_events = interchain_send_tx(
             chains.handle_b(),
@@ -188,11 +198,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
 
         info!("Second ICA transfer made without supervisor: {ica_events:#?}");
 
-        sleep(Duration::from_secs(5));
-
         relayer.with_supervisor(|| {
-            sleep(Duration::from_secs(1));
-
             let ica_events = interchain_send_tx(
                 chains.handle_b(),
                 &signer,
@@ -201,19 +207,20 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
                 Timestamp::from_nanoseconds(120000000000).unwrap(),
             )?;
 
+            // Check that the ICA account's balance has been debited the sent amount.
+            chains.node_a.chain_driver().assert_eventual_wallet_amount(
+                &ica_address.as_ref(),
+                &stake_denom.with_amount(ica_fund - 3 * amount).as_ref(),
+            )?;
+
             info!("Third ICA transfer made with supervisor: {ica_events:#?}");
 
-            sleep(Duration::from_secs(5));
+            chains.node_a.chain_driver().assert_eventual_wallet_amount(
+                &chains.node_a.wallets().user2().address(),
+                &(user2_balance + (3 * amount)).as_ref(),
+            )?;
 
             Ok(())
-        })?;
-
-        // Check that the ICA account's balance has been debited the sent amount.
-        chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &ica_address.as_ref(),
-            &stake_denom.with_amount(ica_fund - 3 * amount).as_ref(),
-        )?;
-
-        Ok(())
+        })
     }
 }
