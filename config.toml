@@ -433,6 +433,11 @@ memo_prefix = ''
 # This will override the global clear interval for this chain only, allowing different intervals for each chain.
 # clear_interval = 50
 
+# Specify packet sequences which should not be cleared.
+# Sequences should be set as a list of numbers: [2, 3, 5].
+# Default: No filter
+# excluded_sequences = []
+
 [[chains]]
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
