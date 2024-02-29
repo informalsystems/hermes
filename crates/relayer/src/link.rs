@@ -1,6 +1,7 @@
 use ibc_relayer_types::core::{
     ics03_connection::connection::State as ConnectionState,
     ics04_channel::channel::State as ChannelState,
+    ics04_channel::packet::Sequence,
     ics24_host::identifier::{ChannelId, PortChannelId, PortId},
 };
 use tracing::info;
@@ -49,9 +50,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         channel: Channel<ChainA, ChainB>,
         with_tx_confirmation: bool,
         link_parameters: LinkParameters,
+        exclude_src_sequences: Vec<Sequence>,
+        exclude_dst_sequences: Vec<Sequence>,
     ) -> Result<Self, LinkError> {
         Ok(Self {
-            a_to_b: RelayPath::new(channel, with_tx_confirmation, link_parameters)?,
+            a_to_b: RelayPath::new(
+                channel,
+                with_tx_confirmation,
+                link_parameters,
+                exclude_src_sequences,
+                exclude_dst_sequences,
+            )?,
         })
     }
 
@@ -61,6 +70,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         opts: LinkParameters,
         with_tx_confirmation: bool,
         auto_register_counterparty_payee: bool,
+        exclude_src_sequences: Vec<Sequence>,
+        exclude_dst_sequences: Vec<Sequence>,
     ) -> Result<Link<ChainA, ChainB>, LinkError> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
@@ -175,7 +186,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 .map_err(LinkError::relayer)?;
         }
 
-        Link::new(channel, with_tx_confirmation, opts)
+        Link::new(
+            channel,
+            with_tx_confirmation,
+            opts,
+            exclude_src_sequences,
+            exclude_dst_sequences,
+        )
     }
 
     /// Constructs a link around the channel that is reverse to the channel
@@ -202,6 +219,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             opts,
             with_tx_confirmation,
             auto_register_counterparty_payee,
+            self.a_to_b.exclude_dst_sequences.clone(),
+            self.a_to_b.exclude_src_sequences.clone(),
         )
     }
 }

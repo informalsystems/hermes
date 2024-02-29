@@ -110,6 +110,24 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             (Some(cmd_tx), None)
         }
         Object::Packet(path) => {
+            let excluded_src_sequences = match config
+                .chains
+                .iter()
+                .find(|chain| *chain.id() == chains.a.id())
+            {
+                Some(chain_config) => chain_config.excluded_sequences(),
+                None => vec![],
+            };
+
+            let excluded_dst_sequences = match config
+                .chains
+                .iter()
+                .find(|chain| *chain.id() == chains.b.id())
+            {
+                Some(chain_config) => chain_config.excluded_sequences(),
+                None => vec![],
+            };
+
             let packets_config = config.mode.packets;
             let link_res = Link::new_from_opts(
                 chains.a.clone(),
@@ -122,6 +140,8 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 },
                 packets_config.tx_confirmation,
                 packets_config.auto_register_counterparty_payee,
+                excluded_src_sequences,
+                excluded_dst_sequences,
             );
 
             match link_res {

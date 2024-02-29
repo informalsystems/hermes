@@ -156,8 +156,33 @@ impl Runnable for ClearPacketsCmd {
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
         };
 
-        let fwd_link = match Link::new_from_opts(chains.src.clone(), chains.dst, opts, false, false)
+        let excluded_src_sequences = match config
+            .chains
+            .iter()
+            .find(|chain| *chain.id() == chains.src.id())
         {
+            Some(chain_config) => chain_config.excluded_sequences(),
+            None => vec![],
+        };
+
+        let excluded_dst_sequences = match config
+            .chains
+            .iter()
+            .find(|chain| *chain.id() == chains.dst.id())
+        {
+            Some(chain_config) => chain_config.excluded_sequences(),
+            None => vec![],
+        };
+
+        let fwd_link = match Link::new_from_opts(
+            chains.src.clone(),
+            chains.dst,
+            opts,
+            false,
+            false,
+            excluded_src_sequences,
+            excluded_dst_sequences,
+        ) {
             Ok(link) => link,
             Err(e) => Output::error(e).exit(),
         };

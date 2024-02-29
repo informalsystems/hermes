@@ -89,10 +89,12 @@ impl Runnable for TxPacketRecvCmd {
             max_memo_size: config.mode.packets.ics20_max_memo_size,
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
         };
-        let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
-            Ok(link) => link,
-            Err(e) => Output::error(e).exit(),
-        };
+        // Packets are only excluded when clearing
+        let link =
+            match Link::new_from_opts(chains.src, chains.dst, opts, false, false, vec![], vec![]) {
+                Ok(link) => link,
+                Err(e) => Output::error(e).exit(),
+            };
 
         let packet_data_query_height = self
             .packet_data_query_height
@@ -186,10 +188,12 @@ impl Runnable for TxPacketAckCmd {
             max_memo_size: config.mode.packets.ics20_max_memo_size,
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
         };
-        let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
-            Ok(link) => link,
-            Err(e) => Output::error(e).exit(),
-        };
+        // Packets are only excluded when clearing
+        let link =
+            match Link::new_from_opts(chains.src, chains.dst, opts, false, false, vec![], vec![]) {
+                Ok(link) => link,
+                Err(e) => Output::error(e).exit(),
+            };
 
         let packet_data_query_height = self
             .packet_data_query_height

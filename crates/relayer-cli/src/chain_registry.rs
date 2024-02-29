@@ -172,6 +172,7 @@ where
         extension_options: Vec::new(),
         compat_mode: None,
         clear_interval: None,
+        excluded_sequences: Vec::new(),
     }))
 }
 

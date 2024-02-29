@@ -2,6 +2,7 @@ use core::time::Duration;
 use std::path::PathBuf;
 
 use byte_unit::Byte;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_rpc::Url;
 
@@ -143,6 +144,8 @@ pub struct CosmosSdkConfig {
     pub extension_options: Vec<ExtensionOption>,
     pub compat_mode: Option<CompatMode>,
     pub clear_interval: Option<u64>,
+    #[serde(default)]
+    pub excluded_sequences: Vec<Sequence>,
 }
 
 impl CosmosSdkConfig {
