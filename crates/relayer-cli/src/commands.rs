@@ -151,7 +151,11 @@ impl Configurable<Config> for CliCmd {
         for ccfg in config.chains.iter_mut() {
             #[allow(irrefutable_let_patterns)]
             if let ChainConfig::CosmosSdk(ref mut cosmos_ccfg) = ccfg {
-                cosmos_ccfg.memo_prefix.apply_suffix(&suffix);
+                if let Some(memo) = &cosmos_ccfg.memo_overwrite {
+                    cosmos_ccfg.memo_prefix = memo.clone();
+                } else {
+                    cosmos_ccfg.memo_prefix.apply_suffix(&suffix);
+                }
             }
         }
 
