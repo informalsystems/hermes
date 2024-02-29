@@ -369,6 +369,13 @@ trust_threshold = '2/3'
 # operational debugging information, e.g., relayer build version.
 memo_prefix = ''
 
+# If this is set to a string, it will overwrite the memo used by Hermes for each transaction
+# it submits to this chain.
+# Default: not set.
+# This is used for chains which have a very small character limit for the memo,
+# and the additional information appended by Hermes would overflow that limit.
+# memo_overwrite = ''
+
 # This section specifies the filters for policy based relaying.
 #
 # Default: no policy / filters, allow all packets on all channels.
