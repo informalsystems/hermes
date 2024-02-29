@@ -1,0 +1,442 @@
+//! This tests different scenarios for the packet sequence filter.
+//! The purpose of this filter is to only filter out packets when clearing,
+//! standard relaying should not be affected by this configuration.
+//!
+//! `FilterClearOnStartTest` tests that the packets sequences configured in
+//! `excluded_sequences` are not relayed when clearing packet on start.
+//!
+//! `FilterClearIntervalTest` tests that the packet sequences configured in
+//! `excluded_sequences` are not relayed when the clear interval is triggered.
+//!
+//! `ClearNoFilterTest` tests that packets are correctly cleared if there is no
+//! packet sequence configured in `excluded_sequences`.
+//!
+//! `StandardRelayingNoFilterTest` tests that even if a packet sequence is
+//! configured in the `excluded_sequences` it will be relayed by the running
+//! instance.
+
+use ibc_relayer::config::ChainConfig;
+use ibc_test_framework::prelude::*;
+
+#[test]
+fn test_filter_clear_on_start() -> Result<(), Error> {
+    run_binary_channel_test(&FilterClearOnStartTest)
+}
+
+#[test]
+fn test_filter_clear_interval() -> Result<(), Error> {
+    run_binary_channel_test(&FilterClearIntervalTest)
+}
+
+#[test]
+fn test_clear_no_filter() -> Result<(), Error> {
+    run_binary_channel_test(&ClearNoFilterTest)
+}
+
+#[test]
+fn test_no_filter_standard_relaying() -> Result<(), Error> {
+    run_binary_channel_test(&StandardRelayingNoFilterTest)
+}
+
+pub struct FilterClearOnStartTest;
+
+impl TestOverrides for FilterClearOnStartTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        let chain_a = &mut config.chains[0];
+        match chain_a {
+            ChainConfig::CosmosSdk(chain_config) => {
+                chain_config.excluded_sequences = vec![2.into()];
+            }
+        }
+        config.mode.packets.clear_on_start = true;
+        config.mode.packets.clear_interval = 0;
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
+
+impl BinaryChannelTest for FilterClearOnStartTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        run_sequence_filter_test(relayer, chains, channels)
+    }
+}
+
+pub struct FilterClearIntervalTest;
+
+impl TestOverrides for FilterClearIntervalTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        let chain_a = &mut config.chains[0];
+        match chain_a {
+            ChainConfig::CosmosSdk(chain_config) => {
+                chain_config.excluded_sequences = vec![2.into()];
+            }
+        }
+        config.mode.packets.clear_on_start = false;
+        config.mode.packets.clear_interval = 10;
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
+
+impl BinaryChannelTest for FilterClearIntervalTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        run_sequence_filter_test(relayer, chains, channels)
+    }
+}
+
+pub struct ClearNoFilterTest;
+
+impl TestOverrides for ClearNoFilterTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.clear_on_start = true;
+        config.mode.packets.clear_interval = 0;
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
+
+impl BinaryChannelTest for ClearNoFilterTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let denom_a = chains.node_a.denom();
+        let denom_a_to_b = derive_ibc_denom(
+            &channels.port_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
+            &denom_a,
+        )?;
+        let denom_b = chains.node_b.denom();
+        let denom_b_to_a = derive_ibc_denom(
+            &channels.port_a.as_ref(),
+            &channels.channel_id_a.as_ref(),
+            &denom_b,
+        )?;
+
+        let wallet_a = chains.node_a.wallets().user1().cloned();
+        let wallet_b = chains.node_b.wallets().user1().cloned();
+
+        let a_to_b_amount = 12345u64;
+        let b_to_a_amount = 54321u64;
+
+        let balance_a = chains
+            .node_a
+            .chain_driver()
+            .query_balance(&wallet_a.address(), &denom_a)?;
+
+        let balance_b = chains
+            .node_b
+            .chain_driver()
+            .query_balance(&wallet_b.address(), &denom_b)?;
+
+        // Create a pending transfer from A to B with sequence 1
+        chains.node_a.chain_driver().ibc_transfer_token(
+            &channels.port_a.as_ref(),
+            &channels.channel_id_a.as_ref(),
+            &wallet_a.as_ref(),
+            &wallet_b.address(),
+            &denom_a.with_amount(a_to_b_amount).as_ref(),
+        )?;
+
+        // Create a pending transfer from A to B with sequence 2
+        chains.node_a.chain_driver().ibc_transfer_token(
+            &channels.port_a.as_ref(),
+            &channels.channel_id_a.as_ref(),
+            &wallet_a.as_ref(),
+            &wallet_b.address(),
+            &denom_a.with_amount(a_to_b_amount).as_ref(),
+        )?;
+
+        // Create a pending transfer from B to A with sequence 1
+        chains.node_b.chain_driver().ibc_transfer_token(
+            &channels.port_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
+            &wallet_b.as_ref(),
+            &wallet_a.address(),
+            &denom_b.with_amount(b_to_a_amount).as_ref(),
+        )?;
+
+        // Create a pending transfer from B to A with sequence 2
+        chains.node_b.chain_driver().ibc_transfer_token(
+            &channels.port_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
+            &wallet_b.as_ref(),
+            &wallet_a.address(),
+            &denom_b.with_amount(b_to_a_amount).as_ref(),
+        )?;
+
+        relayer.with_supervisor(|| {
+            info!("Assert that the send from A escrowed tokens for both transfers");
+
+            chains.node_a.chain_driver().assert_eventual_wallet_amount(
+                &wallet_a.address(),
+                &(balance_a - 2 * a_to_b_amount).as_ref(),
+            )?;
+
+            info!("Assert that only the first transfer A to B was cleared");
+
+            chains.node_b.chain_driver().assert_eventual_wallet_amount(
+                &wallet_b.address(),
+                &denom_a_to_b.with_amount(2 * a_to_b_amount).as_ref(),
+            )?;
+            info!("Assert that the sender from B escrowed tokens for both transfers");
+
+            chains.node_b.chain_driver().assert_eventual_wallet_amount(
+                &wallet_b.address(),
+                &(balance_b - 2 * b_to_a_amount).as_ref(),
+            )?;
+
+            info!("Assert that both transfers from B to A were cleared");
+
+            chains.node_a.chain_driver().assert_eventual_wallet_amount(
+                &wallet_a.address(),
+                &denom_b_to_a.with_amount(2 * b_to_a_amount).as_ref(),
+            )?;
+            Ok(())
+        })
+    }
+}
+
+pub struct StandardRelayingNoFilterTest;
+
+impl TestOverrides for StandardRelayingNoFilterTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        let chain_a = &mut config.chains[0];
+        match chain_a {
+            ChainConfig::CosmosSdk(chain_config) => {
+                chain_config.excluded_sequences = vec![2.into()];
+            }
+        }
+        config.mode.packets.clear_on_start = true;
+        config.mode.packets.clear_interval = 0;
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        true
+    }
+}
+
+impl BinaryChannelTest for StandardRelayingNoFilterTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        _relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let denom_a = chains.node_a.denom();
+        let denom_a_to_b = derive_ibc_denom(
+            &channels.port_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
+            &denom_a,
+        )?;
+        let denom_b = chains.node_b.denom();
+        let denom_b_to_a = derive_ibc_denom(
+            &channels.port_a.as_ref(),
+            &channels.channel_id_a.as_ref(),
+            &denom_b,
+        )?;
+
+        let wallet_a = chains.node_a.wallets().user1().cloned();
+        let wallet_b = chains.node_b.wallets().user1().cloned();
+
+        let a_to_b_amount = 12345u64;
+        let b_to_a_amount = 54321u64;
+
+        let balance_a = chains
+            .node_a
+            .chain_driver()
+            .query_balance(&wallet_a.address(), &denom_a)?;
+
+        let balance_b = chains
+            .node_b
+            .chain_driver()
+            .query_balance(&wallet_b.address(), &denom_b)?;
+
+        // Create a pending transfer from A to B with sequence 1
+        chains.node_a.chain_driver().ibc_transfer_token(
+            &channels.port_a.as_ref(),
+            &channels.channel_id_a.as_ref(),
+            &wallet_a.as_ref(),
+            &wallet_b.address(),
+            &denom_a.with_amount(a_to_b_amount).as_ref(),
+        )?;
+
+        // Create a pending transfer from A to B with sequence 2
+        chains.node_a.chain_driver().ibc_transfer_token(
+            &channels.port_a.as_ref(),
+            &channels.channel_id_a.as_ref(),
+            &wallet_a.as_ref(),
+            &wallet_b.address(),
+            &denom_a.with_amount(a_to_b_amount).as_ref(),
+        )?;
+
+        // Create a pending transfer from B to A with sequence 1
+        chains.node_b.chain_driver().ibc_transfer_token(
+            &channels.port_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
+            &wallet_b.as_ref(),
+            &wallet_a.address(),
+            &denom_b.with_amount(b_to_a_amount).as_ref(),
+        )?;
+
+        // Create a pending transfer from B to A with sequence 2
+        chains.node_b.chain_driver().ibc_transfer_token(
+            &channels.port_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
+            &wallet_b.as_ref(),
+            &wallet_a.address(),
+            &denom_b.with_amount(b_to_a_amount).as_ref(),
+        )?;
+
+        info!("Assert that the send from A escrowed tokens for both transfers");
+
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.address(),
+            &(balance_a - 2 * a_to_b_amount).as_ref(),
+        )?;
+
+        info!("Assert that only the first transfer A to B was cleared");
+
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            &denom_a_to_b.with_amount(2 * a_to_b_amount).as_ref(),
+        )?;
+        info!("Assert that the sender from B escrowed tokens for both transfers");
+
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            &(balance_b - 2 * b_to_a_amount).as_ref(),
+        )?;
+
+        info!("Assert that both transfers from B to A were cleared");
+
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.address(),
+            &denom_b_to_a.with_amount(2 * b_to_a_amount).as_ref(),
+        )?;
+        Ok(())
+    }
+}
+
+fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
+    relayer: RelayerDriver,
+    chains: ConnectedChains<ChainA, ChainB>,
+    channels: ConnectedChannel<ChainA, ChainB>,
+) -> Result<(), Error> {
+    let denom_a = chains.node_a.denom();
+    let denom_a_to_b = derive_ibc_denom(
+        &channels.port_b.as_ref(),
+        &channels.channel_id_b.as_ref(),
+        &denom_a,
+    )?;
+    let denom_b = chains.node_b.denom();
+    let denom_b_to_a = derive_ibc_denom(
+        &channels.port_a.as_ref(),
+        &channels.channel_id_a.as_ref(),
+        &denom_b,
+    )?;
+
+    let wallet_a = chains.node_a.wallets().user1().cloned();
+    let wallet_b = chains.node_b.wallets().user1().cloned();
+
+    let a_to_b_amount = 12345u64;
+    let b_to_a_amount = 54321u64;
+
+    let balance_a = chains
+        .node_a
+        .chain_driver()
+        .query_balance(&wallet_a.address(), &denom_a)?;
+
+    let balance_b = chains
+        .node_b
+        .chain_driver()
+        .query_balance(&wallet_b.address(), &denom_b)?;
+
+    // Create a pending transfer from A to B with sequence 1
+    chains.node_a.chain_driver().ibc_transfer_token(
+        &channels.port_a.as_ref(),
+        &channels.channel_id_a.as_ref(),
+        &wallet_a.as_ref(),
+        &wallet_b.address(),
+        &denom_a.with_amount(a_to_b_amount).as_ref(),
+    )?;
+
+    // Create a pending transfer from A to B with sequence 2
+    chains.node_a.chain_driver().ibc_transfer_token(
+        &channels.port_a.as_ref(),
+        &channels.channel_id_a.as_ref(),
+        &wallet_a.as_ref(),
+        &wallet_b.address(),
+        &denom_a.with_amount(a_to_b_amount).as_ref(),
+    )?;
+
+    // Create a pending transfer from B to A with sequence 1
+    chains.node_b.chain_driver().ibc_transfer_token(
+        &channels.port_b.as_ref(),
+        &channels.channel_id_b.as_ref(),
+        &wallet_b.as_ref(),
+        &wallet_a.address(),
+        &denom_b.with_amount(b_to_a_amount).as_ref(),
+    )?;
+
+    // Create a pending transfer from B to A with sequence 2
+    chains.node_b.chain_driver().ibc_transfer_token(
+        &channels.port_b.as_ref(),
+        &channels.channel_id_b.as_ref(),
+        &wallet_b.as_ref(),
+        &wallet_a.address(),
+        &denom_b.with_amount(b_to_a_amount).as_ref(),
+    )?;
+
+    relayer.with_supervisor(|| {
+        info!("Assert that the send from A escrowed tokens for both transfers");
+
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.address(),
+            &(balance_a - 2 * a_to_b_amount).as_ref(),
+        )?;
+
+        info!("Assert that only the first transfer A to B was cleared");
+
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            &denom_a_to_b.with_amount(a_to_b_amount).as_ref(),
+        )?;
+        info!("Assert that the sender from B escrowed tokens for both transfers");
+
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            &(balance_b - 2 * b_to_a_amount).as_ref(),
+        )?;
+
+        info!("Assert that both transfers from B to A were cleared");
+
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.address(),
+            &denom_b_to_a.with_amount(2 * b_to_a_amount).as_ref(),
+        )?;
+        Ok(())
+    })
+}

@@ -69,6 +69,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             opts,
             false,
             false,
+            vec![],
+            vec![],
         )?;
 
         let channel_end = query_identified_channel_end(

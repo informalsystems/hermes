@@ -505,6 +505,8 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
             opts,
             false,
             false,
+            vec![],
+            vec![],
         )?;
 
         info!("Clearing all even packets ({})", to_clear.len());

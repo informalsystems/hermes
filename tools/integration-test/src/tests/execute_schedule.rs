@@ -57,6 +57,8 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             chain_a_link_opts,
             true,
             false,
+            vec![],
+            vec![],
         )?;
 
         let mut relay_path_a_to_b = chain_a_link.a_to_b;

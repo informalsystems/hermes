@@ -196,6 +196,7 @@ impl FullNode {
             sequential_batch_tx: false,
             compat_mode,
             clear_interval: None,
+            excluded_sequences: Vec::new(),
         }))
     }
 
