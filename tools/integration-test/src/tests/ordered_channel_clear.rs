@@ -121,6 +121,8 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             src_channel_id: channel.channel_id_a.clone().into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
+            exclude_dst_sequences: vec![],
         };
 
         let chain_a_link = Link::new_from_opts(
@@ -129,8 +131,6 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             chain_a_link_opts,
             true,
             true,
-            vec![],
-            vec![],
         )?;
 
         let chain_b_link_opts = LinkParameters {
@@ -138,6 +138,8 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             src_channel_id: channel.channel_id_b.clone().into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
+            exclude_dst_sequences: vec![],
         };
 
         let chain_b_link = Link::new_from_opts(
@@ -146,8 +148,6 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             chain_b_link_opts,
             true,
             true,
-            vec![],
-            vec![],
         )?;
 
         // Send the transfer (recv) packets from A to B over the channel.
@@ -276,6 +276,8 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
             src_channel_id: channel.channel_id_a.into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
+            exclude_dst_sequences: vec![],
         };
 
         let chain_a_link = Link::new_from_opts(
@@ -284,8 +286,6 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
             chain_a_link_opts,
             true,
             true,
-            vec![],
-            vec![],
         )?;
 
         let events_returned: Vec<IbcEvent> = chain_a_link

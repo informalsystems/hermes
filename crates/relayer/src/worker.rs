@@ -110,23 +110,15 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             (Some(cmd_tx), None)
         }
         Object::Packet(path) => {
-            let excluded_src_sequences = match config
-                .chains
-                .iter()
-                .find(|chain| *chain.id() == chains.a.id())
-            {
-                Some(chain_config) => chain_config.excluded_sequences(),
-                None => vec![],
-            };
+            let exclude_src_sequences = config
+                .find_chain(&chains.a.id())
+                .map(|chain_config| chain_config.excluded_sequences())
+                .unwrap_or_default();
 
-            let excluded_dst_sequences = match config
-                .chains
-                .iter()
-                .find(|chain| *chain.id() == chains.b.id())
-            {
-                Some(chain_config) => chain_config.excluded_sequences(),
-                None => vec![],
-            };
+            let exclude_dst_sequences = config
+                .find_chain(&chains.b.id())
+                .map(|chain_config| chain_config.excluded_sequences())
+                .unwrap_or_default();
 
             let packets_config = config.mode.packets;
             let link_res = Link::new_from_opts(
@@ -137,11 +129,11 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     src_channel_id: path.src_channel_id.clone(),
                     max_memo_size: packets_config.ics20_max_memo_size,
                     max_receiver_size: packets_config.ics20_max_receiver_size,
+                    exclude_src_sequences,
+                    exclude_dst_sequences,
                 },
                 packets_config.tx_confirmation,
                 packets_config.auto_register_counterparty_payee,
-                excluded_src_sequences,
-                excluded_dst_sequences,
             );
 
             match link_res {

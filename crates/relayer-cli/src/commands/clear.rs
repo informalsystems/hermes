@@ -146,7 +146,15 @@ impl Runnable for ClearPacketsCmd {
             }
         }
 
-        let mut ev_list = vec![];
+        let exclude_src_sequences = config
+            .find_chain(&chains.src.id())
+            .map(|chain| chain.excluded_sequences())
+            .unwrap_or_default();
+
+        let exclude_dst_sequences = config
+            .find_chain(&chains.dst.id())
+            .map(|chain| chain.excluded_sequences())
+            .unwrap_or_default();
 
         // Construct links in both directions.
         let opts = LinkParameters {
@@ -154,35 +162,12 @@ impl Runnable for ClearPacketsCmd {
             src_channel_id: self.channel_id.clone(),
             max_memo_size: config.mode.packets.ics20_max_memo_size,
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
+            exclude_src_sequences,
+            exclude_dst_sequences,
         };
 
-        let excluded_src_sequences = match config
-            .chains
-            .iter()
-            .find(|chain| *chain.id() == chains.src.id())
+        let fwd_link = match Link::new_from_opts(chains.src.clone(), chains.dst, opts, false, false)
         {
-            Some(chain_config) => chain_config.excluded_sequences(),
-            None => vec![],
-        };
-
-        let excluded_dst_sequences = match config
-            .chains
-            .iter()
-            .find(|chain| *chain.id() == chains.dst.id())
-        {
-            Some(chain_config) => chain_config.excluded_sequences(),
-            None => vec![],
-        };
-
-        let fwd_link = match Link::new_from_opts(
-            chains.src.clone(),
-            chains.dst,
-            opts,
-            false,
-            false,
-            excluded_src_sequences,
-            excluded_dst_sequences,
-        ) {
             Ok(link) => link,
             Err(e) => Output::error(e).exit(),
         };
@@ -191,6 +176,8 @@ impl Runnable for ClearPacketsCmd {
             Ok(link) => link,
             Err(e) => Output::error(e).exit(),
         };
+
+        let mut ev_list = vec![];
 
         // Schedule RecvPacket messages for pending packets in both directions or,
         // if packet sequences are provided, only on the specified chain.

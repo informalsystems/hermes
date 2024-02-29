@@ -487,6 +487,8 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
             src_channel_id: channel.channel_id_a.clone().into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
+            exclude_dst_sequences: vec![],
         };
 
         // Clear all even packets
@@ -505,8 +507,6 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
             opts,
             false,
             false,
-            vec![],
-            vec![],
         )?;
 
         info!("Clearing all even packets ({})", to_clear.len());

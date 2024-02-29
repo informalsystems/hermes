@@ -49,6 +49,8 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             src_channel_id: channel.channel_id_a.clone().into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
+            exclude_dst_sequences: vec![],
         };
 
         let chain_a_link = Link::new_from_opts(
@@ -57,8 +59,6 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             chain_a_link_opts,
             true,
             false,
-            vec![],
-            vec![],
         )?;
 
         let mut relay_path_a_to_b = chain_a_link.a_to_b;

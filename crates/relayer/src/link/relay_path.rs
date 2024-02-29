@@ -125,8 +125,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         channel: Channel<ChainA, ChainB>,
         with_tx_confirmation: bool,
         link_parameters: LinkParameters,
-        exclude_src_sequences: Vec<Sequence>,
-        exclude_dst_sequences: Vec<Sequence>,
     ) -> Result<Self, LinkError> {
         let src_chain = channel.src_chain().clone();
         let dst_chain = channel.dst_chain().clone();
@@ -168,8 +166,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             max_memo_size: link_parameters.max_memo_size,
             max_receiver_size: link_parameters.max_receiver_size,
-            exclude_src_sequences,
-            exclude_dst_sequences,
+
+            exclude_src_sequences: link_parameters.exclude_src_sequences,
+            exclude_dst_sequences: link_parameters.exclude_dst_sequences,
         })
     }
 

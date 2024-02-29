@@ -88,13 +88,16 @@ impl Runnable for TxPacketRecvCmd {
             src_channel_id: self.src_channel_id.clone(),
             max_memo_size: config.mode.packets.ics20_max_memo_size,
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
+
+            // Packets are only excluded when clearing
+            exclude_src_sequences: vec![],
+            exclude_dst_sequences: vec![],
         };
-        // Packets are only excluded when clearing
-        let link =
-            match Link::new_from_opts(chains.src, chains.dst, opts, false, false, vec![], vec![]) {
-                Ok(link) => link,
-                Err(e) => Output::error(e).exit(),
-            };
+
+        let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
+            Ok(link) => link,
+            Err(e) => Output::error(e).exit(),
+        };
 
         let packet_data_query_height = self
             .packet_data_query_height
@@ -187,13 +190,16 @@ impl Runnable for TxPacketAckCmd {
             src_channel_id: self.src_channel_id.clone(),
             max_memo_size: config.mode.packets.ics20_max_memo_size,
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
+
+            // Packets are only excluded when clearing
+            exclude_src_sequences: vec![],
+            exclude_dst_sequences: vec![],
         };
-        // Packets are only excluded when clearing
-        let link =
-            match Link::new_from_opts(chains.src, chains.dst, opts, false, false, vec![], vec![]) {
-                Ok(link) => link,
-                Err(e) => Output::error(e).exit(),
-            };
+
+        let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
+            Ok(link) => link,
+            Err(e) => Output::error(e).exit(),
+        };
 
         let packet_data_query_height = self
             .packet_data_query_height
