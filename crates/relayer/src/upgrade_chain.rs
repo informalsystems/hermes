@@ -6,7 +6,7 @@ use std::ops::Add;
 use bytes::BufMut;
 use flex_error::define_error;
 
-use tendermint::Hash as TxHash;
+use cometbft::Hash as TxHash;
 
 use ibc_proto::cosmos::gov::v1::MsgSubmitProposal;
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal as LegacyMsgSubmitProposal;

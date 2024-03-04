@@ -12,17 +12,17 @@ use tonic::{
     Status as GrpcStatus,
 };
 
-use tendermint::abci;
-use tendermint::Error as TendermintError;
-use tendermint_light_client::builder::error::Error as LightClientBuilderError;
-use tendermint_light_client::components::io::IoError as LightClientIoError;
-use tendermint_light_client::errors::{
+use cometbft::abci;
+use cometbft::Error as TendermintError;
+use cometbft_light_client::builder::error::Error as LightClientBuilderError;
+use cometbft_light_client::components::io::IoError as LightClientIoError;
+use cometbft_light_client::errors::{
     Error as LightClientError, ErrorDetail as LightClientErrorDetail,
 };
-use tendermint_proto::Error as TendermintProtoError;
-use tendermint_rpc::endpoint::abci_query::AbciQuery;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
-use tendermint_rpc::Error as TendermintRpcError;
+use cometbft_proto::Error as TendermintProtoError;
+use cometbft_rpc as rpc;
+use cometbft_rpc::endpoint::abci_query::AbciQuery;
+use cometbft_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
 
 use ibc_relayer_types::applications::ics29_fee::error::Error as FeeError;
 use ibc_relayer_types::applications::ics31_icq::error::Error as CrossChainQueryError;
@@ -47,8 +47,8 @@ define_error! {
             |_| { "I/O error" },
 
         Rpc
-            { url: tendermint_rpc::Url }
-            [ TendermintRpcError ]
+            { url: rpc::Url }
+            [ rpc::Error ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -79,7 +79,7 @@ define_error! {
             |e| { format_args!("send_tx resulted in chain error event: {}", e.detail) },
 
         WebSocket
-            { url: tendermint_rpc::Url }
+            { url: rpc::Url }
             |e| { format!("Websocket error to endpoint {}", e.url) },
 
         EventSource
@@ -367,7 +367,7 @@ define_error! {
                 address: String,
                 endpoint: String,
             }
-            [ DisplayOnly<tendermint_rpc::error::Error> ]
+            [ DisplayOnly<rpc::Error> ]
             |e| {
                 format!("health check failed for endpoint {0} on the JSON-RPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
@@ -425,7 +425,7 @@ define_error! {
                 address: String,
                 endpoint: String,
             }
-            [ DisplayOnly<tendermint_rpc::error::Error> ]
+            [ DisplayOnly<rpc::Error> ]
             |e| {
                 format!("semantic config validation: failed to reach endpoint {0} on the JSON-RPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
@@ -580,11 +580,11 @@ define_error! {
 
         InvalidArchiveAddress
             { address: String }
-            [ TendermintRpcError ]
+            [ rpc::Error ]
             |e| { format!("invalid archive node address {}", e.address) },
 
         InvalidCompatMode
-            [ TendermintRpcError ]
+            [ rpc::Error ]
             |_| { "Invalid CompatMode queried from chain and no `compat_mode` configured in Hermes. This can be fixed by specifying a `compat_mode` in Hermes config.toml" },
 
         HttpRequest

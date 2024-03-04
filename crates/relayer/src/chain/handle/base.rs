@@ -3,6 +3,7 @@ use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use tracing::Span;
 
+use cometbft_rpc as rpc;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
@@ -120,7 +121,7 @@ impl ChainHandle for BaseChainHandle {
     fn send_messages_and_wait_check_tx(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
+    ) -> Result<Vec<rpc::endpoint::broadcast::tx_sync::Response>, Error> {
         self.send(|reply_to| ChainRequest::SendMessagesAndWaitCheckTx {
             tracked_msgs,
             reply_to,

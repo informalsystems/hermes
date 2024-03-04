@@ -29,7 +29,7 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height as ICSHeight;
 
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
+use cometbft_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;

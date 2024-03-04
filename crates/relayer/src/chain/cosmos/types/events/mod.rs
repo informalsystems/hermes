@@ -1,5 +1,5 @@
+use cometbft::abci;
 use ibc_relayer_types::Height;
-use tendermint::abci;
 
 use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 

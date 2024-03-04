@@ -1,6 +1,6 @@
 use flex_error::{define_error, TraceError};
 
-use tendermint_rpc::{Error as RpcError, WebSocketClientUrl};
+use cometbft_rpc::{Error as RpcError, WebSocketClientUrl};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
@@ -53,7 +53,7 @@ define_error! {
 
 impl Error {
     pub fn canceled_or_generic(e: RpcError) -> Self {
-        use tendermint_rpc::error::ErrorDetail;
+        use cometbft_rpc::error::ErrorDetail;
 
         match e.detail() {
             ErrorDetail::Server(detail) if detail.reason.contains("subscription was cancelled") => {

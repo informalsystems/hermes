@@ -2,7 +2,7 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 
 use crate::link::relay_sender::AsyncReply;
 
-use tendermint::Hash as TxHash;
+use cometbft::Hash as TxHash;
 
 /// A collection of transaction hashes.
 #[derive(Clone)]

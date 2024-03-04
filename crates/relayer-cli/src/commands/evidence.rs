@@ -9,10 +9,10 @@ use abscissa_core::{Command, Runnable};
 use ibc_relayer::config::{ChainConfig, Config};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use tendermint::block::Height as TendermintHeight;
-use tendermint::evidence::{DuplicateVoteEvidence, LightClientAttackEvidence};
-use tendermint::validator;
-use tendermint_rpc::{Client, Paging};
+use cometbft::block::Height as TendermintHeight;
+use cometbft::evidence::{DuplicateVoteEvidence, Evidence, LightClientAttackEvidence};
+use cometbft::validator;
+use cometbft_rpc::{Client, Paging};
 
 use ibc_relayer::chain::cosmos::CosmosSdkChain;
 use ibc_relayer::chain::endpoint::ChainEndpoint;
@@ -206,13 +206,13 @@ fn check_misbehaviour_at(
 
     for evidence in block.evidence.into_vec() {
         match evidence {
-            tendermint::evidence::Evidence::DuplicateVote(dv) => {
+            Evidence::DuplicateVote(dv) => {
                 warn!("found duplicate vote evidence");
                 trace!("{dv:#?}");
 
                 handle_duplicate_vote(rt.clone(), config, chain, key_name, *dv)?;
             }
-            tendermint::evidence::Evidence::LightClientAttack(lc) => {
+            Evidence::LightClientAttack(lc) => {
                 warn!("found light client attack evidence");
                 trace!("{lc:#?}");
 

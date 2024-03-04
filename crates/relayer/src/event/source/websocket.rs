@@ -14,8 +14,8 @@ use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
-use tendermint_rpc::{
-    client::CompatMode, event::Event as RpcEvent, query::Query, SubscriptionClient,
+use cometbft_rpc::{
+    self as rpc, client::CompatMode, event::Event as RpcEvent, query::Query, SubscriptionClient,
     WebSocketClient, WebSocketClientDriver, WebSocketClientUrl,
 };
 
@@ -58,8 +58,8 @@ mod retry_strategy {
 /// event handler.
 ///
 /// The default events that are queried are:
-/// - [`EventType::NewBlock`](tendermint_rpc::query::EventType::NewBlock)
-/// - [`EventType::Tx`](tendermint_rpc::query::EventType::Tx)
+/// - [`EventType::NewBlock`](rpc::query::EventType::NewBlock)
+/// - [`EventType::Tx`](rpc::query::EventType::Tx)
 pub struct EventSource {
     chain_id: ChainId,
     /// Delay until batch is emitted
@@ -71,9 +71,9 @@ pub struct EventSource {
     /// Event bus for broadcasting events
     event_bus: EventBus<Arc<Result<EventBatch>>>,
     /// Channel where to receive client driver errors
-    rx_err: mpsc::UnboundedReceiver<tendermint_rpc::Error>,
+    rx_err: mpsc::UnboundedReceiver<rpc::Error>,
     /// Channel where to send client driver errors
-    tx_err: mpsc::UnboundedSender<tendermint_rpc::Error>,
+    tx_err: mpsc::UnboundedSender<rpc::Error>,
     /// Channel where to receive commands
     rx_cmd: channel::Receiver<EventSourceCmd>,
     /// Node Address
@@ -452,10 +452,7 @@ fn sort_events(events: &mut [IbcEventWithHeight]) {
     })
 }
 
-async fn run_driver(
-    driver: WebSocketClientDriver,
-    tx: mpsc::UnboundedSender<tendermint_rpc::Error>,
-) {
+async fn run_driver(driver: WebSocketClientDriver, tx: mpsc::UnboundedSender<rpc::Error>) {
     if let Err(e) = driver.run().await {
         if tx.send(e).is_err() {
             error!("failed to relay driver error to event source");

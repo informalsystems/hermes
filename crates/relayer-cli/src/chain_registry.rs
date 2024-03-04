@@ -24,7 +24,7 @@ use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo, TrustThreshold};
 use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
 use ibc_relayer::keyring::Store;
 
-use tendermint_rpc::Url;
+use cometbft_rpc::Url;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
 

@@ -1,3 +1,5 @@
+use cometbft::abci::Event;
+use cometbft_rpc::{Client, HttpClient};
 use ibc_relayer::channel::version::Version;
 use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
@@ -8,8 +10,6 @@ use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, init_channel_version,
 };
 use ibc_test_framework::util::proposal_status::ProposalStatus;
-use tendermint::abci::Event;
-use tendermint_rpc::{Client, HttpClient};
 
 #[test]
 fn test_async_icq() -> Result<(), Error> {

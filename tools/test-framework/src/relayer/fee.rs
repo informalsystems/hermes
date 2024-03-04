@@ -1,3 +1,4 @@
+use cometbft_rpc::HttpClient;
 use core::time::Duration;
 use http::uri::Uri;
 use ibc_relayer::chain::cosmos::query::fee::{
@@ -14,7 +15,6 @@ use ibc_relayer_types::applications::ics29_fee::msgs::register_payee::{
 };
 use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use tendermint_rpc::HttpClient;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::token::{TaggedTokenExt, TaggedTokenRef};

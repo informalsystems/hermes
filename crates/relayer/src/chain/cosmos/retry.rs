@@ -3,10 +3,10 @@ use std::thread;
 
 use tracing::{debug, error, instrument, warn};
 
+use cometbft::abci::Code;
+use cometbft_rpc::endpoint::broadcast::tx_sync::Response;
+use cometbft_rpc::HttpClient;
 use ibc_proto::google::protobuf::Any;
-use tendermint::abci::Code;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::HttpClient;
 
 use crate::chain::cosmos::query::account::refresh_account;
 use crate::chain::cosmos::tx::estimate_fee_and_send_tx;

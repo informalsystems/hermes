@@ -1,3 +1,6 @@
+use cometbft::block::Height;
+use cometbft_rpc::query::Query;
+use cometbft_rpc::{Client, HttpClient, Url};
 use http::uri::Uri;
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
@@ -6,9 +9,6 @@ use ibc_relayer_types::core::ics23_commitment::merkle::{
     convert_tm_to_ics_merkle_proof, MerkleProof,
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use tendermint::block::Height;
-use tendermint_rpc::query::Query;
-use tendermint_rpc::{Client, HttpClient, Url};
 
 use crate::chain::cosmos::version::Specs;
 use crate::chain::requests::{QueryClientEventRequest, QueryPacketEventDataRequest, QueryTxHash};

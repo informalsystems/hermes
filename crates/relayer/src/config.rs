@@ -17,10 +17,10 @@ use core::time::Duration;
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
 
 use byte_unit::Byte;
+use cometbft::block::Height as BlockHeight;
+use cometbft_rpc::Url;
+use cometbft_rpc::WebSocketClientUrl;
 use serde::{Deserialize, Serialize};
-use tendermint::block::Height as BlockHeight;
-use tendermint_rpc::Url;
-use tendermint_rpc::WebSocketClientUrl;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};

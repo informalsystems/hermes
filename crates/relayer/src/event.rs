@@ -1,7 +1,7 @@
+use cometbft::abci::Event as AbciEvent;
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde::Serialize;
 use subtle_encoding::hex;
-use tendermint::abci::Event as AbciEvent;
 
 use ibc_relayer_types::{
     applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},

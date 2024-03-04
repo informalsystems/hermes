@@ -1,10 +1,10 @@
 use tracing::{error, info};
 
-use tendermint::{
+use cometbft::{
     evidence::{Evidence, LightClientAttackEvidence},
     Hash, Time,
 };
-use tendermint_light_client::{
+use cometbft_light_client::{
     builder::LightClientBuilder,
     components::{clock::FixedClock, io::ProdIo, scheduler},
     predicates::ProdPredicates,
@@ -12,14 +12,14 @@ use tendermint_light_client::{
     types::{LightBlock, PeerId},
     verifier::ProdVerifier,
 };
-use tendermint_light_client_detector::{detect_divergence, Divergence, Provider};
-use tendermint_rpc::{Client, HttpClient};
+use cometbft_light_client_detector::{detect_divergence, Divergence, Provider};
+use cometbft_rpc::{Client, HttpClient};
 
 use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState;
 
 use crate::{error::Error, util::block_on};
 
-type Hasher = tendermint::crypto::default::Sha256;
+type Hasher = cometbft::crypto::default::Sha256;
 
 pub fn detect(
     peer_id: PeerId,

@@ -1,8 +1,8 @@
+use cometbft::merkle::proof::ProofOps as CometBFTProofOps;
+use cometbft_proto::crypto::v1::{ProofOp, ProofOps};
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::stride::interchainquery::v1::MsgSubmitQueryResponse;
 use prost::Message;
-use cometbft::merkle::proof::ProofOps as CometBFTProofOps;
-use cometbft_proto::crypto::{ProofOp, ProofOps};
 
 use crate::applications::ics31_icq::error::Error;
 use crate::signer::Signer;

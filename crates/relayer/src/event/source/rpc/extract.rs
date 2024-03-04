@@ -1,5 +1,5 @@
+use cometbft::abci;
 use ibc_relayer_types::applications::ics29_fee::events::DistributionType;
-use tendermint::abci;
 
 use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;

@@ -2,13 +2,13 @@
    Methods for tagged version of the chain driver.
 */
 
+use cometbft_rpc::client::{Client, HttpClient};
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::util::compat_mode::compat_mode_from_version;
 use serde_json as json;
-use tendermint_rpc::client::{Client, HttpClient};
 
 use crate::chain::cli::query::query_auth_module;
 use crate::chain::cli::query::query_recipient_transactions;

@@ -2,11 +2,11 @@ mod detector;
 
 use std::time::Duration;
 
+use cometbft::Time;
 use itertools::Itertools;
-use tendermint::Time;
 use tracing::{debug, error, trace, warn};
 
-use tendermint_light_client::{
+use cometbft_light_client::{
     components::{
         self,
         io::{AtHeight, Io, ProdIo},
@@ -17,8 +17,8 @@ use tendermint_light_client::{
     verifier::types::{Height as TMHeight, LightBlock, PeerId, Status},
     verifier::ProdVerifier,
 };
-use tendermint_light_client_detector::Divergence;
-use tendermint_rpc as rpc;
+use cometbft_light_client_detector::Divergence;
+use cometbft_rpc as rpc;
 
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;

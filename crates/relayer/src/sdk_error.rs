@@ -1,5 +1,5 @@
+use cometbft::abci::Code;
 use flex_error::define_error;
-use tendermint::abci::Code;
 
 // Provides mapping for errors returned from ibc-go and cosmos-sdk
 define_error! {

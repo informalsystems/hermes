@@ -9,9 +9,9 @@ use tokio::{
 };
 use tracing::{debug, error, error_span, trace};
 
-use tendermint::abci;
-use tendermint::block::Height as BlockHeight;
-use tendermint_rpc::{Client, HttpClient};
+use cometbft::abci;
+use cometbft::block::Height as BlockHeight;
+use cometbft_rpc::{Client, HttpClient};
 
 use ibc_relayer_types::{
     core::{

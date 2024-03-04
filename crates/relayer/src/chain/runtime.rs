@@ -5,6 +5,7 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, Span};
 
+use cometbft_rpc as rpc;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
@@ -384,7 +385,7 @@ where
     fn send_messages_and_wait_check_tx(
         &mut self,
         tracked_msgs: TrackedMsgs,
-        reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
+        reply_to: ReplyTo<Vec<rpc::endpoint::broadcast::tx_sync::Response>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_messages_and_wait_check_tx(tracked_msgs);
         reply_to.send(result).map_err(Error::send)

@@ -4,6 +4,7 @@ use core::fmt::{self, Debug, Display};
 use crossbeam_channel as channel;
 use tracing::Span;
 
+use cometbft_rpc as rpc;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
@@ -120,7 +121,7 @@ pub enum ChainRequest {
 
     SendMessagesAndWaitCheckTx {
         tracked_msgs: TrackedMsgs,
-        reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
+        reply_to: ReplyTo<Vec<rpc::endpoint::broadcast::tx_sync::Response>>,
     },
 
     Config {
@@ -402,7 +403,7 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     fn send_messages_and_wait_check_tx(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error>;
+    ) -> Result<Vec<rpc::endpoint::broadcast::tx_sync::Response>, Error>;
 
     fn get_signer(&self) -> Result<Signer, Error>;
 

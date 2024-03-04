@@ -6,8 +6,8 @@ use itertools::Itertools;
 use tracing::{error, info};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
-use tendermint::abci::{Event, EventAttribute};
-use tendermint_rpc::{
+use cometbft::abci::{Event, EventAttribute};
+use cometbft_rpc::{
     endpoint::block_results,
     query::{Condition, Operand, Operation, Query},
     Client, HttpClient, Order, Url,
