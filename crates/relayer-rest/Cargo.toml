@@ -20,7 +20,7 @@ ibc-relayer       = { version = "0.27.0", path = "../relayer" }
 crossbeam-channel = "0.5"
 serde             = "1.0"
 tracing           = "0.1"
-axum              = "0.6"
+axum              = "0.7"
 tokio             = "1.26"
 
 [dev-dependencies]

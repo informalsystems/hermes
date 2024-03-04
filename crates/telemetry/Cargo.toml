@@ -23,7 +23,7 @@ moka                     = { version = "0.12.5", features = ["sync"] }
 dashmap                  = "5.4.0"
 serde_json               = "1.0.111"
 serde                    = "1.0.195"
-axum                     = "0.6.18"
+axum                     = "0.7.4"
 tokio                    = "1.26.0"
 tracing                  = "0.1.36"
 
