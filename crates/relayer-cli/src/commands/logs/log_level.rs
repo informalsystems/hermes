@@ -21,7 +21,7 @@ pub struct SetLogLevelCmd {
         long = "log-filter",
         help_heading = "FLAGS",
         value_name = "LOG_FILTER",
-        help = "The target of the log level to update, if left empty all the targets will be updated. Example `ibc` or `tendermint_rpc`"
+        help = "The target of the log level to update, if left empty all the targets will be updated. Example `ibc` or `cometbft_rpc`"
     )]
     log_filter: Option<String>,
 }

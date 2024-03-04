@@ -134,8 +134,8 @@ fn build_tracing_filter(
         std::env::var(HERMES_LOG_VAR).unwrap_or_else(|_| default_directive(default_level));
 
     if debug_sections.contains(&DebugSection::Rpc) {
-        // Enable debug tracing for the `tendermint_rpc` crate as well
-        directive.push_str(",tendermint_rpc=debug");
+        // Enable debug tracing for the `cometbft_rpc` crate as well
+        directive.push_str(",cometbft_rpc=debug");
     }
 
     // Build the filter directive

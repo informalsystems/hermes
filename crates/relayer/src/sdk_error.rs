@@ -184,7 +184,7 @@ pub fn sdk_error_from_tx_result(code: Code, codespace: &str) -> SdkError {
 
 /// Converts error codes originating from `broadcast_tx_sync` responses
 /// into IBC relayer domain-type errors.
-/// See [`tendermint_rpc::endpoint::broadcast::tx_sync::Response`].
+/// See [`cometbft_rpc::endpoint::broadcast::tx_sync::Response`].
 /// Cf: <https://github.com/cosmos/cosmos-sdk/blob/v0.42.10/types/errors/errors.go>
 pub fn sdk_error_from_tx_sync_error_code(code: u32) -> SdkError {
     match code {
