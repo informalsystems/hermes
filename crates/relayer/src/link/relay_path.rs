@@ -369,6 +369,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             channel_id: self.dst_channel_id().clone(),
             proofs,
             signer: self.dst_signer()?,
+            counterparty_upgrade_sequence: 0,
         };
 
         Ok(Some(new_msg.to_any()))
@@ -426,7 +427,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
         let _span = span!(Level::ERROR, "relay_pending_packets", ?height).entered();
 
-        let tracking_id = TrackingId::new_cleared_uuid();
+        let tracking_id = TrackingId::new_packet_clearing();
         telemetry!(received_event_batch, tracking_id);
 
         let src_config = self.src_chain().config().map_err(LinkError::relayer)?;
@@ -709,12 +710,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
                     return Ok(reply);
                 }
-                Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
-                    // This error means we could retry
-                    error!("error {}", e.event);
+                Err(LinkError(error::LinkErrorDetail::Send(_), _)) => {
                     if i + 1 == MAX_RETRIES {
-                        error!("{}/{} retries exhausted. giving up", i + 1, MAX_RETRIES)
+                        error!("{}/{} retries exhausted, giving up", i + 1, MAX_RETRIES)
                     } else {
+                        debug!("{}/{} retries exhausted, retrying with newly-generated operational data", i + 1, MAX_RETRIES);
+
                         // If we haven't exhausted all retries, regenerate the op. data & retry
                         match self.regenerate_operational_data(odata.clone()) {
                             None => return Ok(S::Reply::empty()), // Nothing to retry

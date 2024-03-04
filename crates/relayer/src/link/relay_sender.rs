@@ -95,10 +95,11 @@ impl Submit for AsyncSender {
     type Reply = AsyncReply;
 
     fn submit(target: &impl ChainHandle, msgs: TrackedMsgs) -> Result<Self::Reply, LinkError> {
-        let a = target
+        let responses = target
             .send_messages_and_wait_check_tx(msgs)
             .map_err(LinkError::relayer)?;
-        let reply = AsyncReply { responses: a };
+
+        let reply = AsyncReply { responses };
 
         // Note: There may be errors in the reply, for example:
         // `Response { code: Err(11), data: Data([]), log: Log("Too much gas wanted: 35000000, maximum is 25000000: out of gas")`

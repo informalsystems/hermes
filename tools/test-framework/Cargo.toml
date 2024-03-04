@@ -17,14 +17,14 @@ description = """
 ibc-relayer-types = { version = "=0.27.0",     path = "../../crates/relayer-types" }
 ibc-relayer       = { version = "=0.27.0",     path = "../../crates/relayer" }
 ibc-relayer-cli   = { version = "=1.8.0",      path = "../../crates/relayer-cli" }
-ibc-proto         = { version = "0.41.0", features = ["serde"] }
+ibc-proto         = { version = "0.42.0", features = ["serde"] }
 tendermint-rpc    = { version = "0.34.0", features = ["http-client", "websocket-client"] }
 
 http = "0.2.9"
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.36"
 tracing-subscriber = "0.3.14"
-eyre = "0.6.8"
+eyre = "0.6.12"
 color-eyre = "0.6"
 rand = "0.8.5"
 hex = "0.4.3"

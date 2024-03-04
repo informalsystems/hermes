@@ -16,6 +16,8 @@ use tonic::metadata::AsciiMetadataValue;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
+use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
+use ibc_proto::cosmos::base::tendermint::v1beta1::{GetSyncingRequest, GetSyncingResponse};
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
@@ -628,6 +630,70 @@ impl CosmosSdkChain {
     ///
     /// Returns an error if the node is still syncing and has not caught up,
     /// ie. if `sync_info.catching_up` is `true`.
+    fn chain_rpc_status(&self) -> Result<status::Response, Error> {
+        crate::time!(
+            "chain_rpc_status",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
+        crate::telemetry!(query, self.id(), "rpc_status");
+
+        let status = self
+            .block_on(self.rpc_client.status())
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+        if status.sync_info.catching_up {
+            Err(Error::chain_not_caught_up(
+                self.config.rpc_addr.to_string(),
+                self.config().id.clone(),
+            ))
+        } else {
+            Ok(status)
+        }
+    }
+
+    /// Query the chain syncing status via a gRPC query.
+    ///
+    /// Returns an error if the node is still syncing and has not caught up,
+    /// ie. if `sync_info.syncing` is `true`.
+    fn chain_grpc_status(&self) -> Result<GetSyncingResponse, Error> {
+        crate::time!(
+            "chain_grpc_status",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
+        crate::telemetry!(query, self.id(), "grpc_status");
+
+        let grpc_addr = self.grpc_addr.clone();
+        let grpc_addr_string = grpc_addr.to_string();
+
+        let mut client = self
+            .block_on(ServiceClient::connect(grpc_addr.clone()))
+            .map_err(Error::grpc_transport)
+            .unwrap();
+
+        let request = tonic::Request::new(GetSyncingRequest {});
+
+        let sync_info = self
+            .block_on(client.get_syncing(request))
+            .map_err(|e| Error::grpc_status(e, "get_syncing".to_string()))?
+            .into_inner();
+
+        if sync_info.syncing {
+            Err(Error::chain_not_caught_up(
+                grpc_addr_string,
+                self.config().id.clone(),
+            ))
+        } else {
+            Ok(sync_info)
+        }
+    }
+
+    /// Query the chain status of the RPC and gRPC nodes.
+    ///
+    /// Returns an error if any of the node is still syncing and has not caught up.
     fn chain_status(&self) -> Result<status::Response, Error> {
         crate::time!(
             "chain_status",
@@ -637,18 +703,25 @@ impl CosmosSdkChain {
         );
         crate::telemetry!(query, self.id(), "status");
 
-        let status = self
-            .block_on(self.rpc_client.status())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        let rpc_status = self.chain_rpc_status()?;
 
-        if status.sync_info.catching_up {
+        if rpc_status.sync_info.catching_up {
             return Err(Error::chain_not_caught_up(
                 self.config.rpc_addr.to_string(),
                 self.config().id.clone(),
             ));
         }
 
-        Ok(status)
+        let grpc_status = self.chain_grpc_status()?;
+
+        if grpc_status.syncing {
+            return Err(Error::chain_not_caught_up(
+                self.config.grpc_addr.to_string(),
+                self.config().id.clone(),
+            ));
+        }
+
+        Ok(rpc_status)
     }
 
     /// Query the chain's latest height
@@ -991,17 +1064,17 @@ impl ChainEndpoint for CosmosSdkChain {
     /// further checks.
     fn health_check(&mut self) -> Result<HealthCheck, Error> {
         if let Err(e) = do_health_check(self) {
-            warn!("Health checkup for chain '{}' failed", self.id());
-            warn!("    Reason: {}", e.detail());
-            warn!("    Some Hermes features may not work in this mode!");
+            warn!("health check failed for chain '{}'", self.id());
+            warn!("reason: {}", e.detail());
+            warn!("some Hermes features may not work in this mode!");
 
             return Ok(HealthCheck::Unhealthy(Box::new(e)));
         }
 
         if let Err(e) = self.validate_params() {
-            warn!("Hermes might be misconfigured for chain '{}'", self.id());
-            warn!("    Reason: {}", e.detail());
-            warn!("    Some Hermes features may not work in this mode!");
+            warn!("found potential misconfiguration for chain '{}'", self.id());
+            warn!("reason: {}", e.detail());
+            warn!("some Hermes features may not work in this mode!");
 
             return Ok(HealthCheck::Unhealthy(Box::new(e)));
         }
@@ -2400,7 +2473,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
         if !found_matching_denom {
             warn!(
-                "Chain '{}' has no minimum gas price of denomination '{}' \
+                "chain '{}' has no minimum gas price of denomination '{}' \
                 that is strictly less than the `gas_price` specified for \
                 that chain in the Hermes configuration. \
                 This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
@@ -2409,7 +2482,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         }
     } else {
         warn!(
-            "Chain '{}' has no minimum gas price value configured for denomination '{}'. \
+            "chain '{}' has no minimum gas price value configured for denomination '{}'. \
             This is usually a sign of misconfiguration, please check your chain and \
             relayer configurations",
             chain_id, relayer_gas_price.denom
@@ -2419,7 +2492,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
 
     if let Err(diagnostic) = compatibility::run_diagnostic(&version_specs) {
-        return Err(Error::sdk_module_version(
+        return Err(Error::compat_check_failed(
             chain_id.clone(),
             grpc_address,
             diagnostic.to_string(),
