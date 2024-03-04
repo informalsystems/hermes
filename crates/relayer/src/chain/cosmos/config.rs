@@ -1,4 +1,5 @@
 use core::time::Duration;
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use byte_unit::Byte;
@@ -7,7 +8,7 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint_rpc::Url;
 
 use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId};
 
 use crate::chain::cosmos::config::error::Error as ConfigError;
 use crate::config::compat_mode::CompatMode;
@@ -145,7 +146,7 @@ pub struct CosmosSdkConfig {
     pub compat_mode: Option<CompatMode>,
     pub clear_interval: Option<u64>,
     #[serde(default)]
-    pub excluded_sequences: Vec<Sequence>,
+    pub excluded_sequences: BTreeMap<ChannelId, Vec<Sequence>>,
 }
 
 impl CosmosSdkConfig {

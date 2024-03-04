@@ -2432,11 +2432,15 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let rpc_address = chain.config.rpc_addr.to_string();
 
     if !chain.config.excluded_sequences.is_empty() {
-        warn!(
-            "chain '{chain_id}' will not clear packets with sequences: {}. \
-            Ignore this warning if this configuration is correct.",
-            PrettySlice(&chain.config.excluded_sequences)
-        );
+        for filter in chain.config.excluded_sequences.iter() {
+            if !filter.1.is_empty() {
+                warn!(
+                    "chain '{chain_id}' will not clear packets on channel '{}' with sequences: {}. \
+                    Ignore this warning if this configuration is correct.",
+                    filter.0, PrettySlice(filter.1)
+                );
+            }
+        }
     }
 
     chain.block_on(chain.rpc_client.health()).map_err(|e| {

@@ -40,7 +40,6 @@ pub struct LinkParameters {
     pub max_memo_size: Ics20FieldSizeLimit,
     pub max_receiver_size: Ics20FieldSizeLimit,
     pub exclude_src_sequences: Vec<Sequence>,
-    pub exclude_dst_sequences: Vec<Sequence>,
 }
 
 pub struct Link<ChainA: ChainHandle, ChainB: ChainHandle> {
@@ -179,35 +178,5 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         }
 
         Link::new(channel, with_tx_confirmation, opts)
-    }
-
-    /// Constructs a link around the channel that is reverse to the channel
-    /// in this link.
-    pub fn reverse(
-        &self,
-        with_tx_confirmation: bool,
-        auto_register_counterparty_payee: bool,
-    ) -> Result<Link<ChainB, ChainA>, LinkError> {
-        let opts = LinkParameters {
-            src_port_id: self.a_to_b.dst_port_id().clone(),
-            src_channel_id: self.a_to_b.dst_channel_id().clone(),
-            max_memo_size: self.a_to_b.max_memo_size,
-            max_receiver_size: self.a_to_b.max_receiver_size,
-            exclude_src_sequences: self.a_to_b.exclude_dst_sequences.clone(),
-            exclude_dst_sequences: self.a_to_b.exclude_src_sequences.clone(),
-        };
-
-        let chain_b = self.a_to_b.dst_chain().clone();
-        let chain_a = self.a_to_b.src_chain().clone();
-
-        // Some of the checks and initializations may be redundant;
-        // going slowly, but reliably.
-        Link::new_from_opts(
-            chain_b,
-            chain_a,
-            opts,
-            with_tx_confirmation,
-            auto_register_counterparty_payee,
-        )
     }
 }

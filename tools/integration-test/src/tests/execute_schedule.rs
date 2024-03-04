@@ -50,7 +50,6 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
             exclude_src_sequences: vec![],
-            exclude_dst_sequences: vec![],
         };
 
         let chain_a_link = Link::new_from_opts(

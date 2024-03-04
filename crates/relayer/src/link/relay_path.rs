@@ -117,7 +117,6 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub max_memo_size: Ics20FieldSizeLimit,
     pub max_receiver_size: Ics20FieldSizeLimit,
     pub exclude_src_sequences: Vec<Sequence>,
-    pub exclude_dst_sequences: Vec<Sequence>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
@@ -168,7 +167,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             max_receiver_size: link_parameters.max_receiver_size,
 
             exclude_src_sequences: link_parameters.exclude_src_sequences,
-            exclude_dst_sequences: link_parameters.exclude_dst_sequences,
         })
     }
 

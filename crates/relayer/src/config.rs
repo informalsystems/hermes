@@ -705,7 +705,7 @@ impl ChainConfig {
         }
     }
 
-    pub fn excluded_sequences(&self) -> Vec<Sequence> {
+    pub fn excluded_sequences(&self) -> BTreeMap<ChannelId, Vec<Sequence>> {
         match self {
             Self::CosmosSdk(config) => config.excluded_sequences.clone(),
         }

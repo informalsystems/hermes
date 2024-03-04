@@ -91,7 +91,6 @@ impl Runnable for TxPacketRecvCmd {
 
             // Packets are only excluded when clearing
             exclude_src_sequences: vec![],
-            exclude_dst_sequences: vec![],
         };
 
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
@@ -193,7 +192,6 @@ impl Runnable for TxPacketAckCmd {
 
             // Packets are only excluded when clearing
             exclude_src_sequences: vec![],
-            exclude_dst_sequences: vec![],
         };
 
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {

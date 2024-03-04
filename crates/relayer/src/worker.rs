@@ -112,12 +112,14 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
         Object::Packet(path) => {
             let exclude_src_sequences = config
                 .find_chain(&chains.a.id())
-                .map(|chain_config| chain_config.excluded_sequences())
-                .unwrap_or_default();
-
-            let exclude_dst_sequences = config
-                .find_chain(&chains.b.id())
-                .map(|chain_config| chain_config.excluded_sequences())
+                .map(|chain_config| {
+                    chain_config
+                        .excluded_sequences()
+                        .iter()
+                        .find(|e| e.0 == &path.src_channel_id)
+                        .map(|filter| filter.1.clone())
+                        .unwrap_or_default()
+                })
                 .unwrap_or_default();
 
             let packets_config = config.mode.packets;
@@ -130,7 +132,6 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     max_memo_size: packets_config.ics20_max_memo_size,
                     max_receiver_size: packets_config.ics20_max_receiver_size,
                     exclude_src_sequences,
-                    exclude_dst_sequences,
                 },
                 packets_config.tx_confirmation,
                 packets_config.auto_register_counterparty_payee,
