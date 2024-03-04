@@ -195,6 +195,8 @@ fn build_transfer_message_astria(
     timeout_height: TimeoutHeight,
     timeout_timestamp: Timestamp,
 ) -> Any {
+    use astria_core::sequencer::v1alpha1::asset::default_native_asset_id;
+
     let timeout_height = match timeout_height {
         // TODO: update astria IbcHeight to support optional?
         TimeoutHeight::At(height) => astria_core::generated::sequencer::v1alpha1::IbcHeight {
@@ -219,6 +221,7 @@ fn build_transfer_message_astria(
         return_address: hex::decode(sender.to_string()).expect("sender address is hex"),
         timeout_height: Some(timeout_height),
         timeout_time: timeout_timestamp.nanoseconds(),
+        fee_asset_id: default_native_asset_id().as_bytes().to_vec(),
     };
 
     Any {
