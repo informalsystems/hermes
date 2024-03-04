@@ -1,8 +1,8 @@
 use core::fmt;
 
+use cometbft::evidence::DuplicateVoteEvidence;
 use ibc_proto::interchain_security::ccv::provider::v1::MsgSubmitConsumerDoubleVoting as RawIcsDoubleVoting;
 use ibc_proto::Protobuf;
-use cometbft::evidence::DuplicateVoteEvidence;
 
 use crate::clients::ics07_tendermint::header::Header;
 use crate::signer::Signer;

@@ -1,9 +1,9 @@
 //! Types for the IBC events emitted from CometBFT Websocket by the client module.
 
-use serde_derive::{Deserialize, Serialize};
-use std::fmt::{Display, Error as FmtError, Formatter};
 use cometbft::abci;
 use cometbft_proto::Protobuf;
+use serde_derive::{Deserialize, Serialize};
+use std::fmt::{Display, Error as FmtError, Formatter};
 
 use super::header::AnyHeader;
 use crate::core::ics02_client::client_type::ClientType;

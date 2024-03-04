@@ -12,8 +12,8 @@ use tokio::time::timeout;
 use tokio::time::Duration;
 use tracing::{debug, info};
 
-use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
 use cometbft_rpc::{Client, SubscriptionClient, Url, WebSocketClient};
+use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
 
 use crate::error::RegistryError;
 use crate::formatter::{SimpleWebSocketFormatter, UriFormatter};

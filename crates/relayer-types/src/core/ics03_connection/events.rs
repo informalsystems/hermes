@@ -1,8 +1,8 @@
 //! Types for the IBC events emitted from CometBFT Websocket by the connection module.
 
+use cometbft::abci;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
-use cometbft::abci;
 
 use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::events::{IbcEvent, IbcEventType};

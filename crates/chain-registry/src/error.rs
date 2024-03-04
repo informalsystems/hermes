@@ -1,10 +1,10 @@
+use cometbft_rpc;
 use flex_error::{define_error, TraceError};
 use http;
 use itertools::Itertools;
 use reqwest;
 use serde_json;
 use std::path::PathBuf;
-use cometbft_rpc;
 use tokio::task::JoinError;
 use tokio::time::error::Elapsed;
 

@@ -1,7 +1,7 @@
-use std::fmt::{Debug, Display, Error as FmtError, Formatter};
-use std::time::Duration;
 use cometbft::block::signed_header::SignedHeader;
 use cometbft::validator::Set as ValidatorSet;
+use std::fmt::{Debug, Display, Error as FmtError, Formatter};
+use std::time::Duration;
 
 pub struct PrettyDuration<'a>(pub &'a Duration);
 

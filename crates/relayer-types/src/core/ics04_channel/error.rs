@@ -11,8 +11,8 @@ use crate::signer::SignerError;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
-use flex_error::{define_error, TraceError};
 use cometbft_proto::Error as CometbftError;
+use flex_error::{define_error, TraceError};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]

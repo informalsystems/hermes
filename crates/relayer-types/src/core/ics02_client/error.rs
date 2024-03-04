@@ -1,5 +1,5 @@
-use flex_error::{define_error, TraceError};
 use cometbft_proto::Error as CometBFTProtoError;
+use flex_error::{define_error, TraceError};
 
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::height::HeightError;

@@ -363,8 +363,8 @@ mod tests {
     use core::time::Duration;
     use test_log::test;
 
-    use ibc_proto::ics23::ProofSpec as Ics23ProofSpec;
     use cometbft_rpc::endpoint::abci_query::AbciQuery;
+    use ibc_proto::ics23::ProofSpec as Ics23ProofSpec;
 
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::core::ics02_client::trust_threshold::TrustThreshold;

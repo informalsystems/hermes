@@ -1,9 +1,9 @@
+use cometbft::{hash::Algorithm, time::Time, Hash};
+use cometbft_proto::google::protobuf as tpb;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 use ibc_proto::Protobuf;
 use serde::{Deserialize, Serialize};
-use cometbft::{hash::Algorithm, time::Time, Hash};
-use cometbft_proto::google::protobuf as tpb;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;

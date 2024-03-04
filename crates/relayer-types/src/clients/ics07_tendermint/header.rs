@@ -1,13 +1,13 @@
 use std::fmt::{Display, Error as FmtError, Formatter};
 
 use bytes::Buf;
+use cometbft::block::signed_header::SignedHeader;
+use cometbft::validator::Set as ValidatorSet;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 use ibc_proto::Protobuf;
 use prost::Message;
 use serde_derive::{Deserialize, Serialize};
-use cometbft::block::signed_header::SignedHeader;
-use cometbft::validator::Set as ValidatorSet;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
@@ -150,11 +150,11 @@ impl From<Header> for RawHeader {
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
 
-    use subtle_encoding::hex;
     use cometbft::block::signed_header::SignedHeader;
     use cometbft::validator::Info as ValidatorInfo;
     use cometbft::validator::Set as ValidatorSet;
     use cometbft::PublicKey;
+    use subtle_encoding::hex;
 
     use crate::clients::ics07_tendermint::header::Header;
     use crate::Height;

@@ -3,9 +3,9 @@ use std::convert::TryFrom;
 use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str::FromStr;
 
+use cometbft::abci;
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
-use cometbft::abci;
 
 use crate::applications::ics29_fee::error::Error as FeeError;
 use crate::applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket};

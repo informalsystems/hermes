@@ -10,8 +10,8 @@ use ibc_proto::Protobuf;
 use num_rational::Ratio;
 use serde::{Deserialize, Serialize};
 
-use ibc_proto::ibc::lightclients::tendermint::v1::Fraction;
 use cometbft::trust_threshold::TrustThresholdFraction;
+use ibc_proto::ibc::lightclients::tendermint::v1::Fraction;
 
 use crate::core::ics02_client::error::Error;
 

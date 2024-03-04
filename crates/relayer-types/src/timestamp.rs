@@ -5,9 +5,9 @@ use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::Duration;
 
+use cometbft::Time;
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
-use cometbft::Time;
 use time::OffsetDateTime;
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
