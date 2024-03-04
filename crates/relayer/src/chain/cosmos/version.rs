@@ -22,20 +22,15 @@ use ibc_proto::cosmos::base::tendermint::v1beta1::VersionInfo;
 ///    sum: "h1:yaD4PyOx0LnyfiWasC5egg1U76lT83GRxjJjupPo7Gk=",
 /// },
 /// ```
-const SDK_MODULE_NAME: &str = "cosmos/cosmos-sdk";
-const IBC_GO_MODULE_NAME: &str = "cosmos/ibc-go";
-const TENDERMINT_MODULE_NAME: &str = "tendermint/tendermint";
-const COMET_MODULE_NAME: &str = "cometbft/cometbft";
+const SDK_MODULE_NAME: &str = "github.com/cosmos/cosmos-sdk";
+const IBC_GO_MODULE_NAME: &str = "github.com/cosmos/ibc-go";
+const TENDERMINT_MODULE_NAME: &str = "github.com/tendermint/tendermint";
+const COMET_MODULE_NAME: &str = "github.com/cometbft/cometbft";
 
-/// Captures the version(s) specification of different
-/// modules of a network.
-///
-/// Assumes that the network runs on Cosmos SDK.
-/// Stores both the SDK version as well as
-/// the IBC-go module version (if existing).
+/// Captures the version(s) specification of different modules of a network.
 #[derive(Debug)]
 pub struct Specs {
-    pub cosmos_sdk: semver::Version,
+    pub cosmos_sdk: Option<semver::Version>,
     pub ibc_go: Option<semver::Version>,
     pub tendermint: Option<semver::Version>,
     pub comet: Option<semver::Version>,
@@ -43,6 +38,12 @@ pub struct Specs {
 
 impl Display for Specs {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        let cosmos_sdk = self
+            .cosmos_sdk
+            .as_ref()
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "UNKNOWN".to_string());
+
         let ibc_go = self
             .ibc_go
             .as_ref()
@@ -64,20 +65,13 @@ impl Display for Specs {
         write!(
             f,
             "Cosmos SDK {}, IBC-Go {}, Tendermint {}, CometBFT {}",
-            self.cosmos_sdk, ibc_go, tendermint, comet
+            cosmos_sdk, ibc_go, tendermint, comet
         )
     }
 }
 
 define_error! {
     Error {
-        SdkModuleNotFound
-            {
-                address: String,
-                app: AppInfo,
-            }
-            |e| { format!("failed to find the SDK module dependency ('{}') for application {}", e.address, e.app) },
-
         ConsensusModuleNotFound
             {
                 tendermint: String,
@@ -121,7 +115,7 @@ impl TryFrom<VersionInfo> for Specs {
             application = %raw_version.app_name,
             version = %raw_version.version,
             git_commit = %raw_version.git_commit,
-            sdk_version = %sdk_version,
+            sdk_version = ?sdk_version,
             ibc_go_status = ?ibc_go_version,
             tendermint_version = ?tendermint_version,
             comet_version = ?comet_version,
@@ -137,33 +131,8 @@ impl TryFrom<VersionInfo> for Specs {
     }
 }
 
-fn parse_sdk_version(version_info: &VersionInfo) -> Result<semver::Version, Error> {
-    let module = version_info
-        .build_deps
-        .iter()
-        .find(|&m| m.path.contains(SDK_MODULE_NAME))
-        .ok_or_else(|| {
-            Error::sdk_module_not_found(SDK_MODULE_NAME.to_string(), AppInfo::from(version_info))
-        })?;
-
-    // The raw version number has a leading 'v', trim it out;
-    let plain_version = module.version.trim_start_matches('v');
-
-    // Parse the module version
-    let mut version = semver::Version::parse(plain_version).map_err(|e| {
-        Error::version_parsing_failed(
-            module.path.clone(),
-            module.version.clone(),
-            e.to_string(),
-            AppInfo::from(version_info),
-        )
-    })?;
-
-    // Remove the pre-release version to ensure we treat pre-releases of the SDK
-    // as their normal version, eg. 0.42.0-rc2 should satisfy >=0.41.3, <= 0.42.6.
-    version.pre = semver::Prerelease::EMPTY;
-
-    Ok(version)
+fn parse_sdk_version(version_info: &VersionInfo) -> Result<Option<semver::Version>, Error> {
+    parse_optional_version(version_info, SDK_MODULE_NAME)
 }
 
 fn parse_ibc_go_version(version_info: &VersionInfo) -> Result<Option<semver::Version>, Error> {
@@ -185,7 +154,7 @@ fn parse_optional_version(
     match version_info
         .build_deps
         .iter()
-        .find(|&m| m.path.contains(module_name))
+        .find(|&m| m.path == module_name)
     {
         None => Ok(None),
         Some(module) => {

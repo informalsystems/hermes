@@ -10,7 +10,7 @@ pub async fn cross_chain_query_via_rpc(
     client: &HttpClient,
     cross_chain_query_request: CrossChainQueryRequest,
 ) -> Result<CrossChainQueryResponse, Error> {
-    let hex_decoded_request = hex::decode(cross_chain_query_request.request)
+    let hex_decoded_request = hex::decode(cross_chain_query_request.request.to_lowercase())
         .map_err(|_| Error::ics31(CrossChainQueryError::parse()))?;
 
     let response = client

@@ -1,6 +1,7 @@
 use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx};
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use tendermint_rpc::Url;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, span, warn, Level};
 
@@ -13,6 +14,7 @@ use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::Secp256k1KeyPair;
+use crate::telemetry;
 use crate::util::pretty::PrettyFee;
 
 pub async fn estimate_tx_fees(
@@ -44,8 +46,15 @@ pub async fn estimate_tx_fees(
         signatures: signed_tx.signatures,
     };
 
-    let estimated_fee =
-        estimate_fee_with_tx(gas_config, &config.grpc_address, &config.chain_id, tx).await?;
+    let estimated_fee = estimate_fee_with_tx(
+        gas_config,
+        &config.grpc_address,
+        &config.rpc_address,
+        &config.chain_id,
+        tx,
+        account,
+    )
+    .await?;
 
     Ok(estimated_fee)
 }
@@ -53,8 +62,10 @@ pub async fn estimate_tx_fees(
 async fn estimate_fee_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,
+    rpc_address: &Url,
     chain_id: &ChainId,
     tx: Tx,
+    account: &Account,
 ) -> Result<Fee, Error> {
     let estimated_gas = {
         crate::time!(
@@ -64,7 +75,7 @@ async fn estimate_fee_with_tx(
             }
 
         );
-        estimate_gas_with_tx(gas_config, grpc_address, tx).await
+        estimate_gas_with_tx(gas_config, grpc_address, tx, account).await
     }?;
 
     if estimated_gas > gas_config.max_gas {
@@ -80,7 +91,7 @@ async fn estimate_fee_with_tx(
         ));
     }
 
-    let adjusted_fee = gas_amount_to_fee(gas_config, estimated_gas);
+    let adjusted_fee = gas_amount_to_fee(gas_config, estimated_gas, chain_id, rpc_address).await;
 
     debug!(
         id = %chain_id,
@@ -104,6 +115,7 @@ async fn estimate_gas_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,
     tx: Tx,
+    account: &Account,
 ) -> Result<u64, Error> {
     let simulated_gas = send_tx_simulate(grpc_address, tx)
         .await
@@ -139,6 +151,13 @@ async fn estimate_gas_with_tx(
                 e.detail()
             );
 
+            telemetry!(
+                simulate_errors,
+                &account.address.to_string(),
+                true,
+                get_error_text(&e),
+            );
+
             Ok(gas_config.default_gas)
         }
 
@@ -147,6 +166,14 @@ async fn estimate_gas_with_tx(
                 "failed to simulate tx. propagating error to caller: {}",
                 e.detail()
             );
+
+            telemetry!(
+                simulate_errors,
+                &account.address.to_string(),
+                false,
+                get_error_text(&e),
+            );
+
             // Propagate the error, the retrying mechanism at caller may catch & retry.
             Err(e)
         }
@@ -166,5 +193,14 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
                 || detail.is_empty_tx_error()
         }
         _ => false,
+    }
+}
+
+fn get_error_text(e: &Error) -> String {
+    use crate::error::ErrorDetail::*;
+
+    match e.detail() {
+        GrpcStatus(detail) => detail.status.code().to_string(),
+        detail => detail.to_string(),
     }
 }

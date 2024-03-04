@@ -1,6 +1,7 @@
 //! Relayer configuration
 
 pub mod compat_mode;
+pub mod dynamic_gas;
 pub mod error;
 pub mod filter;
 pub mod gas_multiplier;
@@ -16,7 +17,7 @@ use core::time::Duration;
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
 
 use byte_unit::Byte;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use tendermint::block::Height as BlockHeight;
 use tendermint_rpc::Url;
 use tendermint_rpc::WebSocketClientUrl;
@@ -413,6 +414,9 @@ pub struct Packets {
     pub ics20_max_memo_size: Ics20FieldSizeLimit,
     #[serde(default = "default::ics20_max_receiver_size")]
     pub ics20_max_receiver_size: Ics20FieldSizeLimit,
+
+    #[serde(skip)]
+    pub force_disable_clear_on_start: bool,
 }
 
 impl Default for Packets {
@@ -425,6 +429,7 @@ impl Default for Packets {
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
             ics20_max_memo_size: default::ics20_max_memo_size(),
             ics20_max_receiver_size: default::ics20_max_receiver_size(),
+            force_disable_clear_on_start: false,
         }
     }
 }
@@ -618,8 +623,13 @@ pub enum EventSourceMode {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
+// NOTE: To work around a limitation of serde, which does not allow
+// to specify a default variant if not tag is present, we use
+// a custom Deserializer impl.
+//
+// IMPORTANT: Do not forget to update the `Deserializer` impl
+// below when adding a new chain type.
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type")]
 pub enum ChainConfig {
     CosmosSdk(CosmosSdkConfig),
@@ -691,6 +701,41 @@ impl ChainConfig {
     pub fn set_query_packets_chunk_size(&mut self, query_packets_chunk_size: usize) {
         match self {
             Self::CosmosSdk(config) => config.query_packets_chunk_size = query_packets_chunk_size,
+        }
+    }
+}
+
+// /!\ Update me when adding a new chain type!
+impl<'de> Deserialize<'de> for ChainConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let mut value = serde_json::Value::deserialize(deserializer)?;
+
+        // Remove the `type` key from the TOML value in order for deserialization to work,
+        // otherwise it would fail with: `unknown field `type`.
+        let type_value = value
+            .as_object_mut()
+            .ok_or_else(|| serde::de::Error::custom("invalid chain config, must be a table"))?
+            .remove("type")
+            .unwrap_or_else(|| serde_json::json!("CosmosSdk"));
+
+        let type_str = type_value
+            .as_str()
+            .ok_or_else(|| serde::de::Error::custom("invalid chain type, must be a string"))?;
+
+        match type_str {
+            "CosmosSdk" => CosmosSdkConfig::deserialize(value)
+                .map(Self::CosmosSdk)
+                .map_err(|e| serde::de::Error::custom(format!("invalid CosmosSdk config: {e}"))),
+
+            //
+            // <-- Add new chain types here -->
+            //
+            chain_type => Err(serde::de::Error::custom(format!(
+                "unknown chain type: {chain_type}",
+            ))),
         }
     }
 }
@@ -828,6 +873,22 @@ mod tests {
         );
 
         assert!(load(path).is_err());
+    }
+
+    #[test]
+    fn parse_default_chain_type() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_default_chain_type.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        match config.chains[0] {
+            super::ChainConfig::CosmosSdk(_) => {
+                // all good
+            }
+        }
     }
 
     #[test]

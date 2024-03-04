@@ -200,6 +200,21 @@ pub struct TelemetryState {
 
     /// Number of errors observed by Hermes when broadcasting a Tx
     broadcast_errors: Counter<u64>,
+
+    /// Number of errors observed by Hermes when simulating a Tx
+    simulate_errors: Counter<u64>,
+
+    /// The EIP-1559 base fee queried
+    dynamic_gas_queried_fees: ObservableGauge<f64>,
+
+    /// The EIP-1559 base fee paid
+    dynamic_gas_paid_fees: ObservableGauge<f64>,
+
+    /// The EIP-1559 base fee successfully queried
+    dynamic_gas_queried_success_fees: ObservableGauge<f64>,
+
+    /// Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits
+    filtered_packets: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -380,6 +395,33 @@ impl TelemetryState {
                 .with_description(
                     "Number of errors observed by Hermes when broadcasting a Tx",
                 )
+                .init(),
+
+            simulate_errors: meter
+                .u64_counter("simulate_errors")
+                .with_description(
+                    "Number of errors observed by Hermes when simulating a Tx",
+                )
+                .init(),
+
+            dynamic_gas_queried_fees: meter
+                .f64_observable_gauge("dynamic_gas_queried_fees")
+                .with_description("The EIP-1559 base fee queried")
+                .init(),
+
+            dynamic_gas_paid_fees: meter
+                .f64_observable_gauge("dynamic_gas_paid_fees")
+                .with_description("The EIP-1559 base fee paid")
+                .init(),
+
+            dynamic_gas_queried_success_fees: meter
+                .f64_observable_gauge("dynamic_gas_queried_fees")
+                .with_description("The EIP-1559 base fee successfully queried")
+                .init(),
+
+            filtered_packets: meter
+                .u64_counter("filtered_packets")
+                .with_description("Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits")
                 .init(),
         }
     }
@@ -1127,6 +1169,73 @@ impl TelemetryState {
 
         self.broadcast_errors.add(&cx, 1, labels);
     }
+
+    /// Add an error and its description to the list of errors observed after simulating
+    /// a Tx with a specific account.
+    pub fn simulate_errors(&self, address: &String, recoverable: bool, error_description: String) {
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("account", address.to_string()),
+            KeyValue::new("recoverable", recoverable.to_string()),
+            KeyValue::new("error_description", error_description.to_owned()),
+        ];
+
+        self.simulate_errors.add(&cx, 1, labels);
+    }
+
+    pub fn dynamic_gas_queried_fees(&self, chain_id: &ChainId, amount: f64) {
+        let cx = Context::current();
+
+        let labels = &[KeyValue::new("identifier", chain_id.to_string())];
+
+        self.dynamic_gas_queried_fees.observe(&cx, amount, labels);
+    }
+
+    pub fn dynamic_gas_paid_fees(&self, chain_id: &ChainId, amount: f64) {
+        let cx = Context::current();
+
+        let labels = &[KeyValue::new("identifier", chain_id.to_string())];
+
+        self.dynamic_gas_paid_fees.observe(&cx, amount, labels);
+    }
+
+    pub fn dynamic_gas_queried_success_fees(&self, chain_id: &ChainId, amount: f64) {
+        let cx = Context::current();
+
+        let labels = &[KeyValue::new("identifier", chain_id.to_string())];
+
+        self.dynamic_gas_queried_success_fees
+            .observe(&cx, amount, labels);
+    }
+
+    /// Increment number of packets filtered because the memo field is too big
+    #[allow(clippy::too_many_arguments)]
+    pub fn filtered_packets(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        src_channel: &ChannelId,
+        dst_channel: &ChannelId,
+        src_port: &PortId,
+        dst_port: &PortId,
+        count: u64,
+    ) {
+        let cx = Context::current();
+
+        if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
+            ];
+
+            self.filtered_packets.add(&cx, count, labels);
+        }
+    }
 }
 
 use std::sync::Arc;
@@ -1196,6 +1305,15 @@ impl AggregatorSelector for CustomAggregatorSelector {
             // TODO: Once quantile sketches are supported, replace histograms with that.
             "tx_latency_submitted" => Some(Arc::new(histogram(&self.get_submitted_range()))),
             "tx_latency_confirmed" => Some(Arc::new(histogram(&self.get_confirmed_range()))),
+            "dynamic_gas_queried_fees" => Some(Arc::new(histogram(&[
+                0.0025, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0,
+            ]))),
+            "dynamic_gas_paid_fees" => Some(Arc::new(histogram(&[
+                0.0025, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0,
+            ]))),
+            "dynamic_gas_queried_success_fees" => Some(Arc::new(histogram(&[
+                0.0025, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0,
+            ]))),
             "ics29_period_fees" => Some(Arc::new(last_value())),
             _ => Some(Arc::new(sum())),
         }

@@ -58,6 +58,8 @@ pub enum Tag {
 }
 
 impl Fetchable for IBCPath {
+    const DESC: &'static str = "IBC path";
+
     fn path(resource: &str) -> PathBuf {
         ["_IBC", resource].iter().collect()
     }

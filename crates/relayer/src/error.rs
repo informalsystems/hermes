@@ -494,14 +494,14 @@ define_error! {
                 format!("semantic config validation failed for option `gas_multiplier` of chain '{}', reason: gas multiplier ({}) is smaller than `1.1`, which could trigger gas fee errors in production", e.chain_id, e.gas_multiplier)
             },
 
-        SdkModuleVersion
+        CompatCheckFailed
             {
                 chain_id: ChainId,
                 address: String,
                 cause: String
             }
             |e| {
-                format!("Hermes health check failed while verifying the application compatibility for chain {0}:{1}; caused by: {2}",
+                format!("compatibility check failed for chain '{0}' at '{1}': {2}",
                     e.chain_id, e.address, e.cause)
             },
 
@@ -586,6 +586,38 @@ define_error! {
         InvalidCompatMode
             [ TendermintRpcError ]
             |_| { "Invalid CompatMode queried from chain and no `compat_mode` configured in Hermes. This can be fixed by specifying a `compat_mode` in Hermes config.toml" },
+
+        HttpRequest
+            [ TraceError<reqwest::Error> ]
+            |_| { "HTTP request error" },
+
+        HttpResponse
+            { status: reqwest::StatusCode }
+            |e| { format!("HTTP response error with status code {}", e.status) },
+
+        HttpResponseBody
+            [ TraceError<reqwest::Error> ]
+            |_| { "HTTP response body error" },
+
+        JsonDeserialize
+            [ TraceError<serde_json::Error> ]
+            |_| { "JSON deserialization error" },
+
+        JsonField
+            { field: String }
+            |e| { format!("Missing or invalid JSON field: {}", e.field) },
+
+        ParseFloat
+            [ TraceError<std::num::ParseFloatError> ]
+            |_| { "Error parsing float" },
+
+        ParseInt
+            [ TraceError<std::num::ParseIntError> ]
+            |_| { "Error parsing integer" },
+
+        Base64Decode
+            [ TraceError<subtle_encoding::Error> ]
+            |_| { "Error decoding base64-encoded data" },
     }
 }
 
