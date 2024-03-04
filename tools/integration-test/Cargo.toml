@@ -51,11 +51,11 @@ doc = true
 [dev-dependencies]
 tempfile = "3.6.0"
 
-[dependencies.tendermint]
-version = "0.34.0"
+[dependencies.cometbft]
+version = "0.1.0-alpha.2"
 
-[dependencies.tendermint-rpc]
-version = "0.34.0"
+[dependencies.cometbft-rpc]
+version = "0.1.0-alpha.2"
 features = ["http-client"]
 
 [dependencies.byte-unit]
