@@ -1,5 +1,5 @@
 use cometbft::abci::Event;
-use cometbft_rpc::{Client, HttpClient};
+use cometbft_rpc::{client::CompatMode, Client, HttpClient};
 use ibc_relayer::channel::version::Version;
 use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
@@ -146,7 +146,7 @@ fn assert_eventual_async_icq_success<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     let mut rpc_client = HttpClient::new(rpc_addr).unwrap();
-    rpc_client.set_compat_mode(tendermint_rpc::client::CompatMode::V0_34);
+    rpc_client.set_compat_mode(CompatMode::V0_34);
 
     for _ in 0..MAX_RETRIES {
         if check_events(chains, &rpc_client).is_ok() {
