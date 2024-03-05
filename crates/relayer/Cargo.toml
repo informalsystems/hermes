@@ -24,13 +24,13 @@ ibc-proto         = { version = "0.40.0", features = ["serde"] }
 ibc-telemetry     = { version = "0.26.4", path = "../telemetry", optional = true }
 ibc-relayer-types = { version = "0.26.4", path = "../relayer-types", features = ["mocks"] }
 
-astria-core = { git = "https://github.com/astriaorg/astria", rev = "a3e05ebf15f71cb3086244e57d980ec71132e8df" }
-astria-sequencer-client = { git = "https://github.com/astriaorg/astria", rev = "a3e05ebf15f71cb3086244e57d980ec71132e8df", features = [ "http" ] }
+astria-core = { git = "https://github.com/astriaorg/astria", rev = "112a66d6f9bb6638cce4935c949834e1d35416bb" }
+astria-sequencer-client = { git = "https://github.com/astriaorg/astria", rev = "112a66d6f9bb6638cce4935c949834e1d35416bb", features = [ "http" ] }
 ed25519-consensus = "2.1.0"
 ibc-types = "0.11.1"
 jmt = "0.6"
-penumbra-ibc = { git = "https://github.com/penumbra-zone/penumbra.git", tag = "v0.66.0", default-features = false }
-penumbra-proto = { git = "https://github.com/penumbra-zone/penumbra.git", tag = "v0.66.0" }
+penumbra-ibc = { git = "https://github.com/penumbra-zone/penumbra.git", tag = "v0.68.1", default-features = false }
+penumbra-proto = { git = "https://github.com/penumbra-zone/penumbra.git", tag = "v0.68.1" }
 pbjson-types = "0.6"
 
 subtle-encoding = "0.5"
