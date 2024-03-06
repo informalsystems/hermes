@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use byte_unit::Byte;
+use cometbft_rpc::Url;
 use serde_derive::{Deserialize, Serialize};
 
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
