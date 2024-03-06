@@ -62,7 +62,17 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             src_channel_id: channel.channel_id_a.clone().into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
         };
+
+        let rev_opts = LinkParameters {
+            src_port_id: channel.port_b.clone().into_value(),
+            src_channel_id: channel.channel_id_b.clone().into_value(),
+            max_memo_size: packet_config.ics20_max_memo_size,
+            max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
+        };
+
         let link = Link::new_from_opts(
             chains.handle_a().clone(),
             chains.handle_b().clone(),
@@ -93,8 +103,16 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         assert_eq!(summary.unreceived_acks, [1.into()]);
 
         // Acknowledge the packet on the source chain
-        let link = link.reverse(false, false)?;
-        link.relay_ack_packet_messages(vec![])?;
+
+        let rev_link = Link::new_from_opts(
+            chains.handle_b().clone(),
+            chains.handle_a().clone(),
+            rev_opts,
+            false,
+            false,
+        )?;
+
+        rev_link.relay_ack_packet_messages(vec![])?;
 
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;

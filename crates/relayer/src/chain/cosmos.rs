@@ -63,6 +63,7 @@ use tendermint_rpc::endpoint::status;
 use tendermint_rpc::{Client, HttpClient, Order};
 
 use crate::account::Balance;
+use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
     sequential_send_batched_messages_and_wait_commit,
@@ -91,6 +92,7 @@ use crate::chain::handle::Subscription;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
+use crate::config::Error as ConfigError;
 use crate::config::{parse_gas_prices, ChainConfig, GasPrice};
 use crate::consensus_state::AnyConsensusState;
 use crate::denom::DenomTrace;
@@ -102,10 +104,10 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::compat_mode::compat_mode_from_version;
+use crate::util::pretty::PrettySlice;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
-use crate::{chain::client::ClientSettings, config::Error as ConfigError};
 
 use self::gas::dynamic_gas_price;
 use self::types::app_state::GenesisAppState;
@@ -671,8 +673,7 @@ impl CosmosSdkChain {
 
         let mut client = self
             .block_on(ServiceClient::connect(grpc_addr.clone()))
-            .map_err(Error::grpc_transport)
-            .unwrap();
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(GetSyncingRequest {});
 
@@ -2429,6 +2430,17 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let chain_id = chain.id();
     let grpc_address = chain.grpc_addr.to_string();
     let rpc_address = chain.config.rpc_addr.to_string();
+
+    if !chain.config.excluded_sequences.is_empty() {
+        for (channel_id, seqs) in chain.config.excluded_sequences.iter() {
+            if !seqs.is_empty() {
+                warn!(
+                    "chain '{chain_id}' will not clear packets on channel '{channel_id}' with sequences: {}. \
+                    Ignore this warning if this configuration is correct.", PrettySlice(seqs)
+                );
+            }
+        }
+    }
 
     chain.block_on(chain.rpc_client.health()).map_err(|e| {
         Error::health_check_json_rpc(
