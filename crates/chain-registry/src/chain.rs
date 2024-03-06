@@ -233,7 +233,7 @@ mod tests {
                     "windows/amd64": "test"
                 },
                 "cosmos_sdk_version": "0.45",
-                "tendermint_version": "0.34",
+                "cometbft_version": "0.34",
                 "cosmwasm_version": "0.24",
                 "cosmwasm_enabled": true
             },
