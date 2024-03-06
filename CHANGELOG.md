@@ -34,7 +34,7 @@ Special thanks to our contributors for their valuable additions to this release:
     Hermes does not assume anymore that an ICS-04 packet data is valid UTF-8,
     by using the `packet_data_hex` attribute when assembling a packet from events, instead of the deprecated `packet_data` attribute.
     Relying on the `packet_data` attribute enforces a UTF-8 encoded payload (eg. JSON), disallowing eg. Protobuf-encoded payloads.
-    The `packet_data` atttribute [has been deprecated][0] in favor of `packet_data_hex` since IBC-Go v1.0.0.
+    The `packet_data` attribute [has been deprecated][0] in favor of `packet_data_hex` since IBC-Go v1.0.0.
     [0]: https://github.com/cosmos/ibc-go/blob/fadf8f2b0ab184798d021d220d877e00c7634e26/CHANGELOG.md?plain=1#L1417
   - Improve reliability of compatibility check and fix parsing of expected modules
     versions ([\#3831](https://github.com/informalsystems/hermes/issues/3831))
@@ -48,7 +48,7 @@ Special thanks to our contributors for their valuable additions to this release:
     This configuration has no impact on standard packet relaying.
     ([\#3754](https://github.com/informalsystems/hermes/issues/3754))
   - Add a per-chain configuration `memo_overwrite` allowing users
-    to overwite the relayer memo used for each transaction
+    to overwrite the relayer memo used for each transaction
     ([\#3811](https://github.com/informalsystems/hermes/issues/3811))
 - [Telemetry & Metrics](telemetry)
   - Added a new Prometheus metric `simulate_errors` for tracking when a transaction simulation fails, with the following labels:
