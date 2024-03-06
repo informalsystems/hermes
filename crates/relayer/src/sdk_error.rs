@@ -28,11 +28,11 @@ define_error! {
 
         OutOfGasDefault
             { code: u32, amount: u64 }
-            |e| { format_args!("due to the Tx simulation failing, the configured default gas was used! please check the Hermes config.toml and increase the configured default gas. configured default_gas is `{}`", e.amount) },
+            |e| { format_args!("due to the Tx simulation failing, the configured default gas was used. Please check the Hermes config.toml and increase the configured `default_gas`. Current value is `{}`", e.amount) },
 
         OutOfGasSimulated
             { code: u32, amount: u64 }
-            |e| { format_args!("the issue might have been caused by the configured max gas which binds the gas used! please check the Hermes config.toml and increase the configured max gas. configured max_gas is `{}`", e.amount) },
+            |e| { format_args!("the issue might have been caused by the configured max gas which binds the gas used. Please check the Hermes config.toml and increase the configured `max_gas`. Curerent value is `{}`", e.amount) },
 
         InsufficientFee
             { code: u32 }
