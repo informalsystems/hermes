@@ -192,6 +192,7 @@ impl FullNode {
             packet_filter: Default::default(),
             address_type: chain_type.address_type(),
             memo_prefix: Default::default(),
+            memo_overwrite: None,
             proof_specs: Default::default(),
             extension_options: Default::default(),
             sequential_batch_tx: false,

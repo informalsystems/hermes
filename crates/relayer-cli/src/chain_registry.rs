@@ -160,6 +160,7 @@ where
         client_refresh_rate: default::client_refresh_rate(),
         ccv_consumer_chain: false,
         memo_prefix: Memo::default(),
+        memo_overwrite: None,
         proof_specs: Default::default(),
         trust_threshold: TrustThreshold::default(),
         gas_price: GasPrice {
