@@ -161,33 +161,22 @@ impl Runnable for ClearPacketsCmd {
 
         let exclude_src_sequences = config
             .find_chain(&chains.src.id())
-            .map(|chain_config| {
-                chain_config
-                    .excluded_sequences()
-                    .iter()
-                    .find(|e| e.0 == &self.channel_id)
-                    .map(|filter| filter.1.clone())
-                    .unwrap_or_default()
-            })
+            .map(|chain_config| chain_config.excluded_sequences(&self.channel_id).to_vec())
             .unwrap_or_default();
 
-        let exclude_dst_sequences = config
-            .find_chain(&chains.dst.id())
-            .map(|chain_config| {
-                chain_config
-                    .excluded_sequences()
-                    .iter()
-                    .find(|e| {
-                        if let Some(counterparty_channel_id) = channel.counterparty().channel_id() {
-                            e.0 == counterparty_channel_id
-                        } else {
-                            false
-                        }
+        let exclude_dst_sequences =
+            if let Some(counterparty_channel_id) = channel.counterparty().channel_id() {
+                config
+                    .find_chain(&chains.dst.id())
+                    .map(|chain_config| {
+                        chain_config
+                            .excluded_sequences(counterparty_channel_id)
+                            .to_vec()
                     })
-                    .map(|filter| filter.1.clone())
                     .unwrap_or_default()
-            })
-            .unwrap_or_default();
+            } else {
+                Vec::new()
+            };
 
         // Construct links in both directions.
         let fwd_opts = LinkParameters {

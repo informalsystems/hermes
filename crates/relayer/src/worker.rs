@@ -112,15 +112,9 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
         Object::Packet(path) => {
             let exclude_src_sequences = config
                 .find_chain(&chains.a.id())
-                .map(|chain_config| {
-                    chain_config
-                        .excluded_sequences()
-                        .iter()
-                        .find(|e| e.0 == &path.src_channel_id)
-                        .map(|filter| filter.1.clone())
-                        .unwrap_or_default()
-                })
-                .unwrap_or_default();
+                .map(|chain_config| chain_config.excluded_sequences(&path.src_channel_id))
+                .unwrap_or_default()
+                .to_vec();
 
             let packets_config = config.mode.packets;
             let link_res = Link::new_from_opts(

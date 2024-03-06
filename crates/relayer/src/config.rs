@@ -15,6 +15,7 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 use core::time::Duration;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use std::borrow::Cow;
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
 
 use byte_unit::Byte;
@@ -705,9 +706,13 @@ impl ChainConfig {
         }
     }
 
-    pub fn excluded_sequences(&self) -> BTreeMap<ChannelId, Vec<Sequence>> {
+    pub fn excluded_sequences(&self, channel_id: &ChannelId) -> Cow<'_, [Sequence]> {
         match self {
-            Self::CosmosSdk(config) => config.excluded_sequences.clone(),
+            Self::CosmosSdk(config) => config
+                .excluded_sequences
+                .get(channel_id)
+                .map(|seqs| Cow::Borrowed(seqs.as_slice()))
+                .unwrap_or_else(|| Cow::Owned(Vec::new())),
         }
     }
 }
