@@ -41,8 +41,6 @@ impl TryFrom<RawMsgRegisterInterchainAccount> for MsgRegisterInterchainAccount {
     type Error = Error;
 
     fn try_from(value: RawMsgRegisterInterchainAccount) -> Result<Self, Self::Error> {
-        let chan_ordering = Ordering::from_i32(value.ordering).map_err(Error::ics04_channel)?;
-
         Ok(MsgRegisterInterchainAccount {
             owner: value.owner.parse().map_err(Error::owner)?,
             connection_id: value
@@ -50,7 +48,8 @@ impl TryFrom<RawMsgRegisterInterchainAccount> for MsgRegisterInterchainAccount {
                 .parse()
                 .map_err(Error::invalid_connection_identifier)?,
             version: value.version.into(),
-            ordering: chan_ordering,
+            ordering: Ordering::from_i32(value.ordering)
+                .map_err(|_| Error::invalid_ordering(value.ordering))?,
         })
     }
 }

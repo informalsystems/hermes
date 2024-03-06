@@ -1,11 +1,18 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde::Serialize;
 use std::str::FromStr;
+use subtle_encoding::hex;
 use tendermint::abci::Event as AbciEvent;
 
 use ibc_relayer_types::{
     applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
     applications::ics31_icq::events::CrossChainQueryPacket,
+    core::ics02_client::{
+        error::Error as ClientError,
+        events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
+        header::{decode_header, AnyHeader},
+        height::HeightErrorDetail,
+    },
     core::ics03_connection::{
         error::Error as ConnectionError,
         events::{self as connection_events, Attributes as ConnectionAttributes},
@@ -20,12 +27,6 @@ use ibc_relayer_types::{
         timeout::TimeoutHeight,
     },
     core::{
-        ics02_client::{
-            error::Error as ClientError,
-            events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
-            header::{decode_header, AnyHeader},
-            height::HeightErrorDetail,
-        },
         ics04_channel::{channel::Ordering, packet::Sequence, version::Version},
         ics24_host::identifier::ConnectionId,
     },
@@ -430,8 +431,8 @@ fn client_extract_attributes_from_tx(event: &AbciEvent) -> Result<ClientAttribut
 pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, ClientError> {
     for tag in &event.attributes {
         if tag.key == HEADER_ATTRIBUTE_KEY {
-            let header_bytes =
-                hex::decode(&tag.value).map_err(|_| ClientError::malformed_header())?;
+            let header_bytes = hex::decode(tag.value.to_lowercase())
+                .map_err(|_| ClientError::malformed_header())?;
             return decode_header(&header_bytes);
         }
     }
@@ -552,9 +553,11 @@ pub fn extract_packet_and_write_ack_from_tx(
 ) -> Result<(Packet, Vec<u8>), ChannelError> {
     let mut packet = Packet::default();
     let mut write_ack: Vec<u8> = Vec::new();
+
     for tag in &event.attributes {
         let key = tag.key.as_str();
         let value = tag.value.as_str();
+
         match key {
             channel_events::PKT_SRC_PORT_ATTRIBUTE_KEY => {
                 packet.source_port = value.parse().map_err(ChannelError::identifier)?;
@@ -581,7 +584,8 @@ pub fn extract_packet_and_write_ack_from_tx(
                 packet.timeout_timestamp = value.parse().unwrap();
             }
             channel_events::PKT_DATA_ATTRIBUTE_KEY => {
-                packet.data = Vec::from(value.as_bytes());
+                packet.data = hex::decode(value.to_lowercase())
+                    .map_err(|_| ChannelError::invalid_packet_data(value.to_string()))?;
             }
             channel_events::PKT_ACK_ATTRIBUTE_KEY => {
                 write_ack = Vec::from(value.as_bytes());

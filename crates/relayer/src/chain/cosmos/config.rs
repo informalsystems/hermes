@@ -106,6 +106,9 @@ pub struct CosmosSdkConfig {
     #[serde(default)]
     pub memo_prefix: Memo,
 
+    #[serde(default)]
+    pub memo_overwrite: Option<Memo>,
+
     // This is an undocumented and hidden config to make the relayer wait for
     // DeliverTX before sending the next transaction when sending messages in
     // multiple batches. We will instruct relayer operators to turn this on

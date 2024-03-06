@@ -89,8 +89,8 @@ impl Display for ChannelEnd {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(
             f,
-            "ChannelEnd {{ state: {}, ordering: {}, remote: {}, connection_hops: {}, version: {} }}",
-            self.state, self.ordering, self.remote, PrettySlice(&self.connection_hops), self.version
+            "ChannelEnd {{ state: {}, ordering: {}, remote: {}, connection_hops: {}, version: {}, upgrade_sequence: {} }}",
+            self.state, self.ordering, self.remote, PrettySlice(&self.connection_hops), self.version, self.upgrade_sequence
         )
     }
 }
@@ -144,7 +144,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             remote,
             connection_hops,
             version,
-            Sequence::from(value.upgrade_sequence),
+            value.upgrade_sequence.into(),
         ))
     }
 }
@@ -344,7 +344,7 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, Default)]
 pub enum Ordering {
     Uninitialized = 0,
     #[default]

@@ -11,8 +11,10 @@ use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseConfirm";
 
+///
 /// Message definition for the second step in the channel close handshake (the `ChanCloseConfirm`
 /// datagram).
+///
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelCloseConfirm {
     pub port_id: PortId,
@@ -23,19 +25,13 @@ pub struct MsgChannelCloseConfirm {
 }
 
 impl MsgChannelCloseConfirm {
-    pub fn new(
-        port_id: PortId,
-        channel_id: ChannelId,
-        proofs: Proofs,
-        signer: Signer,
-        counterparty_upgrade_sequence: Sequence,
-    ) -> Self {
+    pub fn new(port_id: PortId, channel_id: ChannelId, proofs: Proofs, signer: Signer) -> Self {
         Self {
             port_id,
             channel_id,
             proofs,
             signer,
-            counterparty_upgrade_sequence,
+            counterparty_upgrade_sequence: Sequence::from(0),
         }
     }
 }
@@ -118,7 +114,7 @@ pub mod test_util {
                 revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),
-            counterparty_upgrade_sequence: 1,
+            counterparty_upgrade_sequence: 0,
         }
     }
 }

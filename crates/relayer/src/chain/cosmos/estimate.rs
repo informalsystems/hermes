@@ -14,6 +14,7 @@ use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::Secp256k1KeyPair;
+use crate::telemetry;
 use crate::util::pretty::PrettyFee;
 
 pub async fn estimate_tx_fees(
@@ -51,6 +52,7 @@ pub async fn estimate_tx_fees(
         &config.rpc_address,
         &config.chain_id,
         tx,
+        account,
     )
     .await?;
 
@@ -63,6 +65,7 @@ async fn estimate_fee_with_tx(
     rpc_address: &Url,
     chain_id: &ChainId,
     tx: Tx,
+    account: &Account,
 ) -> Result<Fee, Error> {
     let estimated_gas = {
         crate::time!(
@@ -72,7 +75,7 @@ async fn estimate_fee_with_tx(
             }
 
         );
-        estimate_gas_with_tx(gas_config, grpc_address, tx).await
+        estimate_gas_with_tx(gas_config, grpc_address, tx, account).await
     }?;
 
     if estimated_gas > gas_config.max_gas {
@@ -112,6 +115,7 @@ async fn estimate_gas_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,
     tx: Tx,
+    account: &Account,
 ) -> Result<u64, Error> {
     let simulated_gas = send_tx_simulate(grpc_address, tx)
         .await
@@ -147,6 +151,13 @@ async fn estimate_gas_with_tx(
                 e.detail()
             );
 
+            telemetry!(
+                simulate_errors,
+                &account.address.to_string(),
+                true,
+                get_error_text(&e),
+            );
+
             Ok(gas_config.default_gas)
         }
 
@@ -155,6 +166,14 @@ async fn estimate_gas_with_tx(
                 "failed to simulate tx. propagating error to caller: {}",
                 e.detail()
             );
+
+            telemetry!(
+                simulate_errors,
+                &account.address.to_string(),
+                false,
+                get_error_text(&e),
+            );
+
             // Propagate the error, the retrying mechanism at caller may catch & retry.
             Err(e)
         }
@@ -171,7 +190,17 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
             detail.is_client_state_height_too_low()
                 || detail.is_account_sequence_mismatch_that_can_be_ignored()
                 || detail.is_out_of_order_packet_sequence_error()
+                || detail.is_empty_tx_error()
         }
         _ => false,
+    }
+}
+
+fn get_error_text(e: &Error) -> String {
+    use crate::error::ErrorDetail::*;
+
+    match e.detail() {
+        GrpcStatus(detail) => detail.status.code().to_string(),
+        detail => detail.to_string(),
     }
 }
