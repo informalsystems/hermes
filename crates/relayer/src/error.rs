@@ -709,6 +709,14 @@ impl GrpcStatusSubdetail {
             Some((expected, got)) => expected < got,
         }
     }
+
+    /// Check whether this gRPC error message contains the string "invalid empty tx".
+    ///
+    /// ## Note
+    /// This error may happen for older chains that does not properly support simulation.
+    pub fn is_empty_tx_error(&self) -> bool {
+        self.status.message().contains("invalid empty tx")
+    }
 }
 
 /// Assumes that the cosmos-sdk account sequence mismatch error message, that may be seen

@@ -15,6 +15,7 @@ use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 
 use crate::chain::chain_type::ChainType as TestedChainType;
@@ -197,6 +198,7 @@ impl FullNode {
             sequential_batch_tx: false,
             compat_mode,
             clear_interval: None,
+            excluded_sequences: BTreeMap::new(),
         }))
     }
 
