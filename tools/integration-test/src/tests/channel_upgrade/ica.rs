@@ -161,7 +161,7 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
                     "controller_connection_id": connection.connection_id_a.0,
                     "host_connection_id": connection.connection_id_b.0,
                 });
-                let new_version = Version::ics27_with_fee(&app_version.to_string());
+                let new_version = Version::app_version_with_fee(&app_version.to_string());
 
                 let upgraded_attrs = ChannelUpgradableAttributes::new(
                     new_version.clone(),
