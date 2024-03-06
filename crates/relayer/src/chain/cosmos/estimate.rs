@@ -17,13 +17,26 @@ use crate::keyring::Secp256k1KeyPair;
 use crate::telemetry;
 use crate::util::pretty::PrettyFee;
 
+pub enum EstimatedGas {
+    Simulated(u64),
+    Default(u64),
+}
+
+impl EstimatedGas {
+    pub fn get_amount(&self) -> u64 {
+        match self {
+            Self::Simulated(amount) | Self::Default(amount) => *amount,
+        }
+    }
+}
+
 pub async fn estimate_tx_fees(
     config: &TxConfig,
     key_pair: &Secp256k1KeyPair,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
-) -> Result<Fee, Error> {
+) -> Result<(Fee, EstimatedGas), Error> {
     let gas_config = &config.gas_config;
 
     debug!(
@@ -46,7 +59,7 @@ pub async fn estimate_tx_fees(
         signatures: signed_tx.signatures,
     };
 
-    let estimated_fee = estimate_fee_with_tx(
+    let estimated_fee_and_gas = estimate_fee_with_tx(
         gas_config,
         &config.grpc_address,
         &config.rpc_address,
@@ -56,7 +69,7 @@ pub async fn estimate_tx_fees(
     )
     .await?;
 
-    Ok(estimated_fee)
+    Ok(estimated_fee_and_gas)
 }
 
 async fn estimate_fee_with_tx(
@@ -66,7 +79,7 @@ async fn estimate_fee_with_tx(
     chain_id: &ChainId,
     tx: Tx,
     account: &Account,
-) -> Result<Fee, Error> {
+) -> Result<(Fee, EstimatedGas), Error> {
     let estimated_gas = {
         crate::time!(
             "estimate_gas_with_tx",
@@ -78,29 +91,32 @@ async fn estimate_fee_with_tx(
         estimate_gas_with_tx(gas_config, grpc_address, tx, account).await
     }?;
 
-    if estimated_gas > gas_config.max_gas {
+    let estimated_gas_amount = estimated_gas.get_amount();
+
+    if estimated_gas_amount > gas_config.max_gas {
         debug!(
-            id = %chain_id, estimated = ?estimated_gas, max = ?gas_config.max_gas,
+            id = %chain_id, estimated = ?estimated_gas_amount, max = ?gas_config.max_gas,
             "send_tx: estimated gas is higher than max gas"
         );
 
         return Err(Error::tx_simulate_gas_estimate_exceeded(
             chain_id.clone(),
-            estimated_gas,
+            estimated_gas_amount,
             gas_config.max_gas,
         ));
     }
 
-    let adjusted_fee = gas_amount_to_fee(gas_config, estimated_gas, chain_id, rpc_address).await;
+    let adjusted_fee =
+        gas_amount_to_fee(gas_config, estimated_gas_amount, chain_id, rpc_address).await;
 
     debug!(
         id = %chain_id,
         "send_tx: using {} gas, fee {}",
-        estimated_gas,
+        estimated_gas_amount,
         PrettyFee(&adjusted_fee)
     );
 
-    Ok(adjusted_fee)
+    Ok((adjusted_fee, estimated_gas))
 }
 
 /// Try to simulate the given tx in order to estimate how much gas will be needed to submit it.
@@ -116,7 +132,7 @@ async fn estimate_gas_with_tx(
     grpc_address: &Uri,
     tx: Tx,
     account: &Account,
-) -> Result<u64, Error> {
+) -> Result<EstimatedGas, Error> {
     let simulated_gas = send_tx_simulate(grpc_address, tx)
         .await
         .map(|sr| sr.gas_info);
@@ -130,7 +146,7 @@ async fn estimate_gas_with_tx(
                 gas_info.gas_used
             );
 
-            Ok(gas_info.gas_used)
+            Ok(EstimatedGas::Simulated(gas_info.gas_used))
         }
 
         Ok(None) => {
@@ -139,7 +155,7 @@ async fn estimate_gas_with_tx(
                 gas_config.default_gas
             );
 
-            Ok(gas_config.default_gas)
+            Ok(EstimatedGas::Default(gas_config.default_gas))
         }
 
         // If there is a chance that the tx will be accepted once actually submitted, we fall
@@ -158,7 +174,7 @@ async fn estimate_gas_with_tx(
                 get_error_text(&e),
             );
 
-            Ok(gas_config.default_gas)
+            Ok(EstimatedGas::Default(gas_config.default_gas))
         }
 
         Err(e) => {
