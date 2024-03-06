@@ -142,6 +142,7 @@ If this metric is increasing, it signals that the packet queue is increasing and
 | `cleared_send_packet_count_total`    | Number of SendPacket events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                              | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
 | `cleared_acknowledgment_count_total` | Number of WriteAcknowledgement events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                    | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
 | `broadcast_errors_total`        | Number of errors observed by Hermes when broadcasting a Tx, per error type and account                                                                                                         | `u64` Counter       | Packet workers enabled |
+| `simulate_errors_total`        | Number of errors observed by Hermes when simulating a Tx, per error type, account and whether the error is recoverable or not                                 | `u64` Counter       | Packet workers enabled |
 | `filtered_packets`        | Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits | `u64` Counter | Packet workers enabled, and `ics20_max_memo_size` and/or `ics20_max_receiver_size` enabled |
 
 Notes:

@@ -3,7 +3,6 @@ use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_ack::MsgChannelUpgradeAck;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_confirm::MsgChannelUpgradeConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_open::MsgChannelUpgradeOpen;
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::upgrade_fields::UpgradeFields;
 
 use core::fmt::{Display, Error as FmtError, Formatter};
@@ -899,7 +898,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             version,
-            Sequence::from(0),
+            0,
         );
 
         // Build the domain type message
@@ -979,7 +978,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             Version::empty(),
-            Sequence::from(0),
+            0,
         );
 
         // Retrieve existing channel
@@ -1071,7 +1070,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             version,
-            Sequence::from(0),
+            0,
         );
 
         // Get signer
@@ -1546,10 +1545,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         if let Some(new_ordering) = new_ordering {
-            if new_ordering == Ordering::Uninitialized || new_ordering > channel_end.ordering {
-                return Err(ChannelError::invalid_channel_upgrade_ordering());
-            }
-
             channel_end.ordering = new_ordering;
         }
 
@@ -1735,7 +1730,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             channel_id: dst_channel_id.clone(),
             proposed_upgrade_connection_hops: dst_channel_end.connection_hops,
             counterparty_upgrade_fields: upgrade.fields,
-            counterparty_upgrade_sequence: channel_end.upgrade_sequence,
+            counterparty_upgrade_sequence: channel_end.upgrade_sequence.into(),
             proof_channel: src_proof.object_proof().clone(),
             proof_upgrade,
             proof_height: src_proof.height(),
@@ -2055,7 +2050,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             port_id: dst_port_id.clone(),
             channel_id: dst_channel_id.clone(),
             counterparty_channel_state: src_channel_end.state,
-            counterparty_upgrade_sequence,
+            counterparty_upgrade_sequence: counterparty_upgrade_sequence.into(),
             proof_channel: proofs.object_proof().clone(),
             proof_height: proofs.height(),
             signer,

@@ -11,7 +11,6 @@ use ibc_proto::ibc::core::channel::v1::{
     IdentifiedChannel as RawIdentifiedChannel,
 };
 
-use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics04_channel::{error::Error, version::Version};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
@@ -70,7 +69,7 @@ impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
             version: value.channel_end.version.to_string(),
             port_id: value.port_id.to_string(),
             channel_id: value.channel_id.to_string(),
-            upgrade_sequence: 1,
+            upgrade_sequence: value.channel_end.upgrade_sequence,
         }
     }
 }
@@ -82,15 +81,15 @@ pub struct ChannelEnd {
     pub remote: Counterparty,
     pub connection_hops: Vec<ConnectionId>,
     pub version: Version,
-    pub upgrade_sequence: Sequence,
+    pub upgrade_sequence: u64,
 }
 
 impl Display for ChannelEnd {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(
             f,
-            "ChannelEnd {{ state: {}, ordering: {}, remote: {}, connection_hops: {}, version: {} }}",
-            self.state, self.ordering, self.remote, PrettySlice(&self.connection_hops), self.version
+            "ChannelEnd {{ state: {}, ordering: {}, remote: {}, connection_hops: {}, version: {}, upgrade_sequence: {} }}",
+            self.state, self.ordering, self.remote, PrettySlice(&self.connection_hops), self.version, self.upgrade_sequence
         )
     }
 }
@@ -103,7 +102,7 @@ impl Default for ChannelEnd {
             remote: Counterparty::default(),
             connection_hops: Vec::new(),
             version: Version::default(),
-            upgrade_sequence: Sequence::from(0), // The value of 0 indicates the channel has never been upgraded
+            upgrade_sequence: 0,
         }
     }
 }
@@ -144,7 +143,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             remote,
             connection_hops,
             version,
-            Sequence::from(value.upgrade_sequence),
+            value.upgrade_sequence,
         ))
     }
 }
@@ -161,7 +160,7 @@ impl From<ChannelEnd> for RawChannel {
                 .map(|v| v.as_str().to_string())
                 .collect(),
             version: value.version.to_string(),
-            upgrade_sequence: value.upgrade_sequence.into(),
+            upgrade_sequence: value.upgrade_sequence,
         }
     }
 }
@@ -174,7 +173,7 @@ impl ChannelEnd {
         remote: Counterparty,
         connection_hops: Vec<ConnectionId>,
         version: Version,
-        upgrade_sequence: Sequence,
+        upgrade_sequence: u64,
     ) -> Self {
         Self {
             state,
@@ -238,25 +237,25 @@ impl ChannelEnd {
 
     /// Helper function to compare the state of this end with another state.
     pub fn state_matches(&self, other: &State) -> bool {
-        self.state() == other
+        self.state.eq(other)
     }
 
     /// Helper function to compare the order of this end with another order.
     pub fn order_matches(&self, other: &Ordering) -> bool {
-        self.ordering() == other
+        self.ordering.eq(other)
     }
 
     #[allow(clippy::ptr_arg)]
     pub fn connection_hops_matches(&self, other: &Vec<ConnectionId>) -> bool {
-        self.connection_hops() == other
+        self.connection_hops.eq(other)
     }
 
     pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
-        self.counterparty() == other
+        self.counterparty().eq(other)
     }
 
     pub fn version_matches(&self, other: &Version) -> bool {
-        self.version() == other
+        self.version().eq(other)
     }
 }
 
@@ -333,7 +332,7 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, Default)]
 pub enum Ordering {
     Uninitialized = 0,
     #[default]
@@ -543,7 +542,7 @@ pub mod test_util {
             counterparty: Some(get_dummy_raw_counterparty()),
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
-            upgrade_sequence: 0, // The value of 0 indicates the channel has never been upgraded
+            upgrade_sequence: 0,
         }
     }
 }

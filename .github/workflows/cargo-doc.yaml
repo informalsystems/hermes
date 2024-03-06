@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2023-07-13
+          toolchain: nightly-2024-03-03
           override: true
 
       - name: Build API documentation

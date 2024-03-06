@@ -15,7 +15,7 @@ pub enum TrackingId {
     /// the CLI or during packet clearing.
     Static(&'static str),
     /// Random identifier used to track latency of packet clearing.
-    ClearedUuid(Uuid),
+    PacketClearing(Uuid),
 }
 
 impl TrackingId {
@@ -29,8 +29,13 @@ impl TrackingId {
         Self::Static(s)
     }
 
-    pub fn new_cleared_uuid() -> Self {
-        Self::ClearedUuid(Uuid::new_v4())
+    pub fn new_packet_clearing() -> Self {
+        Self::PacketClearing(Uuid::new_v4())
+    }
+
+    /// Indicates whether a packet clearing process is currently in-progress.
+    pub fn is_clearing(&self) -> bool {
+        matches!(self, Self::PacketClearing(_))
     }
 }
 
@@ -43,7 +48,7 @@ impl Display for TrackingId {
                 s.fmt(f)
             }
             TrackingId::Static(s) => s.fmt(f),
-            TrackingId::ClearedUuid(u) => {
+            TrackingId::PacketClearing(u) => {
                 let mut uuid = "cleared/".to_owned();
                 let mut s = u.to_string();
                 s.truncate(8);
