@@ -27,7 +27,8 @@ jobs:
           images: ${{ env.REGISTRY_IMAGE }}
           tags: |
             type=ref,event=tag
-            type=ref,event=workflow_dispatch
+            type=ref,event=branch
+            type=semver,pattern={{version}}
 
       - name: Set up Docker Buildx
         id: buildx
