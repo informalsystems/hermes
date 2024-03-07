@@ -1668,7 +1668,9 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::grpc_status(e, "query_connection_channels".to_owned()))?
             .into_inner();
 
-        let mut channels: Vec<IdentifiedChannelEnd> = response
+        let height = self.query_chain_latest_height()?;
+
+        let channels: Vec<IdentifiedChannelEnd> = response
             .channels
             .into_iter()
             .filter_map(|ch| {
@@ -1682,23 +1684,26 @@ impl ChainEndpoint for CosmosSdkChain {
                     })
                     .ok()
             })
+            .map(|mut channel| {
+                // If the channel is open, look for an upgrade in order to correctly set the
+                // state to Open(Upgrading) or Open(NotUpgrading)
+                if channel.channel_end.is_open()
+                    && self
+                        .query_upgrade(
+                            QueryUpgradeRequest {
+                                port_id: channel.port_id.to_string(),
+                                channel_id: channel.channel_id.to_string(),
+                            },
+                            height,
+                        )
+                        .is_ok()
+                {
+                    channel.channel_end.state = State::Open(UpgradeState::Upgrading);
+                }
+                channel
+            })
             .collect();
 
-        let height = self.query_chain_latest_height()?;
-        for channel in channels.iter_mut() {
-            if self
-                .query_upgrade(
-                    QueryUpgradeRequest {
-                        port_id: channel.port_id.to_string(),
-                        channel_id: channel.channel_id.to_string(),
-                    },
-                    height,
-                )
-                .is_ok()
-            {
-                channel.channel_end.state = State::Open(UpgradeState::Upgrading);
-            };
-        }
         Ok(channels)
     }
 
@@ -1734,6 +1739,8 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::grpc_status(e, "query_channels".to_owned()))?
             .into_inner();
 
+        let height = self.query_chain_latest_height()?;
+
         let channels = response
             .channels
             .into_iter()
@@ -1747,6 +1754,24 @@ impl ChainEndpoint for CosmosSdkChain {
                         )
                     })
                     .ok()
+            })
+            .map(|mut channel| {
+                // If the channel is open, look for an upgrade in order to correctly set the
+                // state to Open(Upgrading) or Open(NotUpgrading)
+                if channel.channel_end.is_open()
+                    && self
+                        .query_upgrade(
+                            QueryUpgradeRequest {
+                                port_id: channel.port_id.to_string(),
+                                channel_id: channel.channel_id.to_string(),
+                            },
+                            height,
+                        )
+                        .is_ok()
+                {
+                    channel.channel_end.state = State::Open(UpgradeState::Upgrading);
+                }
+                channel
             })
             .collect();
 
@@ -1774,7 +1799,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
-        if channel_end.state_matches(&State::Open(UpgradeState::NotUpgrading)) {
+        if channel_end.is_open() {
             let height = match request.height {
                 QueryHeight::Latest => self.query_chain_latest_height()?,
                 QueryHeight::Specific(height) => height,
