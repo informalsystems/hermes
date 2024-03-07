@@ -18,7 +18,7 @@ pub enum Error {
 /// - A range is specified as `start..end`, where `start` and `end` are sequence numbers.
 /// - If `start` is omitted, the range starts at the minimum sequence number.
 /// - If `end` is omitted, the range ends at the maximum sequence number.
-/// - If both `start` and `end` are omitted, the range sastifies any sequence number.
+/// - If both `start` and `end` are omitted, the range satisfies any sequence number.
 ///
 /// # Examples
 /// - `1`                           Single sequence number `1`
@@ -39,7 +39,7 @@ pub fn parse_seq_ranges(s: &str) -> Result<Vec<RangeInclusive<Sequence>>, Error>
 /// - A range is specified as `start..end`, where `start` and `end` are sequence numbers.
 /// - If `start` is omitted, the range starts at the minimum sequence number.
 /// - If `end` is omitted, the range ends at the maximum sequence number.`
-/// - If both `start` and `end` are omitted, the range sastifies any sequence number.
+/// - If both `start` and `end` are omitted, the range satisfies any sequence number.
 ///
 /// # Examples
 /// - `1`                           Single sequence number `1`

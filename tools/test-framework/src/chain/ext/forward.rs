@@ -3,7 +3,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::{DualTagged, MonoTagged, WalletAddress};
 
 /// Build the recipient address as following:
-/// {intermediate_refund_address}|{foward_port}/{forward_channel}:{final_destination_address}
+/// {intermediate_refund_address}|{forward_port}/{forward_channel}:{final_destination_address}
 /// See <https://hub.cosmos.network/main/governance/proposals/2021-09-hub-ibc-router/>
 pub fn build_forward_address<'a, ChainB, ChainC>(
     intermediate_destination_address: MonoTagged<ChainB, &'a WalletAddress>,
