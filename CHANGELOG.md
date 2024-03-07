@@ -2,7 +2,7 @@
 
 ## v1.8.1
 
-*March 6th, 2024*
+*March 7th, 2024*
 
 This v1.8.1 release brings better reliability when relaying, more enhanced configuration and improved monitoring.
 
@@ -12,15 +12,13 @@ Reliability has been improved:
 
 Additional per-chain configurations have been added:
 * `excluded_sequences` used to skip problematic packets when clearing
-* `memo_overwrite` allowing users to overwrite the relayer memo when chains have a
-strict limit for the size of the memo.
+* `memo_overwrite` allowing users to overwrite the relayer memo when chains have a strict limit for the size of the memo.
 
 Monitoring issues improvements:
 * A new metric `simulate_errors` which counts the number of failed simulated transactions
 * Out of gas error diagnostic gives more information and a dedicated entry to the guide has been added
 * Failed gas simulation will not be considered as unrecoverable for legacy chains.
-* The compatibility check during the health-check has been improved will assess more correctly the versions
-  for Ibc-Go and Cosmos SDK
+* The compatibility check during the health-check has been improved will assess more correctly the versions for Ibc-Go and Cosmos SDK
 
 Special thanks to our contributors for their valuable additions to this release:
 
@@ -29,33 +27,27 @@ Special thanks to our contributors for their valuable additions to this release:
 
 ### BUG FIXES
 
-- [Relayer Library](relayer)
-  - Allow relaying ICS-04 packets with non-UTF-8 payloads ([\#3770](https://github.com/informalsystems/hermes/issues/3770))
-    Hermes does not assume anymore that an ICS-04 packet data is valid UTF-8,
-    by using the `packet_data_hex` attribute when assembling a packet from events, instead of the deprecated `packet_data` attribute.
-    Relying on the `packet_data` attribute enforces a UTF-8 encoded payload (eg. JSON), disallowing eg. Protobuf-encoded payloads.
-    The `packet_data` attribute [has been deprecated][0] in favor of `packet_data_hex` since IBC-Go v1.0.0.
-    [0]: https://github.com/cosmos/ibc-go/blob/fadf8f2b0ab184798d021d220d877e00c7634e26/CHANGELOG.md?plain=1#L1417
-  - Improve reliability of compatibility check and fix parsing of expected modules
-    versions ([\#3831](https://github.com/informalsystems/hermes/issues/3831))
+- Allow relaying ICS-04 packets with non-UTF-8 payloads ([\#3770](https://github.com/informalsystems/hermes/issues/3770))
+  Hermes does not assume anymore that an ICS-04 packet data is valid UTF-8,
+  by using the `packet_data_hex` attribute when assembling a packet from events, instead of the deprecated `packet_data` attribute.
+  Relying on the `packet_data` attribute enforces a UTF-8 encoded payload (eg. JSON), disallowing eg. Protobuf-encoded payloads.
+  The `packet_data` attribute [has been deprecated][0] in favor of `packet_data_hex` since IBC-Go v1.0.0.
+- Improve reliability of compatibility check and fix parsing of expected modules versions ([\#3831](https://github.com/informalsystems/hermes/issues/3831))
+
+[0]: https://github.com/cosmos/ibc-go/blob/fadf8f2b0ab184798d021d220d877e00c7634e26/CHANGELOG.md?plain=1#L1417
 
 ### FEATURES
 
-- [Relayer Library](relayer)
-  - Add a per-chain configuration `excluded_sequences` allowing
-    users to specify a list of packet sequences which will not be
-    cleared.
-    This configuration has no impact on standard packet relaying.
-    ([\#3754](https://github.com/informalsystems/hermes/issues/3754))
-  - Add a per-chain configuration `memo_overwrite` allowing users
-    to overwrite the relayer memo used for each transaction
-    ([\#3811](https://github.com/informalsystems/hermes/issues/3811))
-- [Telemetry & Metrics](telemetry)
-  - Added a new Prometheus metric `simulate_errors` for tracking when a transaction simulation fails, with the following labels:
+- Add a per-chain configuration `excluded_sequences` allowing users to specify a list of packet sequences which will not be cleared.
+  This configuration has no impact on standard packet relaying.
+  ([\#3754](https://github.com/informalsystems/hermes/issues/3754))
+- Add a per-chain configuration `memo_overwrite` allowing users to overwrite the relayer memo used for each transaction
+  ([\#3811](https://github.com/informalsystems/hermes/issues/3811))
+- Added a new Prometheus metric `simulate_errors` for tracking when a transaction simulation fails, with the following labels:
+  ([\#3845](https://github.com/informalsystems/hermes/issues/3845))
   * `recoverable` (can the execution continue if this happened?)
   * `account` (account from which the tx was sent)
   * `error_description` (description of the error)
-    ([\#3845](https://github.com/informalsystems/hermes/issues/3845))
 
     ```
     # HELP simulate_errors_total Number of errors observed by Hermes when simulating a Tx
@@ -65,24 +57,19 @@ Special thanks to our contributors for their valuable additions to this release:
 
 ### IMPROVEMENTS
 
-- General
-  - Use the consensus state at client latest height in status CLI ([#3814])
-    [#3814]: https://github.com/informalsystems/ibc-rs/issues/3814
-  - Add syncing check for gRPC node ([#3814])
-    [#3814]: https://github.com/informalsystems/ibc-rs/issues/3814
-- [Relayer Library](relayer)
-  - Improve the log diagnostic when an out of gas error is thrown.
-    And a new entry related to gas error has been added to the Hermes
-    guide.
-    ([\#3530](https://github.com/informalsystems/hermes/issues/3530))
-  - Improve resilience when relaying on ordered channels.
-    When relaying packets on an ordered channel, Hermes will now attempt
-    to detect whether the next message to send has the sequence number
-    expected on that channel. If there is a mismatch, then Hermes will trigger a packet
-    clear on the channel to unblock it before resuming operations on that channel.
-    ([\#3540](https://github.com/informalsystems/hermes/issues/3540))
-  - Recover from gas simulation failures on legacy chains.
-    ([\#3792](https://github.com/informalsystems/hermes/issues/3792))
+- Use the consensus state at client latest height in status CLI ([#3814](https://github.com/informalsystems/ibc-rs/issues/3814))
+- Add syncing check for gRPC node ([#3814](https://github.com/informalsystems/ibc-rs/issues/3814))
+- Improve the log diagnostic when an out of gas error is thrown.
+  And a new entry related to gas error has been added to the Hermes guide.
+  ([\#3530](https://github.com/informalsystems/hermes/issues/3530))
+- Improve resilience when relaying on ordered channels.
+  When relaying packets on an ordered channel, Hermes will now attempt
+  to detect whether the next message to send has the sequence number
+  expected on that channel. If there is a mismatch, then Hermes will trigger a packet
+  clear on the channel to unblock it before resuming operations on that channel.
+  ([\#3540](https://github.com/informalsystems/hermes/issues/3540))
+- Recover from gas simulation failures on legacy chains.
+  ([\#3792](https://github.com/informalsystems/hermes/issues/3792))
 
 ## v1.8.0
 
