@@ -1,9 +1,3 @@
-#[cfg(feature = "telemetry")]
-use {
-    ibc_relayer_types::core::ics24_host::identifier::ChannelId,
-    ibc_relayer_types::core::ics24_host::identifier::PortId,
-};
-
 use core::time::Duration;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
@@ -13,6 +7,8 @@ use itertools::Itertools;
 use moka::sync::Cache;
 use tracing::{debug, error, error_span, info, trace, warn};
 
+use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
+use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_proto::ibc::apps::fee::v1::{IdentifiedPacketFees, QueryIncentivizedPacketRequest};
 use ibc_proto::ibc::core::channel::v1::PacketId;
 use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
@@ -488,10 +484,8 @@ fn lowest_sequence(events: &[IbcEventWithHeight]) -> Option<Sequence> {
         .min()
 }
 
-#[cfg(feature = "telemetry")]
 use crate::link::RelaySummary;
 
-#[cfg(feature = "telemetry")]
 fn packet_metrics(
     path: &Packet,
     summary: &RelaySummary,
@@ -503,7 +497,6 @@ fn packet_metrics(
     timeout_metrics(path, summary, dst_channel, dst_port);
 }
 
-#[cfg(feature = "telemetry")]
 fn receive_packet_metrics(
     path: &Packet,
     summary: &RelaySummary,
@@ -530,7 +523,6 @@ fn receive_packet_metrics(
     );
 }
 
-#[cfg(feature = "telemetry")]
 fn acknowledgment_metrics(
     path: &Packet,
     summary: &RelaySummary,
@@ -557,7 +549,6 @@ fn acknowledgment_metrics(
     );
 }
 
-#[cfg(feature = "telemetry")]
 fn timeout_metrics(
     path: &Packet,
     summary: &RelaySummary,

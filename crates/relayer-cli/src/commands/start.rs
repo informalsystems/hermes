@@ -186,7 +186,6 @@ fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
     }
 }
 
-#[cfg(feature = "telemetry")]
 fn spawn_telemetry_server(config: &Config) {
     use ibc_relayer::util::spawn_blocking;
 
@@ -219,16 +218,6 @@ fn spawn_telemetry_server(config: &Config) {
             Err(e) => error!("telemetry service failed to start: {e}"),
         }
     });
-}
-
-#[cfg(not(feature = "telemetry"))]
-fn spawn_telemetry_server(config: &Config) {
-    if config.telemetry.enabled {
-        warn!(
-            "telemetry enabled in the config but Hermes was built without telemetry support, \
-             build Hermes with --features=telemetry to enable telemetry support."
-        );
-    }
 }
 
 fn make_supervisor<Chain: ChainHandle>(

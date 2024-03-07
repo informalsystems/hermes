@@ -1845,7 +1845,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     // we need fully qualified ChainId to avoid unneeded imports warnings
-    #[cfg(feature = "telemetry")]
     fn target_info(
         &self,
         target: OperationalDataTarget,
@@ -1871,7 +1870,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
     }
 
-    #[cfg(feature = "telemetry")]
     fn backlog_update(&self, event: &IbcEvent) {
         match event {
             IbcEvent::SendPacket(send_packet_ev) => {
@@ -1905,7 +1903,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
     }
 
-    #[cfg(feature = "telemetry")]
     fn record_cleared_send_packet(&self, event_with_height: &IbcEventWithHeight) {
         if let IbcEvent::SendPacket(send_packet_ev) = &event_with_height.event {
             ibc_telemetry::global().send_packet_events(
@@ -1927,7 +1924,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
     }
 
-    #[cfg(feature = "telemetry")]
     fn record_cleared_acknowledgments<'a>(
         &self,
         events_with_heights: impl Iterator<Item = &'a IbcEventWithHeight>,
