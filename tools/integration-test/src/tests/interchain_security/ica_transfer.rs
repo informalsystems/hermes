@@ -3,10 +3,7 @@
 //! the second chain a Consumer chain.
 use std::str::FromStr;
 
-use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer_types::applications::ics27_ica::cosmos_tx::CosmosTx;
-use ibc_relayer_types::applications::ics27_ica::msgs::send_tx::MsgSendTx;
 use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
 use ibc_relayer_types::applications::transfer::msgs::send::MsgSend;
 use ibc_relayer_types::applications::transfer::{Amount, Coin};
@@ -19,7 +16,7 @@ use ibc_test_framework::framework::binary::channel::run_binary_interchain_securi
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::assert_eventually_channel_established;
 use ibc_test_framework::util::interchain_security::{
-    update_genesis_for_consumer_chain, update_relayer_config_for_consumer_chain,
+    interchain_send_tx, update_genesis_for_consumer_chain, update_relayer_config_for_consumer_chain,
 };
 
 #[test]
@@ -151,29 +148,7 @@ impl BinaryChannelTest for InterchainSecurityIcaTransferTest {
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund - amount).as_ref(),
         )?;
+
         Ok(())
     }
-}
-
-fn interchain_send_tx<ChainA: ChainHandle>(
-    chain: &ChainA,
-    from: &Signer,
-    connection: &ConnectionId,
-    msg: InterchainAccountPacketData,
-    relative_timeout: Timestamp,
-) -> Result<Vec<IbcEventWithHeight>, Error> {
-    let msg = MsgSendTx {
-        owner: from.clone(),
-        connection_id: connection.clone(),
-        packet_data: msg,
-        relative_timeout,
-    };
-
-    let msg_any = msg.to_any();
-
-    let tm = TrackedMsgs::new_static(vec![msg_any], "SendTx");
-
-    chain
-        .send_messages_and_wait_commit(tm)
-        .map_err(Error::relayer)
 }

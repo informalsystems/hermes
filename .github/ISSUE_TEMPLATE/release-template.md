@@ -20,3 +20,4 @@ v                     without deliberation
 - [ ] Create a new release in the changelog, using [`unclog`](https://github.com/informalsystems/unclog)
   - If doing a release candidate (`rc`) version, then skip the `unclog release` step
 - [ ] Reassign unfinished issues of previous milestone to the next milestone
+- [ ] Notify the comms team about the pending new release and [prepare a message](https://www.notion.so/informalsystems/Communications-pipeline-b8c0eeb71dc24203a048fa6ccf189e1a?pvs=4) to announce it

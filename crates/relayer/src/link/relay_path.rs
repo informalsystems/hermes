@@ -1,5 +1,6 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use std::ops::Sub;
 use std::time::{Duration, Instant};
 
@@ -115,6 +116,7 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
 
     pub max_memo_size: Ics20FieldSizeLimit,
     pub max_receiver_size: Ics20FieldSizeLimit,
+    pub exclude_src_sequences: Vec<Sequence>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
@@ -163,6 +165,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             max_memo_size: link_parameters.max_memo_size,
             max_receiver_size: link_parameters.max_receiver_size,
+
+            exclude_src_sequences: link_parameters.exclude_src_sequences,
         })
     }
 
@@ -369,6 +373,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             channel_id: self.dst_channel_id().clone(),
             proofs,
             signer: self.dst_signer()?,
+            counterparty_upgrade_sequence: 0,
         };
 
         Ok(Some(new_msg.to_any()))
@@ -426,7 +431,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
         let _span = span!(Level::ERROR, "relay_pending_packets", ?height).entered();
 
-        let tracking_id = TrackingId::new_cleared_uuid();
+        let tracking_id = TrackingId::new_packet_clearing();
         telemetry!(received_event_batch, tracking_id);
 
         let src_config = self.src_chain().config().map_err(LinkError::relayer)?;
@@ -709,12 +714,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
                     return Ok(reply);
                 }
-                Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
-                    // This error means we could retry
-                    error!("error {}", e.event);
+                Err(LinkError(error::LinkErrorDetail::Send(_), _)) => {
                     if i + 1 == MAX_RETRIES {
-                        error!("{}/{} retries exhausted. giving up", i + 1, MAX_RETRIES)
+                        error!("{}/{} retries exhausted, giving up", i + 1, MAX_RETRIES)
                     } else {
+                        debug!("{}/{} retries exhausted, retrying with newly-generated operational data", i + 1, MAX_RETRIES);
+
                         // If we haven't exhausted all retries, regenerate the op. data & retry
                         match self.regenerate_operational_data(odata.clone()) {
                             None => return Ok(S::Reply::empty()), // Nothing to retry
@@ -1154,6 +1159,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             return Ok(());
         }
 
+        // Retain only sequences which should not be filtered out
+        let sequences: Vec<Sequence> = sequences
+            .into_iter()
+            .filter(|sequence| !self.exclude_src_sequences.contains(sequence))
+            .collect();
+
         debug!(
             dst_chain = %self.dst_chain().id(),
             src_chain = %self.src_chain().id(),
@@ -1217,6 +1228,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if sequences.is_empty() {
             return Ok(());
         }
+
+        // Retain only sequences which should not be filtered out
+        let sequences: Vec<Sequence> = sequences
+            .into_iter()
+            .filter(|sequence| !self.exclude_src_sequences.contains(sequence))
+            .collect();
 
         debug!(
             dst_chain = %self.dst_chain().id(),

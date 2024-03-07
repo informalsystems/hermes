@@ -73,7 +73,7 @@ define_error! {
         Send
             { event: IbcEvent }
             |e| {
-                format!("chain error when sending messages: {0}", e.event)
+                format!("failed to send message: {0}", e.event)
             },
 
         MissingChannelId
