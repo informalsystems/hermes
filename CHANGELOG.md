@@ -4,7 +4,7 @@
 
 *March 6th, 2024*
 
-This v1.8.1 release improves reliability when relaying, more enhanced configuration and improved monitoring.
+This v1.8.1 release brings better reliability when relaying, more enhanced configuration and improved monitoring.
 
 Reliability has been improved:
 * It is now possible to relay ICS-04 packets with non-UTF-8 payloads
