@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 use core::fmt::{self, Debug, Display};
-use ibc_relayer_types::core::ics04_channel::upgrade::Upgrade;
+use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
 
 use crossbeam_channel as channel;
 use tracing::Span;
@@ -8,7 +8,7 @@ use tracing::Span;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
-use ibc_proto::ibc::core::channel::v1::QueryUpgradeRequest;
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
@@ -379,6 +379,12 @@ pub enum ChainRequest {
         height: Height,
         reply_to: ReplyTo<(Upgrade, Option<MerkleProof>)>,
     },
+
+    QueryUpgradeError {
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+        reply_to: ReplyTo<(ErrorReceipt, Option<MerkleProof>)>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -698,4 +704,10 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         request: QueryUpgradeRequest,
         height: Height,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error>;
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error>;
 }

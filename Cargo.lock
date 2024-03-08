@@ -4278,8 +4278,3 @@ dependencies = [
  "quote",
  "syn 2.0.48",
 ]
-
-[[patch.unused]]
-name = "ibc-proto"
-version = "0.41.0"
-source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=romac/channel-upgrade-only#0d28c0068634ef3c863e7a56a34c2c2fce222164"

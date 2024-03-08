@@ -350,10 +350,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Nothing to do if channel on destination is already closed
-        if self
-            .dst_channel(QueryHeight::Latest)?
-            .state_matches(&ChannelState::Closed)
-        {
+        let dst_channel = self.dst_channel(QueryHeight::Latest)?;
+
+        if dst_channel.state_matches(&ChannelState::Closed) {
             return Ok(None);
         }
 

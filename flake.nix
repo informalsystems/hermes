@@ -41,7 +41,6 @@
           ibc-go-v6-simapp
           ibc-go-v7-simapp
           ibc-go-v8-simapp
-          ibc-go-v8-channel-upgrade-simapp
           interchain-security
           migaloo
           neutron

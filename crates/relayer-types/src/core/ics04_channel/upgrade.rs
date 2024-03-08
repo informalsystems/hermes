@@ -1,17 +1,18 @@
+use ibc_proto::ibc::core::channel::v1::ErrorReceipt as RawErrorReceipt;
 use ibc_proto::ibc::core::channel::v1::Upgrade as RawUpgrade;
 use ibc_proto::Protobuf;
 
 use crate::core::ics04_channel::error::Error as ChannelError;
 use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics04_channel::timeout::UpgradeTimeout;
+use crate::core::ics04_channel::timeout::Timeout;
 use crate::core::ics04_channel::upgrade_fields::UpgradeFields;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Upgrade {
     pub fields: UpgradeFields,
     // timeout can be zero, see `TryFrom<RawUpgrade>` implementation
-    pub timeout: Option<UpgradeTimeout>,
-    pub latest_sequence_send: Sequence,
+    pub timeout: Option<Timeout>,
+    pub next_sequence_send: Sequence,
 }
 
 impl Protobuf<RawUpgrade> for Upgrade {}
@@ -26,14 +27,14 @@ impl TryFrom<RawUpgrade> for Upgrade {
             .try_into()?;
         let timeout = value
             .timeout
-            .filter(|tm| UpgradeTimeout::try_from(tm.clone()).is_ok())
-            .map(|tm| UpgradeTimeout::try_from(tm).unwrap());
-        let latest_sequence_send = value.next_sequence_send.into();
+            .filter(|tm| Timeout::try_from(tm.clone()).is_ok())
+            .map(|tm| Timeout::try_from(tm).unwrap());
+        let next_sequence_send = value.next_sequence_send.into();
 
         Ok(Self {
             fields,
             timeout,
-            latest_sequence_send,
+            next_sequence_send,
         })
     }
 }
@@ -44,7 +45,35 @@ impl From<Upgrade> for RawUpgrade {
         Self {
             fields: Some(value.fields.into()),
             timeout,
-            next_sequence_send: value.latest_sequence_send.into(),
+            next_sequence_send: value.next_sequence_send.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ErrorReceipt {
+    pub sequence: Sequence,
+    pub message: String,
+}
+
+impl Protobuf<RawErrorReceipt> for ErrorReceipt {}
+
+impl TryFrom<RawErrorReceipt> for ErrorReceipt {
+    type Error = ChannelError;
+
+    fn try_from(value: RawErrorReceipt) -> Result<Self, Self::Error> {
+        Ok(Self {
+            sequence: value.sequence.into(),
+            message: value.message,
+        })
+    }
+}
+
+impl From<ErrorReceipt> for RawErrorReceipt {
+    fn from(value: ErrorReceipt) -> Self {
+        Self {
+            sequence: value.sequence.into(),
+            message: value.message,
         }
     }
 }

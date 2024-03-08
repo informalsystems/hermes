@@ -36,6 +36,15 @@ impl Version {
         Self::new(val.to_string())
     }
 
+    pub fn app_version_with_fee(app_version: &str) -> Self {
+        let val = json::json!({
+            "fee_version": "ics29-1",
+            "app_version": app_version,
+        });
+
+        Self::new(val.to_string())
+    }
+
     pub fn empty() -> Self {
         Self::new("".to_string())
     }

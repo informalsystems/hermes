@@ -11,6 +11,7 @@ use ibc_proto::ibc::core::channel::v1::{
     IdentifiedChannel as RawIdentifiedChannel,
 };
 
+use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics04_channel::{error::Error, version::Version};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
@@ -69,7 +70,7 @@ impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
             version: value.channel_end.version.to_string(),
             port_id: value.port_id.to_string(),
             channel_id: value.channel_id.to_string(),
-            upgrade_sequence: value.channel_end.upgrade_sequence,
+            upgrade_sequence: value.channel_end.upgrade_sequence.into(),
         }
     }
 }
@@ -81,7 +82,7 @@ pub struct ChannelEnd {
     pub remote: Counterparty,
     pub connection_hops: Vec<ConnectionId>,
     pub version: Version,
-    pub upgrade_sequence: u64,
+    pub upgrade_sequence: Sequence,
 }
 
 impl Display for ChannelEnd {
@@ -102,7 +103,7 @@ impl Default for ChannelEnd {
             remote: Counterparty::default(),
             connection_hops: Vec::new(),
             version: Version::default(),
-            upgrade_sequence: 0,
+            upgrade_sequence: Sequence::from(0), // The value of 0 indicates the channel has never been upgraded
         }
     }
 }
@@ -143,7 +144,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             remote,
             connection_hops,
             version,
-            value.upgrade_sequence,
+            value.upgrade_sequence.into(),
         ))
     }
 }
@@ -160,7 +161,7 @@ impl From<ChannelEnd> for RawChannel {
                 .map(|v| v.as_str().to_string())
                 .collect(),
             version: value.version.to_string(),
-            upgrade_sequence: value.upgrade_sequence,
+            upgrade_sequence: value.upgrade_sequence.into(),
         }
     }
 }
@@ -173,7 +174,7 @@ impl ChannelEnd {
         remote: Counterparty,
         connection_hops: Vec<ConnectionId>,
         version: Version,
-        upgrade_sequence: u64,
+        upgrade_sequence: Sequence,
     ) -> Self {
         Self {
             state,
@@ -237,25 +238,36 @@ impl ChannelEnd {
 
     /// Helper function to compare the state of this end with another state.
     pub fn state_matches(&self, other: &State) -> bool {
-        self.state.eq(other)
+        self.state() == other
     }
 
     /// Helper function to compare the order of this end with another order.
     pub fn order_matches(&self, other: &Ordering) -> bool {
-        self.ordering.eq(other)
+        self.ordering() == other
     }
 
     #[allow(clippy::ptr_arg)]
     pub fn connection_hops_matches(&self, other: &Vec<ConnectionId>) -> bool {
-        self.connection_hops.eq(other)
+        self.connection_hops() == other
     }
 
     pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
-        self.counterparty().eq(other)
+        self.counterparty() == other
     }
 
     pub fn version_matches(&self, other: &Version) -> bool {
-        self.version().eq(other)
+        self.version() == other
+    }
+
+    /// Returns whether or not the channel with this state is
+    /// being upgraded.
+    pub fn is_upgrading(&self) -> bool {
+        use State::*;
+
+        matches!(
+            self.state,
+            Open(UpgradeState::Upgrading) | Flushing | Flushcomplete
+        )
     }
 }
 
@@ -397,7 +409,7 @@ pub enum UpgradeState {
 /// explicitly, this is an attempt to capture the lifecycle of a
 /// channel, beginning from the `Uninitialized` state, through the
 /// `Open` state, before finally being `Closed`.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Deserialize)]
 pub enum State {
     /// Default state
     Uninitialized,
@@ -419,6 +431,23 @@ pub enum State {
     Flushing,
     /// A channel has just completed flushing any in-flight packets.
     Flushcomplete,
+}
+
+impl Serialize for State {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Uninitialized => serializer.serialize_str("Uninitialized"),
+            Self::Init => serializer.serialize_str("Init"),
+            Self::TryOpen => serializer.serialize_str("TryOpen"),
+            Self::Open(_) => serializer.serialize_str("Open"),
+            Self::Closed => serializer.serialize_str("Closed"),
+            Self::Flushing => serializer.serialize_str("Flushing"),
+            Self::Flushcomplete => serializer.serialize_str("Flushcomplete"),
+        }
+    }
 }
 
 impl State {
@@ -494,21 +523,6 @@ impl State {
             _ => false,
         }
     }
-
-    /// Returns whether or not the channel with this state is
-    /// being upgraded.
-    pub fn is_upgrading(self, other: Self) -> bool {
-        use State::*;
-
-        match self {
-            Open(UpgradeState::NotUpgrading) => matches!(
-                other,
-                Open(UpgradeState::Upgrading) | Flushing | Flushcomplete
-            ),
-            Open(UpgradeState::Upgrading) | Flushing | Flushcomplete => true,
-            _ => false,
-        }
-    }
 }
 
 /// Provides a `to_string` method.
@@ -542,7 +556,7 @@ pub mod test_util {
             counterparty: Some(get_dummy_raw_counterparty()),
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
-            upgrade_sequence: 0,
+            upgrade_sequence: 0, // The value of 0 indicates the channel has never been upgraded
         }
     }
 }

@@ -1,1 +1,0 @@
-[[#BINARY hermes]][[#GLOBALOPTIONS]] tx chan-upgrade-init[[#OPTIONS]] --src-chain [[#SRC_CHAIN_ID]] --dst-chain [[#DST_CHAIN_ID]] --dst-port [[#DST_PORT_ID]] --dst-channel [[#DST_CHANNEL_ID]]
