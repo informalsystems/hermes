@@ -1,12 +1,12 @@
 //! Contains functions to generate a relayer config for a given chain
 
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::marker::Send;
-
 use futures::future::join_all;
 use http::Uri;
 use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+use std::fmt::Display;
+use std::marker::Send;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::{error, trace};
 
@@ -173,6 +173,7 @@ where
         extension_options: Vec::new(),
         compat_mode: None,
         clear_interval: None,
+        excluded_sequences: BTreeMap::new(),
     }))
 }
 

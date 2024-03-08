@@ -22,6 +22,8 @@ pub mod ics20_filter;
 pub mod memo;
 pub mod python;
 pub mod query_packet;
+#[cfg(not(feature = "celestia"))]
+pub mod sequence_filter;
 pub mod supervisor;
 pub mod tendermint;
 #[cfg(not(feature = "celestia"))]

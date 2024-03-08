@@ -1,5 +1,6 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use std::ops::Sub;
 use std::time::{Duration, Instant};
 
@@ -115,6 +116,7 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
 
     pub max_memo_size: Ics20FieldSizeLimit,
     pub max_receiver_size: Ics20FieldSizeLimit,
+    pub exclude_src_sequences: Vec<Sequence>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
@@ -163,6 +165,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             max_memo_size: link_parameters.max_memo_size,
             max_receiver_size: link_parameters.max_receiver_size,
+
+            exclude_src_sequences: link_parameters.exclude_src_sequences,
         })
     }
 
@@ -1156,6 +1160,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             return Ok(());
         }
 
+        // Retain only sequences which should not be filtered out
+        let sequences: Vec<Sequence> = sequences
+            .into_iter()
+            .filter(|sequence| !self.exclude_src_sequences.contains(sequence))
+            .collect();
+
         debug!(
             dst_chain = %self.dst_chain().id(),
             src_chain = %self.src_chain().id(),
@@ -1219,6 +1229,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if sequences.is_empty() {
             return Ok(());
         }
+
+        // Retain only sequences which should not be filtered out
+        let sequences: Vec<Sequence> = sequences
+            .into_iter()
+            .filter(|sequence| !self.exclude_src_sequences.contains(sequence))
+            .collect();
 
         debug!(
             dst_chain = %self.dst_chain().id(),
