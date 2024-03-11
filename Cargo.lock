@@ -214,7 +214,7 @@ dependencies = [
  "bitflags 1.3.2",
  "bytes",
  "futures-util",
- "http",
+ "http 0.2.12",
  "http-body",
  "hyper",
  "itoa",
@@ -244,7 +244,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "futures-util",
- "http",
+ "http 0.2.12",
  "http-body",
  "mime",
  "rustversion",
@@ -1259,7 +1259,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.12",
  "indexmap 2.2.1",
  "slab",
  "tokio",
@@ -1344,9 +1344,20 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.2.11"
+version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8947b1a6fad4393052c7ba1f4cd97bed3e953a95c79c92ad9b051a04611d9fbb"
+checksum = "601cbb57e577e2f5ef5be8e7b83f0f63994f25aa94d673e54a92d5c516d101f1"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
+name = "http"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21b9ddb458710bc376481b842f5da65cdf31522de232c1ca8146abce2a358258"
 dependencies = [
  "bytes",
  "fnv",
@@ -1360,7 +1371,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ceab25649e9960c0311ea418d17bee82c0dcec1bd053b5f9a66e265a693bed2"
 dependencies = [
  "bytes",
- "http",
+ "http 0.2.12",
  "pin-project-lite",
 ]
 
@@ -1403,7 +1414,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
+ "http 0.2.12",
  "http-body",
  "httparse",
  "httpdate",
@@ -1423,7 +1434,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
- "http",
+ "http 0.2.12",
  "hyper",
  "rustls",
  "tokio",
@@ -1449,7 +1460,7 @@ dependencies = [
  "async-trait",
  "flex-error",
  "futures",
- "http",
+ "http 1.1.0",
  "ibc-proto",
  "ibc-relayer-types",
  "itertools 0.10.5",
@@ -1466,7 +1477,7 @@ name = "ibc-integration-test"
 version = "0.27.1"
 dependencies = [
  "byte-unit",
- "http",
+ "http 1.1.0",
  "ibc-relayer",
  "ibc-relayer-types",
  "ibc-test-framework",
@@ -1522,7 +1533,7 @@ dependencies = [
  "generic-array",
  "hdpath",
  "hex",
- "http",
+ "http 1.1.0",
  "humantime",
  "humantime-serde",
  "ibc-proto",
@@ -1584,7 +1595,7 @@ dependencies = [
  "flex-error",
  "futures",
  "hdpath",
- "http",
+ "http 1.1.0",
  "humantime",
  "ibc-chain-registry",
  "ibc-relayer",
@@ -1684,7 +1695,7 @@ dependencies = [
  "flex-error",
  "hdpath",
  "hex",
- "http",
+ "http 1.1.0",
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-cli",
@@ -2530,7 +2541,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
+ "http 0.2.12",
  "http-body",
  "hyper",
  "hyper-rustls",
@@ -3654,7 +3665,7 @@ dependencies = [
  "base64",
  "bytes",
  "h2",
- "http",
+ "http 0.2.12",
  "http-body",
  "hyper",
  "hyper-timeout",
@@ -3822,7 +3833,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "data-encoding",
- "http",
+ "http 0.2.12",
  "httparse",
  "log",
  "rand",

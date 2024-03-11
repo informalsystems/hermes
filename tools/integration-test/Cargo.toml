@@ -17,7 +17,7 @@ ibc-relayer-types  = { path = "../../crates/relayer-types" }
 ibc-relayer        = { path = "../../crates/relayer" }
 ibc-test-framework = { path = "../test-framework" }
 
-http = "0.2.9"
+http = "1.1.0"
 serde_json = "1"
 time = "0.3"
 toml = "0.8"
