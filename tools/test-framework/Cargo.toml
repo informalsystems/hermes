@@ -39,6 +39,6 @@ crossbeam-channel = "0.5.11"
 semver = "1.0.21"
 flex-error = "0.4.4"
 prost = { version = "0.12" }
-tonic = { version = "0.10", features = ["tls", "tls-roots"] }
+tonic = { version = "0.11", features = ["tls", "tls-roots"] }
 hdpath = "0.6.3"
 once_cell = "1.19.0"
