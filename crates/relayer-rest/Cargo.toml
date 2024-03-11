@@ -24,5 +24,5 @@ axum              = "0.6"
 tokio             = "1.26"
 
 [dev-dependencies]
-reqwest    = { version = "0.11.16", features = ["json"], default-features = false }
+reqwest    = { version = "0.11.25", features = ["json"], default-features = false }
 toml       = "0.8.8"
