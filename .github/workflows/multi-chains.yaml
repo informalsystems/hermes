@@ -80,6 +80,9 @@ jobs:
           - package: wasmd
             command: wasmd
             account_prefix: wasm
+          - package: injective
+            command: injectived
+            account_prefix: inj
 
     steps:
       - uses: actions/checkout@v4

@@ -62,35 +62,37 @@ pub fn add_genesis_account(
     home_path: &str,
     wallet_address: &str,
     amounts: &[String],
+    extra_start_args: &[&str],
 ) -> Result<(), Error> {
     let amounts_str = itertools::join(amounts, ",");
+
+    let legacy_base_args = [
+        "--home",
+        home_path,
+        "add-genesis-account",
+        wallet_address,
+        &amounts_str,
+    ];
+    let mut legacy_args: Vec<&str> = legacy_base_args.to_vec();
+    legacy_args.extend(extra_start_args.iter());
+
+    let base_args = [
+        "--home",
+        home_path,
+        "genesis",
+        "add-genesis-account",
+        wallet_address,
+        &amounts_str,
+    ];
+    let mut args: Vec<&str> = base_args.to_vec();
+    args.extend(extra_start_args.iter());
+
     // Cosmos SDK v0.47.0 introduced the `genesis` subcommand, this match is required to
     // support pre and post SDK v0.47.0. https://github.com/cosmos/cosmos-sdk/pull/14149
-    match simple_exec(
-        chain_id,
-        command_path,
-        &[
-            "--home",
-            home_path,
-            "genesis",
-            "add-genesis-account",
-            wallet_address,
-            &amounts_str,
-        ],
-    ) {
+    match simple_exec(chain_id, command_path, &args) {
         Ok(_) => Ok(()),
         Err(_) => {
-            simple_exec(
-                chain_id,
-                command_path,
-                &[
-                    "--home",
-                    home_path,
-                    "add-genesis-account",
-                    wallet_address,
-                    &amounts_str,
-                ],
-            )?;
+            simple_exec(chain_id, command_path, &legacy_args)?;
             Ok(())
         }
     }
