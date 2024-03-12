@@ -5,8 +5,8 @@ use core::{
 };
 use std::thread;
 
+use abscissa_core::application::fatal_error;
 use abscissa_core::clap::Parser;
-use abscissa_core::{application::fatal_error, Runnable};
 use eyre::eyre;
 use itertools::Itertools;
 use tendermint_rpc::{client::CompatMode, Client, HttpClient};

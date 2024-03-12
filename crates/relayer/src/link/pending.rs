@@ -1,4 +1,3 @@
-use core::iter::Iterator;
 use core::time::Duration;
 use std::time::Instant;
 

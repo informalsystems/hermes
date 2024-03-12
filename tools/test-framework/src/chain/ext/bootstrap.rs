@@ -6,7 +6,6 @@ use std::fs;
 use std::path::PathBuf;
 use std::str;
 use std::time::Duration;
-use toml;
 use tracing::debug;
 
 use ibc_relayer::keyring::{Secp256k1KeyPair, SigningKeyPair};

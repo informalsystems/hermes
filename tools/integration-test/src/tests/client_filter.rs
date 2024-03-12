@@ -16,8 +16,6 @@
 //! is allowed through the filter. It then asserts that client workers were
 //! established as a result of the connection being allowed through.
 
-use std::time::Duration;
-
 use ibc_relayer::supervisor::client_state_filter::{FilterPolicy, Permission};
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 

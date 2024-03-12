@@ -468,7 +468,6 @@ mod tests {
     use ibc_proto::google::protobuf::Any;
     use ibc_proto::Protobuf;
     use ibc_relayer_types::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
-    use ibc_relayer_types::core::ics02_client::header::{decode_header, AnyHeader};
 
     #[test]
     fn extract_header() {

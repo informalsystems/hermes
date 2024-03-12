@@ -66,14 +66,14 @@ impl From<MsgRegisterInterchainAccount> for RawMsgRegisterInterchainAccount {
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, prost::Message)]
 pub struct LegacyRawMsgRegisterInterchainAccount {
     #[prost(string, tag = "1")]
-    pub owner: ::prost::alloc::string::String,
+    pub owner: String,
     #[prost(string, tag = "2")]
-    pub connection_id: ::prost::alloc::string::String,
+    pub connection_id: String,
     #[prost(string, tag = "3")]
-    pub version: ::prost::alloc::string::String,
+    pub version: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

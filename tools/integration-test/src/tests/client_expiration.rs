@@ -1,7 +1,4 @@
-use core::time::Duration;
-use std::thread::sleep;
-
-use ibc_relayer::config::{self, ChainConfig, Config, ModeConfig};
+use ibc_relayer::config::{self, ChainConfig, ModeConfig};
 use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
 use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
 
@@ -10,7 +7,6 @@ use ibc_test_framework::bootstrap::binary::channel::{
     bootstrap_channel_with_chains, bootstrap_channel_with_connection,
 };
 use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, init_channel, query_channel_end,

@@ -4,11 +4,9 @@
 
 #![allow(clippy::large_enum_variant)]
 #![deny(
-    // warnings,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
-    unused_qualifications,
     rust_2018_idioms
 )]
 #![forbid(unsafe_code)]
@@ -60,7 +58,7 @@ pub mod utils;
 mod serializers;
 
 /// Re-export of ICS 002 Height domain type
-pub type Height = crate::core::ics02_client::height::Height;
+pub type Height = core::ics02_client::height::Height;
 
 #[cfg(test)]
 mod test;

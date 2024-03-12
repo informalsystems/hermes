@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::convert::TryFrom;
 use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str::FromStr;
 

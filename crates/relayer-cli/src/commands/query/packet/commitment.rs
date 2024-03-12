@@ -1,10 +1,9 @@
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::requests::{IncludeProof, QueryHeight, QueryPacketCommitmentRequest};
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::{IncludeProof, QueryHeight, QueryPacketCommitmentRequest};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::Height;

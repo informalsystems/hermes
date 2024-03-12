@@ -3,16 +3,12 @@ use ibc_relayer::worker::client::spawn_refresh_client;
 
 use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
 use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
-use ibc_test_framework::chain::ext::transfer::ChainTransferMethodsExt;
-use ibc_test_framework::chain::tagged::TaggedChainDriverExt;
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{assert_eventually_channel_established, init_channel};
 use ibc_test_framework::relayer::connection::{
     assert_eventually_connection_established, init_connection,
 };
 use ibc_test_framework::types::binary::client::ClientIdPair;
-use ibc_test_framework::types::binary::connection::ConnectedConnection;
 use ibc_test_framework::types::tagged::mono::Tagged;
 
 use super::state::Packet;

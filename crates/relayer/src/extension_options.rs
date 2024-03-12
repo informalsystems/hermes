@@ -9,7 +9,7 @@ use crate::error::Error;
 #[derive(Clone, PartialEq, Eq, Message, Serialize, Deserialize)]
 pub struct ExtensionOptionDynamicFeeTx {
     #[prost(string, tag = "1")]
-    pub max_priority_price: ::prost::alloc::string::String,
+    pub max_priority_price: String,
 }
 
 impl ExtensionOptionDynamicFeeTx {
