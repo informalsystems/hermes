@@ -7,8 +7,6 @@ use itertools::Itertools;
 use moka::sync::Cache;
 use tracing::{debug, error, error_span, info, trace, warn};
 
-use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
-use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_proto::ibc::apps::fee::v1::{IdentifiedPacketFees, QueryIncentivizedPacketRequest};
 use ibc_proto::ibc::core::channel::v1::PacketId;
 use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
@@ -16,6 +14,8 @@ use ibc_relayer_types::applications::transfer::{Amount, Coin, RawCoin};
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
+use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
 use ibc_relayer_types::Height;
 
