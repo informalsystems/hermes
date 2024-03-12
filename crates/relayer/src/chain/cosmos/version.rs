@@ -23,17 +23,22 @@ use ibc_proto::cosmos::base::tendermint::v1beta1::{Module, VersionInfo};
 /// },
 /// ```
 const SDK_MODULE_NAME: &str = "github.com/cosmos/cosmos-sdk";
-const IBC_GO_MODULE_NAME: &str = "github.com/cosmos/ibc-go";
+const IBC_GO_MODULE_PREFIX: &str = "github.com/cosmos/ibc-go/v";
 const TENDERMINT_MODULE_NAME: &str = "github.com/tendermint/tendermint";
 const COMET_MODULE_NAME: &str = "github.com/cometbft/cometbft";
+
+#[derive(Debug)]
+pub enum ConsensusVersion {
+    Tendermint(semver::Version),
+    Comet(semver::Version),
+}
 
 /// Captures the version(s) specification of different modules of a network.
 #[derive(Debug)]
 pub struct Specs {
     pub cosmos_sdk: Option<semver::Version>,
     pub ibc_go: Option<semver::Version>,
-    pub tendermint: Option<semver::Version>,
-    pub comet: Option<semver::Version>,
+    pub consensus: Option<ConsensusVersion>,
 }
 
 impl Display for Specs {
@@ -50,22 +55,16 @@ impl Display for Specs {
             .map(|v| v.to_string())
             .unwrap_or_else(|| "UNKNOWN".to_string());
 
-        let tendermint = self
-            .tendermint
-            .as_ref()
-            .map(|v| v.to_string())
-            .unwrap_or_else(|| "UNKNOWN".to_string());
-
-        let comet = self
-            .comet
-            .as_ref()
-            .map(|v| v.to_string())
-            .unwrap_or_else(|| "UNKNOWN".to_string());
+        let consensus = match self.consensus {
+            Some(ConsensusVersion::Tendermint(ref v)) => format!("Tendermint {v}"),
+            Some(ConsensusVersion::Comet(ref v)) => format!("CometBFT {v}"),
+            None => "Tendermint: UNKNOWN, CometBFT: UNKNOWN".to_string(),
+        };
 
         write!(
             f,
-            "Cosmos SDK {}, IBC-Go {}, Tendermint {}, CometBFT {}",
-            cosmos_sdk, ibc_go, tendermint, comet
+            "Cosmos SDK {}, IBC-Go {}, {}",
+            cosmos_sdk, ibc_go, consensus
         )
     }
 }
@@ -78,7 +77,8 @@ define_error! {
                 comet: String,
                 app: AppInfo,
             }
-            |e| { format!("failed to find the Tendermint ('{}') or CometBFT ('{}') dependency for application {}", e.tendermint, e.comet, e.app) },
+            |e| { format!("failed to find the Tendermint ('{}') or CometBFT ('{}') dependency for application {}",
+                e.tendermint, e.comet, e.app) },
 
         VersionParsingFailed
             {
@@ -102,8 +102,14 @@ impl TryFrom<VersionInfo> for Specs {
         let tendermint_version = parse_tendermint_version(&raw_version)?;
         let comet_version = parse_comet_version(&raw_version)?;
 
+        let consensus_version = match (tendermint_version, comet_version) {
+            (_, Some(comet)) => Some(ConsensusVersion::Comet(comet)),
+            (Some(tendermint), _) => Some(ConsensusVersion::Tendermint(tendermint)),
+            _ => None,
+        };
+
         // Ensure that either Tendermint or CometBFT are being used.
-        if tendermint_version.is_none() && comet_version.is_none() {
+        if consensus_version.is_none() {
             return Err(Error::consensus_module_not_found(
                 TENDERMINT_MODULE_NAME.to_string(),
                 COMET_MODULE_NAME.to_string(),
