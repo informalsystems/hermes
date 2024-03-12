@@ -81,14 +81,14 @@ impl BinaryChannelTest for AutoForwardRelayerTest {
             &denom_a,
         )?;
 
-        info!("Will assert user b received the transfered token");
+        info!("Will assert user b received the transferred token");
 
         chain_driver_b.assert_eventual_wallet_amount(
             &user_b.address(),
             &denom_b.with_amount(send_amount).as_ref(),
         )?;
 
-        info!("Will assert user a transfered the sent amount, the recv fee and ack fee");
+        info!("Will assert user a transferred the sent amount, the recv fee and ack fee");
 
         chain_driver_a.assert_eventual_wallet_amount(
             &user_a.address(),
