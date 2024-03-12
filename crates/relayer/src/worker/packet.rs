@@ -1,9 +1,3 @@
-#[cfg(feature = "telemetry")]
-use {
-    ibc_relayer_types::core::ics24_host::identifier::ChannelId,
-    ibc_relayer_types::core::ics24_host::identifier::PortId,
-};
-
 use core::time::Duration;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
@@ -20,6 +14,8 @@ use ibc_relayer_types::applications::transfer::{Amount, Coin, RawCoin};
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
+use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
 use ibc_relayer_types::Height;
 
