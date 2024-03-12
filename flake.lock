@@ -138,7 +138,6 @@
         "ibc-go-v5-src": "ibc-go-v5-src",
         "ibc-go-v6-src": "ibc-go-v6-src",
         "ibc-go-v7-src": "ibc-go-v7-src",
-        "ibc-go-v8-channel-upgrade-src": "ibc-go-v8-channel-upgrade-src",
         "ibc-go-v8-src": "ibc-go-v8-src",
         "ibc-rs-src": "ibc-rs-src",
         "ica-src": "ica-src",
@@ -178,11 +177,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1705315275,
-        "narHash": "sha256-XnjvjdTdXkwWFWx1nRflbsDyazSBV09QOmr/aiAuZ1M=",
+        "lastModified": 1707228682,
+        "narHash": "sha256-USzPme0JWq2frYdOd6oJGHqveP/jaGiCMZVozcMiNd8=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "04ef5159b4262b7dd445544838468a84a1d987cf",
+        "rev": "0be6eb961b3ca6583689dabefa0ff108d1cefd55",
         "type": "github"
       },
       "original": {
@@ -739,36 +738,19 @@
         "type": "github"
       }
     },
-    "ibc-go-v8-channel-upgrade-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1703189903,
-        "narHash": "sha256-vxzv+b40TKqCIN4FAkeIu+jmlPP5XRLR+P0uEIjr7AE=",
-        "owner": "cosmos",
-        "repo": "ibc-go",
-        "rev": "7a89e5d5b5ebb7643ce3992c34008c35373ecf34",
-        "type": "github"
-      },
-      "original": {
-        "owner": "cosmos",
-        "ref": "04-channel-upgrades-rc.0",
-        "repo": "ibc-go",
-        "type": "github"
-      }
-    },
     "ibc-go-v8-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1699602904,
-        "narHash": "sha256-BcP3y874QviVsV+04p9CioolyvmWH82ORbb5EB2GyRI=",
+        "lastModified": 1706691043,
+        "narHash": "sha256-eS+X4bT7vp1+LyIPd0mOnAJahAONr+Syton3v3rSkGI=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "2551dea41cd3c512845007ca895c8402afa9b79f",
+        "rev": "7e01c9149149b9d4b1d871e58eb88a22f15bdb3c",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "v8.0.0",
+        "ref": "v8.1.0",
         "repo": "ibc-go",
         "type": "github"
       }
@@ -993,11 +975,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1701040486,
-        "narHash": "sha256-vawYwoHA5CwvjfqaT3A5CT9V36Eq43gxdwpux32Qkjw=",
+        "lastModified": 1706683685,
+        "narHash": "sha256-FtPPshEpxH/ewBOsdKBNhlsL2MLEFv1hEnQ19f/bFsQ=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "45827faa2132b8eade424f6bdd48d8828754341a",
+        "rev": "5ad9903c16126a7d949101687af0aa589b1d7d3d",
         "type": "github"
       },
       "original": {
@@ -1041,11 +1023,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1705505490,
-        "narHash": "sha256-HS+Zg50Zm1Ehfat/OgGS2YJqU7/4ohsQhK+ClwcKmVA=",
+        "lastModified": 1707171055,
+        "narHash": "sha256-7ZiKRdhrScsDfhDkGy8yJWAT6BfHqa8PYMX04roU03k=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "f36047a5a4b5631f75210859abac7f97ba1ba7a7",
+        "rev": "4b1aab22192b787355733c9495d47f4c66af084c",
         "type": "github"
       },
       "original": {

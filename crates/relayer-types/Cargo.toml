@@ -40,6 +40,7 @@ itertools = { version = "0.10.3" }
 primitive-types = { version = "0.12.1", default-features = false, features = ["serde_no_std"] }
 num-rational = "0.4.1"
 regex = "1"
+tracing = "0.1.36"
 
 [dependencies.tendermint]
 version = "0.34.0"

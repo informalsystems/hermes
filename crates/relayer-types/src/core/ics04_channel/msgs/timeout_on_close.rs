@@ -18,7 +18,7 @@ pub struct MsgTimeoutOnClose {
     pub next_sequence_recv: Sequence,
     pub proofs: Proofs,
     pub signer: Signer,
-    pub counterparty_upgrade_sequence: u64,
+    pub counterparty_upgrade_sequence: Sequence,
 }
 
 impl MsgTimeoutOnClose {
@@ -27,13 +27,14 @@ impl MsgTimeoutOnClose {
         next_sequence_recv: Sequence,
         proofs: Proofs,
         signer: Signer,
+        counterparty_upgrade_sequence: Sequence,
     ) -> MsgTimeoutOnClose {
         Self {
             packet,
             next_sequence_recv,
             proofs,
             signer,
-            counterparty_upgrade_sequence: 0,
+            counterparty_upgrade_sequence,
         }
     }
 }
@@ -88,7 +89,7 @@ impl TryFrom<RawMsgTimeoutOnClose> for MsgTimeoutOnClose {
             next_sequence_recv: Sequence::from(raw_msg.next_sequence_recv),
             signer: raw_msg.signer.parse().map_err(Error::signer)?,
             proofs,
-            counterparty_upgrade_sequence: raw_msg.counterparty_upgrade_sequence,
+            counterparty_upgrade_sequence: raw_msg.counterparty_upgrade_sequence.into(),
         })
     }
 }
@@ -105,7 +106,7 @@ impl From<MsgTimeoutOnClose> for RawMsgTimeoutOnClose {
             proof_height: Some(domain_msg.proofs.height().into()),
             next_sequence_recv: domain_msg.next_sequence_recv.into(),
             signer: domain_msg.signer.to_string(),
-            counterparty_upgrade_sequence: domain_msg.counterparty_upgrade_sequence,
+            counterparty_upgrade_sequence: domain_msg.counterparty_upgrade_sequence.into(),
         }
     }
 }

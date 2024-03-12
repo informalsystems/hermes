@@ -44,6 +44,24 @@ pub enum TxCmd {
     /// Confirm the closing of a channel (ChannelCloseConfirm)
     ChanCloseConfirm(channel::TxChanCloseConfirmCmd),
 
+    /// Relay the channel upgrade attempt (ChannelUpgradeTry)
+    ChanUpgradeTry(channel::TxChanUpgradeTryCmd),
+
+    /// Relay the channel upgrade attempt (ChannelUpgradeAck)
+    ChanUpgradeAck(channel::TxChanUpgradeAckCmd),
+
+    /// Relay the channel upgrade attempt (ChannelUpgradeConfirm)
+    ChanUpgradeConfirm(channel::TxChanUpgradeConfirmCmd),
+
+    /// Relay the channel upgrade attempt (ChannelUpgradeOpen)
+    ChanUpgradeOpen(channel::TxChanUpgradeOpenCmd),
+
+    /// Relay the channel upgrade cancellation (ChannelUpgradeCancel)
+    ChanUpgradeCancel(channel::TxChanUpgradeCancelCmd),
+
+    /// Relay the channel upgrade timeout (ChannelUpgradeTimeout)
+    ChanUpgradeTimeout(channel::TxChanUpgradeTimeoutCmd),
+
     /// Send a fungible token transfer test transaction (ICS20 MsgTransfer)
     FtTransfer(transfer::TxIcs20MsgTransferCmd),
 

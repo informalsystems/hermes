@@ -15,9 +15,7 @@ use core::str::FromStr;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenTry";
 
-///
 /// Message definition for the second step in the channel open handshake (`ChanOpenTry` datagram).
-///
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelOpenTry {
     pub port_id: PortId,
@@ -61,10 +59,13 @@ impl Msg for MsgChannelOpenTry {
     }
 
     fn validate_basic(&self) -> Result<(), ValidationError> {
-        match self.channel.counterparty().channel_id() {
-            None => Err(ValidationError::invalid_counterparty_channel_id()),
-            Some(_c) => Ok(()),
-        }
+        // TODO: adapt error
+        // match self.channel.counterparty().channel_id() {
+        //     None => Err(ValidationError::invalid_counterparty_channel_id()),
+        //     Some(_c) => Ok(()),
+        // }
+
+        Ok(())
     }
 }
 

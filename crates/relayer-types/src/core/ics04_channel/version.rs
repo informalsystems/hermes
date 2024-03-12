@@ -15,7 +15,7 @@ use crate::applications::transfer;
 /// This field is opaque to the core IBC protocol.
 /// No explicit validation is necessary, and the
 /// spec (v1) currently allows empty strings.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Eq, Deserialize, Serialize)]
 pub struct Version(pub String);
 
 impl Version {
@@ -36,6 +36,15 @@ impl Version {
         Self::new(val.to_string())
     }
 
+    pub fn app_version_with_fee(app_version: &str) -> Self {
+        let val = json::json!({
+            "fee_version": "ics29-1",
+            "app_version": app_version,
+        });
+
+        Self::new(val.to_string())
+    }
+
     pub fn empty() -> Self {
         Self::new("".to_string())
     }
@@ -51,6 +60,28 @@ impl Version {
                 Some(fee_version == "ics29-1")
             })
             .unwrap_or(false)
+    }
+}
+
+impl PartialEq for Version {
+    fn eq(&self, other: &Self) -> bool {
+        if self.0 != other.0 {
+            // If the Version strings don't match, check that this isn't due to the json
+            // fields being in a different order
+            let parsed_version = match serde_json::from_str::<json::Value>(&self.0) {
+                Ok(value) => value,
+                Err(_) => return false,
+            };
+            let parsed_other = match serde_json::from_str::<json::Value>(&other.to_string()) {
+                Ok(value) => value,
+                Err(_) => return false,
+            };
+
+            if parsed_version != parsed_other {
+                return false;
+            }
+        }
+        true
     }
 }
 

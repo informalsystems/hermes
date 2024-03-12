@@ -109,7 +109,7 @@ impl BinaryConnectionTest for AsyncIcqTest {
             "1",
         )?;
 
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string(), "1")?;
 
         info!("Assert that the update oracle proposal is eventually passed");
 

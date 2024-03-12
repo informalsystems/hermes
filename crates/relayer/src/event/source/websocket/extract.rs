@@ -235,6 +235,11 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
             | IbcEvent::OpenConfirmChannel(_)
             | IbcEvent::CloseInitChannel(_)
             | IbcEvent::CloseConfirmChannel(_)
+            | IbcEvent::UpgradeInitChannel(_)
+            | IbcEvent::UpgradeTryChannel(_)
+            | IbcEvent::UpgradeAckChannel(_)
+            | IbcEvent::UpgradeConfirmChannel(_)
+            | IbcEvent::UpgradeOpenChannel(_)
             | IbcEvent::SendPacket(_)
             | IbcEvent::ReceivePacket(_)
             | IbcEvent::WriteAcknowledgement(_)
@@ -312,6 +317,11 @@ fn extract_block_events(
     append_events::<ChannelEvents::OpenConfirm>(
         &mut events,
         extract_events(height, block_events, "channel_open_confirm", "channel_id"),
+        height,
+    );
+    append_events::<ChannelEvents::UpgradeInit>(
+        &mut events,
+        extract_events(height, block_events, "channel_upgrade_init", "channel_id"),
         height,
     );
     append_events::<ChannelEvents::SendPacket>(

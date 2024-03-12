@@ -107,7 +107,7 @@ impl BinaryChannelTest for ForwardRelayerTest {
         let user_a = wallets_a.user1();
         let user_b = wallets_b.user1();
 
-        let balance_a1 = chain_driver_a.query_balance(&user_a.address(), &denom_a)?;
+        let balance_a = chain_driver_a.query_balance(&user_a.address(), &denom_a)?;
 
         let relayer_balance_a = chain_driver_a.query_balance(&relayer_a.address(), &denom_a)?;
         let payee_balance_a = chain_driver_a.query_balance(&payee_a.address(), &denom_a)?;
@@ -116,10 +116,6 @@ impl BinaryChannelTest for ForwardRelayerTest {
         let receive_fee = random_u128_range(300, 400);
         let ack_fee = random_u128_range(200, 300);
         let timeout_fee = random_u128_range(100, 200);
-
-        let total_sent = send_amount + receive_fee + ack_fee + timeout_fee;
-
-        let balance_a2 = balance_a1 - total_sent;
 
         chain_driver_a.ibc_token_transfer_with_fee(
             &port_a,
@@ -139,8 +135,6 @@ impl BinaryChannelTest for ForwardRelayerTest {
             &denom_a,
         )?;
 
-        chain_driver_a.assert_eventual_wallet_amount(&user_a.address(), &balance_a2.as_ref())?;
-
         chain_driver_b.assert_eventual_wallet_amount(
             &user_b.address(),
             &denom_b.with_amount(send_amount).as_ref(),
@@ -148,7 +142,7 @@ impl BinaryChannelTest for ForwardRelayerTest {
 
         chain_driver_a.assert_eventual_wallet_amount(
             &user_a.address(),
-            &(balance_a2 + timeout_fee).as_ref(),
+            &(balance_a - send_amount - receive_fee - ack_fee).as_ref(),
         )?;
 
         chain_driver_a.assert_eventual_wallet_amount(

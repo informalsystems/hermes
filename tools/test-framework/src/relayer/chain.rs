@@ -21,7 +21,9 @@
 */
 
 use crossbeam_channel as channel;
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer::chain::cosmos::version::Specs;
+use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::{
@@ -434,5 +436,21 @@ where
 
     fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
         self.value().query_consumer_chains()
+    }
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
+        self.value().query_upgrade(request, height)
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        self.value().query_upgrade_error(request, height)
     }
 }
