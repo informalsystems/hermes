@@ -22,7 +22,7 @@ prometheus               = "0.13.2"
 moka                     = { version = "0.12.5", features = ["sync"] }
 dashmap                  = "5.4.0"
 serde_json               = "1.0.111"
-serde                    = "1.0.195"
+serde                    = "1.0.197"
 axum                     = "0.6.18"
 tokio                    = "1.26.0"
 tracing                  = "0.1.36"
