@@ -77,6 +77,11 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: Install Protoc
+        uses: heliaxdev/setup-protoc@v2
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Use Rust cache
         uses: Swatinem/rust-cache@v2
       - name: Build Hermes
@@ -128,6 +133,11 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: Install Protoc
+        uses: heliaxdev/setup-protoc@v2
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Use Rust cache
         uses: Swatinem/rust-cache@v2
       - name: Build Hermes
@@ -179,6 +189,11 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: Install Protoc
+        uses: heliaxdev/setup-protoc@v2
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Use Rust cache
         uses: Swatinem/rust-cache@v2
       - name: Build Hermes
@@ -231,6 +246,11 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: Install Protoc
+        uses: heliaxdev/setup-protoc@v2
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Use Rust cache
         uses: Swatinem/rust-cache@v2
       - name: Build Hermes

@@ -30,7 +30,11 @@ jobs:
         with:
           toolchain: nightly-2024-03-03
           override: true
-
+      - name: Install Protoc
+        uses: heliaxdev/setup-protoc@v2
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build API documentation
         uses: actions-rs/cargo@v1
         env:

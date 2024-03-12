@@ -310,7 +310,7 @@ impl Config {
             }
 
             match chain_config {
-                ChainConfig::CosmosSdk(cosmos_config) => {
+                ChainConfig::CosmosSdk(cosmos_config) | ChainConfig::Namada(cosmos_config) => {
                     cosmos_config
                         .validate()
                         .map_err(Into::<Diagnostic<Error>>::into)?;
@@ -635,36 +635,43 @@ pub enum EventSourceMode {
 #[serde(tag = "type")]
 pub enum ChainConfig {
     CosmosSdk(CosmosSdkConfig),
+    // Reuse CosmosSdkConfig for tendermint light clients
+    Namada(CosmosSdkConfig),
 }
 
 impl ChainConfig {
     pub fn id(&self) -> &ChainId {
         match self {
             Self::CosmosSdk(config) => &config.id,
+            Self::Namada(config) => &config.id,
         }
     }
 
     pub fn packet_filter(&self) -> &PacketFilter {
         match self {
             Self::CosmosSdk(config) => &config.packet_filter,
+            Self::Namada(config) => &config.packet_filter,
         }
     }
 
     pub fn max_block_time(&self) -> Duration {
         match self {
             Self::CosmosSdk(config) => config.max_block_time,
+            Self::Namada(config) => config.max_block_time,
         }
     }
 
     pub fn key_name(&self) -> &String {
         match self {
             Self::CosmosSdk(config) => &config.key_name,
+            Self::Namada(config) => &config.key_name,
         }
     }
 
     pub fn set_key_name(&mut self, key_name: String) {
         match self {
             Self::CosmosSdk(config) => config.key_name = key_name,
+            Self::Namada(config) => config.key_name = key_name,
         }
     }
 
@@ -683,6 +690,15 @@ impl ChainConfig {
                     .map(|(key_name, keys)| (key_name, keys.into()))
                     .collect()
             }
+            ChainConfig::Namada(config) => {
+                let keyring =
+                    KeyRing::new_namada(Store::Test, &config.id, &config.key_store_folder)?;
+                keyring
+                    .keys()?
+                    .into_iter()
+                    .map(|(key_name, keys)| (key_name, keys.into()))
+                    .collect()
+            }
         };
 
         Ok(keys)
@@ -690,19 +706,21 @@ impl ChainConfig {
 
     pub fn clear_interval(&self) -> Option<u64> {
         match self {
-            Self::CosmosSdk(config) => config.clear_interval,
+            Self::CosmosSdk(config) | Self::Namada(config) => config.clear_interval,
         }
     }
 
     pub fn query_packets_chunk_size(&self) -> usize {
         match self {
-            Self::CosmosSdk(config) => config.query_packets_chunk_size,
+            Self::CosmosSdk(config) | Self::Namada(config) => config.query_packets_chunk_size,
         }
     }
 
     pub fn set_query_packets_chunk_size(&mut self, query_packets_chunk_size: usize) {
         match self {
-            Self::CosmosSdk(config) => config.query_packets_chunk_size = query_packets_chunk_size,
+            Self::CosmosSdk(config) | Self::Namada(config) => {
+                config.query_packets_chunk_size = query_packets_chunk_size
+            }
         }
     }
 
@@ -899,6 +917,9 @@ mod tests {
         match config.chains[0] {
             super::ChainConfig::CosmosSdk(_) => {
                 // all good
+            }
+            super::ChainConfig::Namada(_) => {
+                panic!("Default chain is expected to be CosmosSDK not Namada")
             }
         }
     }

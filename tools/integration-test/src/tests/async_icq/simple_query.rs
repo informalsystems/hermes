@@ -142,7 +142,7 @@ fn assert_eventual_async_icq_success<ChainA: ChainHandle, ChainB: ChainHandle>(
     relayer: &RelayerDriver,
 ) -> Result<(), Error> {
     let rpc_addr = match relayer.config.chains.first().unwrap() {
-        ChainConfig::CosmosSdk(c) => c.rpc_addr.clone(),
+        ChainConfig::CosmosSdk(c) | ChainConfig::Namada(c) => c.rpc_addr.clone(),
     };
 
     let mut rpc_client = HttpClient::new(rpc_addr).unwrap();
