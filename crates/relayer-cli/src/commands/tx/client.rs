@@ -7,6 +7,9 @@ use std::thread;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+use cometbft::block::Height as BlockHeight;
+use cometbft_light_client_verifier::types::TrustThreshold;
+use cometbft_rpc::Url;
 use ibc_relayer::config::Config;
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
@@ -20,9 +23,6 @@ use ibc_relayer::{
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height;
-use tendermint::block::Height as BlockHeight;
-use tendermint_light_client_verifier::types::TrustThreshold;
-use tendermint_rpc::Url;
 use tracing::debug;
 
 use crate::application::app_config;
@@ -616,9 +616,9 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
+    use cometbft_light_client_verifier::types::TrustThreshold;
     use humantime::Duration;
     use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-    use tendermint_light_client_verifier::types::TrustThreshold;
 
     #[test]
     fn test_parse_trust_threshold() {

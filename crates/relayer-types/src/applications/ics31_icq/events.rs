@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
+use cometbft::{abci, block::Height};
 use serde::{Deserialize, Serialize};
-use tendermint::{abci, block::Height};
 
 use crate::core::ics24_host::identifier::{ChainId, ConnectionId};
 use crate::events::IbcEvent;

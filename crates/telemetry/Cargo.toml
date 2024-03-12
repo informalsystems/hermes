@@ -27,6 +27,7 @@ axum                     = "0.6.18"
 tokio                    = "1.26.0"
 tracing                  = "0.1.36"
 
-[dependencies.tendermint]
-version = "0.34.0"
+[dependencies.cometbft]
+version = "0.1.0-alpha.2"
 default-features = false
+features = ["clock"]

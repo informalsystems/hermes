@@ -1,8 +1,8 @@
+use cometbft::merkle::proof::ProofOps as CometBFTProofOps;
+use cometbft_proto::crypto::v1::{ProofOp, ProofOps};
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::stride::interchainquery::v1::MsgSubmitQueryResponse;
 use prost::Message;
-use tendermint::merkle::proof::ProofOps as TendermintProofOps;
-use tendermint_proto::crypto::{ProofOp, ProofOps};
 
 use crate::applications::ics31_icq::error::Error;
 use crate::signer::Signer;
@@ -15,10 +15,10 @@ pub struct CrossChainQueryResponse {
     pub query_id: String,
     pub result: Vec<u8>,
     pub height: i64,
-    pub proof: TendermintProofOps,
+    pub proof: CometBFTProofOps,
 }
 
-fn into_proof_ops(merkle_proof: TendermintProofOps) -> ProofOps {
+fn into_proof_ops(merkle_proof: CometBFTProofOps) -> ProofOps {
     ProofOps {
         ops: merkle_proof
             .ops
@@ -38,7 +38,7 @@ impl CrossChainQueryResponse {
         query_id: String,
         result: Vec<u8>,
         height: i64,
-        proof: TendermintProofOps,
+        proof: CometBFTProofOps,
     ) -> Self {
         Self {
             chain_id,

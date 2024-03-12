@@ -14,7 +14,7 @@ use crate::timestamp::Timestamp;
 /// `ErasedPartialEqConsensusState` for their type.
 pub trait ConsensusState: Clone + Debug + Send + Sync // Any: From<Self>,
 {
-    /// Type of client associated with this consensus state (eg. Tendermint)
+    /// Type of client associated with this consensus state (eg. Tendermint client, as implemented in CometBFT)
     fn client_type(&self) -> ClientType;
 
     /// Commitment root of the consensus state, which is used for key-value pair verification.

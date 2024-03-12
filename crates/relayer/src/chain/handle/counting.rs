@@ -5,6 +5,7 @@ use std::sync::{Arc, RwLock, RwLockReadGuard};
 use crossbeam_channel as channel;
 use tracing::{debug, Span};
 
+use cometbft_rpc as rpc;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
@@ -126,7 +127,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn send_messages_and_wait_check_tx(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
+    ) -> Result<Vec<rpc::endpoint::broadcast::tx_sync::Response>, Error> {
         self.inc_metric("send_messages_and_wait_check_tx");
         self.inner().send_messages_and_wait_check_tx(tracked_msgs)
     }

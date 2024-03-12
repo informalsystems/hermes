@@ -1,8 +1,8 @@
+use cometbft_rpc::endpoint::broadcast::tx_sync::Response;
+use cometbft_rpc::{Client, HttpClient, Url};
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::events::IbcEvent;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::{Client, HttpClient, Url};
 
 use crate::chain::cosmos::encode::sign_and_encode_tx;
 use crate::chain::cosmos::estimate::estimate_tx_fees;

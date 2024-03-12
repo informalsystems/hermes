@@ -1,7 +1,7 @@
+use cometbft_rpc::Url;
 use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx};
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use tendermint_rpc::Url;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, span, warn, Level};
 

@@ -1,9 +1,9 @@
-//! Types for the IBC events emitted from Tendermint Websocket by the client module.
+//! Types for the IBC events emitted from CometBFT Websocket by the client module.
 
+use cometbft::abci;
+use cometbft_proto::Protobuf;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
-use tendermint::abci;
-use tendermint_proto::Protobuf;
 
 use super::header::AnyHeader;
 use crate::core::ics02_client::client_type::ClientType;

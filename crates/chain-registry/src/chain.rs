@@ -93,7 +93,7 @@ pub struct Codebase {
     pub compatible_versions: Vec<String>,
     pub binaries: Binaries,
     pub cosmos_sdk_version: String,
-    pub tendermint_version: String,
+    pub cometbft_version: String,
     pub cosmwasm_version: String,
     pub cosmwasm_enabled: bool,
 }
@@ -233,7 +233,7 @@ mod tests {
                     "windows/amd64": "test"
                 },
                 "cosmos_sdk_version": "0.45",
-                "tendermint_version": "0.34",
+                "cometbft_version": "0.34",
                 "cosmwasm_version": "0.24",
                 "cosmwasm_enabled": true
             },
@@ -301,7 +301,7 @@ mod tests {
         assert_eq!(chain_data.codebase.binaries.darwin_amd64, "test");
         assert_eq!(chain_data.codebase.binaries.windows_amd64, "test");
         assert_eq!(chain_data.codebase.cosmos_sdk_version, "0.45");
-        assert_eq!(chain_data.codebase.tendermint_version, "0.34");
+        assert_eq!(chain_data.codebase.cometbft_version, "0.34");
         assert_eq!(chain_data.codebase.cosmwasm_version, "0.24");
         assert_eq!(chain_data.codebase.cosmwasm_enabled, true);
         assert_eq!(chain_data.peers.seeds[0].id, "test");

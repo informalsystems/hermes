@@ -29,9 +29,9 @@ use ibc_relayer_types::core::ics24_host::identifier::{
 use ibc_relayer_types::events::WithBlockDataType;
 use ibc_relayer_types::Height;
 
+use cometbft::block::Height as TMBlockHeight;
+use cometbft::Hash as TxHash;
 use serde::{Deserialize, Serialize};
-use tendermint::block::Height as TMBlockHeight;
-use tendermint::Hash as TxHash;
 use tonic::metadata::AsciiMetadataValue;
 
 /// Type to specify a height in a query. Specifically, this caters to the use

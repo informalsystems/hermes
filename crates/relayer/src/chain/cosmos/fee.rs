@@ -1,7 +1,7 @@
+use cometbft_rpc::HttpClient;
 use ibc_relayer_types::applications::ics29_fee::msgs::register_payee::build_register_counterparty_payee_message;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer_types::signer::Signer;
-use tendermint_rpc::HttpClient;
 
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::fee::query_counterparty_payee;

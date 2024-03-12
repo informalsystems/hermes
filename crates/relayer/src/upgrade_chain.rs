@@ -6,7 +6,7 @@ use std::ops::Add;
 use bytes::BufMut;
 use flex_error::define_error;
 
-use tendermint::Hash as TxHash;
+use cometbft::Hash as TxHash;
 
 use ibc_proto::cosmos::gov::v1::MsgSubmitProposal;
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal as LegacyMsgSubmitProposal;
@@ -296,6 +296,7 @@ fn build_upgrade_proposal(
         metadata: "".to_string(),
         title: "proposal 0".to_string(),
         summary: "upgrade the chain software and unbonding period".to_string(),
+        expedited: false,
     };
 
     let mut buf_msg = Vec::new();

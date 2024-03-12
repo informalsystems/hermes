@@ -1,4 +1,5 @@
 use bech32::{ToBase32, Variant};
+use cometbft::account::Id as AccountId;
 use core::str::FromStr;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
@@ -7,7 +8,6 @@ use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::signer::Signer;
 use prost::Message;
-use tendermint::account::Id as AccountId;
 
 use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
 use crate::chain::cosmos::types::config::TxConfig;
@@ -185,6 +185,7 @@ pub fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, E
 }
 
 fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, Vec<u8>), Error> {
+    #[allow(deprecated)]
     let auth_info = AuthInfo {
         signer_infos: vec![signer_info],
         fee: Some(fee),

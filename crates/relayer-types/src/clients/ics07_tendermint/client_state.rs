@@ -9,7 +9,7 @@ use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientState;
 use ibc_proto::Protobuf;
 
-use tendermint_light_client_verifier::options::Options;
+use cometbft_light_client_verifier::options::Options;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header as TmHeader;
@@ -363,8 +363,8 @@ mod tests {
     use core::time::Duration;
     use test_log::test;
 
+    use cometbft_rpc::endpoint::abci_query::AbciQuery;
     use ibc_proto::ics23::ProofSpec as Ics23ProofSpec;
-    use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -665,7 +665,7 @@ mod tests {
 pub mod test_util {
     use core::time::Duration;
 
-    use tendermint::block::Header;
+    use cometbft::block::Header;
 
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::core::ics02_client::height::Height;

@@ -1,6 +1,6 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 
-use tendermint_rpc::endpoint::broadcast::tx_sync;
+use cometbft_rpc::endpoint::broadcast::tx_sync;
 use tracing::info;
 
 use ibc_relayer_types::events::IbcEvent;

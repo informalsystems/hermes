@@ -1,7 +1,7 @@
 use tracing::warn;
 
-use tendermint::Version;
-use tendermint_rpc::client::CompatMode as TmCompatMode;
+use cometbft::Version;
+use cometbft_rpc::client::CompatMode as TmCompatMode;
 
 use crate::config::compat_mode::CompatMode;
 use crate::error::Error;

@@ -2,6 +2,8 @@
    Type definition for a single running full node.
 */
 
+use cometbft_rpc::Url;
+use cometbft_rpc::WebSocketClientUrl;
 use core::str::FromStr;
 use core::time::Duration;
 use eyre::eyre;
@@ -15,8 +17,6 @@ use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
-use tendermint_rpc::Url;
-use tendermint_rpc::WebSocketClientUrl;
 
 use crate::chain::chain_type::ChainType as TestedChainType;
 use crate::chain::driver::ChainDriver;

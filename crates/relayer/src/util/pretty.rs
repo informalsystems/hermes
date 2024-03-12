@@ -1,6 +1,7 @@
 use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 use std::time::Duration;
 
+use cometbft::abci::Code;
 use ibc_proto::{
     cosmos::tx::v1beta1::Fee,
     google::protobuf::Any,
@@ -10,7 +11,6 @@ use ibc_proto::{
         connection::v1::{Counterparty as ConnectionCounterparty, IdentifiedConnection, Version},
     },
 };
-use tendermint::abci::Code;
 
 use crate::event::IbcEventWithHeight;
 

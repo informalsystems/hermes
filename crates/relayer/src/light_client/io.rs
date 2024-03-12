@@ -1,8 +1,9 @@
-use tendermint::{account, block::Height};
-use tendermint_light_client::{
+use cometbft::{account, block::Height, validator};
+use cometbft_light_client::{
     components::io::{AtHeight, Io, IoError, ProdIo},
     types::LightBlock,
 };
+use cometbft_rpc as rpc;
 
 #[derive(Clone, Debug)]
 pub enum AnyIo {
@@ -11,7 +12,7 @@ pub enum AnyIo {
 }
 
 impl AnyIo {
-    pub fn rpc_client(&self) -> &tendermint_rpc::HttpClient {
+    pub fn rpc_client(&self) -> &rpc::HttpClient {
         match self {
             AnyIo::Prod(io) => io.rpc_client(),
             AnyIo::RestartAware(io) => io.rpc_client(),
@@ -22,7 +23,7 @@ impl AnyIo {
         &self,
         height: AtHeight,
         proposer_address: Option<account::Id>,
-    ) -> Result<tendermint::validator::Set, IoError> {
+    ) -> Result<validator::Set, IoError> {
         match self {
             AnyIo::Prod(io) => io.fetch_validator_set(height, proposer_address),
             AnyIo::RestartAware(io) => io.fetch_validator_set(height, proposer_address),
@@ -55,7 +56,7 @@ impl RestartAwareIo {
         }
     }
 
-    pub fn rpc_client(&self) -> &tendermint_rpc::HttpClient {
+    pub fn rpc_client(&self) -> &rpc::HttpClient {
         self.live_io.rpc_client()
     }
 
@@ -63,7 +64,7 @@ impl RestartAwareIo {
         &self,
         height: AtHeight,
         proposer_address: Option<account::Id>,
-    ) -> Result<tendermint::validator::Set, IoError> {
+    ) -> Result<validator::Set, IoError> {
         let io = match height {
             AtHeight::At(height) if height <= self.restart_height => &self.archive_io,
             _ => &self.live_io,

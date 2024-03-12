@@ -1,12 +1,12 @@
 use core::mem;
 
+use cometbft_rpc::endpoint::broadcast::tx_sync::Response;
+use cometbft_rpc::HttpClient;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height;
 use prost::Message;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::HttpClient;
 use tracing::debug;
 
 use crate::chain::cosmos::encode::encoded_tx_metrics;

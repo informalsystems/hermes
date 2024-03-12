@@ -1,4 +1,4 @@
-use tendermint::merkle::proof::ProofOps as TendermintProof;
+use cometbft::merkle::proof::ProofOps as TendermintProof;
 
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;

@@ -4,13 +4,14 @@ version      = "0.27.1"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
-keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+keywords     = ["blockchain", "cosmos", "ibc", "interchain", "cometbft"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
 rust-version = "1.71"
 description  = """
-    Implementation of the Inter-Blockchain Communication Protocol (IBC).
-    This crate comprises the main data structures and on-chain logic.
+    Implementation of Inter-Blockchain Communication (IBC) relaying types.
+    This crate comprises the main data structures for the relayer to be able
+    to interact with IBC-enabled blockchain nodes.
 """
 
 [package.metadata.docs.rs]
@@ -19,8 +20,8 @@ all-features = true
 [features]
 clock = []
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
-# Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = ["tendermint-testgen", "clock"]
+# Depends on the `testgen` suite for generating CometBFT light blocks.
+mocks = ["cometbft-testgen", "clock"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
@@ -41,19 +42,19 @@ primitive-types = { version = "0.12.1", default-features = false, features = ["s
 num-rational = "0.4.1"
 regex = "1"
 
-[dependencies.tendermint]
-version = "0.34.0"
+[dependencies.cometbft]
+version = "0.1.0-alpha.2"
 features = ["clock"]
 
-[dependencies.tendermint-proto]
-version = "0.34.1"
+[dependencies.cometbft-proto]
+version = "0.1.0-alpha.2"
 
-[dependencies.tendermint-light-client-verifier]
-version = "0.34.0"
+[dependencies.cometbft-light-client-verifier]
+version = "0.1.0-alpha.2"
 features = ["rust-crypto"]
 
-[dependencies.tendermint-testgen]
-version = "0.34.0"
+[dependencies.cometbft-testgen]
+version = "0.1.0-alpha.2"
 optional = true
 
 [dev-dependencies]
@@ -61,5 +62,5 @@ env_logger = "0.11.1"
 tracing = { version = "0.1.36", default-features = false }
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
 test-log = { version = "0.2.14", features = ["trace"] }
-tendermint-rpc = { version = "0.34.0", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "0.34.0" } # Needed for generating (synthetic) light blocks.
+cometbft-rpc = { version = "0.1.0-alpha.2", features = ["http-client", "websocket-client"] }
+cometbft-testgen = { version = "0.1.0-alpha.2" } # Needed for generating (synthetic) light blocks.

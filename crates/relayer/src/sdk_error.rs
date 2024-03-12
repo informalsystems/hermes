@@ -1,5 +1,5 @@
+use cometbft::abci::Code;
 use flex_error::define_error;
-use tendermint::abci::Code;
 
 use crate::chain::cosmos::estimate::EstimatedGas;
 
@@ -190,7 +190,7 @@ pub fn sdk_error_from_tx_result(code: Code, codespace: &str) -> SdkError {
 
 /// Converts error codes originating from `broadcast_tx_sync` responses
 /// into IBC relayer domain-type errors.
-/// See [`tendermint_rpc::endpoint::broadcast::tx_sync::Response`].
+/// See [`cometbft_rpc::endpoint::broadcast::tx_sync::Response`].
 /// Cf: <https://github.com/cosmos/cosmos-sdk/blob/v0.42.10/types/errors/errors.go>
 pub fn sdk_error_from_tx_sync_error_code(code: u32, estimated_gas: EstimatedGas) -> SdkError {
     match code {

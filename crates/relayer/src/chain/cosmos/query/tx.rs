@@ -1,12 +1,13 @@
+use cometbft::abci::Event;
+use cometbft::block::Height as TmHeight;
+use cometbft::Hash as TxHash;
+use cometbft_rpc::endpoint::tx::Response as TxResponse;
+use cometbft_rpc::{Client, HttpClient, Order, Url};
 use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height as ICSHeight;
-use tendermint::abci::Event;
-use tendermint::Hash as TxHash;
-use tendermint_rpc::endpoint::tx::Response as TxResponse;
-use tendermint_rpc::{Client, HttpClient, Order, Url};
 use tracing::warn;
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
@@ -184,10 +185,8 @@ pub async fn query_packets_from_block(
     crate::telemetry!(query, chain_id, "query_packets_from_block");
 
     let tm_height = match request.height.get() {
-        QueryHeight::Latest => tendermint::block::Height::default(),
-        QueryHeight::Specific(h) => {
-            tendermint::block::Height::try_from(h.revision_height()).unwrap()
-        }
+        QueryHeight::Latest => TmHeight::default(),
+        QueryHeight::Specific(h) => TmHeight::try_from(h.revision_height()).unwrap(),
     };
 
     let height = Height::new(chain_id.version(), u64::from(tm_height))

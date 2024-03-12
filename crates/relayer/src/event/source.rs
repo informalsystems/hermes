@@ -5,10 +5,10 @@ use std::{sync::Arc, time::Duration};
 
 use crossbeam_channel as channel;
 
-use futures::Stream;
-use tendermint_rpc::{
+use cometbft_rpc::{
     client::CompatMode, event::Event as RpcEvent, Error as RpcError, HttpClient, WebSocketClientUrl,
 };
+use futures::Stream;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc_relayer_types::{
@@ -106,7 +106,7 @@ pub enum EventSourceCmd {
 
 // TODO: These are SDK specific, should be eventually moved.
 pub mod queries {
-    use tendermint_rpc::query::{EventType, Query};
+    use cometbft_rpc::query::{EventType, Query};
 
     pub fn all() -> Vec<Query> {
         // Note: Tendermint-go supports max 5 query specifiers!

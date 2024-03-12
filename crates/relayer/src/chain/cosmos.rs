@@ -53,14 +53,14 @@ use ibc_relayer_types::core::ics24_host::{
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 
-use tendermint::block::Height as TmHeight;
-use tendermint::node::{self, info::TxIndexStatus};
-use tendermint::time::Time as TmTime;
-use tendermint_light_client::verifier::types::LightBlock as TmLightBlock;
-use tendermint_rpc::client::CompatMode;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::endpoint::status;
-use tendermint_rpc::{Client, HttpClient, Order};
+use cometbft::block::Height as TmHeight;
+use cometbft::node::{self, info::TxIndexStatus};
+use cometbft::time::Time as TmTime;
+use cometbft_light_client::verifier::types::LightBlock as TmLightBlock;
+use cometbft_rpc::client::CompatMode;
+use cometbft_rpc::endpoint::broadcast::tx_sync::Response;
+use cometbft_rpc::endpoint::status;
+use cometbft_rpc::{Client, HttpClient, Order};
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
@@ -853,8 +853,7 @@ impl CosmosSdkChain {
         );
         crate::telemetry!(query, self.id(), "query_block");
 
-        let tm_height =
-            tendermint::block::Height::try_from(block_height.revision_height()).unwrap();
+        let tm_height = TmHeight::try_from(block_height.revision_height()).unwrap();
 
         let response = self
             .block_on(self.rpc_client.block_results(tm_height))

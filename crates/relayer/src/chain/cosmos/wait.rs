@@ -1,3 +1,6 @@
+use cometbft::Hash as TxHash;
+use cometbft_rpc::endpoint::tx::Response as TxResponse;
+use cometbft_rpc::{HttpClient, Url};
 use core::time::Duration;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
@@ -5,9 +8,6 @@ use ibc_relayer_types::Height;
 use itertools::Itertools;
 use std::thread;
 use std::time::Instant;
-use tendermint::Hash as TxHash;
-use tendermint_rpc::endpoint::tx::Response as TxResponse;
-use tendermint_rpc::{HttpClient, Url};
 use tokio::time::sleep;
 use tracing::{debug, debug_span, trace};
 

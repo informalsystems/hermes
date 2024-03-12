@@ -15,7 +15,7 @@ pub trait ClientState: Clone + Debug + Send + Sync // Any: From<Self>,
     /// consensus states from this chain).
     fn chain_id(&self) -> ChainId;
 
-    /// Type of client associated with this state (eg. Tendermint)
+    /// Type of client associated with this state (eg. Tendermint as implemented in CometBFT)
     fn client_type(&self) -> ClientType;
 
     /// Latest height the client was updated to

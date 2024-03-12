@@ -7,9 +7,9 @@ use std::thread;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{application::fatal_error, Runnable};
+use cometbft_rpc::{client::CompatMode, Client, HttpClient};
 use eyre::eyre;
 use itertools::Itertools;
-use tendermint_rpc::{client::CompatMode, Client, HttpClient};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 

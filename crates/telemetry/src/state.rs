@@ -20,7 +20,7 @@ use ibc_relayer_types::{
     signer::Signer,
 };
 
-use tendermint::Time;
+use cometbft::Time;
 
 use crate::{broadcast_error::BroadcastError, path_identifier::PathIdentifier};
 

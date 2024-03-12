@@ -1,3 +1,4 @@
+use cometbft::abci::Event as AbciEvent;
 use ibc_relayer_types::core::ics02_client::error::Error;
 use ibc_relayer_types::core::ics02_client::events::{
     Attributes, ClientMisbehaviour, CreateClient, UpdateClient, UpgradeClient,
@@ -6,7 +7,6 @@ use ibc_relayer_types::core::ics02_client::events::{
 };
 use ibc_relayer_types::core::ics02_client::header::Header;
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
-use tendermint::abci::Event as AbciEvent;
 
 use crate::light_client::AnyHeader;
 

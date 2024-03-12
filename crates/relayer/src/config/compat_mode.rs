@@ -5,7 +5,7 @@ use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
 
-use tendermint_rpc::client::CompatMode as TmCompatMode;
+use cometbft_rpc::client::CompatMode as TmCompatMode;
 
 use crate::config::Error;
 

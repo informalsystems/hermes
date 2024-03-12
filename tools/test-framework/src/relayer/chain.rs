@@ -21,14 +21,15 @@
 */
 
 use crossbeam_channel as channel;
-use ibc_relayer::chain::cosmos::version::Specs;
 use tracing::Span;
 
+use cometbft_rpc as rpc;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
 use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
+use ibc_relayer::chain::cosmos::version::Specs;
 use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::requests::*;
@@ -102,7 +103,7 @@ where
     fn send_messages_and_wait_check_tx(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
+    ) -> Result<Vec<rpc::endpoint::broadcast::tx_sync::Response>, Error> {
         self.value().send_messages_and_wait_check_tx(tracked_msgs)
     }
 

@@ -1,5 +1,5 @@
 //! Contains traits to format the URL of API endpoints from a `&str` to any type.
-//! Contains struct to build a `tendermint_rpc::Url` representing a
+//! Contains struct to build a `cometbft_rpc::Url` representing a
 //! WebSocket URL from a RPC URL and to parse or build a valid `http::Uri`
 //! from an (in)complete GRPC URL.
 use crate::error::RegistryError;
@@ -7,7 +7,7 @@ use http::uri::Scheme;
 use http::Uri;
 use std::str::FromStr;
 
-use tendermint_rpc::Url;
+use cometbft_rpc::Url;
 
 /// `UriFormatter` contains the basic expectations to parse a valid URL from a `&str`.
 pub trait UriFormatter {
@@ -33,7 +33,7 @@ pub struct SimpleGrpcFormatter;
 impl UriFormatter for SimpleWebSocketFormatter {
     type OutputFormat = Url;
 
-    /// Format a WebSocket URL from an RPC URL and return a `tendermint_rpc::Url`.
+    /// Format a WebSocket URL from an RPC URL and return a `cometbft_rpc::Url`.
     fn parse_or_build_address(rpc_address: &str) -> Result<Self::OutputFormat, RegistryError> {
         let uri = rpc_address
             .parse::<Uri>()
@@ -58,7 +58,7 @@ impl UriFormatter for SimpleWebSocketFormatter {
 
         match uri_websocket {
             Ok(uri_websocket) => Ok(Url::from_str(uri_websocket.to_string().as_str()).map_err(
-                |e| RegistryError::tendermint_url_parse_error(rpc_address.to_string(), e),
+                |e| RegistryError::cometbft_url_parse_error(rpc_address.to_string(), e),
             )?),
             Err(e) => Err(RegistryError::unable_to_build_websocket_endpoint(
                 rpc_address.to_string(),

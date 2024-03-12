@@ -3,7 +3,7 @@
 use flex_error::{define_error, DisplayError};
 use std::io::Error as IoError;
 
-use tendermint::Error as TendermintError;
+use cometbft::Error as TendermintError;
 
 use ibc_relayer_types::applications::ics29_fee::error::Error as FeeError;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;

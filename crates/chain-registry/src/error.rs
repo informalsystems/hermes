@@ -1,10 +1,10 @@
+use cometbft_rpc;
 use flex_error::{define_error, TraceError};
 use http;
 use itertools::Itertools;
 use reqwest;
 use serde_json;
 use std::path::PathBuf;
-use tendermint_rpc;
 use tokio::task::JoinError;
 use tokio::time::error::Elapsed;
 
@@ -49,17 +49,17 @@ define_error! {
 
         RpcConnectError
             { rpc: String }
-            [ TraceError<tendermint_rpc::Error> ]
+            [ TraceError<cometbft_rpc::Error> ]
             |e| { format_args!("Error when connecting to RPC: {}", e.rpc) },
 
         RpcConsensusParamsError
             { rpc: String }
-            [ TraceError<tendermint_rpc::Error> ]
+            [ TraceError<cometbft_rpc::Error> ]
             |e| { format_args!("Unable to fetch consensus params for RPC: {}", e.rpc) },
 
         RpcStatusError
             { rpc: String }
-            [ TraceError<tendermint_rpc::Error> ]
+            [ TraceError<cometbft_rpc::Error> ]
             |e| { format_args!("Unable to fetch status for RPC: {}", e.rpc) },
 
         RpcUrlWithoutAuthority
@@ -90,14 +90,14 @@ define_error! {
             [ TraceError<http::Error> ]
             |e| { format_args!("Error when parsing URL: {}", e.url) },
 
-        TendermintUrlParseError
+        CometbftUrlParseError
             { url: String }
-            [ TraceError<tendermint_rpc::Error> ]
+            [ TraceError<cometbft_rpc::Error> ]
             |e| { format_args!("Error when parsing URL: {}", e.url) },
 
         WebsocketUrlParseError
             { url: String }
-            [ TraceError<tendermint_rpc::Error> ]
+            [ TraceError<cometbft_rpc::Error> ]
             |e| { format_args!("Error when parsing URL: {}", e.url) },
 
         StatusError
@@ -114,12 +114,12 @@ define_error! {
 
         WebsocketConnectError
             { url: String }
-            [ TraceError<tendermint_rpc::Error> ]
+            [ TraceError<cometbft_rpc::Error> ]
             |e| { format_args!("Unable to connect to WebSocket: {}", e.url) },
 
         WebsocketConnCloseError
             { url: String }
-            [ TraceError<tendermint_rpc::Error> ]
+            [ TraceError<cometbft_rpc::Error> ]
             |e| { format_args!("Unable to close WebSocket connection: {}", e.url) },
 
         WebsocketTimeOutError
@@ -129,7 +129,7 @@ define_error! {
 
         WebsocketDriverError
             { url: String }
-            [ TraceError<tendermint_rpc::Error> ]
+            [ TraceError<cometbft_rpc::Error> ]
             |e| { format_args!("Unable to close WebSocket driver: {}", e.url) },
     }
 }

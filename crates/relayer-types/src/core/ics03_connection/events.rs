@@ -1,8 +1,8 @@
-//! Types for the IBC events emitted from Tendermint Websocket by the connection module.
+//! Types for the IBC events emitted from CometBFT Websocket by the connection module.
 
+use cometbft::abci;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
-use tendermint::abci;
 
 use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::events::{IbcEvent, IbcEventType};
@@ -32,7 +32,7 @@ impl Display for Attributes {
     }
 }
 
-/// Convert attributes to Tendermint ABCI tags
+/// Convert attributes to CometBFT ABCI tags
 impl From<Attributes> for Vec<abci::EventAttribute> {
     fn from(a: Attributes) -> Self {
         let mut attributes = vec![];

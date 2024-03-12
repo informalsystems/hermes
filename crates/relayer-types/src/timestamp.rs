@@ -5,9 +5,9 @@ use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::Duration;
 
+use cometbft::Time;
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
-use tendermint::Time;
 use time::OffsetDateTime;
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
@@ -124,7 +124,7 @@ impl Timestamp {
         self.time.map(Into::into)
     }
 
-    /// Convert a `Timestamp` to an optional [`tendermint::Time`]
+    /// Convert a `Timestamp` to an optional [`cometbft::Time`]
     pub fn into_tm_time(self) -> Option<Time> {
         self.time
     }
@@ -224,9 +224,9 @@ impl FromStr for Timestamp {
 }
 
 impl From<Time> for Timestamp {
-    fn from(tendermint_time: Time) -> Timestamp {
+    fn from(cometbft_time: Time) -> Timestamp {
         Timestamp {
-            time: Some(tendermint_time),
+            time: Some(cometbft_time),
         }
     }
 }
