@@ -27,14 +27,14 @@ const IBC_GO_MODULE_PREFIX: &str = "github.com/cosmos/ibc-go/v";
 const TENDERMINT_MODULE_NAME: &str = "github.com/tendermint/tendermint";
 const COMET_MODULE_NAME: &str = "github.com/cometbft/cometbft";
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ConsensusVersion {
     Tendermint(semver::Version),
     Comet(semver::Version),
 }
 
 /// Captures the version(s) specification of different modules of a network.
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Specs {
     pub cosmos_sdk: Option<semver::Version>,
     pub ibc_go: Option<semver::Version>,
@@ -183,7 +183,7 @@ fn parse_optional_version(
 
 /// Helper struct to capture all the reported information of an
 /// IBC application, e.g., `gaiad`.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AppInfo {
     app_name: String,
     version: String,
@@ -203,5 +203,173 @@ impl From<&VersionInfo> for AppInfo {
             version: vi.version.clone(),
             git_commit: vi.git_commit.clone(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cosmoshub() {
+        let version_info = VersionInfo {
+            name: "gaia".to_string(),
+            app_name: "gaiad".to_string(),
+            version: "v14.2.0".to_string(),
+            git_commit: "3aa6e5058b4cbb4729300b239abfabd9a5b5691f".to_string(),
+            build_tags: "netgo,ledger".to_string(),
+            go_version: "go version go1.20.3 linux/amd64".to_string(),
+            cosmos_sdk_version: "v0.45.16".to_string(),
+            build_deps: vec![
+                Module {
+                    path: "github.com/cometbft/cometbft-db".to_string(),
+                    version: "v0.7.0".to_string(),
+                    sum: "h1:uBjbrBx4QzU0zOEnU8KxoDl18dMNgDh+zZRUE0ucsbo=".to_string(),
+                },
+                Module {
+                    path: "github.com/confio/ics23/go".to_string(),
+                    version: "v0.9.0".to_string(),
+                    sum: "h1:cWs+wdbS2KRPZezoaaj+qBleXgUk5WOQFMP3CQFGTr4=".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/cosmos-db".to_string(),
+                    version: "v0.0.0-20221226095112-f3c38ecb5e32".to_string(),
+                    sum: "h1:zlCp9n3uwQieELltZWHRmwPmPaZ8+XoL2Sj+A2YJlr8=".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/cosmos-proto".to_string(),
+                    version: "v1.0.0-beta.1".to_string(),
+                    sum: "h1:iDL5qh++NoXxG8hSy93FdYJut4XfgbShIocllGaXx/0=".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/cosmos-sdk".to_string(),
+                    version: "v0.45.16".to_string(),
+                    sum: "".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/go-bip39".to_string(),
+                    version: "v1.0.0".to_string(),
+                    sum: "h1:pcomnQdrdH22njcAatO0yWojsUnCO3y2tNoV1cb6hHY=".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/iavl".to_string(),
+                    version: "v0.19.5".to_string(),
+                    sum: "h1:rGA3hOrgNxgRM5wYcSCxgQBap7fW82WZgY78V9po/iY=".to_string(),
+                },
+                Module {
+                    path: "github.com/tendermint/tendermint".to_string(),
+                    version: "v0.34.27".to_string(),
+                    sum: "".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/ibc-go/v4".to_string(),
+                    version: "v4.4.2".to_string(),
+                    sum: "h1:PG4Yy0/bw6Hvmha3RZbc53KYzaCwuB07Ot4GLyzcBvo=".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/interchain-security/v2".to_string(),
+                    version: "v2.0.0".to_string(),
+                    sum: "".to_string(),
+                },
+            ],
+        };
+
+        let app_info = AppInfo::from(&version_info);
+
+        assert_eq!(
+            app_info,
+            AppInfo {
+                app_name: "gaiad".to_string(),
+                version: "v14.2.0".to_string(),
+                git_commit: "3aa6e5058b4cbb4729300b239abfabd9a5b5691f".to_string()
+            }
+        );
+
+        let specs = Specs::try_from(version_info).unwrap();
+
+        assert_eq!(
+            specs,
+            Specs {
+                cosmos_sdk: Some(semver::Version::parse("0.45.16").unwrap()),
+                ibc_go: Some(semver::Version::parse("4.4.2").unwrap()),
+                consensus: Some(ConsensusVersion::Tendermint(
+                    semver::Version::parse("0.34.27").unwrap()
+                ))
+            }
+        );
+    }
+
+    #[test]
+    fn phoenix() {
+        let version_info = VersionInfo {
+            name: "terra".to_string(),
+            app_name: "terrad".to_string(),
+            version: "20210603".to_string(),
+            git_commit: "7cbb1f555b661a6ebec55231e563d2f94effc40e".to_string(),
+            build_tags: "netgo,ledger".to_string(),
+            go_version: "go version go1.20 linux/amd64".to_string(),
+            cosmos_sdk_version: "v0.47.5".to_string(),
+            build_deps: vec![
+                Module {
+                    path: "github.com/confio/ics23/go".to_string(),
+                    version: "v0.9.0".to_string(),
+                    sum: "h1:cWs+wdbS2KRPZezoaaj+qBleXgUk5WOQFMP3CQFGTr4=".to_string(),
+                },
+                Module {
+                    path: "github.com/cometbft/cometbft-db".to_string(),
+                    version: "v0.8.0".to_string(),
+                    sum: "h1:vUMDaH3ApkX8m0KZvOFFy9b5DZHBAjsnEuo9AKVZpjo=".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/cosmos-proto".to_string(),
+                    version: "v1.0.0-beta.3".to_string(),
+                    sum: "h1:VitvZ1lPORTVxkmF2fAp3IiA61xVwArQYKXTdEcpW6o=".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/cosmos-sdk".to_string(),
+                    version: "v0.47.5".to_string(),
+                    sum: "".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/ibc-go/v7".to_string(),
+                    version: "v7.3.0".to_string(),
+                    sum: "".to_string(),
+                },
+                Module {
+                    path: "github.com/cosmos/ics23/go".to_string(),
+                    version: "v0.10.0".to_string(),
+                    sum: "h1:iXqLLgp2Lp+EdpIuwXTYIQU+AiHj9mOC2X9ab++bZDM=".to_string(),
+                },
+                Module {
+                    path: "github.com/cometbft/cometbft".to_string(),
+                    version: "v0.37.2".to_string(),
+                    sum: "h1:XB0yyHGT0lwmJlFmM4+rsRnczPlHoAKFX6K8Zgc2/Jc=".to_string(),
+                },
+            ],
+        };
+
+        let app_info = AppInfo::from(&version_info);
+
+        assert_eq!(
+            app_info,
+            AppInfo {
+                app_name: "terrad".to_string(),
+                version: "20210603".to_string(),
+                git_commit: "7cbb1f555b661a6ebec55231e563d2f94effc40e".to_string()
+            }
+        );
+
+        let specs = Specs::try_from(version_info).unwrap();
+
+        assert_eq!(
+            specs,
+            Specs {
+                cosmos_sdk: Some(semver::Version::parse("0.47.5").unwrap()),
+                ibc_go: Some(semver::Version::parse("7.3.0").unwrap()),
+                consensus: Some(ConsensusVersion::Comet(
+                    semver::Version::parse("0.37.2").unwrap()
+                ))
+            }
+        );
     }
 }
