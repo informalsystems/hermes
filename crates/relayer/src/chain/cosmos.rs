@@ -146,6 +146,7 @@ pub mod wait;
 ///
 /// [tm-37-max]: https://github.com/tendermint/tendermint/blob/v0.37.0-rc1/types/params.go#L79
 pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
+
 pub struct CosmosSdkChain {
     config: config::CosmosSdkConfig,
     tx_config: TxConfig,
@@ -292,19 +293,23 @@ impl CosmosSdkChain {
             ));
         }
 
-        // Query /genesis RPC endpoint to retrieve the `max_expected_time_per_block` value
-        // to use as `max_block_time`.
+        // Query /genesis RPC endpoint to retrieve the `max_expected_time_per_block` value to use as `max_block_time`.
         // If it is not found, keep the configured `max_block_time`.
         match self.block_on(self.rpc_client.genesis::<GenesisAppState>()) {
             Ok(genesis_reponse) => {
                 let old_max_block_time = self.config.max_block_time;
-                self.config.max_block_time =
+                let new_max_block_time =
                     Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
-                info!(
-                    "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
-                    old_max_block_time.as_secs(),
-                    self.config.max_block_time.as_secs()
-                );
+
+                if old_max_block_time.as_secs() != new_max_block_time.as_secs() {
+                    self.config.max_block_time = new_max_block_time;
+
+                    info!(
+                        "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
+                        old_max_block_time.as_secs(),
+                        self.config.max_block_time.as_secs()
+                    );
+                }
             }
             Err(e) => {
                 warn!(
