@@ -37,7 +37,7 @@ struct Test {
 
 impl TestOverrides for Test {
     fn modify_test_config(&self, config: &mut TestConfig) {
-        config.chain_store_dir = self.store_dir.clone();
+        config.chain_store_dir.clone_from(&self.store_dir);
     }
 
     fn modify_relayer_config(&self, config: &mut Config) {

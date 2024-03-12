@@ -1,7 +1,6 @@
 use core::time::Duration;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 
 use ibc_relayer::upgrade_chain::requires_legacy_upgrade_proposal;
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};

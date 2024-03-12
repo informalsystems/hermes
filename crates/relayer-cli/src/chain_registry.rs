@@ -1,12 +1,12 @@
 //! Contains functions to generate a relayer config for a given chain
 
-use futures::future::join_all;
-use http::Uri;
-use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::marker::Send;
+
+use futures::future::join_all;
+use http::Uri;
+use tendermint_rpc::Url;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::{error, trace};
 
@@ -18,13 +18,12 @@ use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
 use ibc_chain_registry::paths::IBCPath;
 use ibc_chain_registry::querier::*;
 use ibc_relayer::chain::cosmos::config::CosmosSdkConfig;
+use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo, TrustThreshold};
 use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
 use ibc_relayer::keyring::Store;
-
-use tendermint_rpc::Url;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
 

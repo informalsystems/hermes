@@ -1,6 +1,4 @@
 use crate::chain::cli::async_icq::{async_icq, update_oracle};
-use crate::chain::driver::ChainDriver;
-use crate::error::Error;
 use crate::prelude::*;
 use crate::types::tagged::*;
 

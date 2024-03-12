@@ -1,5 +1,4 @@
 use core::fmt::Debug;
-use std::marker::{Send, Sync};
 use std::time::Duration;
 
 use crate::core::ics02_client::client_type::ClientType;

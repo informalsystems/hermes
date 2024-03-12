@@ -373,7 +373,6 @@ impl<'de> Deserialize<'de> for ChannelFilterMatch {
 
 pub(crate) mod port {
     use super::*;
-    use ibc_relayer_types::core::ics24_host::identifier::PortId;
 
     pub struct PortFilterMatchVisitor;
 
@@ -401,7 +400,6 @@ pub(crate) mod port {
 
 pub(crate) mod channel {
     use super::*;
-    use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
 
     pub struct ChannelFilterMatchVisitor;
 
@@ -430,7 +428,6 @@ pub(crate) mod channel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::filter::ChannelPolicy;
 
     #[test]
     fn deserialize_packet_filter_policy() {

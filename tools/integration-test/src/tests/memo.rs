@@ -4,11 +4,10 @@
 //! You can find a more thorough walkthrough of this test at
 //! `tools/test-framework/src/docs/walkthroughs/memo.rs`.
 
+use ibc_relayer::config::types::Memo;
 use ibc_relayer::config::ChainConfig;
-use ibc_relayer::config::{types::Memo, Config};
 use serde_json as json;
 
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::{random_string, random_u128_range};
 

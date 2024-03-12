@@ -1,7 +1,6 @@
 #![allow(clippy::redundant_closure_call)]
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 
 use ibc_relayer::connection::{Connection, ConnectionSide};
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};

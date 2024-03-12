@@ -5,7 +5,6 @@ use eyre::eyre;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;
-use toml;
 use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
