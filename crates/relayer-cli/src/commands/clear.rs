@@ -1,3 +1,4 @@
+use eyre::eyre;
 use std::ops::RangeInclusive;
 
 use abscissa_core::clap::Parser;
@@ -187,10 +188,20 @@ impl Runnable for ClearPacketsCmd {
             exclude_src_sequences,
         };
 
+        let counterparty_channel_id = match channel.counterparty().channel_id() {
+            Some(channel_id) => channel_id.clone(),
+            None => Output::error(eyre!(
+                "Channel `{}` and port `{}` does not have a counterparty channel id",
+                self.channel_id,
+                self.port_id
+            ))
+            .exit(),
+        };
+
         // Construct links in both directions.
         let reverse_opts = LinkParameters {
-            src_port_id: self.port_id.clone(),
-            src_channel_id: self.channel_id.clone(),
+            src_port_id: channel.counterparty().port_id().clone(),
+            src_channel_id: counterparty_channel_id,
             max_memo_size: config.mode.packets.ics20_max_memo_size,
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
             exclude_src_sequences: exclude_dst_sequences,
