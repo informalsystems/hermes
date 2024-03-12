@@ -7,7 +7,7 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use flex_error::define_error;
 use tracing::trace;
 
-use ibc_proto::cosmos::base::tendermint::v1beta1::VersionInfo;
+use ibc_proto::cosmos::base::tendermint::v1beta1::{Module, VersionInfo};
 
 /// Specifies the SDK, IBC-go, and Tendermint modules path, as expected
 /// to appear in the application version information of a
@@ -117,50 +117,48 @@ impl TryFrom<VersionInfo> for Specs {
             git_commit = %raw_version.git_commit,
             sdk_version = ?sdk_version,
             ibc_go_status = ?ibc_go_version,
-            tendermint_version = ?tendermint_version,
-            comet_version = ?comet_version,
+            consensus_version = ?consensus_version,
             "parsed version specification"
         );
 
         Ok(Self {
             cosmos_sdk: sdk_version,
             ibc_go: ibc_go_version,
-            tendermint: tendermint_version,
-            comet: comet_version,
+            consensus: consensus_version,
         })
     }
 }
 
 fn parse_sdk_version(version_info: &VersionInfo) -> Result<Option<semver::Version>, Error> {
-    parse_optional_version(version_info, SDK_MODULE_NAME)
+    parse_optional_version(version_info, |m| m.path == SDK_MODULE_NAME)
 }
 
 fn parse_ibc_go_version(version_info: &VersionInfo) -> Result<Option<semver::Version>, Error> {
-    parse_optional_version(version_info, IBC_GO_MODULE_NAME)
+    parse_optional_version(version_info, |m| m.path.starts_with(IBC_GO_MODULE_PREFIX))
 }
 
 fn parse_tendermint_version(version_info: &VersionInfo) -> Result<Option<semver::Version>, Error> {
-    parse_optional_version(version_info, TENDERMINT_MODULE_NAME)
+    parse_optional_version(version_info, |m| m.path == TENDERMINT_MODULE_NAME)
 }
 
 fn parse_comet_version(version_info: &VersionInfo) -> Result<Option<semver::Version>, Error> {
-    parse_optional_version(version_info, COMET_MODULE_NAME)
+    parse_optional_version(version_info, |m| m.path == COMET_MODULE_NAME)
 }
 
 fn parse_optional_version(
     version_info: &VersionInfo,
-    module_name: &str,
+    predicate: impl Fn(&Module) -> bool,
 ) -> Result<Option<semver::Version>, Error> {
-    match version_info
-        .build_deps
-        .iter()
-        .find(|&m| m.path == module_name)
-    {
+    let module = version_info.build_deps.iter().find(|&m| predicate(m));
+
+    match module {
         None => Ok(None),
+
         Some(module) => {
             let plain_version = module.version.trim_start_matches('v');
 
             semver::Version::parse(plain_version)
+                // Discard the pre-release version, if any
                 .map(|mut version| {
                     version.pre = semver::Prerelease::EMPTY;
                     Some(version)
