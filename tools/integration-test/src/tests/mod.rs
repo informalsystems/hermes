@@ -4,7 +4,6 @@
    We expose the modules as public so that cargo doc
    will pick up the definition by default.
 */
-
 pub mod clear_packet;
 pub mod client_expiration;
 pub mod client_filter;
@@ -32,6 +31,9 @@ pub mod transfer;
 
 #[cfg(any(doc, feature = "async-icq"))]
 pub mod async_icq;
+
+#[cfg(any(doc, feature = "authz"))]
+pub mod authz;
 
 #[cfg(any(doc, feature = "ics29-fee"))]
 pub mod fee;
