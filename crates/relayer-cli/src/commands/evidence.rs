@@ -5,7 +5,6 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 use ibc_relayer::config::{ChainConfig, Config};
 use tokio::runtime::Runtime as TokioRuntime;
 

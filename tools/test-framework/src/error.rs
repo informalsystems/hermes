@@ -1,6 +1,5 @@
 //! Error type used for the tests.
 
-use core::convert::{From, Into};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
 use eyre::Report;

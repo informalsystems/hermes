@@ -1,4 +1,4 @@
-use std::convert::{From, Infallible};
+use std::convert::Infallible;
 use std::fmt::{Debug, Display, Error as FmtError, Formatter};
 use std::str::FromStr;
 

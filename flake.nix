@@ -52,6 +52,7 @@
           stride-consumer-no-admin
           stride-consumer
           wasmd
+          injective
           ;
 
         python = nixpkgs.python3.withPackages (p: [

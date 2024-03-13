@@ -2,7 +2,6 @@
    Constructs for N-ary connected channels.
 */
 
-use core::convert::TryFrom;
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;

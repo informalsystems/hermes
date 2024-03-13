@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-integration-test"
-version      = "0.27.1"
+version      = "0.27.2"
 edition      = "2021"
 rust-version = "1.71"
 license      = "Apache-2.0"
@@ -23,7 +23,7 @@ time = "0.3"
 toml = "0.8"
 prost = { version = "0.12" }
 tonic = { version = "0.10", features = ["tls", "tls-roots"] }
-serde = "1.0.195"
+serde = "1.0.197"
 
 [features]
 default = []

@@ -1,5 +1,4 @@
 use alloc::collections::BTreeMap as HashMap;
-use core::convert::TryFrom;
 use ibc_relayer_types::applications::ics29_fee::events::DistributionType;
 
 use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};

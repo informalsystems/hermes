@@ -166,7 +166,7 @@ impl Application for CliApp {
         let terminal = Terminal::new(self.term_colors(command));
 
         let config_path = command.config_path();
-        self.config_path = config_path.clone();
+        self.config_path.clone_from(&config_path);
 
         let config = config_path
             .map(|path| self.load_config(&path))
