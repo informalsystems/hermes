@@ -150,6 +150,10 @@ impl FullNode {
                 5000.0,
                 test_config.native_tokens[native_token_number].clone(),
             ),
+            TestedChainType::RollupEvm => config::GasPrice::new(
+                600000000.0,
+                test_config.native_tokens[native_token_number].clone(),
+            ),
             _ => config::GasPrice::new(
                 0.003,
                 test_config.native_tokens[native_token_number].clone(),

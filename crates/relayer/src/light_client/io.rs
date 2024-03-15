@@ -24,7 +24,7 @@ impl AnyIo {
         proposer_address: Option<account::Id>,
     ) -> Result<tendermint::validator::Set, IoError> {
         match self {
-            AnyIo::Prod(io) => io.fetch_validator_set(height, proposer_address),
+            AnyIo::Prod(io) => Ok(tendermint::validator::Set::new(vec![], None)), //io.fetch_validator_set(height, proposer_address),
             AnyIo::RestartAware(io) => io.fetch_validator_set(height, proposer_address),
         }
     }

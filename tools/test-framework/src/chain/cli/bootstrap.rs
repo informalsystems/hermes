@@ -98,6 +98,130 @@ pub fn add_genesis_account(
     }
 }
 
+pub fn dymint_show_sequencer(chain_id: &str, home_path: &str) -> Result<String, Error> {
+    let output = simple_exec(
+        chain_id,
+        "rollapp-evm",
+        &["--home", home_path, "dymint", "show-sequencer"],
+    )?
+    .stdout;
+
+    Ok(output)
+}
+
+pub fn validate_genesis(chain_id: &str, command_path: &str, home_path: &str) -> Result<(), Error> {
+    let output = simple_exec(
+        chain_id,
+        command_path,
+        &["--home", home_path, "validate-genesis"],
+    )?;
+
+    Ok(())
+}
+
+pub fn add_gentx_seq(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    sequencer: &str,
+    keyname: &str,
+) -> Result<(), Error> {
+    // Cosmos SDK v0.47.0 introduced the `genesis` subcommand, this match is required to
+    // support pre and post SDK v0.47.0. https://github.com/cosmos/cosmos-sdk/pull/14149
+    let _output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "gentx_seq",
+            "--pubkey",
+            sequencer,
+            "--from",
+            keyname,
+            "--keyring-backend",
+            "test",
+        ],
+    )?;
+
+    Ok(())
+}
+
+pub fn create_rollapp(
+    chain_id: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    rollap_chain_id: &str,
+) -> Result<(), Error> {
+    // Cosmos SDK v0.47.0 introduced the `genesis` subcommand, this match is required to
+    // support pre and post SDK v0.47.0. https://github.com/cosmos/cosmos-sdk/pull/14149
+    let _output = simple_exec(
+        chain_id,
+        "dymd",
+        &[
+            "--home",
+            home_path,
+            "--node",
+            rpc_listen_address,
+            "tx",
+            "rollapp",
+            "create-rollapp",
+            rollap_chain_id,
+            "5",
+            "{\"Addresses\":[]}",
+            "--from",
+            "validator",
+            "--keyring-backend",
+            "test",
+            "--broadcast-mode",
+            "block",
+            "--fees",
+            "1dym",
+            "--yes",
+        ],
+    )?;
+
+    Ok(())
+}
+
+pub fn create_sequencer(
+    chain_id: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    sequencer: &str,
+    rollap_chain_id: &str,
+) -> Result<(), Error> {
+    // Cosmos SDK v0.47.0 introduced the `genesis` subcommand, this match is required to
+    // support pre and post SDK v0.47.0. https://github.com/cosmos/cosmos-sdk/pull/14149
+    let _output = simple_exec(
+        chain_id,
+        "dymd",
+        &[
+            "--home",
+            home_path,
+            "--node",
+            rpc_listen_address,
+            "tx",
+            "sequencer",
+            "create-sequencer",
+            sequencer,
+            rollap_chain_id,
+            "{\"Moniker\":\"myrollapp-sequencer\",\"Identity\":\"\",\"Website\":\"\",\"SecurityContact\":\"\",\"Details\":\"\"}",
+            "--from",
+            "validator",
+            "--keyring-backend",
+            "test",
+            "--broadcast-mode",
+            "block",
+            "--fees",
+            "1dym",
+            "--yes",
+        ],
+    )?;
+
+    Ok(())
+}
+
 pub fn add_genesis_validator(
     chain_id: &str,
     command_path: &str,

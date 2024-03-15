@@ -625,6 +625,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     }
                 }
                 IbcEvent::WriteAcknowledgement(ref event) => {
+                    tracing::warn!("op data IbcEvent::WriteAcknowledgement");
                     if self
                         .dst_channel(QueryHeight::Latest)?
                         .state_matches(&ChannelState::Closed)

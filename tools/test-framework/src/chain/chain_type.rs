@@ -15,13 +15,15 @@ pub enum ChainType {
     Evmos,
     Provenance,
     Injective,
+    Dymension,
+    RollupEvm,
 }
 
 impl ChainType {
     pub fn hd_path(&self) -> &str {
         match self {
             Self::Cosmos => COSMOS_HD_PATH,
-            Self::Evmos | Self::Injective => EVMOS_HD_PATH,
+            Self::Evmos | Self::Injective | Self::Dymension | Self::RollupEvm => EVMOS_HD_PATH,
             Self::Provenance => PROVENANCE_HD_PATH,
         }
     }
@@ -38,6 +40,8 @@ impl ChainType {
             Self::Injective => ChainId::from_string(&format!("injective-{prefix}")),
             Self::Evmos => ChainId::from_string(&format!("evmos_9000-{prefix}")),
             Self::Provenance => ChainId::from_string(&format!("pio-mainnet-{prefix}")),
+            Self::RollupEvm => ChainId::from_string(&format!("rollappevm_1234-{prefix}")),
+            Self::Dymension => ChainId::from_string(&format!("dymension_100-{prefix}")),
         }
     }
 
@@ -47,7 +51,7 @@ impl ChainType {
         let json_rpc_port = random_unused_tcp_port();
         match self {
             Self::Cosmos | Self::Injective | Self::Provenance => {}
-            Self::Evmos => {
+            Self::Evmos | Self::Dymension | Self::RollupEvm => {
                 res.push("--json-rpc.address".to_owned());
                 res.push(format!("localhost:{json_rpc_port}"));
             }
@@ -59,7 +63,7 @@ impl ChainType {
     pub fn extra_add_genesis_account_args(&self, chain_id: &ChainId) -> Vec<String> {
         let mut res = vec![];
         match self {
-            Self::Cosmos | Self::Evmos | Self::Provenance => {}
+            Self::Cosmos | Self::Evmos | Self::Dymension | Self::RollupEvm | Self::Provenance => {}
             Self::Injective => {
                 res.push("--chain-id".to_owned());
                 res.push(format!("{chain_id}"));
@@ -71,7 +75,7 @@ impl ChainType {
     pub fn address_type(&self) -> AddressType {
         match self {
             Self::Cosmos | Self::Provenance => AddressType::default(),
-            Self::Evmos => AddressType::Ethermint {
+            Self::Evmos | Self::Dymension | Self::RollupEvm => AddressType::Ethermint {
                 pk_type: "/ethermint.crypto.v1.ethsecp256k1.PubKey".to_string(),
             },
             Self::Injective => AddressType::Ethermint {
@@ -89,6 +93,8 @@ impl FromStr for ChainType {
             name if name.contains("evmosd") => Ok(ChainType::Evmos),
             name if name.contains("injectived") => Ok(ChainType::Injective),
             name if name.contains("provenanced") => Ok(ChainType::Provenance),
+            name if name.contains("dymd") => Ok(ChainType::Dymension),
+            name if name.contains("rollapp-evm") => Ok(ChainType::RollupEvm),
             _ => Ok(ChainType::Cosmos),
         }
     }

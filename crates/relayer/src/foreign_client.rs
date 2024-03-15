@@ -1190,6 +1190,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             );
 
             // Wait for the source network to produce block(s) & reach `target_height`.
+            // TODO: wait for height + 1?
             while src_application_latest_height()? < target_height {
                 thread::sleep(Duration::from_millis(100));
             }

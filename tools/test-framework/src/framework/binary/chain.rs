@@ -24,6 +24,8 @@ use crate::types::env::write_env;
 use crate::types::single::node::FullNode;
 use crate::util::suspend::hang_on_error;
 
+use super::dymension::DymensionChainTest;
+
 /**
    Runs a test case that implements [`BinaryChainTest`], with
    the test case being executed twice, with the second time having the
@@ -236,6 +238,45 @@ where
 }
 
 impl<'a, Test, Overrides> InterchainSecurityChainTest for RunBinaryChainTest<'a, Test>
+where
+    Test: BinaryChainTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: RelayerConfigOverride + ClientOptionsOverride,
+{
+    fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
+        let overrides = self.test.get_overrides();
+
+        let bootstrap_options = BootstrapClientOptions::default()
+            .client_options_a_to_b(overrides.client_options_a_to_b())
+            .client_options_b_to_a(overrides.client_options_b_to_a())
+            .bootstrap_with_random_ids(config.bootstrap_with_random_ids);
+
+        let (relayer, chains) = bootstrap_chains_with_full_nodes(
+            config,
+            node_a,
+            node_b,
+            bootstrap_options,
+            |config| {
+                overrides.modify_relayer_config(config);
+            },
+        )?;
+
+        let env_path = config.chain_store_dir.join("binary-chains.env");
+
+        write_env(&env_path, &(&relayer, &chains))?;
+
+        info!("written chains environment to {}", env_path.display());
+
+        let _drop_handle_a = DropChainHandle(chains.handle_a.clone());
+        let _drop_handle_b = DropChainHandle(chains.handle_b.clone());
+
+        self.test.run(config, relayer, chains)?;
+
+        Ok(())
+    }
+}
+
+impl<'a, Test, Overrides> DymensionChainTest for RunBinaryChainTest<'a, Test>
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,

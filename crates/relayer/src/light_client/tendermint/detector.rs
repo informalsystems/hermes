@@ -80,7 +80,7 @@ fn make_provider(
     let light_store = Box::new(MemoryStore::new());
 
     let builder = LightClientBuilder::custom(
-        peer_id,
+        peer_id.clone(),
         options,
         light_store,
         Box::new(ProdIo::new(peer_id, rpc_client.clone(), None)),

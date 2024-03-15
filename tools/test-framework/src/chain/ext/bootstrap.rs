@@ -11,8 +11,9 @@ use tracing::debug;
 use ibc_relayer::keyring::{Secp256k1KeyPair, SigningKeyPair};
 
 use crate::chain::cli::bootstrap::{
-    add_genesis_account, add_genesis_validator, add_wallet, collect_gen_txs, initialize,
-    start_chain,
+    add_genesis_account, add_genesis_validator, add_gentx_seq, add_wallet, collect_gen_txs,
+    create_rollapp, create_sequencer, dymint_show_sequencer, initialize, start_chain,
+    validate_genesis,
 };
 use crate::chain::cli::provider::{
     copy_validator_key_pair, query_consumer_genesis, query_gov_proposal, replace_genesis_state,
@@ -81,6 +82,12 @@ pub trait ChainBootstrapMethodsExt {
     */
     fn add_genesis_account(&self, wallet: &WalletAddress, amounts: &[&Token]) -> Result<(), Error>;
 
+    fn add_gentx_seq(&self, keyname: &str) -> Result<(), Error>;
+
+    fn create_sequencer(&self, keyname: &str) -> Result<(), Error>;
+
+    fn create_rollapp(&self, rollap_chain_id: &str) -> Result<(), Error>;
+
     /**
        Add a wallet ID with the given stake amount to be the genesis validator
        for an uninitialized chain.
@@ -91,6 +98,8 @@ pub trait ChainBootstrapMethodsExt {
        Call `gaiad collect-gentxs` to generate the genesis transactions.
     */
     fn collect_gen_txs(&self) -> Result<(), Error>;
+
+    fn validate_genesis(&self) -> Result<(), Error>;
 
     /**
        Start a full node by running in the background `gaiad start`.
@@ -254,8 +263,53 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         )
     }
 
+    fn add_gentx_seq(&self, keyname: &str) -> Result<(), Error> {
+        let sequencer = dymint_show_sequencer(self.chain_id.as_str(), &self.home_path)?;
+
+        add_gentx_seq(
+            self.chain_id.as_str(),
+            &self.command_path,
+            &self.home_path,
+            &sequencer,
+            keyname,
+        )?;
+
+        Ok(())
+    }
+
+    fn create_rollapp(&self, rollap_chain_id: &str) -> Result<(), Error> {
+        create_rollapp(
+            self.chain_id.as_str(),
+            &self.home_path,
+            &self.rpc_listen_address(),
+            rollap_chain_id,
+        )?;
+
+        Ok(())
+    }
+
+    fn create_sequencer(&self, rollap_chain_id: &str) -> Result<(), Error> {
+        let sequencer = dymint_show_sequencer(self.chain_id.as_str(), &self.home_path)?;
+
+        create_sequencer(
+            self.chain_id.as_str(),
+            &self.home_path,
+            &self.rpc_listen_address(),
+            &sequencer,
+            rollap_chain_id,
+        )?;
+
+        Ok(())
+    }
+
     fn collect_gen_txs(&self) -> Result<(), Error> {
         collect_gen_txs(self.chain_id.as_str(), &self.command_path, &self.home_path)
+    }
+
+    fn validate_genesis(&self) -> Result<(), Error> {
+        validate_genesis(self.chain_id.as_str(), &self.command_path, &self.home_path)?;
+
+        Ok(())
     }
 
     fn start(&self) -> Result<ChildProcess, Error> {
