@@ -423,3 +423,98 @@ fn get_mut_with_fallback<'a>(
     };
     value.get_mut(key)
 }
+
+pub fn set_mint_denom(genesis: &mut serde_json::Value, denom: &str) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("mint"))
+        .and_then(|mint| mint.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get mint params in genesis file"))?;
+
+    params.insert(
+        "mint_denom".to_owned(),
+        serde_json::Value::String(denom.to_string()),
+    );
+
+    Ok(())
+}
+
+pub fn set_bond_denom(genesis: &mut serde_json::Value, denom: &str) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("staking"))
+        .and_then(|staking| staking.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get staking params in genesis file"))?;
+
+    params.insert(
+        "bond_denom".to_owned(),
+        serde_json::Value::String(denom.to_string()),
+    );
+
+    Ok(())
+}
+
+pub fn set_evm_denom(genesis: &mut serde_json::Value, denom: &str) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("evm"))
+        .and_then(|evm| evm.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get evm params in genesis file"))?;
+
+    params.insert(
+        "evm_denom".to_owned(),
+        serde_json::Value::String(denom.to_string()),
+    );
+
+    Ok(())
+}
+
+pub fn set_claims_denom(genesis: &mut serde_json::Value, denom: &str) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("claims"))
+        .and_then(|claims| claims.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get claims params in genesis file"))?;
+
+    params.insert(
+        "claims_denom".to_owned(),
+        serde_json::Value::String(denom.to_string()),
+    );
+
+    Ok(())
+}
+
+pub fn set_min_deposit(genesis: &mut serde_json::Value, denom: &str) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("gov"))
+        .and_then(|gov| gov.get_mut("deposit_params"))
+        .and_then(|deposit_params| deposit_params.get_mut("min_deposit"))
+        .and_then(|min_deposit| min_deposit.as_array_mut())
+        .ok_or_else(|| eyre!("failed to find min_deposit in genesis file"))?
+        .get_mut(0)
+        .and_then(|deposit| deposit.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get claims params in genesis file"))?;
+
+    params
+        .insert(
+            "denom".to_owned(),
+            serde_json::Value::String(denom.to_string()),
+        )
+        .ok_or_else(|| eyre!("failed to update deposit_params amount in genesis file"))?;
+
+    Ok(())
+}
+
+pub fn set_settlment_layer(config: &mut Value, name: &str) -> Result<(), Error> {
+    config
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("settlement_layer".to_string(), name.into());
+
+    Ok(())
+}

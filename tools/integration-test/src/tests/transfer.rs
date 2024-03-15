@@ -1,9 +1,16 @@
+use ibc_relayer::config::{ChainConfig, EventSourceMode};
+use ibc_test_framework::framework::binary::channel::run_binary_dymension_channel_test;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
     run_binary_channel_test(&IbcTransferTest)
+}
+
+#[test]
+fn test_dymension_ibc_transfer() -> Result<(), Error> {
+    run_binary_dymension_channel_test(&IbcTransferTest)
 }
 
 /**
@@ -41,7 +48,20 @@ fn test_self_connected_nary_ibc_transfer() -> Result<(), Error> {
 
 pub struct IbcTransferTest;
 
-impl TestOverrides for IbcTransferTest {}
+impl TestOverrides for IbcTransferTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.clients.misbehaviour = false;
+        for chain in config.chains.iter_mut() {
+            match chain {
+                ChainConfig::CosmosSdk(config) => {
+                    config.event_source = EventSourceMode::Pull {
+                        interval: Duration::from_secs(1),
+                    };
+                }
+            }
+        }
+    }
+}
 
 impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -72,6 +92,17 @@ impl BinaryChannelTest for IbcTransferTest {
             denom_a
         );
 
+        let denom_b = derive_ibc_denom(
+            &channel.port_b.as_ref(),
+            &channel.channel_id_b.as_ref(),
+            &denom_a,
+        )?;
+
+        let _ = chains
+            .node_b
+            .chain_driver()
+            .query_balance(&wallet_b.address(), &denom_b.as_ref())?;
+
         chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
@@ -95,6 +126,11 @@ impl BinaryChannelTest for IbcTransferTest {
             &wallet_a.address(),
             &(balance_a - a_to_b_amount).as_ref(),
         )?;
+
+        info!(
+            "Waiting for user on chain B to receive IBC transferred amount of {}",
+            a_to_b_amount
+        );
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),

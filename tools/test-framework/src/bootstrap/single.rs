@@ -7,6 +7,7 @@ use std::sync::{Arc, RwLock};
 use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
+use crate::chain::chain_type::ChainType;
 use crate::chain::config;
 use crate::chain::driver::ChainDriver;
 use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
@@ -83,6 +84,10 @@ pub fn bootstrap_single_node(
     // Validator is given more tokens as they are required to vote on upgrade chain
     chain_driver.add_genesis_account(&validator.address, &[&additional_native_token])?;
 
+    if let ChainType::RollupEvm = chain_driver.chain_type {
+        chain_driver.add_gentx_seq("validator")?;
+    }
+
     chain_driver.add_genesis_validator(&validator.id, &initial_native_token)?;
 
     chain_driver.add_genesis_account(&user1.address, &[&initial_native_token, &initial_coin])?;
@@ -92,6 +97,10 @@ pub fn bootstrap_single_node(
     chain_driver.add_genesis_account(&relayer.address, &[&initial_native_token, &initial_coin])?;
 
     chain_driver.collect_gen_txs()?;
+
+    if let ChainType::RollupEvm = chain_driver.chain_type {
+        chain_driver.validate_genesis()?;
+    }
 
     let log_level = std::env::var("CHAIN_LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
 
@@ -110,6 +119,19 @@ pub fn bootstrap_single_node(
         Ok(())
     })?;
 
+    if let ChainType::RollupEvm = chain_driver.chain_type {
+        chain_driver.update_genesis_file("genesis.json", |config| {
+            config::set_mint_denom(config, "urax")?;
+            config::set_bond_denom(config, "urax")?;
+            config::set_min_deposit(config, "urax")?;
+            config::set_evm_denom(config, "urax")?;
+            config::set_claims_denom(config, "urax")?;
+            config::consensus_params_max_gas(config, "40000000")?;
+
+            Ok(())
+        })?;
+    }
+
     let minimum_gas = format!("0{}", native_token);
     chain_driver.update_chain_config("app.toml", |config| {
         config::set_grpc_port(config, chain_driver.grpc_port)?;
@@ -121,7 +143,17 @@ pub fn bootstrap_single_node(
         Ok(())
     })?;
 
+    std::thread::sleep(Duration::from_secs(5));
+
     let process = chain_driver.start()?;
+    std::thread::sleep(Duration::from_secs(5));
+
+    if let ChainType::RollupEvm = chain_driver.chain_type {
+        chain_driver.update_chain_config("dymint.toml", |config| {
+            config::set_settlment_layer(config, "dymension")?;
+            Ok(())
+        })?;
+    }
 
     chain_driver.assert_eventual_wallet_amount(&relayer.address, &initial_coin)?;
 

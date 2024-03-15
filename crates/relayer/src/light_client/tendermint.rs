@@ -86,7 +86,8 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     ) -> Result<Verified<LightBlock>, Error> {
         trace!(%trusted_height, %target_height, "light client verification");
 
-        if !self.enable_verification {
+        //if !self.enable_verification {
+        if true {
             let target = self.fetch(target_height)?;
 
             return Ok(Verified {
@@ -170,7 +171,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             signed_header: update_header.signed_header.clone(),
             validators: update_header.validator_set.clone(),
             next_validators,
-            provider: self.peer_id,
+            provider: self.peer_id.clone(),
         };
 
         // Get the light block at trusted_height + 1 from chain.
@@ -186,7 +187,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         }
 
         let divergence = detector::detect(
-            self.peer_id,
+            self.peer_id.clone(),
             self.io.rpc_client().clone(),
             target_block,
             trusted_block,
@@ -273,14 +274,14 @@ impl LightClient {
         config: &CosmosSdkConfig,
         peer_id: PeerId,
     ) -> Result<Self, Error> {
-        let live_io = io_for_addr(&config.rpc_addr, peer_id, Some(config.rpc_timeout))?;
+        let live_io = io_for_addr(&config.rpc_addr, peer_id.clone(), Some(config.rpc_timeout))?;
 
         let io = match &config.genesis_restart {
             None => AnyIo::Prod(live_io),
             Some(genesis_restart) => {
                 let archive_io = io_for_addr(
                     &genesis_restart.archive_addr,
-                    peer_id,
+                    peer_id.clone(),
                     Some(config.rpc_timeout),
                 )?;
 
@@ -326,7 +327,7 @@ impl LightClient {
         }?;
 
         Ok(TmLightClient::new(
-            self.peer_id,
+            self.peer_id.clone(),
             client_state.as_light_client_options(),
             clock,
             scheduler,

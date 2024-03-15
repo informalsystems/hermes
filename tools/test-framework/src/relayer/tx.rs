@@ -21,6 +21,8 @@ pub fn gas_config_for_test(native_token: String) -> GasConfig {
     // Provenance requires a high gas price
     let price = if native_token == "nhash" {
         5000.0
+    } else if native_token == "urax" {
+        1000.0
     } else {
         0.003
     };

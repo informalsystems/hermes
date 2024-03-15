@@ -36,6 +36,8 @@ use crate::types::env::write_env;
 use crate::types::tagged::*;
 use crate::util::suspend::hang_on_error;
 
+use super::dymension::run_binary_dymension_node_test;
+
 /**
    Runs a test case that implements [`BinaryChannelTest`], with
    the test case being executed twice, with the second time having the position
@@ -102,6 +104,26 @@ where
     run_binary_interchain_security_node_test(&RunBinaryChainTest::new(
         &RunBinaryConnectionTest::new(&RunBinaryChannelTest::new(&RunWithSupervisor::new(test))),
     ))
+}
+
+pub fn run_binary_dymension_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
+where
+    Test: BinaryChannelTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
+        + NodeGenesisOverride
+        + RelayerConfigOverride
+        + ClientOptionsOverride
+        + SupervisorOverride
+        + ConnectionDelayOverride
+        + PortsOverride
+        + ChannelOrderOverride
+        + ChannelVersionOverride,
+{
+    run_binary_dymension_node_test(&RunBinaryChainTest::new(&RunBinaryConnectionTest::new(
+        &RunBinaryChannelTest::new(&RunWithSupervisor::new(test)),
+    )))
 }
 
 /**

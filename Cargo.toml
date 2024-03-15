@@ -29,3 +29,11 @@ overflow-checks = true
 # tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
+tendermint                       = { path = "<PATH TO UPDATED TENDERMINT-RS>/tendermint" }
+tendermint-rpc                   = { path = "<PATH TO UPDATED TENDERMINT-RS>/rpc" }
+tendermint-proto                 = { path = "<PATH TO UPDATED TENDERMINT-RS>/proto" }
+tendermint-light-client          = { path = "<PATH TO UPDATED TENDERMINT-RS>/light-client" }
+tendermint-light-client-verifier = { path = "<PATH TO UPDATED TENDERMINT-RS>/light-client-verifier" }
+tendermint-light-client-detector = { path = "<PATH TO UPDATED TENDERMINT-RS>/light-client-detector" }
+tendermint-testgen               = { path = "<PATH TO UPDATED TENDERMINT-RS>/testgen" }
+ibc-proto                        = { path = "<PATH TO UPDATED IBC-PROTO-RS>" }
