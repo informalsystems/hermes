@@ -2469,45 +2469,39 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let node_min_gas_prices_result = chain.min_gas_price()?;
 
     match node_min_gas_prices_result {
-        Some(node_min_gas_prices) => {
-            if !node_min_gas_prices.is_empty() {
-                let mut found_matching_denom = false;
+        Some(node_min_gas_prices) if !node_min_gas_prices.is_empty() => {
+            let mut found_matching_denom = false;
 
-                for price in node_min_gas_prices {
-                    match relayer_gas_price.partial_cmp(&price) {
-                        Some(Ordering::Less) => {
-                            return Err(Error::gas_price_too_low(chain_id.clone()))
-                        }
-                        Some(_) => {
-                            found_matching_denom = true;
-                            break;
-                        }
-                        None => continue,
+            for price in node_min_gas_prices {
+                match relayer_gas_price.partial_cmp(&price) {
+                    Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
+                    Some(_) => {
+                        found_matching_denom = true;
+                        break;
                     }
+                    None => continue,
                 }
+            }
 
-                if !found_matching_denom {
-                    warn!(
+            if !found_matching_denom {
+                warn!(
                         "chain '{}' has no minimum gas price of denomination '{}' \
-                        that is strictly less than the `gas_price` specified for \
-                        that chain in the Hermes configuration. \
+                        that is strictly less than the `gas_price` specified for that chain in the Hermes configuration. \
                         This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
                         chain_id, relayer_gas_price.denom
                     );
-                }
-            } else {
-                warn!(
-                    "chain '{}' has no minimum gas price value configured for denomination '{}'. \
-                    This is usually a sign of misconfiguration, please check your chain and \
-                    relayer configurations",
-                    chain_id, relayer_gas_price.denom
-                );
             }
         }
+
+        Some(_) => warn!(
+            "chain '{}' has no minimum gas price value configured for denomination '{}'. \
+            This is usually a sign of misconfiguration, please check your chain and relayer configurations",
+            chain_id, relayer_gas_price.denom
+        ),
+
         None => warn!(
-            "chain '{}' does not implement cosmos.base.node.v1beta1.Service/Params endpoint. \
-            It's impossible to check whether the chain's minimum-gas-prices matches the ones \
-            specified in config",
+            "chain '{}' does not implement the `cosmos.base.node.v1beta1.Service/Params` endpoint. \
+            It is impossible to check whether the chain's minimum-gas-prices matches the ones specified in config",
             chain_id,
         ),
     }
