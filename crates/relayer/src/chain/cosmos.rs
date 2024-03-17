@@ -481,7 +481,7 @@ impl CosmosSdkChain {
     }
 
     /// The minimum gas price that this node accepts
-    pub fn min_gas_price(&self) -> Result<Vec<GasPrice>, Error> {
+    pub fn min_gas_price(&self) -> Result<Option<Vec<GasPrice>>, Error> {
         crate::time!(
             "min_gas_price",
             {
@@ -489,10 +489,9 @@ impl CosmosSdkChain {
             }
         );
 
-        let min_gas_price: Vec<GasPrice> =
-            self.query_config_params()?.map_or(vec![], |cfg_response| {
-                parse_gas_prices(cfg_response.minimum_gas_price)
-            });
+        let min_gas_price: Option<Vec<GasPrice>> = self
+            .query_config_params()?
+            .map(|cfg_response| parse_gas_prices(cfg_response.minimum_gas_price));
 
         Ok(min_gas_price)
     }
@@ -2467,38 +2466,44 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     let relayer_gas_price = &chain.config.gas_price;
-    let node_min_gas_prices = chain.min_gas_price()?;
+    let node_min_gas_prices_result = chain.min_gas_price()?;
 
-    if !node_min_gas_prices.is_empty() {
-        let mut found_matching_denom = false;
+    match node_min_gas_prices_result {
+        Some(node_min_gas_prices) if !node_min_gas_prices.is_empty() => {
+            let mut found_matching_denom = false;
 
-        for price in node_min_gas_prices {
-            match relayer_gas_price.partial_cmp(&price) {
-                Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
-                Some(_) => {
-                    found_matching_denom = true;
-                    break;
+            for price in node_min_gas_prices {
+                match relayer_gas_price.partial_cmp(&price) {
+                    Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
+                    Some(_) => {
+                        found_matching_denom = true;
+                        break;
+                    }
+                    None => continue,
                 }
-                None => continue,
+            }
+
+            if !found_matching_denom {
+                warn!(
+                        "chain '{}' has no minimum gas price of denomination '{}' \
+                        that is strictly less than the `gas_price` specified for that chain in the Hermes configuration. \
+                        This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
+                        chain_id, relayer_gas_price.denom
+                    );
             }
         }
 
-        if !found_matching_denom {
-            warn!(
-                "chain '{}' has no minimum gas price of denomination '{}' \
-                that is strictly less than the `gas_price` specified for \
-                that chain in the Hermes configuration. \
-                This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
-                chain_id, relayer_gas_price.denom
-            );
-        }
-    } else {
-        warn!(
+        Some(_) => warn!(
             "chain '{}' has no minimum gas price value configured for denomination '{}'. \
-            This is usually a sign of misconfiguration, please check your chain and \
-            relayer configurations",
+            This is usually a sign of misconfiguration, please check your chain and relayer configurations",
             chain_id, relayer_gas_price.denom
-        );
+        ),
+
+        None => warn!(
+            "chain '{}' does not implement the `cosmos.base.node.v1beta1.Service/Params` endpoint. \
+            It is impossible to check whether the chain's minimum-gas-prices matches the ones specified in config",
+            chain_id,
+        ),
     }
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
