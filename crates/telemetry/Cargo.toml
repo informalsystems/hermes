@@ -28,5 +28,5 @@ tokio                    = "1.26.0"
 tracing                  = "0.1.36"
 
 [dependencies.tendermint]
-version = "0.34.0"
+version = "0.35.0"
 default-features = false

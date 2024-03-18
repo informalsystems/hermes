@@ -52,10 +52,10 @@ doc = true
 tempfile = "3.10.1"
 
 [dependencies.tendermint]
-version = "0.34.0"
+version = "0.35.0"
 
 [dependencies.tendermint-rpc]
-version = "0.34.0"
+version = "0.35.0"
 features = ["http-client"]
 
 [dependencies.byte-unit]

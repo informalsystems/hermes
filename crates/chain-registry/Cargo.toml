@@ -14,7 +14,7 @@ description  = """
 [dependencies]
 ibc-relayer-types = { version = "0.27.2", path = "../relayer-types" }
 ibc-proto         = { version = "0.42.0", features = ["serde"] }
-tendermint-rpc    = { version = "0.34.0", features = ["http-client", "websocket-client"] }
+tendermint-rpc    = { version = "0.35.0", features = ["http-client", "websocket-client"] }
 
 async-trait = "0.1.72"
 flex-error  = { version = "0.4.4", default-features = false }

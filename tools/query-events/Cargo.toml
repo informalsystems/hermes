@@ -5,8 +5,8 @@ edition = "2021"
 publish = false
 
 [dependencies]
-tendermint     = { version  = "0.34.0" }
-tendermint-rpc = { version  = "0.34.0", features = ["http-client"] }
+tendermint     = { version  = "0.35.0" }
+tendermint-rpc = { version  = "0.35.0", features = ["http-client"] }
 
 clap               = { version = "3.2", features = ["derive"] }
 futures            = "0.3.27"

@@ -18,7 +18,7 @@ ibc-relayer-types = { version = "=0.27.2",     path = "../../crates/relayer-type
 ibc-relayer       = { version = "=0.27.2",     path = "../../crates/relayer" }
 ibc-relayer-cli   = { version = "=1.8.2",      path = "../../crates/relayer-cli" }
 ibc-proto         = { version = "0.42.0", features = ["serde"] }
-tendermint-rpc    = { version = "0.34.0", features = ["http-client", "websocket-client"] }
+tendermint-rpc    = { version = "0.35.0", features = ["http-client", "websocket-client"] }
 
 http = "0.2.9"
 tokio = { version = "1.0", features = ["full"] }

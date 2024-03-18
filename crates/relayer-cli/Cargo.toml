@@ -56,15 +56,15 @@ tracing                  = "0.1.36"
 tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
 time                     = "0.3"
 [dependencies.tendermint]
-version = "0.34.0"
+version = "0.35.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "0.34.0"
+version = "0.35.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.34.0"
+version = "0.35.0"
 
 [dependencies.abscissa_core]
 version = "=0.6.0"
