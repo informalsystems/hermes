@@ -195,27 +195,26 @@ impl EventSource {
     async fn fetch_batches(&mut self, latest_height: BlockHeight) -> Result<Vec<EventBatch>> {
         let start_height = self.last_fetched_height.increment();
 
-        trace!("fetching blocks from {start_height} to {latest_height}");
+        trace!(%start_height, %latest_height, "fetching blocks");
 
         let heights = HeightRangeInclusive::new(start_height, latest_height);
         let mut batches = Vec::with_capacity(heights.len());
 
         for height in heights {
-            trace!("collecting events at height {height}");
+            trace!(%height, "collecting events");
 
             let result = collect_events(&self.rpc_client, &self.chain_id, height).await;
 
+            self.last_fetched_height = height;
+
             match result {
                 Ok(batch) => {
-                    self.last_fetched_height = height;
-
                     if let Some(batch) = batch {
                         batches.push(batch);
                     }
                 }
                 Err(e) => {
                     error!(%height, "failed to collect events: {e}");
-                    break;
                 }
             }
         }
