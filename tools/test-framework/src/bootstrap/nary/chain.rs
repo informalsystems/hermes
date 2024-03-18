@@ -2,7 +2,6 @@
    Functions for bootstrapping N-ary number of chains.
 */
 
-use core::convert::TryInto;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;

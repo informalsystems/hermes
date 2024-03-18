@@ -161,7 +161,7 @@ pub fn spawn_incentivized_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHa
     // This Cache will store the IncentivizedPacket observed. They will then be used in order
     // to verify if a SendPacket event is incentivized.
     let incentivized_recv_cache: RwArc<Cache<Sequence, IncentivizedPacket>> = RwArc::new_lock(
-        moka::sync::Cache::builder()
+        Cache::builder()
             .time_to_live(INCENTIVIZED_CACHE_TTL)
             .max_capacity(INCENTIVIZED_CACHE_MAX_CAPACITY)
             .build(),

@@ -131,7 +131,7 @@ async fn estimate_gas_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,
     tx: Tx,
-    account: &Account,
+    _account: &Account,
 ) -> Result<EstimatedGas, Error> {
     let simulated_gas = send_tx_simulate(grpc_address, tx)
         .await
@@ -169,7 +169,7 @@ async fn estimate_gas_with_tx(
 
             telemetry!(
                 simulate_errors,
-                &account.address.to_string(),
+                &_account.address.to_string(),
                 true,
                 get_error_text(&e),
             );
@@ -185,7 +185,7 @@ async fn estimate_gas_with_tx(
 
             telemetry!(
                 simulate_errors,
-                &account.address.to_string(),
+                &_account.address.to_string(),
                 false,
                 get_error_text(&e),
             );

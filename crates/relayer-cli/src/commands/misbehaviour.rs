@@ -1,5 +1,5 @@
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::Command;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::config::Config;

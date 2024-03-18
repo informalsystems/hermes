@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.27.1"
+version      = "0.27.2"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -20,8 +20,8 @@ default   = ["flex-error/std", "flex-error/eyre_tracer"]
 
 [dependencies]
 ibc-proto         = { version = "0.42.0", features = ["serde"] }
-ibc-telemetry     = { version = "0.27.1", path = "../telemetry" }
-ibc-relayer-types = { version = "0.27.1", path = "../relayer-types", features = ["mocks"] }
+ibc-telemetry     = { version = "0.27.2", path = "../telemetry" }
+ibc-relayer-types = { version = "0.27.2", path = "../relayer-types", features = ["mocks"] }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
@@ -109,7 +109,7 @@ version = "0.34.0"
 default-features = false
 
 [dev-dependencies]
-ibc-relayer-types = { version = "0.27.1", path = "../relayer-types", features = ["mocks"] }
+ibc-relayer-types = { version = "0.27.2", path = "../relayer-types", features = ["mocks"] }
 serial_test = "3.0.0"
 env_logger = "0.11.1"
 test-log = { version = "0.2.14", features = ["trace"] }

@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
+use abscissa_core::{config::Override, FrameworkErrorKind};
 use eyre::eyre;
 
 use ibc_relayer::{

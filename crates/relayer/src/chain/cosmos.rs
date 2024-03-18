@@ -1,15 +1,10 @@
 use alloc::sync::Arc;
-use bytes::{Buf, Bytes};
-use core::{
-    convert::{TryFrom, TryInto},
-    future::Future,
-    str::FromStr,
-    time::Duration,
-};
-use futures::future::join_all;
-use num_bigint::BigInt;
+use core::{future::Future, str::FromStr, time::Duration};
 use std::{cmp::Ordering, thread};
 
+use bytes::{Buf, Bytes};
+use futures::future::join_all;
+use num_bigint::BigInt;
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tonic::metadata::AsciiMetadataValue;
@@ -146,6 +141,7 @@ pub mod wait;
 ///
 /// [tm-37-max]: https://github.com/tendermint/tendermint/blob/v0.37.0-rc1/types/params.go#L79
 pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
+
 pub struct CosmosSdkChain {
     config: config::CosmosSdkConfig,
     tx_config: TxConfig,
@@ -292,19 +288,23 @@ impl CosmosSdkChain {
             ));
         }
 
-        // Query /genesis RPC endpoint to retrieve the `max_expected_time_per_block` value
-        // to use as `max_block_time`.
+        // Query /genesis RPC endpoint to retrieve the `max_expected_time_per_block` value to use as `max_block_time`.
         // If it is not found, keep the configured `max_block_time`.
         match self.block_on(self.rpc_client.genesis::<GenesisAppState>()) {
             Ok(genesis_reponse) => {
                 let old_max_block_time = self.config.max_block_time;
-                self.config.max_block_time =
+                let new_max_block_time =
                     Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
-                info!(
-                    "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
-                    old_max_block_time.as_secs(),
-                    self.config.max_block_time.as_secs()
-                );
+
+                if old_max_block_time.as_secs() != new_max_block_time.as_secs() {
+                    self.config.max_block_time = new_max_block_time;
+
+                    info!(
+                        "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
+                        old_max_block_time.as_secs(),
+                        self.config.max_block_time.as_secs()
+                    );
+                }
             }
             Err(e) => {
                 warn!(
@@ -481,7 +481,7 @@ impl CosmosSdkChain {
     }
 
     /// The minimum gas price that this node accepts
-    pub fn min_gas_price(&self) -> Result<Vec<GasPrice>, Error> {
+    pub fn min_gas_price(&self) -> Result<Option<Vec<GasPrice>>, Error> {
         crate::time!(
             "min_gas_price",
             {
@@ -489,10 +489,9 @@ impl CosmosSdkChain {
             }
         );
 
-        let min_gas_price: Vec<GasPrice> =
-            self.query_config_params()?.map_or(vec![], |cfg_response| {
-                parse_gas_prices(cfg_response.minimum_gas_price)
-            });
+        let min_gas_price: Option<Vec<GasPrice>> = self
+            .query_config_params()?
+            .map(|cfg_response| parse_gas_prices(cfg_response.minimum_gas_price));
 
         Ok(min_gas_price)
     }
@@ -2467,38 +2466,44 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     let relayer_gas_price = &chain.config.gas_price;
-    let node_min_gas_prices = chain.min_gas_price()?;
+    let node_min_gas_prices_result = chain.min_gas_price()?;
 
-    if !node_min_gas_prices.is_empty() {
-        let mut found_matching_denom = false;
+    match node_min_gas_prices_result {
+        Some(node_min_gas_prices) if !node_min_gas_prices.is_empty() => {
+            let mut found_matching_denom = false;
 
-        for price in node_min_gas_prices {
-            match relayer_gas_price.partial_cmp(&price) {
-                Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
-                Some(_) => {
-                    found_matching_denom = true;
-                    break;
+            for price in node_min_gas_prices {
+                match relayer_gas_price.partial_cmp(&price) {
+                    Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
+                    Some(_) => {
+                        found_matching_denom = true;
+                        break;
+                    }
+                    None => continue,
                 }
-                None => continue,
+            }
+
+            if !found_matching_denom {
+                warn!(
+                        "chain '{}' has no minimum gas price of denomination '{}' \
+                        that is strictly less than the `gas_price` specified for that chain in the Hermes configuration. \
+                        This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
+                        chain_id, relayer_gas_price.denom
+                    );
             }
         }
 
-        if !found_matching_denom {
-            warn!(
-                "chain '{}' has no minimum gas price of denomination '{}' \
-                that is strictly less than the `gas_price` specified for \
-                that chain in the Hermes configuration. \
-                This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
-                chain_id, relayer_gas_price.denom
-            );
-        }
-    } else {
-        warn!(
+        Some(_) => warn!(
             "chain '{}' has no minimum gas price value configured for denomination '{}'. \
-            This is usually a sign of misconfiguration, please check your chain and \
-            relayer configurations",
+            This is usually a sign of misconfiguration, please check your chain and relayer configurations",
             chain_id, relayer_gas_price.denom
-        );
+        ),
+
+        None => warn!(
+            "chain '{}' does not implement the `cosmos.base.node.v1beta1.Service/Params` endpoint. \
+            It is impossible to check whether the chain's minimum-gas-prices matches the ones specified in config",
+            chain_id,
+        ),
     }
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;

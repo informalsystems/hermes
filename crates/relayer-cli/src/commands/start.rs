@@ -4,7 +4,6 @@ use std::error::Error;
 use std::io;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 use crossbeam_channel::Sender;
 
 use ibc_relayer::chain::handle::{CachingChainHandle, ChainHandle};

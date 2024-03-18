@@ -1,5 +1,4 @@
 use ibc_proto::ibc::core::channel::v1::PacketId as ProtoPacketId;
-use std::convert::TryFrom;
 use std::str::FromStr;
 
 use crate::core::ics04_channel::error::Error;
