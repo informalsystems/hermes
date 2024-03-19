@@ -269,7 +269,7 @@ fn poll_backoff(poll_interval: Duration) -> impl Iterator<Item = Duration> {
 
 fn retries_backoff(collect_retries: u32) -> impl Iterator<Item = Duration> {
     ConstantGrowth::new(Duration::from_secs(1), Duration::from_millis(500))
-        .clamp(Duration::from_secs(1) * 4, collect_retries as usize)
+        .clamp(Duration::from_secs(4), collect_retries as usize)
 }
 
 fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {
