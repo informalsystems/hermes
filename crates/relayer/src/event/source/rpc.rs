@@ -214,10 +214,11 @@ impl EventSource {
             loop {
                 match collect_events(&self.rpc_client, &self.chain_id, height).await {
                     Ok(batch) => {
+                        self.last_fetched_height = height;
+
                         if let Some(batch) = batch {
                             batches.push(batch);
                         }
-                        self.last_fetched_height = height;
                         break;
                     }
                     Err(e) if attempts < self.max_retries => {
