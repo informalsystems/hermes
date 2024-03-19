@@ -23,7 +23,7 @@ use ibc_relayer_types::{
 
 use crate::{
     chain::tracking::TrackingId,
-    event::{bus::EventBus, source::Error, IbcEventWithHeight},
+    event::{bus::EventBus, error::ErrorDetail, source::Error, IbcEventWithHeight},
     telemetry,
     util::retry::ConstantGrowth,
 };
@@ -211,33 +211,34 @@ impl EventSource {
             let mut attempts = 0;
             let mut backoff = retries_backoff(self.max_retries);
 
+            // NOTE: Even if we failed to collect events after max retries,
+            // we still need to update to move on next block
+            self.last_fetched_height = height;
+
             loop {
                 match collect_events(&self.rpc_client, &self.chain_id, height).await {
                     Ok(batch) => {
-                        self.last_fetched_height = height;
-
                         if let Some(batch) = batch {
                             batches.push(batch);
                         }
                         break;
                     }
-                    Err(e) if attempts < self.max_retries => {
-                        let delay = backoff
-                            .next()
-                            .expect("backoff has attempted to make more iterates than is expected");
+                    Err(e) => match e.detail() {
+                        ErrorDetail::Rpc(_) if attempts < self.max_retries => {
+                            let delay = backoff.next().expect(
+                                "backoff has attempted to make more iterates than is expected",
+                            );
 
-                        error!(%height, "failed to collect events: {e}, retrying in {delay:?}...");
-                        sleep(delay).await;
-                        attempts += 1;
-                    }
-                    Err(e) => {
-                        error!(%height, "failed to collect events after {attempts} attempts: {e}");
+                            error!(%height, "failed to collect events: {e}, retrying in {delay:?}...");
+                            sleep(delay).await;
+                            attempts += 1;
+                        }
 
-                        // NOTE: We failed to collect events after max retries,
-                        // but still need to update to move on next block
-                        self.last_fetched_height = height;
-                        break;
-                    }
+                        _ => {
+                            error!(%height, "failed to collect events after {attempts} attempts: {e}");
+                            break;
+                        }
+                    },
                 }
             }
         }
