@@ -189,11 +189,12 @@ grpc_addr = 'http://127.0.0.1:9090'
 
 # b) Pull: for polling for IBC events via the `/block_results` RPC endpoint.
 #
-#     `{ mode = 'pull', interval = '1s' }`
+#     `{ mode = 'pull', interval = '1s', max_retries = 4 }`
 #
 #    where
 #
 #    - `interval` is the interval at which to poll for blocks. Default: 1s
+#    - `max_retries` is the maximum number of retries to collect events for each block. Default: 4
 #
 #    This mode should only be used in situations where Hermes misses events that it should be
 #    receiving, such as when relaying for CosmWasm-enabled chains which emit IBC events without
