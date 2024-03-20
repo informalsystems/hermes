@@ -216,6 +216,8 @@ impl EventSource {
             self.last_fetched_height = height;
 
             loop {
+                attempts += 1;
+
                 match collect_events(&self.rpc_client, &self.chain_id, height).await {
                     Ok(batch) => {
                         if let Some(batch) = batch {
@@ -231,7 +233,6 @@ impl EventSource {
 
                             error!(%height, "failed to collect events: {e}, retrying in {delay:?}...");
                             sleep(delay).await;
-                            attempts += 1;
                         }
 
                         _ => {
