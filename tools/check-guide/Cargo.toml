@@ -1,10 +1,8 @@
 [package]
-name = "check-guide"
+name    = "check-guide"
 version = "0.1.0"
 edition = "2021"
 publish = false
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 ibc-relayer-cli = { path = "../../crates/relayer-cli" }
