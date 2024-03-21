@@ -23,7 +23,7 @@ use ibc_relayer_types::{
 
 use crate::{
     chain::tracking::TrackingId,
-    event::{bus::EventBus, source::Error, IbcEventWithHeight},
+    event::{bus::EventBus, error::ErrorDetail, source::Error, IbcEventWithHeight},
     telemetry,
     util::retry::ConstantGrowth,
 };
@@ -45,6 +45,9 @@ pub struct EventSource {
     /// Poll interval
     poll_interval: Duration,
 
+    /// Max retries to collect events
+    max_retries: u32,
+
     /// Event bus for broadcasting events
     event_bus: EventBus<Arc<Result<EventBatch>>>,
 
@@ -63,6 +66,7 @@ impl EventSource {
         chain_id: ChainId,
         rpc_client: HttpClient,
         poll_interval: Duration,
+        max_retries: u32,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, TxEventSourceCmd)> {
         let event_bus = EventBus::new();
@@ -73,6 +77,7 @@ impl EventSource {
             chain_id,
             rpc_client,
             poll_interval,
+            max_retries,
             event_bus,
             rx_cmd,
             last_fetched_height: BlockHeight::from(0_u32),
@@ -203,19 +208,38 @@ impl EventSource {
         for height in heights {
             trace!("collecting events at height {height}");
 
-            let result = collect_events(&self.rpc_client, &self.chain_id, height).await;
+            let mut attempts = 0;
+            let mut backoff = retries_backoff(self.max_retries);
 
-            match result {
-                Ok(batch) => {
-                    self.last_fetched_height = height;
+            // NOTE: Even if we failed to collect events after max retries,
+            // we still need to update to move on next block
+            self.last_fetched_height = height;
 
-                    if let Some(batch) = batch {
-                        batches.push(batch);
+            loop {
+                attempts += 1;
+
+                match collect_events(&self.rpc_client, &self.chain_id, height).await {
+                    Ok(batch) => {
+                        if let Some(batch) = batch {
+                            batches.push(batch);
+                        }
+                        break;
                     }
-                }
-                Err(e) => {
-                    error!(%height, "failed to collect events: {e}");
-                    break;
+                    Err(e) => match e.detail() {
+                        ErrorDetail::Rpc(_) if attempts < self.max_retries => {
+                            let delay = backoff.next().expect(
+                                "backoff has attempted to make more iterates than is expected",
+                            );
+
+                            error!(%height, "failed to collect events: {e}, retrying in {delay:?}...");
+                            sleep(delay).await;
+                        }
+
+                        _ => {
+                            error!(%height, "failed to collect events after {attempts} attempts: {e}");
+                            break;
+                        }
+                    },
                 }
             }
         }
@@ -242,6 +266,11 @@ impl EventSource {
 fn poll_backoff(poll_interval: Duration) -> impl Iterator<Item = Duration> {
     ConstantGrowth::new(poll_interval, Duration::from_millis(500))
         .clamp(poll_interval * 5, usize::MAX)
+}
+
+fn retries_backoff(collect_retries: u32) -> impl Iterator<Item = Duration> {
+    ConstantGrowth::new(Duration::from_secs(1), Duration::from_millis(500))
+        .clamp(Duration::from_secs(4), collect_retries as usize)
 }
 
 fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {

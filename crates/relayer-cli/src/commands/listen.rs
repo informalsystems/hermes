@@ -156,10 +156,14 @@ fn subscribe(
                     *batch_delay,
                     rt,
                 ),
-                EventSourceMode::Pull { interval } => EventSource::rpc(
+                EventSourceMode::Pull {
+                    interval,
+                    max_retries,
+                } => EventSource::rpc(
                     chain_config.id().clone(),
                     HttpClient::new(config.rpc_addr.clone())?,
                     *interval,
+                    *max_retries,
                     rt,
                 ),
             }?;
