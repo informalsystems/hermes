@@ -93,6 +93,21 @@ jobs:
           command: nextest
           args: run --all-features --no-fail-fast --workspace --exclude ibc-integration-test --no-capture
 
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install cargo-msrv
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-msrv
+      - uses: actions-rs/cargo@v1
+        with:
+          command: msrv
+
   # test-coverage:
   #   runs-on: ubuntu-latest
   #   steps:
