@@ -100,14 +100,12 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-msrv
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-msrv
-      - uses: actions-rs/cargo@v1
-        with:
-          command: msrv
-          args: -- 'cargo check --all-features --all-targets'
+        run: cargo binstall --no-confirm --force cargo-msrv@0.16.0-beta.20
+      - name: Check MSRV
+        run: cargo msrv verify --output-format minimal --manifest-path crates/relayer-cli/Cargo.toml -- 'cargo check --all-features'
 
   # test-coverage:
   #   runs-on: ubuntu-latest
