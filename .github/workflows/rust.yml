@@ -107,6 +107,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: msrv
+          args: -- 'cargo check --all-features --all-targets'
 
   # test-coverage:
   #   runs-on: ubuntu-latest
