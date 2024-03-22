@@ -1,5 +1,4 @@
 use abscissa_core::clap::Parser;
-use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
 use ibc_relayer::chain::handle::ChainHandle;
