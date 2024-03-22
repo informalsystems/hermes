@@ -13,12 +13,6 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Serialize, Debug)]
-struct PacketSeqs {
-    height: Height,
-    seqs: Vec<u64>,
-}
-
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryPacketCommitmentCmd {
     #[clap(
