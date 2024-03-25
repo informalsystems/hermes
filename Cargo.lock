@@ -642,9 +642,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.11"
+version = "0.5.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "176dc175b78f56c0f321911d9c8eb2b77a78a4860b9c19db83835fea1a46649b"
+checksum = "ab3db02a9c5b5121e1e42fbdb1aeb65f5e02624cc58c43f2884c6ccac0b82f95"
 dependencies = [
  "crossbeam-utils 0.8.19",
 ]
@@ -1509,7 +1509,7 @@ dependencies = [
  "bs58",
  "byte-unit",
  "bytes",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "digest 0.10.7",
  "dirs-next",
  "ed25519",
@@ -1576,7 +1576,7 @@ dependencies = [
  "clap_complete",
  "color-eyre",
  "console",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "dialoguer",
  "dirs-next",
  "eyre",
@@ -1613,7 +1613,7 @@ name = "ibc-relayer-rest"
 version = "0.27.2"
 dependencies = [
  "axum",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "ibc-relayer",
  "ibc-relayer-types",
  "reqwest",
@@ -1678,7 +1678,7 @@ name = "ibc-test-framework"
 version = "0.27.2"
 dependencies = [
  "color-eyre",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "eyre",
  "flex-error",
  "hdpath",
@@ -1950,7 +1950,7 @@ version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1911e88d5831f748a4097a43862d129e3c6fca831eecac9b8db6d01d93c9de2"
 dependencies = [
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "crossbeam-epoch",
  "crossbeam-utils 0.8.19",
  "once_cell",
@@ -2120,7 +2120,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b3a2a91fdbfdd4d212c0dcc2ab540de2c2bcbbd90be17de7a7daf8822d010c1"
 dependencies = [
  "async-trait",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "dashmap",
  "fnv",
  "futures-channel",
