@@ -47,9 +47,11 @@ impl EventSource {
         chain_id: ChainId,
         rpc_client: HttpClient,
         poll_interval: Duration,
+        max_retries: u32,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, TxEventSourceCmd)> {
-        let (source, tx) = rpc::EventSource::new(chain_id, rpc_client, poll_interval, rt)?;
+        let (source, tx) =
+            rpc::EventSource::new(chain_id, rpc_client, poll_interval, max_retries, rt)?;
         Ok((Self::Rpc(source), tx))
     }
 

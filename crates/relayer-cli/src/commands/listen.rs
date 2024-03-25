@@ -16,6 +16,7 @@ use tracing::{error, info, instrument};
 use ibc_relayer::{
     chain::handle::Subscription,
     config::{ChainConfig, EventSourceMode},
+    error::Error,
     event::source::EventSource,
     util::compat_mode::compat_mode_from_version,
 };
@@ -156,12 +157,22 @@ fn subscribe(
                     *batch_delay,
                     rt,
                 ),
-                EventSourceMode::Pull { interval } => EventSource::rpc(
-                    chain_config.id().clone(),
-                    HttpClient::new(config.rpc_addr.clone())?,
-                    *interval,
-                    rt,
-                ),
+                EventSourceMode::Pull {
+                    interval,
+                    max_retries,
+                } => {
+                    let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
+                        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+                    rpc_client.set_compat_mode(compat_mode);
+
+                    EventSource::rpc(
+                        chain_config.id().clone(),
+                        rpc_client,
+                        *interval,
+                        *max_retries,
+                        rt,
+                    )
+                }
             }?;
 
             thread::spawn(move || event_source.run());

@@ -335,10 +335,14 @@ impl CosmosSdkChain {
                 *batch_delay,
                 self.rt.clone(),
             ),
-            Mode::Pull { interval } => EventSource::rpc(
+            Mode::Pull {
+                interval,
+                max_retries,
+            } => EventSource::rpc(
                 self.config.id.clone(),
                 self.rpc_client.clone(),
                 *interval,
+                *max_retries,
                 self.rt.clone(),
             ),
         }
