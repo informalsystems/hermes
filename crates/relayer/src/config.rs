@@ -175,7 +175,7 @@ pub mod default {
     }
 
     pub fn poll_interval() -> Duration {
-        Duration::from_secs(1)
+        Duration::from_millis(500)
     }
 
     pub fn max_retries() -> u32 {
