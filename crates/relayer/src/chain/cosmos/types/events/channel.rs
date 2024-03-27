@@ -85,8 +85,11 @@ impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
     type Error = EventError;
 
     fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-        let ack = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_ACK_ATTRIBUTE_KEY))?
-            .into_bytes();
+        let ack_str =
+            extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_ACK_ATTRIBUTE_KEY))?;
+
+        let ack = hex::decode(ack_str.to_lowercase())
+            .map_err(|_| EventError::invalid_packet_ack(ack_str))?;
 
         let packet = Packet::try_from(obj)?;
 
