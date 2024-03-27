@@ -109,11 +109,6 @@ where
     )
     .await?;
 
-    let websocket_address =
-        rpc_data.websocket.clone().try_into().map_err(|e| {
-            RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
-        })?;
-
     let avg_gas_price = if let Some(fee_token) = chain_data.fees.fee_tokens.first() {
         fee_token.average_gas_price
     } else {
@@ -131,9 +126,9 @@ where
         id: chain_data.chain_id,
         rpc_addr: rpc_data.rpc_address,
         grpc_addr: grpc_address,
-        event_source: EventSourceMode::Push {
-            url: websocket_address,
-            batch_delay: default::batch_delay(),
+        event_source: EventSourceMode::Pull {
+            interval: default::poll_interval(),
+            max_retries: default::max_retries(),
         },
         rpc_timeout: default::rpc_timeout(),
         trusted_node: default::trusted_node(),
@@ -191,6 +186,7 @@ where
     for i in 0..retries {
         let query_response =
             QuerierType::query_healthy(chain_name.to_string(), endpoints.clone()).await;
+
         match query_response {
             Ok(r) => {
                 return Ok(r);
@@ -200,13 +196,13 @@ where
             }
         }
     }
-    Err(RegistryError::unhealthy_endpoints(
-        endpoints
-            .iter()
-            .map(|endpoint| endpoint.to_string())
-            .collect(),
-        retries,
-    ))
+
+    let endpoints = endpoints
+        .iter()
+        .map(|endpoint| endpoint.to_string())
+        .collect();
+
+    Err(RegistryError::unhealthy_endpoints(endpoints, retries))
 }
 
 /// Fetches the specified resources from the Cosmos chain registry, using the specified commit hash

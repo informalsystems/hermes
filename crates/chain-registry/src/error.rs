@@ -74,7 +74,7 @@ define_error! {
                     .iter()
                     .join(", ");
 
-                format!("Error finding a healthy endpoint after {} retries. Endpoints: {endpoints}", e.retries)
+                format!("Did not find a healthy endpoint after {} retries. Endpoints: {endpoints}", e.retries)
             },
 
         UriParseError
