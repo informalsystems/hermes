@@ -252,7 +252,6 @@ impl Drop for WorkerMap {
     }
 }
 
-#[cfg(feature = "telemetry")]
 fn metric_type(o: &Object) -> ibc_telemetry::state::WorkerType {
     use ibc_telemetry::state::WorkerType;
 

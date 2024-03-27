@@ -17,11 +17,10 @@ all-features = true
 
 [features]
 default   = ["flex-error/std", "flex-error/eyre_tracer"]
-telemetry = ["ibc-telemetry"]
 
 [dependencies]
 ibc-proto         = { workspace = true, features = ["serde"] }
-ibc-telemetry     = { workspace = true, optional = true }
+ibc-telemetry     = { workspace = true }
 ibc-relayer-types = { workspace = true, features = ["clock"] }
 
 anyhow                           = { workspace = true }
