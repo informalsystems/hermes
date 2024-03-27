@@ -131,7 +131,6 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     Ok(())
 }
 
-#[cfg(feature = "rest-server")]
 fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
     use ibc_relayer::util::spawn_blocking;
 
@@ -167,22 +166,6 @@ fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
     });
 
     Some(rx)
-}
-
-#[cfg(not(feature = "rest-server"))]
-fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
-    let rest = config.rest.clone();
-
-    if rest.enabled {
-        warn!(
-            "REST server enabled in the config but Hermes was built without REST support, \
-             build Hermes with --features=rest-server to enable REST support."
-        );
-
-        None
-    } else {
-        None
-    }
 }
 
 fn spawn_telemetry_server(config: &Config) {
