@@ -1,6 +1,6 @@
 use core::time::Duration;
 use std::borrow::BorrowMut;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
@@ -56,12 +56,11 @@ fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
 /// processing pending txs between `ChainA` and `ChainB`.
 pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: Packet,
-    // Mutex is used to prevent race condition between the packet workers
-    link: Arc<Mutex<Link<ChainA, ChainB>>>,
+    link: Arc<Link<ChainA, ChainB>>,
     resubmit: Resubmit,
 ) -> TaskHandle {
     let span = {
-        let relay_path = &link.lock().unwrap().a_to_b;
+        let relay_path = &link.a_to_b;
         error_span!(
             "worker.packet",
             src_chain = %relay_path.src_chain().id(),
@@ -72,21 +71,20 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     spawn_background_task(span, Some(Duration::from_millis(1000)), move || {
-        handle_execute_schedule(&mut link.lock().unwrap(), &path, resubmit)?;
+        handle_execute_schedule(&link, &path, resubmit)?;
         Ok(Next::Continue)
     })
 }
 
 pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
-    // Mutex is used to prevent race condition between the packet workers
-    link: Arc<Mutex<Link<ChainA, ChainB>>>,
+    link: Arc<Link<ChainA, ChainB>>,
     mut should_clear_on_start: bool,
     clear_interval: u64,
     path: Packet,
 ) -> TaskHandle {
     let span = {
-        let relay_path = &link.lock().unwrap().a_to_b;
+        let relay_path = &link.a_to_b;
         error_span!(
             "worker.packet.cmd",
             src_chain = %relay_path.src_chain().id(),
@@ -114,7 +112,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             // (see `handle_link_error_in_task`) and clearing is retried with the next
             // (`NewBlock`) `cmd` that matches the clearing interval.
             handle_packet_cmd(
-                &mut link.lock().unwrap(),
+                &link,
                 &mut should_clear_on_start,
                 clear_interval,
                 &path,
@@ -142,13 +140,12 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 
 pub fn spawn_incentivized_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
-    // Mutex is used to prevent race condition between the packet workers
-    link: Arc<Mutex<Link<ChainA, ChainB>>>,
+    link: Arc<Link<ChainA, ChainB>>,
     path: Packet,
     fee_filter: FeePolicy,
 ) -> TaskHandle {
     let span = {
-        let relay_path = &link.lock().unwrap().a_to_b;
+        let relay_path = &link.a_to_b;
         error_span!(
             "worker.incentivized.packet.cmd",
             src_chain = %relay_path.src_chain().id(),
@@ -170,7 +167,7 @@ pub fn spawn_incentivized_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHa
     spawn_background_task(span, Some(Duration::from_millis(200)), move || {
         if let Ok(cmd) = cmd_rx.try_recv() {
             handle_incentivized_packet_cmd(
-                &mut link.lock().unwrap(),
+                &link,
                 &path,
                 cmd,
                 &incentivized_recv_cache,
@@ -195,7 +192,7 @@ pub fn spawn_incentivized_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHa
 /// Regardless of the incoming command, this method also refreshes and
 /// and executes any scheduled operational data that is ready.
 fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
-    link: &mut Link<ChainA, ChainB>,
+    link: &Link<ChainA, ChainB>,
     should_clear_on_start: &mut bool,
     clear_interval: u64,
     path: &Packet,
@@ -273,7 +270,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 /// Regardless of the incoming command, this method also refreshes and
 /// and executes any scheduled operational data that is ready.
 fn handle_incentivized_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
-    link: &mut Link<ChainA, ChainB>,
+    link: &Link<ChainA, ChainB>,
     path: &Packet,
     cmd: WorkerCmd,
     incentivized_recv_cache: &RwArc<Cache<Sequence, IncentivizedPacket>>,
@@ -309,7 +306,7 @@ fn handle_incentivized_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 /// It queries the chain for incentivized packet information regarding the `WriteAcknowledgement`,
 /// and stores this information in a Read/Write Cache.
 fn _get_incentivized_for_write_acknowledgement<ChainA: ChainHandle, ChainB: ChainHandle>(
-    link: &mut Link<ChainA, ChainB>,
+    link: &Link<ChainA, ChainB>,
     ack: WriteAcknowledgement,
     height: u64,
     incentivized_ack_cache: RwArc<Cache<Sequence, IdentifiedPacketFees>>,
@@ -397,7 +394,7 @@ fn should_clear_packets(clear_interval: u64, height: Height) -> bool {
 }
 
 fn handle_update_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
-    link: &mut Link<ChainA, ChainB>,
+    link: &Link<ChainA, ChainB>,
     clear_interval: u64,
     path: &Packet,
     batch: EventBatch,
@@ -410,7 +407,7 @@ fn handle_update_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 }
 
 fn handle_clear_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
-    link: &mut Link<ChainA, ChainB>,
+    link: &Link<ChainA, ChainB>,
     clear_interval: u64,
     path: &Packet,
     height: Option<Height>,
@@ -423,7 +420,7 @@ fn handle_clear_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
 }
 
 fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
-    link: &mut Link<ChainA, ChainB>,
+    link: &Link<ChainA, ChainB>,
     _path: &Packet,
     resubmit: Resubmit,
 ) -> Result<(), TaskError<RunError>> {

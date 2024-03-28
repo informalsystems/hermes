@@ -1474,7 +1474,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Note that pieces of operational data that have not elapsed yet are
     /// also placed in the 'unprocessed' bucket.
     fn execute_schedule_for_target_chain<I: Iterator<Item = OperationalData>>(
-        &mut self,
+        &self,
         mut operations: I,
         target_chain: OperationalDataTarget,
     ) -> Result<VecDeque<OperationalData>, (VecDeque<OperationalData>, LinkError)> {
@@ -1542,13 +1542,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Any operational data items that do not get successfully relayed are
     /// dropped. Subsequent pending operational data items that went unprocessed
     /// are queued up again for re-submission.
-    pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
+    pub fn execute_schedule(&self) -> Result<(), LinkError> {
         let src_od_iter = self.src_operational_data.take().into_iter();
 
         match self.execute_schedule_for_target_chain(src_od_iter, OperationalDataTarget::Source) {
-            Ok(unprocessed_src_data) => self.src_operational_data = unprocessed_src_data.into(),
+            Ok(unprocessed_src_data) => {
+                self.src_operational_data.replace(unprocessed_src_data);
+            }
             Err((unprocessed_src_data, e)) => {
-                self.src_operational_data = unprocessed_src_data.into();
+                self.src_operational_data.replace(unprocessed_src_data);
                 return Err(e);
             }
         }
@@ -1558,9 +1560,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         match self
             .execute_schedule_for_target_chain(dst_od_iter, OperationalDataTarget::Destination)
         {
-            Ok(unprocessed_dst_data) => self.dst_operational_data = unprocessed_dst_data.into(),
+            Ok(unprocessed_dst_data) => {
+                self.dst_operational_data.replace(unprocessed_dst_data);
+            }
             Err((unprocessed_dst_data, e)) => {
-                self.dst_operational_data = unprocessed_dst_data.into();
+                self.dst_operational_data.replace(unprocessed_dst_data);
                 return Err(e);
             }
         }

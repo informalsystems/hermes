@@ -2,7 +2,6 @@ use alloc::sync::Arc;
 use core::fmt::{Display, Error as FmtError, Formatter};
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
 use tracing::error;
 
 use crate::foreign_client::ForeignClient;
@@ -138,7 +137,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                         should_clear_on_start(&packets_config, channel_ordering);
 
                     let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
-                    let link = Arc::new(Mutex::new(link));
+                    let link = Arc::new(link);
 
                     let src_chain_config = config
                         .chains
