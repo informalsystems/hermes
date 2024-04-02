@@ -36,6 +36,7 @@ pub struct ChannelUpgradeHandshake;
 impl TestOverrides for ChannelUpgradeHandshake {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
+        config.mode.clients.misbehaviour = false;
     }
 
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {

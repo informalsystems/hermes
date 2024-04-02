@@ -6,12 +6,10 @@ use std::str;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::abci;
 
-use crate::core::ics04_channel::channel::Ordering;
+use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics04_channel::timeout::Timeout;
-use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::{Error as EventError, IbcEvent, IbcEventType};
 use crate::timestamp::Timestamp;
@@ -36,11 +34,9 @@ pub const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp"
 pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
 /// Channel upgrade attribute keys
-pub const UPGRADE_CONNECTION_HOPS: &str = "upgrade_connection_hops";
-pub const UPGRADE_VERSION: &str = "upgrade_version";
 pub const UPGRADE_SEQUENCE: &str = "upgrade_sequence";
-pub const UPGRADE_ORDERING: &str = "upgrade_ordering";
-pub const CHANNEL_FLUSH_STATUS: &str = "channel_flush_status";
+pub const UPGRADE_TIMEOUT_HEIGHT: &str = "timeout_height";
+pub const UPGRADE_TIMEOUT_TIMESTAMP: &str = "timeout_timestamp";
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 pub struct Attributes {
@@ -104,11 +100,9 @@ pub struct UpgradeAttributes {
     pub channel_id: ChannelId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub upgrade_connection_hops: Vec<ConnectionId>,
-    pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
-    pub upgrade_ordering: Ordering,
-    pub upgrade_timeout: Option<Timeout>,
+    pub upgrade_timeout_height: Option<Height>,
+    pub upgrade_timeout_timestamp: Option<Timestamp>,
 }
 
 impl UpgradeAttributes {
@@ -127,14 +121,7 @@ impl Display for UpgradeAttributes {
         } else {
             write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
         }
-        for hop in self.upgrade_connection_hops.iter() {
-            write!(f, " {} ", hop)?;
-        }
-        write!(
-            f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
-        )
+        write!(f, "], upgrade_sequence: {} }}", self.upgrade_sequence)
     }
 }
 pub trait EventType {
@@ -163,28 +150,8 @@ impl From<UpgradeAttributes> for Vec<abci::EventAttribute> {
         let channel_id = (COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY, a.channel_id.as_str()).into();
         attributes.push(channel_id);
 
-        let mut hops = "".to_owned();
-        let mut hops_iterator = a.upgrade_connection_hops.iter().peekable();
-
-        while let Some(hop) = hops_iterator.next() {
-            hops = format!("{hops}{hop}");
-            // If it is not the last element, add separator.
-            if hops_iterator.peek().is_some() {
-                hops = format!("{hops}, ");
-            }
-        }
-
-        let upgrade_connection_hops = (UPGRADE_CONNECTION_HOPS, hops.as_str()).into();
-        attributes.push(upgrade_connection_hops);
-
-        let upgrade_version = (UPGRADE_VERSION, a.upgrade_version.0.as_str()).into();
-        attributes.push(upgrade_version);
-
         let upgrade_sequence = (UPGRADE_SEQUENCE, a.upgrade_sequence.to_string().as_str()).into();
         attributes.push(upgrade_sequence);
-
-        let upgrade_ordering = (UPGRADE_ORDERING, a.upgrade_ordering.as_str()).into();
-        attributes.push(upgrade_ordering);
 
         attributes
     }
@@ -538,10 +505,7 @@ pub struct UpgradeInit {
     pub channel_id: ChannelId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub upgrade_connection_hops: Vec<ConnectionId>,
-    pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
-    pub upgrade_ordering: Ordering,
 }
 
 impl Display for UpgradeInit {
@@ -551,14 +515,7 @@ impl Display for UpgradeInit {
         } else {
             write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
         }
-        for hop in self.upgrade_connection_hops.iter() {
-            write!(f, " {} ", hop)?;
-        }
-        write!(
-            f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
-        )
+        write!(f, "], upgrade_sequence: {} }}", self.upgrade_sequence)
     }
 }
 
@@ -569,11 +526,9 @@ impl From<UpgradeInit> for UpgradeAttributes {
             channel_id: ev.channel_id,
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
-            upgrade_connection_hops: ev.upgrade_connection_hops,
-            upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
-            upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -605,10 +560,7 @@ impl TryFrom<UpgradeAttributes> for UpgradeInit {
             channel_id: attrs.channel_id,
             counterparty_port_id: attrs.counterparty_port_id,
             counterparty_channel_id: attrs.counterparty_channel_id,
-            upgrade_connection_hops: attrs.upgrade_connection_hops,
-            upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
-            upgrade_ordering: attrs.upgrade_ordering,
         })
     }
 }
@@ -631,10 +583,7 @@ pub struct UpgradeTry {
     pub channel_id: ChannelId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub upgrade_connection_hops: Vec<ConnectionId>,
-    pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
-    pub upgrade_ordering: Ordering,
 }
 
 impl Display for UpgradeTry {
@@ -644,14 +593,7 @@ impl Display for UpgradeTry {
         } else {
             write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
         }
-        for hop in self.upgrade_connection_hops.iter() {
-            write!(f, " {} ", hop)?;
-        }
-        write!(
-            f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
-        )
+        write!(f, "], upgrade_sequence: {} }}", self.upgrade_sequence)
     }
 }
 
@@ -662,11 +604,9 @@ impl From<UpgradeTry> for UpgradeAttributes {
             channel_id: ev.channel_id,
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
-            upgrade_connection_hops: ev.upgrade_connection_hops,
-            upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
-            upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -698,10 +638,7 @@ impl TryFrom<UpgradeAttributes> for UpgradeTry {
             channel_id: attrs.channel_id,
             counterparty_port_id: attrs.counterparty_port_id,
             counterparty_channel_id: attrs.counterparty_channel_id,
-            upgrade_connection_hops: attrs.upgrade_connection_hops,
-            upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
-            upgrade_ordering: attrs.upgrade_ordering,
         })
     }
 }
@@ -724,10 +661,7 @@ pub struct UpgradeAck {
     pub channel_id: ChannelId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub upgrade_connection_hops: Vec<ConnectionId>,
-    pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
-    pub upgrade_ordering: Ordering,
 }
 
 impl Display for UpgradeAck {
@@ -737,14 +671,7 @@ impl Display for UpgradeAck {
         } else {
             write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
         }
-        for hop in self.upgrade_connection_hops.iter() {
-            write!(f, " {} ", hop)?;
-        }
-        write!(
-            f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
-        )
+        write!(f, "], upgrade_sequence: {} }}", self.upgrade_sequence)
     }
 }
 
@@ -755,11 +682,9 @@ impl From<UpgradeAck> for UpgradeAttributes {
             channel_id: ev.channel_id,
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
-            upgrade_connection_hops: ev.upgrade_connection_hops,
-            upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
-            upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -791,10 +716,7 @@ impl TryFrom<UpgradeAttributes> for UpgradeAck {
             channel_id: attrs.channel_id,
             counterparty_port_id: attrs.counterparty_port_id,
             counterparty_channel_id: attrs.counterparty_channel_id,
-            upgrade_connection_hops: attrs.upgrade_connection_hops,
-            upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
-            upgrade_ordering: attrs.upgrade_ordering,
         })
     }
 }
@@ -817,10 +739,7 @@ pub struct UpgradeConfirm {
     pub channel_id: ChannelId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub upgrade_connection_hops: Vec<ConnectionId>,
-    pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
-    pub upgrade_ordering: Ordering,
 }
 
 impl Display for UpgradeConfirm {
@@ -830,14 +749,7 @@ impl Display for UpgradeConfirm {
         } else {
             write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
         }
-        for hop in self.upgrade_connection_hops.iter() {
-            write!(f, " {} ", hop)?;
-        }
-        write!(
-            f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
-        )
+        write!(f, "], upgrade_sequence: {} }}", self.upgrade_sequence)
     }
 }
 
@@ -848,11 +760,9 @@ impl From<UpgradeConfirm> for UpgradeAttributes {
             channel_id: ev.channel_id,
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
-            upgrade_connection_hops: ev.upgrade_connection_hops,
-            upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
-            upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -884,10 +794,7 @@ impl TryFrom<UpgradeAttributes> for UpgradeConfirm {
             channel_id: attrs.channel_id,
             counterparty_port_id: attrs.counterparty_port_id,
             counterparty_channel_id: attrs.counterparty_channel_id,
-            upgrade_connection_hops: attrs.upgrade_connection_hops,
-            upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
-            upgrade_ordering: attrs.upgrade_ordering,
         })
     }
 }
@@ -910,10 +817,7 @@ pub struct UpgradeOpen {
     pub channel_id: ChannelId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub upgrade_connection_hops: Vec<ConnectionId>,
-    pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
-    pub upgrade_ordering: Ordering,
 }
 
 impl Display for UpgradeOpen {
@@ -923,14 +827,7 @@ impl Display for UpgradeOpen {
         } else {
             write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
         }
-        for hop in self.upgrade_connection_hops.iter() {
-            write!(f, " {} ", hop)?;
-        }
-        write!(
-            f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
-        )
+        write!(f, "], upgrade_sequence: {} }}", self.upgrade_sequence)
     }
 }
 
@@ -941,11 +838,9 @@ impl From<UpgradeOpen> for UpgradeAttributes {
             channel_id: ev.channel_id,
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
-            upgrade_connection_hops: ev.upgrade_connection_hops,
-            upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
-            upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -977,10 +872,7 @@ impl TryFrom<UpgradeAttributes> for UpgradeOpen {
             channel_id: attrs.channel_id,
             counterparty_port_id: attrs.counterparty_port_id,
             counterparty_channel_id: attrs.counterparty_channel_id,
-            upgrade_connection_hops: attrs.upgrade_connection_hops,
-            upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
-            upgrade_ordering: attrs.upgrade_ordering,
         })
     }
 }
@@ -1003,10 +895,7 @@ pub struct UpgradeCancel {
     pub channel_id: ChannelId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub upgrade_connection_hops: Vec<ConnectionId>,
-    pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
-    pub upgrade_ordering: Ordering,
 }
 
 impl Display for UpgradeCancel {
@@ -1016,14 +905,7 @@ impl Display for UpgradeCancel {
         } else {
             write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
         }
-        for hop in self.upgrade_connection_hops.iter() {
-            write!(f, " {} ", hop)?;
-        }
-        write!(
-            f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering
-        )
+        write!(f, "], upgrade_sequence: {} }}", self.upgrade_sequence)
     }
 }
 
@@ -1034,11 +916,9 @@ impl From<UpgradeCancel> for UpgradeAttributes {
             channel_id: ev.channel_id,
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
-            upgrade_connection_hops: ev.upgrade_connection_hops,
-            upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
-            upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: None,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
         }
     }
 }
@@ -1070,10 +950,7 @@ impl TryFrom<UpgradeAttributes> for UpgradeCancel {
             channel_id: attrs.channel_id,
             counterparty_port_id: attrs.counterparty_port_id,
             counterparty_channel_id: attrs.counterparty_channel_id,
-            upgrade_connection_hops: attrs.upgrade_connection_hops,
-            upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
-            upgrade_ordering: attrs.upgrade_ordering,
         })
     }
 }
@@ -1096,11 +973,9 @@ pub struct UpgradeTimeout {
     pub channel_id: ChannelId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub upgrade_connection_hops: Vec<ConnectionId>,
-    pub upgrade_version: Version,
     pub upgrade_sequence: Sequence,
-    pub upgrade_ordering: Ordering,
-    pub upgrade_timeout: Timeout,
+    pub upgrade_timeout_height: Option<Height>,
+    pub upgrade_timeout_timestamp: Option<Timestamp>,
 }
 
 impl Display for UpgradeTimeout {
@@ -1110,14 +985,19 @@ impl Display for UpgradeTimeout {
         } else {
             write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
         }
-        for hop in self.upgrade_connection_hops.iter() {
-            write!(f, " {} ", hop)?;
+
+        write!(f, "], upgrade_sequence: {}", self.upgrade_sequence)?;
+
+        match (self.upgrade_timeout_height, self.upgrade_timeout_timestamp) {
+            (Some(height), Some(timestamp)) => write!(
+                f,
+                " timeout_height: {}, timeout_timestamp: {} }}",
+                height, timestamp
+            ),
+            (Some(height), None) => write!(f, " timeout_height: {} }}", height),
+            (None, Some(timestamp)) => write!(f, " timeout_timestamp: {} }}", timestamp),
+            (None, None) => write!(f, " }}"),
         }
-        write!(
-            f,
-            "], upgrade_version: {}, upgrade_sequence: {}, upgrade_ordering: {}, upgrade_timeout: {} }}",
-            self.upgrade_version, self.upgrade_sequence, self.upgrade_ordering, self.upgrade_timeout,
-        )
     }
 }
 
@@ -1128,11 +1008,9 @@ impl From<UpgradeTimeout> for UpgradeAttributes {
             channel_id: ev.channel_id,
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
-            upgrade_connection_hops: ev.upgrade_connection_hops,
-            upgrade_version: ev.upgrade_version,
             upgrade_sequence: ev.upgrade_sequence,
-            upgrade_ordering: ev.upgrade_ordering,
-            upgrade_timeout: Some(ev.upgrade_timeout),
+            upgrade_timeout_height: ev.upgrade_timeout_height,
+            upgrade_timeout_timestamp: ev.upgrade_timeout_timestamp,
         }
     }
 }
@@ -1164,14 +1042,9 @@ impl TryFrom<UpgradeAttributes> for UpgradeTimeout {
             channel_id: attrs.channel_id,
             counterparty_port_id: attrs.counterparty_port_id,
             counterparty_channel_id: attrs.counterparty_channel_id,
-            upgrade_connection_hops: attrs.upgrade_connection_hops,
-            upgrade_version: attrs.upgrade_version,
             upgrade_sequence: attrs.upgrade_sequence,
-            upgrade_ordering: attrs.upgrade_ordering,
-            upgrade_timeout: attrs.upgrade_timeout.map_or_else(
-                || Timeout::Timestamp(Timestamp::default()),
-                |timeout| timeout,
-            ),
+            upgrade_timeout_height: attrs.upgrade_timeout_height,
+            upgrade_timeout_timestamp: attrs.upgrade_timeout_timestamp,
         })
     }
 }

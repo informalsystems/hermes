@@ -32,7 +32,9 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 
-use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
+use ibc_test_framework::chain::config::{
+    add_allow_message, set_max_deposit_period, set_voting_period,
+};
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
@@ -314,22 +316,7 @@ impl TestOverrides for ChannelUpgradeICAUnordered {
     }
 
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        use serde_json::Value;
-
-        let allow_messages = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("interchainaccounts"))
-            .and_then(|ica| ica.get_mut("host_genesis_state"))
-            .and_then(|state| state.get_mut("params"))
-            .and_then(|params| params.get_mut("allow_messages"))
-            .and_then(|allow_messages| allow_messages.as_array_mut());
-
-        if let Some(allow_messages) = allow_messages {
-            allow_messages.push(Value::String("/cosmos.bank.v1beta1.MsgSend".to_string()));
-        } else {
-            return Err(Error::generic(eyre!("failed to update genesis file")));
-        }
-
+        add_allow_message(genesis, "/cosmos.bank.v1beta1.MsgSend")?;
         set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
         set_voting_period(genesis, VOTING_PERIOD)?;
 

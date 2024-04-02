@@ -13,7 +13,6 @@ use ibc_relayer_types::core::ics04_channel::events::{
 use ibc_relayer_types::core::ics04_channel::events::{ReceivePacket, TimeoutOnClosePacket};
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
-use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 use ibc_relayer_types::events::Error as EventError;
 use ibc_relayer_types::Height;
 
@@ -45,10 +44,6 @@ fn extract_upgrade_attributes(
     object: &RawObject<'_>,
     namespace: &str,
 ) -> Result<UpgradeAttributes, EventError> {
-    let connection_hops: ConnectionId =
-        extract_attribute(object, &format!("{namespace}.connection_hops"))?
-            .parse()
-            .map_err(EventError::parse)?;
     Ok(UpgradeAttributes {
         port_id: extract_attribute(object, &format!("{namespace}.port_id"))?
             .parse()
@@ -67,16 +62,19 @@ fn extract_upgrade_attributes(
             &format!("{namespace}.counterparty_channel_id"),
         )
         .and_then(|v| v.parse().ok()),
-        upgrade_connection_hops: vec![connection_hops],
-        upgrade_version: extract_attribute(object, &format!("{namespace}.version"))?.into(),
         upgrade_sequence: extract_attribute(object, &format!("{namespace}.upgrade_sequence"))?
             .parse()
             .map_err(|_| EventError::missing_action_string())?,
-        upgrade_ordering: extract_attribute(object, &format!("{namespace}.ordering"))?
-            .parse()
-            .map_err(|_| EventError::missing_action_string())?,
-        upgrade_timeout: maybe_extract_attribute(object, &format!("{namespace}.timeout"))
-            .and_then(|v| v.parse().ok()),
+        upgrade_timeout_height: maybe_extract_attribute(
+            object,
+            &format!("{namespace}.timeout_height"),
+        )
+        .and_then(|v| v.parse().ok()),
+        upgrade_timeout_timestamp: maybe_extract_attribute(
+            object,
+            &format!("{namespace}.timeout_timestamp"),
+        )
+        .and_then(|v| v.parse().ok()),
     })
 }
 

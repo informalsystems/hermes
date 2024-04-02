@@ -5,32 +5,33 @@ use subtle_encoding::hex;
 use tendermint::abci::Event as AbciEvent;
 
 use ibc_relayer_types::{
-    applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
-    applications::ics31_icq::events::CrossChainQueryPacket,
-    core::ics02_client::{
-        error::Error as ClientError,
-        events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
-        header::{decode_header, AnyHeader},
-        height::HeightErrorDetail,
-    },
-    core::ics03_connection::{
-        error::Error as ConnectionError,
-        events::{self as connection_events, Attributes as ConnectionAttributes},
-    },
-    core::ics04_channel::{
-        error::Error as ChannelError,
-        events::{
-            self as channel_events, Attributes as ChannelAttributes,
-            UpgradeAttributes as ChannelUpgradeAttributes,
-        },
-        packet::Packet,
-        timeout::TimeoutHeight,
+    applications::{
+        ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
+        ics31_icq::events::CrossChainQueryPacket,
     },
     core::{
-        ics04_channel::{channel::Ordering, packet::Sequence, version::Version},
-        ics24_host::identifier::ConnectionId,
+        ics02_client::{
+            error::Error as ClientError,
+            events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
+            header::{decode_header, AnyHeader},
+            height::HeightErrorDetail,
+        },
+        ics03_connection::{
+            error::Error as ConnectionError,
+            events::{self as connection_events, Attributes as ConnectionAttributes},
+        },
+        ics04_channel::{
+            error::Error as ChannelError,
+            events::{
+                self as channel_events, Attributes as ChannelAttributes,
+                UpgradeAttributes as ChannelUpgradeAttributes,
+            },
+            packet::{Packet, Sequence},
+            timeout::TimeoutHeight,
+        },
     },
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
+    timestamp::Timestamp,
     Height,
 };
 
@@ -521,25 +522,19 @@ fn channel_upgrade_extract_attributes_from_tx(
             channel_events::COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_channel_id = value.parse().ok();
             }
-            channel_events::UPGRADE_CONNECTION_HOPS => {
-                let mut hops = vec![];
-                for hop_str in value.trim().split(',') {
-                    let hop = ConnectionId::from_str(hop_str).map_err(ChannelError::identifier)?;
-                    hops.push(hop);
-                }
-                attr.upgrade_connection_hops = hops;
-            }
-            channel_events::UPGRADE_VERSION => {
-                attr.upgrade_version = Version(value.to_string());
-            }
             channel_events::UPGRADE_SEQUENCE => {
                 attr.upgrade_sequence =
                     Sequence::from(value.parse::<u64>().map_err(|e| {
                         ChannelError::invalid_string_as_sequence(value.to_string(), e)
                     })?);
             }
-            channel_events::UPGRADE_ORDERING => {
-                attr.upgrade_ordering = Ordering::from_str(value)?;
+            channel_events::UPGRADE_TIMEOUT_HEIGHT => {
+                let maybe_height = Height::from_str(value).ok();
+                attr.upgrade_timeout_height = maybe_height;
+            }
+            channel_events::UPGRADE_TIMEOUT_TIMESTAMP => {
+                let maybe_timestamp = Timestamp::from_str(value).ok();
+                attr.upgrade_timeout_timestamp = maybe_timestamp;
             }
             _ => {}
         }
