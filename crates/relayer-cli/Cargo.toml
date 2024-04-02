@@ -17,18 +17,11 @@ default-run = "hermes"
 [[bin]]
 name = "hermes"
 
-[features]
-default     = ["telemetry", "rest-server", "std", "eyre_tracer"]
-std         = ["flex-error/std"]
-eyre_tracer = ["flex-error/eyre_tracer"]
-telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
-rest-server = ["ibc-relayer-rest"]
-
 [dependencies]
 ibc-relayer-types  = { workspace = true }
 ibc-relayer        = { workspace = true }
-ibc-telemetry      = { workspace = true, optional = true }
-ibc-relayer-rest   = { workspace = true, optional = true }
+ibc-telemetry      = { workspace = true }
+ibc-relayer-rest   = { workspace = true }
 ibc-chain-registry = { workspace = true }
 
 abscissa_core                    = { workspace = true, features = ["options"] }
