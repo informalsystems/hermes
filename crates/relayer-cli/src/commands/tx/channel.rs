@@ -2,7 +2,6 @@
 
 use abscissa_core::clap::Parser;
 use abscissa_core::Command;
-use abscissa_core::Runnable;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
