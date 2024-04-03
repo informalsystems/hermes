@@ -4,7 +4,6 @@
 use eyre::eyre;
 
 use crate::chain::exec::simple_exec;
-use crate::error::Error;
 use crate::prelude::*;
 
 pub fn vote_proposal(
