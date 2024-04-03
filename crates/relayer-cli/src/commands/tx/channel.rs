@@ -133,26 +133,26 @@ impl Runnable for TxChanOpenInitCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-            connection_delay: Default::default(),
-            ordering: self.order,
-            a_side: ChannelSide::new(
-                chains.src,
-                ClientId::default(),
-                ConnectionId::default(),
-                self.src_port_id.clone(),
-                None,
-                None,
-            ),
-            b_side: ChannelSide::new(
-                chains.dst,
-                dst_connection.client_id().clone(),
-                self.dst_conn_id.clone(),
-                self.dst_port_id.clone(),
-                None,
-                None,
-            ),
-        }
-    }
+                    connection_delay: Default::default(),
+                    ordering: self.order,
+                    a_side: ChannelSide::new(
+                        chains.src,
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        None,
+                        None,
+                    ),
+                    b_side: ChannelSide::new(
+                        chains.dst,
+                        dst_connection.client_id().clone(),
+                        self.dst_conn_id.clone(),
+                        self.dst_port_id.clone(),
+                        None,
+                        None,
+                    ),
+                }
+            }
         );
     }
 }
