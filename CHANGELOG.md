@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## v1.8.2
+
+*March 12th, 2024*
+
+This release fixes the two following bugs and improves the connection and channel handshake retry mechanism:
+
+* Fix erroneous warnings for incompatible version of IBC-Go during health checks, ensuring accurate compatibility reporting
+* Fix a bug in the `clear packets` command which caused packet clearing to fail with an "counterparty channel not found" error
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Correctly use the counterparty channel and port IDs when clearing the packets
+    from the destination chain to the source chain in the `packet clear` command
+    ([\#3889](https://github.com/informalsystems/hermes/issues/3889))
+- [Relayer](relayer)
+  - Fix parsing of IBC-Go version in health check and improve health check
+    reporting ([\#3880](https://github.com/informalsystems/hermes/issues/3880))
+
+### FEATURES
+
+- [Integration Test Framework](tools/test-framework)
+  - Add Injective chain to the chains running the integration tests in the CI.
+    ([\#3887](https://github.com/informalsystems/hermes/issues/3887))
+
+### IMPROVEMENTS
+
+- [Relayer](relayer)
+  - Change connection and channel handshake retry strategy
+    to retry at most 10 times (5 times per block max)
+    ([\#3864](https://github.com/informalsystems/hermes/issues/3864))
+
 ## v1.8.1
 
 *March 7th, 2024*

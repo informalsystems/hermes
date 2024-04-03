@@ -81,7 +81,7 @@ impl<'a, T: Display> Display for PrettySlice<'a, T> {
 mod tests {
     use super::*;
 
-    use std::{string::String, vec};
+    use std::vec;
 
     #[test]
     fn test_pretty_duration_micros() {

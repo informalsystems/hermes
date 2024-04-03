@@ -33,7 +33,6 @@ use ibc_relayer_types::{
 
 use crate::{
     account::Balance,
-    chain::requests::QueryPacketEventDataRequest,
     client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
     connection::ConnectionMsgType,

@@ -1,7 +1,6 @@
 use core::fmt;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 use serde::Serialize;
 
 use ibc_relayer::chain::counterparty::{

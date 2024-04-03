@@ -1,12 +1,12 @@
 //! Contains functions to generate a relayer config for a given chain
 
-use futures::future::join_all;
-use http::Uri;
-use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::marker::Send;
+
+use futures::future::join_all;
+use http::Uri;
+use tendermint_rpc::Url;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::{error, trace};
 
@@ -18,13 +18,12 @@ use ibc_chain_registry::formatter::{SimpleGrpcFormatter, UriFormatter};
 use ibc_chain_registry::paths::IBCPath;
 use ibc_chain_registry::querier::*;
 use ibc_relayer::chain::cosmos::config::CosmosSdkConfig;
+use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use ibc_relayer::config::filter::{FilterPattern, PacketFilter};
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo, TrustThreshold};
 use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
 use ibc_relayer::keyring::Store;
-
-use tendermint_rpc::Url;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
 
@@ -110,11 +109,6 @@ where
     )
     .await?;
 
-    let websocket_address =
-        rpc_data.websocket.clone().try_into().map_err(|e| {
-            RegistryError::websocket_url_parse_error(rpc_data.websocket.to_string(), e)
-        })?;
-
     let avg_gas_price = if let Some(fee_token) = chain_data.fees.fee_tokens.first() {
         fee_token.average_gas_price
     } else {
@@ -132,9 +126,9 @@ where
         id: chain_data.chain_id,
         rpc_addr: rpc_data.rpc_address,
         grpc_addr: grpc_address,
-        event_source: EventSourceMode::Push {
-            url: websocket_address,
-            batch_delay: default::batch_delay(),
+        event_source: EventSourceMode::Pull {
+            interval: default::poll_interval(),
+            max_retries: default::max_retries(),
         },
         rpc_timeout: default::rpc_timeout(),
         trusted_node: default::trusted_node(),
@@ -192,6 +186,7 @@ where
     for i in 0..retries {
         let query_response =
             QuerierType::query_healthy(chain_name.to_string(), endpoints.clone()).await;
+
         match query_response {
             Ok(r) => {
                 return Ok(r);
@@ -201,13 +196,13 @@ where
             }
         }
     }
-    Err(RegistryError::unhealthy_endpoints(
-        endpoints
-            .iter()
-            .map(|endpoint| endpoint.to_string())
-            .collect(),
-        retries,
-    ))
+
+    let endpoints = endpoints
+        .iter()
+        .map(|endpoint| endpoint.to_string())
+        .collect();
+
+    Err(RegistryError::unhealthy_endpoints(endpoints, retries))
 }
 
 /// Fetches the specified resources from the Cosmos chain registry, using the specified commit hash

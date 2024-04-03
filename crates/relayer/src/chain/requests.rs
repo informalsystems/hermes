@@ -66,7 +66,7 @@ impl TryFrom<QueryHeight> for AsciiMetadataValue {
 }
 
 impl Display for QueryHeight {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             QueryHeight::Latest => write!(f, "latest height"),
             QueryHeight::Specific(height) => write!(f, "{height}"),
@@ -93,7 +93,7 @@ pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin
     /// querying the next page most efficiently. Only one of offset or key
     /// should be set.
-    pub key: ::prost::alloc::vec::Vec<u8>,
+    pub key: Vec<u8>,
     /// offset is a numeric offset that can be used when key is unavailable.
     /// It is less efficient than using key. Only one of offset or key should
     /// be set.

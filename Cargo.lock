@@ -161,9 +161,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.77"
+version = "0.1.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c980ee35e870bd1a4d2c8294d4c04d0499e67bca1e4b5cefcc693c2fa00caea9"
+checksum = "a507401cad91ec6a857ed5513a2073c82a9b9048762b885bb98655b306964681"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -386,9 +386,9 @@ dependencies = [
 
 [[package]]
 name = "bs58"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5353f36341f7451062466f0b755b96ac3a9547e4d7f6b70d603fc721a7d7896"
+checksum = "bf88ba1141d185c399bee5288d850d63b8369520c1eafc32a0430b5b6c287bf4"
 dependencies = [
  "tinyvec",
 ]
@@ -538,9 +538,9 @@ dependencies = [
 
 [[package]]
 name = "color-eyre"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a667583cca8c4f8436db8de46ea8233c42a7d9ae424a82d338f2e4675229204"
+checksum = "55146f5e46f237f7423d74111267d4597b59b0dad0ffaf7303bce9945d843ad5"
 dependencies = [
  "backtrace",
  "color-spantrace",
@@ -642,9 +642,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.11"
+version = "0.5.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "176dc175b78f56c0f321911d9c8eb2b77a78a4860b9c19db83835fea1a46649b"
+checksum = "ab3db02a9c5b5121e1e42fbdb1aeb65f5e02624cc58c43f2884c6ccac0b82f95"
 dependencies = [
  "crossbeam-utils 0.8.19",
 ]
@@ -1063,7 +1063,6 @@ version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c606d892c9de11507fa0dcffc116434f94e105d0bbdc4e405b61519464c49d7b"
 dependencies = [
- "anyhow",
  "eyre",
  "paste",
 ]
@@ -1444,7 +1443,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-chain-registry"
-version = "0.27.1"
+version = "0.27.2"
 dependencies = [
  "async-trait",
  "flex-error",
@@ -1463,7 +1462,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-integration-test"
-version = "0.27.1"
+version = "0.27.2"
 dependencies = [
  "byte-unit",
  "http",
@@ -1501,7 +1500,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.27.1"
+version = "0.27.2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1510,7 +1509,7 @@ dependencies = [
  "bs58",
  "byte-unit",
  "bytes",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "digest 0.10.7",
  "dirs-next",
  "ed25519",
@@ -1570,14 +1569,14 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "1.8.1"
+version = "1.8.2"
 dependencies = [
  "abscissa_core",
  "clap",
  "clap_complete",
  "color-eyre",
  "console",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "dialoguer",
  "dirs-next",
  "eyre",
@@ -1611,10 +1610,10 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.27.1"
+version = "0.27.2"
 dependencies = [
  "axum",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "ibc-relayer",
  "ibc-relayer-types",
  "reqwest",
@@ -1626,7 +1625,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-types"
-version = "0.27.1"
+version = "0.27.2"
 dependencies = [
  "bytes",
  "derive_more",
@@ -1657,7 +1656,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.27.1"
+version = "0.27.2"
 dependencies = [
  "axum",
  "dashmap",
@@ -1676,10 +1675,10 @@ dependencies = [
 
 [[package]]
 name = "ibc-test-framework"
-version = "0.27.1"
+version = "0.27.2"
 dependencies = [
  "color-eyre",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "eyre",
  "flex-error",
  "hdpath",
@@ -1951,7 +1950,7 @@ version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1911e88d5831f748a4097a43862d129e3c6fca831eecac9b8db6d01d93c9de2"
 dependencies = [
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "crossbeam-epoch",
  "crossbeam-utils 0.8.19",
  "once_cell",
@@ -2121,7 +2120,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b3a2a91fdbfdd4d212c0dcc2ab540de2c2bcbbd90be17de7a7daf8822d010c1"
 dependencies = [
  "async-trait",
- "crossbeam-channel 0.5.11",
+ "crossbeam-channel 0.5.12",
  "dashmap",
  "fnv",
  "futures-channel",
@@ -2476,9 +2475,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.10.3"
+version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b62dbe01f0b06f9d8dc7d49e05a0785f153b00b2c227856282f671e0318c9b15"
+checksum = "c117dbdfde9c8308975b6a18d71f3f385c89461f7b3fb054288ecf2a2058ba4c"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -2799,9 +2798,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.195"
+version = "1.0.197"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63261df402c67811e9ac6def069e4786148c4563f4b50fd4bf30aa370d626b02"
+checksum = "3fb1c873e1b9b056a4dc4c0c198b24c3ffa059243875552b2bd0933b1aee4ce2"
 dependencies = [
  "serde_derive",
 ]
@@ -2827,9 +2826,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.195"
+version = "1.0.197"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46fe8f8603d81ba86327b23a2e9cdf49e1255fb94a4c5f297f6ee0547178ea2c"
+checksum = "7eb0b34b42edc17f6b7cac84a52a1c5f0e1bb2227e997ca9011ea3dd34e8610b"
 dependencies = [
  "proc-macro2",
  "quote",

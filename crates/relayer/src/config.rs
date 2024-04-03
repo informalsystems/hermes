@@ -175,7 +175,11 @@ pub mod default {
     }
 
     pub fn poll_interval() -> Duration {
-        Duration::from_secs(1)
+        Duration::from_millis(500)
+    }
+
+    pub fn max_retries() -> u32 {
+        4
     }
 
     pub fn batch_delay() -> Duration {
@@ -622,6 +626,11 @@ pub enum EventSourceMode {
         /// The polling interval
         #[serde(default = "default::poll_interval", with = "humantime_serde")]
         interval: Duration,
+
+        /// The maximum retries to collect the block results
+        /// before giving up and moving to the next block
+        #[serde(default = "default::max_retries")]
+        max_retries: u32,
     },
 }
 
@@ -754,7 +763,7 @@ impl<'de> Deserialize<'de> for ChainConfig {
 
 /// Attempt to load and parse the TOML config file as a `Config`.
 pub fn load(path: impl AsRef<Path>) -> Result<Config, Error> {
-    let config_toml = std::fs::read_to_string(&path).map_err(Error::io)?;
+    let config_toml = fs::read_to_string(&path).map_err(Error::io)?;
 
     let config = toml::from_str::<Config>(&config_toml[..]).map_err(Error::decode)?;
 

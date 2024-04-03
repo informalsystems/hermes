@@ -2,7 +2,6 @@
    Helpers for manipulating fixed-sized arrays.
 */
 
-use core::convert::TryInto;
 use eyre::eyre;
 
 use crate::error::Error;

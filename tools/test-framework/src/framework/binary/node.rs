@@ -3,8 +3,6 @@
    running without setting up the relayer.
 */
 
-use toml;
-
 use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
 use crate::error::Error;

@@ -595,7 +595,6 @@ fn parse_upgrades(components: &[&str]) -> Option<Path> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use core::str::FromStr;
 
     #[test]
     fn invalid_path_doesnt_parse() {

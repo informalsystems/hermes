@@ -1,5 +1,4 @@
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 use ibc_relayer::chain::handle::ChainHandle;
 use serde::Serialize;
 

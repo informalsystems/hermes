@@ -131,7 +131,7 @@ impl EventSource {
             rx_cmd,
             ws_url,
             rpc_compat,
-            subscriptions: Box::new(futures::stream::empty()),
+            subscriptions: Box::new(stream::empty()),
         };
 
         Ok((source, TxEventSourceCmd(tx_cmd)))
@@ -297,8 +297,7 @@ impl EventSource {
 
     async fn run_loop(&mut self) -> Next {
         // Take ownership of the subscriptions
-        let subscriptions =
-            core::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
+        let subscriptions = core::mem::replace(&mut self.subscriptions, Box::new(stream::empty()));
 
         // Convert the stream of RPC events into a stream of event batches.
         let batches = stream_batches(subscriptions, self.chain_id.clone(), self.batch_delay);

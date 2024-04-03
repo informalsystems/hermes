@@ -28,10 +28,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
       - name: Check templates
         run: bash scripts/auto_gen_templates.sh --mode "check"
       - uses: actions-rs/cargo@v1

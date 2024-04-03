@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::{
     filter::{ChannelFilters, ChannelPolicy, FilterPattern},
     ChainConfig, PacketFilter,
@@ -19,7 +18,6 @@ use ibc_relayer_types::tx_msg::Msg;
 
 use ibc_test_framework::chain::config::add_allow_message;
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
-use ibc_test_framework::ibc::denom::Denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_closed, assert_eventually_channel_established, query_channel_end,

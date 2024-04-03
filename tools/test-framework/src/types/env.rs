@@ -2,7 +2,6 @@
    Types for exporting test setup information into environment variables.
 */
 
-use core::convert::AsRef;
 use itertools::Itertools;
 use std::collections::BTreeMap;
 use std::fs::write;

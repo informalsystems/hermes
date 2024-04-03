@@ -73,12 +73,9 @@ jobs:
           rename-to: stoml
           chmod: 0755
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - name: Use Rust cache
-        uses: Swatinem/rust-cache@v2
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:
@@ -124,12 +121,9 @@ jobs:
           rename-to: stoml
           chmod: 0755
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - name: Use Rust cache
-        uses: Swatinem/rust-cache@v2
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:
@@ -175,12 +169,9 @@ jobs:
           rename-to: stoml
           chmod: 0755
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - name: Use Rust cache
-        uses: Swatinem/rust-cache@v2
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:
@@ -227,12 +218,9 @@ jobs:
           rename-to: stoml
           chmod: 0755
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - name: Use Rust cache
-        uses: Swatinem/rust-cache@v2
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:

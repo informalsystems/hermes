@@ -1,9 +1,7 @@
 use alloc::sync::Arc;
-use core::convert::TryFrom;
+
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
-
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc_proto::ibc::apps::fee::v1::{
@@ -17,6 +15,7 @@ use ibc_relayer_types::core::ics02_client::header::{AnyHeader, Header};
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd, State,
 };
+use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
 use ibc_relayer_types::core::ics03_connection::version::{get_compatible_versions, Version};
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};

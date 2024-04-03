@@ -1,5 +1,4 @@
 use core::fmt::Debug;
-use core::marker::{Send, Sync};
 
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
