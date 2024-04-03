@@ -484,10 +484,8 @@ fn lowest_sequence(events: &[IbcEventWithHeight]) -> Option<Sequence> {
         .min()
 }
 
-#[cfg(feature = "telemetry")]
 use crate::link::RelaySummary;
 
-#[cfg(feature = "telemetry")]
 fn packet_metrics(
     path: &Packet,
     summary: &RelaySummary,
@@ -499,7 +497,6 @@ fn packet_metrics(
     timeout_metrics(path, summary, dst_channel, dst_port);
 }
 
-#[cfg(feature = "telemetry")]
 fn receive_packet_metrics(
     path: &Packet,
     summary: &RelaySummary,
@@ -526,7 +523,6 @@ fn receive_packet_metrics(
     );
 }
 
-#[cfg(feature = "telemetry")]
 fn acknowledgment_metrics(
     path: &Packet,
     summary: &RelaySummary,
@@ -553,7 +549,6 @@ fn acknowledgment_metrics(
     );
 }
 
-#[cfg(feature = "telemetry")]
 fn timeout_metrics(
     path: &Packet,
     summary: &RelaySummary,

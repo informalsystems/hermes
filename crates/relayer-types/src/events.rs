@@ -69,6 +69,10 @@ define_error! {
             { data: String }
             | e | { format_args!("error decoding hex-encoded packet data: {}", e.data) },
 
+        InvalidPacketAck
+            { ack: String }
+            | e | { format_args!("error decoding hex-encoded packet ack: {}", e.ack) },
+
         MissingActionString
             | _ | { "missing action string" },
 

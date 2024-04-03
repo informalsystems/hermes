@@ -31,7 +31,7 @@ pub const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
 pub const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
 pub const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 pub const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
-pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
+pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack_hex";
 
 /// Channel upgrade attribute keys
 pub const UPGRADE_SEQUENCE: &str = "upgrade_sequence";

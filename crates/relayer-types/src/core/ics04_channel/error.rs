@@ -238,6 +238,14 @@ define_error! {
                 format_args!("Invalid packet data, not a valid hex-encoded string: {}", e.data)
             },
 
+        InvalidPacketAck
+            {
+                ack: String,
+            }
+            | e | {
+                format_args!("Invalid packet ack, not a valid hex-encoded string: {}", e.ack)
+            },
+
         LowPacketHeight
             {
                 chain_height: Height,

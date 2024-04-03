@@ -583,7 +583,8 @@ pub fn extract_packet_and_write_ack_from_tx(
                     .map_err(|_| ChannelError::invalid_packet_data(value.to_string()))?;
             }
             channel_events::PKT_ACK_ATTRIBUTE_KEY => {
-                write_ack = Vec::from(value.as_bytes());
+                write_ack = hex::decode(value.to_lowercase())
+                    .map_err(|_| ChannelError::invalid_packet_ack(value.to_string()))?;
             }
             _ => {}
         }
