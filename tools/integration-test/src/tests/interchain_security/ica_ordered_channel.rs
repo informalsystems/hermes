@@ -17,7 +17,7 @@ use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
-use ibc_test_framework::chain::config::add_allow_message;
+use ibc_test_framework::chain::config::add_allow_message_interchainaccounts;
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
@@ -36,7 +36,7 @@ struct IcaOrderedChannelTest;
 
 impl TestOverrides for IcaOrderedChannelTest {
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        add_allow_message(genesis, "/cosmos.bank.v1beta1.MsgSend")?;
+        add_allow_message_interchainaccounts(genesis, "/cosmos.bank.v1beta1.MsgSend")?;
         update_genesis_for_consumer_chain(genesis)?;
 
         Ok(())

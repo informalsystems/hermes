@@ -33,7 +33,7 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 
 use ibc_test_framework::chain::config::{
-    add_allow_message, set_max_deposit_period, set_voting_period,
+    add_allow_message_interchainaccounts, set_max_deposit_period, set_voting_period,
 };
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
 use ibc_test_framework::prelude::*;
@@ -316,7 +316,7 @@ impl TestOverrides for ChannelUpgradeICAUnordered {
     }
 
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        add_allow_message(genesis, "/cosmos.bank.v1beta1.MsgSend")?;
+        add_allow_message_interchainaccounts(genesis, "/cosmos.bank.v1beta1.MsgSend")?;
         set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
         set_voting_period(genesis, VOTING_PERIOD)?;
 

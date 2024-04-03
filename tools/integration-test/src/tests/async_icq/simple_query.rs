@@ -1,7 +1,7 @@
 use ibc_relayer::channel::version::Version;
 use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::chain::config::{
-    add_allow_message, set_max_deposit_period, set_voting_period,
+    add_allow_message_interchainquery, set_max_deposit_period, set_voting_period,
 };
 use ibc_test_framework::chain::ext::async_icq::AsyncIcqMethodsExt;
 use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
@@ -34,7 +34,7 @@ impl TestOverrides for AsyncIcqTest {
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
         set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
         set_voting_period(genesis, VOTING_PERIOD)?;
-        add_allow_message(genesis, "/provenance.oracle.v1.Query/Oracle")?;
+        add_allow_message_interchainquery(genesis, "/provenance.oracle.v1.Query/Oracle")?;
 
         Ok(())
     }

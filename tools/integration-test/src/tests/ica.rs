@@ -16,8 +16,9 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 
-use ibc_test_framework::chain::config::add_allow_message;
-use ibc_test_framework::chain::ext::ica::register_interchain_account;
+use ibc_test_framework::chain::{
+    config::add_allow_message_interchainaccounts, ext::ica::register_interchain_account,
+};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_closed, assert_eventually_channel_established, query_channel_end,
@@ -76,7 +77,7 @@ impl TestOverrides for IcaFilterTestAllow {
 
     // Allow MsgSend messages over ICA
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        add_allow_message(genesis, "/cosmos.bank.v1beta1.MsgSend")?;
+        add_allow_message_interchainaccounts(genesis, "/cosmos.bank.v1beta1.MsgSend")?;
 
         Ok(())
     }
