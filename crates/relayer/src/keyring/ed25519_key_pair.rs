@@ -157,14 +157,14 @@ impl SigningKeyPair for Ed25519KeyPair {
             Ed25519AddressType::Solana => {
                 bs58::encode(&self.signing_key.verifying_key()).into_string()
             }
-            Ed25519AddressType::Astria => hex::encode(
-                astria_core::sequencer::v1alpha1::Address::from_verification_key(
+            Ed25519AddressType::Astria => {
+                hex::encode(astria_core::sequencer::v1::Address::from_verification_key(
                     ed25519_consensus::VerificationKey::try_from(
                         self.signing_key.verifying_key().to_bytes(),
                     )
                     .expect("can convert between ed25519 keys"),
-                ),
-            ),
+                ))
+            }
         }
     }
 

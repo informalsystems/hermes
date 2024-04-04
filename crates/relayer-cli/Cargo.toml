@@ -40,7 +40,7 @@ dialoguer                = "0.10.3"
 dirs-next                = "2.0.0"
 eyre                     = "0.6.8"
 flex-error               = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
-futures                  = "0.3.27"
+futures                  = "0.3"
 hdpath                   = "0.6.3"
 http                     = "0.2"
 humantime                = "2.1"
