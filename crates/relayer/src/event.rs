@@ -142,6 +142,10 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
             channel_upgrade_timeout_try_from_abci_event(abci_event)
                 .map_err(IbcEventError::channel)?,
         )),
+        Ok(IbcEventType::UpgradeErrorChannel) => Ok(IbcEvent::UpgradeErrorChannel(
+            channel_upgrade_error_try_from_abci_event(abci_event)
+                .map_err(IbcEventError::channel)?,
+        )),
         Ok(IbcEventType::SendPacket) => Ok(IbcEvent::SendPacket(
             send_packet_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
         )),
@@ -353,6 +357,16 @@ pub fn channel_upgrade_timeout_try_from_abci_event(
     }
 }
 
+pub fn channel_upgrade_error_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeError, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeError::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
 pub fn send_packet_try_from_abci_event(
     abci_event: &AbciEvent,
 ) -> Result<channel_events::SendPacket, ChannelError> {
@@ -535,6 +549,10 @@ fn channel_upgrade_extract_attributes_from_tx(
             channel_events::UPGRADE_TIMEOUT_TIMESTAMP => {
                 let maybe_timestamp = Timestamp::from_str(value).ok();
                 attr.upgrade_timeout_timestamp = maybe_timestamp;
+            }
+            channel_events::UPGRADE_ERROR_RECEIPT => {
+                let maybe_error_receipt = value.to_string();
+                attr.error_receipt = Some(maybe_error_receipt);
             }
             _ => {}
         }

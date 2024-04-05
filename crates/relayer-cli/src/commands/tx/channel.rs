@@ -780,7 +780,7 @@ impl Runnable for TxChanUpgradeTryCmd {
 
         info!("message ChanUpgradeTry: {}", channel);
 
-        let res: Result<Option<IbcEvent>, Error> = channel
+        let res: Result<IbcEvent, Error> = channel
             .build_chan_upgrade_try_and_send()
             .map_err(Error::channel);
 
@@ -911,7 +911,7 @@ impl Runnable for TxChanUpgradeAckCmd {
 
         info!("message ChanUpgradeAck: {}", channel);
 
-        let res: Result<Option<IbcEvent>, Error> = channel
+        let res: Result<IbcEvent, Error> = channel
             .build_chan_upgrade_ack_and_send()
             .map_err(Error::channel);
 
@@ -1042,7 +1042,7 @@ impl Runnable for TxChanUpgradeConfirmCmd {
 
         info!("message ChanUpgradeConfirm: {}", channel);
 
-        let res: Result<Option<IbcEvent>, Error> = channel
+        let res: Result<IbcEvent, Error> = channel
             .build_chan_upgrade_confirm_and_send()
             .map_err(Error::channel);
 

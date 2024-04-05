@@ -542,7 +542,8 @@ pub fn collect_events(
             IbcEvent::UpgradeInitChannel(..)
             | IbcEvent::UpgradeTryChannel(..)
             | IbcEvent::UpgradeAckChannel(..)
-            | IbcEvent::UpgradeOpenChannel(..) => {
+            | IbcEvent::UpgradeOpenChannel(..)
+            | IbcEvent::UpgradeErrorChannel(..) => {
                 collect_event(
                     &mut collected,
                     event_with_height.clone(),

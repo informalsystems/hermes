@@ -799,10 +799,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
         info!("Check that the step ChanUpgradeAck timed out...");
 
         // ACK should fail because the upgrade has timed out
-        assert!(
-            ack_event.is_none(),
-            "channel upgrade ack should have failed due to timeout"
-        );
+        assert_eq!(ack_event.event_type(), IbcEventType::UpgradeErrorChannel);
 
         info!("Will run ChanUpgradeCancel step...");
 

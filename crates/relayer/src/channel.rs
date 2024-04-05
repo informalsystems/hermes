@@ -764,6 +764,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         &mut self,
         state: State,
     ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
+        //tracing::warn!("state: {:#?}, counterparty: {:#?}", state, self.counterparty_state()?);
         let event = match (state, self.counterparty_state()?) {
             // Open handshake steps
             (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),
@@ -789,51 +790,71 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             // Channel Upgrade handshake steps
             (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::NotUpgrading)) => {
-                match self.build_chan_upgrade_try_and_send()? {
-                    Some(event) => Some(event),
-                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
-                }
+                Some(self.build_chan_upgrade_try_and_send()?)
             }
             (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::Upgrading)) => {
-                match self.build_chan_upgrade_try_and_send()? {
-                    Some(event) => Some(event),
-                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
-                }
+                Some(self.build_chan_upgrade_try_and_send()?)
             }
             (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::Upgrading)) => {
-                match self.flipped().build_chan_upgrade_try_and_send()? {
-                    Some(event) => Some(event),
-                    None => Some(self.build_chan_upgrade_cancel_and_send()?),
-                }
+                Some(self.build_chan_upgrade_try_and_send()?)
             }
             (State::Flushing, State::Open(UpgradeState::Upgrading)) => {
-                match self.build_chan_upgrade_ack_and_send()? {
-                    Some(event) => Some(event),
-                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
-                }
+                Some(self.build_chan_upgrade_ack_and_send()?)
             }
-            (State::Flushing, State::Flushing) => match self.build_chan_upgrade_ack_and_send()? {
-                Some(event) => Some(event),
-                None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
-            },
+            (State::Flushing, State::Flushing) => Some(self.build_chan_upgrade_ack_and_send()?),
             (State::Flushcomplete, State::Flushing) => {
-                match self.build_chan_upgrade_confirm_and_send()? {
-                    Some(event) => Some(event),
-                    None => Some(self.flipped().build_chan_upgrade_cancel_and_send()?),
-                }
+                Some(self.build_chan_upgrade_confirm_and_send()?)
             }
+
             (State::Flushing, State::Open(UpgradeState::NotUpgrading)) => {
                 Some(self.flipped().build_chan_upgrade_cancel_and_send()?)
+            }
+            (State::Open(UpgradeState::NotUpgrading), State::Flushing) => {
+                Some(self.build_chan_upgrade_cancel_and_send()?)
             }
 
             (State::Flushcomplete, State::Flushcomplete) => {
                 Some(self.build_chan_upgrade_open_and_send()?)
             }
             (State::Flushcomplete, State::Open(UpgradeState::NotUpgrading)) => {
-                Some(self.flipped().build_chan_upgrade_open_and_send()?)
+                // Check if error
+                let height = self.b_chain().query_latest_height().unwrap();
+                let (upgrade_error, _) = self
+                    .b_chain()
+                    .query_upgrade_error(
+                        QueryUpgradeErrorRequest {
+                            port_id: self.b_side.port_id.clone().to_string(),
+                            channel_id: self.b_side.channel_id.clone().unwrap().clone().to_string(),
+                        },
+                        height,
+                    )
+                    .map_err(|_| ChannelError::missing_upgrade_error_receipt_proof())?;
+
+                if upgrade_error.sequence > 0.into() {
+                    Some(self.flipped().build_chan_upgrade_cancel_and_send()?)
+                } else {
+                    Some(self.flipped().build_chan_upgrade_open_and_send()?)
+                }
             }
             (State::Open(UpgradeState::NotUpgrading), State::Flushcomplete) => {
-                Some(self.build_chan_upgrade_open_and_send()?)
+                // Check if error query_upgrade_error
+                let height = self.a_chain().query_latest_height().unwrap();
+                let (upgrade_error, _) = self
+                    .a_chain()
+                    .query_upgrade_error(
+                        QueryUpgradeErrorRequest {
+                            port_id: self.a_side.port_id.clone().to_string(),
+                            channel_id: self.a_side.channel_id.clone().unwrap().clone().to_string(),
+                        },
+                        height,
+                    )
+                    .map_err(|_| ChannelError::missing_upgrade_error_receipt_proof())?;
+
+                if upgrade_error.sequence > 0.into() {
+                    Some(self.build_chan_upgrade_cancel_and_send()?)
+                } else {
+                    Some(self.build_chan_upgrade_open_and_send()?)
+                }
             }
 
             _ => None,
@@ -846,7 +867,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             | Some(IbcEvent::OpenAckChannel(_))
             | Some(IbcEvent::CloseConfirmChannel(_))
             | Some(IbcEvent::UpgradeConfirmChannel(_))
-            | Some(IbcEvent::UpgradeOpenChannel(_)) => Ok((event, Next::Abort)),
+            | Some(IbcEvent::UpgradeOpenChannel(_))
+            | Some(IbcEvent::UpgradeCancelChannel(_)) => Ok((event, Next::Abort)),
             _ => Ok((event, Next::Continue)),
         }
     }
@@ -1675,7 +1697,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(chain_a_msgs)
     }
 
-    pub fn build_chan_upgrade_try_and_send(&self) -> Result<Option<IbcEvent>, ChannelError> {
+    pub fn build_chan_upgrade_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_upgrade_try()?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeTry");
@@ -1685,22 +1707,34 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .send_messages_and_wait_commit(tm)
             .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
-        // If the Channel Upgrade Try times out, there will be no events in the response
-        if let Some(event_with_height) = events.into_iter().find(|event_with_height| {
-            matches!(event_with_height.event, IbcEvent::UpgradeTryChannel(_))
-                || matches!(event_with_height.event, IbcEvent::ChainError(_))
-        }) {
-            match &event_with_height.event {
-                IbcEvent::UpgradeTryChannel(_) => {
-                    info!("👋 {} => {}", self.dst_chain().id(), event_with_height);
-                    Ok(Some(event_with_height.event.clone()))
-                }
-                IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
-                _ => Err(ChannelError::invalid_event(event_with_height.event.clone())),
+        // Find the relevant event for channel upgrade try
+        let result = events
+            .into_iter()
+            .find(|events_with_height| {
+                matches!(events_with_height.event, IbcEvent::UpgradeTryChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::UpgradeErrorChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no chan upgrade try or upgrade error event was in the response".to_string(),
+                )
+            })?;
+
+        match result.event {
+            IbcEvent::UpgradeTryChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
             }
-        } else {
-            warn!("no channel upgrade try event found, this might be due to the channel upgrade having timed out");
-            Ok(None)
+            IbcEvent::UpgradeErrorChannel(ref ev) => {
+                warn!(
+                    "Channel Upgrade Try failed with error: {}",
+                    ev.error_receipt
+                );
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
         }
     }
 
@@ -1773,7 +1807,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(chain_a_msgs)
     }
 
-    pub fn build_chan_upgrade_ack_and_send(&self) -> Result<Option<IbcEvent>, ChannelError> {
+    pub fn build_chan_upgrade_ack_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_upgrade_ack()?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeAck");
@@ -1783,22 +1817,34 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .send_messages_and_wait_commit(tm)
             .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
-        // If the Channel Upgrade Ack times out, there will be no events in the response
-        if let Some(event_with_height) = events.into_iter().find(|event_with_height| {
-            matches!(event_with_height.event, IbcEvent::UpgradeAckChannel(_))
-                || matches!(event_with_height.event, IbcEvent::ChainError(_))
-        }) {
-            match &event_with_height.event {
-                IbcEvent::UpgradeAckChannel(_) => {
-                    info!("👋 {} => {}", self.dst_chain().id(), event_with_height);
-                    Ok(Some(event_with_height.event.clone()))
-                }
-                IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
-                _ => Err(ChannelError::invalid_event(event_with_height.event.clone())),
+        // Find the relevant event for channel upgrade ack
+        let result = events
+            .into_iter()
+            .find(|events_with_height| {
+                matches!(events_with_height.event, IbcEvent::UpgradeAckChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::UpgradeErrorChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no chan upgrade ack or upgrade error event was in the response".to_string(),
+                )
+            })?;
+
+        match result.event {
+            IbcEvent::UpgradeAckChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
             }
-        } else {
-            warn!("no channel upgrade ack event found, this might be due to the channel upgrade having timed out");
-            Ok(None)
+            IbcEvent::UpgradeErrorChannel(ref ev) => {
+                warn!(
+                    "Channel Upgrade Ack failed with error: {}",
+                    ev.error_receipt
+                );
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
         }
     }
 
@@ -1886,7 +1932,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(chain_a_msgs)
     }
 
-    pub fn build_chan_upgrade_confirm_and_send(&self) -> Result<Option<IbcEvent>, ChannelError> {
+    pub fn build_chan_upgrade_confirm_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_upgrade_confirm()?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeConfirm");
@@ -1896,22 +1942,34 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .send_messages_and_wait_commit(tm)
             .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
-        // If the Channel Upgrade Confirm times out, there will be no events in the response
-        if let Some(event_with_height) = events.into_iter().find(|event_with_height| {
-            matches!(event_with_height.event, IbcEvent::UpgradeConfirmChannel(_))
-                || matches!(event_with_height.event, IbcEvent::ChainError(_))
-        }) {
-            match &event_with_height.event {
-                IbcEvent::UpgradeConfirmChannel(_) => {
-                    info!("👋 {} => {}", self.dst_chain().id(), event_with_height);
-                    Ok(Some(event_with_height.event.clone()))
-                }
-                IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
-                _ => Err(ChannelError::invalid_event(event_with_height.event.clone())),
+        // Find the relevant event for channel upgrade confirm
+        let result = events
+            .into_iter()
+            .find(|events_with_height| {
+                matches!(events_with_height.event, IbcEvent::UpgradeConfirmChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::UpgradeErrorChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no chan upgrade ack or upgrade error event was in the response".to_string(),
+                )
+            })?;
+
+        match result.event {
+            IbcEvent::UpgradeConfirmChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
             }
-        } else {
-            warn!("no channel upgrade confirm event found, this might be due to the channel upgrade having timed out");
-            Ok(None)
+            IbcEvent::UpgradeErrorChannel(ref ev) => {
+                warn!(
+                    "Channel Upgrade Confirm failed with error: {}",
+                    ev.error_receipt
+                );
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
         }
     }
 

@@ -132,6 +132,7 @@ const CHANNEL_OPEN_ACK_EVENT: &str = "channel_open_ack";
 const CHANNEL_OPEN_CONFIRM_EVENT: &str = "channel_open_confirm";
 const CHANNEL_CLOSE_INIT_EVENT: &str = "channel_close_init";
 const CHANNEL_CLOSE_CONFIRM_EVENT: &str = "channel_close_confirm";
+/// Channel upgrade event types
 const CHANNEL_UPGRADE_INIT_EVENT: &str = "channel_upgrade_init";
 const CHANNEL_UPGRADE_TRY_EVENT: &str = "channel_upgrade_try";
 const CHANNEL_UPGRADE_ACK_EVENT: &str = "channel_upgrade_ack";
@@ -139,6 +140,7 @@ const CHANNEL_UPGRADE_CONFIRM_EVENT: &str = "channel_upgrade_confirm";
 const CHANNEL_UPGRADE_OPEN_EVENT: &str = "channel_upgrade_open";
 const CHANNEL_UPGRADE_CANCEL_EVENT: &str = "channel_upgrade_cancelled";
 const CHANNEL_UPGRADE_TIMEOUT_EVENT: &str = "channel_upgrade_timeout";
+const CHANNEL_UPGRADE_ERROR_EVENT: &str = "channel_upgrade_error";
 /// Packet event types
 const SEND_PACKET_EVENT: &str = "send_packet";
 const RECEIVE_PACKET_EVENT: &str = "receive_packet";
@@ -177,6 +179,7 @@ pub enum IbcEventType {
     UpgradeOpenChannel,
     UpgradeCancelChannel,
     UpgradeTimeoutChannel,
+    UpgradeErrorChannel,
     SendPacket,
     ReceivePacket,
     WriteAck,
@@ -216,6 +219,7 @@ impl IbcEventType {
             IbcEventType::UpgradeOpenChannel => CHANNEL_UPGRADE_OPEN_EVENT,
             IbcEventType::UpgradeCancelChannel => CHANNEL_UPGRADE_CANCEL_EVENT,
             IbcEventType::UpgradeTimeoutChannel => CHANNEL_UPGRADE_TIMEOUT_EVENT,
+            IbcEventType::UpgradeErrorChannel => CHANNEL_UPGRADE_ERROR_EVENT,
             IbcEventType::SendPacket => SEND_PACKET_EVENT,
             IbcEventType::ReceivePacket => RECEIVE_PACKET_EVENT,
             IbcEventType::WriteAck => WRITE_ACK_EVENT,
@@ -259,6 +263,7 @@ impl FromStr for IbcEventType {
             CHANNEL_UPGRADE_OPEN_EVENT => Ok(IbcEventType::UpgradeOpenChannel),
             CHANNEL_UPGRADE_CANCEL_EVENT => Ok(IbcEventType::UpgradeCancelChannel),
             CHANNEL_UPGRADE_TIMEOUT_EVENT => Ok(IbcEventType::UpgradeTimeoutChannel),
+            CHANNEL_UPGRADE_ERROR_EVENT => Ok(IbcEventType::UpgradeErrorChannel),
             SEND_PACKET_EVENT => Ok(IbcEventType::SendPacket),
             RECEIVE_PACKET_EVENT => Ok(IbcEventType::ReceivePacket),
             WRITE_ACK_EVENT => Ok(IbcEventType::WriteAck),
@@ -304,6 +309,7 @@ pub enum IbcEvent {
     UpgradeOpenChannel(ChannelEvents::UpgradeOpen),
     UpgradeCancelChannel(ChannelEvents::UpgradeCancel),
     UpgradeTimeoutChannel(ChannelEvents::UpgradeTimeout),
+    UpgradeErrorChannel(ChannelEvents::UpgradeError),
 
     SendPacket(ChannelEvents::SendPacket),
     ReceivePacket(ChannelEvents::ReceivePacket),
@@ -350,6 +356,7 @@ impl Display for IbcEvent {
             IbcEvent::UpgradeOpenChannel(ev) => write!(f, "UpgradeOpenChannel({ev})"),
             IbcEvent::UpgradeCancelChannel(ev) => write!(f, "UpgradeCancelChannel({ev})"),
             IbcEvent::UpgradeTimeoutChannel(ev) => write!(f, "UpgradeTimeoutChannel({ev})"),
+            IbcEvent::UpgradeErrorChannel(ev) => write!(f, "UpgradeErrorChannel({ev})"),
 
             IbcEvent::SendPacket(ev) => write!(f, "SendPacket({ev})"),
             IbcEvent::ReceivePacket(ev) => write!(f, "ReceivePacket({ev})"),
@@ -402,6 +409,7 @@ impl IbcEvent {
             IbcEvent::UpgradeOpenChannel(_) => IbcEventType::UpgradeOpenChannel,
             IbcEvent::UpgradeCancelChannel(_) => IbcEventType::UpgradeCancelChannel,
             IbcEvent::UpgradeTimeoutChannel(_) => IbcEventType::UpgradeTimeoutChannel,
+            IbcEvent::UpgradeErrorChannel(_) => IbcEventType::UpgradeErrorChannel,
             IbcEvent::SendPacket(_) => IbcEventType::SendPacket,
             IbcEvent::ReceivePacket(_) => IbcEventType::ReceivePacket,
             IbcEvent::WriteAcknowledgement(_) => IbcEventType::WriteAck,
@@ -435,6 +443,7 @@ impl IbcEvent {
             IbcEvent::UpgradeOpenChannel(ev) => Some(ev.into()),
             IbcEvent::UpgradeCancelChannel(ev) => Some(ev.into()),
             IbcEvent::UpgradeTimeoutChannel(ev) => Some(ev.into()),
+            IbcEvent::UpgradeErrorChannel(ev) => Some(ev.into()),
             _ => None,
         }
     }

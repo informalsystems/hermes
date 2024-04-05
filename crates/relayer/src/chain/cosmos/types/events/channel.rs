@@ -75,6 +75,8 @@ fn extract_upgrade_attributes(
             &format!("{namespace}.timeout_timestamp"),
         )
         .and_then(|v| v.parse().ok()),
+        error_receipt: maybe_extract_attribute(object, &format!("{namespace}.error_receipt"))
+            .and_then(|v| v.parse().ok()),
     })
 }
 

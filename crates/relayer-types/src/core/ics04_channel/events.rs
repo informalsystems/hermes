@@ -37,6 +37,7 @@ pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack_hex";
 pub const UPGRADE_SEQUENCE: &str = "upgrade_sequence";
 pub const UPGRADE_TIMEOUT_HEIGHT: &str = "timeout_height";
 pub const UPGRADE_TIMEOUT_TIMESTAMP: &str = "timeout_timestamp";
+pub const UPGRADE_ERROR_RECEIPT: &str = "error_receipt";
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 pub struct Attributes {
@@ -103,6 +104,7 @@ pub struct UpgradeAttributes {
     pub upgrade_sequence: Sequence,
     pub upgrade_timeout_height: Option<Height>,
     pub upgrade_timeout_timestamp: Option<Timestamp>,
+    pub error_receipt: Option<String>,
 }
 
 impl UpgradeAttributes {
@@ -529,6 +531,7 @@ impl From<UpgradeInit> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_timeout_height: None,
             upgrade_timeout_timestamp: None,
+            error_receipt: None,
         }
     }
 }
@@ -607,6 +610,7 @@ impl From<UpgradeTry> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_timeout_height: None,
             upgrade_timeout_timestamp: None,
+            error_receipt: None,
         }
     }
 }
@@ -685,6 +689,7 @@ impl From<UpgradeAck> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_timeout_height: None,
             upgrade_timeout_timestamp: None,
+            error_receipt: None,
         }
     }
 }
@@ -763,6 +768,7 @@ impl From<UpgradeConfirm> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_timeout_height: None,
             upgrade_timeout_timestamp: None,
+            error_receipt: None,
         }
     }
 }
@@ -841,6 +847,7 @@ impl From<UpgradeOpen> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_timeout_height: None,
             upgrade_timeout_timestamp: None,
+            error_receipt: None,
         }
     }
 }
@@ -919,6 +926,7 @@ impl From<UpgradeCancel> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_timeout_height: None,
             upgrade_timeout_timestamp: None,
+            error_receipt: None,
         }
     }
 }
@@ -1011,6 +1019,7 @@ impl From<UpgradeTimeout> for UpgradeAttributes {
             upgrade_sequence: ev.upgrade_sequence,
             upgrade_timeout_height: ev.upgrade_timeout_height,
             upgrade_timeout_timestamp: ev.upgrade_timeout_timestamp,
+            error_receipt: None,
         }
     }
 }
@@ -1058,6 +1067,94 @@ impl From<UpgradeTimeout> for IbcEvent {
 impl EventType for UpgradeTimeout {
     fn event_type() -> IbcEventType {
         IbcEventType::UpgradeTimeoutChannel
+    }
+}
+//
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct UpgradeError {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: Option<ChannelId>,
+    pub upgrade_sequence: Sequence,
+    pub error_receipt: String,
+}
+
+impl Display for UpgradeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        if let Some(counterparty_channel_id) = &self.counterparty_channel_id {
+            write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: {counterparty_channel_id}, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
+        } else {
+            write!(f, "UpgradeAttributes {{ port_id: {}, channel_id: {}, counterparty_port_id: {}, counterparty_channel_id: None, upgrade_connection_hops: [", self.port_id, self.channel_id, self.counterparty_port_id)?;
+        }
+
+        write!(
+            f,
+            "], upgrade_sequence: {}, error_receipt: {} }}",
+            self.upgrade_sequence, self.error_receipt
+        )
+    }
+}
+
+impl From<UpgradeError> for UpgradeAttributes {
+    fn from(ev: UpgradeError) -> Self {
+        Self {
+            port_id: ev.port_id,
+            channel_id: ev.channel_id,
+            counterparty_port_id: ev.counterparty_port_id,
+            counterparty_channel_id: ev.counterparty_channel_id,
+            upgrade_sequence: ev.upgrade_sequence,
+            upgrade_timeout_height: None,
+            upgrade_timeout_timestamp: None,
+            error_receipt: Some(ev.error_receipt),
+        }
+    }
+}
+
+impl UpgradeError {
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+
+    pub fn counterparty_port_id(&self) -> &PortId {
+        &self.counterparty_port_id
+    }
+
+    pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
+        self.counterparty_channel_id.as_ref()
+    }
+}
+
+impl TryFrom<UpgradeAttributes> for UpgradeError {
+    type Error = EventError;
+
+    fn try_from(attrs: UpgradeAttributes) -> Result<Self, Self::Error> {
+        let error_receipt = attrs.error_receipt.unwrap_or_default();
+        Ok(Self {
+            port_id: attrs.port_id,
+            channel_id: attrs.channel_id,
+            counterparty_port_id: attrs.counterparty_port_id,
+            counterparty_channel_id: attrs.counterparty_channel_id,
+            upgrade_sequence: attrs.upgrade_sequence,
+            error_receipt,
+        })
+    }
+}
+
+impl From<UpgradeError> for IbcEvent {
+    fn from(v: UpgradeError) -> Self {
+        IbcEvent::UpgradeErrorChannel(v)
+    }
+}
+
+impl EventType for UpgradeError {
+    fn event_type() -> IbcEventType {
+        IbcEventType::UpgradeErrorChannel
     }
 }
 
