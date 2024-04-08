@@ -45,7 +45,7 @@ async-stream             = "0.3.5"
 async-trait              = "0.1.79"
 axum                     = "0.6.18"
 bech32                   = "0.9.1"
-bitcoin                  = "0.31.1"
+bitcoin                  = "0.31.2"
 bs58                     = "0.5.1"
 byte-unit                = { version = "4.0.19", default-features = false }
 bytes                    = "1.4.0"
