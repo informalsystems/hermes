@@ -659,36 +659,3 @@ mod tests {
         }
     }
 }
-
-#[cfg(any(test, feature = "mocks"))]
-pub mod test_util {
-    use core::time::Duration;
-
-    use tendermint::block::Header;
-
-    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
-    use crate::core::ics02_client::height::Height;
-    use crate::core::ics24_host::identifier::ChainId;
-
-    pub fn get_dummy_tendermint_client_state(tm_header: Header) -> ClientState {
-        ClientState::new(
-            ChainId::from(tm_header.chain_id.clone()),
-            Default::default(),
-            Duration::from_secs(64000),
-            Duration::from_secs(128000),
-            Duration::from_millis(3000),
-            Height::new(
-                ChainId::chain_version(tm_header.chain_id.as_str()),
-                u64::from(tm_header.height),
-            )
-            .unwrap(),
-            Default::default(),
-            vec!["".to_string()],
-            AllowUpdate {
-                after_expiry: false,
-                after_misbehaviour: false,
-            },
-        )
-        .unwrap()
-    }
-}

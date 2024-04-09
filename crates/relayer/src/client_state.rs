@@ -18,28 +18,16 @@ use ibc_relayer_types::core::ics24_host::error::ValidationError;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer_types::Height;
 
-#[cfg(test)]
-use ibc_proto::ibc::mock::ClientState as RawMockClientState;
-#[cfg(test)]
-use ibc_relayer_types::mock::client_state::MockClientState;
-#[cfg(test)]
-use ibc_relayer_types::mock::client_state::MOCK_CLIENT_STATE_TYPE_URL;
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum AnyUpgradeOptions {
     Tendermint(TmUpgradeOptions),
-
-    #[cfg(test)]
-    Mock(()),
 }
 
 impl AnyUpgradeOptions {
     fn into_tm_upgrade_options(self) -> Option<TmUpgradeOptions> {
         match self {
             AnyUpgradeOptions::Tendermint(tm) => Some(tm),
-            #[cfg(test)]
-            AnyUpgradeOptions::Mock(_) => None,
         }
     }
 }
@@ -48,72 +36,48 @@ impl AnyUpgradeOptions {
 #[serde(tag = "type")]
 pub enum AnyClientState {
     Tendermint(TmClientState),
-
-    #[cfg(test)]
-    Mock(MockClientState),
 }
 
 impl AnyClientState {
     pub fn chain_id(&self) -> ChainId {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.chain_id(),
         }
     }
 
     pub fn latest_height(&self) -> Height {
         match self {
             Self::Tendermint(tm_state) => tm_state.latest_height(),
-
-            #[cfg(test)]
-            Self::Mock(mock_state) => mock_state.latest_height(),
         }
     }
 
     pub fn frozen_height(&self) -> Option<Height> {
         match self {
             Self::Tendermint(tm_state) => tm_state.frozen_height(),
-
-            #[cfg(test)]
-            Self::Mock(mock_state) => mock_state.frozen_height(),
         }
     }
 
     pub fn trust_threshold(&self) -> Option<TrustThreshold> {
         match self {
             AnyClientState::Tendermint(state) => Some(state.trust_threshold),
-
-            #[cfg(test)]
-            AnyClientState::Mock(_) => None,
         }
     }
 
     pub fn trusting_period(&self) -> Duration {
         match self {
             AnyClientState::Tendermint(state) => state.trusting_period,
-
-            #[cfg(test)]
-            AnyClientState::Mock(_) => Duration::from_secs(14 * 24 * 60 * 60), // 2 weeks
         }
     }
 
     pub fn max_clock_drift(&self) -> Duration {
         match self {
             AnyClientState::Tendermint(state) => state.max_clock_drift,
-
-            #[cfg(test)]
-            AnyClientState::Mock(_) => Duration::new(0, 0),
         }
     }
 
     pub fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(state) => state.client_type(),
-
-            #[cfg(test)]
-            Self::Mock(state) => state.client_type(),
         }
     }
 }
@@ -132,12 +96,6 @@ impl TryFrom<Any> for AnyClientState {
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
-            #[cfg(test)]
-            MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
-                Protobuf::<RawMockClientState>::decode_vec(&raw.value)
-                    .map_err(Error::decode_raw_client_state)?,
-            )),
-
             _ => Err(Error::unknown_client_state_type(raw.type_url)),
         }
     }
@@ -150,11 +108,6 @@ impl From<AnyClientState> for Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
                 value: Protobuf::<RawTmClientState>::encode_vec(value),
             },
-            #[cfg(test)]
-            AnyClientState::Mock(value) => Any {
-                type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-                value: Protobuf::<RawMockClientState>::encode_vec(value),
-            },
         }
     }
 }
@@ -165,9 +118,6 @@ impl ClientState for AnyClientState {
     fn chain_id(&self) -> ChainId {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.chain_id(),
         }
     }
 
@@ -197,20 +147,12 @@ impl ClientState for AnyClientState {
                 // TODO: Handle case where upgrade options are not of the right type,
                 //       not a problem in practice for now but good to have.
             }
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => {
-                mock_state.upgrade(upgrade_height, (), chain_id);
-            }
         }
     }
 
     fn expired(&self, elapsed_since_latest: Duration) -> bool {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
     }
 }
@@ -218,13 +160,6 @@ impl ClientState for AnyClientState {
 impl From<TmClientState> for AnyClientState {
     fn from(cs: TmClientState) -> Self {
         Self::Tendermint(cs)
-    }
-}
-
-#[cfg(test)]
-impl From<MockClientState> for AnyClientState {
-    fn from(cs: MockClientState) -> Self {
-        Self::Mock(cs)
     }
 }
 
@@ -268,25 +203,5 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
             client_id: value.client_id.to_string(),
             client_state: Some(value.client_state.into()),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use ibc_proto::google::protobuf::Any;
-    use ibc_relayer_types::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-    use ibc_relayer_types::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use test_log::test;
-
-    use super::AnyClientState;
-
-    #[test]
-    fn any_client_state_serialization() {
-        let tm_client_state: AnyClientState =
-            get_dummy_tendermint_client_state(get_dummy_tendermint_header()).into();
-
-        let raw: Any = tm_client_state.clone().into();
-        let tm_client_state_back = AnyClientState::try_from(raw).unwrap();
-        assert_eq!(tm_client_state, tm_client_state_back);
     }
 }

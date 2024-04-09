@@ -27,9 +27,6 @@ use ibc_relayer_types::core::ics02_client::header::AnyHeader;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::Height as ICSHeight;
 
-#[cfg(test)]
-use ibc_relayer_types::core::ics02_client::client_type::ClientType;
-
 use crate::{
     chain::cosmos::config::CosmosSdkConfig,
     chain::cosmos::CosmosSdkChain,
@@ -150,12 +147,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
-
-            #[cfg(test)]
-            _ => Err(Error::misbehaviour(format!(
-                "client type incompatible for chain {}",
-                self.chain_id
-            ))),
         }?;
 
         let next_validators = self
@@ -317,12 +308,6 @@ impl LightClient {
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
-
-            #[cfg(test)]
-            _ => Err(Error::client_type_mismatch(
-                ClientType::Tendermint,
-                client_state.client_type(),
-            )),
         }?;
 
         Ok(TmLightClient::new(
