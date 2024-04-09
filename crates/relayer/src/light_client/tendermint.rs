@@ -147,6 +147,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
+            AnyClientState::Wasm(client_state) => Ok(&client_state.underlying),
         }?;
 
         let next_validators = self
@@ -308,6 +309,7 @@ impl LightClient {
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
+            AnyClientState::Wasm(client_state) => Ok(&client_state.underlying),
         }?;
 
         Ok(TmLightClient::new(

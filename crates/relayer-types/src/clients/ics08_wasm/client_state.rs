@@ -7,6 +7,7 @@ use ibc_proto::Protobuf;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 
+use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 use crate::core::ics02_client::client_state::ClientState as Ics02ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
@@ -22,31 +23,41 @@ pub const WASM_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.wasm.v1.ClientSt
 /// Binary data represented by the data field is opaque and only interpreted by the Wasm contract.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
-    pub data: Vec<u8>,
     pub checksum: Vec<u8>,
     pub latest_height: Height,
+    pub underlying: TmClientState,
 }
 
 impl Ics02ClientState for ClientState {
     fn chain_id(&self) -> ChainId {
-        todo!()
+        self.underlying.chain_id()
     }
 
     fn client_type(&self) -> ClientType {
-        todo!()
+        ClientType::Wasm
     }
 
     fn latest_height(&self) -> Height {
-        todo!()
+        self.latest_height
     }
 
     fn frozen_height(&self) -> Option<Height> {
-        todo!()
+        self.underlying.frozen_height()
     }
 
-    fn expired(&self, _elapsed: Duration) -> bool {
-        todo!()
+    fn expired(&self, elapsed: Duration) -> bool {
+        self.underlying.expired(elapsed)
     }
+}
+
+fn encode_underlying_client_state(client_state: TmClientState) -> Vec<u8> {
+    Any::from(client_state).encode_to_vec()
+}
+
+fn decode_underlying_client_state(data: &[u8]) -> Result<TmClientState, Error> {
+    let any = Any::decode(data)?;
+    let client_state = TmClientState::try_from(any)?;
+    Ok(client_state)
 }
 
 impl Protobuf<RawClientState> for ClientState {}
@@ -54,7 +65,7 @@ impl Protobuf<RawClientState> for ClientState {}
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
         RawClientState {
-            data: value.data,
+            data: encode_underlying_client_state(value.underlying),
             checksum: value.checksum,
             latest_height: Some(value.latest_height.into()),
         }
@@ -70,12 +81,12 @@ impl TryFrom<RawClientState> for ClientState {
             .ok_or_else(Error::missing_latest_height)?;
 
         Ok(ClientState {
-            data: value.data,
             checksum: value.checksum,
             latest_height: raw_height
                 .clone()
                 .try_into()
                 .map_err(|_| Error::invalid_raw_height(raw_height))?,
+            underlying: decode_underlying_client_state(&value.data)?,
         })
     }
 }
@@ -90,9 +101,7 @@ impl TryFrom<Any> for ClientState {
         use core::ops::Deref;
 
         fn decode_client_state<B: Buf>(buf: B) -> Result<ClientState, Error> {
-            RawClientState::decode(buf)
-                .map_err(Error::decode)?
-                .try_into()
+            RawClientState::decode(buf)?.try_into()
         }
 
         match raw.type_url.as_str() {

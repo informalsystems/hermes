@@ -2,10 +2,12 @@
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::Protobuf;
+use prost::Message;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::lightclients::wasm::v1::ConsensusState as RawConsensusState;
 
+use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState as Ics02ConsensusState;
 use crate::core::ics02_client::error::Error as Ics02Error;
@@ -20,7 +22,7 @@ pub const WASM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.wasm.v1.Conse
 /// Binary data represented by the data field is opaque and only interpreted by the Wasm contract
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConsensusState {
-    pub data: Vec<u8>,
+    pub underlying: TmConsensusState,
 }
 
 impl Ics02ConsensusState for ConsensusState {
@@ -29,27 +31,41 @@ impl Ics02ConsensusState for ConsensusState {
     }
 
     fn root(&self) -> &CommitmentRoot {
-        todo!()
+        self.underlying.root()
     }
 
     fn timestamp(&self) -> Timestamp {
-        todo!()
+        self.underlying.timestamp()
     }
+}
+
+fn encode_underlying_consensus_state(consensus_state: TmConsensusState) -> Vec<u8> {
+    Any::from(consensus_state).encode_to_vec()
+}
+
+fn decode_underlying_consensus_state(data: &[u8]) -> Result<TmConsensusState, Error> {
+    let any = Any::decode(data)?;
+    let client_state = TmConsensusState::try_from(any)?;
+    Ok(client_state)
 }
 
 impl Protobuf<RawConsensusState> for ConsensusState {}
 
 impl From<ConsensusState> for RawConsensusState {
-    fn from(value: ConsensusState) -> Self {
-        RawConsensusState { data: value.data }
+    fn from(consensus_state: ConsensusState) -> Self {
+        RawConsensusState {
+            data: encode_underlying_consensus_state(consensus_state.underlying),
+        }
     }
 }
 
 impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
 
-    fn try_from(value: RawConsensusState) -> Result<Self, Self::Error> {
-        Ok(Self { data: value.data })
+    fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
+        Ok(Self {
+            underlying: decode_underlying_consensus_state(&raw.data)?,
+        })
     }
 }
 
@@ -70,12 +86,9 @@ impl TryFrom<Any> for ConsensusState {
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         use bytes::Buf;
         use core::ops::Deref;
-        use prost::Message;
 
         fn decode_consensus_state<B: Buf>(buf: B) -> Result<ConsensusState, Error> {
-            RawConsensusState::decode(buf)
-                .map_err(Error::decode)?
-                .try_into()
+            RawConsensusState::decode(buf)?.try_into()
         }
 
         match raw.type_url.as_str() {
