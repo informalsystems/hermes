@@ -81,7 +81,7 @@ tracing-subscriber               = { workspace = true, features = ["fmt", "env-f
 uuid                             = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
-ibc-relayer-types = { workspace = true, features = ["mocks"] }
+ibc-relayer-types = { workspace = true }
 serial_test       = { workspace = true }
 env_logger        = { workspace = true }
 test-log          = { workspace = true, features = ["trace"] }
