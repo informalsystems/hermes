@@ -5,9 +5,13 @@ use serde::{Deserialize, Serialize};
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientState;
+use ibc_proto::ibc::lightclients::wasm::v1::ClientState as RawWasmClientState;
 use ibc_proto::Protobuf;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     ClientState as TmClientState, TENDERMINT_CLIENT_STATE_TYPE_URL,
+};
+use ibc_relayer_types::clients::ics08_wasm::client_state::{
+    ClientState as WasmClientState, WASM_CLIENT_STATE_TYPE_URL,
 };
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
@@ -21,54 +25,63 @@ use ibc_relayer_types::Height;
 #[serde(tag = "type")]
 pub enum AnyClientState {
     Tendermint(TmClientState),
+    Wasm(WasmClientState),
 }
 
 impl AnyClientState {
     pub fn chain_id(&self) -> ChainId {
         match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
+            Self::Tendermint(tm_state) => tm_state.chain_id(),
+            Self::Wasm(wasm_state) => wasm_state.chain_id(),
         }
     }
 
     pub fn latest_height(&self) -> Height {
         match self {
             Self::Tendermint(tm_state) => tm_state.latest_height(),
+            Self::Wasm(wasm_state) => wasm_state.latest_height(),
         }
     }
 
     pub fn frozen_height(&self) -> Option<Height> {
         match self {
             Self::Tendermint(tm_state) => tm_state.frozen_height(),
+            Self::Wasm(_) => None,
         }
     }
 
     pub fn trust_threshold(&self) -> Option<TrustThreshold> {
         match self {
-            AnyClientState::Tendermint(state) => Some(state.trust_threshold),
+            Self::Tendermint(state) => Some(state.trust_threshold),
+            Self::Wasm(_) => None,
         }
     }
 
     pub fn trusting_period(&self) -> Duration {
         match self {
-            AnyClientState::Tendermint(state) => state.trusting_period,
+            Self::Tendermint(state) => state.trusting_period,
+            Self::Wasm(_) => todo!(),
         }
     }
 
     pub fn max_clock_drift(&self) -> Duration {
         match self {
-            AnyClientState::Tendermint(state) => state.max_clock_drift,
+            Self::Tendermint(state) => state.max_clock_drift,
+            Self::Wasm(_) => todo!(),
         }
     }
 
     pub fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(state) => state.client_type(),
+            Self::Wasm(state) => state.client_type(),
         }
     }
 
     pub fn expired(&self, elapsed: Duration) -> bool {
         match self {
             Self::Tendermint(state) => state.expired(elapsed),
+            Self::Wasm(_) => todo!(),
         }
     }
 }
@@ -87,6 +100,11 @@ impl TryFrom<Any> for AnyClientState {
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
+            WASM_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Wasm(
+                Protobuf::<RawWasmClientState>::decode_vec(&raw.value)
+                    .map_err(Error::decode_raw_client_state)?,
+            )),
+
             _ => Err(Error::unknown_client_state_type(raw.type_url)),
         }
     }
@@ -98,6 +116,10 @@ impl From<AnyClientState> for Any {
             AnyClientState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
                 value: Protobuf::<RawTmClientState>::encode_vec(value),
+            },
+            AnyClientState::Wasm(value) => Any {
+                type_url: WASM_CLIENT_STATE_TYPE_URL.to_string(),
+                value: Protobuf::<RawWasmClientState>::encode_vec(value),
             },
         }
     }
