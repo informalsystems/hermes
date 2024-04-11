@@ -18,11 +18,40 @@ use super::error::Error;
 
 pub const WASM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.wasm.v1.ConsensusState";
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum WasmConsensusState {
+    Tendermint(TmConsensusState),
+}
+
+impl Ics02ConsensusState for WasmConsensusState {
+    fn client_type(&self) -> ClientType {
+        match self {
+            Self::Tendermint(tm_client_state) => tm_client_state.client_type(),
+        }
+    }
+
+    fn root(&self) -> &CommitmentRoot {
+        match self {
+            Self::Tendermint(tm_client_state) => tm_client_state.root(),
+        }
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        match self {
+            Self::Tendermint(tm_client_state) => tm_client_state.timestamp(),
+        }
+    }
+}
+
 /// The Wasm consensus state tracks the consensus state of the Wasm client.
 /// Binary data represented by the data field is opaque and only interpreted by the Wasm contract
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConsensusState {
-    pub underlying: TmConsensusState,
+    pub underlying: WasmConsensusState,
+}
+
+impl ConsensusState {
+    pub const TYPE_URL: &'static str = WASM_CONSENSUS_STATE_TYPE_URL;
 }
 
 impl Ics02ConsensusState for ConsensusState {
@@ -39,14 +68,21 @@ impl Ics02ConsensusState for ConsensusState {
     }
 }
 
-fn encode_underlying_consensus_state(consensus_state: TmConsensusState) -> Vec<u8> {
-    Any::from(consensus_state).encode_to_vec()
+fn encode_underlying_consensus_state(consensus_state: WasmConsensusState) -> Vec<u8> {
+    match consensus_state {
+        WasmConsensusState::Tendermint(tm_state) => Any::from(tm_state).encode_to_vec(),
+    }
 }
 
-fn decode_underlying_consensus_state(data: &[u8]) -> Result<TmConsensusState, Error> {
+fn decode_underlying_consensus_state(data: &[u8]) -> Result<WasmConsensusState, Error> {
     let any = Any::decode(data)?;
-    let client_state = TmConsensusState::try_from(any)?;
-    Ok(client_state)
+
+    match any.type_url.as_str() {
+        TmConsensusState::TYPE_URL => Ok(WasmConsensusState::Tendermint(
+            TmConsensusState::try_from(any)?,
+        )),
+        _ => Err(Error::unsupported_wasm_consensus_state_type(any.type_url)),
+    }
 }
 
 impl Protobuf<RawConsensusState> for ConsensusState {}

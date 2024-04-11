@@ -7,12 +7,8 @@ use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientState;
 use ibc_proto::ibc::lightclients::wasm::v1::ClientState as RawWasmClientState;
 use ibc_proto::Protobuf;
-use ibc_relayer_types::clients::ics07_tendermint::client_state::{
-    ClientState as TmClientState, TENDERMINT_CLIENT_STATE_TYPE_URL,
-};
-use ibc_relayer_types::clients::ics08_wasm::client_state::{
-    ClientState as WasmClientState, WASM_CLIENT_STATE_TYPE_URL,
-};
+use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState as TmClientState;
+use ibc_relayer_types::clients::ics08_wasm::client_state::ClientState as WasmClientState;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error;
@@ -95,12 +91,12 @@ impl TryFrom<Any> for AnyClientState {
         match raw.type_url.as_str() {
             "" => Err(Error::empty_client_state_response()),
 
-            TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
+            TmClientState::TYPE_URL => Ok(AnyClientState::Tendermint(
                 Protobuf::<RawTmClientState>::decode_vec(&raw.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
-            WASM_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Wasm(
+            WasmClientState::TYPE_URL => Ok(AnyClientState::Wasm(
                 Protobuf::<RawWasmClientState>::decode_vec(&raw.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
@@ -114,11 +110,11 @@ impl From<AnyClientState> for Any {
     fn from(value: AnyClientState) -> Self {
         match value {
             AnyClientState::Tendermint(value) => Any {
-                type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
+                type_url: TmClientState::TYPE_URL.to_string(),
                 value: Protobuf::<RawTmClientState>::encode_vec(value),
             },
             AnyClientState::Wasm(value) => Any {
-                type_url: WASM_CLIENT_STATE_TYPE_URL.to_string(),
+                type_url: WasmClientState::TYPE_URL.to_string(),
                 value: Protobuf::<RawWasmClientState>::encode_vec(value),
             },
         }

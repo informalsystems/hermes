@@ -25,6 +25,14 @@ define_error! {
             [ TraceError<prost::DecodeError> ]
             | _ | { "Protbuf decoding error" },
 
+        UnsupportedWasmClientStateType
+            { type_url: String }
+            |e| { format_args!("unsupported Wasm client state type: {}", e.type_url) },
+
+        UnsupportedWasmConsensusStateType
+            { type_url: String }
+            |e| { format_args!("unsupported Wasm consensus state type: {}", e.type_url) },
+
         Ics02
             [ Ics02Error ]
             | _ | { "ICS 002 error" },

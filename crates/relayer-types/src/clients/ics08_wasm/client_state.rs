@@ -19,22 +19,64 @@ use super::proto::v1::ClientState as RawClientState;
 
 pub const WASM_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.wasm.v1.ClientState";
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum WasmClientState {
+    Tendermint(TmClientState),
+}
+
+impl Ics02ClientState for WasmClientState {
+    fn client_type(&self) -> ClientType {
+        match self {
+            Self::Tendermint(tm_client_state) => tm_client_state.client_type(),
+        }
+    }
+
+    fn chain_id(&self) -> ChainId {
+        match self {
+            Self::Tendermint(tm_client_state) => tm_client_state.chain_id(),
+        }
+    }
+
+    fn latest_height(&self) -> Height {
+        match self {
+            Self::Tendermint(tm_client_state) => tm_client_state.latest_height(),
+        }
+    }
+
+    fn frozen_height(&self) -> Option<Height> {
+        match self {
+            Self::Tendermint(tm_client_state) => tm_client_state.frozen_height(),
+        }
+    }
+
+    fn expired(&self, elapsed: Duration) -> bool {
+        match self {
+            Self::Tendermint(tm_client_state) => tm_client_state.expired(elapsed),
+        }
+    }
+}
+
 /// The Wasm client state tracks the location of the Wasm bytecode via codeHash.
 /// Binary data represented by the data field is opaque and only interpreted by the Wasm contract.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
     pub checksum: Vec<u8>,
     pub latest_height: Height,
-    pub underlying: TmClientState,
+    pub underlying: WasmClientState,
+}
+
+impl ClientState {
+    pub const TYPE_URL: &'static str = WASM_CLIENT_STATE_TYPE_URL;
 }
 
 impl Ics02ClientState for ClientState {
-    fn chain_id(&self) -> ChainId {
-        self.underlying.chain_id()
-    }
-
     fn client_type(&self) -> ClientType {
         ClientType::Wasm
+    }
+
+    fn chain_id(&self) -> ChainId {
+        self.underlying.chain_id()
     }
 
     fn latest_height(&self) -> Height {
@@ -50,14 +92,21 @@ impl Ics02ClientState for ClientState {
     }
 }
 
-fn encode_underlying_client_state(client_state: TmClientState) -> Vec<u8> {
-    Any::from(client_state).encode_to_vec()
+fn encode_underlying_client_state(client_state: WasmClientState) -> Vec<u8> {
+    match client_state {
+        WasmClientState::Tendermint(tm_client_state) => Any::from(tm_client_state).encode_to_vec(),
+    }
 }
 
-fn decode_underlying_client_state(data: &[u8]) -> Result<TmClientState, Error> {
+fn decode_underlying_client_state(data: &[u8]) -> Result<WasmClientState, Error> {
     let any = Any::decode(data)?;
-    let client_state = TmClientState::try_from(any)?;
-    Ok(client_state)
+    match any.type_url.as_str() {
+        TmClientState::TYPE_URL => {
+            let tm_client_state = TmClientState::try_from(any)?;
+            Ok(WasmClientState::Tendermint(tm_client_state))
+        }
+        _ => Err(Error::unsupported_wasm_client_state_type(any.type_url)),
+    }
 }
 
 impl Protobuf<RawClientState> for ClientState {}

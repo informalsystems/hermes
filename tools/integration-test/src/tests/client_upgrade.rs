@@ -157,6 +157,9 @@ impl BinaryChainTest for ClientUpgradeTest {
                 assert_eq!(client_state.chain_id, upgraded_chain_id);
                 Ok(())
             }
+            other => {
+                panic!("Unsupported client state: {other:?}");
+            }
         }
     }
 }
@@ -209,6 +212,9 @@ impl BinaryChainTest for InvalidClientUpgradeTest {
             AnyClientState::Tendermint(client_state) => {
                 assert_eq!(client_state.chain_id, chains.handle_a().id());
                 Ok(())
+            }
+            other => {
+                panic!("Unsupported client state: {other:?}");
             }
         }
     }
@@ -307,6 +313,9 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
             AnyClientState::Tendermint(client_state) => {
                 assert_eq!(client_state.chain_id, chains.handle_a().id());
                 Ok(())
+            }
+            other => {
+                panic!("Unsupported client state: {other:?}");
             }
         }
     }
@@ -408,6 +417,9 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
             AnyClientState::Tendermint(client_state) => {
                 assert_eq!(client_state.chain_id, chains.handle_a().id());
                 Ok(())
+            }
+            other => {
+                panic!("Unsupported client state: {other:?}");
             }
         }
     }

@@ -5,12 +5,8 @@ use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawTmConsensusState;
 use ibc_proto::ibc::lightclients::wasm::v1::ConsensusState as RawWasmConsensusState;
 use ibc_proto::Protobuf;
-use ibc_relayer_types::clients::ics07_tendermint::consensus_state::{
-    ConsensusState as TmConsensusState, TENDERMINT_CONSENSUS_STATE_TYPE_URL,
-};
-use ibc_relayer_types::clients::ics08_wasm::consensus_state::{
-    ConsensusState as WasmConsensusState, WASM_CONSENSUS_STATE_TYPE_URL,
-};
+use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
+use ibc_relayer_types::clients::ics08_wasm::consensus_state::ConsensusState as WasmConsensusState;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics02_client::error::Error;
@@ -29,7 +25,7 @@ impl AnyConsensusState {
     pub fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(cs_state) => cs_state.timestamp(),
-            Self::Wasm(cs_state) => cs_state.timestamp().into(),
+            Self::Wasm(cs_state) => cs_state.timestamp(),
         }
     }
 
@@ -57,12 +53,12 @@ impl TryFrom<Any> for AnyConsensusState {
         match value.type_url.as_str() {
             "" => Err(Error::empty_consensus_state_response()),
 
-            TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
+            TmConsensusState::TYPE_URL => Ok(AnyConsensusState::Tendermint(
                 Protobuf::<RawTmConsensusState>::decode_vec(&value.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
-            WASM_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Wasm(
+            WasmConsensusState::TYPE_URL => Ok(AnyConsensusState::Wasm(
                 Protobuf::<RawWasmConsensusState>::decode_vec(&value.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
@@ -76,12 +72,12 @@ impl From<AnyConsensusState> for Any {
     fn from(value: AnyConsensusState) -> Self {
         match value {
             AnyConsensusState::Tendermint(value) => Any {
-                type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
+                type_url: TmConsensusState::TYPE_URL.to_string(),
                 value: Protobuf::<RawTmConsensusState>::encode_vec(value),
             },
 
             AnyConsensusState::Wasm(value) => Any {
-                type_url: WASM_CONSENSUS_STATE_TYPE_URL.to_string(),
+                type_url: WasmConsensusState::TYPE_URL.to_string(),
                 value: Protobuf::<RawWasmConsensusState>::encode_vec(value),
             },
         }

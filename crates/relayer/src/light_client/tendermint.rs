@@ -20,8 +20,10 @@ use tendermint_light_client::{
 use tendermint_light_client_detector::Divergence;
 use tendermint_rpc as rpc;
 
-use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
+use ibc_relayer_types::clients::{
+    ics07_tendermint::header::Header as TmHeader, ics08_wasm::client_state::WasmClientState,
+};
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics02_client::header::AnyHeader;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -147,7 +149,9 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
-            AnyClientState::Wasm(client_state) => Ok(&client_state.underlying),
+            AnyClientState::Wasm(client_state) => match &client_state.underlying {
+                WasmClientState::Tendermint(tm_client_state) => Ok(tm_client_state),
+            },
         }?;
 
         let next_validators = self
@@ -309,7 +313,9 @@ impl LightClient {
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
-            AnyClientState::Wasm(client_state) => Ok(&client_state.underlying),
+            AnyClientState::Wasm(client_state) => match &client_state.underlying {
+                WasmClientState::Tendermint(ref tm_client_state) => Ok(tm_client_state),
+            },
         }?;
 
         Ok(TmLightClient::new(
