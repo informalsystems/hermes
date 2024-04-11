@@ -14,7 +14,7 @@ use ibc_proto::cosmos::upgrade::v1beta1::Plan;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::{MsgIbcSoftwareUpgrade, UpgradeProposal};
 use ibc_relayer_types::clients::ics07_tendermint::client_state::UpgradeOptions;
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics02_client::client_state::UpgradableClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer_types::{downcast, Height};
 use tracing::warn;
