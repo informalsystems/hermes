@@ -12,7 +12,9 @@ use tendermint_light_client_verifier::options::Options;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header as TmHeader;
-use crate::core::ics02_client::client_state::ClientState as Ics2ClientState;
+use crate::core::ics02_client::client_state::{
+    ClientState as Ics2ClientState, UpgradableClientState,
+};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -192,8 +194,6 @@ pub struct UpgradeOptions {
 }
 
 impl Ics2ClientState for ClientState {
-    type UpgradeOptions = UpgradeOptions;
-
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -209,6 +209,14 @@ impl Ics2ClientState for ClientState {
     fn frozen_height(&self) -> Option<Height> {
         self.frozen_height
     }
+
+    fn expired(&self, elapsed: Duration) -> bool {
+        elapsed > self.trusting_period
+    }
+}
+
+impl UpgradableClientState for ClientState {
+    type UpgradeOptions = UpgradeOptions;
 
     fn upgrade(
         &mut self,
@@ -228,10 +236,6 @@ impl Ics2ClientState for ClientState {
         self.latest_height = upgrade_height;
         self.unbonding_period = upgrade_options.unbonding_period;
         self.chain_id = chain_id;
-    }
-
-    fn expired(&self, elapsed: Duration) -> bool {
-        elapsed > self.trusting_period
     }
 }
 
