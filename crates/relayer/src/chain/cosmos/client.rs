@@ -20,7 +20,7 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn for_create_command(
+    pub fn from_create_options(
         options: CreateOptions,
         src_chain_config: &CosmosSdkConfig,
         dst_chain_config: &CosmosSdkConfig,
@@ -44,7 +44,7 @@ impl Settings {
             .trust_threshold
             .unwrap_or(src_chain_config.trust_threshold);
 
-        Settings {
+        Self {
             max_clock_drift,
             trusting_period: options.trusting_period,
             trust_threshold,

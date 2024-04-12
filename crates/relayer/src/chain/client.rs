@@ -1,22 +1,37 @@
 //! Data structures and logic to set up IBC client's parameters.
 
-use crate::chain::cosmos;
+use ibc_relayer_types::core::ics02_client::client_type::ClientType;
+
+use crate::chain::cosmos::client::Settings as TendermintClientSettings;
 use crate::config::ChainConfig;
 use crate::foreign_client::CreateOptions;
+
+#[derive(Clone, Debug)]
+pub enum WasmClientSettings {
+    Tendermint(TendermintClientSettings),
+}
 
 /// Client parameters for the `build_create_client` operation.
 ///
 /// The parameters are specialized for each supported chain type.
 #[derive(Clone, Debug)]
 pub enum ClientSettings {
-    Tendermint(cosmos::client::Settings),
+    Tendermint(TendermintClientSettings),
+    Wasm(WasmClientSettings),
 }
 
 impl ClientSettings {
+    pub fn client_type(&self) -> ClientType {
+        match self {
+            ClientSettings::Tendermint(_) => ClientType::Tendermint,
+            ClientSettings::Wasm(_) => ClientType::Wasm,
+        }
+    }
+
+    /// Create the client settings for an ICS 07 Tendermint client between the given source and destination chains.
     /// Takes the settings from the user-supplied options if they have been specified,
-    /// falling back to defaults using the configuration of the source
-    /// and the destination chain.
-    pub fn for_create_command(
+    /// falling back to defaults using the configuration of the source and the destination chain.
+    pub fn tendermint_from_create_options(
         options: CreateOptions,
         src_chain_config: &ChainConfig,
         dst_chain_config: &ChainConfig,
@@ -26,15 +41,48 @@ impl ClientSettings {
         // heterogeneous chains is left for future revisions.
         //
         // TODO: extract Tendermint-related configs into a separate substructure
-        // that can be used both by CosmosSdkConfig and configs for nonSDK chains.
-        use ChainConfig::CosmosSdk as Csdk;
+        // that can be used both by CosmosSdkConfig and configs for non-SDK chains.
+
         match (src_chain_config, dst_chain_config) {
-            (Csdk(src_chain_config), Csdk(dst_chain_config)) => {
-                ClientSettings::Tendermint(cosmos::client::Settings::for_create_command(
+            (
+                ChainConfig::CosmosSdk(src_chain_config),
+                ChainConfig::CosmosSdk(dst_chain_config),
+            ) => ClientSettings::Tendermint(TendermintClientSettings::from_create_options(
+                options,
+                src_chain_config,
+                dst_chain_config,
+            )),
+        }
+    }
+
+    /// Create the client settings for an ICS 08 Wasm client wrapping an ICS 07 Tendermint client
+    /// between the given source and destination chains.
+    /// Takes the settings from the user-supplied options if they have been specified,
+    /// falling back to defaults using the configuration of the source and the destination chain.
+    pub fn wasm_from_create_options(
+        options: CreateOptions,
+        src_chain_config: &ChainConfig,
+        dst_chain_config: &ChainConfig,
+    ) -> Self {
+        // Currently, only Tendermint chain pairs are supported by
+        // ForeignClient::build_create_client_and_send. Support for
+        // heterogeneous chains is left for future revisions.
+        //
+        // TODO: extract Tendermint-related configs into a separate substructure
+        // that can be used both by CosmosSdkConfig and configs for non-SDK chains.
+
+        match (src_chain_config, dst_chain_config) {
+            (
+                ChainConfig::CosmosSdk(src_chain_config),
+                ChainConfig::CosmosSdk(dst_chain_config),
+            ) => {
+                let settings = TendermintClientSettings::from_create_options(
                     options,
                     src_chain_config,
                     dst_chain_config,
-                ))
+                );
+
+                ClientSettings::Wasm(WasmClientSettings::Tendermint(settings))
             }
         }
     }

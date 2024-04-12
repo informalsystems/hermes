@@ -642,7 +642,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let settings = ClientSettings::for_create_command(options, &src_config, &dst_config);
+        let settings =
+            ClientSettings::tendermint_from_create_options(options, &src_config, &dst_config);
 
         let client_state: AnyClientState = self
             .src_chain
