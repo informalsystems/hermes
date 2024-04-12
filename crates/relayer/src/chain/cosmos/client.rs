@@ -25,7 +25,7 @@ impl Settings {
         src_chain_config: &CosmosSdkConfig,
         dst_chain_config: &CosmosSdkConfig,
     ) -> Self {
-        let max_clock_drift = match options.max_clock_drift {
+        let max_clock_drift = match options.max_clock_drift() {
             None => calculate_client_state_drift(src_chain_config, dst_chain_config),
             Some(user_value) => {
                 if user_value > dst_chain_config.max_block_time {
@@ -41,12 +41,14 @@ impl Settings {
         };
 
         let trust_threshold = options
-            .trust_threshold
+            .trust_threshold()
             .unwrap_or(src_chain_config.trust_threshold);
+
+        let trusting_period = options.trusting_period();
 
         Self {
             max_clock_drift,
-            trusting_period: options.trusting_period,
+            trusting_period,
             trust_threshold,
         }
     }

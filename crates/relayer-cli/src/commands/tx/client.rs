@@ -7,7 +7,6 @@ use std::thread;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use ibc_relayer::config::Config;
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use ibc_relayer::{chain::handle::ChainHandle, config::GenesisRestart};
@@ -17,6 +16,7 @@ use ibc_relayer::{
     },
     config::ChainConfig,
 };
+use ibc_relayer::{config::Config, foreign_client::TendermintCreateOptions};
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height;
@@ -94,11 +94,11 @@ impl Runnable for TxCreateClientCmd {
 
         let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
 
-        let options = CreateOptions {
+        let options = CreateOptions::Tendermint(TendermintCreateOptions {
             max_clock_drift: self.clock_drift.map(Into::into),
             trusting_period: self.trusting_period.map(Into::into),
             trust_threshold: self.trust_threshold.map(Into::into),
-        };
+        });
 
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEventWithHeight, Error> = client

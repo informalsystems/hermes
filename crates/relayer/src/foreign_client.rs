@@ -351,11 +351,59 @@ impl HasExpiredOrFrozenError for ForeignClientError {
 ///
 /// Currently, the parameters are specific to the Tendermint-based chains.
 /// A future revision will bring differentiated options for other chain types.
-#[derive(Debug, Default)]
-pub struct CreateOptions {
+#[derive(Clone, Debug)]
+pub enum CreateOptions {
+    Tendermint(TendermintCreateOptions),
+}
+
+impl CreateOptions {
+    pub fn max_clock_drift(&self) -> Option<Duration> {
+        match self {
+            CreateOptions::Tendermint(opts) => opts.max_clock_drift,
+        }
+    }
+
+    pub fn trusting_period(&self) -> Option<Duration> {
+        match self {
+            CreateOptions::Tendermint(opts) => opts.trusting_period,
+        }
+    }
+
+    pub fn trust_threshold(&self) -> Option<TrustThreshold> {
+        match self {
+            CreateOptions::Tendermint(opts) => opts.trust_threshold,
+        }
+    }
+}
+
+impl From<TendermintCreateOptions> for CreateOptions {
+    fn from(opts: TendermintCreateOptions) -> Self {
+        CreateOptions::Tendermint(opts)
+    }
+}
+
+impl Default for CreateOptions {
+    fn default() -> Self {
+        CreateOptions::Tendermint(TendermintCreateOptions::default())
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct TendermintCreateOptions {
     pub max_clock_drift: Option<Duration>,
     pub trusting_period: Option<Duration>,
     pub trust_threshold: Option<TrustThreshold>,
+}
+
+#[derive(Clone, Debug)]
+pub struct WasmCreateOptions {
+    pub checksum: Vec<u8>,
+    pub underlying: WasmUnderlyingCreateOptions,
+}
+
+#[derive(Clone, Debug)]
+pub enum WasmUnderlyingCreateOptions {
+    Tendermint(TendermintCreateOptions),
 }
 
 /// Captures the diagnostic of verifying whether a certain
