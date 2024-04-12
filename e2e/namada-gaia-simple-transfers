@@ -26,7 +26,7 @@ SHIELDED_ALIAS_A="shielded_a"
 SHIELDED_ALIAS_B="shielded_b"
 PAYMENT_ALIAS_A="payment_a"
 PAYMENT_ALIAS_B="payment_b"
-NAMADA_LEDGER_ADDR="127.0.0.1:27657"
+NAMADA_LEDGER_ADDR="http://127.0.0.1:27657"
 
 GAIA_CHAIN_CONFIG="
 [[chains]]
@@ -193,22 +193,11 @@ sleep 15
 echo "==== Balances on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} balance \
   --owner relayer \
+  --show-ibc-tokens \
   --node ${NAMADA_LEDGER_ADDR}
 
 echo "==== Balances on Gaia ===="
 gaiad query bank balances ${gaia_user}
-
-
-echo "~~ Generate the proof from Namada for the following transfer ~~"
-resp=$(${NAMADAC} --base-dir ${base_dir} ibc-gen-shielded \
-  --output-folder-path ${base_dir} \
-  --target ${payment_addr_a} \
-  --token "samoleans" \
-  --amount 10 \
-  --port-id transfer \
-  --channel-id channel-0 \
-  --node ${NAMADA_LEDGER_ADDR})
-memo_path=$(echo $resp | awk '{print $8}')
 
 echo "~~ Shielding transfer 10 samoleans from Gaia to Namada ~~"
 cargo run --bin hermes -- --config config_for_namada.toml \
@@ -221,14 +210,17 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --receiver ${payment_addr_a} \
   --denom samoleans \
   --timeout-height-offset 1000 \
-  --memo $(cat ${memo_path})
 
 # wait for relaying
-sleep 15
+sleep 40
 
 echo "==== Balance of shielded_a on Namada ===="
+${NAMADAC} --base-dir ${base_dir} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} \
+  --node ${NAMADA_LEDGER_ADDR}
 ${NAMADAC} --base-dir ${base_dir} balance \
   --owner ${SHIELDED_ALIAS_A} \
+  --show-ibc-tokens \
   --node ${NAMADA_LEDGER_ADDR}
 
 echo "==== Balances on Gaia ===="
@@ -244,13 +236,18 @@ ${NAMADAC} --base-dir ${base_dir} transfer \
   --node ${NAMADA_LEDGER_ADDR}
 
 echo "==== Balance of shielded_a on Namada ===="
+${NAMADAC} --base-dir ${base_dir} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} ${SHIELDED_ALIAS_B} \
+  --node ${NAMADA_LEDGER_ADDR}
 ${NAMADAC} --base-dir ${base_dir} balance \
   --owner ${SHIELDED_ALIAS_A} \
+  --show-ibc-tokens \
   --node ${NAMADA_LEDGER_ADDR}
 
 echo "==== Balance of shielded_b on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} balance \
   --owner ${SHIELDED_ALIAS_B} \
+  --show-ibc-tokens \
   --node ${NAMADA_LEDGER_ADDR}
 
 echo "~~ Transfer back 5 samoleans from Namada to Gaia ~~"
@@ -264,16 +261,21 @@ ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
   --node ${NAMADA_LEDGER_ADDR}
 
 # wait for relaying
-sleep 15
+sleep 40
 
 echo "==== Balances of shielded_a on Namada ===="
+${NAMADAC} --base-dir ${base_dir} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} ${SHIELDED_ALIAS_B} \
+  --node ${NAMADA_LEDGER_ADDR}
 ${NAMADAC} --base-dir ${base_dir} balance \
   --owner ${SHIELDED_ALIAS_A} \
+  --show-ibc-tokens \
   --node ${NAMADA_LEDGER_ADDR}
 
 echo "==== Balances of shielded_b on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} balance \
   --owner ${SHIELDED_ALIAS_B} \
+  --show-ibc-tokens \
   --node ${NAMADA_LEDGER_ADDR}
 
 echo "==== Balances on Gaia ===="

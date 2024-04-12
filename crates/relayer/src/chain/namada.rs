@@ -34,17 +34,17 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 use namada_ibc::storage;
 use namada_parameters::{storage as param_storage, EpochDuration};
+use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
 use namada_sdk::io::NullIo;
 use namada_sdk::masp::fs::FsShieldedUtils;
-use namada_sdk::masp::ShieldedContext;
+use namada_sdk::masp::DefaultLogger;
 use namada_sdk::proof_of_stake::storage_key as pos_storage_key;
 use namada_sdk::proof_of_stake::OwnedPosParams;
 use namada_sdk::queries::Client as SdkClient;
 use namada_sdk::state::ics23_specs::ibc_proof_specs;
 use namada_sdk::state::Sha256Hasher;
-use namada_sdk::types::address::{Address, InternalAddress};
-use namada_sdk::types::storage::{Key, KeySeg, PrefixValue};
+use namada_sdk::storage::{Key, KeySeg, PrefixValue};
 use namada_sdk::wallet::Store;
 use namada_sdk::wallet::Wallet;
 use namada_sdk::{rpc, Namada, NamadaImpl};
@@ -166,6 +166,24 @@ impl NamadaChain {
             .parse()
             .unwrap())
     }
+
+    async fn shielded_sync(&self) -> Result<(), Error> {
+        let mut shielded = self.ctx.shielded_mut().await;
+        let _ = shielded.load().await;
+        shielded
+            .fetch(
+                self.ctx.client(),
+                &DefaultLogger::new(self.ctx.io()),
+                None,
+                None,
+                1,
+                &[],
+                &[],
+            )
+            .await
+            .map_err(NamadaError::namada)?;
+        shielded.save().await.map_err(Error::io)
+    }
 }
 
 impl ChainEndpoint for NamadaChain {
@@ -181,7 +199,7 @@ impl ChainEndpoint for NamadaChain {
     }
 
     fn config(&self) -> ChainConfig {
-        ChainConfig::CosmosSdk(self.config.clone())
+        ChainConfig::Namada(self.config.clone())
     }
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
@@ -202,7 +220,12 @@ impl ChainEndpoint for NamadaChain {
             KeyRing::new_namada(config.key_store_type, &config.id, &config.key_store_folder)
                 .map_err(Error::key_base)?;
 
-        let shielded_ctx = ShieldedContext::<FsShieldedUtils>::default();
+        let shielded_dir = dirs_next::home_dir()
+            .expect("No home directory")
+            .join(".hermes/shielded")
+            .join(config.id.to_string());
+        std::fs::create_dir_all(&shielded_dir).map_err(Error::io)?;
+        let shielded_ctx = FsShieldedUtils::new(shielded_dir);
 
         let mut store = Store::default();
         let key = keybase
