@@ -4,7 +4,9 @@ use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 
 use crate::chain::cosmos::client::Settings as TendermintClientSettings;
 use crate::config::ChainConfig;
-use crate::foreign_client::CreateOptions;
+use crate::foreign_client::{
+    CreateOptions, TendermintCreateOptions, WasmCreateOptions, WasmUnderlyingCreateOptions,
+};
 
 #[derive(Clone, Debug)]
 pub struct WasmClientSettings {
@@ -34,11 +36,26 @@ impl ClientSettings {
         }
     }
 
+    pub fn create(
+        options: CreateOptions,
+        src_chain_config: &ChainConfig,
+        dst_chain_config: &ChainConfig,
+    ) -> Self {
+        match options {
+            CreateOptions::Tendermint(options) => {
+                Self::create_tendermint(options, src_chain_config, dst_chain_config)
+            }
+            CreateOptions::Wasm(options) => {
+                Self::create_wasm(options, src_chain_config, dst_chain_config)
+            }
+        }
+    }
+
     /// Create the client settings for an ICS 07 Tendermint client between the given source and destination chains.
     /// Takes the settings from the user-supplied options if they have been specified,
     /// falling back to defaults using the configuration of the source and the destination chain.
     pub fn create_tendermint(
-        options: CreateOptions,
+        options: TendermintCreateOptions,
         src_chain_config: &ChainConfig,
         dst_chain_config: &ChainConfig,
     ) -> Self {
@@ -66,8 +83,7 @@ impl ClientSettings {
     /// Takes the settings from the user-supplied options if they have been specified,
     /// falling back to defaults using the configuration of the source and the destination chain.
     pub fn create_wasm(
-        options: CreateOptions,
-        checksum: Vec<u8>,
+        options: WasmCreateOptions,
         src_chain_config: &ChainConfig,
         dst_chain_config: &ChainConfig,
     ) -> Self {
@@ -83,14 +99,18 @@ impl ClientSettings {
                 ChainConfig::CosmosSdk(src_chain_config),
                 ChainConfig::CosmosSdk(dst_chain_config),
             ) => {
-                let settings = TendermintClientSettings::from_create_options(
-                    options,
-                    src_chain_config,
-                    dst_chain_config,
-                );
+                let settings = match options.underlying {
+                    WasmUnderlyingCreateOptions::Tendermint(options) => {
+                        TendermintClientSettings::from_create_options(
+                            options,
+                            src_chain_config,
+                            dst_chain_config,
+                        )
+                    }
+                };
 
                 ClientSettings::Wasm(WasmClientSettings {
-                    checksum,
+                    checksum: options.checksum,
                     underlying: WasmUnderlyingClientSettings::Tendermint(settings),
                 })
             }

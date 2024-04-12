@@ -348,37 +348,21 @@ impl HasExpiredOrFrozenError for ForeignClientError {
 }
 
 /// User-supplied options for the [`ForeignClient::build_create_client`] operation.
-///
-/// Currently, the parameters are specific to the Tendermint-based chains.
-/// A future revision will bring differentiated options for other chain types.
 #[derive(Clone, Debug)]
 pub enum CreateOptions {
     Tendermint(TendermintCreateOptions),
-}
-
-impl CreateOptions {
-    pub fn max_clock_drift(&self) -> Option<Duration> {
-        match self {
-            CreateOptions::Tendermint(opts) => opts.max_clock_drift,
-        }
-    }
-
-    pub fn trusting_period(&self) -> Option<Duration> {
-        match self {
-            CreateOptions::Tendermint(opts) => opts.trusting_period,
-        }
-    }
-
-    pub fn trust_threshold(&self) -> Option<TrustThreshold> {
-        match self {
-            CreateOptions::Tendermint(opts) => opts.trust_threshold,
-        }
-    }
+    Wasm(WasmCreateOptions),
 }
 
 impl From<TendermintCreateOptions> for CreateOptions {
     fn from(opts: TendermintCreateOptions) -> Self {
-        CreateOptions::Tendermint(opts)
+        Self::Tendermint(opts)
+    }
+}
+
+impl From<WasmCreateOptions> for CreateOptions {
+    fn from(opts: WasmCreateOptions) -> Self {
+        Self::Wasm(opts)
     }
 }
 
@@ -691,13 +675,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let settings = ClientSettings::create_tendermint(options, &src_config, &dst_config);
-        // let settings = match checksum {
-        //     None => ClientSettings::create_tendermint(options, &src_config, &dst_config),
-        //     Some(checksum) => {
-        //         ClientSettings::create_wasm(options, checksum, &src_config, &dst_config)
-        //     }
-        // };
+        let settings = ClientSettings::create(options, &src_config, &dst_config);
 
         let client_state: AnyClientState = self
             .src_chain
