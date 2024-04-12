@@ -358,7 +358,7 @@ pub trait ChainEndpoint: Sized {
         &self,
         height: ICSHeight,
         settings: ClientSettings,
-    ) -> Result<Self::ClientState, Error>;
+    ) -> Result<AnyClientState, Error>;
 
     fn build_consensus_state(
         &self,

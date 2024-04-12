@@ -21,11 +21,11 @@ pub const WASM_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.wasm.v1.ClientSt
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
-pub enum WasmClientState {
+pub enum WasmUnderlyingClientState {
     Tendermint(TmClientState),
 }
 
-impl Ics02ClientState for WasmClientState {
+impl Ics02ClientState for WasmUnderlyingClientState {
     fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(tm_client_state) => tm_client_state.client_type(),
@@ -63,7 +63,7 @@ impl Ics02ClientState for WasmClientState {
 pub struct ClientState {
     pub checksum: Vec<u8>,
     pub latest_height: Height,
-    pub underlying: WasmClientState,
+    pub underlying: WasmUnderlyingClientState,
 }
 
 impl ClientState {
@@ -92,18 +92,20 @@ impl Ics02ClientState for ClientState {
     }
 }
 
-fn encode_underlying_client_state(client_state: WasmClientState) -> Vec<u8> {
+fn encode_underlying_client_state(client_state: WasmUnderlyingClientState) -> Vec<u8> {
     match client_state {
-        WasmClientState::Tendermint(tm_client_state) => Any::from(tm_client_state).encode_to_vec(),
+        WasmUnderlyingClientState::Tendermint(tm_client_state) => {
+            Any::from(tm_client_state).encode_to_vec()
+        }
     }
 }
 
-fn decode_underlying_client_state(data: &[u8]) -> Result<WasmClientState, Error> {
+fn decode_underlying_client_state(data: &[u8]) -> Result<WasmUnderlyingClientState, Error> {
     let any = Any::decode(data)?;
     match any.type_url.as_str() {
         TmClientState::TYPE_URL => {
             let tm_client_state = TmClientState::try_from(any)?;
-            Ok(WasmClientState::Tendermint(tm_client_state))
+            Ok(WasmUnderlyingClientState::Tendermint(tm_client_state))
         }
         _ => Err(Error::unsupported_wasm_client_state_type(any.type_url)),
     }

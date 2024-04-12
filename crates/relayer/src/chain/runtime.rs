@@ -480,10 +480,7 @@ where
         settings: ClientSettings,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
-        let client_state = self
-            .chain
-            .build_client_state(height, settings)
-            .map(|cs| cs.into());
+        let client_state = self.chain.build_client_state(height, settings);
 
         reply_to.send(client_state).map_err(Error::send)
     }

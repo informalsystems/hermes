@@ -25,6 +25,9 @@ use ibc_relayer_types::clients::ics07_tendermint::client_state::{
 };
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
+use ibc_relayer_types::clients::ics08_wasm::client_state::{
+    ClientState as WasmClientState, WasmUnderlyingClientState,
+};
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
@@ -108,6 +111,8 @@ use self::gas::dynamic_gas_price;
 use self::types::app_state::GenesisAppState;
 use self::types::gas::GasConfig;
 use self::version::Specs;
+
+use super::client::{WasmClientSettings, WasmUnderlyingClientSettings};
 
 pub mod batch;
 pub mod client;
@@ -2228,31 +2233,28 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         height: ICSHeight,
         settings: ClientSettings,
-    ) -> Result<Self::ClientState, Error> {
-        let settings = match settings {
+    ) -> Result<AnyClientState, Error> {
+        let tm_settings = match &settings {
             ClientSettings::Tendermint(settings) => settings,
-            other => {
-                return Err(Error::client_type_mismatch(
-                    ClientType::Tendermint,
-                    other.client_type(),
-                ))
-            }
+            ClientSettings::Wasm(WasmClientSettings { underlying, .. }) => match underlying {
+                WasmUnderlyingClientSettings::Tendermint(settings) => settings,
+            },
         };
 
         let unbonding_period = self.unbonding_period()?;
-        let trusting_period = settings
+        let trusting_period = tm_settings
             .trusting_period
             .unwrap_or_else(|| self.trusting_period(unbonding_period));
 
         let proof_specs = self.config.proof_specs.clone().unwrap_or_default();
 
         // Build the client state.
-        TmClientState::new(
+        let tm_client_state = TmClientState::new(
             self.id().clone(),
-            settings.trust_threshold,
+            tm_settings.trust_threshold,
             trusting_period,
             unbonding_period,
-            settings.max_clock_drift,
+            tm_settings.max_clock_drift,
             height,
             proof_specs,
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
@@ -2261,7 +2263,18 @@ impl ChainEndpoint for CosmosSdkChain {
                 after_misbehaviour: true,
             },
         )
-        .map_err(Error::ics07)
+        .map_err(Error::ics07)?;
+
+        match settings {
+            ClientSettings::Tendermint(_) => Ok(AnyClientState::Tendermint(tm_client_state)),
+            ClientSettings::Wasm(WasmClientSettings { checksum, .. }) => {
+                Ok(AnyClientState::Wasm(WasmClientState {
+                    checksum,
+                    latest_height: height,
+                    underlying: WasmUnderlyingClientState::Tendermint(tm_client_state),
+                }))
+            }
+        }
     }
 
     fn build_consensus_state(

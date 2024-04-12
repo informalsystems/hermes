@@ -7,7 +7,13 @@ use crate::config::ChainConfig;
 use crate::foreign_client::CreateOptions;
 
 #[derive(Clone, Debug)]
-pub enum WasmClientSettings {
+pub struct WasmClientSettings {
+    pub checksum: Vec<u8>,
+    pub underlying: WasmUnderlyingClientSettings,
+}
+
+#[derive(Clone, Debug)]
+pub enum WasmUnderlyingClientSettings {
     Tendermint(TendermintClientSettings),
 }
 
@@ -31,7 +37,7 @@ impl ClientSettings {
     /// Create the client settings for an ICS 07 Tendermint client between the given source and destination chains.
     /// Takes the settings from the user-supplied options if they have been specified,
     /// falling back to defaults using the configuration of the source and the destination chain.
-    pub fn tendermint_from_create_options(
+    pub fn create_tendermint(
         options: CreateOptions,
         src_chain_config: &ChainConfig,
         dst_chain_config: &ChainConfig,
@@ -59,8 +65,9 @@ impl ClientSettings {
     /// between the given source and destination chains.
     /// Takes the settings from the user-supplied options if they have been specified,
     /// falling back to defaults using the configuration of the source and the destination chain.
-    pub fn wasm_from_create_options(
+    pub fn create_wasm(
         options: CreateOptions,
+        checksum: Vec<u8>,
         src_chain_config: &ChainConfig,
         dst_chain_config: &ChainConfig,
     ) -> Self {
@@ -82,7 +89,10 @@ impl ClientSettings {
                     dst_chain_config,
                 );
 
-                ClientSettings::Wasm(WasmClientSettings::Tendermint(settings))
+                ClientSettings::Wasm(WasmClientSettings {
+                    checksum,
+                    underlying: WasmUnderlyingClientSettings::Tendermint(settings),
+                })
             }
         }
     }
