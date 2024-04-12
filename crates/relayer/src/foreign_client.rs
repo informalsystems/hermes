@@ -410,9 +410,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
     /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
-    pub fn new(
+    pub fn create(
         dst_chain: DstChain,
         src_chain: SrcChain,
+        create_options: CreateOptions,
     ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         // Sanity check
         if src_chain.id().eq(&dst_chain.id()) {
@@ -425,7 +426,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             src_chain,
         };
 
-        client.create()?;
+        client.perform_create(create_options)?;
 
         Ok(client)
     }
@@ -642,8 +643,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let settings =
-            ClientSettings::tendermint_from_create_options(options, &src_config, &dst_config);
+        let settings = ClientSettings::create_tendermint(options, &src_config, &dst_config);
+        // let settings = match checksum {
+        //     None => ClientSettings::create_tendermint(options, &src_config, &dst_config),
+        //     Some(checksum) => {
+        //         ClientSettings::create_wasm(options, checksum, &src_config, &dst_config)
+        //     }
+        // };
 
         let client_state: AnyClientState = self
             .src_chain
@@ -710,9 +716,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         skip(self),
         fields(client = %self)
     )]
-    fn create(&mut self) -> Result<(), ForeignClientError> {
+    fn perform_create(&mut self, create_options: CreateOptions) -> Result<(), ForeignClientError> {
         let event_with_height = self
-            .build_create_client_and_send(CreateOptions::default())
+            .build_create_client_and_send(create_options)
             .map_err(|e| {
                 error!("failed to create client: {}", e);
                 e

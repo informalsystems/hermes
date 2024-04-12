@@ -5,7 +5,7 @@ use abscissa_core::clap::Parser;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::connection::Connection;
-use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
 use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
@@ -90,10 +90,16 @@ impl CreateConnectionCommand {
             self.chain_a_id, chain_b_id
         );
 
-        let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
-            .unwrap_or_else(exit_with_unrecoverable_error);
-        let client_b = ForeignClient::new(chains.dst.clone(), chains.src)
-            .unwrap_or_else(exit_with_unrecoverable_error);
+        let client_a = ForeignClient::create(
+            chains.src.clone(),
+            chains.dst.clone(),
+            CreateOptions::default(),
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
+
+        let client_b =
+            ForeignClient::create(chains.dst.clone(), chains.src, CreateOptions::default())
+                .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally, execute the connection handshake.
         let delay = Duration::from_secs(self.delay);
