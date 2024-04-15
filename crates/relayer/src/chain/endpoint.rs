@@ -361,9 +361,11 @@ pub trait ChainEndpoint: Sized {
     ) -> Result<AnyClientState, Error>;
 
     fn build_consensus_state(
-        &self,
-        light_block: Self::LightBlock,
-    ) -> Result<Self::ConsensusState, Error>;
+        &mut self,
+        trusted: ICSHeight,
+        target: ICSHeight,
+        client_state: &AnyClientState,
+    ) -> Result<AnyConsensusState, Error>;
 
     /// Fetch, and verify the header at `target_height`, assuming we trust the
     /// header at `trusted_height` with the given `client_state`.

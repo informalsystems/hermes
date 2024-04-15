@@ -688,7 +688,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        let consensus_state = self
+        let consensus_state: AnyConsensusState = self
             .src_chain
             .build_consensus_state(
                 client_state.latest_height(),
@@ -703,9 +703,15 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
+        dbg!(&client_state, &consensus_state);
+
         //TODO Get acct_prefix
-        let msg = MsgCreateClient::new(client_state.into(), consensus_state.into(), signer)
-            .map_err(ForeignClientError::client)?;
+        let msg = MsgCreateClient::new(
+            dbg!(client_state.into()),
+            dbg!(consensus_state.into()),
+            signer,
+        )
+        .map_err(ForeignClientError::client)?;
 
         Ok(msg)
     }

@@ -493,12 +493,9 @@ where
         client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let verified = self.chain.verify_header(trusted, target, &client_state)?;
-
         let consensus_state = self
             .chain
-            .build_consensus_state(verified)
-            .map(|cs| cs.into());
+            .build_consensus_state(trusted, target, &client_state);
 
         reply_to.send(consensus_state).map_err(Error::send)
     }

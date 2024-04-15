@@ -28,6 +28,9 @@ use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc_relayer_types::clients::ics08_wasm::client_state::{
     ClientState as WasmClientState, WasmUnderlyingClientState,
 };
+use ibc_relayer_types::clients::ics08_wasm::consensus_state::{
+    ConsensusState as WasmConsensusState, WasmUnderlyingConsensusState,
+};
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
@@ -2278,17 +2281,30 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn build_consensus_state(
-        &self,
-        light_block: Self::LightBlock,
-    ) -> Result<Self::ConsensusState, Error> {
+        &mut self,
+        trusted: ICSHeight,
+        target: ICSHeight,
+        client_state: &AnyClientState,
+    ) -> Result<AnyConsensusState, Error> {
         crate::time!(
             "build_consensus_state",
             {
                 "src_chain": self.config().id.to_string(),
+                "trusted_height": trusted,
+                "target_height": target,
+                "client_type": client_state.client_type().to_string(),
             }
         );
 
-        Ok(TmConsensusState::from(light_block.signed_header.header))
+        let light_block = self.verify_header(trusted, target, client_state)?;
+        let consensus_state = TmConsensusState::from(light_block.signed_header.header);
+
+        match client_state.client_type() {
+            ClientType::Tendermint => Ok(AnyConsensusState::from(consensus_state)),
+            ClientType::Wasm => Ok(AnyConsensusState::Wasm(WasmConsensusState {
+                underlying: WasmUnderlyingConsensusState::Tendermint(consensus_state),
+            })),
+        }
     }
 
     fn build_header(
