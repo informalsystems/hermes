@@ -27,43 +27,43 @@ pub enum AnyClientState {
 impl AnyClientState {
     pub fn chain_id(&self) -> ChainId {
         match self {
-            Self::Tendermint(tm_state) => tm_state.chain_id(),
-            Self::Wasm(wasm_state) => wasm_state.chain_id(),
+            Self::Tendermint(state) => state.chain_id(),
+            Self::Wasm(state) => state.chain_id(),
         }
     }
 
     pub fn latest_height(&self) -> Height {
         match self {
-            Self::Tendermint(tm_state) => tm_state.latest_height(),
-            Self::Wasm(wasm_state) => wasm_state.latest_height(),
+            Self::Tendermint(state) => state.latest_height(),
+            Self::Wasm(state) => state.latest_height(),
         }
     }
 
     pub fn frozen_height(&self) -> Option<Height> {
         match self {
-            Self::Tendermint(tm_state) => tm_state.frozen_height(),
-            Self::Wasm(_) => None,
+            Self::Tendermint(state) => state.frozen_height(),
+            Self::Wasm(state) => state.frozen_height(),
         }
     }
 
     pub fn trust_threshold(&self) -> Option<TrustThreshold> {
         match self {
             Self::Tendermint(state) => Some(state.trust_threshold),
-            Self::Wasm(_) => None,
+            Self::Wasm(state) => state.trust_threshold(),
         }
     }
 
     pub fn trusting_period(&self) -> Duration {
         match self {
             Self::Tendermint(state) => state.trusting_period,
-            Self::Wasm(_) => todo!(),
+            Self::Wasm(state) => state.trusting_period(),
         }
     }
 
     pub fn max_clock_drift(&self) -> Duration {
         match self {
             Self::Tendermint(state) => state.max_clock_drift,
-            Self::Wasm(_) => todo!(),
+            Self::Wasm(state) => state.max_clock_drift(),
         }
     }
 
@@ -77,7 +77,7 @@ impl AnyClientState {
     pub fn expired(&self, elapsed: Duration) -> bool {
         match self {
             Self::Tendermint(state) => state.expired(elapsed),
-            Self::Wasm(_) => todo!(),
+            Self::Wasm(state) => state.expired(elapsed),
         }
     }
 }

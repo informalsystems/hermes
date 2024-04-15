@@ -25,6 +25,7 @@ use ibc_relayer_types::clients::ics07_tendermint::client_state::{
 };
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
+use ibc_relayer_types::clients::ics08_wasm::client_message::ClientMessage;
 use ibc_relayer_types::clients::ics08_wasm::client_state::{
     ClientState as WasmClientState, WasmUnderlyingClientState,
 };
@@ -34,6 +35,7 @@ use ibc_relayer_types::clients::ics08_wasm::consensus_state::{
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics02_client::header::AnyHeader;
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
@@ -1438,12 +1440,15 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
 
-        if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
-            return Err(Error::consensus_state_type_mismatch(
-                ClientType::Tendermint,
-                consensus_state.client_type(),
-            ));
-        }
+        match &consensus_state {
+            AnyConsensusState::Tendermint(_) => Ok(()),
+            AnyConsensusState::Wasm(cs) => {
+                // We only expect the underlying consensus state to be a Tendermint consensus state.
+                match cs.underlying {
+                    WasmUnderlyingConsensusState::Tendermint(_) => Ok(()),
+                }
+            }
+        }?;
 
         match include_proof {
             IncludeProof::Yes => {
@@ -2312,11 +2317,14 @@ impl ChainEndpoint for CosmosSdkChain {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-    ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
+    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
         crate::time!(
             "build_header",
             {
                 "src_chain": self.config().id.to_string(),
+                "trusted_height": trusted_height,
+                "target_height": target_height,
+                "client_type": client_state.client_type().to_string(),
             }
         );
 
@@ -2330,7 +2338,28 @@ impl ChainEndpoint for CosmosSdkChain {
             now,
         )?;
 
-        Ok((target, supporting))
+        match client_state.client_type() {
+            ClientType::Tendermint => Ok((
+                AnyHeader::Tendermint(target),
+                supporting.into_iter().map(AnyHeader::Tendermint).collect(),
+            )),
+            ClientType::Wasm => {
+                let target = AnyHeader::Wasm(ClientMessage {
+                    data: Box::new(AnyHeader::from(target)),
+                });
+
+                let supporting = supporting
+                    .into_iter()
+                    .map(|header| {
+                        AnyHeader::from(ClientMessage {
+                            data: Box::new(AnyHeader::from(header)),
+                        })
+                    })
+                    .collect();
+
+                Ok((target, supporting))
+            }
+        }
     }
 
     fn maybe_register_counterparty_payee(

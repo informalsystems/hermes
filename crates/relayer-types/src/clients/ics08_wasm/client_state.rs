@@ -12,6 +12,7 @@ use crate::core::ics02_client::client_state::ClientState as Ics02ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::height::Height;
+use crate::core::ics02_client::trust_threshold::TrustThreshold;
 use crate::core::ics24_host::identifier::ChainId;
 
 use super::error::Error;
@@ -68,6 +69,24 @@ pub struct ClientState {
 
 impl ClientState {
     pub const TYPE_URL: &'static str = WASM_CLIENT_STATE_TYPE_URL;
+
+    pub fn trust_threshold(&self) -> Option<TrustThreshold> {
+        match &self.underlying {
+            WasmUnderlyingClientState::Tendermint(tm) => Some(tm.trust_threshold),
+        }
+    }
+
+    pub fn trusting_period(&self) -> Duration {
+        match &self.underlying {
+            WasmUnderlyingClientState::Tendermint(tm) => tm.trusting_period,
+        }
+    }
+
+    pub fn max_clock_drift(&self) -> Duration {
+        match &self.underlying {
+            WasmUnderlyingClientState::Tendermint(tm) => tm.max_clock_drift,
+        }
+    }
 }
 
 impl Ics02ClientState for ClientState {

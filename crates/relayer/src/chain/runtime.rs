@@ -463,12 +463,7 @@ where
     ) -> Result<(), Error> {
         let result = self
             .chain
-            .build_header(trusted_height, target_height, &client_state)
-            .map(|(header, support)| {
-                let header = header.into();
-                let support = support.into_iter().map(|h| h.into()).collect();
-                (header, support)
-            });
+            .build_header(trusted_height, target_height, &client_state);
 
         reply_to.send(result).map_err(Error::send)
     }

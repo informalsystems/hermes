@@ -146,6 +146,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let update_header: &TmHeader = match any_header {
             AnyHeader::Tendermint(header) => Ok(header),
+
+            // FIXME(wasm)
+            other => Err(Error::misbehaviour(format!(
+                "header in update client event {} is not a Tendermint header: {other:?}",
+                self.chain_id
+            ))),
         }?;
 
         let client_state = match client_state {
