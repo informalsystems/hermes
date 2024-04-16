@@ -198,7 +198,6 @@
         "stargaze-src": "stargaze-src",
         "stoml-src": "stoml-src",
         "stride-consumer-src": "stride-consumer-src",
-        "stride-src": "stride-src",
         "umee-src": "umee-src",
         "wasmd-src": "wasmd-src",
         "wasmd_next-src": "wasmd_next-src",
@@ -214,15 +213,16 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1713188540,
-        "narHash": "sha256-owF5G+dSh7R5+M+SrcnriflHrvCczbK9qRqAwpL/mCE=",
+        "lastModified": 1713260173,
+        "narHash": "sha256-Vtgt7tK1py3R7W1veNNwyddVH3irOGZgDpBJ99K4lBM=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "5e1ca8a49888190704311a186d0770dbf0d4dc3f",
+        "rev": "671d43dbfc2195dd85e8e880d68c41b53dcc6b22",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "luca_joss/update-consumer-chains",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1124,15 +1124,16 @@
     "neutron-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-NuoOlrciBeL2f/A7wlQBqYlYJhSYucXRhLgxdasfyhI=",
+        "lastModified": 1712330928,
+        "narHash": "sha256-3olixILNnkRcNwtpPDqQJ63cYjV5qiVYTM+fJEIH65s=",
         "owner": "neutron-org",
         "repo": "neutron",
-        "rev": "e605ed3db4381994ee8185ba4a0ff0877d34e67f",
+        "rev": "d652580f204231a5d6d76c83a084d7110d981416",
         "type": "github"
       },
       "original": {
         "owner": "neutron-org",
-        "ref": "v2.0.0",
+        "ref": "v3.0.2",
         "repo": "neutron",
         "type": "github"
       }
@@ -1337,11 +1338,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1713128889,
-        "narHash": "sha256-aB90ZqzosyRDpBh+rILIcyP5lao8SKz8Sr2PSWvZrzk=",
+        "lastModified": 1713219115,
+        "narHash": "sha256-xC8H/s6ZBnqzJIf7gIV9OIL73d43pV60E8F2VOr5QRo=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "2748d22b45a99fb2deafa5f11c7531c212b2cefa",
+        "rev": "2b80ce7707aedcb79be09e412b6dd6c15c578ab2",
         "type": "github"
       },
       "original": {
@@ -1604,31 +1605,16 @@
     "stride-consumer-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-DByig9ISs9x9Kvakc8LFL558VKhM+UBiaESWgyVzI0w=",
+        "lastModified": 1711572539,
+        "narHash": "sha256-WOoaijuB/Xziw3RMzVcLgR1iDWv72StuLL8K5JzcdlA=",
         "owner": "Stride-Labs",
         "repo": "stride",
-        "rev": "bbf0bb7f52878f3205c76bb1e96662fe7bd7af8d",
+        "rev": "093f25e17b1c9fae38a8092f9582af7c84bbaee4",
         "type": "github"
       },
       "original": {
         "owner": "Stride-Labs",
-        "ref": "v12.1.0",
-        "repo": "stride",
-        "type": "github"
-      }
-    },
-    "stride-src": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-fdjnFHPBZNnhDyVoMuPfqNb6YUYRdcMO73FlZHjIuzA=",
-        "owner": "Stride-Labs",
-        "repo": "stride",
-        "rev": "3c69e7644859981b1fd9313eb1f0c5e5886e4a0d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Stride-Labs",
-        "ref": "v8.0.0",
+        "ref": "v21.0.0",
         "repo": "stride",
         "type": "github"
       }
