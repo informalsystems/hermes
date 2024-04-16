@@ -55,6 +55,13 @@ impl TestOverrides for InterchainSecurityIcqTest {
                         .ok_or_else(|| eyre!("failed to get duration"))?;
 
                     *duration = serde_json::Value::String("20s".to_owned());
+                } else if identifier.as_str() == Some("day") {
+                    // The stride epoch must be 1/4th the length of the day epoch
+                    let duration = v
+                        .get_mut("duration")
+                        .ok_or_else(|| eyre!("failed to get duration"))?;
+
+                    *duration = serde_json::Value::String("80s".to_owned());
                 }
             }
             set_voting_period(genesis, 10)?;
@@ -73,7 +80,7 @@ impl TestOverrides for InterchainSecurityIcqTest {
     // will be created. So the channel worker needs to be enabled.
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode = ModeConfig {
-            connections: config::Connections { enabled: false },
+            connections: config::Connections { enabled: true },
             channels: config::Channels { enabled: true },
             ..Default::default()
         };

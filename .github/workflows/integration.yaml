@@ -171,7 +171,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia15 .#stride-consumer
+          - package: .#gaia15 .#stride
             command: gaiad,strided
             account_prefix: cosmos,stride
           - package: .#gaia15 .#neutron
@@ -216,7 +216,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia15 .#stride-consumer-no-admin
+          - package: .#gaia15 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
