@@ -31,7 +31,7 @@ pub fn register_host_zone(
             bech32_prefix,
             ibc_denom,
             channel_id,
-            "1",
+            "5",
             "false",
             "--from",
             sender,

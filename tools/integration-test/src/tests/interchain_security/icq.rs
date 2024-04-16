@@ -9,24 +9,18 @@
 //! The test then waits for a Cross-chain Query to be pending and
 //! then processed.
 
-use ibc_relayer::config::{self, ModeConfig};
-
+use ibc_test_framework::chain::cli::host_zone::register_host_zone;
+use ibc_test_framework::chain::config::{
+    set_crisis_denom, set_mint_mint_denom, set_staking_bond_denom, set_staking_max_entries,
+    set_voting_period,
+};
+use ibc_test_framework::chain::ext::crosschainquery::CrossChainQueryMethodsExt;
+use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::interchain_security::{
     update_genesis_for_consumer_chain, update_relayer_config_for_consumer_chain,
 };
 use ibc_test_framework::util::random::random_u128_range;
-use ibc_test_framework::{
-    chain::{
-        cli::host_zone::register_host_zone,
-        config::{
-            set_crisis_denom, set_mint_mint_denom, set_staking_bond_denom, set_staking_max_entries,
-            set_voting_period,
-        },
-        ext::crosschainquery::CrossChainQueryMethodsExt,
-    },
-    framework::binary::channel::run_binary_interchain_security_channel_test,
-};
 
 #[test]
 fn test_ics31_cross_chain_queries() -> Result<(), Error> {
@@ -54,14 +48,14 @@ impl TestOverrides for InterchainSecurityIcqTest {
                         .get_mut("duration")
                         .ok_or_else(|| eyre!("failed to get duration"))?;
 
-                    *duration = serde_json::Value::String("20s".to_owned());
+                    *duration = serde_json::Value::String("25s".to_owned());
                 } else if identifier.as_str() == Some("day") {
                     // The stride epoch must be 1/4th the length of the day epoch
                     let duration = v
                         .get_mut("duration")
                         .ok_or_else(|| eyre!("failed to get duration"))?;
 
-                    *duration = serde_json::Value::String("80s".to_owned());
+                    *duration = serde_json::Value::String("100s".to_owned());
                 }
             }
             set_voting_period(genesis, 10)?;
@@ -79,11 +73,9 @@ impl TestOverrides for InterchainSecurityIcqTest {
     // When calling `strided tx stakeibc register-host-zone` new channel
     // will be created. So the channel worker needs to be enabled.
     fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode = ModeConfig {
-            connections: config::Connections { enabled: true },
-            channels: config::Channels { enabled: true },
-            ..Default::default()
-        };
+        config.mode.clients.misbehaviour = false;
+        config.mode.connections.enabled = true;
+        config.mode.channels.enabled = true;
 
         update_relayer_config_for_consumer_chain(config);
     }

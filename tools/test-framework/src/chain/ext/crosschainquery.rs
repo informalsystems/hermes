@@ -14,7 +14,7 @@ use crate::types::tagged::MonoTagged;
    If you encounter retry error, verify the value of `stride_epoch`in
    the `stride_epoch` configuration in Stride's `genesis.toml` file.
 */
-const WAIT_CROSS_CHAIN_QUERY_ATTEMPTS: u16 = 60;
+const WAIT_CROSS_CHAIN_QUERY_ATTEMPTS: u16 = 100;
 
 pub trait CrossChainQueryMethodsExt<Chain> {
     fn assert_pending_cross_chain_query(&self) -> Result<(), Error>;
