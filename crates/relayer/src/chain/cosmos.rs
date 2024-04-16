@@ -2345,14 +2345,14 @@ impl ChainEndpoint for CosmosSdkChain {
             )),
             ClientType::Wasm => {
                 let target = AnyHeader::Wasm(ClientMessage {
-                    data: Box::new(AnyHeader::from(target)),
+                    data: Box::new(AnyHeader::Tendermint(target)),
                 });
 
                 let supporting = supporting
                     .into_iter()
                     .map(|header| {
                         AnyHeader::from(ClientMessage {
-                            data: Box::new(AnyHeader::from(header)),
+                            data: Box::new(AnyHeader::Tendermint(header)),
                         })
                     })
                     .collect();
