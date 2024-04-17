@@ -390,6 +390,12 @@ pub enum WasmUnderlyingCreateOptions {
     Tendermint(TendermintCreateOptions),
 }
 
+impl From<TendermintCreateOptions> for WasmUnderlyingCreateOptions {
+    fn from(opts: TendermintCreateOptions) -> Self {
+        Self::Tendermint(opts)
+    }
+}
+
 /// Captures the diagnostic of verifying whether a certain
 /// consensus state is within the trusting period (i.e., trusted)
 /// or it's not within the trusting period (not trusted).
@@ -703,15 +709,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        dbg!(&client_state, &consensus_state);
-
         //TODO Get acct_prefix
-        let msg = MsgCreateClient::new(
-            dbg!(client_state.into()),
-            dbg!(consensus_state.into()),
-            signer,
-        )
-        .map_err(ForeignClientError::client)?;
+        let msg = MsgCreateClient::new(client_state.into(), consensus_state.into(), signer)
+            .map_err(ForeignClientError::client)?;
 
         Ok(msg)
     }

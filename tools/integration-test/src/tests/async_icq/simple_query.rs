@@ -100,27 +100,17 @@ impl BinaryConnectionTest for AsyncIcqTest {
             &wallet_a.address().to_string(),
         )?;
 
-        driver.value().assert_proposal_status(
-            driver.value().chain_id.as_str(),
-            &driver.value().command_path,
-            &driver.value().home_path,
-            &driver.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "1",
-        )?;
+        driver
+            .value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
 
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal("1", &fee_denom_a.with_amount(381000000u64).to_string())?;
 
         info!("Assert that the update oracle proposal is eventually passed");
 
-        driver.value().assert_proposal_status(
-            driver.value().chain_id.as_str(),
-            &driver.value().command_path,
-            &driver.value().home_path,
-            &driver.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            "1",
-        )?;
+        driver
+            .value()
+            .assert_proposal_status(ProposalStatus::Passed, "1")?;
 
         let query = r#"{"query_version":{}}"#;
         chains.node_a.chain_driver().async_icq(

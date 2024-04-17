@@ -1,40 +1,75 @@
-/*!
-   Methods for voting on a proposal.
-*/
-use crate::chain::exec::simple_exec;
+use eyre::eyre;
+use http::Uri;
+use ibc_relayer::config::default::max_grpc_decoding_size;
+use prost::Message;
+
+use ibc_proto::cosmos::gov::v1beta1::{query_client::QueryClient, QueryProposalRequest};
+use ibc_proto::ibc::core::client::v1::{MsgIbcSoftwareUpgrade, UpgradeProposal};
+use ibc_relayer::error::Error as RelayerError;
+
 use crate::error::Error;
+use crate::prelude::handle_generic_error;
 
-pub fn vote_proposal(
-    chain_id: &str,
-    command_path: &str,
-    home_path: &str,
-    rpc_listen_address: &str,
-    fees: &str,
-) -> Result<(), Error> {
-    simple_exec(
-        chain_id,
-        command_path,
-        &[
-            "--node",
-            rpc_listen_address,
-            "tx",
-            "gov",
-            "vote",
-            "1",
-            "yes",
-            "--chain-id",
-            chain_id,
-            "--home",
-            home_path,
-            "--keyring-backend",
-            "test",
-            "--from",
-            "validator",
-            "--fees",
-            fees,
-            "--yes",
-        ],
-    )?;
+/// Query the proposal with the given proposal_id, which is supposed to be an UpgradeProposal.
+/// Extract the Plan from the UpgradeProposal and get the height at which the chain upgrades,
+/// from the Plan.
+pub async fn query_upgrade_proposal_height(
+    grpc_address: &Uri,
+    proposal_id: u64,
+) -> Result<u64, Error> {
+    let mut client = match QueryClient::connect(grpc_address.clone()).await {
+        Ok(client) => client,
+        Err(_) => {
+            return Err(Error::query_client());
+        }
+    };
 
-    Ok(())
+    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
+
+    let request = tonic::Request::new(QueryProposalRequest { proposal_id });
+
+    let response = client
+        .proposal(request)
+        .await
+        .map(|r| r.into_inner())
+        .map_err(|e| RelayerError::grpc_status(e, "query_upgrade_proposal_height".to_owned()))?;
+
+    // Querying for a balance might fail, i.e. if the account doesn't actually exist
+    let proposal = response
+        .proposal
+        .ok_or_else(|| RelayerError::empty_query_account(proposal_id.to_string()))?;
+
+    let proposal_content = proposal
+        .content
+        .ok_or_else(|| eyre!("failed to retrieve content of Proposal"))?;
+
+    let height = match proposal_content.type_url.as_str() {
+        "/ibc.core.client.v1.MsgIBCSoftwareUpgrade" => {
+            let upgrade_plan = MsgIbcSoftwareUpgrade::decode(&proposal_content.value as &[u8])
+                .map_err(handle_generic_error)?;
+
+            let plan = upgrade_plan
+                .plan
+                .ok_or_else(|| eyre!("failed to plan from MsgIbcSoftwareUpgrade"))?;
+
+            plan.height as u64
+        }
+        "/ibc.core.client.v1.UpgradeProposal" => {
+            let upgrade_plan = UpgradeProposal::decode(&proposal_content.value as &[u8])
+                .map_err(handle_generic_error)?;
+
+            let plan = upgrade_plan
+                .plan
+                .ok_or_else(|| eyre!("failed to plan from MsgIbcSoftwareUpgrade"))?;
+
+            plan.height as u64
+        }
+        _ => {
+            return Err(Error::incorrect_proposal_type_url(
+                proposal_content.type_url,
+            ))
+        }
+    };
+
+    Ok(height)
 }
