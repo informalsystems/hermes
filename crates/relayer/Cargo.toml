@@ -82,19 +82,23 @@ uuid                             = { workspace = true, features = ["v4"] }
 
 [dependencies.namada_ibc]
 git = "https://github.com/anoma/namada"
-version = "0.33.0"
+#version = "0.33.0"
+branch = "tiago/generalize-events"
 
 [dependencies.namada_parameters]
 git = "https://github.com/anoma/namada"
-version = "0.33.0"
+#version = "0.33.0"
+branch = "tiago/generalize-events"
 
 [dependencies.namada_sdk]
 git = "https://github.com/anoma/namada"
-version = "0.33.0"
+#version = "0.33.0"
+branch = "tiago/generalize-events"
 
 [dependencies.namada_trans_token]
 git = "https://github.com/anoma/namada"
-version = "0.33.0"
+#version = "0.33.0"
+branch = "tiago/generalize-events"
 
 [dev-dependencies]
 ibc-relayer-types = { workspace = true }
