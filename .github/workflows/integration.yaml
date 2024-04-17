@@ -334,7 +334,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: nextest
-          args: -p ibc-integration-test --features wasm --no-fail-fast --no-run
+          args: run -p ibc-integration-test --features wasm --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
