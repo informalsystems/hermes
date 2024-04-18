@@ -1315,6 +1315,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
+        dbg!(&header, &support);
+
         self.wait_for_header_validation_delay(&client_state, &header)?;
 
         let mut msgs = vec![];
