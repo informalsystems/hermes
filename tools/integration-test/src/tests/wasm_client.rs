@@ -21,6 +21,11 @@ use ibc_test_framework::types::binary::chains::DropChainHandle;
 use ibc_test_framework::types::env::write_env;
 use ibc_test_framework::util::proposal_status::ProposalStatus;
 
+#[test]
+fn test_create_and_update_wasm_client() -> Result<(), Error> {
+    run_binary_node_test(&CreateAndUpdateWasmClientTest)
+}
+
 const WASM_PATH: &str = "fixtures/wasm/ibc_client_tendermint_cw.wasm";
 
 const TM_CREATE_OPTIONS: TendermintCreateOptions = TendermintCreateOptions {
@@ -28,11 +33,6 @@ const TM_CREATE_OPTIONS: TendermintCreateOptions = TendermintCreateOptions {
     trusting_period: Some(Duration::from_secs(30)),
     trust_threshold: Some(TrustThreshold::TWO_THIRDS),
 };
-
-#[test]
-fn test_create_and_update_wasm_client() -> Result<(), Error> {
-    run_binary_node_test(&CreateAndUpdateWasmClientTest)
-}
 
 fn sha256(data: &[u8]) -> Vec<u8> {
     use sha2::Digest;
@@ -113,12 +113,14 @@ impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
         let mut client_b_to_a =
             bootstrap_foreign_client(&chain_b, &chain_a, overrides.client_options_b_to_a())?;
 
+        info!("Refreshing client A to B...");
         let res = client_a_to_b.refresh();
 
         // Check that `refresh()` was successful but did not update the client, as elapsed < refresh_window.
         assert_client_refreshed(false, res);
         info!("Client A to B was not refreshed, as expected");
 
+        info!("Refreshing client A to B...");
         let res = client_b_to_a.refresh();
 
         // Check that `refresh()` was successful but did not update the client, as elapsed < refresh_window.
@@ -126,14 +128,18 @@ impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
         info!("Client B to A was not refreshed, as expected");
 
         // Wait for elapsed > refresh_window
-        sleep(Duration::from_secs(20));
+        let wait_time = Duration::from_secs(10);
+        info!("Waiting for {wait_time:?} seconds before refreshing clients...");
+        sleep(wait_time);
 
+        info!("Refreshing client A to B...");
         let res = client_a_to_b.refresh();
 
         // Check that `refresh()` was successful and update client was successful, as elapsed > refresh_window.
         assert_client_refreshed(true, res);
         info!("Client A to B was refreshed successfully");
 
+        info!("Refreshing client B to A...");
         let res = client_b_to_a.refresh();
 
         // Check that `refresh()` was successful and update client was successful, as elapsed > refresh_window.
