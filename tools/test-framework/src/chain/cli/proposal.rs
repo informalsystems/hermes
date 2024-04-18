@@ -27,8 +27,6 @@ pub fn vote_proposal(driver: &ChainDriver, proposal_id: &str, fees: &str) -> Res
             "validator",
             "--fees",
             fees,
-            "--gas",
-            "auto",
             "--yes",
             "--output",
             "json",
