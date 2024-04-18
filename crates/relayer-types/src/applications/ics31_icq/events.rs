@@ -94,17 +94,18 @@ impl<'a> TryFrom<&'a [abci::EventAttribute]> for CrossChainQueryPacket {
     }
 }
 
-fn fetch_first_element_from_events(
+fn fetch_nth_element_from_events(
     block_events: &BTreeMap<String, Vec<String>>,
     key: &str,
+    index: usize,
 ) -> Result<String, Error> {
     let res = block_events
         .get(key)
         .ok_or_else(|| Error::event(format!("attribute not found for key: {key}")))?
-        .first()
+        .get(index)
         .ok_or_else(|| {
             Error::event(format!(
-                "element at position 0, of attribute with key `{key}`, not found"
+                "element at position {index}, of attribute with key `{key}`, not found"
             ))
         })?;
 
@@ -114,45 +115,71 @@ fn fetch_first_element_from_events(
 impl CrossChainQueryPacket {
     pub fn extract_query_event(
         block_events: &BTreeMap<String, Vec<String>>,
+    ) -> Result<Vec<IbcEvent>, Error> {
+        let cross_chain_queries = block_events
+            .get(&format!("{}.{}", EVENT_TYPE_PREFIX, "query_id"))
+            .ok_or_else(|| Error::event("attribute not found for key: query_id".to_string()))?
+            .iter()
+            .enumerate()
+            .filter_map(|(i, _)| Self::extract_nth_query_event(block_events, i).ok())
+            .collect::<Vec<IbcEvent>>();
+
+        Ok(cross_chain_queries)
+    }
+
+    fn extract_nth_query_event(
+        block_events: &BTreeMap<String, Vec<String>>,
+        index: usize,
     ) -> Result<IbcEvent, Error> {
-        let chain_id_str = fetch_first_element_from_events(
+        let chain_id_str = fetch_nth_element_from_events(
             block_events,
             &format!("{}.{}", EVENT_TYPE_PREFIX, "chain_id"),
+            index,
         )?;
-        let connection_id_str = fetch_first_element_from_events(
+        let connection_id_str = fetch_nth_element_from_events(
             block_events,
             &format!("{}.{}", EVENT_TYPE_PREFIX, "connection_id"),
+            index,
         )?;
-        let query_type = fetch_first_element_from_events(
-            block_events,
-            &format!("{}.{}", EVENT_TYPE_PREFIX, "type"),
-        )?;
-        let height_str = fetch_first_element_from_events(
+        let height_str = fetch_nth_element_from_events(
             block_events,
             &format!("{}.{}", EVENT_TYPE_PREFIX, "height"),
+            index,
         )?;
-
+        let query_type = fetch_nth_element_from_events(
+            block_events,
+            &format!("{}.{}", EVENT_TYPE_PREFIX, "type"),
+            index,
+        )?;
+        let query_id = fetch_nth_element_from_events(
+            block_events,
+            &format!("{}.{}", EVENT_TYPE_PREFIX, "query_id"),
+            index,
+        )?;
+        let module = fetch_nth_element_from_events(
+            block_events,
+            &format!("{}.{}", EVENT_TYPE_PREFIX, "module"),
+            index,
+        )?;
+        let action = fetch_nth_element_from_events(
+            block_events,
+            &format!("{}.{}", EVENT_TYPE_PREFIX, "action"),
+            index,
+        )?;
+        let request = fetch_nth_element_from_events(
+            block_events,
+            &format!("{}.{}", EVENT_TYPE_PREFIX, "request"),
+            index,
+        )?;
         Ok(IbcEvent::CrossChainQueryPacket(CrossChainQueryPacket {
-            module: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "module"),
-            )?,
-            action: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "action"),
-            )?,
-            query_id: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "query_id"),
-            )?,
+            module,
+            action,
+            query_id,
             chain_id: ChainId::from_string(&chain_id_str),
             connection_id: ConnectionId::from_str(&connection_id_str)?,
-            query_type,
+            query_type: query_type.clone(),
             height: Height::from_str(&height_str)?,
-            request: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "request"),
-            )?,
+            request,
         }))
     }
 }

@@ -329,8 +329,12 @@ fn extract_block_events(
         height,
     );
     // extract cross chain query event from block_events
-    if let Ok(ccq) = CrossChainQueryPacket::extract_query_event(block_events) {
-        events.push(IbcEventWithHeight::new(ccq, height));
+    if let Ok(ccqs) = CrossChainQueryPacket::extract_query_event(block_events) {
+        let mut ccqs_with_height = ccqs
+            .iter()
+            .map(|ccq| IbcEventWithHeight::new(ccq.clone(), height))
+            .collect::<Vec<IbcEventWithHeight>>();
+        events.append(&mut ccqs_with_height);
     }
 
     events
