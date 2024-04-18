@@ -346,8 +346,6 @@ impl ChainBootstrapMethodsExt for ChainDriver {
                     let json_res = json::from_str::<json::Value>(&exec_output.stdout)
                         .map_err(handle_generic_error)?;
 
-                    dbg!(&json_res);
-
                     // Cosmos SDK v0.50.1 outputs the status of the proposal using an integer code
                     let proposal_status: ProposalStatus = match json_res.get("proposal") {
                         Some(proposal) => proposal
