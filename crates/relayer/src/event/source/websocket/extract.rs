@@ -328,13 +328,14 @@ fn extract_block_events(
         extract_events(height, block_events, "channel_close_confirm", "channel_id"),
         height,
     );
-    // extract cross chain query event from block_events
-    if let Ok(ccqs) = CrossChainQueryPacket::extract_query_event(block_events) {
-        let mut ccqs_with_height = ccqs
-            .iter()
-            .map(|ccq| IbcEventWithHeight::new(ccq.clone(), height))
-            .collect::<Vec<IbcEventWithHeight>>();
-        events.append(&mut ccqs_with_height);
+
+    // Extract cross chain query event from block_events
+    if let Ok(ccqs) = CrossChainQueryPacket::extract_query_events(block_events) {
+        let ccqs_with_height = ccqs
+            .into_iter()
+            .map(|ccq| IbcEventWithHeight::new(ccq, height));
+
+        events.extend(ccqs_with_height);
     }
 
     events
