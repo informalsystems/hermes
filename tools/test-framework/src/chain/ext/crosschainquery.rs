@@ -72,14 +72,13 @@ impl<'a, Chain: Send> CrossChainQueryMethodsExt<Chain> for MonoTagged<Chain, &'a
                 )?;
 
                 // Verify that the there are no more pending Cross Chain Queries.
-                if json::from_str::<json::Value>(&output)
+                if !json::from_str::<json::Value>(&output)
                     .map_err(handle_generic_error)?
                     .get("pending_queries")
                     .ok_or_else(|| eyre!("no pending cross chain queries"))?
                     .as_array()
                     .ok_or_else(|| eyre!("pending cross chain queries is not an array"))?
-                    .first()
-                    .is_some()
+                    .is_empty()
                 {
                     return Err(Error::generic(eyre!(
                         "Pending query has not been processed"

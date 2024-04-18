@@ -1,7 +1,9 @@
 use core::time::Duration;
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
+use ibc_relayer::chain::requests::{
+    IncludeProof, QueryChannelRequest, QueryChannelsRequest, QueryHeight,
+};
 use ibc_relayer::channel::version::Version;
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
@@ -205,6 +207,23 @@ pub fn query_identified_channel_end<ChainA: ChainHandle, ChainB>(
         channel_id.into_value().clone(),
         channel_end,
     )))
+}
+
+pub fn query_identified_channel_ends<ChainA: ChainHandle, ChainB>(
+    handle: &ChainA,
+) -> Result<Vec<DualTagged<ChainA, ChainB, IdentifiedChannelEnd>>, Error> {
+    let channel_ends = handle.query_channels(QueryChannelsRequest { pagination: None })?;
+    let identified_channels = channel_ends
+        .iter()
+        .map(|c| {
+            DualTagged::new(IdentifiedChannelEnd::new(
+                c.port_id.clone(),
+                c.channel_id.clone(),
+                c.channel_end.clone(),
+            ))
+        })
+        .collect();
+    Ok(identified_channels)
 }
 
 pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainHandle>(
