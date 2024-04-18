@@ -1,3 +1,2 @@
-- Correctly extract all `interchainquery` events if
-  there are more than one emitted at the same time
+- Fix a bug where Hermes would only ever extract the first emitted ICS 031 CrossChain Query event, which would cause it to miss the other CCQ events.
   ([\#3954](https://github.com/informalsystems/hermes/issues/3954))
