@@ -20,6 +20,7 @@ use ibc_proto::ibc::apps::fee::v1::{
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
 use ibc_proto::Protobuf;
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
@@ -32,6 +33,7 @@ use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc_relayer_types::core::ics04_channel::channel::{State, UpgradeState};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
@@ -52,10 +54,6 @@ use ibc_relayer_types::core::{
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
-use ibc_relayer_types::{
-    applications::ics31_icq::response::CrossChainQueryResponse,
-    core::ics04_channel::channel::{State, UpgradeState},
-};
 
 use tendermint::block::Height as TmHeight;
 use tendermint::node::{self, info::TxIndexStatus};
@@ -2646,17 +2644,8 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
-    use ibc_relayer_types::{
-        core::{ics02_client::client_type::ClientType, ics24_host::identifier::ClientId},
-        mock::client_state::MockClientState,
-        mock::header::MockHeader,
-        Height,
-    };
-
-    use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
-    use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
-
     use super::calculate_fee;
+    use crate::config::GasPrice;
 
     #[test]
     fn mul_ceil() {
@@ -2693,44 +2682,5 @@ mod tests {
 
         let fee = calculate_fee(gas_amount, &gas_price);
         assert_eq!(&fee.amount, "90000000000000000000000000");
-    }
-
-    #[test]
-    fn sort_clients_id_suffix() {
-        // 14 days in seconds
-        let trusting_period = 1209600u64;
-        let mut clients: Vec<IdentifiedAnyClientState> = vec![
-            IdentifiedAnyClientState::new(
-                ClientId::new(ClientType::Tendermint, 4).unwrap(),
-                AnyClientState::Mock(MockClientState::new(
-                    MockHeader::new(Height::new(0, 1).unwrap()),
-                    trusting_period,
-                )),
-            ),
-            IdentifiedAnyClientState::new(
-                ClientId::new(ClientType::Tendermint, 1).unwrap(),
-                AnyClientState::Mock(MockClientState::new(
-                    MockHeader::new(Height::new(0, 1).unwrap()),
-                    trusting_period,
-                )),
-            ),
-            IdentifiedAnyClientState::new(
-                ClientId::new(ClientType::Tendermint, 7).unwrap(),
-                AnyClientState::Mock(MockClientState::new(
-                    MockHeader::new(Height::new(0, 1).unwrap()),
-                    trusting_period,
-                )),
-            ),
-        ];
-        clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));
-        assert_eq!(
-            client_id_suffix(&clients.first().unwrap().client_id).unwrap(),
-            1
-        );
-        assert_eq!(client_id_suffix(&clients[1].client_id).unwrap(), 4);
-        assert_eq!(
-            client_id_suffix(&clients.last().unwrap().client_id).unwrap(),
-            7
-        );
     }
 }

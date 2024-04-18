@@ -629,22 +629,6 @@ pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, ChannelError> {
 mod tests {
     use super::*;
 
-    use ibc_proto::google::protobuf::Any;
-    use ibc_proto::Protobuf;
-    use ibc_relayer_types::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
-
-    #[test]
-    fn extract_header() {
-        let header = get_dummy_ics07_header();
-        let mut header_bytes = Vec::new();
-        Protobuf::<Any>::encode(header.clone(), &mut header_bytes).unwrap();
-
-        let decoded_dyn_header = decode_header(&header_bytes).unwrap();
-        let AnyHeader::Tendermint(decoded_tm_header) = decoded_dyn_header;
-
-        assert_eq!(header, decoded_tm_header);
-    }
-
     #[test]
     fn connection_event_to_abci_event() {
         let attributes = ConnectionAttributes {

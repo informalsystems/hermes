@@ -2,9 +2,9 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use std::ops::Add;
 use std::time::{Duration, Instant};
 
-use ibc_proto::google::protobuf::Any;
 use tracing::{debug, info};
 
+use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::Height;
 

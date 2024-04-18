@@ -107,8 +107,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v14
+        with: 
+          name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
@@ -141,8 +145,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v14
+        with: 
+          name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
@@ -180,8 +188,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v14
+        with: 
+          name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
@@ -221,8 +233,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v14
+        with: 
+          name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
@@ -262,8 +278,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v14
+        with: 
+          name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
@@ -304,8 +324,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v14
+        with: 
+          name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
@@ -341,8 +365,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v14
+        with: 
+          name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
