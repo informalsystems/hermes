@@ -114,35 +114,14 @@ impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
             bootstrap_foreign_client(&chain_b, &chain_a, overrides.client_options_b_to_a())?;
 
         info!("Refreshing client A to B...");
-        let res = client_a_to_b.refresh();
+        let res = client_a_to_b.refresh(true);
 
-        // Check that `refresh()` was successful but did not update the client, as elapsed < refresh_window.
-        assert_client_refreshed(false, res);
-        info!("Client A to B was not refreshed, as expected");
-
-        info!("Refreshing client A to B...");
-        let res = client_b_to_a.refresh();
-
-        // Check that `refresh()` was successful but did not update the client, as elapsed < refresh_window.
-        assert_client_refreshed(false, res);
-        info!("Client B to A was not refreshed, as expected");
-
-        // Wait for elapsed > refresh_window
-        let wait_time = Duration::from_secs(10);
-        info!("Waiting for {wait_time:?} seconds before refreshing clients...");
-        sleep(wait_time);
-
-        info!("Refreshing client A to B...");
-        let res = client_a_to_b.refresh();
-
-        // Check that `refresh()` was successful and update client was successful, as elapsed > refresh_window.
         assert_client_refreshed(true, res);
         info!("Client A to B was refreshed successfully");
 
         info!("Refreshing client B to A...");
-        let res = client_b_to_a.refresh();
+        let res = client_b_to_a.refresh(true);
 
-        // Check that `refresh()` was successful and update client was successful, as elapsed > refresh_window.
         assert_client_refreshed(true, res);
         info!("Client B to A was refreshed successfully");
 

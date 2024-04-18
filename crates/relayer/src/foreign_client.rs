@@ -902,7 +902,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         skip_all,
         fields(client = %self)
     )]
-    pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+    pub fn refresh(&mut self, force: bool) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
         fn check_no_errors(
             ibc_events: &[IbcEvent],
             dst_chain_id: ChainId,
@@ -922,9 +922,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             }
         }
 
-        // If elapsed < refresh_window for the client, `try_refresh()` will
-        // be successful with an empty vector.
-        if let Some(events) = self.try_refresh()? {
+        // If `!force && elapsed < refresh_window` for the client,
+        // `try_refresh()` will be successful with an empty vector.
+        if let Some(events) = self.try_refresh(force)? {
             check_no_errors(&events, self.dst_chain().id())?;
             Ok(Some(events))
         } else {
@@ -932,7 +932,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    fn try_refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+    fn try_refresh(&mut self, force: bool) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
         let (client_state, elapsed) = self.validated_client_state()?;
 
         let src_config = self.src_chain.config().map_err(|e| {
@@ -951,18 +951,15 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .trusting_period()
             .mul_f64(refresh_rate.as_f64());
 
-        match (elapsed, refresh_period) {
-            (None, _) => Ok(None),
-            (Some(elapsed), refresh_period) => {
-                if elapsed > refresh_period {
-                    info!(?elapsed, ?refresh_period, "client needs to be refreshed");
+        let elapsed = elapsed.unwrap_or_default();
 
-                    self.build_latest_update_client_and_send()
-                        .map_or_else(Err, |ev| Ok(Some(ev)))
-                } else {
-                    Ok(None)
-                }
-            }
+        if force || elapsed > refresh_period {
+            info!(?elapsed, ?refresh_period, "client needs to be refreshed");
+
+            self.build_latest_update_client_and_send()
+                .map_or_else(Err, |ev| Ok(Some(ev)))
+        } else {
+            Ok(None)
         }
     }
 
