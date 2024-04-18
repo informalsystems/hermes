@@ -34,8 +34,6 @@ pub fn store_wasm_client_code(
             "test",
             "--gas",
             "auto",
-            "--fees",
-            "1000016stake",
             "--deposit",
             "200000stake",
             "-y",
