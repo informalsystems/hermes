@@ -12,8 +12,7 @@ use ibc_test_framework::bootstrap::binary::chain::{
     spawn_chain_handle,
 };
 use ibc_test_framework::chain::config::{
-    add_allowed_client, set_max_body_bytes, set_max_deposit_period, set_min_deposit_amount,
-    set_voting_period,
+    add_allowed_client, set_max_body_bytes, set_max_deposit_period, set_voting_period,
 };
 use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use ibc_test_framework::chain::ext::wasm_client::StoreWasmClientCodeMethodsExt;
