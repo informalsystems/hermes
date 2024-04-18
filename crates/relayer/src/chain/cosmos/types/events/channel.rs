@@ -1,6 +1,5 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
 
-use ibc_relayer_types::applications::ics31_icq;
 use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
 use ibc_relayer_types::core::ics02_client::height::HeightErrorDetail;
 use ibc_relayer_types::core::ics04_channel::error::Error;
@@ -183,20 +182,18 @@ impl TryFrom<RawObject<'_>> for CrossChainQueryPacket {
     type Error = EventError;
 
     fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-        let p = ics31_icq::events::EVENT_TYPE_PREFIX;
-
         Ok(Self {
-            module: extract_attribute(&obj, &format!("{p}.module"))?,
-            action: extract_attribute(&obj, &format!("{p}.action"))?,
-            query_id: extract_attribute(&obj, &format!("{p}.query_id"))?,
-            chain_id: extract_attribute(&obj, &format!("{p}.chain_id"))
+            module: extract_attribute(&obj, &format!("{}.module", obj.action))?,
+            action: extract_attribute(&obj, &format!("{}.action", obj.action))?,
+            query_id: extract_attribute(&obj, &format!("{}.query_id", obj.action))?,
+            chain_id: extract_attribute(&obj, &format!("{}.chain_id", obj.action))
                 .map(|s| ChainId::from_string(&s))?,
-            connection_id: extract_attribute(&obj, &format!("{p}.connection_id"))?
+            connection_id: extract_attribute(&obj, &format!("{}.connection_id", obj.action))?
                 .parse()
                 .map_err(EventError::parse)?,
-            query_type: extract_attribute(&obj, &format!("{p}.type"))?,
-            request: extract_attribute(&obj, &format!("{p}.request"))?,
-            height: extract_attribute(&obj, &format!("{p}.height"))?
+            query_type: extract_attribute(&obj, &format!("{}.type", obj.action))?,
+            request: extract_attribute(&obj, &format!("{}.request", obj.action))?,
+            height: extract_attribute(&obj, &format!("{}.height", obj.action))?
                 .parse()
                 .map_err(|_| EventError::height())?,
         })

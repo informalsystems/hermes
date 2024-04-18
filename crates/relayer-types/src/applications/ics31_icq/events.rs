@@ -98,4 +98,3 @@ impl<'a> TryFrom<&'a [abci::EventAttribute]> for CrossChainQueryPacket {
         })
     }
 }
-
