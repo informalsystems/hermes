@@ -1,5 +1,4 @@
 use ibc_relayer::channel::version::Version;
-use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
 use ibc_test_framework::chain::ext::async_icq::AsyncIcqMethodsExt;
 use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
@@ -9,7 +8,7 @@ use ibc_test_framework::relayer::channel::{
 };
 use ibc_test_framework::util::proposal_status::ProposalStatus;
 use tendermint::abci::Event;
-use tendermint_rpc::{Client, HttpClient};
+use tendermint_rpc::Client;
 
 #[test]
 fn test_async_icq() -> Result<(), Error> {
@@ -61,7 +60,7 @@ impl BinaryConnectionTest for AsyncIcqTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
-        relayer: RelayerDriver,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -119,7 +118,7 @@ impl BinaryConnectionTest for AsyncIcqTest {
             &wallet_a.address().to_string(),
         )?;
 
-        assert_eventual_async_icq_success(&chains, &relayer)?;
+        assert_eventual_async_icq_success(&chains.node_a)?;
 
         Ok(())
     }
@@ -127,21 +126,14 @@ impl BinaryConnectionTest for AsyncIcqTest {
 
 /// Listen to events on the controller side to assert if the async ICQ is eventually
 /// successful
-fn assert_eventual_async_icq_success<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chains: &ConnectedChains<ChainA, ChainB>,
-    relayer: &RelayerDriver,
+fn assert_eventual_async_icq_success<ChainA: ChainHandle>(
+    chain: &MonoTagged<ChainA, FullNode>,
 ) -> Result<(), Error> {
-    let rpc_addr = match relayer.config.chains.first().unwrap() {
-        ChainConfig::CosmosSdk(c) => c.rpc_addr.clone(),
-    };
-
-    let mut rpc_client = HttpClient::new(rpc_addr).unwrap();
-    rpc_client.set_compat_mode(tendermint_rpc::client::CompatMode::V0_34);
-
     for _ in 0..MAX_RETRIES {
-        if check_events(chains, &rpc_client).is_ok() {
+        if check_events(&chain.chain_driver()).is_ok() {
             return Ok(());
         }
+
         sleep(Duration::from_secs(1));
     }
 
@@ -151,16 +143,11 @@ fn assert_eventual_async_icq_success<ChainA: ChainHandle, ChainB: ChainHandle>(
 }
 
 /// Checks if there is an Oracle event in the given events
-fn check_events<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chains: &ConnectedChains<ChainA, ChainB>,
-    rpc_client: &HttpClient,
-) -> Result<(), Error> {
-    let response = chains
-        .node_a
-        .chain_driver()
+fn check_events<Chain: ChainHandle>(driver: &MonoTagged<Chain, &ChainDriver>) -> Result<(), Error> {
+    let response = driver
         .value()
         .runtime
-        .block_on(rpc_client.latest_block_results())
+        .block_on(driver.rpc_client().unwrap().value().latest_block_results())
         .map_err(|err| Error::generic(eyre!("Failed to fetch block results: {}", err)))?;
 
     if let Some(txs_results) = response.txs_results {
