@@ -152,6 +152,7 @@
         "gaia12-src": "gaia12-src",
         "gaia13-src": "gaia13-src",
         "gaia14-src": "gaia14-src",
+        "gaia15-src": "gaia15-src",
         "gaia5-src": "gaia5-src",
         "gaia6-ordered-src": "gaia6-ordered-src",
         "gaia6-src": "gaia6-src",
@@ -196,7 +197,6 @@
         "slinky-src": "slinky-src",
         "stargaze-src": "stargaze-src",
         "stoml-src": "stoml-src",
-        "stride-consumer-src": "stride-consumer-src",
         "stride-src": "stride-src",
         "umee-src": "umee-src",
         "wasmd-src": "wasmd-src",
@@ -213,11 +213,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1712575879,
-        "narHash": "sha256-GYXUqApWtdkEYW50rRPaVCcEXEkMS/JE1UVacQCgRdg=",
+        "lastModified": 1713267602,
+        "narHash": "sha256-2zfGCgm2wdoCLVTEzxKWXYLjciwpVEukDIpwlA5CnZI=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "2555dd09ad8c2b69281baf30aeb561dd506766f2",
+        "rev": "ffd8ab2cf6a7746f50474c85f097ad426d05c75d",
         "type": "github"
       },
       "original": {
@@ -588,6 +588,23 @@
       "original": {
         "owner": "cosmos",
         "ref": "v14.0.0",
+        "repo": "gaia",
+        "type": "github"
+      }
+    },
+    "gaia15-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1712522710,
+        "narHash": "sha256-2LsF++HkbVpX9h4DgkNea5nnyEuhDQSlNOAICdhAggU=",
+        "owner": "cosmos",
+        "repo": "gaia",
+        "rev": "7281c9b9dc4e3087ee87f5b24e416802b52e8661",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "ref": "v15.2.0",
         "repo": "gaia",
         "type": "github"
       }
@@ -1106,15 +1123,16 @@
     "neutron-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-NuoOlrciBeL2f/A7wlQBqYlYJhSYucXRhLgxdasfyhI=",
+        "lastModified": 1712330928,
+        "narHash": "sha256-3olixILNnkRcNwtpPDqQJ63cYjV5qiVYTM+fJEIH65s=",
         "owner": "neutron-org",
         "repo": "neutron",
-        "rev": "e605ed3db4381994ee8185ba4a0ff0877d34e67f",
+        "rev": "d652580f204231a5d6d76c83a084d7110d981416",
         "type": "github"
       },
       "original": {
         "owner": "neutron-org",
-        "ref": "v2.0.0",
+        "ref": "v3.0.2",
         "repo": "neutron",
         "type": "github"
       }
@@ -1319,11 +1337,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1712543224,
-        "narHash": "sha256-9RSfZL1TKYdGxZwgDxwtBtsKMGR4Zgn+DAnF9s71/lU=",
+        "lastModified": 1713254108,
+        "narHash": "sha256-0TZIsfDbHG5zibtlw6x0yOp3jkInIGaJ35B7Y4G8Pec=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "b0dab7cc34ef4d8a1b2de36178da801090bcb271",
+        "rev": "2fd19c8be2551a61c1ddc3d9f86d748f4db94f00",
         "type": "github"
       },
       "original": {
@@ -1336,16 +1354,16 @@
     "osmosis-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1707262742,
-        "narHash": "sha256-DudppJmGaToUcYVbVA17FVXlev1NuoSY+Jy2c7PpZlY=",
+        "lastModified": 1712687434,
+        "narHash": "sha256-j1PtSv4i/3IV6hUHxxgO/5t9/bfWs28i3D/uVAkf68Q=",
         "owner": "osmosis-labs",
         "repo": "osmosis",
-        "rev": "350901e523815fc34a1de1ca54e9ccd3c4d1f756",
+        "rev": "0021d3812a8c8d2798ab17e58991a677b82e8955",
         "type": "github"
       },
       "original": {
         "owner": "osmosis-labs",
-        "ref": "v22.0.5",
+        "ref": "v24.0.1",
         "repo": "osmosis",
         "type": "github"
       }
@@ -1583,34 +1601,19 @@
         "type": "github"
       }
     },
-    "stride-consumer-src": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-DByig9ISs9x9Kvakc8LFL558VKhM+UBiaESWgyVzI0w=",
-        "owner": "Stride-Labs",
-        "repo": "stride",
-        "rev": "bbf0bb7f52878f3205c76bb1e96662fe7bd7af8d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Stride-Labs",
-        "ref": "v12.1.0",
-        "repo": "stride",
-        "type": "github"
-      }
-    },
     "stride-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-fdjnFHPBZNnhDyVoMuPfqNb6YUYRdcMO73FlZHjIuzA=",
+        "lastModified": 1711572539,
+        "narHash": "sha256-WOoaijuB/Xziw3RMzVcLgR1iDWv72StuLL8K5JzcdlA=",
         "owner": "Stride-Labs",
         "repo": "stride",
-        "rev": "3c69e7644859981b1fd9313eb1f0c5e5886e4a0d",
+        "rev": "093f25e17b1c9fae38a8092f9582af7c84bbaee4",
         "type": "github"
       },
       "original": {
         "owner": "Stride-Labs",
-        "ref": "v8.0.0",
+        "ref": "v21.0.0",
         "repo": "stride",
         "type": "github"
       }

@@ -45,12 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia13
-            command: gaiad
-            account_prefix: cosmos
-            native_token: stake
-            features: forward-packet,clean-workers
-          - package: gaia14
+          - package: gaia15
             command: gaiad
             account_prefix: cosmos
             native_token: stake
@@ -170,63 +165,18 @@ jobs:
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features ordered test_ordered_channel
 
-  interchain-security-no-ica:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        chain:
-          - package: .#gaia13 .#neutron
-            command: gaiad,neutrond
-            account_prefix: cosmos,neutron
-          - package: .#gaia14 .#neutron
-            command: gaiad,neutrond
-            account_prefix: cosmos,neutron
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-        with: 
-          extra-conf: |
-            substituters = https://cache.nixos.org
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-      - name: Install Cachix
-        uses: cachix/cachix-action@v14
-        with: 
-          name: cosmos-nix
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
-      - name: Install cargo-nextest
-        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - env:
-          RUST_LOG: trace
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          NEXTEST_RETRIES: 2
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell ${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-            --features interchain-security interchain_security::
-
   interchain-security-ica:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia13 .#stride-consumer
+          - package: .#gaia15 .#stride
             command: gaiad,strided
             account_prefix: cosmos,stride
-          - package: .#gaia14 .#stride-consumer
-            command: gaiad,strided
-            account_prefix: cosmos,stride
+          - package: .#gaia15 .#neutron
+            command: gaiad,neutrond
+            account_prefix: cosmos,neutron
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
@@ -245,7 +195,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
+          args: -p ibc-integration-test --features interchain-security,ica --no-fail-fast --no-run
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
@@ -266,10 +216,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia13 .#stride-consumer-no-admin
-            command: gaiad,strided
-            account_prefix: cosmos,stride
-          - package: .#gaia14 .#stride-consumer-no-admin
+          - package: .#gaia15 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -310,11 +257,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#celestia .#gaia13
-            command: celestia-appd,gaiad
-            account_prefix: celestia,cosmos
-            native_token: utia,stake
-          - package: .#celestia .#gaia14
+          - package: .#celestia .#gaia15
             command: celestia-appd,gaiad
             account_prefix: celestia,cosmos
             native_token: utia,stake
@@ -343,7 +286,7 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          COMPAT_MODES: 0.34
+          COMPAT_MODES: 0.34,0.37
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
           NATIVE_TOKENS: ${{ matrix.chain.native_token }}
