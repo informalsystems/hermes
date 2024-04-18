@@ -370,10 +370,15 @@ impl ChainBootstrapMethodsExt for ChainDriver {
                 }
                 Err(e) => {
                     let msg = e.to_string();
+
                     if msg.contains(&format!("status:{}", status.as_str())) {
                         Ok(())
                     } else {
-                        Err(Error::generic(eyre!("Error querying proposal `{proposal_id}`. Potential issues could be due to not using enough gas or the proposal submitted is invalid. Error: {e}")))
+                        Err(Error::generic(eyre!(
+                            "Error querying proposal `{proposal_id}`. \
+                            Potential issues could be due to not using enough gas or the proposal submitted is invalid. \
+                            Error: {e}"
+                        )))
                     }
                 }
             },

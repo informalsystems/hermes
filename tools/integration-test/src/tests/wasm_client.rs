@@ -11,6 +11,10 @@ use ibc_test_framework::bootstrap::binary::chain::{
     add_chain_config, bootstrap_foreign_client, new_registry, save_relayer_config,
     spawn_chain_handle,
 };
+use ibc_test_framework::chain::config::{
+    add_allowed_client, set_max_body_bytes, set_max_deposit_period, set_min_deposit_amount,
+    set_voting_period,
+};
 use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use ibc_test_framework::chain::ext::wasm_client::StoreWasmClientCodeMethodsExt;
 use ibc_test_framework::prelude::*;
@@ -68,61 +72,15 @@ impl TestOverrides for CreateAndUpdateWasmClientTest {
     }
 
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        let max_deposit_period = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("gov"))
-            .and_then(|gov| gov.get_mut("params"))
-            .and_then(|deposit_params| deposit_params.as_object_mut())
-            .ok_or_else(|| eyre!("Failed to retrieve `deposit_params` in genesis configuration"))?;
-
-        max_deposit_period
-            .insert(
-                "max_deposit_period".to_owned(),
-                serde_json::Value::String("10s".to_owned()),
-            )
-            .ok_or_else(|| {
-                eyre!("Failed to update `max_deposit_period` in genesis configuration")
-            })?;
-
-        let voting_period = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("gov"))
-            .and_then(|gov| gov.get_mut("params"))
-            .and_then(|voting_params| voting_params.as_object_mut())
-            .ok_or_else(|| eyre!("Failed to retrieve `voting_params` in genesis configuration"))?;
-
-        voting_period
-            .insert(
-                "voting_period".to_owned(),
-                serde_json::Value::String("10s".to_owned()),
-            )
-            .ok_or_else(|| eyre!("Failed to update `voting_period` in genesis configuration"))?;
-
-        let allowed_clients = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("ibc"))
-            .and_then(|ibc| ibc.get_mut("client_genesis"))
-            .and_then(|client_genesis| client_genesis.get_mut("params"))
-            .and_then(|params| params.get_mut("allowed_clients"))
-            .and_then(|allowed_clients| allowed_clients.as_array_mut())
-            .ok_or_else(|| {
-                eyre!("Failed to retrieve `allowed_clients` in genesis configuration")
-            })?;
-
-        allowed_clients.push(serde_json::Value::String("08-wasm".to_string()));
+        set_max_deposit_period(genesis, "10s")?;
+        set_voting_period(genesis, 10)?;
+        add_allowed_client(genesis, "08-wasm")?;
 
         Ok(())
     }
 
     fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
-        config
-            .get_mut("rpc")
-            .and_then(|rpc| rpc.as_table_mut())
-            .ok_or_else(|| eyre!("Failed to retrieve `rpc` in app configuration"))?
-            .insert(
-                "max_body_bytes".to_string(),
-                toml::Value::Integer(10001048576),
-            );
+        set_max_body_bytes(config, 10001048576)?;
 
         Ok(())
     }
