@@ -345,7 +345,7 @@ jobs:
         run: |
           nix shell .#python ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-            --features wasm
+            --features wasm wasm_client
 
   celestia-to-gaia:
     runs-on: ubuntu-20.04
