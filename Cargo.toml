@@ -95,7 +95,7 @@ semver                   = "1.0.21"
 serde                    = "1.0.197"
 serde_derive             = "1.0.104"
 serde_json               = "1.0.115"
-serde_yaml               = "0.9.31"
+serde_yaml               = "0.9.34"
 serial_test              = "3.0.0"
 sha2                     = "0.10.6"
 signal-hook              = "0.3.17"
@@ -115,7 +115,7 @@ tonic                    = "0.10"
 tracing                  = { version = "0.1.36", default-features = false }
 tracing-subscriber       = "0.3.14"
 uint                     = "0.9"
-uuid                     = "1.7.0"
+uuid                     = "1.8.0"
 
 [profile.release]
 overflow-checks = true
