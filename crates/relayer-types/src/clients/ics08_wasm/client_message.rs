@@ -46,7 +46,7 @@ impl TryFrom<RawClientMessage> for ClientMessage {
 
     fn try_from(value: RawClientMessage) -> Result<Self, Self::Error> {
         let any = Any::decode(value.data.as_slice()).map_err(Error::proto_decode)?;
-        let data = AnyHeader::try_from(any).unwrap();
+        let data = AnyHeader::try_from(any)?;
         Ok(ClientMessage {
             data: Box::new(data),
         })

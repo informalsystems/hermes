@@ -19,7 +19,7 @@ define_error! {
 
         ProtoEncode
             [ TraceError<prost::EncodeError> ]
-            | _ | { "Protobuf encoding error error" },
+            | _ | { "Protobuf encoding error" },
 
         ProtoDecode
             [ TraceError<prost::DecodeError> ]
