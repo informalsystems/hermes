@@ -38,7 +38,7 @@ const TM_CREATE_OPTIONS: TendermintCreateOptions = TendermintCreateOptions {
 
 fn wasm_options() -> CreateOptions {
     let wasm_code = std::fs::read(WASM_PATH).unwrap();
-    let checksum = sha2::Sha256::digest(&wasm_code);
+    let checksum = sha2::Sha256::digest(wasm_code);
 
     WasmCreateOptions {
         checksum: checksum.to_vec(),
