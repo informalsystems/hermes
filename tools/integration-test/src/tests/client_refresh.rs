@@ -53,7 +53,7 @@ impl BinaryChainTest for ClientDefaultsTest {
     ) -> Result<(), Error> {
         let mut client_a_to_b = chains.foreign_clients.client_a_to_b;
         let mut client_b_to_a = chains.foreign_clients.client_b_to_a;
-        let res = client_a_to_b.refresh(false);
+        let res = client_a_to_b.refresh();
         // Check that `refresh()` was successful but did not update the client, as elapsed < refresh_window.
         match res {
             Ok(ibc_events) => assert!(
@@ -62,7 +62,7 @@ impl BinaryChainTest for ClientDefaultsTest {
             ),
             Err(_) => panic!("Client refresh failed: {res:?}"),
         }
-        let res = client_b_to_a.refresh(false);
+        let res = client_b_to_a.refresh();
         // Check that `refresh()` was successful but did not update the client, as elapsed < refresh_window.
         match res {
             Ok(ibc_events) => assert!(
@@ -75,7 +75,7 @@ impl BinaryChainTest for ClientDefaultsTest {
         // Wait for elapsed > refresh_window
         std::thread::sleep(core::time::Duration::from_secs(40));
 
-        let res = client_a_to_b.refresh(false);
+        let res = client_a_to_b.refresh();
         // Check that `refresh()` was successful and update client was successful, as elapsed > refresh_window.
         match res {
             Ok(ibc_events) => assert!(
@@ -84,7 +84,7 @@ impl BinaryChainTest for ClientDefaultsTest {
             ),
             Err(_) => panic!("Client refresh failed: {res:?}"),
         }
-        let res = client_b_to_a.refresh(false);
+        let res = client_b_to_a.refresh();
         // Check that `refresh()` was successful and update client was successful, as elapsed > refresh_window.
         match res {
             Ok(ibc_events) => assert!(
@@ -148,13 +148,13 @@ impl BinaryChainTest for ClientFailsTest {
         // Wait for elapsed > refresh_window
         std::thread::sleep(core::time::Duration::from_secs(45));
 
-        let res = client_a_to_b.refresh(false);
+        let res = client_a_to_b.refresh();
         // Assert that `refresh()` returns an error as the update client will fail due to the low `gas_multiplier`.
         assert!(
             res.is_err(),
             "Client refresh should return an Error {res:?}"
         );
-        let res = client_b_to_a.refresh(false);
+        let res = client_b_to_a.refresh();
         // Assert that `refresh()` returns an error as the update client will fail due to the low `gas_multiplier`.
         assert!(
             res.is_err(),

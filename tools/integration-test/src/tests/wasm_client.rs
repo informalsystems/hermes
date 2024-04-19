@@ -106,13 +106,13 @@ impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
             bootstrap_foreign_client(&chain_b, &chain_a, overrides.client_options_b_to_a())?;
 
         info!("Refreshing client A to B...");
-        let res = client_a_to_b.refresh(true);
+        let res = client_a_to_b.force_refresh();
 
         assert_client_refreshed(true, res);
         info!("Client A to B was refreshed successfully");
 
         info!("Refreshing client B to A...");
-        let res = client_b_to_a.refresh(true);
+        let res = client_b_to_a.force_refresh();
 
         assert_client_refreshed(true, res);
         info!("Client B to A was refreshed successfully");

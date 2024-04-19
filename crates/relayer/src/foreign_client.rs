@@ -902,29 +902,29 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         skip_all,
         fields(client = %self)
     )]
-    pub fn refresh(&mut self, force: bool) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
-        fn check_no_errors(
-            ibc_events: &[IbcEvent],
-            dst_chain_id: ChainId,
-        ) -> Result<(), ForeignClientError> {
-            // The assumption is that only one IbcEventType::ChainError will be
-            // in the resulting Vec<IbcEvent> if an error occurred.
-            let chain_error = ibc_events
-                .iter()
-                .find(|&e| e.event_type() == IbcEventType::ChainError);
+    pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+        if let Some(events) = self.try_refresh(false)? {
+            check_no_errors(&events, self.dst_chain().id())?;
 
-            match chain_error {
-                None => Ok(()),
-                Some(ev) => Err(ForeignClientError::chain_error_event(
-                    dst_chain_id,
-                    ev.to_owned(),
-                )),
-            }
+            Ok(Some(events))
+        } else {
+            Ok(None)
         }
+    }
 
-        // If `!force && elapsed < refresh_window` for the client,
-        // `try_refresh()` will be successful with an empty vector.
-        if let Some(events) = self.try_refresh(force)? {
+    #[instrument(
+        name = "foreign_client.force_refresh",
+        level = "error",
+        skip_all,
+        fields(client = %self)
+    )]
+    pub fn force_refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+        if let Some(events) = self.try_refresh(true)? {
+            if events.is_empty() {
+                warn!("no events emitted after forced client refresh");
+                return Ok(None);
+            }
+
             check_no_errors(&events, self.dst_chain().id())?;
             Ok(Some(events))
         } else {
@@ -954,10 +954,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let elapsed = elapsed.unwrap_or_default();
 
         if force || elapsed > refresh_period {
-            info!(?elapsed, ?refresh_period, "client needs to be refreshed");
+            info!(
+                ?elapsed,
+                ?refresh_period,
+                ?force,
+                "refreshing client, will send a client update"
+            );
 
-            self.build_latest_update_client_and_send()
-                .map_or_else(Err, |ev| Ok(Some(ev)))
+            self.build_latest_update_client_and_send().map(Some)
         } else {
             Ok(None)
         }
@@ -1957,6 +1961,25 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
         IbcEvent::UpdateClient(ev) => Ok(ev.client_id()),
         _ => Err(ForeignClientError::missing_client_id_from_event(
             event.clone(),
+        )),
+    }
+}
+
+fn check_no_errors(
+    ibc_events: &[IbcEvent],
+    dst_chain_id: ChainId,
+) -> Result<(), ForeignClientError> {
+    // The assumption is that only one IbcEventType::ChainError will be
+    // in the resulting Vec<IbcEvent> if an error occurred.
+    let chain_error = ibc_events
+        .iter()
+        .find(|&e| e.event_type() == IbcEventType::ChainError);
+
+    match chain_error {
+        None => Ok(()),
+        Some(ev) => Err(ForeignClientError::chain_error_event(
+            dst_chain_id,
+            ev.to_owned(),
         )),
     }
 }
