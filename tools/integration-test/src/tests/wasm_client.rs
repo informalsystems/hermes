@@ -32,7 +32,7 @@ const WASM_PATH: &str = "fixtures/wasm/ibc_client_tendermint_cw.wasm";
 
 const TM_CREATE_OPTIONS: TendermintCreateOptions = TendermintCreateOptions {
     max_clock_drift: Some(Duration::from_secs(3)),
-    trusting_period: Some(Duration::from_secs(60)),
+    trusting_period: Some(Duration::from_secs(30)),
     trust_threshold: Some(TrustThreshold::TWO_THIRDS),
 };
 
