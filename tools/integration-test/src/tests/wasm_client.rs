@@ -2,6 +2,8 @@ use core::time::Duration;
 use std::path::Path;
 use std::thread::sleep;
 
+use sha2::Digest;
+
 use ibc_relayer::foreign_client::{
     CreateOptions, ForeignClientError, TendermintCreateOptions, WasmCreateOptions,
 };
@@ -34,36 +36,26 @@ const TM_CREATE_OPTIONS: TendermintCreateOptions = TendermintCreateOptions {
     trust_threshold: Some(TrustThreshold::TWO_THIRDS),
 };
 
-fn sha256(data: &[u8]) -> Vec<u8> {
-    use sha2::Digest;
-    let mut hasher = sha2::Sha256::new();
-    hasher.update(data);
-    hasher.finalize().to_vec()
+fn wasm_options() -> CreateOptions {
+    let wasm_code = std::fs::read(WASM_PATH).unwrap();
+    let checksum = sha2::Sha256::digest(&wasm_code);
+
+    WasmCreateOptions {
+        checksum: checksum.to_vec(),
+        underlying: TM_CREATE_OPTIONS.into(),
+    }
+    .into()
 }
 
 struct CreateAndUpdateWasmClientTest;
 
 impl TestOverrides for CreateAndUpdateWasmClientTest {
     fn client_options_a_to_b(&self) -> CreateOptions {
-        let wasm_code = std::fs::read(WASM_PATH).unwrap();
-        let checksum = sha256(&wasm_code);
-
-        WasmCreateOptions {
-            checksum,
-            underlying: TM_CREATE_OPTIONS.into(),
-        }
-        .into()
+        wasm_options()
     }
 
     fn client_options_b_to_a(&self) -> CreateOptions {
-        let wasm_code = std::fs::read(WASM_PATH).unwrap();
-        let checksum = sha256(&wasm_code);
-
-        WasmCreateOptions {
-            checksum,
-            underlying: TM_CREATE_OPTIONS.into(),
-        }
-        .into()
+        wasm_options()
     }
 
     fn should_spawn_supervisor(&self) -> bool {
