@@ -520,6 +520,10 @@ define_error! {
             { address: String }
             |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) },
 
+        EmptyProposal
+            { proposal_id: String }
+            |e| { format!("Query/Proposal RPC returned an empty proposal for proposal id: {}", e.proposal_id) },
+
         NoHistoricalEntries
             { chain_id: ChainId }
             |e| {

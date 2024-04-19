@@ -1,5 +1,6 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
 
+use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
 use ibc_relayer_types::core::ics02_client::height::HeightErrorDetail;
 use ibc_relayer_types::core::ics04_channel::error::Error;
 use ibc_relayer_types::core::ics04_channel::events::{
@@ -13,6 +14,7 @@ use ibc_relayer_types::core::ics04_channel::events::{
 use ibc_relayer_types::core::ics04_channel::events::{ReceivePacket, TimeoutOnClosePacket};
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::Error as EventError;
 use ibc_relayer_types::Height;
 
@@ -221,6 +223,28 @@ impl TryFrom<RawObject<'_>> for Packet {
             )?
             .parse()
             .map_err(EventError::timestamp)?,
+        })
+    }
+}
+
+impl TryFrom<RawObject<'_>> for CrossChainQueryPacket {
+    type Error = EventError;
+
+    fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
+        Ok(Self {
+            module: extract_attribute(&obj, &format!("{}.module", obj.action))?,
+            action: extract_attribute(&obj, &format!("{}.action", obj.action))?,
+            query_id: extract_attribute(&obj, &format!("{}.query_id", obj.action))?,
+            chain_id: extract_attribute(&obj, &format!("{}.chain_id", obj.action))
+                .map(|s| ChainId::from_string(&s))?,
+            connection_id: extract_attribute(&obj, &format!("{}.connection_id", obj.action))?
+                .parse()
+                .map_err(EventError::parse)?,
+            query_type: extract_attribute(&obj, &format!("{}.type", obj.action))?,
+            request: extract_attribute(&obj, &format!("{}.request", obj.action))?,
+            height: extract_attribute(&obj, &format!("{}.height", obj.action))?
+                .parse()
+                .map_err(|_| EventError::height())?,
         })
     }
 }

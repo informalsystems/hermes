@@ -293,7 +293,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         let raw_proposal = r#"
         {
             "title": "Create consumer chain",
-            "description": "First consumer chain",
+            "summary": "First consumer chain",
             "chain_id": "{consumer_chain_id}",
             "initial_height": {
                 "revision_number": 1,

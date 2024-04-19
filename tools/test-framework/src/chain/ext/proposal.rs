@@ -200,10 +200,10 @@ pub async fn query_upgrade_proposal_height(
         .map(|r| r.into_inner())
         .map_err(|e| RelayerError::grpc_status(e, "query_upgrade_proposal_height".to_owned()))?;
 
-    // Querying for a balance might fail, i.e. if the account doesn't actually exist
+    // Querying for proposal might not exist if the proposal id is incorrect
     let proposal = response
         .proposal
-        .ok_or_else(|| RelayerError::empty_query_account(proposal_id.to_string()))?;
+        .ok_or_else(|| RelayerError::empty_proposal(proposal_id.to_string()))?;
 
     let proposal_content = proposal
         .content
