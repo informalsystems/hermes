@@ -167,7 +167,7 @@ pub fn channel_connection_client_no_checks(
                 channel_id: channel_id.clone(),
                 height: QueryHeight::Latest,
             },
-            IncludeProof::No,
+            IncludeProof::Yes,
         )
         .map_err(Error::relayer)?;
 

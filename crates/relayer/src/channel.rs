@@ -460,7 +460,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                         channel_id: id.clone(),
                         height: QueryHeight::Latest,
                     },
-                    IncludeProof::No,
+                    IncludeProof::Yes,
                 )
                 .map(|(channel_end, _)| channel_end)
                 .map_err(|e| ChannelError::chain_query(self.a_chain().id(), e))
@@ -818,7 +818,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             (State::Flushcomplete, State::Open(UpgradeState::NotUpgrading)) => {
                 // Check if error
                 let height = self.b_chain().query_latest_height().unwrap();
-                let (upgrade_error, _) = self
+                let upgrade_error = self
                     .b_chain()
                     .query_upgrade_error(
                         QueryUpgradeErrorRequest {
@@ -827,10 +827,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                         },
                         height,
                     )
-                    .map_err(|_| ChannelError::missing_upgrade_error_receipt_proof())?;
+                    .map_err(|_| ChannelError::missing_upgrade_error_receipt_proof());
 
-                if upgrade_error.sequence > 0.into() {
-                    Some(self.flipped().build_chan_upgrade_cancel_and_send()?)
+                let channel_end = self.a_channel(self.a_channel_id())?;
+
+                if let Ok((upgrade_error, _)) = upgrade_error {
+                    if upgrade_error.sequence == channel_end.upgrade_sequence {
+                        Some(self.flipped().build_chan_upgrade_cancel_and_send()?)
+                    } else {
+                        Some(self.flipped().build_chan_upgrade_open_and_send()?)
+                    }
                 } else {
                     Some(self.flipped().build_chan_upgrade_open_and_send()?)
                 }
@@ -838,7 +844,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             (State::Open(UpgradeState::NotUpgrading), State::Flushcomplete) => {
                 // Check if error query_upgrade_error
                 let height = self.a_chain().query_latest_height().unwrap();
-                let (upgrade_error, _) = self
+                let upgrade_error = self
                     .a_chain()
                     .query_upgrade_error(
                         QueryUpgradeErrorRequest {
@@ -847,10 +853,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                         },
                         height,
                     )
-                    .map_err(|_| ChannelError::missing_upgrade_error_receipt_proof())?;
+                    .map_err(|_| ChannelError::missing_upgrade_error_receipt_proof());
 
-                if upgrade_error.sequence > 0.into() {
-                    Some(self.build_chan_upgrade_cancel_and_send()?)
+                let channel_end = self.b_channel(self.b_channel_id())?;
+
+                if let Ok((upgrade_error, _)) = upgrade_error {
+                    if upgrade_error.sequence > 0.into()
+                        && upgrade_error.sequence == channel_end.upgrade_sequence
+                    {
+                        Some(self.build_chan_upgrade_cancel_and_send()?)
+                    } else {
+                        Some(self.build_chan_upgrade_open_and_send()?)
+                    }
                 } else {
                     Some(self.build_chan_upgrade_open_and_send()?)
                 }

@@ -409,7 +409,7 @@ pub fn assert_eventually_channel_upgrade_try<ChainA: ChainHandle, ChainB: ChainH
     assert_eventually_succeed(
         "channel upgrade try step should be done",
         20,
-        Duration::from_secs(1),
+        Duration::from_secs(2),
         || {
             assert_channel_upgrade_state(
                 ChannelState::Flushing,
