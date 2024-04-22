@@ -1,0 +1,202 @@
+use core::time::Duration;
+use std::path::Path;
+use std::thread::sleep;
+
+use sha2::Digest;
+
+use ibc_relayer::foreign_client::{
+    CreateOptions, ForeignClientError, TendermintCreateOptions, WasmCreateOptions,
+};
+use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
+use ibc_relayer_types::events::IbcEvent;
+use ibc_test_framework::bootstrap::binary::chain::{
+    add_chain_config, bootstrap_foreign_client, new_registry, save_relayer_config,
+    spawn_chain_handle,
+};
+use ibc_test_framework::chain::config::{
+    add_allowed_client, set_max_body_bytes, set_max_deposit_period, set_voting_period,
+};
+use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
+use ibc_test_framework::chain::ext::wasm_client::StoreWasmClientCodeMethodsExt;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::types::binary::chains::DropChainHandle;
+use ibc_test_framework::types::env::write_env;
+use ibc_test_framework::util::proposal_status::ProposalStatus;
+
+#[test]
+fn test_create_and_update_wasm_client() -> Result<(), Error> {
+    run_binary_node_test(&CreateAndUpdateWasmClientTest)
+}
+
+const WASM_PATH: &str = "fixtures/wasm/ibc_client_tendermint_cw.wasm";
+
+const TM_CREATE_OPTIONS: TendermintCreateOptions = TendermintCreateOptions {
+    max_clock_drift: Some(Duration::from_secs(3)),
+    trusting_period: Some(Duration::from_secs(30)),
+    trust_threshold: Some(TrustThreshold::TWO_THIRDS),
+};
+
+fn wasm_options() -> CreateOptions {
+    let wasm_code = std::fs::read(WASM_PATH).unwrap();
+    let checksum = sha2::Sha256::digest(wasm_code);
+
+    WasmCreateOptions {
+        checksum: checksum.to_vec(),
+        underlying: TM_CREATE_OPTIONS.into(),
+    }
+    .into()
+}
+
+struct CreateAndUpdateWasmClientTest;
+
+impl TestOverrides for CreateAndUpdateWasmClientTest {
+    fn client_options_a_to_b(&self) -> CreateOptions {
+        wasm_options()
+    }
+
+    fn client_options_b_to_a(&self) -> CreateOptions {
+        wasm_options()
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
+        set_max_deposit_period(genesis, "10s")?;
+        set_voting_period(genesis, 10)?;
+        add_allowed_client(genesis, "08-wasm")?;
+
+        Ok(())
+    }
+
+    fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
+        set_max_body_bytes(config, 10001048576)?;
+
+        Ok(())
+    }
+}
+
+impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
+    fn run(
+        &self,
+        test_config: &TestConfig,
+        node_a: FullNode,
+        node_b: FullNode,
+    ) -> Result<(), Error> {
+        let (chain_a, chain_b) = setup_chains(test_config, &node_a, &node_b)?;
+
+        let _drop_handle_a = DropChainHandle(chain_a.clone());
+        let _drop_handle_b = DropChainHandle(chain_b.clone());
+
+        info!("Storing Wasm contract on chain A");
+        store_wasm_contract(node_a, test_config)?;
+
+        info!("Storing Wasm contract on chain B");
+        store_wasm_contract(node_b, test_config)?;
+
+        let overrides = self.get_overrides();
+
+        info!("Creating client A to B");
+        let mut client_a_to_b =
+            bootstrap_foreign_client(&chain_a, &chain_b, overrides.client_options_a_to_b())?;
+
+        info!("Creating client B to A");
+        let mut client_b_to_a =
+            bootstrap_foreign_client(&chain_b, &chain_a, overrides.client_options_b_to_a())?;
+
+        info!("Refreshing client A to B...");
+        let res = client_a_to_b.force_refresh();
+
+        assert_client_refreshed(true, res);
+        info!("Client A to B was refreshed successfully");
+
+        info!("Refreshing client B to A...");
+        let res = client_b_to_a.force_refresh();
+
+        assert_client_refreshed(true, res);
+        info!("Client B to A was refreshed successfully");
+
+        Ok(())
+    }
+}
+
+fn store_wasm_contract(node_a: FullNode, test_config: &TestConfig) -> Result<(), Error> {
+    node_a
+        .chain_driver
+        .store_wasm_client_code(Path::new(WASM_PATH), "tmp", "tmp", "validator")?;
+
+    node_a
+        .chain_driver
+        .assert_proposal_status(ProposalStatus::DepositPeriod, "1")?;
+
+    node_a
+        .chain_driver
+        .deposit_proposal("1", "100000000stake")?;
+
+    node_a
+        .chain_driver
+        .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
+
+    let fee_denom_a = &test_config.native_tokens[0];
+    node_a
+        .chain_driver
+        .vote_proposal("1", &format!("381000000{}", fee_denom_a))?;
+
+    node_a
+        .chain_driver
+        .assert_proposal_status(ProposalStatus::Passed, "1")?;
+
+    Ok(())
+}
+
+fn setup_chains(
+    test_config: &TestConfig,
+    node_a: &FullNode,
+    node_b: &FullNode,
+) -> Result<(impl ChainHandle, impl ChainHandle), Error> {
+    let env_path = test_config.chain_store_dir.join("binary-chains.env");
+
+    let mut config = Config::default();
+
+    add_chain_config(&mut config, node_a, test_config, 0)?;
+    add_chain_config(&mut config, node_b, test_config, 1)?;
+
+    let config_path = test_config.chain_store_dir.join("relayer-config.toml");
+    save_relayer_config(&config, &config_path)?;
+
+    let registry = new_registry(config.clone());
+    let chain_a = spawn_chain_handle(|| {}, &registry, node_a)?;
+    let chain_b = spawn_chain_handle(|| {}, &registry, node_b)?;
+
+    sleep(Duration::from_secs(10));
+
+    let relayer = RelayerDriver {
+        config_path,
+        config,
+        registry,
+        hang_on_fail: test_config.hang_on_fail,
+    };
+
+    write_env(&env_path, &relayer)?;
+    info!("written chains environment to {}", env_path.display());
+
+    Ok((chain_a, chain_b))
+}
+
+fn assert_client_refreshed(
+    refreshed: bool,
+    res: Result<Option<Vec<IbcEvent>>, ForeignClientError>,
+) {
+    match res {
+        Ok(ibc_events) if refreshed => assert!(
+            ibc_events.is_some(),
+            "Client was unexpectedly not refreshed: {ibc_events:?}"
+        ),
+        Ok(ibc_events) => assert!(
+            ibc_events.is_none(),
+            "Client was unexpectedly refreshed: {ibc_events:?}"
+        ),
+        Err(e) => panic!("Client refresh failed: {e:?}"),
+    }
+}

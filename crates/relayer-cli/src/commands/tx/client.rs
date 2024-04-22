@@ -6,10 +6,9 @@ use std::thread;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use subtle_encoding::hex;
 
-use ibc_relayer::config::Config;
-use ibc_relayer::event::IbcEventWithHeight;
-use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
+use ibc_relayer::foreign_client::{CreateOptions, ForeignClient, WasmUnderlyingCreateOptions};
 use ibc_relayer::{chain::handle::ChainHandle, config::GenesisRestart};
 use ibc_relayer::{
     chain::requests::{
@@ -17,6 +16,8 @@ use ibc_relayer::{
     },
     config::ChainConfig,
 };
+use ibc_relayer::{config::Config, foreign_client::TendermintCreateOptions};
+use ibc_relayer::{event::IbcEventWithHeight, foreign_client::WasmCreateOptions};
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height;
@@ -75,6 +76,13 @@ pub struct TxCreateClientCmd {
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
     #[clap(long = "trust-threshold", value_name = "TRUST_THRESHOLD", parse(try_from_str = parse_trust_threshold))]
     trust_threshold: Option<TrustThreshold>,
+
+    /// The hex-encoded SHA256 checksum of the WASM contract that backs this client.
+    /// If specified, the client will be created as an ICS 08 Wasm client.
+    /// Otherwise, the client will be created as an ICS 07 Tendermint client.
+    /// Only Wasm clients wrapping an ICS 07 Tendermint client are supported.
+    #[clap(long = "wasm-checksum", value_name = "WASM_CHECKSUM")]
+    wasm_checksum: Option<String>,
 }
 
 /// Sample to run this tx:
@@ -94,10 +102,24 @@ impl Runnable for TxCreateClientCmd {
 
         let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
 
-        let options = CreateOptions {
+        let tm_options = TendermintCreateOptions {
             max_clock_drift: self.clock_drift.map(Into::into),
             trusting_period: self.trusting_period.map(Into::into),
             trust_threshold: self.trust_threshold.map(Into::into),
+        };
+
+        let options = match &self.wasm_checksum {
+            None => CreateOptions::Tendermint(tm_options),
+            Some(checksum) => {
+                let checksum = hex::decode(checksum).unwrap_or_else(|e| {
+                    Output::error(format!("invalid WASM checksum: {e}")).exit()
+                });
+
+                CreateOptions::Wasm(WasmCreateOptions {
+                    checksum,
+                    underlying: WasmUnderlyingCreateOptions::Tendermint(tm_options),
+                })
+            }
         };
 
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
@@ -643,7 +665,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("reference_chain"),
                 clock_drift: None,
                 trusting_period: None,
-                trust_threshold: None
+                trust_threshold: None,
+                wasm_checksum: None,
             },
             TxCreateClientCmd::parse_from([
                 "test",
@@ -663,7 +686,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("reference_chain"),
                 clock_drift: Some("5s".parse::<Duration>().unwrap()),
                 trusting_period: None,
-                trust_threshold: None
+                trust_threshold: None,
+                wasm_checksum: None,
             },
             TxCreateClientCmd::parse_from([
                 "test",
@@ -681,7 +705,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("reference_chain"),
                 clock_drift: Some("3s".parse::<Duration>().unwrap()),
                 trusting_period: None,
-                trust_threshold: None
+                trust_threshold: None,
+                wasm_checksum: None,
             },
             TxCreateClientCmd::parse_from([
                 "test",
@@ -703,7 +728,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("reference_chain"),
                 clock_drift: None,
                 trusting_period: Some("5s".parse::<Duration>().unwrap()),
-                trust_threshold: None
+                trust_threshold: None,
+                wasm_checksum: None,
             },
             TxCreateClientCmd::parse_from([
                 "test",
@@ -721,7 +747,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("reference_chain"),
                 clock_drift: None,
                 trusting_period: Some("3s".parse::<Duration>().unwrap()),
-                trust_threshold: None
+                trust_threshold: None,
+                wasm_checksum: None,
             },
             TxCreateClientCmd::parse_from([
                 "test",
@@ -743,7 +770,8 @@ mod tests {
                 src_chain_id: ChainId::from_string("reference_chain"),
                 clock_drift: None,
                 trusting_period: None,
-                trust_threshold: Some(TrustThreshold::new(1, 2).unwrap())
+                trust_threshold: Some(TrustThreshold::new(1, 2).unwrap()),
+                wasm_checksum: None,
             },
             TxCreateClientCmd::parse_from([
                 "test",
@@ -765,7 +793,10 @@ mod tests {
                 src_chain_id: ChainId::from_string("reference_chain"),
                 clock_drift: Some("5s".parse::<Duration>().unwrap()),
                 trusting_period: Some("3s".parse::<Duration>().unwrap()),
-                trust_threshold: Some(TrustThreshold::new(1, 2).unwrap())
+                trust_threshold: Some(TrustThreshold::new(1, 2).unwrap()),
+                wasm_checksum: Some(
+                    "d9014c4624844aa5bac314773d6b689ad467fa4e1d1a50a1b8a99d5a95f72ff5".to_string()
+                ),
             },
             TxCreateClientCmd::parse_from([
                 "test",
@@ -778,7 +809,9 @@ mod tests {
                 "--trusting-period",
                 "3s",
                 "--trust-threshold",
-                "1/2"
+                "1/2",
+                "--wasm-checksum",
+                "d9014c4624844aa5bac314773d6b689ad467fa4e1d1a50a1b8a99d5a95f72ff5"
             ])
         )
     }

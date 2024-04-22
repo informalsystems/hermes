@@ -99,14 +99,9 @@ impl BinaryChainTest for ClientUpgradeTest {
 
         let driver = chains.node_a.chain_driver();
 
-        driver.value().assert_proposal_status(
-            driver.value().chain_id.as_str(),
-            &driver.value().command_path,
-            &driver.value().home_path,
-            &driver.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "1",
-        )?;
+        driver
+            .value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
 
         // Retrieve the height which should be used to upgrade the client
         let upgrade_height = driver.query_upgrade_proposal_height(
@@ -121,18 +116,13 @@ impl BinaryChainTest for ClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal("1", &fee_denom_a.with_amount(381000000u64).to_string())?;
 
         info!("Assert that the chain upgrade proposal is eventually passed");
 
-        driver.value().assert_proposal_status(
-            driver.value().chain_id.as_str(),
-            &driver.value().command_path,
-            &driver.value().home_path,
-            &driver.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            "1",
-        )?;
+        driver
+            .value()
+            .assert_proposal_status(ProposalStatus::Passed, "1")?;
 
         // Wait for the chain to upgrade
         std::thread::sleep(WAIT_CHAIN_UPGRADE);
@@ -156,6 +146,9 @@ impl BinaryChainTest for ClientUpgradeTest {
             AnyClientState::Tendermint(client_state) => {
                 assert_eq!(client_state.chain_id, upgraded_chain_id);
                 Ok(())
+            }
+            other => {
+                panic!("Unsupported client state: {other:?}");
             }
         }
     }
@@ -210,6 +203,9 @@ impl BinaryChainTest for InvalidClientUpgradeTest {
                 assert_eq!(client_state.chain_id, chains.handle_a().id());
                 Ok(())
             }
+            other => {
+                panic!("Unsupported client state: {other:?}");
+            }
         }
     }
 }
@@ -245,14 +241,9 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
 
         let driver = chains.node_a.chain_driver();
 
-        driver.value().assert_proposal_status(
-            driver.value().chain_id.as_str(),
-            &driver.value().command_path,
-            &driver.value().home_path,
-            &driver.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "1",
-        )?;
+        driver
+            .value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
 
         // Retrieve the height which should be used to upgrade the client
         let upgrade_height = driver.query_upgrade_proposal_height(
@@ -267,21 +258,16 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal("1", &fee_denom_a.with_amount(381000000u64).to_string())?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         client_upgrade_height.increment();
 
         info!("Assert that the chain upgrade proposal is eventually passed");
 
-        driver.value().assert_proposal_status(
-            driver.value().chain_id.as_str(),
-            &driver.value().command_path,
-            &driver.value().home_path,
-            &driver.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            "1",
-        )?;
+        driver
+            .value()
+            .assert_proposal_status(ProposalStatus::Passed, "1")?;
 
         // Wait for the chain to upgrade
         std::thread::sleep(WAIT_CHAIN_UPGRADE);
@@ -307,6 +293,9 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
             AnyClientState::Tendermint(client_state) => {
                 assert_eq!(client_state.chain_id, chains.handle_a().id());
                 Ok(())
+            }
+            other => {
+                panic!("Unsupported client state: {other:?}");
             }
         }
     }
@@ -342,14 +331,9 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
 
         let driver = chains.node_a.chain_driver();
 
-        driver.value().assert_proposal_status(
-            driver.value().chain_id.as_str(),
-            &driver.value().command_path,
-            &driver.value().home_path,
-            &driver.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "1",
-        )?;
+        driver
+            .value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
 
         // Retrieve the height which should be used to upgrade the client
         let upgrade_height = driver.query_upgrade_proposal_height(
@@ -364,7 +348,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal("1", &fee_denom_a.with_amount(381000000u64).to_string())?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         client_upgrade_height
@@ -373,14 +357,9 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
 
         info!("Assert that the chain upgrade proposal is eventually passed");
 
-        driver.value().assert_proposal_status(
-            driver.value().chain_id.as_str(),
-            &driver.value().command_path,
-            &driver.value().home_path,
-            &driver.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            "1",
-        )?;
+        driver
+            .value()
+            .assert_proposal_status(ProposalStatus::Passed, "1")?;
 
         // Wait for the chain to upgrade
         std::thread::sleep(WAIT_CHAIN_UPGRADE);
@@ -408,6 +387,9 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
             AnyClientState::Tendermint(client_state) => {
                 assert_eq!(client_state.chain_id, chains.handle_a().id());
                 Ok(())
+            }
+            other => {
+                panic!("Unsupported client state: {other:?}");
             }
         }
     }

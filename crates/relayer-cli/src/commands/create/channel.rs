@@ -10,7 +10,7 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::channel::Channel;
 use ibc_relayer::config::default::connection_delay;
 use ibc_relayer::connection::Connection;
-use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::version::Version;
@@ -185,10 +185,16 @@ impl CreateChannelCommand {
             self.order
         );
 
-        let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
-            .unwrap_or_else(exit_with_unrecoverable_error);
-        let client_b = ForeignClient::new(chains.dst.clone(), chains.src)
-            .unwrap_or_else(exit_with_unrecoverable_error);
+        let client_a = ForeignClient::create(
+            chains.src.clone(),
+            chains.dst.clone(),
+            CreateOptions::default(),
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
+
+        let client_b =
+            ForeignClient::create(chains.dst.clone(), chains.src, CreateOptions::default())
+                .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the connection.
         let con = Connection::new(client_a, client_b, connection_delay())

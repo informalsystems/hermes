@@ -9,3 +9,4 @@ pub mod proposal;
 pub mod transfer;
 pub mod version;
 pub mod wait_chain;
+pub mod wasm_client;

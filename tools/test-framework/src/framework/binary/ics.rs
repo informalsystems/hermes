@@ -4,12 +4,11 @@ use crate::bootstrap::consumer::bootstrap_consumer_node;
 use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
 use crate::chain::chain_type::ChainType;
-use crate::chain::cli::upgrade::vote_proposal;
 use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use crate::error::Error;
 use crate::framework::base::{run_basic_test, BasicTest, HasOverrides, TestConfigOverride};
 use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
-use crate::prelude::FullNode;
+use crate::prelude::{ChainProposalMethodsExt, FullNode};
 use crate::types::config::TestConfig;
 use crate::util::proposal_status::ProposalStatus;
 
@@ -75,31 +74,15 @@ where
             .chain_driver
             .submit_consumer_chain_proposal(chain_id.as_str(), "2023-05-31T12:09:47.048227Z")?;
 
-        node_a.chain_driver.assert_proposal_status(
-            node_a.chain_driver.chain_id.as_str(),
-            &node_a.chain_driver.command_path,
-            &node_a.chain_driver.home_path,
-            &node_a.chain_driver.rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "1",
-        )?;
+        node_a
+            .chain_driver
+            .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
 
-        vote_proposal(
-            node_a.chain_driver.chain_id.as_str(),
-            &node_a.chain_driver.command_path,
-            &node_a.chain_driver.home_path,
-            &node_a.chain_driver.rpc_listen_address(),
-            &provider_fee,
-        )?;
+        node_a.chain_driver.vote_proposal("1", &provider_fee)?;
 
-        node_a.chain_driver.assert_proposal_status(
-            node_a.chain_driver.chain_id.as_str(),
-            &node_a.chain_driver.command_path,
-            &node_a.chain_driver.home_path,
-            &node_a.chain_driver.rpc_listen_address(),
-            ProposalStatus::Passed,
-            "1",
-        )?;
+        node_a
+            .chain_driver
+            .assert_proposal_status(ProposalStatus::Passed, "1")?;
 
         let node_b = bootstrap_consumer_node(
             builder,
