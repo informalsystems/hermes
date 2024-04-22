@@ -200,7 +200,6 @@
         "stride-src": "stride-src",
         "umee-src": "umee-src",
         "wasmd-src": "wasmd-src",
-        "wasmd_next-src": "wasmd_next-src",
         "wasmvm_1-src": "wasmvm_1-src",
         "wasmvm_1_1_1-src": "wasmvm_1_1_1-src",
         "wasmvm_1_1_2-src": "wasmvm_1_1_2-src",
@@ -213,11 +212,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1713760054,
-        "narHash": "sha256-Qsx6/C0AlUldU98RjKt3d+KHVGUBmfirynq1ldvWZeU=",
+        "lastModified": 1713771294,
+        "narHash": "sha256-vBfFaW06np8dtxq1lNmo2zA26/8kf82g2CMEhgyqxw4=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "47a6d6d4d40d9770b23147951635bef0ac5507c5",
+        "rev": "e68f2d5e7121c10e956fda7f6c0a564becd3a7e0",
         "type": "github"
       },
       "original": {
@@ -1726,31 +1725,16 @@
     "wasmd-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-F0p555FEeA405tuLn82yUEbRZpJLs85GrUKvSrjTdjk=",
+        "lastModified": 1700749637,
+        "narHash": "sha256-rKbuaWcRdHXSI+acHrx/hCdGOx5prPd+Dmng4BVrhzs=",
         "owner": "CosmWasm",
         "repo": "wasmd",
-        "rev": "a347ace2ff41539fe06c68168bc6f28d6ca9fa52",
+        "rev": "7ea00e2ea858ed599141e322bd68171998a3259a",
         "type": "github"
       },
       "original": {
         "owner": "CosmWasm",
-        "ref": "v0.30.0",
-        "repo": "wasmd",
-        "type": "github"
-      }
-    },
-    "wasmd_next-src": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-b+6XhBdKyQlrzsYxVRrDf4vHpv8GAJkGwHVfJ9sdf3U=",
-        "owner": "CosmWasm",
-        "repo": "wasmd",
-        "rev": "c2bb27d289f7f72f1471a4b33cb08fdfc8d66f63",
-        "type": "github"
-      },
-      "original": {
-        "owner": "CosmWasm",
-        "ref": "v0.40.0-rc.1",
+        "ref": "v0.50.0",
         "repo": "wasmd",
         "type": "github"
       }
