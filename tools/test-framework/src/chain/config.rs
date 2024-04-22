@@ -422,6 +422,25 @@ pub fn globalfee_minimum_gas_prices(
     Ok(())
 }
 
+pub fn set_retry_delay_period(
+    genesis: &mut serde_json::Value,
+    retry_delay_period: &str,
+) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("ccvconsumer"))
+        .and_then(|ccvconsumer| ccvconsumer.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get ccvconsumer params in genesis file"))?;
+
+    params.insert(
+        "retry_delay_period".to_owned(),
+        serde_json::Value::String(retry_delay_period.to_string()),
+    );
+
+    Ok(())
+}
+
 /// Look up a key in a JSON object, falling back to the second key if the first one cannot be found.
 ///
 /// This lets us support both Tendermint 0.34 and 0.37, which sometimes use different keys for the
