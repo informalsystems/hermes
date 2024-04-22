@@ -42,7 +42,8 @@
           packages = {
             inherit
               (cosmos-nix)
-              apalache
+              # apalache
+
               celestia
               cometbft
               evmos

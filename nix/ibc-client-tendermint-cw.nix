@@ -1,12 +1,17 @@
 { nixpkgs }:
 let
-  rust-bin =
+  rustWithWasmTarget =
     nixpkgs.rust-bin.stable.latest.default.override
       {
         targets = [ "wasm32-unknown-unknown" ];
       };
+
+  rustWasmPlatform = nixpkgs.makeRustPlatform {
+    cargo = rustWithWasmTarget;
+    rustc = rustWithWasmTarget;
+  };
 in
-nixpkgs.rustPlatform.buildRustPackage {
+rustWasmPlatform.buildRustPackage {
   name = "ibc-client-tendermint-cw";
 
   src = nixpkgs.fetchFromGitHub {
@@ -23,10 +28,6 @@ nixpkgs.rustPlatform.buildRustPackage {
   postPatch = ''
     ln -s ${./ibc-rs.Cargo.lock} Cargo.lock
   '';
-
-  nativeBuildInputs = [
-    rust-bin
-  ];
 
   doCheck = false;
 

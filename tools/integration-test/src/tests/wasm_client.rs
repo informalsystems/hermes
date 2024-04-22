@@ -1,5 +1,5 @@
 use core::time::Duration;
-use std::path::Path;
+use std::path::PathBuf;
 use std::thread::sleep;
 
 use sha2::Digest;
@@ -30,6 +30,14 @@ fn test_create_and_update_wasm_client() -> Result<(), Error> {
 
 const WASM_PATH_ENV: &str = "IBC_CLIENT_WASM_FILE";
 
+fn ibc_client_wasm_path() -> PathBuf {
+    PathBuf::from(std::env::var(WASM_PATH_ENV).expect("IBC_CLIENT_WASM_FILE not set"))
+}
+
+fn ibc_client_wasm_code() -> Vec<u8> {
+    std::fs::read(ibc_client_wasm_path()).expect("failed to read Wasm code")
+}
+
 const TM_CREATE_OPTIONS: TendermintCreateOptions = TendermintCreateOptions {
     max_clock_drift: Some(Duration::from_secs(3)),
     trusting_period: Some(Duration::from_secs(30)),
@@ -37,9 +45,7 @@ const TM_CREATE_OPTIONS: TendermintCreateOptions = TendermintCreateOptions {
 };
 
 fn wasm_options() -> CreateOptions {
-    let wasm_path = std::env::var(WASM_PATH_ENV).expect("IBC_CLIENT_WASM_FILE not set");
-    let wasm_code = std::fs::read(wasm_path).expect("failed to read Wasm code");
-    let checksum = sha2::Sha256::digest(wasm_code);
+    let checksum = sha2::Sha256::digest(ibc_client_wasm_code());
 
     WasmCreateOptions {
         checksum: checksum.to_vec(),
@@ -123,11 +129,12 @@ impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
 }
 
 fn store_wasm_contract(node_a: FullNode, test_config: &TestConfig) -> Result<(), Error> {
-    let wasm_path = std::env::var(WASM_PATH_ENV).expect("IBC_CLIENT_WASM_FILE not set");
-
-    node_a
-        .chain_driver
-        .store_wasm_client_code(Path::new(&wasm_path), "tmp", "tmp", "validator")?;
+    node_a.chain_driver.store_wasm_client_code(
+        &ibc_client_wasm_path(),
+        "tmp",
+        "tmp",
+        "validator",
+    )?;
 
     node_a
         .chain_driver
