@@ -30,13 +30,13 @@ ibc-test-framework   = { version = "0.27.2", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.27.2", path = "tools/integration-test" }
 
 # Tendermint dependencies
-tendermint                       = { version = "0.34.0", default-features = false }
-tendermint-light-client          = { version = "0.34.0", default-features = false }
-tendermint-light-client-detector = { version = "0.34.0", default-features = false }
-tendermint-light-client-verifier = { version = "0.34.0", default-features = false }
-tendermint-proto                 = "0.34.1"
-tendermint-rpc                   = "0.34.0"
-tendermint-testgen               = "0.34.0"
+tendermint                       = { version = "0.35.0", default-features = false }
+tendermint-light-client          = { version = "0.35.0", default-features = false }
+tendermint-light-client-detector = { version = "0.35.0", default-features = false }
+tendermint-light-client-verifier = { version = "0.35.0", default-features = false }
+tendermint-proto                 = "0.35.0"
+tendermint-rpc                   = "0.35.0"
+tendermint-testgen               = "0.35.0"
 
 # Other dependencies
 abscissa_core            = "=0.6.0"
@@ -121,6 +121,7 @@ uuid                     = "1.8.0"
 overflow-checks = true
 
 [patch.crates-io]
+ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", branch = "main" }
 # tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
