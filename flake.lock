@@ -213,11 +213,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1713267602,
-        "narHash": "sha256-2zfGCgm2wdoCLVTEzxKWXYLjciwpVEukDIpwlA5CnZI=",
+        "lastModified": 1713760054,
+        "narHash": "sha256-Qsx6/C0AlUldU98RjKt3d+KHVGUBmfirynq1ldvWZeU=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "ffd8ab2cf6a7746f50474c85f097ad426d05c75d",
+        "rev": "47a6d6d4d40d9770b23147951635bef0ac5507c5",
         "type": "github"
       },
       "original": {
@@ -1060,15 +1060,16 @@
     "juno-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-z9TOeDyUnn1T8Z662XqQJ9ydVIKKB54YISt7ms4xvos=",
+        "lastModified": 1709992388,
+        "narHash": "sha256-8VcxdvaaBNyzza6U65PELt8bUII3teruokfbu5j7i9M=",
         "owner": "CosmosContracts",
         "repo": "juno",
-        "rev": "48507ed9b83511089cbf1fdc5bae54cae4a7f4b2",
+        "rev": "e98863bf7112f4b117a2114e22f7482367362764",
         "type": "github"
       },
       "original": {
         "owner": "CosmosContracts",
-        "ref": "v17.1.1",
+        "ref": "v21.0.0",
         "repo": "juno",
         "type": "github"
       }
@@ -1091,15 +1092,16 @@
     "migaloo-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-O+vGWFnV3+bvXinxl1QjVyDnQskp5H1VnlL+TaMfiSs=",
+        "lastModified": 1710414169,
+        "narHash": "sha256-BGOUAw48c92KGpUMvzStiJfd+tgJpTBYk0bAvvUNYL8=",
         "owner": "White-Whale-Defi-Platform",
         "repo": "migaloo-chain",
-        "rev": "de98de2dd96917ae1ab79161d573fc0b4ee1facf",
+        "rev": "5382bfc56173a0f57dcaef34e99c59c99cf70dda",
         "type": "github"
       },
       "original": {
         "owner": "White-Whale-Defi-Platform",
-        "ref": "v3.0.2",
+        "ref": "v4.1.3",
         "repo": "migaloo-chain",
         "type": "github"
       }
@@ -1337,11 +1339,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1713254108,
-        "narHash": "sha256-0TZIsfDbHG5zibtlw6x0yOp3jkInIGaJ35B7Y4G8Pec=",
+        "lastModified": 1713687659,
+        "narHash": "sha256-Yd8KuOBpZ0Slau/NxFhMPJI0gBxeax0vq/FD0rqKwuQ=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "2fd19c8be2551a61c1ddc3d9f86d748f4db94f00",
+        "rev": "f2d7a289c5a5ece8521dd082b81ac7e4a57c2c5c",
         "type": "github"
       },
       "original": {
