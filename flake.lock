@@ -213,11 +213,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1713540680,
-        "narHash": "sha256-bWECJaorGnVWpx1UYHn0SVdRXTGMmfgRRsBJkw9rCDI=",
+        "lastModified": 1713760054,
+        "narHash": "sha256-Qsx6/C0AlUldU98RjKt3d+KHVGUBmfirynq1ldvWZeU=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "17a1d0ca88ff3302dfd9411701fd5b6541f6e9f6",
+        "rev": "47a6d6d4d40d9770b23147951635bef0ac5507c5",
         "type": "github"
       },
       "original": {
@@ -1092,15 +1092,16 @@
     "migaloo-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-O+vGWFnV3+bvXinxl1QjVyDnQskp5H1VnlL+TaMfiSs=",
+        "lastModified": 1710414169,
+        "narHash": "sha256-BGOUAw48c92KGpUMvzStiJfd+tgJpTBYk0bAvvUNYL8=",
         "owner": "White-Whale-Defi-Platform",
         "repo": "migaloo-chain",
-        "rev": "de98de2dd96917ae1ab79161d573fc0b4ee1facf",
+        "rev": "5382bfc56173a0f57dcaef34e99c59c99cf70dda",
         "type": "github"
       },
       "original": {
         "owner": "White-Whale-Defi-Platform",
-        "ref": "v3.0.2",
+        "ref": "v4.1.3",
         "repo": "migaloo-chain",
         "type": "github"
       }
@@ -1338,11 +1339,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1713442664,
-        "narHash": "sha256-LoExypse3c/uun/39u4bPTN4wejIF7hNsdITZO41qTw=",
+        "lastModified": 1713687659,
+        "narHash": "sha256-Yd8KuOBpZ0Slau/NxFhMPJI0gBxeax0vq/FD0rqKwuQ=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "d764f230634fa4f86dc8d01c6af9619c7cc5d225",
+        "rev": "f2d7a289c5a5ece8521dd082b81ac7e4a57c2c5c",
         "type": "github"
       },
       "original": {
