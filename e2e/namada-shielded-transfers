@@ -1,0 +1,197 @@
+#!/bin/bash
+
+# This script executes shielded transfers between Namada instances locally
+# `make build` and `make build-wasm-scripts` on Namada directory in advance
+# Run with `namada-shielded-transfers ${namada_dir}`
+
+set -e
+
+NAMADA_DIR=$1
+if [ -z "${NAMADA_DIR}" ]
+then
+  echo "ERROR: Namada directory should be given"
+  exit 1
+fi
+cd $(dirname $0)
+HERMES_DIR=${PWD%/e2e*}
+
+NAMADAC="${NAMADA_DIR}/target/debug/namadac"
+NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
+DATA_DIR="${HERMES_DIR}/data"
+
+SHIELDED_ALIAS_A="shielded_a"
+SHIELDED_ALIAS_B="shielded_b"
+SHIELDED_ALIAS_B_2="shielded_b_2"
+PAYMENT_ALIAS_A="payment_a"
+PAYMENT_ALIAS_B="payment_b"
+PAYMENT_ALIAS_B_2="payment_b_2"
+LEDGER_ADDR_A="http://127.0.0.1:27657"
+LEDGER_ADDR_B="http://127.0.0.1:28657"
+INITIAL_BALANCE=5000
+
+function init_relayer_balance() {
+  local suffix=$1
+  local ledger_addr=$2
+
+  local base_dir=${DATA_DIR}/namada-${suffix}
+
+  ${NAMADAC} --base-dir ${base_dir} \
+    transfer \
+    --source albert \
+    --target relayer \
+    --token nam \
+    --amount ${INITIAL_BALANCE} \
+    --node ${ledger_addr}
+}
+
+# ==== main ====
+
+# Run 2 Namada chains
+${HERMES_DIR}/scripts/setup-namada ${NAMADA_DIR}
+
+cd ${HERMES_DIR}
+ids=$(grep "id" config_for_namada.toml | awk -F"'" '/^id/ {print $2}')
+chain_a=$(echo ${ids} | awk '{print $1}')
+chain_b=$(echo ${ids} | awk '{print $2}')
+
+# Initialize the balances
+init_relayer_balance "a" ${LEDGER_ADDR_A}
+init_relayer_balance "b" ${LEDGER_ADDR_B}
+
+# Create a channel
+cargo run --bin hermes -- --config config_for_namada.toml \
+  create channel \
+  --a-chain ${chain_a} \
+  --b-chain ${chain_b} \
+  --a-port transfer \
+  --b-port transfer \
+  --new-client-connection --yes
+
+base_dir_a=${DATA_DIR}/namada-a
+base_dir_b=${DATA_DIR}/namada-b
+
+# setup shielded keys
+${NAMADAW} --base-dir ${base_dir_a} gen --shielded --alias ${SHIELDED_ALIAS_A} --unsafe-dont-encrypt
+${NAMADAW} --base-dir ${base_dir_a} gen-payment-addr --alias ${PAYMENT_ALIAS_A} --key ${SHIELDED_ALIAS_A}
+payment_addr_a=$(${NAMADAW} --base-dir ${base_dir_a} find --alias ${PAYMENT_ALIAS_A} | awk -v paymentAlias="${PAYMENT_ALIAS_A}" '{if($1 ~ paymentAlias) {print $2}}')
+
+${NAMADAW} --base-dir ${base_dir_b} gen --shielded --alias ${SHIELDED_ALIAS_B} --unsafe-dont-encrypt
+${NAMADAW} --base-dir ${base_dir_b} gen-payment-addr --alias ${PAYMENT_ALIAS_B} --key ${SHIELDED_ALIAS_B}
+payment_addr_b=$(${NAMADAW} --base-dir ${base_dir_b} find --alias ${PAYMENT_ALIAS_B} | awk -v paymentAlias="${PAYMENT_ALIAS_B}" '{if($1 ~ paymentAlias) {print $2}}')
+
+${NAMADAW} --base-dir ${base_dir_b} gen --shielded --alias ${SHIELDED_ALIAS_B_2} --unsafe-dont-encrypt
+${NAMADAW} --base-dir ${base_dir_b} gen-payment-addr --alias ${PAYMENT_ALIAS_B_2} --key ${SHIELDED_ALIAS_B_2}
+payment_addr_b_2=$(${NAMADAW} --base-dir ${base_dir_b} find --alias ${PAYMENT_ALIAS_B_2} | awk -v paymentAlias="${PAYMENT_ALIAS_B_2}" '{if($1 ~ paymentAlias) {print $2}}')
+
+# faucet apfel on chain_a and chain_b
+${NAMADAC} --base-dir ${base_dir_a} transfer \
+  --source albert \
+  --target ${payment_addr_a} \
+  --token apfel \
+  --amount 1000 \
+  --signing-keys albert-key \
+  --node ${LEDGER_ADDR_A}
+
+${NAMADAC} --base-dir ${base_dir_a} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} \
+  --node ${LEDGER_ADDR_A}
+
+echo "==== Start Hermes ===="
+cargo run --bin hermes -- --config config_for_namada.toml \
+  start > ${HERMES_DIR}/e2e/hermes.log 2>&1 &
+
+echo "~~ Transfer 100 apfel from chain_a to chain_b ~~"
+${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
+  --source ${SHIELDED_ALIAS_A} \
+  --receiver ${payment_addr_b} \
+  --token apfel \
+  --amount 100 \
+  --channel-id channel-0 \
+  --gas-payer relayer \
+  --node ${LEDGER_ADDR_A}
+
+# wait for relaying
+sleep 40
+
+echo "==== Balances on chain A ===="
+${NAMADAC} --base-dir ${base_dir_a} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} \
+  --node ${LEDGER_ADDR_A}
+${NAMADAC} --base-dir ${base_dir_a} balance \
+  --token apfel \
+  --owner ${SHIELDED_ALIAS_A} \
+  --show-ibc-tokens \
+  --node ${LEDGER_ADDR_A}
+
+echo "==== Balances on chain B ===="
+${NAMADAC} --base-dir ${base_dir_b} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_B} \
+  --node ${LEDGER_ADDR_B}
+${NAMADAC} --base-dir ${base_dir_b} balance \
+  --owner ${SHIELDED_ALIAS_B} \
+  --show-ibc-tokens \
+  --node ${LEDGER_ADDR_B}
+
+echo "~~ Shielded transfer 50 apfel from shielded_b to shielded_b_2 ~~"
+${NAMADAC} --base-dir ${base_dir_b} transfer \
+  --source ${SHIELDED_ALIAS_B} \
+  --target ${payment_addr_b_2} \
+  --token "transfer/channel-0/apfel" \
+  --amount 50 \
+  --signing-keys relayer \
+  --node ${LEDGER_ADDR_B}
+
+echo "==== Balance of shielded_b on chain B ===="
+${NAMADAC} --base-dir ${base_dir_b} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_B} \
+  --node ${LEDGER_ADDR_B}
+${NAMADAC} --base-dir ${base_dir_b} balance \
+  --owner ${SHIELDED_ALIAS_B} \
+  --show-ibc-tokens \
+  --node ${LEDGER_ADDR_B}
+
+echo "==== Balance of shielded_b_2 on chain B ===="
+${NAMADAC} --base-dir ${base_dir_b} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_B_2} \
+  --node ${LEDGER_ADDR_B}
+${NAMADAC} --base-dir ${base_dir_b} balance \
+  --owner ${SHIELDED_ALIAS_B_2} \
+  --show-ibc-tokens \
+  --node ${LEDGER_ADDR_B}
+
+echo "~~ Transfer back 50 apfel from shielded_b_2 on chain B to chain A ~~"
+${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
+  --source ${SHIELDED_ALIAS_B_2} \
+  --receiver ${payment_addr_a} \
+  --token "transfer/channel-0/apfel" \
+  --amount 50 \
+  --signing-keys relayer \
+  --channel-id channel-0 \
+  --node ${LEDGER_ADDR_B}
+
+# wait for relaying
+sleep 40
+
+echo "==== Balances of shielded_a on chain A ===="
+${NAMADAC} --base-dir ${base_dir_a} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} \
+  --node ${LEDGER_ADDR_A}
+${NAMADAC} --base-dir ${base_dir_a} balance \
+  --owner ${SHIELDED_ALIAS_A} \
+  --show-ibc-tokens \
+  --node ${LEDGER_ADDR_A}
+
+echo "==== Balances of shielded_b on chain B ===="
+${NAMADAC} --base-dir ${base_dir_b} balance \
+  --owner ${SHIELDED_ALIAS_B} \
+  --show-ibc-tokens \
+  --node ${LEDGER_ADDR_B}
+
+echo "==== Balance of shielded_b_2 on chain B ===="
+${NAMADAC} --base-dir ${base_dir_b} balance \
+  --owner ${SHIELDED_ALIAS_B_2} \
+  --show-ibc-tokens \
+  --node ${LEDGER_ADDR_B}
+
+killall hermes
+killall namadan

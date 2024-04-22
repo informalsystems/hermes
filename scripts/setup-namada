@@ -27,8 +27,8 @@ BASE_GENESIS_DIR="${NAMADA_DIR}/genesis/localnet"
 CHECKSUM_PATH="${NAMADA_DIR}/wasm/checksums.json"
 DATA_DIR="${HERMES_DIR}/data"
 
-LEDGER_ADDR_A="127.0.0.1:27657"
-LEDGER_ADDR_B="127.0.0.1:28657"
+LEDGER_ADDR_A="http://127.0.0.1:27657"
+LEDGER_ADDR_B="http://127.0.0.1:28657"
 
 HERMES_CONFIG_TEMPLATE="
 [global]
@@ -88,6 +88,8 @@ function make_genesis() {
   mkdir -p ${base_dir}/templates
   cp ${BASE_GENESIS_DIR}/*.toml ${base_dir}/templates
   sed -i .bak "s/epochs_per_year = .*/epochs_per_year = 31536/g" ${base_dir}/templates/parameters.toml
+  sed -i .bak "s/default_mint_limit = .*/default_mint_limit = \"1000000000\"/g" ${base_dir}/templates/parameters.toml
+  sed -i .bak "s/default_per_epoch_throughput_limit = .*/default_per_epoch_throughput_limit = \"1000000000\"/g" ${base_dir}/templates/parameters.toml
 
   mkdir ${base_dir}/pre-genesis
   cp -r ${BASE_GENESIS_DIR}/src/pre-genesis/* ${base_dir}/pre-genesis

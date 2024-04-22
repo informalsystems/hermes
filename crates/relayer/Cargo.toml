@@ -90,6 +90,9 @@ features = ["num-bigint", "serde"]
 version = "0.34.0"
 features = ["secp256k1"]
 
+[dependencies.tendermint-config]
+version = "0.34.0"
+
 [dependencies.tendermint-proto]
 version = "0.34.0"
 
@@ -110,10 +113,21 @@ default-features = false
 version = "0.34.0"
 default-features = false
 
+[dependencies.namada_ibc]
+git = "https://github.com/anoma/namada"
+version = "0.33.0"
+
+[dependencies.namada_parameters]
+git = "https://github.com/anoma/namada"
+version = "0.33.0"
+
 [dependencies.namada_sdk]
 git = "https://github.com/anoma/namada"
-tag = "v0.29.0"
-features = ["std"]
+version = "0.33.0"
+
+[dependencies.namada_trans_token]
+git = "https://github.com/anoma/namada"
+version = "0.33.0"
 
 [dev-dependencies]
 ibc-relayer-types = { version = "0.27.0", path = "../relayer-types", features = ["mocks"] }

@@ -22,7 +22,11 @@ NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
 DATA_DIR="${HERMES_DIR}/data"
 IBC_TOKEN="transfer/channel-0/samoleans"
 
-NAMADA_LEDGER_ADDR="127.0.0.1:27657"
+SHIELDED_ALIAS_A="shielded_a"
+SHIELDED_ALIAS_B="shielded_b"
+PAYMENT_ALIAS_A="payment_a"
+PAYMENT_ALIAS_B="payment_b"
+NAMADA_LEDGER_ADDR="http://127.0.0.1:27657"
 
 GAIA_CHAIN_CONFIG="
 [[chains]]
@@ -59,6 +63,15 @@ echo "${GAIA_CHAIN_CONFIG}" >> config_for_namada.toml
 # add Gaia key
 cargo run -q --bin hermes -- --config config_for_namada.toml \
   keys add --chain gaia-0 --key-file ${DATA_DIR}/gaia-0/user_seed.json --overwrite
+
+# setup Namada shielded keys
+${NAMADAW} --base-dir ${base_dir} gen --shielded --alias ${SHIELDED_ALIAS_A} --unsafe-dont-encrypt
+${NAMADAW} --base-dir ${base_dir} gen-payment-addr --alias ${PAYMENT_ALIAS_A} --key ${SHIELDED_ALIAS_A}
+payment_addr_a=$(${NAMADAW} --base-dir ${base_dir} find --alias ${PAYMENT_ALIAS_A} | awk -v paymentAlias="${PAYMENT_ALIAS_A}" '{if($1 ~ paymentAlias) {print $2}}')
+
+${NAMADAW} --base-dir ${base_dir} gen --shielded --alias ${SHIELDED_ALIAS_B} --unsafe-dont-encrypt
+${NAMADAW} --base-dir ${base_dir} gen-payment-addr --alias ${PAYMENT_ALIAS_B} --key ${SHIELDED_ALIAS_B}
+payment_addr_b=$(${NAMADAW} --base-dir ${base_dir} find --alias ${PAYMENT_ALIAS_B} | awk -v paymentAlias="${PAYMENT_ALIAS_B}" '{if($1 ~ paymentAlias) {print $2}}')
 
 # Initialize Relayer's balance on Namada
 ${NAMADAC} --base-dir ${base_dir} \
@@ -180,6 +193,89 @@ sleep 15
 echo "==== Balances on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} balance \
   --owner relayer \
+  --show-ibc-tokens \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "==== Balances on Gaia ===="
+gaiad query bank balances ${gaia_user}
+
+echo "~~ Shielding transfer 10 samoleans from Gaia to Namada ~~"
+cargo run --bin hermes -- --config config_for_namada.toml \
+  tx ft-transfer \
+  --dst-chain ${chain_id} \
+  --src-chain gaia-0 \
+  --src-port transfer \
+  --src-channel channel-0 \
+  --amount 10 \
+  --receiver ${payment_addr_a} \
+  --denom samoleans \
+  --timeout-height-offset 1000 \
+
+# wait for relaying
+sleep 40
+
+echo "==== Balance of shielded_a on Namada ===="
+${NAMADAC} --base-dir ${base_dir} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} \
+  --node ${NAMADA_LEDGER_ADDR}
+${NAMADAC} --base-dir ${base_dir} balance \
+  --owner ${SHIELDED_ALIAS_A} \
+  --show-ibc-tokens \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "==== Balances on Gaia ===="
+gaiad query bank balances ${gaia_user}
+
+echo "~~ Shielded transfer 5 apfel from shielded_a to shielded_b ~~"
+${NAMADAC} --base-dir ${base_dir} transfer \
+  --source ${SHIELDED_ALIAS_A} \
+  --target ${payment_addr_b} \
+  --token ${IBC_TOKEN} \
+  --amount 5 \
+  --signing-keys relayer \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "==== Balance of shielded_a on Namada ===="
+${NAMADAC} --base-dir ${base_dir} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} ${SHIELDED_ALIAS_B} \
+  --node ${NAMADA_LEDGER_ADDR}
+${NAMADAC} --base-dir ${base_dir} balance \
+  --owner ${SHIELDED_ALIAS_A} \
+  --show-ibc-tokens \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "==== Balance of shielded_b on Namada ===="
+${NAMADAC} --base-dir ${base_dir} balance \
+  --owner ${SHIELDED_ALIAS_B} \
+  --show-ibc-tokens \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "~~ Transfer back 5 samoleans from Namada to Gaia ~~"
+${NAMADAC} --base-dir ${base_dir} ibc-transfer \
+  --source ${SHIELDED_ALIAS_B} \
+  --receiver ${gaia_user} \
+  --token ${IBC_TOKEN} \
+  --amount 5 \
+  --signing-keys relayer \
+  --channel-id channel-0 \
+  --node ${NAMADA_LEDGER_ADDR}
+
+# wait for relaying
+sleep 40
+
+echo "==== Balances of shielded_a on Namada ===="
+${NAMADAC} --base-dir ${base_dir} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} ${SHIELDED_ALIAS_B} \
+  --node ${NAMADA_LEDGER_ADDR}
+${NAMADAC} --base-dir ${base_dir} balance \
+  --owner ${SHIELDED_ALIAS_A} \
+  --show-ibc-tokens \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "==== Balances of shielded_b on Namada ===="
+${NAMADAC} --base-dir ${base_dir} balance \
+  --owner ${SHIELDED_ALIAS_B} \
+  --show-ibc-tokens \
   --node ${NAMADA_LEDGER_ADDR}
 
 echo "==== Balances on Gaia ===="

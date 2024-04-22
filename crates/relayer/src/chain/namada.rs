@@ -32,23 +32,24 @@ use ibc_relayer_types::core::ics24_host::path::{
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
+use namada_ibc::storage;
+use namada_parameters::{storage as param_storage, EpochDuration};
+use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
-use namada_sdk::core::ledger::ibc::storage;
-use namada_sdk::core::ledger::parameters::{storage as param_storage, EpochDuration};
-use namada_sdk::core::ledger::storage::ics23_specs::ibc_proof_specs;
-use namada_sdk::core::ledger::storage::Sha256Hasher;
-use namada_sdk::core::types::address::{Address, InternalAddress};
-use namada_sdk::core::types::storage::{Key, KeySeg, PrefixValue};
-use namada_sdk::core::types::token;
 use namada_sdk::io::NullIo;
 use namada_sdk::masp::fs::FsShieldedUtils;
-use namada_sdk::masp::ShieldedContext;
+use namada_sdk::masp::DefaultLogger;
 use namada_sdk::proof_of_stake::storage_key as pos_storage_key;
 use namada_sdk::proof_of_stake::OwnedPosParams;
 use namada_sdk::queries::Client as SdkClient;
+use namada_sdk::state::ics23_specs::ibc_proof_specs;
+use namada_sdk::state::Sha256Hasher;
+use namada_sdk::storage::{Key, KeySeg, PrefixValue};
 use namada_sdk::wallet::Store;
 use namada_sdk::wallet::Wallet;
 use namada_sdk::{rpc, Namada, NamadaImpl};
+use namada_trans_token::storage_key::{balance_key, denom_key, is_any_token_balance_key};
+use namada_trans_token::{Amount, DenominatedAmount, Denomination};
 use tendermint::block::Height as TmHeight;
 use tendermint::{node, Time};
 use tendermint_light_client::types::LightBlock as TMLightBlock;
@@ -165,6 +166,24 @@ impl NamadaChain {
             .parse()
             .unwrap())
     }
+
+    async fn shielded_sync(&self) -> Result<(), Error> {
+        let mut shielded = self.ctx.shielded_mut().await;
+        let _ = shielded.load().await;
+        shielded
+            .fetch(
+                self.ctx.client(),
+                &DefaultLogger::new(self.ctx.io()),
+                None,
+                None,
+                1,
+                &[],
+                &[],
+            )
+            .await
+            .map_err(NamadaError::namada)?;
+        shielded.save().await.map_err(Error::io)
+    }
 }
 
 impl ChainEndpoint for NamadaChain {
@@ -180,7 +199,7 @@ impl ChainEndpoint for NamadaChain {
     }
 
     fn config(&self) -> ChainConfig {
-        ChainConfig::CosmosSdk(self.config.clone())
+        ChainConfig::Namada(self.config.clone())
     }
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
@@ -201,7 +220,12 @@ impl ChainEndpoint for NamadaChain {
             KeyRing::new_namada(config.key_store_type, &config.id, &config.key_store_folder)
                 .map_err(Error::key_base)?;
 
-        let shielded_ctx = ShieldedContext::<FsShieldedUtils>::default();
+        let shielded_dir = dirs_next::home_dir()
+            .expect("No home directory")
+            .join(".hermes/shielded")
+            .join(config.id.to_string());
+        std::fs::create_dir_all(&shielded_dir).map_err(Error::io)?;
+        let shielded_ctx = FsShieldedUtils::new(shielded_dir);
 
         let mut store = Store::default();
         let key = keybase
@@ -409,7 +433,7 @@ impl ChainEndpoint for NamadaChain {
         let token =
             Address::decode(denom).map_err(|_| NamadaError::address_decode(denom.to_string()))?;
 
-        let balance_key = token::balance_key(&token, &owner);
+        let balance_key = balance_key(&token, &owner);
         let (value, _) = self.query(balance_key, QueryHeight::Latest, IncludeProof::No)?;
         if value.is_empty() {
             return Ok(Balance {
@@ -417,16 +441,15 @@ impl ChainEndpoint for NamadaChain {
                 denom: denom.to_string(),
             });
         }
-        let amount =
-            token::Amount::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
-        let denom_key = token::denom_key(&token);
+        let amount = Amount::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
+        let denom_key = denom_key(&token);
         let (value, _) = self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
         let denominated_amount = if value.is_empty() {
-            token::DenominatedAmount::new(amount, 0.into())
+            DenominatedAmount::new(amount, 0.into())
         } else {
-            let token_denom = token::Denomination::try_from_slice(&value[..])
-                .map_err(NamadaError::borsh_decode)?;
-            token::DenominatedAmount::new(amount, token_denom)
+            let token_denom =
+                Denomination::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
+            DenominatedAmount::new(amount, token_denom)
         };
 
         Ok(Balance {
@@ -444,19 +467,19 @@ impl ChainEndpoint for NamadaChain {
         let mut balances = vec![];
         let prefix = Key::from(Address::Internal(InternalAddress::Multitoken).to_db_key());
         for PrefixValue { key, value } in self.query_prefix(prefix)? {
-            if let Some([token, bal_owner]) = token::is_any_token_balance_key(&key) {
+            if let Some([token, bal_owner]) = is_any_token_balance_key(&key) {
                 if owner == *bal_owner {
-                    let amount = token::Amount::try_from_slice(&value[..])
-                        .map_err(NamadaError::borsh_decode)?;
-                    let denom_key = token::denom_key(token);
+                    let amount =
+                        Amount::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
+                    let denom_key = denom_key(token);
                     let (value, _) =
                         self.query(denom_key, QueryHeight::Latest, IncludeProof::No)?;
                     let denominated_amount = if value.is_empty() {
-                        token::DenominatedAmount::new(amount, 0.into())
+                        DenominatedAmount::new(amount, 0.into())
                     } else {
-                        let namada_denom = token::Denomination::try_from_slice(&value[..])
+                        let namada_denom = Denomination::try_from_slice(&value[..])
                             .map_err(NamadaError::borsh_decode)?;
-                        token::DenominatedAmount::new(amount, namada_denom)
+                        DenominatedAmount::new(amount, namada_denom)
                     };
                     let balance = Balance {
                         amount: denominated_amount.to_string(),
