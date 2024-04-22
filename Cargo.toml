@@ -72,7 +72,7 @@ hex                      = "0.4.3"
 http                     = "0.2.9"
 humantime                = "2.1.0"
 humantime-serde          = "1.1.1"
-ibc-proto                = "0.42.0"
+ibc-proto                = "0.43.0"
 ics23                    = "0.11.1"
 itertools                = "0.10.5"
 moka                     = "0.12.5"
@@ -111,7 +111,7 @@ tiny-keccak              = { version = "2.0.2", default-features = false }
 tokio                    = "1.26.0"
 tokio-stream             = "0.1.14"
 toml                     = "0.8.8"
-tonic                    = "0.10"
+tonic                    = "0.11"
 tracing                  = { version = "0.1.36", default-features = false }
 tracing-subscriber       = "0.3.14"
 uint                     = "0.9"
@@ -121,7 +121,6 @@ uuid                     = "1.8.0"
 overflow-checks = true
 
 [patch.crates-io]
-ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", branch = "main" }
 # tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
