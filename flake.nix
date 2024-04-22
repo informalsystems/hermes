@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    rust-overlay.url = "github:oxalica/rust-overlay";
     cosmos-nix.url = "github:informalsystems/cosmos.nix";
     cosmos-nix-wasm.url = "github:informalsystems/cosmos.nix/jonathan/ibc-go-wasm";
   };
@@ -23,10 +24,19 @@
         let
           nixpkgs = import inputs.nixpkgs {
             inherit system;
+            overlays = [
+              inputs.rust-overlay.overlays.default
+            ];
           };
 
           cosmos-nix = inputs.cosmos-nix.packages.${system};
           cosmos-nix-wasm = inputs.cosmos-nix-wasm.packages.${system};
+
+          ibc-client-tendermint-cw =
+            import ./nix/ibc-client-tendermint-cw.nix
+              {
+                inherit nixpkgs;
+              };
         in
         {
           packages = {
@@ -61,6 +71,8 @@
               (cosmos-nix-wasm)
               ibc-go-v7-wasm-simapp
               ;
+
+            ibc-client-tendermint-cw = ibc-client-tendermint-cw;
 
             python = nixpkgs.python3.withPackages (p: [
               p.toml
