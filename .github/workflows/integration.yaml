@@ -279,15 +279,6 @@ jobs:
           toolchain: stable
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - name: Download latest IBC client CosmWasm contract
-        uses: actions/download-artifact@v4
-        with:
-          run-id: ${{ env.UPLOAD_WASM_RUN_ID }}
-          repository: cosmos/ibc-rs
-          pattern: tendermint-cw-*
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Relocate CosmWasm contract
-        run: mv tendermint-cw-*/ibc_client_tendermint_cw.wasm tools/integration-test/fixtures/wasm/ibc_client_tendermint_cw.wasm
       - name: Build tests
         uses: actions-rs/cargo@v1
         with:
@@ -301,7 +292,9 @@ jobs:
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
           NATIVE_TOKENS: ${{ matrix.chain.native_token }}
+          IBC_CLIENT_WASM_FILE: ${{ github.workspace }}/result/ibc_client_tendermint_cw.wasm
         run: |
+          nix build .#ibc-client-tendermint-cw
           nix shell .#python ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features wasm wasm_client
