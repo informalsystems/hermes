@@ -26,12 +26,17 @@ fn find_value<'a>(key: &str, entries: &'a [abci::EventAttribute]) -> Result<&'a 
     entries
         .iter()
         .find_map(|entry| {
-            if entry.key == key {
-                Some(entry.value.as_str())
+            if entry.key_bytes() == key.as_bytes() {
+                Some(
+                    entry
+                        .value_str()
+                        .map_err(|_| Error::event_attribute_invalid_utf8(key.to_owned())),
+                )
             } else {
                 None
             }
         })
+        .transpose()?
         .ok_or_else(|| Error::event_attribute_not_found(key.to_owned()))
 }
 

@@ -359,7 +359,14 @@ define_error! {
 
         AbciConversionFailed
             { abci_event: String }
-            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)}
+            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)},
+
+        MalformedEventAttributeKey
+            | _ | { format_args!("event attribute key is not valid UTF-8") },
+
+        MalformedEventAttributeValue
+            { key: String }
+            | e | { format_args!("event attribute value for key {} is not valid UTF-8", e.key) },
     }
 }
 

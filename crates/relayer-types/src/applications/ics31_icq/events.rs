@@ -32,21 +32,22 @@ fn find_value<'a>(key: &str, entries: &'a [abci::EventAttribute]) -> Result<&'a 
     entries
         .iter()
         .find_map(|entry| {
-            if entry.key == key {
-                Some(entry.value.as_str())
+            if entry.key_bytes() == key.as_bytes() {
+                Some(entry.value_str().map_err(|_| {
+                    Error::event(format!(
+                        "attribute value for key {key} is not a valid UTF-8 string"
+                    ))
+                }))
             } else {
                 None
             }
         })
+        .transpose()?
         .ok_or_else(|| Error::event(format!("attribute not found for key: {key}")))
 }
 
 fn new_attr(key: &str, value: &str) -> abci::EventAttribute {
-    abci::EventAttribute {
-        key: String::from(key),
-        value: String::from(value),
-        index: true,
-    }
+    abci::EventAttribute::from((key, value, true))
 }
 
 impl From<CrossChainQueryPacket> for abci::Event {
