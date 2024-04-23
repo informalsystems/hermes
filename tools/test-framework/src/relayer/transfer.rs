@@ -159,7 +159,7 @@ pub fn ibc_namada_token_transfer(
             "--channel-id",
             channel_id,
             "--node",
-            &format!("127.0.0.1:{rpc_port}"),
+            &format!("http://127.0.0.1:{rpc_port}"),
         ],
     )?;
 

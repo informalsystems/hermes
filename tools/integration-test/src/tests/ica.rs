@@ -259,7 +259,18 @@ impl BinaryConnectionTest for ICACloseChannelTest {
         chains: ConnectedChains<Controller, Host>,
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
-        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
+        let gas_denom_str = match relayer
+            .config
+            .chains
+            .first()
+            .ok_or_else(|| eyre!("chain configuration is empty"))?
+        {
+            ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
+                chain_config.gas_price.denom.clone()
+            }
+        };
+        let stake_denom: MonoTagged<Host, Denom> =
+            MonoTagged::new(Denom::base(&gas_denom_str, &gas_denom_str));
         let (wallet, ica_address, controller_channel_id, controller_port_id) = relayer
             .with_supervisor(|| {
                 // Register an interchain account on behalf of

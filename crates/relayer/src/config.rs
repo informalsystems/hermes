@@ -746,11 +746,6 @@ impl<'de> Deserialize<'de> for ChainConfig {
             "Namada" => CosmosSdkConfig::deserialize(value)
                 .map(Self::Namada)
                 .map_err(|e| serde::de::Error::custom(format!("invalid Namada config: {e}"))),
-
-            "Namada" => CosmosSdkConfig::deserialize(value)
-                .map(Self::CosmosSdk)
-                .map_err(|e| serde::de::Error::custom(format!("invalid CosmosSdk config: {e}"))),
-
             //
             // <-- Add new chain types here -->
             //

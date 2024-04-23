@@ -271,7 +271,7 @@ fn get_denom(home_path: &str) -> Result<String, Error> {
     let output = simple_exec(
         "namada",
         "namadaw",
-        &["--base-dir", home_path, "address", "find", "--alias", "nam"],
+        &["--base-dir", home_path, "find", "--alias", "nam"],
     )?
     .stdout;
 

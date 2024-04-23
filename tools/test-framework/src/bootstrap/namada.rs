@@ -69,6 +69,14 @@ pub fn bootstrap_namada_node(
     let copy_loop = format!("for file in {namada_repo_path}/genesis/localnet/*.toml; do cp \"$file\" {templates_path}; done");
     simple_exec("namada", "sh", &["-c", &copy_loop])?;
 
+    chain_driver.update_chain_config("templates/parameters.toml", |parameters| {
+        config::namada::set_default_mint_limit(parameters, 1000000000)?;
+        config::namada::set_epochs_per_year(parameters, 31536)?;
+        config::namada::set_default_per_epoch_throughput_limit(parameters, 10000000000)?;
+
+        Ok(())
+    })?;
+
     let pre_genesis_path = &format!("{home_path}/pre-genesis");
     fs::create_dir_all(pre_genesis_path)?;
 
@@ -275,6 +283,8 @@ pub fn bootstrap_namada_node(
         user1: christel,
         user2: daewon,
     };
+
+    sleep(Duration::from_secs(10));
 
     let mut updated_chain_driver = chain_driver.clone();
     updated_chain_driver.chain_id = ChainId::from_string(&chain_id);

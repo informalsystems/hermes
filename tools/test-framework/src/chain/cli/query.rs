@@ -121,6 +121,7 @@ pub fn query_namada_balance(
             "balance",
             "--owner",
             wallet_id,
+            "--show-ibc-tokens",
             "--node",
             rpc_listen_address,
         ],
