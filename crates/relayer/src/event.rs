@@ -301,8 +301,14 @@ fn client_extract_attributes_from_tx(event: &AbciEvent) -> Result<ClientAttribut
     let mut attr = ClientAttributes::default();
 
     for tag in &event.attributes {
-        let key = tag.key.as_str();
-        let value = tag.value.as_str();
+        let key = tag
+            .key_str()
+            .map_err(|_| ClientError::malformed_event_attribute_key())?;
+
+        let value = tag
+            .value_str()
+            .map_err(|_| ClientError::malformed_event_attribute_value(key.to_owned()))?;
+
         match key {
             client_events::CLIENT_ID_ATTRIBUTE_KEY => {
                 attr.client_id = value
@@ -328,9 +334,13 @@ fn client_extract_attributes_from_tx(event: &AbciEvent) -> Result<ClientAttribut
 
 pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, ClientError> {
     for tag in &event.attributes {
-        if tag.key == HEADER_ATTRIBUTE_KEY {
-            let header_bytes = hex::decode(tag.value.to_lowercase())
-                .map_err(|_| ClientError::malformed_header())?;
+        if tag.key_bytes() == HEADER_ATTRIBUTE_KEY.as_bytes() {
+            let header_bytes = hex::decode(
+                tag.value_str()
+                    .map_err(|_| ClientError::malformed_header())?
+                    .to_lowercase(),
+            )
+            .map_err(|_| ClientError::malformed_header())?;
             return decode_header(&header_bytes);
         }
     }
@@ -344,8 +354,14 @@ fn connection_extract_attributes_from_tx(
     let mut attr = ConnectionAttributes::default();
 
     for tag in &event.attributes {
-        let key = tag.key.as_str();
-        let value = tag.value.as_str();
+        let key = tag
+            .key_str()
+            .map_err(|_| ConnectionError::malformed_event_attribute_key())?;
+
+        let value = tag
+            .value_str()
+            .map_err(|_| ConnectionError::malformed_event_attribute_value(key.to_owned()))?;
+
         match key {
             connection_events::CONN_ID_ATTRIBUTE_KEY => {
                 attr.connection_id = value.parse().ok();
@@ -373,8 +389,14 @@ fn channel_extract_attributes_from_tx(
     let mut attr = ChannelAttributes::default();
 
     for tag in &event.attributes {
-        let key = tag.key.as_str();
-        let value = tag.value.as_str();
+        let key = tag
+            .key_str()
+            .map_err(|_| ChannelError::malformed_event_attribute_key())?;
+
+        let value = tag
+            .value_str()
+            .map_err(|_| ChannelError::malformed_event_attribute_value(key.to_owned()))?;
+
         match key {
             channel_events::PORT_ID_ATTRIBUTE_KEY => {
                 attr.port_id = value.parse().map_err(ChannelError::identifier)?
@@ -405,8 +427,13 @@ pub fn extract_packet_and_write_ack_from_tx(
     let mut write_ack: Vec<u8> = Vec::new();
 
     for tag in &event.attributes {
-        let key = tag.key.as_str();
-        let value = tag.value.as_str();
+        let key = tag
+            .key_str()
+            .map_err(|_| ChannelError::malformed_event_attribute_key())?;
+
+        let value = tag
+            .value_str()
+            .map_err(|_| ChannelError::malformed_event_attribute_value(key.to_owned()))?;
 
         match key {
             channel_events::PKT_SRC_PORT_ATTRIBUTE_KEY => {

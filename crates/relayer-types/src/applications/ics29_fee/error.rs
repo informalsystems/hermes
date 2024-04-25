@@ -37,6 +37,10 @@ define_error! {
 
         EventAttributeNotFound
             { key: String }
-            | e | { format_args!("IBC event attribute not found for key: {}", e.key) },
+            | e | { format_args!("IBC event attribute not found for key `{}`", e.key) },
+
+        EventAttributeInvalidUtf8
+            { key: String }
+            | e | { format_args!("IBC event attribute value for key `{}` is not a valid UTF-8 string", e.key) },
     }
 }
