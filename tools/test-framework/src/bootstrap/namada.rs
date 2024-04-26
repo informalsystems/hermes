@@ -31,23 +31,11 @@ use crate::types::process::ChildProcess;
 use crate::util::file::pipe_to_file;
 
 /**
-   Bootstrap a single full node with the provided [`ChainBuilder`] and
+   Bootstrap a single Namada full node with the provided [`ChainBuilder`] and
    a prefix for the chain ID.
 
-   The function would generate random postfix attached to the end of
-   a chain ID. So for example having a prefix `"alpha"` may generate
-   a chain with an ID  like `"ibc-alpha-f5a2a988"`
-
-   The bootstrap function also tries to use as many random parameters
-   when initializing the chain, such as using random denomination
-   and wallets. This is to help ensure that the test is written to
-   only work with specific hardcoded parameters.
-
-   TODO: Due to the limitation of the `gaiad` command, currently
-   parameters such as the stake denomination (`stake`) and the wallet
-   address prefix (`cosmos`) cannot be overridden. It would be
-   great to be able to randomize these parameters in the future
-   as well.
+   The bootstrap function follows the commands and configurations done in the
+   the setup-namada-single-node script found in the scripts/ directory.
 */
 pub fn bootstrap_namada_node(
     builder: &ChainBuilder,
@@ -289,7 +277,7 @@ pub fn bootstrap_namada_node(
     let mut updated_chain_driver = chain_driver.clone();
     updated_chain_driver.chain_id = ChainId::from_string(&chain_id);
 
-    let denom_str = get_namada_denom_address(&chain_id, home_path, "nam");
+    let denom_str = get_namada_denom_address(&chain_id, home_path, "nam")?;
     let denom = Denom::base("nam", &denom_str);
 
     let node = FullNode {
