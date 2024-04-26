@@ -425,8 +425,7 @@ jobs:
       - name: Fix permissions for Namada repository
         id: namada-permissions
         run: |
-          ls -lh ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}/wasm
-          rsync -av ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }} /tmp/namada-repo
+          rsync -av ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}/ /tmp/namada-repo/
           chmod -R a+w /tmp/namada-repo
           echo "NAMADA_REPO_PATH=/tmp/namada-repo" >> "$GITHUB_OUTPUT"
       - name: Download CometBFT
@@ -449,7 +448,6 @@ jobs:
           cmake .
           make
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/lib
-          ./bin/wasm-opt --version
           mkdir -p $HOME/bin
           cp bin/wasm-opt $HOME/bin/wasm-opt
           export PATH=$HOME/bin:$PATH
