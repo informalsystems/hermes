@@ -45,12 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia13
-            command: gaiad
-            account_prefix: cosmos
-            native_token: stake
-            features: forward-packet,clean-workers
-          - package: gaia14
+          - package: gaia15
             command: gaiad
             account_prefix: cosmos
             native_token: stake
@@ -177,10 +172,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia13 .#neutron
-            command: gaiad,neutrond
-            account_prefix: cosmos,neutron
-          - package: .#gaia14 .#neutron
+          - package: .#gaia15 .#neutron
             command: gaiad,neutrond
             account_prefix: cosmos,neutron
     steps:
@@ -225,10 +217,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia13 .#stride-consumer
-            command: gaiad,strided
-            account_prefix: cosmos,stride
-          - package: .#gaia14 .#stride-consumer
+          - package: .#gaia15 .#stride-consumer
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -273,10 +262,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia13 .#stride-consumer-no-admin
-            command: gaiad,strided
-            account_prefix: cosmos,stride
-          - package: .#gaia14 .#stride-consumer-no-admin
+          - package: .#gaia15 .#stride-consumer-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -320,11 +306,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#celestia .#gaia13
-            command: celestia-appd,gaiad
-            account_prefix: celestia,cosmos
-            native_token: utia,stake
-          - package: .#celestia .#gaia14
+          - package: .#celestia .#gaia15
             command: celestia-appd,gaiad
             account_prefix: celestia,cosmos
             native_token: utia,stake
