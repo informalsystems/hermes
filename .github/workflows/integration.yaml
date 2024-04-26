@@ -405,24 +405,25 @@ jobs:
             command: namada
             account_prefix: ''
             native_token: nam
-          - package: .#gaia14 .#namada
+          - package: .#gaia15 .#namada
             command: gaiad,namada
             account_prefix: cosmos,''
             native_token: stake,nam
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
-      - uses: cachix/cachix-action@v12
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v14
         with:
-          name: cosmos
-      - uses: actions-rs/toolchain@v1
+          name: cosmos-nix
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
       - name: Install libudev
         run: sudo apt-get update && sudo apt-get -y install libudev-dev
       - name: Install Protoc
@@ -430,7 +431,6 @@ jobs:
         with:
           version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -445,7 +445,7 @@ jobs:
         run: |
           ls -lh ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}/wasm
           cp -r -L ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }} /tmp/namada-repo
-          chmod -R 777 /tmp/namada-repo
+          chmod -R a+w /tmp/namada-repo
           echo "NAMADA_REPO_PATH=/tmp/namada-repo" >> "$GITHUB_OUTPUT"
       - name: Download CometBFT
         run: |
@@ -475,7 +475,7 @@ jobs:
           set -e
           cd ${{ steps.namada-permissions.outputs.NAMADA_REPO_PATH }}
           make build
-          chmod -R 777 wasm/
+          chmod -R a+w wasm/
           make build-wasm-scripts
       - env:
           RUST_LOG: info
