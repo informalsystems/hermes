@@ -231,6 +231,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         counterparty_chain: ChainB,
         channel_open_event: IbcEvent,
     ) -> Result<Channel<ChainA, ChainB>, ChannelError> {
+        crate::time!(
+            "restore_from_event",
+            {
+                "src_chain": chain.id(),
+                "dst_chain": counterparty_chain.id(),
+                "event": channel_open_event,
+            }
+        );
         let channel_event_attributes = channel_open_event
             .clone()
             .channel_attributes()
@@ -291,6 +299,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         channel: WorkerChannelObject,
         height: Height,
     ) -> Result<(Channel<ChainA, ChainB>, State), ChannelError> {
+        crate::time!(
+            "restore_from_state",
+            {
+                "src_chain": chain.id(),
+                "dst_chain": counterparty_chain.id(),
+            }
+        );
         let (a_channel, _) = chain
             .query_channel(
                 QueryChannelRequest {
@@ -550,6 +565,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     /// while on chain a the counterparty of channel 1 is 100. r1 needs to update
     /// its b_side to 100
     fn update_channel_and_query_states(&mut self) -> Result<(State, State), ChannelError> {
+        crate::time!(
+            "update_channel_and_query_states",
+            {
+                "chain": self.a_side.chain.id(),
+            }
+        );
         let relayer_a_id = self.a_side.channel_id();
         let relayer_b_id = self.b_side.channel_id().cloned();
 
@@ -603,6 +624,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     /// Sends a channel open handshake message.
     /// The message sent depends on the chain status of the channel ends.
     fn do_chan_open_handshake(&mut self) -> Result<(), ChannelError> {
+        crate::time!(
+            "do_chan_open_handshake",
+            {
+                "chain": self.a_side.chain.id(),
+            }
+        );
         let (a_state, b_state) = self.update_channel_and_query_states()?;
         debug!(
             "do_chan_open_handshake with channel end states: {}, {}",
@@ -700,6 +727,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
     /// Executes the channel handshake protocol (ICS004)
     fn handshake(&mut self) -> Result<(), ChannelError> {
+        crate::time!(
+            "handshake",
+            {
+                "chain": self.a_side.chain.id(),
+            }
+        );
         let max_block_times = self.max_block_times()?;
 
         retry_with_index(
@@ -729,6 +762,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     pub fn counterparty_state(&self) -> Result<State, ChannelError> {
+        crate::time!(
+            "counterparty_state",
+            {
+                "chain": self.a_side.chain.id(),
+            }
+        );
         // Source channel ID must be specified
         let channel_id = self
             .src_channel_id()
@@ -781,6 +820,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<Next, u64> {
+        crate::time!(
+            "step_state",
+            {
+                "chain": self.a_side.chain.id(),
+                "state": state,
+            }
+        );
         match self.handshake_step(state) {
             Err(e) => {
                 if e.is_expired_or_frozen_error() {
@@ -803,6 +849,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     pub fn step_event(&mut self, event: &IbcEvent, index: u64) -> RetryResult<Next, u64> {
+        crate::time!(
+            "step_event",
+            {
+                "chain": self.a_side.chain.id(),
+                "event": event,
+            }
+        );
         let state = match event {
             IbcEvent::OpenInitChannel(_) => State::Init,
             IbcEvent::OpenTryChannel(_) => State::TryOpen,
