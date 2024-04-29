@@ -160,6 +160,12 @@ pub fn channel_connection_client_no_checks(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
+    crate::time!(
+        "counterparty_state",
+        {
+            "chain": chain.id(),
+        }
+    );
     let (channel_end, _) = chain
         .query_channel(
             QueryChannelRequest {
@@ -220,6 +226,12 @@ pub fn channel_connection_client(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
+    crate::time!(
+        "channel_connection_client",
+        {
+            "chain": chain.id(),
+        }
+    );
     let channel_connection_client =
         channel_connection_client_no_checks(chain, port_id, channel_id)?;
 
@@ -252,6 +264,12 @@ fn fetch_channel_on_destination(
     counterparty_chain: &impl ChainHandle,
     remote_connection_id: &ConnectionId,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
+    crate::time!(
+        "fetch_channel_on_destination",
+        {
+            "chain": counterparty_chain.id(),
+        }
+    );
     let counterparty_channels = counterparty_chain
         .query_connection_channels(QueryConnectionChannelsRequest {
             connection_id: remote_connection_id.clone(),
@@ -275,6 +293,12 @@ pub fn channel_state_on_destination(
     connection: &IdentifiedConnectionEnd,
     counterparty_chain: &impl ChainHandle,
 ) -> Result<State, Error> {
+    crate::time!(
+        "channel_state_on_destination",
+        {
+            "chain": counterparty_chain.id(),
+        }
+    );
     let remote_channel = channel_on_destination(channel, connection, counterparty_chain)?;
     Ok(remote_channel.map_or_else(
         || State::Uninitialized,
@@ -287,6 +311,12 @@ pub fn channel_on_destination(
     connection: &IdentifiedConnectionEnd,
     counterparty_chain: &impl ChainHandle,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
+    crate::time!(
+        "channel_on_destination",
+        {
+            "chain": counterparty_chain.id(),
+        }
+    );
     if let Some(remote_channel_id) = channel.channel_end.counterparty().channel_id() {
         let counterparty = counterparty_chain
             .query_channel(
