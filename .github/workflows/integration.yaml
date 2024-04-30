@@ -378,7 +378,9 @@ jobs:
           args: -p ibc-integration-test --features mbt --no-fail-fast --no-run
 
   namada:
+    needs: [integration-test, celestia-to-gaia, interchain-security-icq, interchain-security-no-ica, ordered-channel-test, model-based-test]
     runs-on: ubuntu-20.04
+    if: always()
     strategy:
       fail-fast: false
       matrix:
