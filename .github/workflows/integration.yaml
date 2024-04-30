@@ -459,7 +459,7 @@ jobs:
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
         run: |
-          nix shell .#gaia15 .#namada e2e ${{ matrix.scripts.name }} /tmp/namada-repo
+          nix shell .#gaia15 .#namada -c sh e2e/${{ matrix.scripts.name }} /tmp/namada-repo
 
   namada:
     needs: [integration-test, celestia-to-gaia, interchain-security-icq, interchain-security-no-ica, ordered-channel-test, model-based-test]
