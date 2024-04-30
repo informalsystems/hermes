@@ -8,7 +8,7 @@ use ibc_proto::google::protobuf::Any;
 use namada_parameters::storage as parameter_storage;
 use namada_sdk::address::{Address, ImplicitAddress};
 use namada_sdk::args;
-use namada_sdk::args::{InputAmount, Tx as TxArgs, TxCustom};
+use namada_sdk::args::{InputAmount, Tx as TxArgs, TxCustom, TxExpiration};
 use namada_sdk::borsh::BorshDeserialize;
 use namada_sdk::borsh::BorshSerializeExt;
 use namada_sdk::chain::ChainId;
@@ -122,7 +122,7 @@ impl NamadaChain {
             fee_token,
             fee_unshield: None,
             gas_limit,
-            expiration: None,
+            expiration: TxExpiration::Default,
             disposable_signing_key: false,
             chain_id: Some(chain_id),
             signing_keys: vec![relayer_public_key],

@@ -6,7 +6,7 @@ use ibc_relayer_types::Height as ICSHeight;
 use namada_ibc::storage::{ibc_trace_key_prefix, is_ibc_trace_key};
 use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
-use namada_sdk::event::extend::Height as HeightAttr;
+use namada_sdk::events::extend::Height as HeightAttr;
 use namada_sdk::queries::{Client as SdkClient, RPC};
 use namada_sdk::rpc;
 use namada_sdk::storage::{BlockHeight, Epoch, Key, PrefixValue};
