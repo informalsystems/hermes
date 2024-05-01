@@ -32,6 +32,7 @@
           cometbft
           evmos
           gaia6-ordered
+          gaia14
           gaia15
           ibc-go-v2-simapp
           ibc-go-v3-simapp
