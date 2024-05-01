@@ -268,6 +268,7 @@ impl FromStr for ConnectionId {
     type Err = ValidationError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
         validate_connection_identifier(s).map(|_| Self(s.to_string()))
     }
 }

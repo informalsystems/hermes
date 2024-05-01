@@ -159,6 +159,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 Some(b_channel_id.clone()),
                 None,
             ),
+            connection_hops: None,
             connection_delay: a_connection.delay_period(),
         };
 

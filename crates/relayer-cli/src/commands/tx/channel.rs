@@ -3,16 +3,21 @@
 use abscissa_core::clap::Parser;
 
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
+use ibc_relayer::chain::requests::{
+    IncludeProof, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
+};
 use ibc_relayer::channel::{Channel, ChannelSide};
-use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
+use ibc_relayer_types::core::ics03_connection::connection::{
+    ConnectionEnd, IdentifiedConnectionEnd,
+};
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
+use ibc_relayer_types::core::ics33_multihop::channel_path::{ConnectionHop, ConnectionHops};
 use ibc_relayer_types::events::IbcEvent;
 
-use crate::cli_utils::ChainHandlePair;
+use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
@@ -108,6 +113,16 @@ pub struct TxChanOpenInitCmd {
         help = "The channel ordering, valid options 'unordered' (default) and 'ordered'"
     )]
     order: Ordering,
+
+    #[clap(
+        long = "connection-hops",
+        value_name = "CONNECTION_HOPS",
+        use_delimiter = true,
+        value_delimiter = ',',
+        help = "The comma separated identifiers of the intermediate connections between /
+        a source and destination chain for a multi-hop channel (optional)"
+    )]
+    connection_hops: Option<Vec<ConnectionId>>,
 }
 
 impl Runnable for TxChanOpenInitCmd {
@@ -131,8 +146,86 @@ impl Runnable for TxChanOpenInitCmd {
             Err(e) => Output::error(e).exit(),
         };
 
+        let mut connection_hops: Option<ConnectionHops> = None;
+
+        dbg!(&dst_connection);
+        // Check if connection IDs were provided via --connection-hops, indicating a multi-hop channel
+        if let Some(connnection_ids) = &self.connection_hops {
+            let mut constructed_hops: Vec<ConnectionHop> = Vec::new();
+
+            // Start building the connection hops in reverse order, starting from the destination and
+            // moving towards the source. Start with the ConnectionEnd already obtained from the destination.
+            let conn_client_state = match chains.dst.query_client_state(
+                QueryClientStateRequest {
+                    client_id: dst_connection.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((client_state, _)) => client_state,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            constructed_hops.push(ConnectionHop {
+                connection: IdentifiedConnectionEnd::new(
+                    self.dst_conn_id.clone(),
+                    dst_connection.clone(),
+                ),
+                reference_chain_id: conn_client_state.chain_id().clone(),
+            });
+
+            // Repeat the process for each of the remaining hops until the source chain is reached
+            for connection_id in connnection_ids.iter().rev() {
+                dbg!(&connection_id);
+                // Retrieve the ChainId of the chain referenced by the previous connection hop
+                let chain_id = constructed_hops.last().unwrap().reference_chain_id();
+
+                // Spawn a handle for the chain referenced in the previous hop
+                let chain_handle = match spawn_chain_runtime(&config, &chain_id) {
+                    Ok(handle) => handle,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                dbg!(&chain_handle);
+
+                // Retrieve the connection associated with the next hop
+                let hop_connection = match chain_handle.query_connection(
+                    QueryConnectionRequest {
+                        connection_id: connection_id.clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                ) {
+                    Ok((connection, _)) => connection,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                dbg!(&hop_connection);
+
+                // Retrieve the client state for the client underlying the hop connection
+                let hop_conn_client_state = match chain_handle.query_client_state(
+                    QueryClientStateRequest {
+                        client_id: hop_connection.client_id().clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                ) {
+                    Ok((client_state, _)) => client_state,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                constructed_hops.push(ConnectionHop {
+                    connection: IdentifiedConnectionEnd::new(
+                        connection_id.clone(),
+                        hop_connection.clone(),
+                    ),
+                    reference_chain_id: hop_conn_client_state.chain_id().clone(),
+                });
+            }
+            connection_hops = Some(ConnectionHops::new(constructed_hops));
+        }
+
         let channel = Channel {
-            connection_delay: Default::default(),
             ordering: self.order,
             a_side: ChannelSide::new(
                 chains.src,
@@ -150,9 +243,13 @@ impl Runnable for TxChanOpenInitCmd {
                 None,
                 None,
             ),
+            connection_hops,
+            connection_delay: Default::default(),
         };
 
         info!("message ChanOpenInit: {}", channel);
+
+        dbg!(&channel);
 
         let res: Result<IbcEvent, Error> = channel
             .build_chan_open_init_and_send()
@@ -258,6 +355,7 @@ impl Runnable for TxChanOpenTryCmd {
                         self.dst_chan_id.clone(),
                         None,
                     ),
+                    connection_hops: None,
                 }
             }
         );
@@ -359,6 +457,7 @@ impl Runnable for TxChanOpenAckCmd {
                         Some(self.dst_chan_id.clone()),
                         None,
                     ),
+                    connection_hops: None,
                 }
             }
         );
@@ -460,6 +559,7 @@ impl Runnable for TxChanOpenConfirmCmd {
                         Some(self.dst_chan_id.clone()),
                         None,
                     ),
+                    connection_hops: None,
                 }
             }
         );
@@ -561,6 +661,7 @@ impl Runnable for TxChanCloseInitCmd {
                         Some(self.dst_chan_id.clone()),
                         None,
                     ),
+                    connection_hops: None,
                 }
             }
         );
@@ -662,6 +763,7 @@ impl Runnable for TxChanCloseConfirmCmd {
                         Some(self.dst_chan_id.clone()),
                         None,
                     ),
+                    connection_hops: None,
                 }
             }
         );
@@ -692,7 +794,8 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 dst_port_id: PortId::from_str("port_b").unwrap(),
                 src_port_id: PortId::from_str("port_a").unwrap(),
-                order: Ordering::Unordered
+                order: Ordering::Unordered,
+                connection_hops: None,
             },
             TxChanOpenInitCmd::parse_from([
                 "test",
@@ -719,7 +822,8 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 dst_port_id: PortId::from_str("port_b").unwrap(),
                 src_port_id: PortId::from_str("port_a").unwrap(),
-                order: Ordering::Ordered
+                order: Ordering::Ordered,
+                connection_hops: None,
             },
             TxChanOpenInitCmd::parse_from([
                 "test",
@@ -748,7 +852,8 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 dst_port_id: PortId::from_str("port_b").unwrap(),
                 src_port_id: PortId::from_str("port_a").unwrap(),
-                order: Ordering::Unordered
+                order: Ordering::Unordered,
+                connection_hops: None,
             },
             TxChanOpenInitCmd::parse_from([
                 "test",

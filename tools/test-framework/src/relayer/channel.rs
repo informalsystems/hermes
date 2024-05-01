@@ -65,6 +65,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
             None,
             None,
         ),
+        connection_hops: None,
     };
 
     let event = channel.build_chan_open_init_and_send()?;
@@ -104,6 +105,7 @@ pub fn init_channel_version<ChainA: ChainHandle, ChainB: ChainHandle>(
             None,
             Some(version),
         ),
+        connection_hops: None,
     };
 
     let event = channel.build_chan_open_init_and_send()?;
@@ -141,6 +143,7 @@ pub fn init_channel_optimistic<ChainA: ChainHandle, ChainB: ChainHandle>(
             None,
             None,
         ),
+        connection_hops: None,
     };
 
     let event = channel.build_chan_open_init_and_send()?;
