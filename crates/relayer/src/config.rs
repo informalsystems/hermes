@@ -758,7 +758,7 @@ impl<'de> Deserialize<'de> for ChainConfig {
 
 /// Attempt to load and parse the TOML config file as a `Config`.
 pub fn load(path: impl AsRef<Path>) -> Result<Config, Error> {
-    let config_toml = std::fs::read_to_string(&path).map_err(Error::io)?;
+    let config_toml = fs::read_to_string(&path).map_err(Error::io)?;
 
     let config = toml::from_str::<Config>(&config_toml[..]).map_err(Error::decode)?;
 

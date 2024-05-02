@@ -1,7 +1,6 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use ibc_relayer::chain::requests::{IncludeProof, QueryHeight, QueryPacketCommitmentRequest};
-use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
 use ibc_relayer::chain::handle::ChainHandle;
@@ -13,12 +12,6 @@ use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
-
-#[derive(Serialize, Debug)]
-struct PacketSeqs {
-    height: Height,
-    seqs: Vec<u64>,
-}
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryPacketCommitmentCmd {

@@ -104,7 +104,6 @@ pub struct TxChanOpenInitCmd {
 
     #[clap(
         long = "order",
-        default_value_t,
         value_name = "ORDER",
         help = "The channel ordering, valid options 'unordered' (default) and 'ordered'"
     )]
