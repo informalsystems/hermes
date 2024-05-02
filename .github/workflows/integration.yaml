@@ -383,11 +383,6 @@ jobs:
     if: always()
     strategy:
       fail-fast: false
-      matrix:
-        scripts:
-          - name: namada-gaia-simple-transfers
-          - name: namada-shielded-transfers
-          - name: namada-simple-transfers
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@v1.3.1
@@ -454,12 +449,30 @@ jobs:
           chmod -R a+w wasm/
           make build-wasm-scripts
           nix-collect-garbage -d
-      - env:
+      - name: namada-gaia-simple-transfers
+        env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
         run: |
-          nix shell .#gaia14 .#namada -c sh e2e/${{ matrix.scripts.name }} /tmp/namada-repo
+          nix shell .#gaia14 .#namada -c bash e2e/namada-gaia-simple-transfers /tmp/namada-repo
+          rm -r data/
+      - name: namada-shielded-transfers
+        env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+        run: |
+          nix shel .#namada -c bash e2e/namada-shielded-transfers /tmp/namada-repo
+          rm -r data/
+      - name: namada-simple-transfers
+        env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+        run: |
+          nix shell .#namada -c bash e2e/namada-simple-transfers /tmp/namada-repo
+          rm -r data/
 
   namada:
     needs: [integration-test, celestia-to-gaia, interchain-security-icq, interchain-security-no-ica, ordered-channel-test, model-based-test, namada-scripts]
