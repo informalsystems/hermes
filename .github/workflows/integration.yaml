@@ -425,6 +425,15 @@ jobs:
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: echo "NAMADA_REPO_PATH=$(nix build .#namada-src --print-out-paths)" >> "$GITHUB_OUTPUT"
+      - name: Fix permissions for Namada repository
+        id: namada-permissions
+        run: |
+          mkdir -p /tmp/namada-repo/
+          chmod -R a+w /tmp/namada-repo
+          rsync -avL --exclude='crates/apps/proto' ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}/ /tmp/namada-repo/
+          rsync -av ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}/crates/apps/ /tmp/namada-repo/crates/apps/
+          chmod -R a+w /tmp/namada-repo
+          echo "NAMADA_REPO_PATH=/tmp/namada-repo" >> "$GITHUB_OUTPUT"
       - name: Download CometBFT
         run: |
           curl -o cometbft.tar.gz -LO https://github.com/cometbft/cometbft/releases/download/v0.37.2/cometbft_0.37.2_linux_amd64.tar.gz
@@ -443,7 +452,7 @@ jobs:
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
           NATIVE_TOKENS: ${{ matrix.chain.native_token }}
-          NAMADA_REPO_PATH: ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}/
+          NAMADA_REPO_PATH: /tmp/namada-repo
         run: |
           nix shell ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=1 \
