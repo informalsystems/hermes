@@ -212,11 +212,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1714115246,
-        "narHash": "sha256-eJL8FZ7vJ9Mx4bSCCQ5foet7tqkGqmOlYdMDsuxkxXk=",
+        "lastModified": 1715078111,
+        "narHash": "sha256-detF8ZVdRxGtx4mD7kLOlnTbtCLCNdjR3fh39xaWJIw=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "741a5fbc212b6260e0d557f1e8e68444a7bda9a3",
+        "rev": "e15765eb49a0a4be63c16e4c1050d732f97c5552",
         "type": "github"
       },
       "original": {
@@ -1109,16 +1109,16 @@
     "namada-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1712916378,
-        "narHash": "sha256-zI3ca98eUex09/PjpNnaKez1kC6z7ibaspxlE/avrEQ=",
+        "lastModified": 1715075631,
+        "narHash": "sha256-NmDVS//tiDz6LEleWVeJZIcpryim3RB6QAZmRaCNRTs=",
         "owner": "anoma",
         "repo": "namada",
-        "rev": "97ec5b46cb350a28157d21ea9070f0eb5ddb3f9f",
+        "rev": "c231350ad3862a43e5abac3b423908e01bdc1c78",
         "type": "github"
       },
       "original": {
         "owner": "anoma",
-        "ref": "v0.33.0",
+        "ref": "yuji/for-hermes-ci",
         "repo": "namada",
         "type": "github"
       }
@@ -1341,11 +1341,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1714091391,
-        "narHash": "sha256-68n3GBvlm1MIeJXadPzQ3v8Y9sIW3zmv8gI5w5sliC8=",
+        "lastModified": 1715037484,
+        "narHash": "sha256-OUt8xQFmBU96Hmm4T9tOWTu4oCswCzoVl+pxSq/kiFc=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "4c86138ce486d601d956a165e2f7a0fc029a03c1",
+        "rev": "ad7efee13e0d216bf29992311536fce1d3eefbef",
         "type": "github"
       },
       "original": {

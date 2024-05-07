@@ -378,7 +378,6 @@ jobs:
           args: -p ibc-integration-test --features mbt --no-fail-fast --no-run
 
   namada:
-    needs: [integration-test, celestia-to-gaia, interchain-security-icq, interchain-security-no-ica, ordered-channel-test, model-based-test]
     runs-on: ubuntu-20.04
     if: always()
     strategy:
@@ -426,15 +425,6 @@ jobs:
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: echo "NAMADA_REPO_PATH=$(nix build .#namada-src --print-out-paths)" >> "$GITHUB_OUTPUT"
-      - name: Fix permissions for Namada repository
-        id: namada-permissions
-        run: |
-          mkdir -p /tmp/namada-repo/
-          chmod -R a+w /tmp/namada-repo
-          rsync -avL --exclude='crates/apps/proto' ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}/ /tmp/namada-repo/
-          rsync -av ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}/crates/apps/ /tmp/namada-repo/crates/apps/
-          chmod -R a+w /tmp/namada-repo
-          echo "NAMADA_REPO_PATH=/tmp/namada-repo" >> "$GITHUB_OUTPUT"
       - name: Download CometBFT
         run: |
           curl -o cometbft.tar.gz -LO https://github.com/cometbft/cometbft/releases/download/v0.37.2/cometbft_0.37.2_linux_amd64.tar.gz
@@ -446,25 +436,6 @@ jobs:
           curl -o /home/runner/.masp-params/masp-spend.params -L https://github.com/anoma/masp-mpc/releases/download/namada-trusted-setup/masp-spend.params\?raw\=true
           curl -o /home/runner/.masp-params/masp-output.params -L https://github.com/anoma/masp-mpc/releases/download/namada-trusted-setup/masp-output.params?raw=true
           curl -o /home/runner/.masp-params/masp-convert.params -L https://github.com/anoma/masp-mpc/releases/download/namada-trusted-setup/masp-convert.params?raw=true
-      - name: Install Binaryen (wasm-opt) and Generate Namada files
-        run: |
-          git clone https://github.com/WebAssembly/binaryen.git
-          cd binaryen
-          git submodule init
-          git submodule update
-          cmake .
-          make
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/lib
-          mkdir -p $HOME/bin
-          cp bin/wasm-opt $HOME/bin/wasm-opt
-          export PATH=$HOME/bin:$PATH
-          wasm-opt --version
-          set -e
-          cd ${{ steps.namada-permissions.outputs.NAMADA_REPO_PATH }}
-          make build
-          chmod -R a+w wasm/
-          make build-wasm-scripts
-          nix-collect-garbage -d
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
