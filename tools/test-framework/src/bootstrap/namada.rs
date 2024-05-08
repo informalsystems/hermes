@@ -168,6 +168,7 @@ pub fn bootstrap_namada_node(
         config::namada::set_rpc_port(config, chain_driver.rpc_port)?;
         config::namada::set_p2p_port(config, chain_driver.p2p_port)?;
         config::namada::set_proxy_app_port(config, chain_driver.pprof_port)?;
+        config::namada::set_block_cache_bytes(config, 268435456)?;
 
         config_modifier(config)?;
 

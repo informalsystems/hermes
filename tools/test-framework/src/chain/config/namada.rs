@@ -56,6 +56,23 @@ pub fn set_proxy_app_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+/// Set the `p2p` field in the full node config.
+pub fn set_block_cache_bytes(config: &mut Value, block_cache_bytes: i64) -> Result<(), Error> {
+    config
+        .get_mut("ledger")
+        .ok_or_else(|| eyre!("expect ledger section"))?
+        .get_mut("shell")
+        .ok_or_else(|| eyre!("expect shell section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert(
+            "block_cache_bytes".to_string(),
+            Value::Integer(block_cache_bytes),
+        );
+
+    Ok(())
+}
+
 pub fn set_unbonding_len(parameters: &mut Value, unbonding_len: i64) -> Result<(), Error> {
     parameters
         .get_mut("pos_params")
