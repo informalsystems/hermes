@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "1.8.0"
+version    = "1.8.2"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -8,7 +8,7 @@ keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
 repository = "https://github.com/informalsystems/hermes"
 authors    = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.71"
+rust-version = "1.71.1"
 description  = """
   Hermes is an IBC Relayer written in Rust
 """
@@ -17,62 +17,44 @@ default-run = "hermes"
 [[bin]]
 name = "hermes"
 
-[features]
-default     = ["telemetry", "rest-server", "std", "eyre_tracer"]
-std         = ["flex-error/std"]
-eyre_tracer = ["flex-error/eyre_tracer"]
-telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
-rest-server = ["ibc-relayer-rest"]
-
 [dependencies]
-ibc-relayer-types  = { version = "0.27.0", path = "../relayer-types" }
-ibc-relayer        = { version = "0.27.0", path = "../relayer" }
-ibc-telemetry      = { version = "0.27.0", path = "../telemetry", optional = true }
-ibc-relayer-rest   = { version = "0.27.0", path = "../relayer-rest", optional = true }
-ibc-chain-registry = { version = "0.27.0" , path = "../chain-registry" }
+ibc-relayer-types  = { workspace = true }
+ibc-relayer        = { workspace = true }
+ibc-telemetry      = { workspace = true }
+ibc-relayer-rest   = { workspace = true }
+ibc-chain-registry = { workspace = true }
 
-clap                     = { version = "3.2", features = ["cargo"] }
-clap_complete            = "3.2"
-color-eyre               = "0.6"
-console                  = "0.15.5"
-crossbeam-channel        = "0.5.11"
-dialoguer                = "0.11.0"
-dirs-next                = "2.0.0"
-eyre                     = "0.6.12"
-flex-error               = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
-futures                  = "0.3.27"
-hdpath                   = "0.6.3"
-http                     = "0.2"
-humantime                = "2.1"
-itertools                = "0.10.5"
-oneline-eyre             = "0.1"
-regex                    = "1.9.5"
-serde                    = { version = "1.0", features = ["serde_derive"] }
-serde_json               = "1"
-signal-hook              = "0.3.17"
-subtle-encoding          = "0.5"
-tokio                    = { version = "1.0", features = ["full"] }
-tracing                  = "0.1.36"
-tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
-time                     = "0.3"
-
-[dependencies.tendermint]
-version = "0.34.0"
-features = ["secp256k1"]
-
-[dependencies.tendermint-rpc]
-version = "0.34.0"
-features = ["http-client", "websocket-client"]
-
-[dependencies.tendermint-light-client-verifier]
-version = "0.34.0"
-
-[dependencies.abscissa_core]
-version = "=0.6.0"
-features = ["options"]
+abscissa_core                    = { workspace = true, features = ["options"] }
+clap                             = { workspace = true, features = ["cargo"] }
+clap_complete                    = { workspace = true }
+color-eyre                       = { workspace = true }
+console                          = { workspace = true }
+crossbeam-channel                = { workspace = true }
+dialoguer                        = { workspace = true }
+dirs-next                        = { workspace = true }
+eyre                             = { workspace = true }
+flex-error                       = { workspace = true, features = ["std", "eyre_tracer"] }
+futures                          = { workspace = true }
+hdpath                           = { workspace = true }
+http                             = { workspace = true }
+humantime                        = { workspace = true }
+itertools                        = { workspace = true }
+oneline-eyre                     = { workspace = true }
+regex                            = { workspace = true }
+serde                            = { workspace = true, features = ["serde_derive"] }
+serde_json                       = { workspace = true }
+signal-hook                      = { workspace = true }
+subtle-encoding                  = { workspace = true }
+tendermint-light-client-verifier = { workspace = true }
+tendermint-rpc                   = { workspace = true, features = ["http-client", "websocket-client"] }
+tendermint                       = { workspace = true, features = ["secp256k1"] }
+time                             = { workspace = true }
+tokio                            = { workspace = true, features = ["full"] }
+tracing                          = { workspace = true }
+tracing-subscriber               = { workspace = true, features = ["fmt", "env-filter", "json"] }
 
 [dev-dependencies]
-abscissa_core = { version = "=0.6.0", features = ["testing"] }
-once_cell = "1.19"
-regex = "1.9"
-serial_test = "3.0.0"
+abscissa_core = { workspace = true, features = ["testing"] }
+once_cell     = { workspace = true }
+regex         = { workspace = true }
+serial_test   = { workspace = true }

@@ -13,6 +13,7 @@ use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 use tendermint_rpc::Url;
 use tendermint_rpc::WebSocketClientUrl;
@@ -191,11 +192,13 @@ impl FullNode {
             packet_filter: Default::default(),
             address_type: chain_type.address_type(),
             memo_prefix: Default::default(),
+            memo_overwrite: None,
             proof_specs: Default::default(),
             extension_options: Default::default(),
             sequential_batch_tx: false,
             compat_mode,
             clear_interval: None,
+            excluded_sequences: BTreeMap::new(),
         }))
     }
 

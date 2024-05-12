@@ -26,10 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: nightly
-          override: true
+          toolchain: nightly-2024-04-21
       - name: Install Protoc
         uses: heliaxdev/setup-protoc@v2
         with:
@@ -45,7 +44,7 @@ jobs:
 
       - name: Push API documentation to GitHub Pages
         if: github.ref == 'refs/heads/master'
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           deploy_key: ${{ secrets.IBC_RS_DOC_PRIVATE_KEY }}
           external_repository: informalsystems/hermes-api-doc

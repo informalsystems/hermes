@@ -9,7 +9,7 @@ use ibc_relayer::config::{store, ChainConfig, Config};
 
 use std::collections::HashSet;
 use std::path::PathBuf;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 fn find_key(chain_config: &ChainConfig) -> Option<String> {
     let keys = chain_config.list_keys().ok()?;
@@ -115,7 +115,13 @@ impl Runnable for AutoCmd {
         let mut chain_configs: Vec<(String, ChainConfig)> = config_results
             .unwrap()
             .into_iter()
-            .filter_map(|(name, config)| config.ok().map(|c| (name, c)))
+            .filter_map(|(name, config)| match config {
+                Ok(config) => Some((name, config)),
+                Err(e) => {
+                    error!("Failed to generate chain config for chain '{name}': {e}");
+                    None
+                }
+            })
             .collect();
 
         // Determine which chains were not fetched

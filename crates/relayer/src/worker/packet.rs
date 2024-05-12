@@ -1,9 +1,3 @@
-#[cfg(feature = "telemetry")]
-use {
-    ibc_relayer_types::core::ics24_host::identifier::ChannelId,
-    ibc_relayer_types::core::ics24_host::identifier::PortId,
-};
-
 use core::time::Duration;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
@@ -17,14 +11,19 @@ use ibc_proto::ibc::apps::fee::v1::{IdentifiedPacketFees, QueryIncentivizedPacke
 use ibc_proto::ibc::core::channel::v1::PacketId;
 use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
 use ibc_relayer_types::applications::transfer::{Amount, Coin, RawCoin};
+use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
+use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_relayer_types::events::{IbcEvent, IbcEventType};
 use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::QueryHeight;
 use crate::config::filter::FeePolicy;
 use crate::event::source::EventBatch;
+use crate::event::IbcEventWithHeight;
 use crate::foreign_client::HasExpiredOrFrozenError;
 use crate::link::Resubmit;
 use crate::link::{error::LinkError, Link};
@@ -162,7 +161,7 @@ pub fn spawn_incentivized_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHa
     // This Cache will store the IncentivizedPacket observed. They will then be used in order
     // to verify if a SendPacket event is incentivized.
     let incentivized_recv_cache: RwArc<Cache<Sequence, IncentivizedPacket>> = RwArc::new_lock(
-        moka::sync::Cache::builder()
+        Cache::builder()
             .time_to_live(INCENTIVIZED_CACHE_TTL)
             .max_capacity(INCENTIVIZED_CACHE_MAX_CAPACITY)
             .build(),
@@ -204,6 +203,24 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Result<(), TaskError<RunError>> {
     // Handle packet clearing which is triggered from a command
     let (do_clear, maybe_height) = match &cmd {
+        WorkerCmd::IbcEvents { batch } if link.a_to_b.channel().ordering == Ordering::Ordered => {
+            let lowest_sequence = lowest_sequence(&batch.events);
+
+            let next_sequence = query_next_sequence_receive(
+                link.a_to_b.dst_chain(),
+                link.a_to_b.dst_port_id(),
+                link.a_to_b.dst_channel_id(),
+                QueryHeight::Specific(batch.height),
+            )
+            .ok();
+
+            if *should_clear_on_start || next_sequence < lowest_sequence {
+                (true, Some(batch.height))
+            } else {
+                (false, None)
+            }
+        }
+
         WorkerCmd::IbcEvents { batch } => {
             if *should_clear_on_start {
                 (true, Some(batch.height))
@@ -439,10 +456,36 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
     Ok(())
 }
 
-#[cfg(feature = "telemetry")]
+fn query_next_sequence_receive<Chain: ChainHandle>(
+    chain: &Chain,
+    port_id: &PortId,
+    channel_id: &ChannelId,
+    height: QueryHeight,
+) -> Result<Sequence, LinkError> {
+    use crate::chain::requests::{IncludeProof, QueryNextSequenceReceiveRequest};
+
+    chain
+        .query_next_sequence_receive(
+            QueryNextSequenceReceiveRequest {
+                port_id: port_id.clone(),
+                channel_id: channel_id.clone(),
+                height,
+            },
+            IncludeProof::No,
+        )
+        .map(|(seq, _height)| seq)
+        .map_err(|e| LinkError::query(chain.id(), e))
+}
+
+fn lowest_sequence(events: &[IbcEventWithHeight]) -> Option<Sequence> {
+    events
+        .iter()
+        .flat_map(|event| event.event.packet().map(|p| p.sequence))
+        .min()
+}
+
 use crate::link::RelaySummary;
 
-#[cfg(feature = "telemetry")]
 fn packet_metrics(
     path: &Packet,
     summary: &RelaySummary,
@@ -454,7 +497,6 @@ fn packet_metrics(
     timeout_metrics(path, summary, dst_channel, dst_port);
 }
 
-#[cfg(feature = "telemetry")]
 fn receive_packet_metrics(
     path: &Packet,
     summary: &RelaySummary,
@@ -481,7 +523,6 @@ fn receive_packet_metrics(
     );
 }
 
-#[cfg(feature = "telemetry")]
 fn acknowledgment_metrics(
     path: &Packet,
     summary: &RelaySummary,
@@ -508,7 +549,6 @@ fn acknowledgment_metrics(
     );
 }
 
-#[cfg(feature = "telemetry")]
 fn timeout_metrics(
     path: &Packet,
     summary: &RelaySummary,

@@ -1,6 +1,8 @@
 use flex_error::define_error;
 use tendermint::abci::Code;
 
+use crate::chain::cosmos::estimate::EstimatedGas;
+
 // Provides mapping for errors returned from ibc-go and cosmos-sdk
 define_error! {
     SdkError {
@@ -24,9 +26,13 @@ define_error! {
             { code: u32 }
             | e | { format_args!("unknown TX sync response error: {}", e.code) },
 
-        OutOfGas
-            { code: u32 }
-            |_| { "the gas requirement is higher than the configured maximum gas! please check the Hermes config.toml".to_string() },
+        OutOfGasDefault
+            { code: u32, amount: u64 }
+            |e| { format_args!("due to the Tx simulation failing, the configured default gas was used. Please check the Hermes config.toml and increase the configured `default_gas`. Current value is `{}`", e.amount) },
+
+        OutOfGasSimulated
+            { code: u32, amount: u64 }
+            |e| { format_args!("the issue might have been caused by the configured max gas which binds the gas used. Please check the Hermes config.toml and increase the configured `max_gas`. Curerent value is `{}`", e.amount) },
 
         InsufficientFee
             { code: u32 }
@@ -186,12 +192,15 @@ pub fn sdk_error_from_tx_result(code: Code, codespace: &str) -> SdkError {
 /// into IBC relayer domain-type errors.
 /// See [`tendermint_rpc::endpoint::broadcast::tx_sync::Response`].
 /// Cf: <https://github.com/cosmos/cosmos-sdk/blob/v0.42.10/types/errors/errors.go>
-pub fn sdk_error_from_tx_sync_error_code(code: u32) -> SdkError {
+pub fn sdk_error_from_tx_sync_error_code(code: u32, estimated_gas: EstimatedGas) -> SdkError {
     match code {
         // The primary reason (we know of) causing broadcast_tx_sync to fail
         // is due to "out of gas" errors. These are unrecoverable at the moment
         // on Hermes side. We'll inform the user to check for misconfiguration.
-        11 => SdkError::out_of_gas(code),
+        11 => match estimated_gas {
+            EstimatedGas::Default(amount) => SdkError::out_of_gas_default(code, amount),
+            EstimatedGas::Simulated(amount) => SdkError::out_of_gas_simulated(code, amount),
+        },
         13 => SdkError::insufficient_fee(code),
         _ => SdkError::unknown_tx_sync(code),
     }

@@ -32,8 +32,7 @@
           cometbft
           evmos
           gaia6-ordered
-          gaia13
-          gaia14
+          gaia15
           ibc-go-v2-simapp
           ibc-go-v3-simapp
           ibc-go-v4-simapp
@@ -49,9 +48,8 @@
           provenance
           stride
           stride-no-admin
-          stride-consumer-no-admin
-          stride-consumer
           wasmd
+          injective
           ;
 
         python = nixpkgs.python3.withPackages (p: [

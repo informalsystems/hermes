@@ -6,7 +6,6 @@ use std::fs;
 use std::path::PathBuf;
 use std::str;
 use std::time::Duration;
-use toml;
 use tracing::debug;
 
 use ibc_relayer::keyring::{Secp256k1KeyPair, SigningKeyPair};
@@ -231,6 +230,9 @@ impl ChainBootstrapMethodsExt for ChainDriver {
 
     fn add_genesis_account(&self, wallet: &WalletAddress, amounts: &[&Token]) -> Result<(), Error> {
         let amounts_str = amounts.iter().map(|t| t.to_string()).collect::<Vec<_>>();
+        let extra_args = self
+            .chain_type
+            .extra_add_genesis_account_args(&self.chain_id);
 
         add_genesis_account(
             self.chain_id.as_str(),
@@ -238,6 +240,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             &self.home_path,
             &wallet.0,
             &amounts_str,
+            &extra_args.iter().map(|s| s.as_ref()).collect::<Vec<_>>(),
         )
     }
 
@@ -290,7 +293,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         let raw_proposal = r#"
         {
             "title": "Create consumer chain",
-            "description": "First consumer chain",
+            "summary": "First consumer chain",
             "chain_id": "{consumer_chain_id}",
             "initial_height": {
                 "revision_number": 1,

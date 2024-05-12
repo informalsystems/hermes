@@ -5,7 +5,6 @@ use eyre::eyre;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;
-use toml;
 use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
@@ -75,6 +74,7 @@ pub fn bootstrap_consumer_node(
         config::set_soft_opt_out_threshold(genesis, "0.05")?;
         config::consensus_params_max_gas(genesis, "3000000")?;
         config::globalfee_minimum_gas_prices(genesis, globalfee_minimum_gas)?;
+        config::set_retry_delay_period(genesis, "100s")?;
         Ok(())
     })?;
 

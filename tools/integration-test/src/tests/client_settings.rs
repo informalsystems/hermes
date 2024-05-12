@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::config::ChainConfig;
