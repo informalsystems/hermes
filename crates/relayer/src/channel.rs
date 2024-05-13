@@ -864,7 +864,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             State::Init,
             self.ordering,
             counterparty,
-            vec![self.dst_connection_id().clone()],
+            self.connection_hops.as_ref().unwrap().connection_ids(),
             version,
             0,
         );

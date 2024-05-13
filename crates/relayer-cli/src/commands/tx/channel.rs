@@ -122,7 +122,7 @@ pub struct TxChanOpenInitCmd {
         help = "The comma separated identifiers of the intermediate connections between /
         a source and destination chain for a multi-hop channel (optional)"
     )]
-    connection_hops: Option<Vec<ConnectionId>>,
+    conn_hop_ids: Option<Vec<ConnectionId>>,
 }
 
 impl Runnable for TxChanOpenInitCmd {
@@ -146,47 +146,45 @@ impl Runnable for TxChanOpenInitCmd {
             Err(e) => Output::error(e).exit(),
         };
 
-        let mut connection_hops: Option<ConnectionHops> = None;
+        // There always exists at least one hop, even in single-hop channels.
+        // A number of hops greater than one indicates a multi-hop channel.
+        // See: https://github.com/cosmos/ibc/blob/main/spec/core/ics-033-multi-hop/README.md?plain=1#L62
+        //
+        // Start building the connection hops in reverse order, starting from --dst-connection and
+        // moving towards the source.
+        let conn_client_state = match chains.dst.query_client_state(
+            QueryClientStateRequest {
+                client_id: dst_connection.client_id().clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((client_state, _)) => client_state,
+            Err(e) => Output::error(e).exit(),
+        };
 
-        dbg!(&dst_connection);
+        let mut assembled_hops: Vec<ConnectionHop> = Vec::new();
+
+        assembled_hops.push(ConnectionHop {
+            connection: IdentifiedConnectionEnd::new(
+                self.dst_conn_id.clone(),
+                dst_connection.clone(),
+            ),
+            reference_chain_id: conn_client_state.chain_id().clone(),
+        });
+
         // Check if connection IDs were provided via --connection-hops, indicating a multi-hop channel
-        if let Some(connnection_ids) = &self.connection_hops {
-            let mut constructed_hops: Vec<ConnectionHop> = Vec::new();
-
-            // Start building the connection hops in reverse order, starting from the destination and
-            // moving towards the source. Start with the ConnectionEnd already obtained from the destination.
-            let conn_client_state = match chains.dst.query_client_state(
-                QueryClientStateRequest {
-                    client_id: dst_connection.client_id().clone(),
-                    height: QueryHeight::Latest,
-                },
-                IncludeProof::No,
-            ) {
-                Ok((client_state, _)) => client_state,
-                Err(e) => Output::error(e).exit(),
-            };
-
-            constructed_hops.push(ConnectionHop {
-                connection: IdentifiedConnectionEnd::new(
-                    self.dst_conn_id.clone(),
-                    dst_connection.clone(),
-                ),
-                reference_chain_id: conn_client_state.chain_id().clone(),
-            });
-
-            // Repeat the process for each of the remaining hops until the source chain is reached
+        if let Some(connnection_ids) = &self.conn_hop_ids {
+            // Retrieve information for each of the remaining hops until the other end of the channel is reached
             for connection_id in connnection_ids.iter().rev() {
-                dbg!(&connection_id);
                 // Retrieve the ChainId of the chain referenced by the previous connection hop
-                let chain_id = constructed_hops.last().unwrap().reference_chain_id();
+                let chain_id = assembled_hops.last().unwrap().reference_chain_id();
 
                 // Spawn a handle for the chain referenced in the previous hop
                 let chain_handle = match spawn_chain_runtime(&config, &chain_id) {
                     Ok(handle) => handle,
                     Err(e) => Output::error(e).exit(),
                 };
-
-                dbg!(&chain_handle);
 
                 // Retrieve the connection associated with the next hop
                 let hop_connection = match chain_handle.query_connection(
@@ -200,9 +198,7 @@ impl Runnable for TxChanOpenInitCmd {
                     Err(e) => Output::error(e).exit(),
                 };
 
-                dbg!(&hop_connection);
-
-                // Retrieve the client state for the client underlying the hop connection
+                // Retrieve the state of the client underlying the hop connection
                 let hop_conn_client_state = match chain_handle.query_client_state(
                     QueryClientStateRequest {
                         client_id: hop_connection.client_id().clone(),
@@ -214,7 +210,7 @@ impl Runnable for TxChanOpenInitCmd {
                     Err(e) => Output::error(e).exit(),
                 };
 
-                constructed_hops.push(ConnectionHop {
+                assembled_hops.push(ConnectionHop {
                     connection: IdentifiedConnectionEnd::new(
                         connection_id.clone(),
                         hop_connection.clone(),
@@ -222,8 +218,10 @@ impl Runnable for TxChanOpenInitCmd {
                     reference_chain_id: hop_conn_client_state.chain_id().clone(),
                 });
             }
-            connection_hops = Some(ConnectionHops::new(constructed_hops));
         }
+
+        // Instantiate ConnectionHops from a vec of ConnectionHop
+        let connection_hops = Some(ConnectionHops::new(assembled_hops));
 
         let channel = Channel {
             ordering: self.order,
@@ -248,8 +246,6 @@ impl Runnable for TxChanOpenInitCmd {
         };
 
         info!("message ChanOpenInit: {}", channel);
-
-        dbg!(&channel);
 
         let res: Result<IbcEvent, Error> = channel
             .build_chan_open_init_and_send()
@@ -795,7 +791,7 @@ mod tests {
                 dst_port_id: PortId::from_str("port_b").unwrap(),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 order: Ordering::Unordered,
-                connection_hops: None,
+                conn_hop_ids: None,
             },
             TxChanOpenInitCmd::parse_from([
                 "test",
@@ -823,7 +819,7 @@ mod tests {
                 dst_port_id: PortId::from_str("port_b").unwrap(),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 order: Ordering::Ordered,
-                connection_hops: None,
+                conn_hop_ids: None,
             },
             TxChanOpenInitCmd::parse_from([
                 "test",
@@ -853,7 +849,7 @@ mod tests {
                 dst_port_id: PortId::from_str("port_b").unwrap(),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 order: Ordering::Unordered,
-                connection_hops: None,
+                conn_hop_ids: None,
             },
             TxChanOpenInitCmd::parse_from([
                 "test",
