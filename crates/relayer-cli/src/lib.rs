@@ -14,7 +14,7 @@
 
 #![forbid(unsafe_code)]
 #![deny(rust_2018_idioms, trivial_casts, unused_lifetimes)]
-#![allow(deprecated)]
+#![allow(deprecated, unknown_lints, non_local_definitions)]
 
 extern crate alloc;
 

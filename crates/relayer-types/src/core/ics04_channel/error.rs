@@ -409,7 +409,14 @@ define_error! {
                     .join(", ");
 
                 format!("error parsing a vector of ConnectionId: {}", failures)
-            }
+            },
+
+        MalformedEventAttributeKey
+            | _ | { format_args!("event attribute key is not valid UTF-8") },
+
+        MalformedEventAttributeValue
+            { key: String }
+            | e | { format_args!("event attribute value for key {} is not valid UTF-8", e.key) },
     }
 }
 

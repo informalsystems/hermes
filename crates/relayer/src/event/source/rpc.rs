@@ -292,7 +292,9 @@ fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {
                     .attributes
                     .iter()
                     .zip(other.0.attributes.iter())
-                    .all(|(a, b)| a.key == b.key && a.value == b.value)
+                    .all(|(a, b)| {
+                        a.key_bytes() == b.key_bytes() && a.value_bytes() == b.value_bytes()
+                    })
         }
     }
 
@@ -304,8 +306,8 @@ fn dedupe(events: Vec<abci::Event>) -> Vec<abci::Event> {
 
             for attr in &self.0.attributes {
                 // NOTE: We don't hash the index because it is not deterministic
-                attr.key.hash(state);
-                attr.value.hash(state);
+                attr.key_bytes().hash(state);
+                attr.value_bytes().hash(state);
             }
         }
     }

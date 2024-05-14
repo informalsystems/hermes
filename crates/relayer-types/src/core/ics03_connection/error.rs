@@ -157,5 +157,12 @@ define_error! {
 
         ImplementationSpecific
             | _ | { "implementation specific error" },
+
+        MalformedEventAttributeKey
+            | _ | { format_args!("event attribute key is not valid UTF-8") },
+
+        MalformedEventAttributeValue
+            { key: String }
+            | e | { format_args!("event attribute value for key {} is not valid UTF-8", e.key) },
     }
 }
