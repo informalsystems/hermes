@@ -515,7 +515,7 @@ pub fn assert_eventually_channel_upgrade_confirm<ChainA: ChainHandle, ChainB: Ch
         || {
             assert_channel_upgrade_state(
                 ChannelState::Open(UpgradeState::NotUpgrading),
-                ChannelState::Flushcomplete,
+                ChannelState::FlushComplete,
                 handle_a,
                 handle_b,
                 channel_id_a,

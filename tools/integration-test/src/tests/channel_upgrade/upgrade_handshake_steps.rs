@@ -213,7 +213,7 @@ impl BinaryChannelTest for ChannelUpgradeManualHandshake {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            ChannelState::Flushcomplete,
+            ChannelState::FlushComplete,
             ChannelState::Flushing,
             &old_attrs,
         )?;
@@ -477,7 +477,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromAck {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            ChannelState::Flushcomplete,
+            ChannelState::FlushComplete,
             ChannelState::Flushing,
             &old_attrs,
         )?;
@@ -617,7 +617,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFromConfirm {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            ChannelState::Flushcomplete,
+            ChannelState::FlushComplete,
             ChannelState::Flushing,
             &old_attrs,
         )?;
@@ -773,7 +773,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeInitiateNewUpgrade {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            ChannelState::Flushcomplete,
+            ChannelState::FlushComplete,
             ChannelState::Flushing,
             &pre_upgrade_1_attrs,
         )?;

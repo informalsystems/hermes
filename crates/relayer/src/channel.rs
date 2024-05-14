@@ -801,7 +801,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 Some(self.build_chan_upgrade_ack_and_send()?)
             }
             (State::Flushing, State::Flushing) => Some(self.build_chan_upgrade_ack_and_send()?),
-            (State::Flushcomplete, State::Flushing) => {
+            (State::FlushComplete, State::Flushing) => {
                 Some(self.build_chan_upgrade_confirm_and_send()?)
             }
 
@@ -812,10 +812,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 Some(self.build_chan_upgrade_cancel_and_send()?)
             }
 
-            (State::Flushcomplete, State::Flushcomplete) => {
+            (State::FlushComplete, State::FlushComplete) => {
                 Some(self.build_chan_upgrade_open_and_send()?)
             }
-            (State::Flushcomplete, State::Open(UpgradeState::NotUpgrading)) => {
+            (State::FlushComplete, State::Open(UpgradeState::NotUpgrading)) => {
                 // Check if error
                 let height = self.b_chain().query_latest_height().unwrap();
                 let upgrade_error = self
@@ -841,7 +841,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     Some(self.flipped().build_chan_upgrade_open_and_send()?)
                 }
             }
-            (State::Open(UpgradeState::NotUpgrading), State::Flushcomplete) => {
+            (State::Open(UpgradeState::NotUpgrading), State::FlushComplete) => {
                 // Check if error query_upgrade_error
                 let height = self.a_chain().query_latest_height().unwrap();
                 let upgrade_error = self
@@ -917,8 +917,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             IbcEvent::CloseInitChannel(_) => State::Closed,
             IbcEvent::UpgradeInitChannel(_) => State::Open(UpgradeState::Upgrading),
             IbcEvent::UpgradeTryChannel(_) => State::Flushing,
-            IbcEvent::UpgradeAckChannel(_) => State::Flushcomplete,
-            IbcEvent::UpgradeConfirmChannel(_) => State::Flushcomplete,
+            IbcEvent::UpgradeAckChannel(_) => State::FlushComplete,
+            IbcEvent::UpgradeConfirmChannel(_) => State::FlushComplete,
             IbcEvent::UpgradeOpenChannel(_) => State::Open(UpgradeState::NotUpgrading),
             _ => State::Uninitialized,
         };

@@ -117,7 +117,7 @@ pub mod test_util {
         RawMsgChannelUpgradeOpen {
             port_id: PortId::default().to_string(),
             channel_id: ChannelId::default().to_string(),
-            counterparty_channel_state: 6, // Flushcomplete
+            counterparty_channel_state: 6, // FlushComplete
             counterparty_upgrade_sequence: 1,
             proof_channel: get_dummy_proof(),
             proof_height: Some(RawHeight {

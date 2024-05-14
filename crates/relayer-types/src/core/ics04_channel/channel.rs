@@ -266,7 +266,7 @@ impl ChannelEnd {
 
         matches!(
             self.state,
-            Open(UpgradeState::Upgrading) | Flushing | Flushcomplete
+            Open(UpgradeState::Upgrading) | Flushing | FlushComplete
         )
     }
 }
@@ -430,7 +430,7 @@ pub enum State {
     /// A channel has just accepted the upgrade handshake attempt and is flushing in-flight packets.
     Flushing,
     /// A channel has just completed flushing any in-flight packets.
-    Flushcomplete,
+    FlushComplete,
 }
 
 impl Serialize for State {
@@ -445,7 +445,7 @@ impl Serialize for State {
             Self::Open(_) => serializer.serialize_str("Open"),
             Self::Closed => serializer.serialize_str("Closed"),
             Self::Flushing => serializer.serialize_str("Flushing"),
-            Self::Flushcomplete => serializer.serialize_str("Flushcomplete"),
+            Self::FlushComplete => serializer.serialize_str("FlushComplete"),
         }
     }
 }
@@ -460,7 +460,7 @@ impl State {
             Self::Open(_) => "OPEN",
             Self::Closed => "CLOSED",
             Self::Flushing => "FLUSHING",
-            Self::Flushcomplete => "FLUSHCOMPLETE",
+            Self::FlushComplete => "FLUSHCOMPLETE",
         }
     }
 
@@ -473,7 +473,7 @@ impl State {
             3 => Ok(Self::Open(UpgradeState::NotUpgrading)),
             4 => Ok(Self::Closed),
             5 => Ok(Self::Flushing),
-            6 => Ok(Self::Flushcomplete),
+            6 => Ok(Self::FlushComplete),
             _ => Err(Error::unknown_state(s)),
         }
     }
@@ -487,7 +487,7 @@ impl State {
             State::Open(_) => 3,
             State::Closed => 4,
             State::Flushing => 5,
-            State::Flushcomplete => 6,
+            State::FlushComplete => 6,
         }
     }
 
@@ -711,7 +711,7 @@ mod tests {
             State::Open(UpgradeState::Upgrading),
             State::Closed,
             State::Flushing,
-            State::Flushcomplete,
+            State::FlushComplete,
         ];
         for state in higher_or_equal_states {
             assert!(State::Uninitialized.less_or_equal_progress(state))
@@ -731,7 +731,7 @@ mod tests {
             State::Open(UpgradeState::Upgrading),
             State::Closed,
             State::Flushing,
-            State::Flushcomplete,
+            State::FlushComplete,
         ];
         for state in lower_states {
             assert!(!State::Init.less_or_equal_progress(state));
@@ -753,7 +753,7 @@ mod tests {
             State::Open(UpgradeState::Upgrading),
             State::Closed,
             State::Flushing,
-            State::Flushcomplete,
+            State::FlushComplete,
         ];
         for state in lower_states {
             assert!(!State::TryOpen.less_or_equal_progress(state));
@@ -774,7 +774,7 @@ mod tests {
             State::Open(UpgradeState::Upgrading),
             State::Closed,
             State::Flushing,
-            State::Flushcomplete,
+            State::FlushComplete,
         ];
         for state in lower_states {
             assert!(!State::Open(UpgradeState::NotUpgrading).less_or_equal_progress(state));
@@ -797,14 +797,14 @@ mod tests {
             State::Open(UpgradeState::Upgrading),
             State::Closed,
             State::Flushing,
-            State::Flushcomplete,
+            State::FlushComplete,
         ];
 
         let upgrading_states = vec![
             State::Open(UpgradeState::Upgrading),
             State::Closed,
             State::Flushing,
-            State::Flushcomplete,
+            State::FlushComplete,
         ];
         for upgrade_state in upgrading_states {
             for state in states.iter() {

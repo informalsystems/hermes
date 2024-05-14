@@ -312,7 +312,7 @@ impl BinaryChannelTest for ChannelUpgradeTimeoutConfirmHandshake {
             &chains.handle_b,
             &channels.channel_id_a.as_ref(),
             &channels.port_a.as_ref(),
-            ChannelState::Flushcomplete,
+            ChannelState::FlushComplete,
             ChannelState::Flushing,
             &old_attrs,
         )?;
