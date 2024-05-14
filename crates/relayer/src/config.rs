@@ -735,7 +735,7 @@ impl ChainConfig {
 
     pub fn excluded_sequences(&self, channel_id: &ChannelId) -> Cow<'_, [Sequence]> {
         match self {
-            Self::CosmosSdk(config) => config
+            Self::CosmosSdk(config) | Self::Namada(config) => config
                 .excluded_sequences
                 .get(channel_id)
                 .map(|seqs| Cow::Borrowed(seqs.as_slice()))

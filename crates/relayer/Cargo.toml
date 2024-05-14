@@ -46,6 +46,10 @@ humantime                        = { workspace = true }
 humantime-serde                  = { workspace = true }
 itertools                        = { workspace = true }
 moka                             = { workspace = true, features = ["sync"] }
+namada_ibc                       = { workspace = true }
+namada_parameters                = { workspace = true }
+namada_sdk                       = { workspace = true }
+namada_trans_token               = { workspace = true }
 num-bigint                       = { workspace = true, features = ["serde"] }
 num-rational                     = { workspace = true, features = ["num-bigint", "serde"] }
 once_cell                        = { workspace = true }
@@ -54,6 +58,7 @@ regex                            = { workspace = true }
 reqwest                          = { workspace = true, features = ["rustls-tls-native-roots", "json"] }
 retry                            = { workspace = true }
 ripemd                           = { workspace = true }
+rpassword                        = { workspace = true }
 secp256k1                        = { workspace = true, features = ["rand-std"] }
 semver                           = { workspace = true }
 serde                            = { workspace = true }
@@ -79,22 +84,6 @@ tonic                            = { workspace = true, features = ["tls", "tls-r
 tracing                          = { workspace = true }
 tracing-subscriber               = { workspace = true, features = ["fmt", "env-filter", "json"] }
 uuid                             = { workspace = true, features = ["v4"] }
-
-[dependencies.namada_ibc]
-git = "https://github.com/anoma/namada"
-rev = "d785578fd68dbecf62084c8cbd8f6ea516c3fa50"
-
-[dependencies.namada_parameters]
-git = "https://github.com/anoma/namada"
-rev = "d785578fd68dbecf62084c8cbd8f6ea516c3fa50"
-
-[dependencies.namada_sdk]
-git = "https://github.com/anoma/namada"
-rev = "d785578fd68dbecf62084c8cbd8f6ea516c3fa50"
-
-[dependencies.namada_trans_token]
-git = "https://github.com/anoma/namada"
-rev = "d785578fd68dbecf62084c8cbd8f6ea516c3fa50"
 
 [dev-dependencies]
 ibc-relayer-types = { workspace = true }

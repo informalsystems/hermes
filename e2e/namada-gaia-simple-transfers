@@ -128,15 +128,26 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --src-channel channel-0
 
 echo "==== Balances on Namada ===="
-${NAMADAC} --base-dir ${base_dir} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir} balance \
   --token ${IBC_TOKEN} \
   --owner relayer \
-  --node ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR})
+echo "${balance}"
+if [ "${balance}" != "${IBC_TOKEN}: 100" ]; then
+  echo "The balance on Namada is wrong"
+  exit 1
+fi
 
 echo "==== Balances on Gaia ===="
 gaia_user=$(gaiad --home ${DATA_DIR}/gaia-0 \
   keys --keyring-backend="test" show user -a)
-gaiad query bank balances ${gaia_user}
+balance=$(gaiad query bank balances ${gaia_user})
+echo "${balance}"
+balance=$(echo "${balance}" | grep samoleans -B 1 | tr -d '\n')
+if [ "${balance}" != "- amount: \"9900\"  denom: samoleans" ]; then
+  echo "The balance on Gaia is wrong"
+  exit 1
+fi
 
 echo "~~ Transfer back 50 samoleans from Namada to Gaia ~~"
 ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
@@ -165,13 +176,24 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --src-channel channel-0
 
 echo "==== Balances on Namada ===="
-${NAMADAC} --base-dir ${base_dir} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir} balance \
   --token ${IBC_TOKEN} \
   --owner relayer \
-  --node ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR})
+echo "${balance}"
+if [ "${balance}" != "${IBC_TOKEN}: 50" ]; then
+  echo "The balance on Namada is wrong"
+  exit 1
+fi
 
 echo "==== Balances on Gaia ===="
-gaiad query bank balances ${gaia_user}
+balance=$(gaiad query bank balances ${gaia_user})
+echo "${balance}"
+balance=$(echo "${balance}" | grep samoleans -B 1 | tr -d '\n')
+if [ "${balance}" != "- amount: \"9950\"  denom: samoleans" ]; then
+  echo "The balance on Gaia is wrong"
+  exit 1
+fi
 
 echo "==== Start Hermes ===="
 cargo run --bin hermes -- --config config_for_namada.toml \
@@ -191,13 +213,24 @@ ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
 sleep 15
 
 echo "==== Balances on Namada ===="
-${NAMADAC} --base-dir ${base_dir} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir} balance \
+  --token apfel \
   --owner relayer \
-  --show-ibc-tokens \
-  --node ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR})
+echo "${balance}"
+if [ "${balance}" != "apfel: 800" ]; then
+  echo "The balance on Namada is wrong"
+  exit 1
+fi
 
 echo "==== Balances on Gaia ===="
-gaiad query bank balances ${gaia_user}
+balance=$(gaiad query bank balances ${gaia_user})
+echo "${balance}"
+balance=$(echo "${balance}" | grep ibc -B 1 | tr -d '\n')
+if [[ "${balance}" != *"- amount: \"200\"  denom: ibc/"* ]]; then
+  echo "The balance on Gaia is wrong"
+  exit 1
+fi
 
 echo "~~ Shielding transfer 10 samoleans from Gaia to Namada ~~"
 cargo run --bin hermes -- --config config_for_namada.toml \
@@ -218,13 +251,24 @@ echo "==== Balance of shielded_a on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} shielded-sync \
   --viewing-keys ${SHIELDED_ALIAS_A} \
   --node ${NAMADA_LEDGER_ADDR}
-${NAMADAC} --base-dir ${base_dir} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir} balance \
+  --token ${IBC_TOKEN} \
   --owner ${SHIELDED_ALIAS_A} \
-  --show-ibc-tokens \
-  --node ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 10" ]]; then
+  echo "The balance of shielded_a on Namada is wrong"
+  exit 1
+fi
 
 echo "==== Balances on Gaia ===="
-gaiad query bank balances ${gaia_user}
+balance=$(gaiad query bank balances ${gaia_user})
+echo "${balance}"
+balance=$(echo "${balance}" | grep samoleans -B 1 | tr -d '\n')
+if [ "${balance}" != "- amount: \"9940\"  denom: samoleans" ]; then
+  echo "The balance on Gaia is wrong"
+  exit 1
+fi
 
 echo "~~ Shielded transfer 5 apfel from shielded_a to shielded_b ~~"
 ${NAMADAC} --base-dir ${base_dir} transfer \
@@ -239,16 +283,26 @@ echo "==== Balance of shielded_a on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} shielded-sync \
   --viewing-keys ${SHIELDED_ALIAS_A} ${SHIELDED_ALIAS_B} \
   --node ${NAMADA_LEDGER_ADDR}
-${NAMADAC} --base-dir ${base_dir} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir} balance \
+  --token ${IBC_TOKEN} \
   --owner ${SHIELDED_ALIAS_A} \
-  --show-ibc-tokens \
-  --node ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 5" ]]; then
+  echo "The balance of shielded_a on Namada is wrong"
+  exit 1
+fi
 
 echo "==== Balance of shielded_b on Namada ===="
-${NAMADAC} --base-dir ${base_dir} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir} balance \
+  --token ${IBC_TOKEN} \
   --owner ${SHIELDED_ALIAS_B} \
-  --show-ibc-tokens \
-  --node ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 5"* ]]; then
+  echo "The balance of shielded_b on Namada is wrong"
+  exit 1
+fi
 
 echo "~~ Transfer back 5 samoleans from Namada to Gaia ~~"
 ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
@@ -267,19 +321,35 @@ echo "==== Balances of shielded_a on Namada ===="
 ${NAMADAC} --base-dir ${base_dir} shielded-sync \
   --viewing-keys ${SHIELDED_ALIAS_A} ${SHIELDED_ALIAS_B} \
   --node ${NAMADA_LEDGER_ADDR}
-${NAMADAC} --base-dir ${base_dir} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir} balance \
+  --token ${IBC_TOKEN} \
   --owner ${SHIELDED_ALIAS_A} \
-  --show-ibc-tokens \
-  --node ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 5"* ]]; then
+  echo "The balance of shielded_a on Namada is wrong"
+  exit 1
+fi
 
 echo "==== Balances of shielded_b on Namada ===="
-${NAMADAC} --base-dir ${base_dir} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir} balance \
+  --token ${IBC_TOKEN} \
   --owner ${SHIELDED_ALIAS_B} \
-  --show-ibc-tokens \
-  --node ${NAMADA_LEDGER_ADDR}
+  --node ${NAMADA_LEDGER_ADDR})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 0"* ]]; then
+  echo "The balance of shielded_b on Namada is wrong"
+  exit 1
+fi
 
 echo "==== Balances on Gaia ===="
-gaiad query bank balances ${gaia_user}
+balance=$(gaiad query bank balances ${gaia_user})
+echo "${balance}"
+balance=$(echo "${balance}" | grep samoleans -B 1 | tr -d '\n')
+if [ "${balance}" != "- amount: \"9945\"  denom: samoleans" ]; then
+  echo "The balance on Gaia is wrong"
+  exit 1
+fi
 
 killall hermes
 killall gaiad
