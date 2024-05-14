@@ -543,8 +543,14 @@ fn channel_upgrade_extract_attributes_from_tx(
     let mut attr = ChannelUpgradeAttributes::default();
 
     for tag in &event.attributes {
-        let key = tag.key.as_str();
-        let value = tag.value.as_str();
+        let key = tag
+            .key_str()
+            .map_err(|_| ChannelError::malformed_event_attribute_key())?;
+
+        let value = tag
+            .value_str()
+            .map_err(|_| ChannelError::malformed_event_attribute_value(key.to_owned()))?;
+
         match key {
             channel_events::PORT_ID_ATTRIBUTE_KEY => {
                 attr.port_id = value.parse().map_err(ChannelError::identifier)?
