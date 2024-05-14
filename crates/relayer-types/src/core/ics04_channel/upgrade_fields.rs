@@ -32,14 +32,16 @@ impl TryFrom<RawUpgradeFields> for UpgradeFields {
     type Error = ChannelError;
 
     fn try_from(value: RawUpgradeFields) -> Result<Self, Self::Error> {
+        use itertools::Either;
+
         let ordering = Ordering::from_i32(value.ordering)?;
 
         let (connection_hops, failures): (Vec<_>, Vec<_>) = value
             .connection_hops
             .iter()
             .partition_map(|id| match ConnectionId::from_str(id) {
-                Ok(connection_id) => itertools::Either::Left(connection_id),
-                Err(e) => itertools::Either::Right((id.clone(), e)),
+                Ok(connection_id) => Either::Left(connection_id),
+                Err(e) => Either::Right((id.clone(), e)),
             });
 
         if !failures.is_empty() {
