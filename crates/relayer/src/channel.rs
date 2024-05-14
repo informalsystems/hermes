@@ -243,11 +243,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id;
 
-        let connection_id = channel_event_attributes.connection_id.clone();
+        // FIXME: connection_id is an instance of ConnectionIds(Vec<ConnectionId>), but ChannelSide::new() requires
+        // a single ConnectionId. To avoid further changes in ChannelSide, get only the 0th element for now.
+        // In the future, modify ChannelSide to use a Vec<ConnectionId>.
+        let connection_id = channel_event_attributes.connection_id.get_connection_ids()[0].clone();
+
         let (connection, _) = chain
             .query_connection(
                 QueryConnectionRequest {
-                    connection_id: connection_id.clone(),
+                    connection_id: connection_id.clone(), // FIXME: Add support for multihop connections queries.
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -268,7 +272,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             a_side: ChannelSide::new(
                 chain,
                 connection.client_id().clone(),
-                connection_id,
+                connection_id.clone(),
                 port_id,
                 channel_id,
                 // The event does not include the version.
