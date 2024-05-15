@@ -163,7 +163,7 @@ impl Runnable for TxChanOpenInitCmd {
             Err(e) => Output::error(e).exit(),
         };
 
-        let mut assembled_hops: Vec<ConnectionHop> = Vec::new();
+        let mut assembled_hops = Vec::new();
 
         assembled_hops.push(ConnectionHop {
             connection: IdentifiedConnectionEnd::new(

@@ -297,7 +297,7 @@ impl PartialEq<str> for ConnectionId {
 pub struct ConnectionIds(Vec<ConnectionId>);
 
 impl ConnectionIds {
-    pub fn get_connection_ids(&self) -> &Vec<ConnectionId> {
+    pub fn as_vec(&self) -> &[ConnectionId] {
         &self.0
     }
 
@@ -310,7 +310,7 @@ impl FromStr for ConnectionIds {
     type Err = ValidationError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let connection_ids: Vec<ConnectionId> = s
+        let connection_ids = s
             .split('/')
             .map(|conn_id| conn_id.parse())
             .collect::<Result<Vec<ConnectionId>, _>>()?;
@@ -326,7 +326,7 @@ impl Display for ConnectionIds {
             .0
             .iter()
             .map(|connection_id| connection_id.as_str())
-            .collect::<Vec<&str>>()
+            .collect::<Vec<_>>()
             .join(",");
 
         write!(f, "{}", s)
