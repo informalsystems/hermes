@@ -294,7 +294,7 @@ impl PartialEq<str> for ConnectionId {
 }
 
 // A Vec<ConnectionId> wrapper for the multi-hop channels PoC implementation
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ConnectionIds(Vec<ConnectionId>);
 
 impl ConnectionIds {
@@ -308,7 +308,7 @@ impl FromStr for ConnectionIds {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let connection_ids: Vec<ConnectionId> = s
-            .split("/")
+            .split('/')
             .map(|conn_id| conn_id.parse())
             .collect::<Result<Vec<ConnectionId>, _>>()?;
 
@@ -327,12 +327,6 @@ impl Display for ConnectionIds {
             .join(",");
 
         write!(f, "{}", s)
-    }
-}
-
-impl Default for ConnectionIds {
-    fn default() -> Self {
-        Self(Vec::new())
     }
 }
 
