@@ -178,7 +178,7 @@ impl Runnable for TxChanOpenInitCmd {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
             for connection_id in connnection_ids.iter().rev() {
                 // Retrieve the ChainId of the chain referenced by the previous connection hop
-                let chain_id = assembled_hops.last().unwrap().reference_chain_id();
+                let chain_id = &assembled_hops.last().unwrap().reference_chain_id;
 
                 // Spawn a handle for the chain referenced in the previous hop
                 let chain_handle = match spawn_chain_runtime(&config, chain_id) {

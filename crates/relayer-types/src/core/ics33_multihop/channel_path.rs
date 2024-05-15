@@ -16,22 +16,7 @@ impl ConnectionHop {
             reference_chain_id,
         }
     }
-
-    pub fn reference_chain_id(&self) -> &ChainId {
-        &self.reference_chain_id
-    }
-
-    pub fn connection(&self) -> &IdentifiedConnectionEnd {
-        &self.connection
-    }
 }
-
-// impl Display for ConnectionHop {
-//     todo!();
-// }
-// impl FromStr for ConnectionHop {
-//     todo!();
-// }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionHops {
