@@ -268,7 +268,6 @@ impl FromStr for ConnectionId {
     type Err = ValidationError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s = s.trim();
         validate_connection_identifier(s).map(|_| Self(s.to_string()))
     }
 }
@@ -301,6 +300,10 @@ impl ConnectionIds {
     pub fn get_connection_ids(&self) -> &Vec<ConnectionId> {
         &self.0
     }
+
+    pub fn into_vec(self) -> Vec<ConnectionId> {
+        self.0
+    }
 }
 
 impl FromStr for ConnectionIds {
@@ -312,7 +315,7 @@ impl FromStr for ConnectionIds {
             .map(|conn_id| conn_id.parse())
             .collect::<Result<Vec<ConnectionId>, _>>()?;
 
-        assert!(!connection_ids.is_empty()); // FIXME: Properly ensure that the vector is not empty
+        assert!(!connection_ids.is_empty()); // FIXME: Address this in the future to properly ensure that the vector is not empty
         Ok(Self(connection_ids))
     }
 }

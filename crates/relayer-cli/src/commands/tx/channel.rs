@@ -181,7 +181,7 @@ impl Runnable for TxChanOpenInitCmd {
                 let chain_id = assembled_hops.last().unwrap().reference_chain_id();
 
                 // Spawn a handle for the chain referenced in the previous hop
-                let chain_handle = match spawn_chain_runtime(&config, &chain_id) {
+                let chain_handle = match spawn_chain_runtime(&config, chain_id) {
                     Ok(handle) => handle,
                     Err(e) => Output::error(e).exit(),
                 };
