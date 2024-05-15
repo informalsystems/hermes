@@ -5,9 +5,17 @@ USAGE:
     hermes tx chan-open-init [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID>
 
 OPTIONS:
-    -h, --help             Print help information
-        --order <ORDER>    The channel ordering, valid options 'unordered' (default) and 'ordered'
-                           [default: ORDER_UNORDERED]
+        --connection-hops <CONNECTION_HOPS>
+            A list of identifiers of the intermediate connections between /
+                    a source and destination chain for a multi-hop channel, separated by slashes, /
+                    e.g, 'connection-1/connection-0' (optional)
+
+    -h, --help
+            Print help information
+
+        --order <ORDER>
+            The channel ordering, valid options 'unordered' (default) and 'ordered' [default:
+            ORDER_UNORDERED]
 
 REQUIRED:
         --dst-chain <DST_CHAIN_ID>
