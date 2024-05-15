@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use flex_error::define_error;
-use ibc_relayer_types::core::ics04_channel::events::UpgradeAttributes;
 use serde::{Deserialize, Serialize};
 
 use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
@@ -9,7 +8,7 @@ use ibc_relayer_types::core::{
     ics02_client::events::UpdateClient,
     ics03_connection::events::Attributes as ConnectionAttributes,
     ics04_channel::events::{
-        Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
+        Attributes, CloseInit, SendPacket, TimeoutPacket, UpgradeAttributes, WriteAcknowledgement,
     },
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };

@@ -1,6 +1,5 @@
 use alloc::sync::Arc;
 use core::fmt::{self, Debug, Display};
-use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
 
 use crossbeam_channel as channel;
 use tracing::Span;
@@ -20,6 +19,7 @@ use ibc_relayer_types::{
         ics04_channel::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
+            upgrade::{ErrorReceipt, Upgrade},
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},

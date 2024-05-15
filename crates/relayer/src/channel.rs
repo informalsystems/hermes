@@ -1,4 +1,10 @@
-pub use error::ChannelError;
+use core::fmt::{Display, Error as FmtError, Formatter};
+use core::time::Duration;
+
+use ibc_proto::google::protobuf::Any;
+use serde::Serialize;
+use tracing::{debug, error, info, warn};
+
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_ack::MsgChannelUpgradeAck;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_cancel::MsgChannelUpgradeCancel;
@@ -6,13 +12,6 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_confirm::MsgChann
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_open::MsgChannelUpgradeOpen;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_timeout::MsgChannelUpgradeTimeout;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-
-use core::fmt::{Display, Error as FmtError, Formatter};
-use core::time::Duration;
-
-use ibc_proto::google::protobuf::Any;
-use serde::Serialize;
-use tracing::{debug, error, info, warn};
 
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State, UpgradeState,
@@ -48,9 +47,11 @@ use crate::util::retry::retry_with_index;
 use crate::util::retry::RetryResult;
 use crate::util::task::Next;
 
-pub mod error;
 pub mod version;
 use version::Version;
+
+pub mod error;
+pub use error::ChannelError;
 
 pub mod channel_handshake_retry {
     //! Provides utility methods and constants to configure the retry behavior
