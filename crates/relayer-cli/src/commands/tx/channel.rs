@@ -12,7 +12,7 @@ use ibc_relayer_types::core::ics03_connection::connection::{
 };
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+    ChainId, ChannelId, ClientId, ConnectionId, ConnectionIds, PortId,
 };
 use ibc_relayer_types::core::ics33_multihop::channel_path::{ConnectionHop, ConnectionHops};
 use ibc_relayer_types::events::IbcEvent;
@@ -117,12 +117,11 @@ pub struct TxChanOpenInitCmd {
     #[clap(
         long = "connection-hops",
         value_name = "CONNECTION_HOPS",
-        use_delimiter = true,
-        value_delimiter = ',',
-        help = "The comma separated identifiers of the intermediate connections between /
-        a source and destination chain for a multi-hop channel (optional)"
+        help = "A list of identifiers of the intermediate connections between /
+        a source and destination chain for a multi-hop channel, separated by slashes, /
+        e.g, 'connection-1/connection-0' (optional)"
     )]
-    conn_hop_ids: Option<Vec<ConnectionId>>,
+    conn_hop_ids: Option<ConnectionIds>,
 }
 
 impl Runnable for TxChanOpenInitCmd {
@@ -176,7 +175,7 @@ impl Runnable for TxChanOpenInitCmd {
         // Check if connection IDs were provided via --connection-hops, indicating a multi-hop channel
         if let Some(connnection_ids) = &self.conn_hop_ids {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
-            for connection_id in connnection_ids.iter().rev() {
+            for connection_id in connnection_ids.as_vec().iter().rev() {
                 // Retrieve the ChainId of the chain referenced by the previous connection hop
                 let chain_id = &assembled_hops.last().unwrap().reference_chain_id;
 

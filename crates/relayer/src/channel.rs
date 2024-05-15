@@ -246,7 +246,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // FIXME: connection_id is an instance of ConnectionIds(Vec<ConnectionId>), but ChannelSide::new() requires
         // a single ConnectionId. To avoid further changes in ChannelSide, get only the 0th element for now.
         // In the future, modify ChannelSide to use a Vec<ConnectionId>.
-        let connection_id = channel_event_attributes.connection_id.get_connection_ids()[0].clone();
+        let connection_id = channel_event_attributes.connection_id.as_vec()[0].clone();
 
         let (connection, _) = chain
             .query_connection(
