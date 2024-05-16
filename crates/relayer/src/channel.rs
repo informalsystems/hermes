@@ -179,7 +179,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Display for Channel<ChainA, Chain
             self.ordering,
             self.a_side,
             self.b_side,
-            // TODO: add connection hops
+            // FIXME: add connection hops
             PrettyDuration(&self.connection_delay)
         )
     }

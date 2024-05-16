@@ -172,6 +172,10 @@ impl Runnable for TxChanOpenInitCmd {
             reference_chain_id: conn_client_state.chain_id().clone(),
         });
 
+        // FIXME: We are not currently checking for cycles in channel paths, e.g, the following channel hops are valid:
+        // ChainA -> ChainB -> ChainA -> ChainB. Still unsure if this should be allowed or not. Need to think about
+        // possible ramifications.
+
         // Check if connection IDs were provided via --connection-hops, indicating a multi-hop channel
         if let Some(connnection_ids) = &self.conn_hop_ids {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
