@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::fmt::{Debug, Display, Error as FmtError, Formatter};
 use std::str::FromStr;
 
+use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -316,7 +317,7 @@ impl FromStr for ConnectionIds {
             .collect::<Result<Vec<ConnectionId>, _>>()?;
 
         if connection_ids.is_empty() {
-            return Err(ValidationError::empty());
+            return Err(ValidationError::empty_connection_hops());
         }
 
         Ok(Self(connection_ids))
@@ -325,14 +326,7 @@ impl FromStr for ConnectionIds {
 
 impl Display for ConnectionIds {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        let s = self
-            .0
-            .iter()
-            .map(|connection_id| connection_id.as_str())
-            .collect::<Vec<_>>()
-            .join(",");
-
-        write!(f, "{}", s)
+        write!(f, "{}", self.0.iter().join(","))
     }
 }
 
