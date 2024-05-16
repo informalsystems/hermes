@@ -297,7 +297,7 @@ impl PartialEq<str> for ConnectionId {
 pub struct ConnectionIds(Vec<ConnectionId>);
 
 impl ConnectionIds {
-    pub fn as_vec(&self) -> &[ConnectionId] {
+    pub fn as_slice(&self) -> &[ConnectionId] {
         &self.0
     }
 
@@ -315,7 +315,10 @@ impl FromStr for ConnectionIds {
             .map(|conn_id| conn_id.parse())
             .collect::<Result<Vec<ConnectionId>, _>>()?;
 
-        assert!(!connection_ids.is_empty()); // FIXME: Address this in the future to properly ensure that the vector is not empty
+        if connection_ids.is_empty() {
+            return Err(ValidationError::empty());
+        }
+
         Ok(Self(connection_ids))
     }
 }

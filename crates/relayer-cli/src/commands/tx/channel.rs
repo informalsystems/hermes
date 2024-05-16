@@ -175,7 +175,7 @@ impl Runnable for TxChanOpenInitCmd {
         // Check if connection IDs were provided via --connection-hops, indicating a multi-hop channel
         if let Some(connnection_ids) = &self.conn_hop_ids {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
-            for connection_id in connnection_ids.as_vec().iter().rev() {
+            for connection_id in connnection_ids.as_slice().iter().rev() {
                 // Retrieve the ChainId of the chain referenced by the previous connection hop
                 let chain_id = &assembled_hops.last().unwrap().reference_chain_id;
 
@@ -219,8 +219,16 @@ impl Runnable for TxChanOpenInitCmd {
             }
         }
 
-        // Instantiate ConnectionHops from a vec of ConnectionHop
-        let connection_hops = Some(ConnectionHops::new(assembled_hops));
+        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
+        // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
+        // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
+        let connection_hops = match assembled_hops.len() {
+            0 => Output::error("At least one connection hop is required for opening a channel.")
+                .exit(),
+            1 => None,
+            _ => Some(ConnectionHops::new(assembled_hops)),
+        };
 
         let channel = Channel {
             ordering: self.order,
@@ -777,7 +785,7 @@ mod tests {
     use abscissa_core::clap::Parser;
     use ibc_relayer_types::core::{
         ics04_channel::channel::Ordering,
-        ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId},
+        ics24_host::identifier::{ChainId, ChannelId, ConnectionId, ConnectionIds, PortId},
     };
 
     #[test]
@@ -804,6 +812,38 @@ mod tests {
                 "port_b",
                 "--src-port",
                 "port_a"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_chan_open_init_connection_hops() {
+        assert_eq!(
+            TxChanOpenInitCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
+                dst_port_id: PortId::from_str("port_b").unwrap(),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                order: Ordering::Unordered,
+                conn_hop_ids: Some(
+                    ConnectionIds::from_str("connection_a/connection_b/connection_c").unwrap()
+                )
+            },
+            TxChanOpenInitCmd::parse_from([
+                "test",
+                "--dst-chain",
+                "chain_b",
+                "--src-chain",
+                "chain_a",
+                "--dst-connection",
+                "connection_b",
+                "--dst-port",
+                "port_b",
+                "--src-port",
+                "port_a",
+                "--connection-hops",
+                "connection_a/connection_b/connection_c",
             ])
         )
     }
@@ -942,6 +982,26 @@ mod tests {
             "port_b",
             "--src-port",
             "port_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_chan_open_init_wrong_conn_hops_separator() {
+        assert!(TxChanOpenInitCmd::try_parse_from([
+            "test",
+            "--dst-chain",
+            "chain_b",
+            "--src-chain",
+            "chain_a",
+            "--dst-connection",
+            "connection_b",
+            "--dst-port",
+            "port_b",
+            "--src-port",
+            "port_a",
+            "--connection-hops",
+            "connection-0,connection-1"
         ])
         .is_err())
     }
