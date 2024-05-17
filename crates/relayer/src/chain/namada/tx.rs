@@ -120,7 +120,6 @@ impl NamadaChain {
             wrapper_fee_payer: Some(relayer_public_key.clone()),
             fee_amount: None,
             fee_token,
-            fee_unshield: None,
             gas_limit,
             expiration: TxExpiration::Default,
             disposable_signing_key: false,
