@@ -117,8 +117,8 @@ pub struct TxChanOpenInitCmd {
     #[clap(
         long = "connection-hops",
         value_name = "CONNECTION_HOPS",
-        help = "A list of identifiers of the intermediate connections between /
-        a source and destination chain for a multi-hop channel, separated by slashes, /
+        help = "A list of identifiers of the intermediate connections between \
+        a source and destination chain for a multi-hop channel, separated by slashes, \
         e.g, 'connection-1/connection-0' (optional)"
     )]
     conn_hop_ids: Option<ConnectionIds>,
