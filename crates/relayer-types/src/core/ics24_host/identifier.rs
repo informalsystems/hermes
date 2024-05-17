@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::fmt::{Debug, Display, Error as FmtError, Formatter};
 use std::str::FromStr;
 
+use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -289,6 +290,43 @@ impl Default for ConnectionId {
 impl PartialEq<str> for ConnectionId {
     fn eq(&self, other: &str) -> bool {
         self.as_str().eq(other)
+    }
+}
+
+// A Vec<ConnectionId> wrapper for the multi-hop channels PoC implementation
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct ConnectionIds(Vec<ConnectionId>);
+
+impl ConnectionIds {
+    pub fn as_slice(&self) -> &[ConnectionId] {
+        &self.0
+    }
+
+    pub fn into_vec(self) -> Vec<ConnectionId> {
+        self.0
+    }
+}
+
+impl FromStr for ConnectionIds {
+    type Err = ValidationError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let connection_ids = s
+            .split('/')
+            .map(|conn_id| conn_id.parse())
+            .collect::<Result<Vec<ConnectionId>, _>>()?;
+
+        if connection_ids.is_empty() {
+            return Err(ValidationError::empty_connection_hops());
+        }
+
+        Ok(Self(connection_ids))
+    }
+}
+
+impl Display for ConnectionIds {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "{}", self.0.iter().join(","))
     }
 }
 

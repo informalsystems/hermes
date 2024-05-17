@@ -104,6 +104,7 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
         options.order,
         port_a.0.clone(),
         port_b.0.clone(),
+        None,
         Some(options.version),
     )?;
 
@@ -188,6 +189,7 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
                 None,
                 None,
             ),
+            connection_hops: None,
             connection_delay: connection.connection.delay_period,
         };
 
