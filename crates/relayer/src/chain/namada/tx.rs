@@ -349,7 +349,7 @@ impl NamadaChain {
                 .find_public_key(pkh.to_string())
                 .map_err(|e| NamadaError::namada(namada_sdk::error::Error::Other(e.to_string())))?;
 
-            if tx::is_reveal_pk_needed(self.ctx.client(), address, args.force)
+            if tx::is_reveal_pk_needed(self.ctx.client(), address)
                 .await
                 .map_err(NamadaError::namada)?
             {
