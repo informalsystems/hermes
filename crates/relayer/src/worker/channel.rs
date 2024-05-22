@@ -36,6 +36,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
 ) -> TaskHandle {
     let mut complete_handshake_on_new_block = true;
+
     spawn_background_task(
         error_span!("worker.channel", channel = %channel.short_name()),
         Some(Duration::from_millis(200)),
@@ -50,6 +51,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         debug!("starts processing {:?}", last_event);
 
                         complete_handshake_on_new_block = false;
+
                         if let Some(event_with_height) = last_event {
                             match event_with_height.event.event_type() {
                                 IbcEventType::UpgradeInitChannel
@@ -71,6 +73,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                     },
                                 )
                                 .map_err(|e| TaskError::Fatal(RunError::retry(e))),
+
                                 IbcEventType::UpgradeErrorChannel => retry_with_index(
                                     channel_handshake_retry::default_strategy(max_block_times),
                                     |index| match RelayChannel::restore_from_state(
@@ -94,6 +97,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                     },
                                 )
                                 .map_err(|e| TaskError::Fatal(RunError::retry(e))),
+
                                 _ => retry_with_index(
                                     channel_handshake_retry::default_strategy(max_block_times),
                                     |index| match RelayChannel::restore_from_event(
@@ -120,6 +124,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         debug!("starts processing block event at {:#?}", current_height);
 
                         complete_handshake_on_new_block = false;
+
                         retry_with_index(
                             channel_handshake_retry::default_strategy(max_block_times),
                             |index| match RelayChannel::restore_from_state(
