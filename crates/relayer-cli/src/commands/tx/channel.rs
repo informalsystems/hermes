@@ -4,7 +4,7 @@ use abscissa_core::clap::Parser;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    IncludeProof, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::channel::{Channel, ChannelSide};
 use ibc_relayer_types::core::ics03_connection::connection::{
@@ -133,7 +133,7 @@ impl Runnable for TxChanOpenInitCmd {
             Err(e) => Output::error(e).exit(),
         };
 
-        // Retrieve the connection
+        // Attempt to retrieve --dst-connection
         let dst_connection = match chains.dst.query_connection(
             QueryConnectionRequest {
                 connection_id: self.dst_conn_id.clone(),
@@ -256,7 +256,7 @@ impl Runnable for TxChanOpenInitCmd {
             connection_delay: Default::default(),
         };
 
-        info!("message ChanOpenInit: {}", channel);
+        info!("message {}: {}", "ChanOpenInit", channel);
 
         let res: Result<IbcEvent, Error> = channel
             .build_chan_open_init_and_send()
@@ -338,34 +338,194 @@ pub struct TxChanOpenTryCmd {
 
 impl Runnable for TxChanOpenTryCmd {
     fn run(&self) {
-        tx_chan_cmd!(
-            "ChanOpenTry",
-            build_chan_open_try_and_send,
-            self,
-            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
-                Channel {
-                    connection_delay: Default::default(),
-                    ordering: Ordering::default(),
-                    a_side: ChannelSide::new(
-                        chains.src,
-                        ClientId::default(),
-                        ConnectionId::default(),
-                        self.src_port_id.clone(),
-                        Some(self.src_chan_id.clone()),
-                        None,
+        let config = app_config();
+
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
+            Ok(chains) => chains,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        // Attempt to retrieve --dst-connection
+        let dst_connection = match chains.dst.query_connection(
+            QueryConnectionRequest {
+                connection_id: self.dst_conn_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((connection, _)) => connection,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        // Retrieve the ChannelEnd in INIT state (--src-channel) from --src-chain
+        let init_channel = match chains.src.query_channel(
+            QueryChannelRequest {
+                port_id: self.src_port_id.clone(),
+                channel_id: self.src_chan_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((channel, _)) => channel,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        let mut assembled_reverse_hops = Vec::new();
+
+        // Determine if the channel is a multihop channel, i.e, connection_hops > 1
+        if init_channel.connection_hops().len() > 1 {
+            // In the case of multihop channels, we must build the channel path from --dst-chain
+            // to --src-chain by leveraging the information stored in the existing ChannelEnd (which contains
+            // the path from --src-chain to --dst-chain). We must traverse the path from --src-chain to
+            // --dst-chain, and, for each connection hop, obtain the counterparty connection and use it
+            // to build the same hop from the opposite direction.
+            let mut chain_id = chains.src.id().clone();
+
+            for connection_id in init_channel.connection_hops() {
+                let chain_handle = match spawn_chain_runtime(&config, &chain_id) {
+                    Ok(handle) => handle,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                let hop_connection = match chain_handle.query_connection(
+                    QueryConnectionRequest {
+                        connection_id: connection_id.clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                ) {
+                    Ok((connection, _)) => connection,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                let hop_conn_client_state = match chain_handle.query_client_state(
+                    QueryClientStateRequest {
+                        client_id: hop_connection.client_id().clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                ) {
+                    Ok((client_state, _)) => client_state,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                // Obtain the counterparty connection_id and chain_id for the current connection hop
+                let counterparty_conn_id = hop_connection.counterparty().connection_id().unwrap();
+                let counterparty_chain_id = hop_conn_client_state.chain_id().clone();
+
+                let counterparty_handle = match spawn_chain_runtime(&config, &counterparty_chain_id)
+                {
+                    Ok(handle) => handle,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                // Retrieve the counterparty connection
+                let counterparty_connection = match counterparty_handle.query_connection(
+                    QueryConnectionRequest {
+                        connection_id: counterparty_conn_id.clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                ) {
+                    Ok((connection, _)) => connection,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                // Build the current hop from the opposite direction
+                assembled_reverse_hops.push(ConnectionHop {
+                    connection: IdentifiedConnectionEnd::new(
+                        counterparty_conn_id.clone(),
+                        counterparty_connection,
                     ),
-                    b_side: ChannelSide::new(
-                        chains.dst,
-                        dst_connection.client_id().clone(),
-                        self.dst_conn_id.clone(),
-                        self.dst_port_id.clone(),
-                        self.dst_chan_id.clone(),
-                        None,
-                    ),
-                    connection_hops: None,
-                }
+                    reference_chain_id: chain_id.clone(),
+                });
+
+                // Update chain_id to point to the next chain in the channel path
+                chain_id = hop_conn_client_state.chain_id().clone();
             }
-        );
+        } else {
+            // If the channel path corresponds to a single-hop channel, there is only one
+            // connection hop from --dst-connection to --src-chain.
+            let hop_connection = match chains.dst.query_connection(
+                QueryConnectionRequest {
+                    connection_id: self.dst_conn_id.clone().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((connection, _)) => connection,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            // Retrieve the state of the client underlying the hop connection
+            let hop_conn_client_state = match chains.dst.query_client_state(
+                QueryClientStateRequest {
+                    client_id: hop_connection.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((client_state, _)) => client_state,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            // Build the single hop from --dst-chain to --src-chain
+            assembled_reverse_hops.push(ConnectionHop {
+                connection: IdentifiedConnectionEnd::new(
+                    self.dst_conn_id.clone(),
+                    hop_connection.clone(),
+                ),
+                reference_chain_id: hop_conn_client_state.chain_id().clone(),
+            });
+        }
+
+        // The connection hops were assembled while traversing from --src-chain towards --dst-chain.
+        // Reverse them to obtain the path from --dst-chain to --src-chain. Single hops remain unchanged.
+        assembled_reverse_hops.reverse();
+
+        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
+        // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
+        // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
+        let connection_hops = match assembled_reverse_hops.len() {
+            0 => Output::error("At least one connection hop is required for opening a channel.")
+                .exit(),
+            1 => None,
+            _ => Some(ConnectionHops::new(assembled_reverse_hops)),
+        };
+
+        let channel = Channel {
+            ordering: Ordering::default(),
+            a_side: ChannelSide::new(
+                chains.src,
+                ClientId::default(),
+                ConnectionId::default(),
+                self.src_port_id.clone(),
+                Some(self.src_chan_id.clone()),
+                None,
+            ),
+            b_side: ChannelSide::new(
+                chains.dst,
+                dst_connection.client_id().clone(),
+                self.dst_conn_id.clone(),
+                self.dst_port_id.clone(),
+                self.dst_chan_id.clone(),
+                None,
+            ),
+            connection_hops,
+            connection_delay: Default::default(),
+        };
+
+        info!("message {}: {}", "ChanOpenTry", channel);
+
+        let res: Result<IbcEvent, Error> = channel
+            .build_chan_open_try_and_send()
+            .map_err(Error::channel);
+
+        match res {
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(e).exit(),
+        }
     }
 }
 
