@@ -119,5 +119,17 @@ define_error! {
         KeyRing
             [ KeyRingError ]
             |_| { "keyring error" },
+
+        Ics33HopsDestinationMismatch
+            {
+                src_chain: ChainId,
+                dst_chain: ChainId,
+                reference_chain: ChainId,
+            }
+            | e | {
+                format_args!("expected a channel path from chain '{}' to chain '{}', \
+                 but the received connection identifier(s) lead to chain '{}' ", e.dst_chain, e.src_chain,
+                 e.reference_chain)
+            },
     }
 }

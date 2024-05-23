@@ -118,7 +118,7 @@ pub struct TxChanOpenInitCmd {
         long = "connection-hops",
         value_name = "CONNECTION_HOPS",
         help = "A list of identifiers of the intermediate connections between \
-        a source and destination chain for a multi-hop channel, separated by slashes, \
+        a destination and a source chain for a multi-hop channel, separated by slashes, \
         e.g, 'connection-1/connection-0' (optional)"
     )]
     conn_hop_ids: Option<ConnectionIds>,
@@ -179,7 +179,7 @@ impl Runnable for TxChanOpenInitCmd {
         // Check if connection IDs were provided via --connection-hops, indicating a multi-hop channel
         if let Some(connnection_ids) = &self.conn_hop_ids {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
-            for connection_id in connnection_ids.as_slice().iter().rev() {
+            for connection_id in connnection_ids.as_slice().iter() {
                 // Retrieve the ChainId of the chain referenced by the previous connection hop
                 let chain_id = &assembled_hops.last().unwrap().reference_chain_id;
 
@@ -220,6 +220,18 @@ impl Runnable for TxChanOpenInitCmd {
                     ),
                     reference_chain_id: hop_conn_client_state.chain_id().clone(),
                 });
+            }
+        }
+
+        // Ensure that the channel path leads to the chain passed to --src-chain
+        if let Some(last_hop) = &assembled_hops.last() {
+            if last_hop.reference_chain_id != chains.src.id() {
+                Output::error(Error::ics33_hops_destination_mismatch(
+                    chains.src.id(),
+                    chains.dst.id(),
+                    last_hop.reference_chain_id.clone(),
+                ))
+                .exit()
             }
         }
 
@@ -482,6 +494,18 @@ impl Runnable for TxChanOpenTryCmd {
         // The connection hops were assembled while traversing from --src-chain towards --dst-chain.
         // Reverse them to obtain the path from --dst-chain to --src-chain. Single hops remain unchanged.
         assembled_reverse_hops.reverse();
+
+        // Ensure that the reverse channel path leads to the chain passed to --src-chain
+        if let Some(last_hop) = &assembled_reverse_hops.last() {
+            if last_hop.reference_chain_id != chains.src.id() {
+                Output::error(Error::ics33_hops_destination_mismatch(
+                    chains.src.id(),
+                    chains.dst.id(),
+                    last_hop.reference_chain_id.clone(),
+                ))
+                .exit()
+            }
+        }
 
         // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
