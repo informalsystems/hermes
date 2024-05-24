@@ -7,6 +7,7 @@ use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::channel::{Channel, ChannelSide};
+use ibc_relayer::connection::ConnectionError;
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
@@ -422,7 +423,12 @@ impl Runnable for TxChanOpenTryCmd {
                 };
 
                 // Obtain the counterparty connection_id and chain_id for the current connection hop
-                let counterparty_conn_id = hop_connection.counterparty().connection_id().unwrap();
+                let counterparty_conn_id = hop_connection
+                    .counterparty()
+                    .connection_id()
+                    .unwrap_or_else(|| {
+                        Output::error(ConnectionError::missing_counterparty_connection_id()).exit()
+                    });
                 let counterparty_chain_id = hop_conn_client_state.chain_id().clone();
 
                 let counterparty_handle = match spawn_chain_runtime(&config, &counterparty_chain_id)
