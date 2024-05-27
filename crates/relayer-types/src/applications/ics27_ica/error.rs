@@ -9,7 +9,7 @@ define_error! {
     Error {
         Ics04Channel
             [ channel_error::Error ]
-            | _ | { "ics04 channel error" },
+            | _ | { "ICS 04 channel error" },
 
         Owner
         [ SignerError ]

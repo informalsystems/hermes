@@ -1677,8 +1677,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ));
         }
 
-        if channel_end.state != State::Open(UpgradeState::NotUpgrading)
-            && channel_end.state != State::Open(UpgradeState::Upgrading)
+        if !matches!(channel_end.state, State::Open(_))
         {
             return Err(ChannelError::invalid_channel_upgrade_state(
                 State::Open(UpgradeState::NotUpgrading).to_string(),
