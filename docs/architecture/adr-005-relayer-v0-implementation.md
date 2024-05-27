@@ -221,7 +221,7 @@ Accepted
   [comment](https://github.com/informalsystems/hermes/pull/449#issuecomment-750248113)
   provides additional insights into development-time relayer `v0.1` environment.
 
-- __Mock__: Has been removed after splittin the ibc-rs repository
+- __Mock__: Has been removed after splitting the ibc-rs repository
 
 
 
