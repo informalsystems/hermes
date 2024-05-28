@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v1.8.3
+
+*May 28th, 2024*
+
+This patch release fixes a bug that may happen prevent the relayer from submitting the evidence for a duplicate vote in some cases.
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Fix the trusted height consensus state query when submitting the double vote evidence
+    ([\#3999](https://github.com/informalsystems/hermes/issues/3999))
+
 ## v1.8.2
 
 *March 12th, 2024*
