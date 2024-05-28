@@ -14,12 +14,24 @@ use crate::error::Error;
 
 pub async fn query_eip_base_fee(
     rpc_address: &Url,
-    endpoint: &str,
+    gas_price_denom: &str,
     chain_id: &ChainId,
 ) -> Result<f64, Error> {
     debug!("Querying Omosis EIP-1559 base fee from {rpc_address}");
 
-    let response = reqwest::get(endpoint).await.map_err(Error::http_request)?;
+    let url = if chain_id.name().contains("osmosis") {
+        format!(
+            "{}abci_query?path=\"/osmosis.txfees.v1beta1.Query/GetEipBaseFee\"",
+            rpc_address
+        )
+    } else {
+        format!(
+            "{}abci_query?path=\"/feemarket.feemarket.v1.Query/GasPrices\"&denom={}",
+            rpc_address, gas_price_denom
+        )
+    };
+
+    let response = reqwest::get(&url).await.map_err(Error::http_request)?;
 
     if !response.status().is_success() {
         return Err(Error::http_response(response.status()));
