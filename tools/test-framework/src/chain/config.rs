@@ -359,11 +359,18 @@ pub fn consensus_params_max_gas(
     genesis: &mut serde_json::Value,
     max_gas: &str,
 ) -> Result<(), Error> {
-    let block = genesis
-        .get_mut("consensus_params")
-        .and_then(|consensus_params| consensus_params.get_mut("block"))
-        .and_then(|block| block.as_object_mut())
-        .ok_or_else(|| eyre!("failed to get `block` field in genesis file"))?;
+    let block = match genesis.get_mut("consensus_params") {
+        Some(consensus_params) => consensus_params
+            .get_mut("block")
+            .and_then(|block| block.as_object_mut())
+            .ok_or_else(|| eyre!("failed to get `block` field in genesis file"))?,
+        None => genesis
+            .get_mut("consensus")
+            .and_then(|consensus| consensus.get_mut("params"))
+            .and_then(|params| params.get_mut("block"))
+            .and_then(|block| block.as_object_mut())
+            .ok_or_else(|| eyre!("failed to get `block` field in genesis file"))?,
+    };
 
     block.insert(
         "max_gas".to_owned(),
