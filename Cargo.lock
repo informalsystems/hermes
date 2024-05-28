@@ -3429,15 +3429,6 @@ checksum = "f8478577c03552c21db0e2724ffb8986a5ce7af88107e6be5d2ee6e158c12800"
 
 [[package]]
 name = "itertools"
-version = "0.10.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
@@ -3775,8 +3766,8 @@ checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
 
 [[package]]
 name = "namada_account"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "linkme",
@@ -3789,8 +3780,8 @@ dependencies = [
 
 [[package]]
 name = "namada_controller"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "namada_core",
  "smooth-operator",
@@ -3799,8 +3790,8 @@ dependencies = [
 
 [[package]]
 name = "namada_core"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "bech32 0.8.1",
  "borsh 1.2.1",
@@ -3846,8 +3837,8 @@ dependencies = [
 
 [[package]]
 name = "namada_ethereum_bridge"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "ethabi",
@@ -3878,8 +3869,8 @@ dependencies = [
 
 [[package]]
 name = "namada_events"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "linkme",
@@ -3894,8 +3885,8 @@ dependencies = [
 
 [[package]]
 name = "namada_gas"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "linkme",
@@ -3909,8 +3900,8 @@ dependencies = [
 
 [[package]]
 name = "namada_governance"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "itertools 0.12.1",
@@ -3932,8 +3923,8 @@ dependencies = [
 
 [[package]]
 name = "namada_ibc"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "ibc",
@@ -3962,8 +3953,8 @@ dependencies = [
 
 [[package]]
 name = "namada_macros"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "data-encoding",
  "proc-macro2",
@@ -3974,8 +3965,8 @@ dependencies = [
 
 [[package]]
 name = "namada_merkle_tree"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "eyre",
@@ -3989,8 +3980,8 @@ dependencies = [
 
 [[package]]
 name = "namada_migrations"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "lazy_static",
  "linkme",
@@ -3999,8 +3990,8 @@ dependencies = [
 
 [[package]]
 name = "namada_parameters"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "namada_core",
@@ -4011,8 +4002,8 @@ dependencies = [
 
 [[package]]
 name = "namada_proof_of_stake"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "data-encoding",
@@ -4038,16 +4029,16 @@ dependencies = [
 
 [[package]]
 name = "namada_replay_protection"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "namada_core",
 ]
 
 [[package]]
 name = "namada_sdk"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "async-trait",
  "bimap",
@@ -4113,8 +4104,8 @@ dependencies = [
 
 [[package]]
 name = "namada_shielded_token"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "masp_primitives",
@@ -4131,8 +4122,8 @@ dependencies = [
 
 [[package]]
 name = "namada_state"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "ics23",
@@ -4159,8 +4150,8 @@ dependencies = [
 
 [[package]]
 name = "namada_storage"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "itertools 0.12.1",
@@ -4179,8 +4170,8 @@ dependencies = [
 
 [[package]]
 name = "namada_token"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "namada_core",
  "namada_events",
@@ -4191,8 +4182,8 @@ dependencies = [
 
 [[package]]
 name = "namada_trans_token"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "konst",
  "namada_core",
@@ -4202,8 +4193,8 @@ dependencies = [
 
 [[package]]
 name = "namada_tx"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "ark-bls12-381",
  "bitflags 2.5.0",
@@ -4230,8 +4221,8 @@ dependencies = [
 
 [[package]]
 name = "namada_vote_ext"
-version = "0.36.1"
-source = "git+https://github.com/anoma/namada#0017f90838a9774fe19f0e905c33cecd86c36fa7"
+version = "0.37.0"
+source = "git+https://github.com/anoma/namada#5a5838a528ace84c03a1dfc818a50450f6d09459"
 dependencies = [
  "borsh 1.2.1",
  "linkme",
@@ -4964,7 +4955,7 @@ checksum = "8bdf592881d821b83d471f8af290226c8d51402259e9bb5be7f9f8bdebbb11ac"
 dependencies = [
  "bytes",
  "heck",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "log",
  "multimap",
  "once_cell",
