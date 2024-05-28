@@ -48,7 +48,7 @@ pub async fn query_eip_base_fee(
         extract_dynamic_gas_price(result.result.response.value)?
     };
 
-    debug!("EIP-1559 base fee is {}", amount);
+    trace!("EIP-1559 base fee: {amount}");
 
     Ok(amount)
 }
