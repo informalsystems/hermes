@@ -55,11 +55,11 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - name: Install sconfig
-        uses: jaxxstorm/action-install-gh-release@v1.11.0
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
           repo: freshautomations/sconfig
           platform: linux
@@ -68,7 +68,7 @@ jobs:
           rename-to: sconfig
           chmod: 0755
       - name: Install stoml
-        uses: jaxxstorm/action-install-gh-release@v1.11.0
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
           repo: freshautomations/stoml
           platform: linux
@@ -112,11 +112,11 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - name: Install sconfig
-        uses: jaxxstorm/action-install-gh-release@v1.11.0
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
           repo: freshautomations/sconfig
           platform: linux
@@ -125,7 +125,7 @@ jobs:
           rename-to: sconfig
           chmod: 0755
       - name: Install stoml
-        uses: jaxxstorm/action-install-gh-release@v1.11.0
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
           repo: freshautomations/stoml
           platform: linux
@@ -169,11 +169,11 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - name: Install sconfig
-        uses: jaxxstorm/action-install-gh-release@v1.11.0
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
           repo: freshautomations/sconfig
           platform: linux
@@ -182,7 +182,7 @@ jobs:
           rename-to: sconfig
           chmod: 0755
       - name: Install stoml
-        uses: jaxxstorm/action-install-gh-release@v1.11.0
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
           repo: freshautomations/stoml
           platform: linux
@@ -227,11 +227,11 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - name: Install sconfig
-        uses: jaxxstorm/action-install-gh-release@v1.11.0
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
           repo: freshautomations/sconfig
           platform: linux
@@ -240,7 +240,7 @@ jobs:
           rename-to: sconfig
           chmod: 0755
       - name: Install stoml
-        uses: jaxxstorm/action-install-gh-release@v1.11.0
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
           repo: freshautomations/stoml
           platform: linux
