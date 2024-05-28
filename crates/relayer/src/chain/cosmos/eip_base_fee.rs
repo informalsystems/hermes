@@ -81,15 +81,6 @@ fn extract_dynamic_gas_price_osmosis(encoded: String) -> Result<f64, Error> {
     f64::from_str(dec.to_string().as_str()).map_err(Error::parse_float)
 }
 
-/// GasPricesResponse is the response type for the Query/GasPrices RPC method.
-/// Returns a gas price in all available denoms.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GasPricesResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub prices: ::prost::alloc::vec::Vec<DecCoin>,
-}
-
 /// GasPriceResponse is the response type for the Query/GasPrice RPC method.
 /// Returns a gas price in specified denom.
 #[allow(clippy::derive_partial_eq_without_eq)]
