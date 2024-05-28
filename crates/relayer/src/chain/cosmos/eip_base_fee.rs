@@ -2,13 +2,13 @@ use core::fmt;
 use std::ops::Div;
 use std::str::FromStr;
 
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use serde::Deserialize;
 use subtle_encoding::base64;
 use tendermint_rpc::Url;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use ibc_proto::cosmos::base::v1beta1::{DecCoin, DecProto};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::error::Error;
 
