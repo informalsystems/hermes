@@ -105,7 +105,7 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -143,7 +143,7 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -186,7 +186,7 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -228,7 +228,7 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -270,7 +270,7 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -311,7 +311,7 @@ jobs:
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
-        uses: cachix/cachix-action@v14
+        uses: cachix/cachix-action@v15
         with: 
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
