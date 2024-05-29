@@ -1604,32 +1604,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let proof_upgrade =
             CommitmentProofBytes::try_from(upgrade_proof).map_err(ChannelError::malformed_proof)?;
 
-        // TODO: Is this check necessary?
-        if channel_end.counterparty().port_id() != self.dst_port_id() {
-            return Err(ChannelError::mismatch_port(
-                self.dst_chain().id(),
-                self.dst_port_id().clone(),
-                self.src_chain().id(),
-                self.src_port_id().clone(),
-                src_channel_id.clone(),
-            ));
-        }
-
-        let counterparty_ordering = channel_end.ordering();
-
-        // We're assuming here that so long as the orderings match between the
-        // two channel ends, that the ordering on this channel end is valid
-        // as far as going from a stricter order to a less strict ordering
-        // So we aren't explicitly checking for that here like we did in the
-        // build_chan_upgrade_init function
-        // TODO: Make sure this assumption is correct
-        if *counterparty_ordering != self.ordering {
-            return Err(ChannelError::invalid_ordering(
-                self.ordering,
-                *counterparty_ordering,
-            ));
-        }
-
         if !matches!(channel_end.state, State::Open(_)) {
             return Err(ChannelError::invalid_channel_upgrade_state(
                 State::Open(UpgradeState::NotUpgrading).to_string(),
