@@ -1,0 +1,253 @@
+#!/bin/bash
+
+# This script tests NFT transfers between a local Namada and Stargaze testnet
+# Need to create an account and an NFT on Stargaze testnet.
+# `make build` and `make build-wasm-scripts` on Namada directory,
+# set up a local Namada with `scripts/setup-namada-single-node`,
+# edit `config_namada_stargaze.toml`
+# Then Run with `namada-stargaze-transfers ${namada_dir}`
+#
+# Set a key as "relayer"
+# starsd keys add relayer --recover
+#
+# Add Stargaze key as a relayer
+#cargo run -q --bin hermes -- --config config_namada_stargaze.toml \
+#  keys add --chain ${STARGAZE_CHAIN_ID} --mnemonic-file /dev/stdin
+
+set -ex
+
+
+NAMADA_DIR=$1
+if [ -z "${NAMADA_DIR}" ]
+then
+  echo "ERROR: Namada directory should be given"
+  exit 1
+fi
+
+cd $(dirname $0)
+HERMES_DIR=${PWD%/e2e*}
+
+# edit for your environment
+NAMADA_CHAIN_ID="namada-test.eb0199f3257a844df8"
+NAMADAC="${NAMADA_DIR}/target/debug/namadac"
+NAMADAN="${NAMADA_DIR}/target/debug/namadan"
+NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
+DATA_DIR="${HERMES_DIR}/data"
+NAMADA_LEDGER_ADDR="http://127.0.0.1:27657"
+
+TOKEN_ID="5"
+
+CONFIG_FILE="${HERMES_DIR}/config_namada_stargaze.toml"
+
+STARGAZE_CHAIN_ID="elgafar-1"
+ICS721_CONTRACT="stars1ve46fjrhcrum94c7d8yc2wsdz8cpuw73503e8qn9r44spr6dw0lsvmvtqh"
+SG721_CONTRACT="stars1exh83tyv29g374yhs6cktwsd2sen50gjpuq2jhfn6p7e6nqsejfq2p0v7z"
+STARGAZE_NODE="https://rpc.elgafar-1.stargaze-apis.com:443"
+STARGAZE_PORT="wasm.${ICS721_CONTRACT}"
+
+TX_ARGS="--from relayer --node ${STARGAZE_NODE} --chain-id ${STARGAZE_CHAIN_ID} --gas auto --gas-prices 0.01ustars --gas-adjustment 1.1 -y"
+
+NAMADA_BASE="${DATA_DIR}/namada"
+SHIELDED_ALIAS="shielded-1"
+PAYMENT_ALIAS="payment-1"
+
+SHIELDED_ALIAS_2="shielded-2"
+PAYMENT_ALIAS_2="payment-2"
+
+#### main ####
+echo "==== Check the minted NFT on Stargaze ===="
+starsd query wasm contract-state smart ${SG721_CONTRACT} \
+  "{\"owner_of\": {\"token_id\": \"${TOKEN_ID}\"}}" \
+  --node ${STARGAZE_NODE}
+
+# Create a channel
+resp=$(cargo run --bin hermes -- --config ${CONFIG_FILE} \
+  create channel \
+  --a-chain ${NAMADA_CHAIN_ID} \
+  --b-chain ${STARGAZE_CHAIN_ID} \
+  --a-port nft-transfer \
+  --b-port ${STARGAZE_PORT} \
+  --channel-version ics721-1 \
+  --new-client-connection --yes)
+
+namada_channel=$(echo "$resp" | grep "a_side" -A 19 | grep "channel-" | sed 's/"//g' | awk -F',' '{print $1}' | sed 's/ //g')
+stargaze_channel=$(echo "$resp" | grep "b_side" -A 19 | grep "channel-" | sed 's/"//g' | awk -F',' '{print $1}' | sed 's/ //g')
+
+echo "==== Send the NFT from Stargaze to Namada ===="
+current_height=$(starsd status --node ${STARGAZE_NODE} | jq .SyncInfo.latest_block_height | sed 's/"//g')
+timeout_height=$((${current_height} + 100))
+namada_receiver=$(${NAMADAW} --base-dir ${NAMADA_BASE} find --alias relayer | awk '/"relayer":/{print $3}')
+msg="{\"receiver\": \"${namada_receiver}\", \"channel_id\": \"${stargaze_channel}\", \"timeout\": {\"block\": { \"revision\": 0, \"height\": ${timeout_height}}}}"
+encoded_msg=$(echo ${msg} | base64)
+starsd tx wasm execute ${SG721_CONTRACT} \
+  "{\"send_nft\": {\"contract\":\"${ICS721_CONTRACT}\", \"token_id\": \"${TOKEN_ID}\", \"msg\": \"${encoded_msg}\"}}" \
+  ${TX_ARGS}
+
+sleep 5
+
+echo "==== Packet relaying ===="
+cargo run --bin hermes -- --config ${CONFIG_FILE} clear packets \
+  --chain ${STARGAZE_CHAIN_ID} \
+  --port wasm.${ICS721_CONTRACT} \
+  --channel ${stargaze_channel}
+
+echo "==== Check the escrowed NFT on Stargaze ===="
+starsd query wasm contract-state smart ${SG721_CONTRACT} \
+  "{\"owner_of\": {\"token_id\": \"${TOKEN_ID}\"}}" \
+  --node ${STARGAZE_NODE}
+
+echo "==== Check the NFT on Namada ===="
+token="nft-transfer/${namada_channel}/${SG721_CONTRACT}/${TOKEN_ID}"
+${NAMADAC} --base-dir ${NAMADA_BASE} balance \
+  --token ${token} \
+  --owner relayer \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "==== Send back the NFT from Namada to Stargaze ===="
+stargaze_receiver=$(starsd keys show relayer -a)
+${NAMADAC} --base-dir ${NAMADA_BASE} ibc-transfer \
+  --source relayer \
+  --receiver ${stargaze_receiver} \
+  --token  ${token}\
+  --amount 1 \
+  --signing-keys relayer \
+  --channel-id ${namada_channel} \
+  --port-id nft-transfer \
+  --node ${NAMADA_LEDGER_ADDR}
+
+sleep 5
+
+echo "==== Packet relaying ===="
+cargo run --bin hermes -- --config ${CONFIG_FILE} clear packets \
+  --chain ${STARGAZE_CHAIN_ID} \
+  --port wasm.${ICS721_CONTRACT} \
+  --channel ${stargaze_channel}
+
+echo "==== Check the NFT on Stargaze ===="
+starsd query wasm contract-state smart ${SG721_CONTRACT} \
+  "{\"owner_of\": {\"token_id\": \"${TOKEN_ID}\"}}" \
+  --node ${STARGAZE_NODE}
+
+echo "==== Check the NFT on Namada ===="
+token="nft-transfer/${namada_channel}/${SG721_CONTRACT}/${TOKEN_ID}"
+${NAMADAC} --base-dir ${NAMADA_BASE} balance \
+  --token ${token} \
+  --owner relayer \
+  --node ${NAMADA_LEDGER_ADDR}
+
+
+echo "======== Try shielded transfer ========"
+
+# setup shielded keys for Namada
+${NAMADAW} --base-dir ${NAMADA_BASE} gen --shielded --alias ${SHIELDED_ALIAS} \
+  --unsafe-dont-encrypt --alias-force
+${NAMADAW} --base-dir ${NAMADA_BASE} gen-payment-addr --alias ${PAYMENT_ALIAS} \
+  --key ${SHIELDED_ALIAS}
+payment_addr=$(${NAMADAW} --base-dir ${NAMADA_BASE} find --alias ${PAYMENT_ALIAS} \
+  | awk -v paymentAlias="${PAYMENT_ALIAS}" '{if($1 ~ paymentAlias) {print $2}}')
+
+# another one
+${NAMADAW} --base-dir ${NAMADA_BASE} gen --shielded --alias ${SHIELDED_ALIAS_2} \
+  --unsafe-dont-encrypt --alias-force
+${NAMADAW} --base-dir ${NAMADA_BASE} gen-payment-addr --alias ${PAYMENT_ALIAS_2} \
+  --key ${SHIELDED_ALIAS_2}
+payment_addr_2=$(${NAMADAW} --base-dir ${NAMADA_BASE} find --alias ${PAYMENT_ALIAS_2} \
+  | awk -v paymentAlias="${PAYMENT_ALIAS_2}" '{if($1 ~ paymentAlias) {print $2}}')
+
+echo "==== Shielding transfer from Stargaze to Namada ===="
+current_height=$(starsd status --node ${STARGAZE_NODE} | jq .SyncInfo.latest_block_height | sed 's/"//g')
+timeout_height=$((${current_height} + 100))
+msg="{\"receiver\": \"${payment_addr}\", \"channel_id\": \"${stargaze_channel}\", \"timeout\": {\"block\": { \"revision\": 0, \"height\": ${timeout_height}}}}"
+encoded_msg=$(echo ${msg} | base64)
+starsd tx wasm execute ${SG721_CONTRACT} \
+  "{\"send_nft\": {\"contract\":\"${ICS721_CONTRACT}\", \"token_id\": \"${TOKEN_ID}\", \"msg\": \"${encoded_msg}\"}}" \
+  ${TX_ARGS}
+
+sleep 5
+
+echo "==== Packet relaying ===="
+cargo run --bin hermes -- --config ${CONFIG_FILE} clear packets \
+  --chain ${STARGAZE_CHAIN_ID} \
+  --port wasm.${ICS721_CONTRACT} \
+  --channel ${stargaze_channel}
+
+echo "==== Check the escrowed NFT on Stargaze ===="
+starsd query wasm contract-state smart ${SG721_CONTRACT} \
+  "{\"owner_of\": {\"token_id\": \"${TOKEN_ID}\"}}" \
+  --node ${STARGAZE_NODE}
+
+echo "==== Check the NFT on Namada ===="
+${NAMADAC} --base-dir ${NAMADA_BASE} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS} \
+  --node ${NAMADA_LEDGER_ADDR}
+token="nft-transfer/${namada_channel}/${SG721_CONTRACT}/${TOKEN_ID}"
+${NAMADAC} --base-dir ${NAMADA_BASE} balance \
+  --token ${token} \
+  --owner ${SHIELDED_ALIAS} \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "==== Shielded transfer in Namada ===="
+${NAMADAC} --base-dir ${NAMADA_BASE} transfer \
+  --source ${SHIELDED_ALIAS} \
+  --target ${PAYMENT_ALIAS_2} \
+  --token  ${token}\
+  --amount 1 \
+  --signing-keys relayer \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "==== Check the shielded NFT on Namada ===="
+echo "== shielded-1 balance =="
+${NAMADAC} --base-dir ${NAMADA_BASE} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS} ${SHIELDED_ALIAS_2}\
+  --node ${NAMADA_LEDGER_ADDR}
+${NAMADAC} --base-dir ${NAMADA_BASE} balance \
+  --token ${token} \
+  --owner ${SHIELDED_ALIAS} \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "== shielded-2 balance =="
+${NAMADAC} --base-dir ${NAMADA_BASE} balance \
+  --token ${token} \
+  --owner ${SHIELDED_ALIAS_2} \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "==== Unshielding transfer from Namada to Stargaze ===="
+${NAMADAC} --base-dir ${NAMADA_BASE} ibc-transfer \
+  --source ${SHIELDED_ALIAS_2} \
+  --receiver ${stargaze_receiver} \
+  --token  ${token}\
+  --amount 1 \
+  --signing-keys relayer \
+  --channel-id ${namada_channel} \
+  --port-id nft-transfer \
+  --node ${NAMADA_LEDGER_ADDR}
+
+sleep 5
+
+echo "==== Packet relaying ===="
+cargo run --bin hermes -- --config ${CONFIG_FILE} clear packets \
+  --chain ${STARGAZE_CHAIN_ID} \
+  --port wasm.${ICS721_CONTRACT} \
+  --channel ${stargaze_channel}
+
+echo "==== Check the shielded NFT on Stargaze ===="
+starsd query wasm contract-state smart ${SG721_CONTRACT} \
+  "{\"owner_of\": {\"token_id\": \"${TOKEN_ID}\"}}" \
+  --node ${STARGAZE_NODE}
+
+echo "==== Check the NFT on Namada ===="
+${NAMADAC} --base-dir ${NAMADA_BASE} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS} \
+  --node ${NAMADA_LEDGER_ADDR}
+token="nft-transfer/${namada_channel}/${SG721_CONTRACT}/${TOKEN_ID}"
+echo "== shielded-1 balance =="
+${NAMADAC} --base-dir ${NAMADA_BASE} balance \
+  --token ${token} \
+  --owner ${SHIELDED_ALIAS} \
+  --node ${NAMADA_LEDGER_ADDR}
+
+echo "== shielded-2 balance =="
+${NAMADAC} --base-dir ${NAMADA_BASE} balance \
+  --token ${token} \
+  --owner ${SHIELDED_ALIAS_2} \
+  --node ${NAMADA_LEDGER_ADDR}
