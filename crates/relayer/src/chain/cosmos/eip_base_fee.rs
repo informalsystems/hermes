@@ -21,7 +21,9 @@ pub async fn query_eip_base_fee(
 
     let chain_name = chain_id.name();
 
-    let url = if chain_name.starts_with("osmosis") || chain_name.starts_with("osmo-test") {
+    let is_osmosis = chain_name.starts_with("osmosis") || chain_name.starts_with("osmo-test");
+
+    let url = if is_osmosis {
         format!(
             "{}abci_query?path=\"/osmosis.txfees.v1beta1.Query/GetEipBaseFee\"",
             rpc_address
@@ -56,7 +58,7 @@ pub async fn query_eip_base_fee(
 
     let result: EipBaseFeeHTTPResult = response.json().await.map_err(Error::http_response_body)?;
 
-    let amount = if chain_name.starts_with("osmosis") || chain_name.starts_with("osmo-test") {
+    let amount = if is_osmosis {
         extract_dynamic_gas_price_osmosis(result.result.response.value)?
     } else {
         extract_dynamic_gas_price(result.result.response.value)?
