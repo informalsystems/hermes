@@ -56,7 +56,7 @@ pub struct CosmosSdkConfig {
     pub max_gas: Option<u64>,
 
     // This field is only meant to be set via the `update client` command,
-    // for when we need to ugprade a client across a genesis restart and
+    // for when we need to upgrade a client across a genesis restart and
     // therefore need and archive node to fetch blocks from.
     pub genesis_restart: Option<GenesisRestart>,
 
