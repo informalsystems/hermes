@@ -30,13 +30,13 @@ ibc-test-framework   = { version = "0.27.2", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.27.2", path = "tools/integration-test" }
 
 # Tendermint dependencies
-tendermint                       = { version = "0.34.0", default-features = false }
-tendermint-light-client          = { version = "0.34.0", default-features = false }
-tendermint-light-client-detector = { version = "0.34.0", default-features = false }
-tendermint-light-client-verifier = { version = "0.34.0", default-features = false }
-tendermint-proto                 = "0.34.1"
-tendermint-rpc                   = "0.34.0"
-tendermint-testgen               = "0.34.0"
+tendermint                       = { version = "0.36.0", default-features = false }
+tendermint-light-client          = { version = "0.36.0", default-features = false }
+tendermint-light-client-detector = { version = "0.36.0", default-features = false }
+tendermint-light-client-verifier = { version = "0.36.0", default-features = false }
+tendermint-proto                 = { version = "0.36.0" }
+tendermint-rpc                   = { version = "0.36.0" }
+tendermint-testgen               = { version = "0.36.0" }
 
 # Other dependencies
 abscissa_core            = "=0.6.0"
@@ -72,9 +72,9 @@ hex                      = "0.4.3"
 http                     = "0.2.9"
 humantime                = "2.1.0"
 humantime-serde          = "1.1.1"
-ibc-proto                = "0.42.2"
+ibc-proto                = "0.44.0"
 ics23                    = "0.11.1"
-itertools                = "0.10.5"
+itertools                = "0.12.1"
 moka                     = "0.12.5"
 num-bigint               = "0.4"
 num-rational             = "0.4.1"
@@ -83,7 +83,7 @@ oneline-eyre             = "0.1"
 opentelemetry            = "0.19.0"
 opentelemetry-prometheus = "0.12.0"
 primitive-types          = { version = "0.12.1", default-features = false }
-prometheus               = "0.13.2"
+prometheus               = "0.13.4"
 prost                    = "0.12"
 rand                     = "0.8.5"
 regex                    = "1.10.4"
@@ -92,11 +92,11 @@ retry                    = { version = "2.0.0", default-features = false }
 ripemd                   = "0.1.3"
 secp256k1                = "0.28.2"
 semver                   = "1.0.21"
-serde                    = "1.0.197"
+serde                    = "1.0.203"
 serde_derive             = "1.0.104"
-serde_json               = "1.0.115"
+serde_json               = "1.0.117"
 serde_yaml               = "0.9.34"
-serial_test              = "3.0.0"
+serial_test              = "3.1.1"
 sha2                     = "0.10.6"
 signal-hook              = "0.3.17"
 signature                = "2.1.0"
@@ -104,14 +104,14 @@ strum                    = "0.25"
 subtle-encoding          = "0.5.1"
 tempfile                 = "3.10.1"
 test-log                 = "0.2.14"
-thiserror                = "1.0.57"
+thiserror                = "1.0.61"
 time                     = "0.3"
 tiny-bip39               = "1.0.0"
 tiny-keccak              = { version = "2.0.2", default-features = false }
 tokio                    = "1.26.0"
 tokio-stream             = "0.1.14"
 toml                     = "0.8.8"
-tonic                    = "0.10"
+tonic                    = "0.11"
 tracing                  = { version = "0.1.36", default-features = false }
 tracing-subscriber       = "0.3.14"
 uint                     = "0.9"
