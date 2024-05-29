@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-rest"
-version      = "0.27.2"
+version      = "0.27.3"
 authors      = ["Informal Systems <hello@informal.systems>"]
 edition      = "2021"
 license      = "Apache-2.0"
