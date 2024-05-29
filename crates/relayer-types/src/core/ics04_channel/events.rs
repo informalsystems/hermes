@@ -8,7 +8,7 @@ use tendermint::abci;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
-use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::core::ics24_host::identifier::{ChannelId, ConnectionIds, PortId};
 use crate::events::{Error as EventError, IbcEvent, IbcEventType};
 
 use crate::utils::pretty::PrettySlice;
@@ -35,7 +35,7 @@ pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack_hex";
 pub struct Attributes {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
+    pub connection_id: ConnectionIds,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
 }
@@ -70,7 +70,7 @@ impl From<Attributes> for Vec<abci::EventAttribute> {
             let channel_id = (CHANNEL_ID_ATTRIBUTE_KEY, channel_id.as_str()).into();
             attributes.push(channel_id);
         }
-        let connection_id = (CONNECTION_ID_ATTRIBUTE_KEY, a.connection_id.as_str()).into();
+        let connection_id = (CONNECTION_ID_ATTRIBUTE_KEY, a.connection_id.to_string()).into();
         attributes.push(connection_id);
         let counterparty_port_id = (
             COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY,
@@ -94,7 +94,7 @@ pub trait EventType {
 pub struct OpenInit {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
+    pub connection_id: ConnectionIds,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
 }
@@ -147,7 +147,7 @@ impl EventType for OpenInit {
 pub struct OpenTry {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
+    pub connection_id: ConnectionIds,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
 }
@@ -200,7 +200,7 @@ pub struct OpenAck {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
+    pub connection_id: ConnectionIds,
     pub counterparty_port_id: PortId,
 }
 
@@ -256,7 +256,7 @@ impl EventType for OpenAck {
 pub struct OpenConfirm {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
+    pub connection_id: ConnectionIds,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
 }
@@ -309,7 +309,7 @@ impl EventType for OpenConfirm {
 pub struct CloseInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub connection_id: ConnectionId,
+    pub connection_id: ConnectionIds,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
 }
@@ -386,7 +386,7 @@ impl EventType for CloseInit {
 pub struct CloseConfirm {
     pub channel_id: Option<ChannelId>,
     pub port_id: PortId,
-    pub connection_id: ConnectionId,
+    pub connection_id: ConnectionIds,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
 }

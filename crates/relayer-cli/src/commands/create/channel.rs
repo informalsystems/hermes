@@ -200,6 +200,7 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
+            None,
             self.version.clone(),
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
@@ -258,6 +259,7 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
+            None,
             self.version.clone(),
         )
         .unwrap_or_else(exit_with_unrecoverable_error);

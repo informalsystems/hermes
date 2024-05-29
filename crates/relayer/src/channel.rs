@@ -1,11 +1,8 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::time::Duration;
 
-use ibc_proto::google::protobuf::Any;
-use serde::Serialize;
-use tracing::{debug, error, info, warn};
-
 pub use error::ChannelError;
+use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State,
 };
@@ -18,9 +15,12 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenT
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
+use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHops;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
+use serde::Serialize;
+use tracing::{debug, error, info, warn};
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
@@ -167,6 +167,7 @@ pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub ordering: Ordering,
     pub a_side: ChannelSide<ChainA>,
     pub b_side: ChannelSide<ChainB>,
+    pub connection_hops: Option<ConnectionHops>,
     pub connection_delay: Duration,
 }
 
@@ -178,6 +179,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Display for Channel<ChainA, Chain
             self.ordering,
             self.a_side,
             self.b_side,
+            // FIXME: add connection hops
             PrettyDuration(&self.connection_delay)
         )
     }
@@ -191,6 +193,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         ordering: Ordering,
         a_port: PortId,
         b_port: PortId,
+        connection_hops: Option<ConnectionHops>,
         version: Option<Version>,
     ) -> Result<Self, ChannelError> {
         let src_connection_id = connection
@@ -218,6 +221,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 Default::default(),
                 version,
             ),
+            connection_hops,
             connection_delay: connection.delay_period,
         };
 
@@ -239,11 +243,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id;
 
-        let connection_id = channel_event_attributes.connection_id.clone();
+        // FIXME: connection_id is an instance of ConnectionIds(Vec<ConnectionId>), but ChannelSide::new() requires
+        // a single ConnectionId. To avoid further changes in ChannelSide, get only the 0th element for now.
+        // In the future, modify ChannelSide to use a Vec<ConnectionId>.
+        let connection_id = channel_event_attributes.connection_id.as_slice()[0].clone();
+
         let (connection, _) = chain
             .query_connection(
                 QueryConnectionRequest {
-                    connection_id: connection_id.clone(),
+                    connection_id: connection_id.clone(), // FIXME: Add support for multihop connections queries.
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -264,7 +272,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             a_side: ChannelSide::new(
                 chain,
                 connection.client_id().clone(),
-                connection_id,
+                connection_id.clone(),
                 port_id,
                 channel_id,
                 // The event does not include the version.
@@ -279,6 +287,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 channel_event_attributes.counterparty_channel_id,
                 None,
             ),
+            connection_hops: None,
             connection_delay: connection.delay_period(),
         })
     }
@@ -349,6 +358,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_channel.remote.channel_id.clone(),
                 None,
             ),
+            connection_hops: None,
             connection_delay: a_connection.delay_period(),
         };
 
@@ -495,6 +505,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ordering: self.ordering,
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
+            connection_hops: None,
             connection_delay: self.connection_delay,
         }
     }
@@ -857,7 +868,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             State::Init,
             self.ordering,
             counterparty,
-            vec![self.dst_connection_id().clone()],
+            self.connection_hops
+                .as_ref()
+                .map(|hops| hops.connection_ids())
+                .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
             version,
             0,
         );
@@ -1478,6 +1492,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ordering: self.ordering,
             a_side: self.a_side.map_chain(mapper_a),
             b_side: self.b_side.map_chain(mapper_b),
+            connection_hops: None,
             connection_delay: self.connection_delay,
         }
     }

@@ -7,3 +7,4 @@ pub mod ics04_channel;
 pub mod ics23_commitment;
 pub mod ics24_host;
 pub mod ics26_routing;
+pub mod ics33_multihop;
