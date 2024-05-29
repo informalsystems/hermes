@@ -1,4 +1,3 @@
-use std::convert::TryInto;
 use std::ops::RangeInclusive;
 use std::thread;
 use std::time::{Duration, Instant};

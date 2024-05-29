@@ -89,25 +89,25 @@ sleep 1
 
 # Add samoleans to user
 USER=$($BINARY --home $CHAIN_DIR/$CHAIN_ID keys --keyring-backend="test" show user -a)
-$BINARY --home $CHAIN_DIR/$CHAIN_ID add-genesis-account $USER $USER_COINS &> /dev/null
+$BINARY --home $CHAIN_DIR/$CHAIN_ID genesis add-genesis-account $USER $USER_COINS &> /dev/null
 sleep 1
 
 # Add samoleans to user2
 USER2=$($BINARY --home $CHAIN_DIR/$CHAIN_ID keys --keyring-backend="test" show user2 -a)
-$BINARY --home $CHAIN_DIR/$CHAIN_ID add-genesis-account $USER2 $USER_COINS &> /dev/null
+$BINARY --home $CHAIN_DIR/$CHAIN_ID genesis add-genesis-account $USER2 $USER_COINS &> /dev/null
 sleep 1
 
 
 # Add stake to validator
 VALIDATOR=$($BINARY --home $CHAIN_DIR/$CHAIN_ID keys --keyring-backend="test" show validator -a)
-$BINARY --home $CHAIN_DIR/$CHAIN_ID add-genesis-account $VALIDATOR $STAKE &> /dev/null
+$BINARY --home $CHAIN_DIR/$CHAIN_ID genesis add-genesis-account $VALIDATOR $STAKE &> /dev/null
 sleep 1
 
 # Stake everything
-$BINARY --home $CHAIN_DIR/$CHAIN_ID gentx validator --keyring-backend="test" --chain-id $CHAIN_ID $STAKE &> /dev/null
+$BINARY --home $CHAIN_DIR/$CHAIN_ID genesis gentx validator --keyring-backend="test" --chain-id $CHAIN_ID $STAKE &> /dev/null
 sleep 1
 
-$BINARY --home $CHAIN_DIR/$CHAIN_ID collect-gentxs &> /dev/null
+$BINARY --home $CHAIN_DIR/$CHAIN_ID genesis collect-gentxs &> /dev/null
 sleep 1
 
 # Check platform
@@ -121,23 +121,25 @@ fi
 echo "Change settings in config.toml file..."
 if [ $platform = 'linux' ]; then
   sed -i 's#"172800s"#"200s"#g' $CHAIN_DIR/$CHAIN_ID/config/genesis.json
-  sed -i 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:'"$RPC_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+  sed -i 's#"tcp://0.0.0.0:26657"#"tcp://0.0.0.0:'"$RPC_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2P_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i 's#"localhost:6060"#"localhost:'"$PROF_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '/^\[grpc-web\]/,/^\[/s/^enable = true/enable = false/' $CHAIN_DIR/$CHAIN_ID/config/app.toml
+  sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0stake"/g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
   # sed -i '' 's#index-events = \[\]#index-events = \["message.action","send_packet.packet_src_channel","send_packet.packet_sequence"\]#g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
 else
   sed -i '' 's#"172800s"#"200s"#g' $CHAIN_DIR/$CHAIN_ID/config/genesis.json
-  sed -i '' 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:'"$RPC_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+  sed -i '' 's#"tcp://0.0.0.0:26657"#"tcp://0.0.0.0:'"$RPC_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2P_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's#"localhost:6060"#"localhost:'"$PROF_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' '/^\[grpc-web\]/,/^\[/s/^enable = true/enable = false/' $CHAIN_DIR/$CHAIN_ID/config/app.toml
+  sed -i '' 's/minimum-gas-prices = ""/minimum-gas-prices = "0stake"/g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
   # sed -i '' 's/min-retain-blocks = 0/min-retain-blocks = 100/g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
   # sed -i '' 's#index-events = \[\]#index-events = \["message.action","send_packet.packet_src_channel","send_packet.packet_sequence"\]#g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
   # sed -i '' 's/error/debug/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
@@ -146,7 +148,7 @@ fi
 
 # Start gaia
 echo "Start gaia on grpc port: $GRPC_PORT..."
-$BINARY --home $CHAIN_DIR/$CHAIN_ID start --pruning=nothing --grpc.address="0.0.0.0:$GRPC_PORT" --log_level info > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
+$BINARY --home $CHAIN_DIR/$CHAIN_ID start --pruning=nothing --rpc.laddr="tcp://0.0.0.0:$RPC_PORT" --grpc.address="0.0.0.0:$GRPC_PORT" --log_level info > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
 
 # Show validator's and user's balance
 sleep 3

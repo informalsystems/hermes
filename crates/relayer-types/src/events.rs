@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::convert::TryFrom;
 use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str::FromStr;
 
@@ -69,6 +68,10 @@ define_error! {
         InvalidPacketData
             { data: String }
             | e | { format_args!("error decoding hex-encoded packet data: {}", e.data) },
+
+        InvalidPacketAck
+            { ack: String }
+            | e | { format_args!("error decoding hex-encoded packet ack: {}", e.ack) },
 
         MissingActionString
             | _ | { "missing action string" },

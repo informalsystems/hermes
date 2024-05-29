@@ -1,5 +1,4 @@
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 use ibc_relayer_types::core::ics02_client::height::Height;
 use std::ops::RangeInclusive;
 
@@ -88,7 +87,11 @@ impl Runnable for TxPacketRecvCmd {
             src_channel_id: self.src_channel_id.clone(),
             max_memo_size: config.mode.packets.ics20_max_memo_size,
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
+
+            // Packets are only excluded when clearing
+            exclude_src_sequences: vec![],
         };
+
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,
             Err(e) => Output::error(e).exit(),
@@ -185,7 +188,11 @@ impl Runnable for TxPacketAckCmd {
             src_channel_id: self.src_channel_id.clone(),
             max_memo_size: config.mode.packets.ics20_max_memo_size,
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
+
+            // Packets are only excluded when clearing
+            exclude_src_sequences: vec![],
         };
+
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,
             Err(e) => Output::error(e).exit(),

@@ -6,9 +6,12 @@ use ibc_relayer_types::Height as ICSHeight;
 use namada_ibc::storage::{ibc_trace_key_prefix, is_ibc_trace_key};
 use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
+use namada_sdk::events::extend::Height as HeightAttr;
 use namada_sdk::queries::{Client as SdkClient, RPC};
 use namada_sdk::rpc;
 use namada_sdk::storage::{BlockHeight, Epoch, Key, PrefixValue};
+use namada_sdk::tx::data::ResultCode;
+use namada_sdk::tx::event::Code as CodeAttr;
 use namada_sdk::Namada;
 use tendermint::block::Height as TmHeight;
 
@@ -89,11 +92,9 @@ impl NamadaChain {
         match event {
             Some(event) => {
                 let h = event
-                    .get("height")
-                    .expect("No height in the Namada event")
-                    .parse()
+                    .read_attribute::<HeightAttr>()
                     .map_err(|_| Error::invalid_height_no_source())?;
-                let height = ICSHeight::new(self.config.id.version(), h)
+                let height = ICSHeight::new(self.config.id.version(), h.0)
                     .map_err(|_| Error::invalid_height_no_source())?;
                 let pb_abci_event = tendermint_proto::v0_37::abci::Event::from(event);
                 let abci_event = pb_abci_event.try_into().map_err(|_| {
@@ -121,15 +122,15 @@ impl NamadaChain {
         {
             Some(applied) => {
                 let h = applied
-                    .get("height")
-                    .expect("No height in the Namada Applied event")
-                    .parse()
+                    .read_attribute::<HeightAttr>()
                     .map_err(|_| Error::invalid_height_no_source())?;
-                let height = ICSHeight::new(self.config.id.version(), h)
+                let height = ICSHeight::new(self.config.id.version(), h.0)
                     .map_err(|_| Error::invalid_height_no_source())?;
                 // Check if the tx is valid
-                let code = applied.get("code").expect("The code should exist");
-                if code != "0" {
+                let code = applied
+                    .read_attribute::<CodeAttr>()
+                    .expect("The code should exist");
+                if code != ResultCode::Ok {
                     return Ok(vec![IbcEventWithHeight::new(
                         IbcEvent::ChainError(format!(
                             "The transaction was invalid: Event {:?}",
@@ -225,11 +226,9 @@ impl NamadaChain {
         {
             Some(event) => {
                 let h = event
-                    .get("height")
-                    .expect("No height in the Namada Applied event")
-                    .parse()
+                    .read_attribute::<HeightAttr>()
                     .map_err(|_| Error::invalid_height_no_source())?;
-                let height = ICSHeight::new(self.config.id.version(), h)
+                let height = ICSHeight::new(self.config.id.version(), h.0)
                     .map_err(|_| Error::invalid_height_no_source())?;
                 Ok(Some(height))
             }

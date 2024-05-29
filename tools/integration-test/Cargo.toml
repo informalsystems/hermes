@@ -1,8 +1,8 @@
 [package]
 name         = "ibc-integration-test"
-version      = "0.27.0"
+version      = "0.27.2"
 edition      = "2021"
-rust-version = "1.71"
+rust-version = "1.71.1"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
@@ -13,17 +13,20 @@ description  = "Integration tests for Hermes"
 publish      = false
 
 [dependencies]
-ibc-relayer-types  = { path = "../../crates/relayer-types" }
-ibc-relayer        = { path = "../../crates/relayer" }
-ibc-test-framework = { path = "../test-framework" }
+ibc-relayer-types  = { workspace = true }
+ibc-relayer        = { workspace = true }
+ibc-test-framework = { workspace = true }
 
-http = "0.2.9"
-serde_json = "1"
-time = "0.3"
-toml = "0.8"
-prost = { version = "0.12" }
-tonic = { version = "0.10", features = ["tls", "tls-roots"] }
-serde = "1.0.195"
+byte-unit      = { workspace = true, features = ["serde"] }
+http           = { workspace = true }
+prost          = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+tendermint-rpc = { workspace = true, features = ["http-client"] }
+tendermint     = { workspace = true }
+time           = { workspace = true }
+toml           = { workspace = true }
+tonic          = { workspace = true, features = ["tls", "tls-roots"] }
 
 [features]
 default = []
@@ -50,16 +53,4 @@ name = "test_setup_with_binary_channel"
 doc = true
 
 [dev-dependencies]
-tempfile = "3.6.0"
-
-[dependencies.tendermint]
-version = "0.34.0"
-
-[dependencies.tendermint-rpc]
-version = "0.34.0"
-features = ["http-client"]
-
-[dependencies.byte-unit]
-version = "4.0.19"
-default-features = false
-features = ["serde"]
+tempfile = { workspace = true }

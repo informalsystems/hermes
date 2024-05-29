@@ -13,16 +13,18 @@ const NAMADA_HD_PATH: &str = "m/44'/877'/0'/0'/0'";
 #[derive(Clone, Debug)]
 pub enum ChainType {
     Cosmos,
+    Osmosis,
     Evmos,
     Provenance,
+    Injective,
     Namada,
 }
 
 impl ChainType {
     pub fn hd_path(&self) -> &str {
         match self {
-            Self::Cosmos => COSMOS_HD_PATH,
-            Self::Evmos => EVMOS_HD_PATH,
+            Self::Cosmos | Self::Osmosis => COSMOS_HD_PATH,
+            Self::Evmos | Self::Injective => EVMOS_HD_PATH,
             Self::Provenance => PROVENANCE_HD_PATH,
             Self::Namada => NAMADA_HD_PATH,
         }
@@ -30,13 +32,14 @@ impl ChainType {
 
     pub fn chain_id(&self, prefix: &str, use_random_id: bool) -> ChainId {
         match self {
-            Self::Cosmos => {
+            Self::Cosmos | Self::Osmosis => {
                 if use_random_id {
                     ChainId::from_string(&format!("ibc-{}-{:x}", prefix, random_u32()))
                 } else {
                     ChainId::from_string(&format!("ibc{prefix}"))
                 }
             }
+            Self::Injective => ChainId::from_string(&format!("injective-{prefix}")),
             Self::Evmos => ChainId::from_string(&format!("evmos_9000-{prefix}")),
             Self::Provenance => ChainId::from_string(&format!("pio-mainnet-{prefix}")),
             Self::Namada => ChainId::from_string(&format!("namada-{prefix}")),
@@ -48,7 +51,10 @@ impl ChainType {
         let mut res = vec![];
         let json_rpc_port = random_unused_tcp_port();
         match self {
-            Self::Cosmos | Self::Namada | Self::Provenance => {}
+            Self::Cosmos | Self::Injective | Self::Provenance | Self::Namada => {}
+            Self::Osmosis => {
+                res.push("--reject-config-defaults".to_owned());
+            }
             Self::Evmos => {
                 res.push("--json-rpc.address".to_owned());
                 res.push(format!("localhost:{json_rpc_port}"));
@@ -57,11 +63,29 @@ impl ChainType {
         res
     }
 
+    // Extra arguments required to run `<chain binary> add-genesis-account`
+    pub fn extra_add_genesis_account_args(&self, chain_id: &ChainId) -> Vec<String> {
+        let mut res = vec![];
+        match self {
+            Self::Cosmos | Self::Osmosis | Self::Evmos | Self::Provenance | Self::Namada => {}
+            Self::Injective => {
+                res.push("--chain-id".to_owned());
+                res.push(format!("{chain_id}"));
+            }
+        }
+        res
+    }
+
     pub fn address_type(&self) -> AddressType {
         match self {
-            Self::Cosmos | Self::Namada | Self::Provenance => AddressType::default(),
+            Self::Cosmos | Self::Osmosis | Self::Provenance | Self::Namada => {
+                AddressType::default()
+            }
             Self::Evmos => AddressType::Ethermint {
                 pk_type: "/ethermint.crypto.v1.ethsecp256k1.PubKey".to_string(),
+            },
+            Self::Injective => AddressType::Ethermint {
+                pk_type: "/injective.crypto.v1beta1.ethsecp256k1.PubKey".to_string(),
             },
         }
     }
@@ -72,12 +96,10 @@ impl FromStr for ChainType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            name if name.contains("gaiad") => Ok(ChainType::Cosmos),
-            name if name.contains("simd") => Ok(ChainType::Cosmos),
-            name if name.contains("wasmd") => Ok(ChainType::Cosmos),
-            name if name.contains("icad") => Ok(ChainType::Cosmos),
             name if name.contains("evmosd") => Ok(ChainType::Evmos),
+            name if name.contains("injectived") => Ok(ChainType::Injective),
             name if name.contains("provenanced") => Ok(ChainType::Provenance),
+            name if name.contains("osmosisd") => Ok(ChainType::Osmosis),
             name if name.contains("namada") => Ok(ChainType::Namada),
             _ => Ok(ChainType::Cosmos),
         }

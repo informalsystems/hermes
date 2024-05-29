@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{convert::TryFrom, fmt};
+use std::fmt;
 use subtle_encoding::{Encoding, Hex};
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;

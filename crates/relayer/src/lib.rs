@@ -3,7 +3,6 @@
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
-    unused_qualifications,
     rust_2018_idioms
 )]
 #![allow(clippy::too_many_arguments)]
@@ -15,7 +14,7 @@
 //!
 //! For the IBC relayer binary, please see [Hermes] (`ibc-relayer-cli` crate).
 //!
-//! [Hermes]: https://docs.rs/ibc-relayer-cli/1.8.0/
+//! [Hermes]: https://docs.rs/ibc-relayer-cli/1.8.2/
 
 extern crate alloc;
 

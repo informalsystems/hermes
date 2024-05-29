@@ -1,6 +1,5 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::Command;
-use abscissa_core::Runnable;
 
 use crate::components::default_directive;
 use crate::prelude::*;

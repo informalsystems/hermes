@@ -19,7 +19,7 @@ pub fn submit_consumer_chain_proposal(
         &[
             "tx",
             "gov",
-            "submit-proposal",
+            "submit-legacy-proposal",
             "consumer-addition",
             &proposal_file,
             "--chain-id",

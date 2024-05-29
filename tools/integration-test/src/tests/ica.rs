@@ -1,14 +1,10 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::{
     filter::{ChannelFilters, ChannelPolicy, FilterPattern},
     ChainConfig, PacketFilter,
 };
-use ibc_relayer::event::IbcEventWithHeight;
-use ibc_relayer_types::applications::ics27_ica::msgs::send_tx::MsgSendTx;
 use ibc_relayer_types::applications::ics27_ica::packet_data::InterchainAccountPacketData;
 use ibc_relayer_types::applications::{
     ics27_ica::cosmos_tx::CosmosTx,
@@ -21,11 +17,11 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 
 use ibc_test_framework::chain::ext::ica::register_interchain_account;
-use ibc_test_framework::ibc::denom::Denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_closed, assert_eventually_channel_established, query_channel_end,
 };
+use ibc_test_framework::util::interchain_security::interchain_send_tx;
 
 #[test]
 fn test_ica_filter_default() -> Result<(), Error> {
@@ -187,6 +183,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         Ok(())
     }
 }
+
 pub struct IcaFilterTestDeny;
 
 impl TestOverrides for IcaFilterTestDeny {
@@ -383,27 +380,4 @@ impl BinaryConnectionTest for ICACloseChannelTest {
             Ok(())
         })
     }
-}
-
-fn interchain_send_tx<ChainA: ChainHandle>(
-    chain: &ChainA,
-    from: &Signer,
-    connection: &ConnectionId,
-    msg: InterchainAccountPacketData,
-    relative_timeout: Timestamp,
-) -> Result<Vec<IbcEventWithHeight>, Error> {
-    let msg = MsgSendTx {
-        owner: from.clone(),
-        connection_id: connection.clone(),
-        packet_data: msg,
-        relative_timeout,
-    };
-
-    let msg_any = msg.to_any();
-
-    let tm = TrackedMsgs::new_static(vec![msg_any], "SendTx");
-
-    chain
-        .send_messages_and_wait_commit(tm)
-        .map_err(Error::relayer)
 }

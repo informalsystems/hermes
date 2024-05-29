@@ -1,3 +1,4 @@
+use eyre::eyre;
 use std::ops::RangeInclusive;
 
 use abscissa_core::clap::Parser;
@@ -5,6 +6,7 @@ use abscissa_core::config::Override;
 use abscissa_core::{Command, FrameworkErrorKind, Runnable};
 
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::config::Config;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
@@ -146,26 +148,83 @@ impl Runnable for ClearPacketsCmd {
             }
         }
 
-        let mut ev_list = vec![];
+        let (channel, _) = match chains.src.query_channel(
+            QueryChannelRequest {
+                port_id: self.port_id.clone(),
+                channel_id: self.channel_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok(channel) => channel,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        let exclude_src_sequences = config
+            .find_chain(&chains.src.id())
+            .map(|chain_config| chain_config.excluded_sequences(&self.channel_id).to_vec())
+            .unwrap_or_default();
+
+        let exclude_dst_sequences =
+            if let Some(counterparty_channel_id) = channel.counterparty().channel_id() {
+                config
+                    .find_chain(&chains.dst.id())
+                    .map(|chain_config| {
+                        chain_config
+                            .excluded_sequences(counterparty_channel_id)
+                            .to_vec()
+                    })
+                    .unwrap_or_default()
+            } else {
+                Vec::new()
+            };
 
         // Construct links in both directions.
-        let opts = LinkParameters {
+        let fwd_opts = LinkParameters {
             src_port_id: self.port_id.clone(),
             src_channel_id: self.channel_id.clone(),
             max_memo_size: config.mode.packets.ics20_max_memo_size,
             max_receiver_size: config.mode.packets.ics20_max_receiver_size,
+            exclude_src_sequences,
         };
 
-        let fwd_link = match Link::new_from_opts(chains.src.clone(), chains.dst, opts, false, false)
+        let counterparty_channel_id = match channel.counterparty().channel_id() {
+            Some(channel_id) => channel_id.clone(),
+            None => Output::error(eyre!(
+                "Channel `{}` and port `{}` does not have a counterparty channel id",
+                self.channel_id,
+                self.port_id
+            ))
+            .exit(),
+        };
+
+        // Construct links in both directions.
+        let reverse_opts = LinkParameters {
+            src_port_id: channel.counterparty().port_id().clone(),
+            src_channel_id: counterparty_channel_id,
+            max_memo_size: config.mode.packets.ics20_max_memo_size,
+            max_receiver_size: config.mode.packets.ics20_max_receiver_size,
+            exclude_src_sequences: exclude_dst_sequences,
+        };
+
+        let fwd_link = match Link::new_from_opts(
+            chains.src.clone(),
+            chains.dst.clone(),
+            fwd_opts,
+            false,
+            false,
+        ) {
+            Ok(link) => link,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        let rev_link = match Link::new_from_opts(chains.dst, chains.src, reverse_opts, false, false)
         {
             Ok(link) => link,
             Err(e) => Output::error(e).exit(),
         };
 
-        let rev_link = match fwd_link.reverse(false, false) {
-            Ok(link) => link,
-            Err(e) => Output::error(e).exit(),
-        };
+        let mut ev_list = vec![];
 
         // Schedule RecvPacket messages for pending packets in both directions or,
         // if packet sequences are provided, only on the specified chain.

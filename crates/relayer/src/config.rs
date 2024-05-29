@@ -14,6 +14,8 @@ use core::cmp::Ordering;
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 use core::time::Duration;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use std::borrow::Cow;
 use std::{fs, fs::File, io::Write, ops::Range, path::Path};
 
 use byte_unit::Byte;
@@ -173,7 +175,11 @@ pub mod default {
     }
 
     pub fn poll_interval() -> Duration {
-        Duration::from_secs(1)
+        Duration::from_millis(500)
+    }
+
+    pub fn max_retries() -> u32 {
+        4
     }
 
     pub fn batch_delay() -> Duration {
@@ -414,6 +420,9 @@ pub struct Packets {
     pub ics20_max_memo_size: Ics20FieldSizeLimit,
     #[serde(default = "default::ics20_max_receiver_size")]
     pub ics20_max_receiver_size: Ics20FieldSizeLimit,
+
+    #[serde(skip)]
+    pub force_disable_clear_on_start: bool,
 }
 
 impl Default for Packets {
@@ -426,6 +435,7 @@ impl Default for Packets {
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
             ics20_max_memo_size: default::ics20_max_memo_size(),
             ics20_max_receiver_size: default::ics20_max_receiver_size(),
+            force_disable_clear_on_start: false,
         }
     }
 }
@@ -616,6 +626,11 @@ pub enum EventSourceMode {
         /// The polling interval
         #[serde(default = "default::poll_interval", with = "humantime_serde")]
         interval: Duration,
+
+        /// The maximum retries to collect the block results
+        /// before giving up and moving to the next block
+        #[serde(default = "default::max_retries")]
+        max_retries: u32,
     },
 }
 
@@ -715,6 +730,16 @@ impl ChainConfig {
             Self::CosmosSdk(config) | Self::Namada(config) => {
                 config.query_packets_chunk_size = query_packets_chunk_size
             }
+        }
+    }
+
+    pub fn excluded_sequences(&self, channel_id: &ChannelId) -> Cow<'_, [Sequence]> {
+        match self {
+            Self::CosmosSdk(config) | Self::Namada(config) => config
+                .excluded_sequences
+                .get(channel_id)
+                .map(|seqs| Cow::Borrowed(seqs.as_slice()))
+                .unwrap_or_else(|| Cow::Owned(Vec::new())),
         }
     }
 }

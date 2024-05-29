@@ -2,7 +2,6 @@ use ibc_relayer::config::{types::MaxMsgNum, ChainConfig};
 use ibc_relayer::link::{Link, LinkParameters};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 use ibc_relayer_types::events::IbcEvent;
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
@@ -121,6 +120,7 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             src_channel_id: channel.channel_id_a.clone().into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
         };
 
         let chain_a_link = Link::new_from_opts(
@@ -136,6 +136,7 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             src_channel_id: channel.channel_id_b.clone().into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
         };
 
         let chain_b_link = Link::new_from_opts(
@@ -273,6 +274,7 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
             src_channel_id: channel.channel_id_a.into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
         };
 
         let chain_a_link = Link::new_from_opts(

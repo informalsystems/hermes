@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-test-framework"
-version    = "0.27.0"
+version    = "0.27.2"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -14,31 +14,31 @@ description = """
 """
 
 [dependencies]
-ibc-relayer-types = { version = "=0.27.0",     path = "../../crates/relayer-types" }
-ibc-relayer       = { version = "=0.27.0",     path = "../../crates/relayer" }
-ibc-relayer-cli   = { version = "=1.8.0",      path = "../../crates/relayer-cli" }
-ibc-proto         = { version = "0.42.0", features = ["serde"] }
-tendermint-rpc    = { version = "0.34.0", features = ["http-client", "websocket-client"] }
+ibc-relayer-types = { workspace = true }
+ibc-relayer       = { workspace = true }
+ibc-relayer-cli   = { workspace = true }
+ibc-proto         = { workspace = true, features = ["serde"] }
+tendermint-rpc    = { workspace = true, features = ["http-client", "websocket-client"] }
 
-http = "0.2.9"
-tokio = { version = "1.0", features = ["full"] }
-tracing = "0.1.36"
-tracing-subscriber = "0.3.14"
-eyre = "0.6.12"
-color-eyre = "0.6"
-rand = "0.8.5"
-hex = "0.4.3"
-serde = "1.0"
-serde_json = "1"
-serde_yaml = "0.9.31"
-itertools = "0.10"
-toml = "0.8"
-subtle-encoding = "0.5.1"
-sha2 = "0.10.6"
-crossbeam-channel = "0.5.11"
-semver = "1.0.21"
-flex-error = "0.4.4"
-prost = { version = "0.12" }
-tonic = { version = "0.10", features = ["tls", "tls-roots"] }
-hdpath = "0.6.3"
-once_cell = "1.19.0"
+color-eyre         = { workspace = true }
+crossbeam-channel  = { workspace = true }
+eyre               = { workspace = true }
+flex-error         = { workspace = true }
+hdpath             = { workspace = true }
+hex                = { workspace = true }
+http               = { workspace = true }
+itertools          = { workspace = true }
+once_cell          = { workspace = true }
+prost              = { workspace = true }
+rand               = { workspace = true }
+semver             = { workspace = true }
+serde              = { workspace = true }
+serde_json         = { workspace = true }
+serde_yaml         = { workspace = true }
+sha2               = { workspace = true }
+subtle-encoding    = { workspace = true }
+tokio              = { workspace = true, features = ["full"] }
+toml               = { workspace = true }
+tonic              = { workspace = true, features = ["tls", "tls-roots"] }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }

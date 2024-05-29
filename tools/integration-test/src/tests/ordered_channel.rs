@@ -13,7 +13,6 @@
 //! A more thorough walkthrough of this test can be found at
 //! `tools/test-framework/src/docs/walkthroughs/ordered_channel.rs`.
 
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 

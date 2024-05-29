@@ -1,12 +1,8 @@
-use std::thread::sleep;
-use std::time::Duration;
-
 use ibc_relayer::chain::requests::{
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_test_framework::ibc::denom::Denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::types::tagged::mono::Tagged;
 

@@ -14,7 +14,7 @@ pub mod client_filter;
 pub mod client_refresh;
 #[cfg(not(feature = "namada"))]
 pub mod client_settings;
-#[cfg(not(any(feature = "celestia", feature = "juno", feature = "namada")))]
+#[cfg(not(any(feature = "celestia", feature = "namada")))]
 pub mod client_upgrade;
 pub mod connection_delay;
 #[cfg(not(feature = "namada"))]
@@ -31,7 +31,6 @@ pub mod memo;
 #[cfg(not(feature = "namada"))]
 pub mod python;
 pub mod query_packet;
-#[cfg(not(feature = "namada"))]
 pub mod supervisor;
 #[cfg(not(feature = "namada"))]
 pub mod tendermint;

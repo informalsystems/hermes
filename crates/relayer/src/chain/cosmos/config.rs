@@ -1,12 +1,14 @@
 use core::time::Duration;
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use byte_unit::Byte;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_rpc::Url;
 
 use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId};
 
 use crate::chain::cosmos::config::error::Error as ConfigError;
 use crate::config::compat_mode::CompatMode;
@@ -54,7 +56,7 @@ pub struct CosmosSdkConfig {
     pub max_gas: Option<u64>,
 
     // This field is only meant to be set via the `update client` command,
-    // for when we need to ugprade a client across a genesis restart and
+    // for when we need to upgrade a client across a genesis restart and
     // therefore need and archive node to fetch blocks from.
     pub genesis_restart: Option<GenesisRestart>,
 
@@ -106,6 +108,9 @@ pub struct CosmosSdkConfig {
     #[serde(default)]
     pub memo_prefix: Memo,
 
+    #[serde(default)]
+    pub memo_overwrite: Option<Memo>,
+
     // This is an undocumented and hidden config to make the relayer wait for
     // DeliverTX before sending the next transaction when sending messages in
     // multiple batches. We will instruct relayer operators to turn this on
@@ -143,6 +148,8 @@ pub struct CosmosSdkConfig {
     pub extension_options: Vec<ExtensionOption>,
     pub compat_mode: Option<CompatMode>,
     pub clear_interval: Option<u64>,
+    #[serde(default)]
+    pub excluded_sequences: BTreeMap<ChannelId, Vec<Sequence>>,
 }
 
 impl CosmosSdkConfig {

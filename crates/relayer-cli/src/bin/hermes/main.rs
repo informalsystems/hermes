@@ -1,6 +1,6 @@
 //! Main entry point for Cli
 
-#![deny(warnings, missing_docs, trivial_casts, unused_qualifications)]
+#![deny(warnings, missing_docs, trivial_casts)]
 #![forbid(unsafe_code)]
 
 use ibc_relayer_cli::application::APPLICATION;

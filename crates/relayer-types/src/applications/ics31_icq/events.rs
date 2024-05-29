@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
@@ -9,7 +8,7 @@ use crate::events::IbcEvent;
 
 use super::error::Error;
 
-const EVENT_TYPE_PREFIX: &str = "query_request";
+pub const EVENT_TYPE_PREFIX: &str = "query_request";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CrossChainQueryPacket {
@@ -23,25 +22,32 @@ pub struct CrossChainQueryPacket {
     pub request: String,
 }
 
+impl From<CrossChainQueryPacket> for IbcEvent {
+    fn from(packet: CrossChainQueryPacket) -> Self {
+        IbcEvent::CrossChainQueryPacket(packet)
+    }
+}
+
 fn find_value<'a>(key: &str, entries: &'a [abci::EventAttribute]) -> Result<&'a str, Error> {
     entries
         .iter()
         .find_map(|entry| {
-            if entry.key == key {
-                Some(entry.value.as_str())
+            if entry.key_bytes() == key.as_bytes() {
+                Some(entry.value_str().map_err(|_| {
+                    Error::event(format!(
+                        "attribute value for key {key} is not a valid UTF-8 string"
+                    ))
+                }))
             } else {
                 None
             }
         })
+        .transpose()?
         .ok_or_else(|| Error::event(format!("attribute not found for key: {key}")))
 }
 
 fn new_attr(key: &str, value: &str) -> abci::EventAttribute {
-    abci::EventAttribute {
-        key: String::from(key),
-        value: String::from(value),
-        index: true,
-    }
+    abci::EventAttribute::from((key, value, true))
 }
 
 impl From<CrossChainQueryPacket> for abci::Event {
@@ -91,68 +97,5 @@ impl<'a> TryFrom<&'a [abci::EventAttribute]> for CrossChainQueryPacket {
             height,
             request,
         })
-    }
-}
-
-fn fetch_first_element_from_events(
-    block_events: &BTreeMap<String, Vec<String>>,
-    key: &str,
-) -> Result<String, Error> {
-    let res = block_events
-        .get(key)
-        .ok_or_else(|| Error::event(format!("attribute not found for key: {key}")))?
-        .first()
-        .ok_or_else(|| {
-            Error::event(format!(
-                "element at position 0, of attribute with key `{key}`, not found"
-            ))
-        })?;
-
-    Ok(res.clone())
-}
-
-impl CrossChainQueryPacket {
-    pub fn extract_query_event(
-        block_events: &BTreeMap<String, Vec<String>>,
-    ) -> Result<IbcEvent, Error> {
-        let chain_id_str = fetch_first_element_from_events(
-            block_events,
-            &format!("{}.{}", EVENT_TYPE_PREFIX, "chain_id"),
-        )?;
-        let connection_id_str = fetch_first_element_from_events(
-            block_events,
-            &format!("{}.{}", EVENT_TYPE_PREFIX, "connection_id"),
-        )?;
-        let query_type = fetch_first_element_from_events(
-            block_events,
-            &format!("{}.{}", EVENT_TYPE_PREFIX, "type"),
-        )?;
-        let height_str = fetch_first_element_from_events(
-            block_events,
-            &format!("{}.{}", EVENT_TYPE_PREFIX, "height"),
-        )?;
-
-        Ok(IbcEvent::CrossChainQueryPacket(CrossChainQueryPacket {
-            module: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "module"),
-            )?,
-            action: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "action"),
-            )?,
-            query_id: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "query_id"),
-            )?,
-            chain_id: ChainId::from_string(&chain_id_str),
-            connection_id: ConnectionId::from_str(&connection_id_str)?,
-            query_type,
-            height: Height::from_str(&height_str)?,
-            request: fetch_first_element_from_events(
-                block_events,
-                &format!("{}.{}", EVENT_TYPE_PREFIX, "request"),
-            )?,
-        }))
     }
 }

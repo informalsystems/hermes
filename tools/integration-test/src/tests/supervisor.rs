@@ -1,5 +1,4 @@
-use ibc_relayer::config::{self, Config, ModeConfig};
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
+use ibc_relayer::config::{self, ModeConfig};
 
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{assert_eventually_channel_established, init_channel};

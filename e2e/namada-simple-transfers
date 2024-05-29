@@ -18,7 +18,14 @@ HERMES_DIR=${PWD%/e2e*}
 NAMADAC="${NAMADA_DIR}/target/debug/namadac"
 NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
 DATA_DIR="${HERMES_DIR}/data"
+IBC_TOKEN="transfer/channel-0/apfel"
 
+SHIELDED_ALIAS_A="shielded_a"
+SHIELDED_ALIAS_B="shielded_b"
+SHIELDED_ALIAS_B_2="shielded_b_2"
+PAYMENT_ALIAS_A="payment_a"
+PAYMENT_ALIAS_B="payment_b"
+PAYMENT_ALIAS_B_2="payment_b_2"
 LEDGER_ADDR_A="http://127.0.0.1:27657"
 LEDGER_ADDR_B="http://127.0.0.1:28657"
 INITIAL_BALANCE=5000
@@ -61,9 +68,23 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --b-port transfer \
   --new-client-connection --yes
 
-# faucet apfel on chain_a and chain_b
 base_dir_a=${DATA_DIR}/namada-a
 base_dir_b=${DATA_DIR}/namada-b
+
+# Setup shielded keys
+${NAMADAW} --base-dir ${base_dir_a} gen --shielded --alias ${SHIELDED_ALIAS_A} --unsafe-dont-encrypt
+${NAMADAW} --base-dir ${base_dir_a} gen-payment-addr --alias ${PAYMENT_ALIAS_A} --key ${SHIELDED_ALIAS_A}
+payment_addr_a=$(${NAMADAW} --base-dir ${base_dir_a} find --alias ${PAYMENT_ALIAS_A} | awk -v paymentAlias="${PAYMENT_ALIAS_A}" '{if($1 ~ paymentAlias) {print $2}}')
+
+${NAMADAW} --base-dir ${base_dir_b} gen --shielded --alias ${SHIELDED_ALIAS_B} --unsafe-dont-encrypt
+${NAMADAW} --base-dir ${base_dir_b} gen-payment-addr --alias ${PAYMENT_ALIAS_B} --key ${SHIELDED_ALIAS_B}
+payment_addr_b=$(${NAMADAW} --base-dir ${base_dir_b} find --alias ${PAYMENT_ALIAS_B} | awk -v paymentAlias="${PAYMENT_ALIAS_B}" '{if($1 ~ paymentAlias) {print $2}}')
+
+${NAMADAW} --base-dir ${base_dir_b} gen --shielded --alias ${SHIELDED_ALIAS_B_2} --unsafe-dont-encrypt
+${NAMADAW} --base-dir ${base_dir_b} gen-payment-addr --alias ${PAYMENT_ALIAS_B_2} --key ${SHIELDED_ALIAS_B_2}
+payment_addr_b_2=$(${NAMADAW} --base-dir ${base_dir_b} find --alias ${PAYMENT_ALIAS_B_2} | awk -v paymentAlias="${PAYMENT_ALIAS_B_2}" '{if($1 ~ paymentAlias) {print $2}}')
+
+# Faucet apfel on chain A and chain B
 ${NAMADAC} --base-dir ${base_dir_a} transfer \
   --source albert \
   --target relayer \
@@ -80,11 +101,23 @@ ${NAMADAC} --base-dir ${base_dir_b} transfer \
   --signing-keys albert-key \
   --node ${LEDGER_ADDR_B}
 
+# Faucet apfel for shielded_a
+${NAMADAC} --base-dir ${base_dir_a} transfer \
+  --source albert \
+  --target ${payment_addr_a} \
+  --token apfel \
+  --amount 1000 \
+  --signing-keys albert-key \
+  --node ${LEDGER_ADDR_A}
+${NAMADAC} --base-dir ${base_dir_a} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} \
+  --node ${LEDGER_ADDR_A}
+
 # Get the receiver addresses
 receiver_a=$(${NAMADAW} --base-dir ${base_dir_a} find --alias relayer | awk '/"relayer":/{print $3}')
 receiver_b=$(${NAMADAW} --base-dir ${base_dir_b} find --alias relayer | awk '/"relayer":/{print $3}')
 
-echo "~~ Transfer 100 apfel from chain_a to chain_b ~~"
+echo "~~ Transfer 100 apfel from chain A to chain B ~~"
 ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --source relayer \
   --receiver ${receiver_b} \
@@ -111,30 +144,32 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --src-channel channel-0
 
 echo "==== Balances on chain A ===="
-${NAMADAC} --base-dir ${base_dir_a} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir_a} balance \
   --token apfel \
   --owner relayer \
-  --show-ibc-tokens \
-  --node ${LEDGER_ADDR_A}
+  --node ${LEDGER_ADDR_A})
+echo ${balance}
+if [ "${balance}" != "apfel: 900" ]; then
+  echo "The balance on chain A is wrong"
+  exit 1
+fi
 
 echo "==== Balances on chain B ===="
-${NAMADAC} --base-dir ${base_dir_b} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${IBC_TOKEN} \
   --owner relayer \
-  --show-ibc-tokens \
-  --node ${LEDGER_ADDR_B}
-# get token address
-received_token=$(${NAMADAC} --base-dir ${base_dir_b} balance \
-  --owner relayer \
-  --show-ibc-tokens \
-  --node ${LEDGER_ADDR_B} \
-  | sed -e s/://g \
-  | awk '$1 ~ /transfer\/channel-0/ {print $1}')
+  --node ${LEDGER_ADDR_B})
+echo ${balance}
+if [ "${balance}" != "${IBC_TOKEN}: 100" ]; then
+  echo "The balance on chain B is wrong"
+  exit 1
+fi
 
-echo "~~ Transfer back 50 apfel from chain_b to chain_a ~~"
+echo "~~ Transfer back 50 apfel from chain B to chain A ~~"
 ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --source relayer \
   --receiver ${receiver_a} \
-  --token ${received_token} \
+  --token ${IBC_TOKEN} \
   --amount 50 \
   --signing-keys relayer \
   --channel-id channel-0 \
@@ -157,24 +192,32 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --src-channel channel-0
 
 echo "==== Balances on chain A ===="
-${NAMADAC} --base-dir ${base_dir_a} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir_a} balance \
   --token apfel \
   --owner relayer \
-  --show-ibc-tokens \
-  --node ${LEDGER_ADDR_A}
+  --node ${LEDGER_ADDR_A})
+echo ${balance}
+if [ "${balance}" != "apfel: 950" ]; then
+  echo "The balance on chain A is wrong"
+  exit 1
+fi
 
 echo "==== Balances on chain B ===="
-${NAMADAC} --base-dir ${base_dir_b} balance \
-  --token ${received_token} \
+balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${IBC_TOKEN} \
   --owner relayer \
-  --show-ibc-tokens \
-  --node ${LEDGER_ADDR_B}
+  --node ${LEDGER_ADDR_B})
+echo ${balance}
+if [ "${balance}" != "${IBC_TOKEN}: 50" ]; then
+  echo "The balance on chain B is wrong"
+  exit 1
+fi
 
 echo "==== Start Hermes ===="
 cargo run --bin hermes -- --config config_for_namada.toml \
   start > ${HERMES_DIR}/e2e/hermes.log 2>&1 &
 
-echo "~~ Transfer 200 apfel from chain_a to chain_b ~~"
+echo "~~ Transfer 200 apfel from chain A to chain B ~~"
 ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --source relayer \
   --receiver ${receiver_b} \
@@ -184,7 +227,7 @@ ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --channel-id channel-0 \
   --node ${LEDGER_ADDR_A}
 
-echo "~~ Transfer 300 apfel from chain_b to chain_a ~~"
+echo "~~ Transfer 300 apfel from chain B to chain A ~~"
 ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --source relayer \
   --receiver ${receiver_a} \
@@ -198,16 +241,175 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
 sleep 15
 
 echo "==== Balances on chain A ===="
-${NAMADAC} --base-dir ${base_dir_a} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir_a} balance \
+  --token apfel \
   --owner relayer \
-  --show-ibc-tokens \
-  --node ${LEDGER_ADDR_A}
+  --node ${LEDGER_ADDR_A})
+echo ${balance}
+if [ "${balance}" != "apfel: 750" ]; then
+  echo "The balance on chain A is wrong"
+  exit 1
+fi
+
+balance=$(${NAMADAC} --base-dir ${base_dir_a} balance \
+  --token ${IBC_TOKEN} \
+  --owner relayer \
+  --node ${LEDGER_ADDR_A})
+echo ${balance}
+if [ "${balance}" != "${IBC_TOKEN}: 300" ]; then
+  echo "The balance on chain A is wrong"
+  exit 1
+fi
 
 echo "==== Balances on chain B ===="
-${NAMADAC} --base-dir ${base_dir_b} balance \
+balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token apfel \
   --owner relayer \
-  --show-ibc-tokens \
+  --node ${LEDGER_ADDR_B})
+echo ${balance}
+if [ "${balance}" != "apfel: 700" ]; then
+  echo "The balance on chain B is wrong"
+  exit 1
+fi
+
+balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${IBC_TOKEN} \
+  --owner relayer \
+  --node ${LEDGER_ADDR_B})
+echo ${balance}
+if [ "${balance}" != "${IBC_TOKEN}: 250" ]; then
+  echo "The balance on chain B is wrong"
+  exit 1
+fi
+
+echo "==== Shielded transfer tests ===="
+
+echo "~~ Shielded transfer 100 apfel from chain A to chain B ~~"
+${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
+  --source ${SHIELDED_ALIAS_A} \
+  --receiver ${payment_addr_b} \
+  --token apfel \
+  --amount 100 \
+  --channel-id channel-0 \
+  --gas-payer relayer \
+  --node ${LEDGER_ADDR_A}
+
+# wait for relaying
+sleep 40
+
+echo "==== Balance of shielded_a on chain A ===="
+${NAMADAC} --base-dir ${base_dir_a} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} \
+  --node ${LEDGER_ADDR_A}
+balance=$(${NAMADAC} --base-dir ${base_dir_a} balance \
+  --token apfel \
+  --owner ${SHIELDED_ALIAS_A} \
+  --node ${LEDGER_ADDR_A})
+echo "${balance}"
+if [[ "${balance}" != *"apfel: 900" ]]; then
+  echo "The balance of shielded_a on chain A is wrong"
+  exit 1
+fi
+
+echo "==== Balance of shielded_b on chain B ===="
+${NAMADAC} --base-dir ${base_dir_b} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_B} \
   --node ${LEDGER_ADDR_B}
+balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${IBC_TOKEN} \
+  --owner ${SHIELDED_ALIAS_B} \
+  --node ${LEDGER_ADDR_B})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 100" ]]; then
+  echo "The balance of shielded_b on chain B is wrong"
+  exit 1
+fi
+
+echo "~~ Shielded transfer 50 apfel from shielded_b to shielded_b_2 ~~"
+${NAMADAC} --base-dir ${base_dir_b} transfer \
+  --source ${SHIELDED_ALIAS_B} \
+  --target ${payment_addr_b_2} \
+  --token ${IBC_TOKEN} \
+  --amount 50 \
+  --signing-keys relayer \
+  --node ${LEDGER_ADDR_B}
+
+echo "==== Balance of shielded_b on chain B ===="
+${NAMADAC} --base-dir ${base_dir_b} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_B} \
+  --node ${LEDGER_ADDR_B}
+balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${IBC_TOKEN} \
+  --owner ${SHIELDED_ALIAS_B} \
+  --node ${LEDGER_ADDR_B})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 50" ]]; then
+  echo "The balance of shielded_b on chain B is wrong"
+  exit 1
+fi
+
+echo "==== Balance of shielded_b_2 on chain B ===="
+${NAMADAC} --base-dir ${base_dir_b} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_B_2} \
+  --node ${LEDGER_ADDR_B}
+balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${IBC_TOKEN} \
+  --owner ${SHIELDED_ALIAS_B_2} \
+  --node ${LEDGER_ADDR_B})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 50" ]]; then
+  echo "The balance of shielded_b_2 on chain B is wrong"
+  exit 1
+fi
+
+echo "~~ Transfer back 50 apfel from shielded_b_2 on chain B to chain A ~~"
+${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
+  --source ${SHIELDED_ALIAS_B_2} \
+  --receiver ${payment_addr_a} \
+  --token ${IBC_TOKEN} \
+  --amount 50 \
+  --signing-keys relayer \
+  --channel-id channel-0 \
+  --node ${LEDGER_ADDR_B}
+
+# wait for relaying
+sleep 40
+
+echo "==== Balances of shielded_a on chain A ===="
+${NAMADAC} --base-dir ${base_dir_a} shielded-sync \
+  --viewing-keys ${SHIELDED_ALIAS_A} \
+  --node ${LEDGER_ADDR_A}
+balance=$(${NAMADAC} --base-dir ${base_dir_a} balance \
+  --token apfel \
+  --owner ${SHIELDED_ALIAS_A} \
+  --node ${LEDGER_ADDR_A})
+echo "${balance}"
+if [[ "${balance}" != *"apfel: 950" ]]; then
+  echo "The balance of shielded_a on chain A is wrong"
+  exit 1
+fi
+
+echo "==== Balances of shielded_b on chain B ===="
+balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${IBC_TOKEN} \
+  --owner ${SHIELDED_ALIAS_B} \
+  --node ${LEDGER_ADDR_B})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 50" ]]; then
+  echo "The balance of shielded_b on chain B is wrong"
+  exit 1
+fi
+
+echo "==== Balance of shielded_b_2 on chain B ===="
+balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
+  --token ${IBC_TOKEN} \
+  --owner ${SHIELDED_ALIAS_B_2} \
+  --node ${LEDGER_ADDR_B})
+echo "${balance}"
+if [[ "${balance}" != *"${IBC_TOKEN}: 0" ]]; then
+  echo "The balance of shielded_b_2 on chain B is wrong"
+  exit 1
+fi
 
 killall hermes
 killall namadan

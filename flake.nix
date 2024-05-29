@@ -32,7 +32,6 @@
           cometbft
           evmos
           gaia6-ordered
-          gaia14
           gaia15
           ibc-go-v2-simapp
           ibc-go-v3-simapp
@@ -42,18 +41,17 @@
           ibc-go-v7-simapp
           ibc-go-v8-simapp
           interchain-security
-          juno
           migaloo
           namada
           namada-src
           neutron
+          juno
           osmosis
           provenance
           stride
           stride-no-admin
-          stride-consumer-no-admin
-          stride-consumer
           wasmd
+          injective
           ;
 
         python = nixpkgs.python3.withPackages (p: [

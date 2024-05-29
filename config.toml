@@ -189,11 +189,12 @@ grpc_addr = 'http://127.0.0.1:9090'
 
 # b) Pull: for polling for IBC events via the `/block_results` RPC endpoint.
 #
-#     `{ mode = 'pull', interval = '1s' }`
+#     `{ mode = 'pull', interval = '1s', max_retries = 4 }`
 #
 #    where
 #
 #    - `interval` is the interval at which to poll for blocks. Default: 1s
+#    - `max_retries` is the maximum number of retries to collect events for each block. Default: 4
 #
 #    This mode should only be used in situations where Hermes misses events that it should be
 #    receiving, such as when relaying for CosmWasm-enabled chains which emit IBC events without
@@ -369,6 +370,13 @@ trust_threshold = '2/3'
 # operational debugging information, e.g., relayer build version.
 memo_prefix = ''
 
+# If this is set to a string, it will overwrite the memo used by Hermes for each transaction
+# it submits to this chain.
+# Default: not set.
+# This is used for chains which have a very small character limit for the memo,
+# and the additional information appended by Hermes would overflow that limit.
+# memo_overwrite = ''
+
 # This section specifies the filters for policy based relaying.
 #
 # Default: no policy / filters, allow all packets on all channels.
@@ -432,6 +440,18 @@ memo_prefix = ''
 # Specify the a clear interval for the chain.
 # This will override the global clear interval for this chain only, allowing different intervals for each chain.
 # clear_interval = 50
+
+# Specify packet sequences which should not be cleared, per channel.
+#
+# For each channel, specify a list of sequences which should not be cleared, eg.
+#
+#   excluded_sequences = [
+#     ['channel-0', [1, 2, 3]],
+#     ['channel-1', [4, 5, 6]]
+#  ]
+#
+# Default: No filter
+# excluded_sequences = []
 
 [[chains]]
 id = 'ibc-1'

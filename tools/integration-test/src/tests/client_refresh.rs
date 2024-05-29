@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::foreign_client::CreateOptions;

@@ -5,7 +5,6 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 use ibc_relayer::config::{ChainConfig, Config};
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -330,11 +329,12 @@ fn submit_duplicate_vote_evidence(
     // ie. retrieve the consensus state at the highest height smaller than the infraction height.
     //
     // Note: The consensus state heights are sorted in increasing order.
-    let consensus_state_heights =
-        chain.query_consensus_state_heights(QueryConsensusStateHeightsRequest {
+    let consensus_state_heights = counterparty_chain_handle.query_consensus_state_heights(
+        QueryConsensusStateHeightsRequest {
             client_id: counterparty_client_id.clone(),
             pagination: Some(PageRequest::all()),
-        })?;
+        },
+    )?;
 
     // Retrieve the consensus state at the highest height smaller than the infraction height.
     let consensus_state_height_before_infraction_height = consensus_state_heights

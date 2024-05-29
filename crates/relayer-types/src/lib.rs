@@ -4,11 +4,9 @@
 
 #![allow(clippy::large_enum_variant)]
 #![deny(
-    // warnings,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
-    unused_qualifications,
     rust_2018_idioms
 )]
 #![forbid(unsafe_code)]
@@ -65,8 +63,5 @@ pub type Height = core::ics02_client::height::Height;
 #[cfg(test)]
 mod test;
 
-#[cfg(any(test, feature = "mocks"))]
+#[cfg(test)]
 pub mod test_utils;
-
-#[cfg(any(test, feature = "mocks"))]
-pub mod mock; // Context mock, the underlying host chain, and client types: for testing all handlers.

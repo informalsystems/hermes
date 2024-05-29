@@ -50,7 +50,7 @@ sconfig data/ibc-1-f/config/config.toml "rpc.laddr=tcp://0.0.0.0:26457"
 sconfig data/ibc-1-f/config/config.toml "p2p.laddr=tcp://0.0.0.0:26456"
 
 info "Starting ibc-1..."
-gaiad --home ./data/ibc-1 start --pruning=nothing --grpc.address=0.0.0.0:9091 --log_level error > data/ibc-1.log 2>&1 &
+gaiad --home ./data/ibc-1 start --pruning=nothing --rpc.laddr="tcp://0.0.0.0:26557" --grpc.address=0.0.0.0:9091 --log_level error > data/ibc-1.log 2>&1 &
 
 info "Starting ibc-1 fork..."
-gaiad --home ./data/ibc-1-f start --pruning=nothing --grpc.address=0.0.0.0:9092 --log_level error > data/ibc-1-f.log 2>&1 &
+gaiad --home ./data/ibc-1-f start --pruning=nothing --rpc.laddr="tcp://0.0.0.0:26457" --grpc.address=0.0.0.0:9092 --log_level error > data/ibc-1-f.log 2>&1 &

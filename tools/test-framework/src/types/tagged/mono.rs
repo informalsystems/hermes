@@ -17,9 +17,8 @@
 
 */
 
-use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
+use core::cmp::Ordering;
 use core::fmt::{self, Debug, Display};
-use core::iter::{IntoIterator, Iterator};
 use core::marker::PhantomData;
 use serde::{Serialize, Serializer};
 

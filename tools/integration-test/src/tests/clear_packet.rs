@@ -501,6 +501,15 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
             src_channel_id: channel.channel_id_a.clone().into_value(),
             max_memo_size: packet_config.ics20_max_memo_size,
             max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
+        };
+
+        let rev_opts = LinkParameters {
+            src_port_id: channel.port_b.clone().into_value(),
+            src_channel_id: channel.channel_id_b.clone().into_value(),
+            max_memo_size: packet_config.ics20_max_memo_size,
+            max_receiver_size: packet_config.ics20_max_receiver_size,
+            exclude_src_sequences: vec![],
         };
 
         // Clear all even packets
@@ -546,8 +555,15 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
 
         info!("Clearing all unreceived ack packets ({})", to_clear.len());
 
-        let rev_link = link.reverse(false, false).unwrap();
-        rev_link.relay_ack_packet_messages(to_clear).unwrap();
+        let rev_link = Link::new_from_opts(
+            chains.handle_b().clone(),
+            chains.handle_a().clone(),
+            rev_opts,
+            false,
+            false,
+        )?;
+
+        rev_link.relay_ack_packet_messages(to_clear)?;
 
         let pending_packets_a =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end_a.value())?;

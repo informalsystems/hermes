@@ -58,10 +58,7 @@ jobs:
       fail-fast: false
       matrix:
         first-package:
-          - package: gaia13
-            command: gaiad
-            account_prefix: cosmos
-          - package: gaia14
+          - package: gaia15
             command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v7-simapp
@@ -80,6 +77,9 @@ jobs:
           - package: wasmd
             command: wasmd
             account_prefix: wasm
+          - package: injective
+            command: injectived
+            account_prefix: inj
 
     steps:
       - uses: actions/checkout@v4
@@ -87,18 +87,20 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
-      - uses: actions-rs/toolchain@v1
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v15
+        with: 
+          name: cosmos-nix
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
       - name: Install Protoc
         uses: heliaxdev/setup-protoc@v2
         with:
           version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test

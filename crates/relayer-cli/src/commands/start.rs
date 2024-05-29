@@ -4,7 +4,6 @@ use std::error::Error;
 use std::io;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
 use crossbeam_channel::Sender;
 
 use ibc_relayer::chain::handle::{CachingChainHandle, ChainHandle};
@@ -132,7 +131,6 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     Ok(())
 }
 
-#[cfg(feature = "rest-server")]
 fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
     use ibc_relayer::util::spawn_blocking;
 
@@ -170,23 +168,6 @@ fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
     Some(rx)
 }
 
-#[cfg(not(feature = "rest-server"))]
-fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
-    let rest = config.rest.clone();
-
-    if rest.enabled {
-        warn!(
-            "REST server enabled in the config but Hermes was built without REST support, \
-             build Hermes with --features=rest-server to enable REST support."
-        );
-
-        None
-    } else {
-        None
-    }
-}
-
-#[cfg(feature = "telemetry")]
 fn spawn_telemetry_server(config: &Config) {
     use ibc_relayer::util::spawn_blocking;
 
@@ -219,16 +200,6 @@ fn spawn_telemetry_server(config: &Config) {
             Err(e) => error!("telemetry service failed to start: {e}"),
         }
     });
-}
-
-#[cfg(not(feature = "telemetry"))]
-fn spawn_telemetry_server(config: &Config) {
-    if config.telemetry.enabled {
-        warn!(
-            "telemetry enabled in the config but Hermes was built without telemetry support, \
-             build Hermes with --features=telemetry to enable telemetry support."
-        );
-    }
 }
 
 fn make_supervisor<Chain: ChainHandle>(

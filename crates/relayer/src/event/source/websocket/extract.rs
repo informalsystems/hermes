@@ -1,7 +1,7 @@
 use alloc::collections::BTreeMap as HashMap;
-use core::convert::TryFrom;
 use ibc_relayer_types::applications::ics29_fee::events::DistributionType;
 
+use ibc_relayer_types::applications::ics31_icq;
 use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
 
 use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
@@ -334,10 +334,17 @@ fn extract_block_events(
         extract_events(height, block_events, "channel_close_confirm", "channel_id"),
         height,
     );
-    // extract cross chain query event from block_events
-    if let Ok(ccq) = CrossChainQueryPacket::extract_query_event(block_events) {
-        events.push(IbcEventWithHeight::new(ccq, height));
-    }
+
+    append_events::<CrossChainQueryPacket>(
+        &mut events,
+        extract_events(
+            height,
+            block_events,
+            ics31_icq::events::EVENT_TYPE_PREFIX,
+            "query_id",
+        ),
+        height,
+    );
 
     events
 }

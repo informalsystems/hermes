@@ -1,7 +1,6 @@
 use core::fmt::{Debug, Error, Formatter};
 
 use abscissa_core::clap::Parser;
-use abscissa_core::Runnable;
 use serde::Serialize;
 
 use eyre::eyre;

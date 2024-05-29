@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-rest"
-version      = "0.27.0"
+version      = "0.27.2"
 authors      = ["Informal Systems <hello@informal.systems>"]
 edition      = "2021"
 license      = "Apache-2.0"
@@ -8,22 +8,22 @@ readme       = "README.md"
 keywords     = ["ibc", "rest", "api", "cosmos", "tendermint"]
 homepage     = "https://hermes.informal.systems/"
 repository   = "https://github.com/informalsystems/hermes"
-rust-version = "1.71"
+rust-version = "1.71.1"
 description  = """
   Rust implementation of a RESTful API server for Hermes
 """
 
 [dependencies]
-ibc-relayer-types = { version = "0.27.0", path = "../relayer-types" }
-ibc-relayer       = { version = "0.27.0", path = "../relayer" }
+ibc-relayer-types = { workspace = true }
+ibc-relayer       = { workspace = true }
 
-crossbeam-channel = "0.5"
-serde             = "1.0"
-tracing           = "0.1"
-axum              = "0.6"
-tokio             = "1.26"
+axum              = { workspace = true }
+crossbeam-channel = { workspace = true }
+serde             = { workspace = true }
+tokio             = { workspace = true }
+tracing           = { workspace = true }
 
 [dev-dependencies]
-reqwest    = { version = "0.11.16", features = ["json"], default-features = false }
-serde_json = "1"
-toml       = "0.8.8"
+reqwest    = { workspace = true, features = ["json"] }
+serde_json = { workspace = true }
+toml       = { workspace = true }

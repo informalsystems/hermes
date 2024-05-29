@@ -13,13 +13,8 @@
 // Tip: Deny warnings with `RUSTFLAGS="-D warnings"` environment variable in CI
 
 #![forbid(unsafe_code)]
-#![deny(
-    rust_2018_idioms,
-    trivial_casts,
-    unused_lifetimes,
-    unused_qualifications
-)]
-#![allow(deprecated)]
+#![deny(rust_2018_idioms, trivial_casts, unused_lifetimes)]
+#![allow(deprecated, unknown_lints, non_local_definitions)]
 
 extern crate alloc;
 
