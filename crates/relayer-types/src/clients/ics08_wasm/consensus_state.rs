@@ -26,19 +26,19 @@ pub enum WasmUnderlyingConsensusState {
 impl Ics02ConsensusState for WasmUnderlyingConsensusState {
     fn client_type(&self) -> ClientType {
         match self {
-            Self::Tendermint(tm_client_state) => tm_client_state.client_type(),
+            Self::Tendermint(tm_consensus_state) => tm_consensus_state.client_type(),
         }
     }
 
     fn root(&self) -> &CommitmentRoot {
         match self {
-            Self::Tendermint(tm_client_state) => tm_client_state.root(),
+            Self::Tendermint(tm_consensus_state) => tm_consensus_state.root(),
         }
     }
 
     fn timestamp(&self) -> Timestamp {
         match self {
-            Self::Tendermint(tm_client_state) => tm_client_state.timestamp(),
+            Self::Tendermint(tm_consensus_state) => tm_consensus_state.timestamp(),
         }
     }
 }
