@@ -980,6 +980,122 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(dst_expected_channel)
     }
 
+    pub fn build_multihop_chan_open_try(&self) -> Result<Vec<Any>, ChannelError> {
+        // Source channel ID must be specified
+        //~ Self is a Channel with two ChannelSides, a_side and b_side
+        //~ --src-chain is now chain4 and --dst-chain is chain1
+        //~ src_channel_id is the id of the channel opened on chain4, which is in INIT state
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
+
+        // Channel must exist on source
+        //~ Query the --src-chain (chain4) for the channel in INIT state (--src-channel), (source chain is the one in which this is running)
+        let (src_channel, _) = self
+            .src_chain() //~ ChainA
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: self.src_port_id().clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // Channel must be in INIT state
+        match src_channel.state() {
+            State::Init => (),
+            _ => {
+                return Err(ChannelError::unexpected_channel_state(
+                    src_channel_id.clone(),
+                    State::Init,
+                    src_channel.state().clone(),
+                ))
+            }
+        }
+
+        //~ src_channel.counterparty().port_id() is the port_id of the counterparty (chain1)
+        //~ as specified in the channel in INIT state (in chain4). self.dst_port_id() is the port on chain1,
+        //~ which was passed to --dst-port
+        if src_channel.counterparty().port_id() != self.dst_port_id() {
+            return Err(ChannelError::mismatch_port(
+                self.dst_chain().id(),
+                self.dst_port_id().clone(),
+                self.src_chain().id(),
+                src_channel.counterparty().port_id().clone(),
+                src_channel_id.clone(),
+            ));
+        }
+
+        //~ --dst-connection must exist on destination
+        //~ Query --dst-chain (chain1) for the specified --dst-connection
+        self.dst_chain()
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: self.dst_connection_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+
+        //~ query_height is the latest height on src_chain (chain4)
+        let query_height = self
+            .src_chain()
+            .query_latest_height()
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        let proofs = self
+            .src_chain() //~ (chain4)
+            .build_channel_proofs(self.src_port_id(), src_channel_id, query_height) //~ Proof that there's a channel in INIT state in --src-chain
+            .map_err(ChannelError::channel_proof)?;
+
+        // Build message(s) to update client on destination
+        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+
+        //~ Set the counterparty for the TRYOPEN channel in --dst-chain (chain1) as src (chain4)
+        let counterparty =
+            Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
+
+        // Reuse the version that was either set on ChanOpenInit or overwritten by the application.
+        let version = src_channel.version().clone();
+
+        let channel = ChannelEnd::new(
+            State::TryOpen,
+            *src_channel.ordering(),
+            counterparty,
+            vec![self.dst_connection_id().clone()], //~ pass a single conn id or the connection hops
+            version,
+            0,
+        );
+
+        // Get signer
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        let previous_channel_id = if src_channel.counterparty().channel_id.is_none() {
+            self.b_side.channel_id.clone()
+        } else {
+            src_channel.counterparty().channel_id.clone()
+        };
+
+        // Build the domain type message
+        let new_msg = MsgChannelOpenTry {
+            port_id: self.dst_port_id().clone(),
+            previous_channel_id,
+            counterparty_version: src_channel.version().clone(),
+            channel,
+            proofs,
+            signer,
+        };
+
+        msgs.push(new_msg.to_any());
+        Ok(msgs)
+    }
+
     pub fn build_chan_open_try(&self) -> Result<Vec<Any>, ChannelError> {
         // Source channel ID must be specified
         let src_channel_id = self
@@ -998,6 +1114,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 IncludeProof::No,
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // Channel must be in INIT state
+        match src_channel.state() {
+            State::Init => (),
+            _ => {
+                return Err(ChannelError::unexpected_channel_state(
+                    src_channel_id.clone(),
+                    State::Init,
+                    src_channel.state().clone(),
+                ))
+            }
+        }
 
         if src_channel.counterparty().port_id() != self.dst_port_id() {
             return Err(ChannelError::mismatch_port(
@@ -1075,7 +1203,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = self.build_chan_open_try()?;
+        let dst_msgs = if let Some(_) = self.connection_hops {
+            self.build_multihop_chan_open_try()?
+        } else {
+            self.build_chan_open_try()?
+        };
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelOpenTry");
 

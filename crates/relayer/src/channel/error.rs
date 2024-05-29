@@ -120,7 +120,14 @@ define_error! {
 
         ChannelAlreadyExist
             { channel_id: ChannelId }
-            |e| { format_args!("channel '{}' already exist in an incompatible state", e.channel_id) },
+            |e| { format_args!("channel '{}' already exists in an incompatible state", e.channel_id) },
+
+        UnexpectedChannelState
+            { channel_id: ChannelId,
+              expected_state: State,
+              channel_state: State,
+            }
+            | e | { format_args!("expected state of channel '{}' to be '{}', but found '{}'", e.channel_id, e.expected_state, e.channel_state) },
 
         MismatchChannelEnds
             {
