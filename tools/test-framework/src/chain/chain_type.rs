@@ -29,11 +29,18 @@ impl ChainType {
 
     pub fn chain_id(&self, prefix: &str, use_random_id: bool) -> ChainId {
         match self {
-            Self::Cosmos | Self::Osmosis => {
+            Self::Cosmos => {
                 if use_random_id {
                     ChainId::from_string(&format!("ibc-{}-{:x}", prefix, random_u32()))
                 } else {
                     ChainId::from_string(&format!("ibc{prefix}"))
+                }
+            }
+            Self::Osmosis => {
+                if use_random_id {
+                    ChainId::from_string(&format!("osmosis-{}-{:x}", prefix, random_u32()))
+                } else {
+                    ChainId::from_string(&format!("osmosis{prefix}"))
                 }
             }
             Self::Injective => ChainId::from_string(&format!("injective-{prefix}")),
