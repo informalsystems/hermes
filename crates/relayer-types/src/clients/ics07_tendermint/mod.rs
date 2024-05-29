@@ -6,3 +6,5 @@ pub mod consensus_state;
 pub mod error;
 pub mod header;
 pub mod misbehaviour;
+
+pub const TENDERMINT_CLIENT_TYPE: &str = "07-tendermint";

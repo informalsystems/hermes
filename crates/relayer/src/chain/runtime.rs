@@ -463,12 +463,7 @@ where
     ) -> Result<(), Error> {
         let result = self
             .chain
-            .build_header(trusted_height, target_height, &client_state)
-            .map(|(header, support)| {
-                let header = header.into();
-                let support = support.into_iter().map(|h| h.into()).collect();
-                (header, support)
-            });
+            .build_header(trusted_height, target_height, &client_state);
 
         reply_to.send(result).map_err(Error::send)
     }
@@ -480,10 +475,7 @@ where
         settings: ClientSettings,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
-        let client_state = self
-            .chain
-            .build_client_state(height, settings)
-            .map(|cs| cs.into());
+        let client_state = self.chain.build_client_state(height, settings);
 
         reply_to.send(client_state).map_err(Error::send)
     }
@@ -496,12 +488,9 @@ where
         client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let verified = self.chain.verify_header(trusted, target, &client_state)?;
-
         let consensus_state = self
             .chain
-            .build_consensus_state(verified)
-            .map(|cs| cs.into());
+            .build_consensus_state(trusted, target, &client_state);
 
         reply_to.send(consensus_state).map_err(Error::send)
     }

@@ -68,3 +68,6 @@ pub mod interchain_security;
 
 #[cfg(any(doc, feature = "dynamic-gas-fee"))]
 pub mod dynamic_gas_fee;
+
+#[cfg(any(doc, feature = "wasm"))]
+pub mod wasm_client;
