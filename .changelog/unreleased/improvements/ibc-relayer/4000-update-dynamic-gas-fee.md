@@ -1,0 +1,2 @@
+- Add support for dynamic gas fee for chains using Skip's [`x/feemarket`](https://github.com/skip-mev/feemarket) module, while keeping compatibility with Osmosis' bespoke implementation
+  ([\#4000](https://github.com/informalsystems/hermes/issues/4000))
