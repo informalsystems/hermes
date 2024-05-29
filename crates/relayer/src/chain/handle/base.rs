@@ -530,10 +530,12 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryUpgradeRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
         self.send(|reply_to| ChainRequest::QueryUpgrade {
             request,
             height,
+            include_proof,
             reply_to,
         })
     }
@@ -542,10 +544,12 @@ impl ChainHandle for BaseChainHandle {
         &self,
         request: QueryUpgradeErrorRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
         self.send(|reply_to| ChainRequest::QueryUpgradeError {
             request,
             height,
+            include_proof,
             reply_to,
         })
     }

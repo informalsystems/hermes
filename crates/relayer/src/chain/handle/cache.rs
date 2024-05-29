@@ -523,15 +523,18 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryUpgradeRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
-        self.inner.query_upgrade(request, height)
+        self.inner.query_upgrade(request, height, include_proof)
     }
 
     fn query_upgrade_error(
         &self,
         request: QueryUpgradeErrorRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
-        self.inner.query_upgrade_error(request, height)
+        self.inner
+            .query_upgrade_error(request, height, include_proof)
     }
 }

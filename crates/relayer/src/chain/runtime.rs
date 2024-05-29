@@ -356,12 +356,12 @@ where
                             self.query_consumer_chains(reply_to)?
                         },
 
-                        ChainRequest::QueryUpgrade { request, height, reply_to } => {
-                            self.query_upgrade(request, height, reply_to)?
+                        ChainRequest::QueryUpgrade { request, height, include_proof, reply_to } => {
+                            self.query_upgrade(request, height, include_proof, reply_to)?
                         },
 
-                        ChainRequest::QueryUpgradeError { request, height, reply_to } => {
-                            self.query_upgrade_error(request, height, reply_to)?
+                        ChainRequest::QueryUpgradeError { request, height, include_proof, reply_to } => {
+                            self.query_upgrade_error(request, height, include_proof, reply_to)?
                         },
                     }
                 },
@@ -879,9 +879,10 @@ where
         &self,
         request: QueryUpgradeRequest,
         height: Height,
+        include_proof: IncludeProof,
         reply_to: ReplyTo<(Upgrade, Option<MerkleProof>)>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_upgrade(request, height);
+        let result = self.chain.query_upgrade(request, height, include_proof);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())
@@ -891,9 +892,12 @@ where
         &self,
         request: QueryUpgradeErrorRequest,
         height: Height,
+        include_proof: IncludeProof,
         reply_to: ReplyTo<(ErrorReceipt, Option<MerkleProof>)>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_upgrade_error(request, height);
+        let result = self
+            .chain
+            .query_upgrade_error(request, height, include_proof);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())

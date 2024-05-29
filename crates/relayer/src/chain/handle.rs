@@ -377,12 +377,14 @@ pub enum ChainRequest {
     QueryUpgrade {
         request: QueryUpgradeRequest,
         height: Height,
+        include_proof: IncludeProof,
         reply_to: ReplyTo<(Upgrade, Option<MerkleProof>)>,
     },
 
     QueryUpgradeError {
         request: QueryUpgradeErrorRequest,
         height: Height,
+        include_proof: IncludeProof,
         reply_to: ReplyTo<(ErrorReceipt, Option<MerkleProof>)>,
     },
 }
@@ -703,11 +705,13 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         &self,
         request: QueryUpgradeRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error>;
 
     fn query_upgrade_error(
         &self,
         request: QueryUpgradeErrorRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error>;
 }

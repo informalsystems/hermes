@@ -827,6 +827,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                             channel_id: self.b_side.channel_id.clone().unwrap().clone().to_string(),
                         },
                         height,
+                        IncludeProof::No,
                     )
                     .map_err(|_| ChannelError::missing_upgrade_error_receipt_proof());
 
@@ -853,6 +854,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                             channel_id: self.a_side.channel_id.clone().unwrap().clone().to_string(),
                         },
                         height,
+                        IncludeProof::No,
                     )
                     .map_err(|_| ChannelError::missing_upgrade_error_receipt_proof());
 
@@ -1643,6 +1645,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     channel_id: src_channel_id.to_string(),
                 },
                 src_latest_height,
+                IncludeProof::Yes,
             )
             .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
 
@@ -1778,6 +1781,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     channel_id: src_channel_id.to_string(),
                 },
                 src_latest_height,
+                IncludeProof::Yes,
             )
             .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
 
@@ -1902,6 +1906,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     channel_id: src_channel_id.to_string(),
                 },
                 src_latest_height,
+                IncludeProof::Yes,
             )
             .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
 
@@ -2110,6 +2115,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     channel_id: src_channel_id.to_string(),
                 },
                 src_latest_height,
+                IncludeProof::Yes,
             )
             .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
 

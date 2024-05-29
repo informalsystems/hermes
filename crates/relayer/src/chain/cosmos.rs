@@ -1697,6 +1697,7 @@ impl ChainEndpoint for CosmosSdkChain {
                                 channel_id: channel.channel_id.to_string(),
                             },
                             height,
+                            IncludeProof::No,
                         )
                         .is_ok()
                 {
@@ -1768,6 +1769,7 @@ impl ChainEndpoint for CosmosSdkChain {
                                 channel_id: channel.channel_id.to_string(),
                             },
                             height,
+                            IncludeProof::No,
                         )
                         .is_ok()
                 {
@@ -1815,6 +1817,7 @@ impl ChainEndpoint for CosmosSdkChain {
                         channel_id: request.channel_id.to_string(),
                     },
                     height,
+                    IncludeProof::No,
                 )
                 .is_ok()
             {
@@ -2452,6 +2455,7 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryUpgradeRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
         let port_id = PortId::from_str(&request.port_id)
             .map_err(|_| Error::invalid_port_string(request.port_id))?;
@@ -2465,16 +2469,22 @@ impl ChainEndpoint for CosmosSdkChain {
             QueryHeight::Specific(height),
             true,
         )?;
-        let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
         let upgrade = Upgrade::decode_vec(&res.value).map_err(Error::decode)?;
 
-        Ok((upgrade, Some(proof)))
+        match include_proof {
+            IncludeProof::Yes => {
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                Ok((upgrade, Some(proof)))
+            }
+            IncludeProof::No => Ok((upgrade, None)),
+        }
     }
 
     fn query_upgrade_error(
         &self,
         request: QueryUpgradeErrorRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
         let port_id = PortId::from_str(&request.port_id)
             .map_err(|_| Error::invalid_port_string(request.port_id))?;
@@ -2488,10 +2498,15 @@ impl ChainEndpoint for CosmosSdkChain {
             QueryHeight::Specific(height),
             true,
         )?;
-        let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
         let error_receipt = ErrorReceipt::decode_vec(&res.value).map_err(Error::decode)?;
 
-        Ok((error_receipt, Some(proof)))
+        match include_proof {
+            IncludeProof::Yes => {
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                Ok((error_receipt, Some(proof)))
+            }
+            IncludeProof::No => Ok((error_receipt, None)),
+        }
     }
 }
 

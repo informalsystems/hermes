@@ -442,15 +442,18 @@ where
         &self,
         request: QueryUpgradeRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
-        self.value().query_upgrade(request, height)
+        self.value().query_upgrade(request, height, include_proof)
     }
 
     fn query_upgrade_error(
         &self,
         request: QueryUpgradeErrorRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
-        self.value().query_upgrade_error(request, height)
+        self.value()
+            .query_upgrade_error(request, height, include_proof)
     }
 }

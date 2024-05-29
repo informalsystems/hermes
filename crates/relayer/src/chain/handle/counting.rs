@@ -516,17 +516,20 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         &self,
         request: QueryUpgradeRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
         self.inc_metric("query_upgrade");
-        self.inner.query_upgrade(request, height)
+        self.inner.query_upgrade(request, height, include_proof)
     }
 
     fn query_upgrade_error(
         &self,
         request: QueryUpgradeErrorRequest,
         height: Height,
+        include_proof: IncludeProof,
     ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
         self.inc_metric("query_upgrade_error");
-        self.inner.query_upgrade_error(request, height)
+        self.inner
+            .query_upgrade_error(request, height, include_proof)
     }
 }
