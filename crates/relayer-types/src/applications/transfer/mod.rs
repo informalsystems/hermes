@@ -23,4 +23,4 @@ pub const MODULE_ID_STR: &str = "transfer";
 pub const PORT_ID_STR: &str = "transfer";
 
 /// ICS20 application current version.
-pub const VERSION: &str = "ics20-1";
+pub const VERSION: &str = "ics20";

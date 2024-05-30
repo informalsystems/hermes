@@ -23,14 +23,14 @@ impl Version {
         Self(v)
     }
 
-    pub fn ics20() -> Self {
-        Self::new(transfer::VERSION.to_string())
+    pub fn ics20(version: u64) -> Self {
+        Self::new(format!("{}-{version}", transfer::VERSION))
     }
 
-    pub fn ics20_with_fee() -> Self {
+    pub fn ics20_with_fee(version: u64) -> Self {
         let val = json::json!({
             "fee_version": "ics29-1",
-            "app_version": transfer::VERSION,
+            "app_version": format!("{}-{version}", transfer::VERSION),
         });
 
         Self::new(val.to_string())
@@ -51,6 +51,10 @@ impl Version {
                 Some(fee_version == "ics29-1")
             })
             .unwrap_or(false)
+    }
+
+    pub fn is_ics20_v2(&self) -> bool {
+        self.0.contains("ics20-2")
     }
 }
 
@@ -88,12 +92,12 @@ mod test {
     #[test]
     fn test_ics29_version() {
         {
-            let version = Version::ics20();
+            let version = Version::ics20(1);
             assert!(!version.supports_fee());
         }
 
         {
-            let version = Version::ics20_with_fee();
+            let version = Version::ics20_with_fee(1);
             assert!(version.supports_fee());
         }
     }
