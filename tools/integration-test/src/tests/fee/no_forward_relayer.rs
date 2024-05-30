@@ -33,7 +33,7 @@ impl TestOverrides for NoForwardRelayerTest {
     }
 
     fn channel_version(&self) -> Version {
-        Version::ics20_with_fee()
+        Version::ics20_with_fee(1)
     }
 }
 
@@ -43,7 +43,7 @@ impl TestOverrides for InvalidForwardRelayerTest {
     }
 
     fn channel_version(&self) -> Version {
-        Version::ics20_with_fee()
+        Version::ics20_with_fee(1)
     }
 }
 

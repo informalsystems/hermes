@@ -48,6 +48,13 @@ pub struct FullNode {
     pub denom: Denom,
 
     /**
+       The second currency denomination which the wallets have been loaded
+       with initial balance during the chain setup.
+       This is used for ICS20 v2 test transfering multiple denoms in one message.
+    */
+    pub second_denom: Denom,
+
+    /**
        The test wallets with more than sufficient account balance that
        can be used for testing.
     */
@@ -82,6 +89,9 @@ pub trait TaggedFullNodeExt<Chain> {
 
     /// Get the [`Denom`] tagged with the given `Chain`.
     fn denom(&self) -> MonoTagged<Chain, &Denom>;
+
+    /// Get the [`Denom`] tagged with the given `Chain` of the secondary token.
+    fn second_denom(&self) -> MonoTagged<Chain, &Denom>;
 }
 
 impl<Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, FullNode> {
@@ -100,6 +110,10 @@ impl<Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, FullNode> {
     fn denom(&self) -> MonoTagged<Chain, &Denom> {
         self.map_ref(|c| &c.denom)
     }
+
+    fn second_denom(&self) -> MonoTagged<Chain, &Denom> {
+        self.map_ref(|c| &c.second_denom)
+    }
 }
 
 impl<'a, Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, &'a FullNode> {
@@ -117,6 +131,10 @@ impl<'a, Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, &'a FullNode> {
 
     fn denom(&self) -> MonoTagged<Chain, &Denom> {
         self.map_ref(|c| &c.denom)
+    }
+
+    fn second_denom(&self) -> MonoTagged<Chain, &Denom> {
+        self.map_ref(|c| &c.second_denom)
     }
 }
 
