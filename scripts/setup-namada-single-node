@@ -131,7 +131,7 @@ function fund_relayer_acc() {
   local base_dir=${DATA_DIR}/namada
 
   ${NAMADAC} --base-dir ${base_dir} \
-    transfer --node ${LEDGER_ADDR} \
+    transparent-transfer --node ${LEDGER_ADDR} \
     --source ${account} --target relayer --amount 10000 --token NAM
 }
 

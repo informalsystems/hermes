@@ -75,7 +75,7 @@ payment_addr_b=$(${NAMADAW} --base-dir ${base_dir} find --alias ${PAYMENT_ALIAS_
 
 # Initialize Relayer's balance on Namada
 ${NAMADAC} --base-dir ${base_dir} \
-  transfer \
+  transparent-transfer \
   --source albert \
   --target relayer \
   --token nam \
@@ -83,7 +83,7 @@ ${NAMADAC} --base-dir ${base_dir} \
   --node ${NAMADA_LEDGER_ADDR}
 
 ${NAMADAC} --base-dir ${base_dir} \
-  transfer \
+  transparent-transfer \
   --source albert \
   --target relayer \
   --token apfel \

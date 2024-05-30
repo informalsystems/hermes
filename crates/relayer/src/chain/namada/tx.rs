@@ -19,11 +19,11 @@ use namada_sdk::ibc::core::channel::types::msgs::{
     MsgTimeout as IbcMsgTimeout, ACKNOWLEDGEMENT_TYPE_URL, RECV_PACKET_TYPE_URL, TIMEOUT_TYPE_URL,
 };
 use namada_sdk::ibc::core::host::types::identifiers::{ChannelId, PortId};
-use namada_sdk::ibc::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout};
+use namada_ibc::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout};
 use namada_sdk::masp::{PaymentAddress, TransferTarget};
 use namada_sdk::masp_primitives::transaction::Transaction as MaspTransaction;
 use namada_sdk::{signing, tx, Namada};
-use namada_trans_token::Transfer;
+use namada_token::ShieldingTransfer;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tracing::{debug, debug_span, trace};
@@ -214,7 +214,7 @@ impl NamadaChain {
         channel_id: &ChannelId,
         packet_data: &[u8],
         is_refund: bool,
-    ) -> Result<Option<(Transfer, MaspTransaction)>, Error> {
+    ) -> Result<Option<(ShieldingTransfer, MaspTransaction)>, Error> {
         let transfer = serde_json::from_slice::<PacketData>(packet_data)
             .ok()
             .and_then(|data| {
@@ -277,7 +277,7 @@ impl NamadaChain {
             };
             Ok(self
                 .rt
-                .block_on(tx::gen_ibc_shielded_transfer(&self.ctx, args))
+                .block_on(tx::gen_ibc_shielding_transfer(&self.ctx, args))
                 .map_err(NamadaError::namada)?)
         } else {
             Ok(None)

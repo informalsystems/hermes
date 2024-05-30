@@ -4,7 +4,7 @@
 # `make build` and `make build-wasm-scripts` on Namada directory in advance
 # Run with `namada-simple-transfers ${namada_dir}`
 
-set -e
+set -ex
 
 NAMADA_DIR=$1
 if [ -z "${NAMADA_DIR}" ]
@@ -37,7 +37,7 @@ function init_relayer_balance() {
   local base_dir=${DATA_DIR}/namada-${suffix}
 
   ${NAMADAC} --base-dir ${base_dir} \
-    transfer \
+    transparent-transfer \
     --source albert \
     --target relayer \
     --token nam \
@@ -57,6 +57,7 @@ chain_b=$(echo ${ids} | awk '{print $2}')
 
 # Initialize the balances
 init_relayer_balance "a" ${LEDGER_ADDR_A}
+sleep 5
 init_relayer_balance "b" ${LEDGER_ADDR_B}
 
 # Create a channel
@@ -85,7 +86,7 @@ ${NAMADAW} --base-dir ${base_dir_b} gen-payment-addr --alias ${PAYMENT_ALIAS_B_2
 payment_addr_b_2=$(${NAMADAW} --base-dir ${base_dir_b} find --alias ${PAYMENT_ALIAS_B_2} | awk -v paymentAlias="${PAYMENT_ALIAS_B_2}" '{if($1 ~ paymentAlias) {print $2}}')
 
 # Faucet apfel on chain A and chain B
-${NAMADAC} --base-dir ${base_dir_a} transfer \
+${NAMADAC} --base-dir ${base_dir_a} transparent-transfer \
   --source albert \
   --target relayer \
   --token apfel \
@@ -93,7 +94,7 @@ ${NAMADAC} --base-dir ${base_dir_a} transfer \
   --signing-keys albert-key \
   --node ${LEDGER_ADDR_A}
 
-${NAMADAC} --base-dir ${base_dir_b} transfer \
+${NAMADAC} --base-dir ${base_dir_b} transparent-transfer \
   --source albert \
   --target relayer \
   --token apfel \
@@ -102,7 +103,7 @@ ${NAMADAC} --base-dir ${base_dir_b} transfer \
   --node ${LEDGER_ADDR_B}
 
 # Faucet apfel for shielded_a
-${NAMADAC} --base-dir ${base_dir_a} transfer \
+${NAMADAC} --base-dir ${base_dir_a} shield \
   --source albert \
   --target ${payment_addr_a} \
   --token apfel \
