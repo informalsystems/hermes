@@ -46,6 +46,7 @@ celestia            = []
 async-icq           = []
 juno                = []
 dynamic-gas-fee     = []
+ics20-v2            = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"

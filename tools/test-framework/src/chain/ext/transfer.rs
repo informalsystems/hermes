@@ -9,7 +9,9 @@ use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
-use crate::relayer::transfer::{batched_ibc_token_transfer, ibc_token_transfer};
+use crate::relayer::transfer::{
+    batched_ibc_token_transfer, ibc_token_transfer, ibc_token_transfer_v2,
+};
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -42,6 +44,15 @@ pub trait ChainTransferMethodsExt<Chain> {
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
+    ) -> Result<Packet, Error>;
+
+    fn ibc_transfer_token_v2<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        token: &Vec<TaggedTokenRef<Chain>>,
     ) -> Result<Packet, Error>;
 
     fn ibc_transfer_token_with_memo_and_timeout<Counterparty>(
@@ -103,6 +114,28 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             sender,
             recipient,
             token,
+            None,
+            None,
+        ))
+    }
+
+    fn ibc_transfer_token_v2<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        tokens: &Vec<TaggedTokenRef<Chain>>,
+    ) -> Result<Packet, Error> {
+        let rpc_client = self.rpc_client()?;
+        self.value().runtime.block_on(ibc_token_transfer_v2(
+            rpc_client.as_ref(),
+            &self.tx_config(),
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            tokens,
             None,
             None,
         ))

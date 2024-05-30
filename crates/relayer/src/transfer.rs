@@ -143,15 +143,48 @@ pub fn build_transfer_message(
     let msg = MsgTransfer {
         source_port: src_port_id,
         source_channel: src_channel_id,
-        token: Coin {
+        token: Some(Coin {
             denom,
             amount: amount.to_string(),
-        },
+        }),
         sender,
         receiver,
         timeout_height,
         timeout_timestamp,
         memo,
+        tokens: vec![],
+    };
+
+    msg.to_any()
+}
+
+pub fn build_transfer_message_v2(
+    src_port_id: PortId,
+    src_channel_id: ChannelId,
+    tokens: Vec<(Amount, String)>,
+    sender: Signer,
+    receiver: Signer,
+    timeout_height: TimeoutHeight,
+    timeout_timestamp: Timestamp,
+    memo: Option<String>,
+) -> Any {
+    let tokens = tokens
+        .iter()
+        .map(|(amount, denom)| Coin {
+            denom: denom.clone(),
+            amount: amount.to_string(),
+        })
+        .collect();
+    let msg = MsgTransfer {
+        source_port: src_port_id,
+        source_channel: src_channel_id,
+        token: None,
+        sender,
+        receiver,
+        timeout_height,
+        timeout_timestamp,
+        memo,
+        tokens,
     };
 
     msg.to_any()
