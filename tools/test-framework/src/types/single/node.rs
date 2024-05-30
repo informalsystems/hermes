@@ -50,7 +50,7 @@ pub struct FullNode {
     /**
        The second currency denomination which the wallets have been loaded
        with initial balance during the chain setup.
-       This is used for ICS20 v2 test transfering multiple denoms in one message.
+       This is used for ICS20 v2 test transferring multiple denoms in one message.
     */
     pub second_denom: Denom,
 
