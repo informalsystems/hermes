@@ -24,13 +24,13 @@ impl Version {
     }
 
     pub fn ics20(version: u64) -> Self {
-        Self::new(format!("{}-{version}", transfer::VERSION))
+        Self::new(format!("{}-{version}", transfer::VERSION_PREFIX))
     }
 
     pub fn ics20_with_fee(version: u64) -> Self {
         let val = json::json!({
             "fee_version": "ics29-1",
-            "app_version": format!("{}-{version}", transfer::VERSION),
+            "app_version": format!("{}-{version}", transfer::VERSION_PREFIX),
         });
 
         Self::new(val.to_string())

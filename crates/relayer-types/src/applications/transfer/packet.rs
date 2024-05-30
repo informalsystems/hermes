@@ -51,7 +51,7 @@ impl From<PacketData> for RawPacketData {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawPacketDataV2", into = "RawPacketDataV2")]
 pub struct PacketDataV2 {
-    pub token: Vec<PrefixedCoin>,
+    pub tokens: Vec<PrefixedCoin>,
     pub sender: Signer,
     pub receiver: Signer,
     pub memo: Option<String>,
@@ -76,7 +76,7 @@ impl TryFrom<RawPacketDataV2> for PacketDataV2 {
         let memo = Some(raw_pkt_data.memo).filter(|m| !m.is_empty());
         Ok(Self {
             //token: PrefixedCoin { denom, amount },
-            token: tokens,
+            tokens,
             sender: raw_pkt_data.sender.parse().map_err(Error::signer)?,
             receiver: raw_pkt_data.receiver.parse().map_err(Error::signer)?,
             memo,
@@ -88,7 +88,7 @@ impl From<PacketDataV2> for RawPacketDataV2 {
     fn from(pkt_data: PacketDataV2) -> Self {
         let memo = pkt_data.memo.unwrap_or_default();
         let tokens = pkt_data
-            .token
+            .tokens
             .iter()
             .map(|token| RawToken {
                 denom: token.denom.to_string(),
