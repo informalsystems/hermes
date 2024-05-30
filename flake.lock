@@ -212,11 +212,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1716982951,
-        "narHash": "sha256-r0hJZwaTHHadByBvaqS8QbHXScPS8TAKAWTjuYKM47A=",
+        "lastModified": 1717061591,
+        "narHash": "sha256-JTq7LVuG2PuO6q05eAj7GjQF2En1yjLGyp862Qp/J7k=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "27613725a2433da4a7f28dab98dbaa8f1b78e5c3",
+        "rev": "b965d3fd75f06375ccfe8d006298302138cd2ce2",
         "type": "github"
       },
       "original": {
@@ -1109,11 +1109,11 @@
     "namada-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1716975323,
-        "narHash": "sha256-Al3OG0goDJB3WZRh6HvloIHk6oFQdRhsRWLa7DHC72Y=",
+        "lastModified": 1716995663,
+        "narHash": "sha256-jIFt4cawGczvk4O1qQXt5oim1wmZlzqBpgKaqeF+0fk=",
         "owner": "anoma",
         "repo": "namada",
-        "rev": "e1dc32bdfb60f014cc0b5b5cadf54b9d13601510",
+        "rev": "e03a968151edc7e1b5400ad91c2f46015a88ca64",
         "type": "github"
       },
       "original": {
@@ -1341,11 +1341,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1716914467,
-        "narHash": "sha256-KkT6YM/yNQqirtYj/frn6RRakliB8RDvGqVGGaNhdcU=",
+        "lastModified": 1716941088,
+        "narHash": "sha256-GKSAGfLNocNTux33YT9GbEXwEewxepwFL+ViX1CrMCQ=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "4a3fc4cf736b7d2d288d7a8bf775ac8d4c0920b4",
+        "rev": "6c25325ec30a566f5c0446ceee61ada081903872",
         "type": "github"
       },
       "original": {
