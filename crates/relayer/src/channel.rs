@@ -1010,7 +1010,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 return Err(ChannelError::unexpected_channel_state(
                     src_channel_id.clone(),
                     State::Init,
-                    src_channel.state().clone(),
+                    *src_channel.state(),
                 ))
             }
         }
@@ -1122,7 +1122,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 return Err(ChannelError::unexpected_channel_state(
                     src_channel_id.clone(),
                     State::Init,
-                    src_channel.state().clone(),
+                    *src_channel.state(),
                 ))
             }
         }
@@ -1203,7 +1203,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = if let Some(_) = self.connection_hops {
+        let dst_msgs = if self.connection_hops.is_some() {
             self.build_multihop_chan_open_try()?
         } else {
             self.build_chan_open_try()?
