@@ -1,3 +1,5 @@
+use serde_json::json;
+
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer_types::applications::ics27_ica::msgs::register::{
     LegacyMsgRegisterInterchainAccount, MsgRegisterInterchainAccount,
@@ -77,11 +79,18 @@ pub fn register_interchain_account<Chain: ChainHandle, Counterparty: ChainHandle
 
     let owner = handle.get_signer()?;
 
-    let version_str = format!("{{\"version\":\"ics27-1\",\"encoding\":\"proto3\",\"tx_type\":\"sdk_multi_msg\",\"controller_connection_id\":\"{}\",\"host_connection_id\":\"{}\"}}", connection.connection_id_a.0, connection.connection_id_b.0);
+    let version_obj = json!({
+        "version": "ics27-1",
+        "encoding": "proto3",
+        "tx_type": "sdk_multi_msg",
+        "controller_connection_id": connection.connection_id_a.0,
+        "host_connection_id": connection.connection_id_b.0
+    });
+
     let msg = LegacyMsgRegisterInterchainAccount {
         owner,
         connection_id: connection.connection_id_a.0.clone(),
-        version: Version::new(version_str),
+        version: Version::new(version_obj.to_string()),
     };
 
     let msg_any = msg.to_any();
@@ -94,7 +103,10 @@ pub fn register_interchain_account<Chain: ChainHandle, Counterparty: ChainHandle
 
     for event in events.iter() {
         if let IbcEvent::OpenInitChannel(open_init) = &event.event {
-            let channel_id = open_init.channel_id.clone().ok_or(()).map_err(|_| Error::generic(eyre!("channel_id is empty in the event response after sending MsgRegisterInterchainAccount")))?;
+            let channel_id = open_init.channel_id
+                .clone()
+                .ok_or(())
+                .map_err(|_| Error::generic(eyre!("channel_id is empty in the event response after sending MsgRegisterInterchainAccount")))?;
             return Ok((
                 wallet,
                 TaggedChannelId::new(channel_id),
@@ -123,11 +135,18 @@ pub fn register_ordered_interchain_account<Chain: ChainHandle, Counterparty: Cha
 
     let owner = handle.get_signer()?;
 
-    let version_str = format!("{{\"version\":\"ics27-1\",\"encoding\":\"proto3\",\"tx_type\":\"sdk_multi_msg\",\"controller_connection_id\":\"{}\",\"host_connection_id\":\"{}\"}}", connection.connection_id_a.0, connection.connection_id_b.0);
+    let version_obj = json!({
+        "version": "ics27-1",
+        "encoding": "proto3",
+        "tx_type": "sdk_multi_msg",
+        "controller_connection_id": connection.connection_id_a.0,
+        "host_connection_id": connection.connection_id_b.0
+    });
+
     let msg = MsgRegisterInterchainAccount {
         owner,
         connection_id: connection.connection_id_a.0.clone(),
-        version: Version::new(version_str),
+        version: Version::new(version_obj.to_string()),
         ordering: Ordering::Ordered,
     };
 
@@ -141,7 +160,10 @@ pub fn register_ordered_interchain_account<Chain: ChainHandle, Counterparty: Cha
 
     for event in events.iter() {
         if let IbcEvent::OpenInitChannel(open_init) = &event.event {
-            let channel_id = open_init.channel_id.clone().ok_or(()).map_err(|_| Error::generic(eyre!("channel_id is empty in the event response after sending MsgRegisterInterchainAccount")))?;
+            let channel_id = open_init.channel_id
+                .clone()
+                .ok_or(())
+                .map_err(|_| Error::generic(eyre!("channel_id is empty in the event response after sending MsgRegisterInterchainAccount")))?;
             return Ok((
                 wallet,
                 TaggedChannelId::new(channel_id),
