@@ -17,6 +17,7 @@ use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
 use ibc_proto::Protobuf;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
@@ -32,6 +33,7 @@ use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc_relayer_types::core::ics04_channel::channel::{State, UpgradeState};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
@@ -39,11 +41,16 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
 use ibc_relayer_types::core::ics24_host::path::{
-    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
-    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+    AcksPath, ChannelEndsPath, ChannelUpgradeErrorPath, ChannelUpgradePath,
+    ClientConsensusStatePath, ClientStatePath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
+    SeqRecvsPath,
 };
 use ibc_relayer_types::core::ics24_host::{
     ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
+};
+use ibc_relayer_types::core::{
+    ics02_client::height::Height, ics04_channel::upgrade::ErrorReceipt,
+    ics04_channel::upgrade::Upgrade,
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
@@ -1663,7 +1670,9 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::grpc_status(e, "query_connection_channels".to_owned()))?
             .into_inner();
 
-        let channels = response
+        let height = self.query_chain_latest_height()?;
+
+        let channels: Vec<IdentifiedChannelEnd> = response
             .channels
             .into_iter()
             .filter_map(|ch| {
@@ -1677,7 +1686,27 @@ impl ChainEndpoint for CosmosSdkChain {
                     })
                     .ok()
             })
+            .map(|mut channel| {
+                // If the channel is open, look for an upgrade in order to correctly set the
+                // state to Open(Upgrading) or Open(NotUpgrading)
+                if channel.channel_end.is_open()
+                    && self
+                        .query_upgrade(
+                            QueryUpgradeRequest {
+                                port_id: channel.port_id.to_string(),
+                                channel_id: channel.channel_id.to_string(),
+                            },
+                            height,
+                            IncludeProof::No,
+                        )
+                        .is_ok()
+                {
+                    channel.channel_end.state = State::Open(UpgradeState::Upgrading);
+                }
+                channel
+            })
             .collect();
+
         Ok(channels)
     }
 
@@ -1713,6 +1742,8 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::grpc_status(e, "query_channels".to_owned()))?
             .into_inner();
 
+        let height = self.query_chain_latest_height()?;
+
         let channels = response
             .channels
             .into_iter()
@@ -1726,6 +1757,25 @@ impl ChainEndpoint for CosmosSdkChain {
                         )
                     })
                     .ok()
+            })
+            .map(|mut channel| {
+                // If the channel is open, look for an upgrade in order to correctly set the
+                // state to Open(Upgrading) or Open(NotUpgrading)
+                if channel.channel_end.is_open()
+                    && self
+                        .query_upgrade(
+                            QueryUpgradeRequest {
+                                port_id: channel.port_id.to_string(),
+                                channel_id: channel.channel_id.to_string(),
+                            },
+                            height,
+                            IncludeProof::No,
+                        )
+                        .is_ok()
+                {
+                    channel.channel_end.state = State::Open(UpgradeState::Upgrading);
+                }
+                channel
             })
             .collect();
 
@@ -1746,12 +1796,34 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_channel");
 
         let res = self.query(
-            ChannelEndsPath(request.port_id, request.channel_id),
+            ChannelEndsPath(request.port_id.clone(), request.channel_id.clone()),
             request.height,
             matches!(include_proof, IncludeProof::Yes),
         )?;
 
-        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+        let mut channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+
+        if channel_end.is_open() {
+            let height = match request.height {
+                QueryHeight::Latest => self.query_chain_latest_height()?,
+                QueryHeight::Specific(height) => height,
+            };
+            // In order to determine if the channel is Open upgrading or not the Upgrade is queried.
+            // If an upgrade is ongoing then the query will succeed in finding an Upgrade.
+            if self
+                .query_upgrade(
+                    QueryUpgradeRequest {
+                        port_id: request.port_id.to_string(),
+                        channel_id: request.channel_id.to_string(),
+                    },
+                    height,
+                    IncludeProof::No,
+                )
+                .is_ok()
+            {
+                channel_end.state = State::Open(UpgradeState::Upgrading);
+            }
+        }
 
         match include_proof {
             IncludeProof::Yes => {
@@ -2377,6 +2449,64 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect();
 
         Ok(result)
+    }
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
+        let port_id = PortId::from_str(&request.port_id)
+            .map_err(|_| Error::invalid_port_string(request.port_id))?;
+        let channel_id = ChannelId::from_str(&request.channel_id)
+            .map_err(|_| Error::invalid_channel_string(request.channel_id))?;
+        let res = self.query(
+            ChannelUpgradePath {
+                port_id,
+                channel_id,
+            },
+            QueryHeight::Specific(height),
+            true,
+        )?;
+        let upgrade = Upgrade::decode_vec(&res.value).map_err(Error::decode)?;
+
+        match include_proof {
+            IncludeProof::Yes => {
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                Ok((upgrade, Some(proof)))
+            }
+            IncludeProof::No => Ok((upgrade, None)),
+        }
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        let port_id = PortId::from_str(&request.port_id)
+            .map_err(|_| Error::invalid_port_string(request.port_id))?;
+        let channel_id = ChannelId::from_str(&request.channel_id)
+            .map_err(|_| Error::invalid_channel_string(request.channel_id))?;
+        let res = self.query(
+            ChannelUpgradeErrorPath {
+                port_id,
+                channel_id,
+            },
+            QueryHeight::Specific(height),
+            true,
+        )?;
+        let error_receipt = ErrorReceipt::decode_vec(&res.value).map_err(Error::decode)?;
+
+        match include_proof {
+            IncludeProof::Yes => {
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                Ok((error_receipt, Some(proof)))
+            }
+            IncludeProof::No => Ok((error_receipt, None)),
+        }
     }
 }
 

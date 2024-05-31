@@ -1,5 +1,7 @@
 use alloc::sync::Arc;
 
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
+use ibc_relayer_types::core::ics02_client::height::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc_proto::ibc::apps::fee::v1::{
@@ -16,6 +18,7 @@ use ibc_relayer_types::core::ics03_connection::connection::{
 use ibc_relayer_types::core::ics03_connection::version::{get_compatible_versions, Version};
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
 use ibc_relayer_types::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes,
 };
@@ -686,4 +689,18 @@ pub trait ChainEndpoint: Sized {
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
 
     fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error>;
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error>;
 }

@@ -472,15 +472,16 @@ def handshake(
     split()
 
     a_chan_end = query_channel_end(c, side_a, port_id, a_chan_id)
-    if a_chan_end.state != 'Open':
+    if str(a_chan_end.state) != 'Open':
         l.error(
-            f'Channel end with id {a_chan_id} on chain {side_a} is not in Open state, got: {a_chan_end.state}')
+            f"Channel end with id {a_chan_id} on chain {side_a} is not in `Open` state, got: {a_chan_end.state}")
         exit(1)
 
     b_chan_end = query_channel_end(c, side_b, port_id, b_chan_id)
-    if b_chan_end.state != 'Open':
+    print(b_chan_end.state)
+    if str(b_chan_end.state) != 'Open':
         l.error(
-            f'Channel end with id {b_chan_id} on chain {side_b} is not in Open state, got: {b_chan_end.state}')
+            f'Channel end with id {b_chan_id} on chain {side_b} is not in `Open` state, got: {b_chan_end.state}')
         exit(1)
 
     a_chan_ends = query_channel_ends(c, side_a, port_id, a_chan_id)

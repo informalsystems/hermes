@@ -90,6 +90,7 @@ where
             &node_a.chain_driver.home_path,
             &node_a.chain_driver.rpc_listen_address(),
             &provider_fee,
+            "1",
         )?;
 
         node_a.chain_driver.assert_proposal_status(

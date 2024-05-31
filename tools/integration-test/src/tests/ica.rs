@@ -16,7 +16,9 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 
-use ibc_test_framework::chain::ext::ica::register_interchain_account;
+use ibc_test_framework::chain::{
+    config::add_allow_message_interchainaccounts, ext::ica::register_interchain_account,
+};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_closed, assert_eventually_channel_established, query_channel_end,
@@ -75,22 +77,9 @@ impl TestOverrides for IcaFilterTestAllow {
 
     // Allow MsgSend messages over ICA
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        use serde_json::Value;
+        add_allow_message_interchainaccounts(genesis, "/cosmos.bank.v1beta1.MsgSend")?;
 
-        let allow_messages = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("interchainaccounts"))
-            .and_then(|ica| ica.get_mut("host_genesis_state"))
-            .and_then(|state| state.get_mut("params"))
-            .and_then(|params| params.get_mut("allow_messages"))
-            .and_then(|allow_messages| allow_messages.as_array_mut());
-
-        if let Some(allow_messages) = allow_messages {
-            allow_messages.push(Value::String("/cosmos.bank.v1beta1.MsgSend".to_string()));
-            Ok(())
-        } else {
-            Err(Error::generic(eyre!("failed to update genesis file")))
-        }
+        Ok(())
     }
 }
 

@@ -40,6 +40,7 @@ tendermint-testgen               = { workspace = true, optional = true }
 tendermint                       = { workspace = true, features = ["clock"] }
 time                             = { workspace = true }
 uint                             = { workspace = true }
+tracing                          = { workspace = true }
 
 [dev-dependencies]
 env_logger         = { workspace = true }
