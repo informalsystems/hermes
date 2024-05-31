@@ -190,6 +190,51 @@ pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> 
     Ok(())
 }
 
+pub fn add_allow_message_interchainaccounts(
+    genesis: &mut serde_json::Value,
+    message: &str,
+) -> Result<(), Error> {
+    let allow_messages = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("interchainaccounts"))
+        .and_then(|ica| ica.get_mut("host_genesis_state"))
+        .and_then(|state| state.get_mut("params"))
+        .and_then(|params| params.get_mut("allow_messages"))
+        .and_then(|allow_messages| allow_messages.as_array_mut())
+        .ok_or_else(|| {
+            eyre!("failed to retrieve allow_messages as a vector, in the genesis file")
+        })?;
+
+    // Only add `MsgSend` if the wildcard '*' is not specified
+    if allow_messages.iter().all(|v| v.as_str() != Some("*")) {
+        allow_messages.push(serde_json::Value::String(message.to_string()));
+    }
+
+    Ok(())
+}
+
+pub fn add_allow_message_interchainquery(
+    genesis: &mut serde_json::Value,
+    message: &str,
+) -> Result<(), Error> {
+    let allow_messages = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("interchainquery"))
+        .and_then(|ica| ica.get_mut("params"))
+        .and_then(|params| params.get_mut("allow_queries"))
+        .and_then(|allow_messages| allow_messages.as_array_mut())
+        .ok_or_else(|| {
+            eyre!("failed to retrieve allow_messages as a vector, in the genesis file")
+        })?;
+
+    // Only add `MsgSend` if the wildcard '*' is not specified
+    if allow_messages.iter().all(|v| v.as_str() != Some("*")) {
+        allow_messages.push(serde_json::Value::String(message.to_string()));
+    }
+
+    Ok(())
+}
+
 pub fn set_min_deposit_amount(
     genesis: &mut serde_json::Value,
     min_deposit_amount: u64,

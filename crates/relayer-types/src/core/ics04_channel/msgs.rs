@@ -22,6 +22,15 @@ pub mod chan_open_try;
 pub mod chan_close_confirm;
 pub mod chan_close_init;
 
+// Upgrade handshake messages.
+pub mod chan_upgrade_ack;
+pub mod chan_upgrade_cancel;
+pub mod chan_upgrade_confirm;
+pub mod chan_upgrade_init;
+pub mod chan_upgrade_open;
+pub mod chan_upgrade_timeout;
+pub mod chan_upgrade_try;
+
 // Packet specific messages.
 pub mod acknowledgement;
 pub mod recv_packet;
