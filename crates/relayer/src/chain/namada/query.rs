@@ -7,6 +7,7 @@ use namada_ibc::storage::{ibc_trace_key_prefix, is_ibc_trace_key};
 use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
 use namada_sdk::events::extend::Height as HeightAttr;
+use namada_sdk::events::Event as NamadaEvent;
 use namada_sdk::queries::{Client as SdkClient, RPC};
 use namada_sdk::rpc;
 use namada_sdk::storage::{BlockHeight, Epoch, Key, PrefixValue};
@@ -14,6 +15,7 @@ use namada_sdk::tx::data::ResultCode;
 use namada_sdk::tx::event::Code as CodeAttr;
 use namada_sdk::Namada;
 use tendermint::block::Height as TmHeight;
+use tendermint::Hash as TmHash;
 
 use crate::chain::endpoint::ChainEndpoint;
 use crate::chain::requests::{
@@ -111,15 +113,8 @@ impl NamadaChain {
     }
 
     /// Get all IBC events when the tx has been applied
-    pub fn query_tx_events(&self, tx_hash: &str) -> Result<Vec<IbcEventWithHeight>, Error> {
-        match self
-            .rt
-            .block_on(RPC.shell().applied(
-                self.ctx.client(),
-                &tx_hash.try_into().expect("Invalid tx hash"),
-            ))
-            .map_err(NamadaError::query)?
-        {
+    pub fn query_tx_events(&self, tx_hash: &TmHash) -> Result<Vec<IbcEventWithHeight>, Error> {
+        match self.query_applied_event(tx_hash)? {
             Some(applied) => {
                 let h = applied
                     .read_attribute::<HeightAttr>()
@@ -143,6 +138,15 @@ impl NamadaChain {
             }
             None => Ok(vec![]),
         }
+    }
+
+    fn query_applied_event(&self, tx_hash: &TmHash) -> Result<Option<NamadaEvent>, Error> {
+        self.rt
+            .block_on(RPC.shell().applied(
+                self.ctx.client(),
+                &tx_hash.as_ref().try_into().expect("Invalid tx hash"),
+            ))
+            .map_err(|e| Error::namada(NamadaError::query(e)))
     }
 
     /// Get IBC packet events
