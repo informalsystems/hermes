@@ -147,6 +147,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_chain.clone(),
                 a_connection.client_id().clone(),
                 a_connection_id,
+                None, // FIXME: Unsure about what to add here ('None' for now)
                 opts.src_port_id.clone(),
                 Some(opts.src_channel_id.clone()),
                 None,
@@ -155,11 +156,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 b_chain.clone(),
                 a_connection.counterparty().client_id().clone(),
                 a_connection.counterparty().connection_id().unwrap().clone(),
+                None, // FIXME: Unsure about what to add here ('None' for now)
                 a_channel.counterparty().port_id.clone(),
                 Some(b_channel_id.clone()),
                 None,
             ),
-            connection_hops: None,
             connection_delay: a_connection.delay_period(),
         };
 

@@ -199,6 +199,16 @@ define_error! {
                 format_args!("error after maximum retry of {} and total delay of {}s: {}",
                     e.tries, e.total_delay.as_secs(), e.description)
             },
+
+        MissingConnectionHops
+        {
+            channel_id: ChannelId,
+            chain_id: ChainId,
+        }
+        |e| {
+            format_args!("channel {} on chain {} has no connection hops specified",
+                e.channel_id, e.chain_id)
+        },
     }
 }
 

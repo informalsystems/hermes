@@ -87,6 +87,7 @@ pub struct ChannelSide<Chain: ChainHandle> {
     pub chain: Chain,
     client_id: ClientId,
     connection_id: ConnectionId,
+    connection_hops: Option<ConnectionHops>,
     port_id: PortId,
     channel_id: Option<ChannelId>,
     version: Option<Version>,
@@ -108,6 +109,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
         chain: Chain,
         client_id: ClientId,
         connection_id: ConnectionId,
+        connection_hops: Option<ConnectionHops>,
         port_id: PortId,
         channel_id: Option<ChannelId>,
         version: Option<Version>,
@@ -116,6 +118,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
             chain,
             client_id,
             connection_id,
+            connection_hops,
             port_id,
             channel_id,
             version,
@@ -154,6 +157,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
             chain: mapper(self.chain),
             client_id: self.client_id,
             connection_id: self.connection_id,
+            connection_hops: self.connection_hops,
             port_id: self.port_id,
             channel_id: self.channel_id,
             version: self.version,
@@ -167,7 +171,6 @@ pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub ordering: Ordering,
     pub a_side: ChannelSide<ChainA>,
     pub b_side: ChannelSide<ChainB>,
-    pub connection_hops: Option<ConnectionHops>,
     pub connection_delay: Duration,
 }
 
@@ -193,7 +196,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         ordering: Ordering,
         a_port: PortId,
         b_port: PortId,
-        connection_hops: Option<ConnectionHops>,
+        a_side_hops: Option<ConnectionHops>,
+        b_side_hops: Option<ConnectionHops>,
         version: Option<Version>,
     ) -> Result<Self, ChannelError> {
         let src_connection_id = connection
@@ -209,6 +213,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 connection.src_chain(),
                 connection.src_client_id().clone(),
                 src_connection_id.clone(),
+                a_side_hops,
                 a_port,
                 Default::default(),
                 version.clone(),
@@ -217,11 +222,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 connection.dst_chain(),
                 connection.dst_client_id().clone(),
                 dst_connection_id.clone(),
+                b_side_hops,
                 b_port,
                 Default::default(),
                 version,
             ),
-            connection_hops,
             connection_delay: connection.delay_period,
         };
 
@@ -273,6 +278,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 chain,
                 connection.client_id().clone(),
                 connection_id.clone(),
+                None, //FIXME: Unsure what to add here ('None' for now), can we get the hops from the event?
                 port_id,
                 channel_id,
                 // The event does not include the version.
@@ -283,11 +289,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 counterparty_chain,
                 connection.counterparty().client_id().clone(),
                 counterparty_connection_id.clone(),
+                None, //FIXME: Unsure what to add here ('None' for now), can we get the hops from the event?
                 channel_event_attributes.counterparty_port_id.clone(),
                 channel_event_attributes.counterparty_channel_id,
                 None,
             ),
-            connection_hops: None,
             connection_delay: connection.delay_period(),
         })
     }
@@ -346,6 +352,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 chain.clone(),
                 a_connection.client_id().clone(),
                 a_connection_id.clone(),
+                None, // FIXME: Unsure about what to add here ('None' for now)
                 channel.src_port_id.clone(),
                 Some(channel.src_channel_id.clone()),
                 None,
@@ -354,11 +361,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 counterparty_chain.clone(),
                 a_connection.counterparty().client_id().clone(),
                 b_connection_id.clone(),
+                None, // FIXME: Unsure about what to add here ('None' for now)
                 a_channel.remote.port_id.clone(),
                 a_channel.remote.channel_id.clone(),
                 None,
             ),
-            connection_hops: None,
             connection_delay: a_connection.delay_period(),
         };
 
@@ -505,7 +512,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ordering: self.ordering,
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
-            connection_hops: None,
             connection_delay: self.connection_delay,
         }
     }
@@ -868,7 +874,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             State::Init,
             self.ordering,
             counterparty,
-            self.connection_hops
+            self.b_side
+                .connection_hops
                 .as_ref()
                 .map(|hops| hops.connection_ids())
                 .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
@@ -1203,7 +1210,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = if self.connection_hops.is_some() {
+        let dst_msgs = if self.b_side.connection_hops.is_some() {
             self.build_multihop_chan_open_try()?
         } else {
             self.build_chan_open_try()?
@@ -1624,7 +1631,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ordering: self.ordering,
             a_side: self.a_side.map_chain(mapper_a),
             b_side: self.b_side.map_chain(mapper_b),
-            connection_hops: None,
             connection_delay: self.connection_delay,
         }
     }

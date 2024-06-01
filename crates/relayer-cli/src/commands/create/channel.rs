@@ -200,7 +200,8 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
-            None,
+            None, // FIXME: Unsure about what to add here ('None' for now)
+            None, // FIXME: Unsure about what to add here ('None' for now)
             self.version.clone(),
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
@@ -259,7 +260,8 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
-            None,
+            None, // FIXME: Unsure about what to add here ('None' for now)
+            None, // FIXME: Unsure about what to add here ('None' for now)
             self.version.clone(),
         )
         .unwrap_or_else(exit_with_unrecoverable_error);

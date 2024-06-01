@@ -6,7 +6,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
-use ibc_relayer::channel::{Channel, ChannelSide};
+use ibc_relayer::channel::{Channel, ChannelError, ChannelSide};
 use ibc_relayer::connection::ConnectionError;
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
@@ -152,7 +152,7 @@ impl Runnable for TxChanOpenInitCmd {
         //
         // Start building the connection hops in reverse order, starting from --dst-connection and
         // moving towards the source.
-        let conn_client_state = match chains.dst.query_client_state(
+        let dst_conn_client_state = match chains.dst.query_client_state(
             QueryClientStateRequest {
                 client_id: dst_connection.client_id().clone(),
                 height: QueryHeight::Latest,
@@ -163,14 +163,16 @@ impl Runnable for TxChanOpenInitCmd {
             Err(e) => Output::error(e).exit(),
         };
 
-        let mut assembled_hops = Vec::new();
+        // Connection hops from b_side (--dst-chain) to a_side (--src-chain)
+        let mut b_side_hops = Vec::new();
 
-        assembled_hops.push(ConnectionHop {
+        // Build the first connection_hop, represented by --dst-connection
+        b_side_hops.push(ConnectionHop {
             connection: IdentifiedConnectionEnd::new(
                 self.dst_conn_id.clone(),
                 dst_connection.clone(),
             ),
-            reference_chain_id: conn_client_state.chain_id().clone(),
+            reference_chain_id: dst_conn_client_state.chain_id().clone(),
         });
 
         // FIXME: We are not currently checking for cycles in channel paths, e.g, the following channel hops are valid:
@@ -182,7 +184,7 @@ impl Runnable for TxChanOpenInitCmd {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
             for connection_id in connnection_ids.as_slice().iter() {
                 // Retrieve the ChainId of the chain referenced by the previous connection hop
-                let chain_id = &assembled_hops.last().unwrap().reference_chain_id;
+                let chain_id = &b_side_hops.last().unwrap().reference_chain_id;
 
                 // Spawn a handle for the chain referenced in the previous hop
                 let chain_handle = match spawn_chain_runtime(&config, chain_id) {
@@ -214,18 +216,15 @@ impl Runnable for TxChanOpenInitCmd {
                     Err(e) => Output::error(e).exit(),
                 };
 
-                assembled_hops.push(ConnectionHop {
-                    connection: IdentifiedConnectionEnd::new(
-                        connection_id.clone(),
-                        hop_connection.clone(),
-                    ),
+                b_side_hops.push(ConnectionHop {
+                    connection: IdentifiedConnectionEnd::new(connection_id.clone(), hop_connection),
                     reference_chain_id: hop_conn_client_state.chain_id().clone(),
                 });
             }
         }
 
         // Ensure that the channel path leads to the chain passed to --src-chain
-        if let Some(last_hop) = &assembled_hops.last() {
+        if let Some(last_hop) = &b_side_hops.last() {
             if last_hop.reference_chain_id != chains.src.id() {
                 Output::error(Error::ics33_hops_destination_mismatch(
                     chains.src.id(),
@@ -240,11 +239,11 @@ impl Runnable for TxChanOpenInitCmd {
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
-        let connection_hops = match assembled_hops.len() {
+        let b_side_hops = match b_side_hops.len() {
             0 => Output::error("At least one connection hop is required for opening a channel.")
                 .exit(),
             1 => None,
-            _ => Some(ConnectionHops::new(assembled_hops)),
+            _ => Some(ConnectionHops::new(b_side_hops)),
         };
 
         let channel = Channel {
@@ -253,6 +252,7 @@ impl Runnable for TxChanOpenInitCmd {
                 chains.src,
                 ClientId::default(),
                 ConnectionId::default(),
+                None,
                 self.src_port_id.clone(),
                 None,
                 None,
@@ -261,11 +261,11 @@ impl Runnable for TxChanOpenInitCmd {
                 chains.dst,
                 dst_connection.client_id().clone(),
                 self.dst_conn_id.clone(),
+                b_side_hops,
                 self.dst_port_id.clone(),
                 None,
                 None,
             ),
-            connection_hops,
             connection_delay: Default::default(),
         };
 
@@ -383,7 +383,8 @@ impl Runnable for TxChanOpenTryCmd {
             Err(e) => Output::error(e).exit(),
         };
 
-        let mut assembled_reverse_hops = Vec::new();
+        let mut a_side_hops = Vec::new();
+        let mut b_side_hops = Vec::new();
 
         // Determine if the channel is a multihop channel, i.e, connection_hops > 1
         if init_channel.connection_hops().len() > 1 {
@@ -394,15 +395,15 @@ impl Runnable for TxChanOpenTryCmd {
             // to build the same hop from the opposite direction.
             let mut chain_id = chains.src.id().clone();
 
-            for connection_id in init_channel.connection_hops() {
+            for a_side_connection_id in init_channel.connection_hops() {
                 let chain_handle = match spawn_chain_runtime(&config, &chain_id) {
                     Ok(handle) => handle,
                     Err(e) => Output::error(e).exit(),
                 };
 
-                let hop_connection = match chain_handle.query_connection(
+                let a_side_hop_connection = match chain_handle.query_connection(
                     QueryConnectionRequest {
-                        connection_id: connection_id.clone(),
+                        connection_id: a_side_connection_id.clone(),
                         height: QueryHeight::Latest,
                     },
                     IncludeProof::No,
@@ -411,9 +412,9 @@ impl Runnable for TxChanOpenTryCmd {
                     Err(e) => Output::error(e).exit(),
                 };
 
-                let hop_conn_client_state = match chain_handle.query_client_state(
+                let a_side_hop_conn_client_state = match chain_handle.query_client_state(
                     QueryClientStateRequest {
-                        client_id: hop_connection.client_id().clone(),
+                        client_id: a_side_hop_connection.client_id().clone(),
                         height: QueryHeight::Latest,
                     },
                     IncludeProof::No,
@@ -422,14 +423,15 @@ impl Runnable for TxChanOpenTryCmd {
                     Err(e) => Output::error(e).exit(),
                 };
 
-                // Obtain the counterparty connection_id and chain_id for the current connection hop
-                let counterparty_conn_id = hop_connection
+                // Obtain the counterparty ConnectionId and ChainId for the current connection hop
+                // towards b_side
+                let counterparty_conn_id = a_side_hop_connection
                     .counterparty()
                     .connection_id()
                     .unwrap_or_else(|| {
                         Output::error(ConnectionError::missing_counterparty_connection_id()).exit()
                     });
-                let counterparty_chain_id = hop_conn_client_state.chain_id().clone();
+                let counterparty_chain_id = a_side_hop_conn_client_state.chain_id().clone();
 
                 let counterparty_handle = match spawn_chain_runtime(&config, &counterparty_chain_id)
                 {
@@ -449,8 +451,16 @@ impl Runnable for TxChanOpenTryCmd {
                     Err(e) => Output::error(e).exit(),
                 };
 
+                a_side_hops.push(ConnectionHop {
+                    connection: IdentifiedConnectionEnd::new(
+                        a_side_connection_id.clone(),
+                        a_side_hop_connection.clone(),
+                    ),
+                    reference_chain_id: a_side_hop_conn_client_state.chain_id(),
+                });
+
                 // Build the current hop from the opposite direction
-                assembled_reverse_hops.push(ConnectionHop {
+                b_side_hops.push(ConnectionHop {
                     connection: IdentifiedConnectionEnd::new(
                         counterparty_conn_id.clone(),
                         counterparty_connection,
@@ -459,12 +469,55 @@ impl Runnable for TxChanOpenTryCmd {
                 });
 
                 // Update chain_id to point to the next chain in the channel path
-                chain_id = hop_conn_client_state.chain_id().clone();
+                // from a_side towards b_side
+                chain_id = a_side_hop_conn_client_state.chain_id().clone();
             }
         } else {
             // If the channel path corresponds to a single-hop channel, there is only one
-            // connection hop from --dst-connection to --src-chain.
-            let hop_connection = match chains.dst.query_connection(
+            // connection hop from --dst-connection to --src-chain and vice-versa.
+
+            // Get the single ConnectionId from a_side (--src-chain) to b_side (--dst-chain)
+            // from the connection_hops field of the ChannelEnd in INIT state
+            let a_side_connection_id =
+                init_channel.connection_hops().first().unwrap_or_else(|| {
+                    Output::error(ChannelError::missing_connection_hops(
+                        self.src_chan_id.clone(),
+                        self.src_chain_id.clone(),
+                    ))
+                    .exit()
+                });
+
+            let a_side_hop_connection = match chains.src.query_connection(
+                QueryConnectionRequest {
+                    connection_id: a_side_connection_id.clone().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((connection, _)) => connection,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            let a_side_hop_conn_client_state = match chains.src.query_client_state(
+                QueryClientStateRequest {
+                    client_id: a_side_hop_connection.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((client_state, _)) => client_state,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            a_side_hops.push(ConnectionHop {
+                connection: IdentifiedConnectionEnd::new(
+                    a_side_connection_id.clone(),
+                    a_side_hop_connection,
+                ),
+                reference_chain_id: a_side_hop_conn_client_state.chain_id(),
+            });
+
+            let b_side_hop_connection = match chains.dst.query_connection(
                 QueryConnectionRequest {
                     connection_id: self.dst_conn_id.clone().clone(),
                     height: QueryHeight::Latest,
@@ -476,9 +529,9 @@ impl Runnable for TxChanOpenTryCmd {
             };
 
             // Retrieve the state of the client underlying the hop connection
-            let hop_conn_client_state = match chains.dst.query_client_state(
+            let b_side_hop_conn_client_state = match chains.dst.query_client_state(
                 QueryClientStateRequest {
-                    client_id: hop_connection.client_id().clone(),
+                    client_id: b_side_hop_connection.client_id().clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -488,21 +541,24 @@ impl Runnable for TxChanOpenTryCmd {
             };
 
             // Build the single hop from --dst-chain to --src-chain
-            assembled_reverse_hops.push(ConnectionHop {
+            b_side_hops.push(ConnectionHop {
                 connection: IdentifiedConnectionEnd::new(
                     self.dst_conn_id.clone(),
-                    hop_connection.clone(),
+                    b_side_hop_connection.clone(),
                 ),
-                reference_chain_id: hop_conn_client_state.chain_id().clone(),
+                reference_chain_id: b_side_hop_conn_client_state.chain_id().clone(),
             });
         }
 
         // The connection hops were assembled while traversing from --src-chain towards --dst-chain.
         // Reverse them to obtain the path from --dst-chain to --src-chain. Single hops remain unchanged.
-        assembled_reverse_hops.reverse();
+        b_side_hops.reverse();
+
+        dbg!(&b_side_hops);
+        dbg!(&a_side_hops);
 
         // Ensure that the reverse channel path leads to the chain passed to --src-chain
-        if let Some(last_hop) = &assembled_reverse_hops.last() {
+        if let Some(last_hop) = &b_side_hops.last() {
             if last_hop.reference_chain_id != chains.src.id() {
                 Output::error(Error::ics33_hops_destination_mismatch(
                     chains.src.id(),
@@ -517,11 +573,18 @@ impl Runnable for TxChanOpenTryCmd {
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
-        let connection_hops = match assembled_reverse_hops.len() {
+        let a_side_hops = match a_side_hops.len() {
             0 => Output::error("At least one connection hop is required for opening a channel.")
                 .exit(),
             1 => None,
-            _ => Some(ConnectionHops::new(assembled_reverse_hops)),
+            _ => Some(ConnectionHops::new(a_side_hops)),
+        };
+
+        let b_side_hops = match b_side_hops.len() {
+            0 => Output::error("At least one connection hop is required for opening a channel.")
+                .exit(),
+            1 => None,
+            _ => Some(ConnectionHops::new(b_side_hops)),
         };
 
         let channel = Channel {
@@ -530,6 +593,7 @@ impl Runnable for TxChanOpenTryCmd {
                 chains.src,
                 ClientId::default(),
                 ConnectionId::default(),
+                a_side_hops,
                 self.src_port_id.clone(),
                 Some(self.src_chan_id.clone()),
                 None,
@@ -538,11 +602,11 @@ impl Runnable for TxChanOpenTryCmd {
                 chains.dst,
                 dst_connection.client_id().clone(),
                 self.dst_conn_id.clone(),
+                b_side_hops,
                 self.dst_port_id.clone(),
                 self.dst_chan_id.clone(),
                 None,
             ),
-            connection_hops,
             connection_delay: Default::default(),
         };
 
@@ -642,6 +706,7 @@ impl Runnable for TxChanOpenAckCmd {
                         chains.src,
                         ClientId::default(),
                         ConnectionId::default(),
+                        None,
                         self.src_port_id.clone(),
                         Some(self.src_chan_id.clone()),
                         None,
@@ -650,11 +715,11 @@ impl Runnable for TxChanOpenAckCmd {
                         chains.dst,
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
+                        None,
                         self.dst_port_id.clone(),
                         Some(self.dst_chan_id.clone()),
                         None,
                     ),
-                    connection_hops: None,
                 }
             }
         );
@@ -744,6 +809,7 @@ impl Runnable for TxChanOpenConfirmCmd {
                         chains.src,
                         ClientId::default(),
                         ConnectionId::default(),
+                        None,
                         self.src_port_id.clone(),
                         Some(self.src_chan_id.clone()),
                         None,
@@ -752,11 +818,11 @@ impl Runnable for TxChanOpenConfirmCmd {
                         chains.dst,
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
+                        None,
                         self.dst_port_id.clone(),
                         Some(self.dst_chan_id.clone()),
                         None,
                     ),
-                    connection_hops: None,
                 }
             }
         );
@@ -846,6 +912,7 @@ impl Runnable for TxChanCloseInitCmd {
                         chains.src,
                         ClientId::default(),
                         ConnectionId::default(),
+                        None,
                         self.src_port_id.clone(),
                         Some(self.src_chan_id.clone()),
                         None,
@@ -854,11 +921,11 @@ impl Runnable for TxChanCloseInitCmd {
                         chains.dst,
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
+                        None,
                         self.dst_port_id.clone(),
                         Some(self.dst_chan_id.clone()),
                         None,
                     ),
-                    connection_hops: None,
                 }
             }
         );
@@ -948,6 +1015,7 @@ impl Runnable for TxChanCloseConfirmCmd {
                         chains.src,
                         ClientId::default(),
                         ConnectionId::default(),
+                        None,
                         self.src_port_id.clone(),
                         Some(self.src_chan_id.clone()),
                         None,
@@ -956,11 +1024,11 @@ impl Runnable for TxChanCloseConfirmCmd {
                         chains.dst,
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
+                        None,
                         self.dst_port_id.clone(),
                         Some(self.dst_chan_id.clone()),
                         None,
                     ),
-                    connection_hops: None,
                 }
             }
         );

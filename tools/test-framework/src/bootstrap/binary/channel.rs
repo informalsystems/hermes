@@ -105,6 +105,7 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
         port_a.0.clone(),
         port_b.0.clone(),
         None,
+        None,
         Some(options.version),
     )?;
 
@@ -177,6 +178,7 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
                 chain_b.clone(),
                 client_id_b.value().clone(),
                 connection.connection_id_b.value().clone(),
+                None,
                 port_id.cloned().into_value(),
                 None,
                 None,
@@ -185,11 +187,11 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
                 chain_a.clone(),
                 client_id_a.value().clone(),
                 connection.connection_id_a.value().clone(),
+                None,
                 port_id.cloned().into_value(),
                 None,
                 None,
             ),
-            connection_hops: None,
             connection_delay: connection.connection.delay_period,
         };
 
