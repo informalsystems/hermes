@@ -20,22 +20,6 @@ Additionally, this release includes various bug fixes enhancing the stability an
     Both servers can still be disabled in the configuration file, by setting `telemetry.enabled = false` and `rest.enabled = false`, respectively.
     ([\#3878](https://github.com/informalsystems/hermes/pull/3878))
 
-### BUG FIXES
-
-- [Relayer Library](relayer)
-  - Fix creation of channels and connection on chains
-    using an unsupported version of ibc-go, eg. Sei
-    ([\#3817](https://github.com/informalsystems/hermes/issues/3817))
-  - Fix a bug where Hermes would only ever extract the first emitted ICS 031 CrossChain Query event, which would cause it to miss the other CCQ events.
-    ([\#3954](https://github.com/informalsystems/hermes/issues/3954))
-- [Relayer CLI](relayer-cli)
-  - Fixed `minimum-gas-prices` health-check messages and make it more verbose and legible
-    ([\#3893](https://github.com/informalsystems/hermes/issues/3893))
-  - Set `compat_mode` for pull mode in `hermes listen` command
-    ([\#3910](https://github.com/informalsystems/hermes/issues/3910))
-  - Fixed the trusted height consensus state query when submitting the double vote evidence
-    ([\#3999](https://github.com/informalsystems/hermes/issues/3999))
-
 ### FEATURES
 
 - [Relayer Library](relayer)
@@ -71,6 +55,22 @@ Additionally, this release includes various bug fixes enhancing the stability an
 - [Relayer CLI](relayer-cli)
   - Use RPC (pull) event source instead of WebSocket (push) when generating configuration with `hermes config auto`
     ([\#3913](https://github.com/informalsystems/hermes/issues/3913))
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Fix creation of channels and connection on chains
+    using an unsupported version of ibc-go, eg. Sei
+    ([\#3817](https://github.com/informalsystems/hermes/issues/3817))
+  - Fix a bug where Hermes would only ever extract the first emitted ICS 031 CrossChain Query event, which would cause it to miss the other CCQ events.
+    ([\#3954](https://github.com/informalsystems/hermes/issues/3954))
+- [Relayer CLI](relayer-cli)
+  - Fixed `minimum-gas-prices` health-check messages and make it more verbose and legible
+    ([\#3893](https://github.com/informalsystems/hermes/issues/3893))
+  - Set `compat_mode` for pull mode in `hermes listen` command
+    ([\#3910](https://github.com/informalsystems/hermes/issues/3910))
+  - Fixed the trusted height consensus state query when submitting the double vote evidence
+    ([\#3999](https://github.com/informalsystems/hermes/issues/3999))
 
 ## v1.8.3
 
