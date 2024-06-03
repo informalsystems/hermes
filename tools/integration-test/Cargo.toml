@@ -29,28 +29,29 @@ toml           = { workspace = true }
 tonic          = { workspace = true, features = ["tls", "tls-roots"] }
 
 [features]
-default = []
-example = []
-manual = []
-ordered = []
-ica = []
-ics29-fee = []
-experimental = []
-mbt = []
-forward-packet = []
-ics31 = []
-clean-workers = []
-fee-grant = []
-channel-upgrade = []
-interchain-security = []
-celestia = []
-async-icq = []
-juno = []
-dynamic-gas-fee = []
+default                         = []
+example                         = []
+manual                          = []
+ordered                         = []
+ica                             = []
+ics29-fee                       = []
+experimental                    = []
+mbt                             = []
+forward-packet                  = []
+ics31                           = []
+clean-workers                   = []
+fee-grant                       = []
+channel-upgrade                 = []
+interchain-security             = []
+celestia                        = []
+async-icq                       = []
+juno                            = []
+dynamic-gas-fee                 = []
+new-register-interchain-account = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
-doc = true
+doc  = true
 
 [dev-dependencies]
 tempfile = { workspace = true }

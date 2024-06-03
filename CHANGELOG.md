@@ -35,14 +35,17 @@ Additionally, this release includes various bug fixes enhancing the stability an
 ### IMPROVEMENTS
 
 - [Integration Test Framework](tools/test-framework)
-  - Update the version of Juno running the integraiton tests in the CI from `v17.1.1`
+  - Update the version of Juno running the integration tests in the CI from `v17.1.1`
     to `v21.0.0` ([\#3959](https://github.com/informalsystems/hermes/issues/3959))
   - Update the version of Migaloo Chain running the
-    integraiton tests in the CI from `v3.0.2` to `v4.1.3`
+    integration tests in the CI from `v3.0.2` to `v4.1.3`
     ([\#3960](https://github.com/informalsystems/hermes/issues/3960))
   - Update the version of `wasmd` running the
-    integraiton tests in the CI from `v0.30.0` to `v0.50.0`
+    integration tests in the CI from `v0.30.0` to `v0.50.0`
     ([\#3961](https://github.com/informalsystems/hermes/issues/3961))
+  - Update the version of ibc-go simapp running the
+    integration tests in the CI from `v8.2.0` to `v8.3.1`
+    ([\#4009](https://github.com/informalsystems/hermes/issues/4009))
 - [Relayer Library](relayer)
   - Update to tendermint-rs v0.35.0
     ([\#3895](https://github.com/informalsystems/hermes/issues/3895))

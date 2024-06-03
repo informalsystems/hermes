@@ -17,7 +17,8 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 
 use ibc_test_framework::chain::{
-    config::add_allow_message_interchainaccounts, ext::ica::register_interchain_account,
+    config::add_allow_message_interchainaccounts,
+    ext::ica::{register_interchain_account, register_ordered_interchain_account},
 };
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
@@ -46,6 +47,7 @@ fn test_ica_filter_deny() -> Result<(), Error> {
     run_binary_connection_test(&IcaFilterTestDeny)
 }
 
+#[cfg(any(doc, feature = "new-register-interchain-account"))]
 #[test]
 fn test_ica_close_channel() -> Result<(), Error> {
     run_binary_connection_test(&ICACloseChannelTest)
@@ -251,7 +253,11 @@ impl BinaryConnectionTest for ICACloseChannelTest {
                 // Register an interchain account on behalf of
                 // controller wallet `user1` where the counterparty chain is the interchain accounts host.
                 let (wallet, controller_channel_id, controller_port_id) =
-                    register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
+                    register_ordered_interchain_account(
+                        &chains.node_a,
+                        chains.handle_a(),
+                        &connection,
+                    )?;
 
                 // Check that the corresponding ICA channel is eventually established.
                 let _counterparty_channel_id = assert_eventually_channel_established(
