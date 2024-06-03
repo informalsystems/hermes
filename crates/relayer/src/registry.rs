@@ -2,6 +2,7 @@
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use alloc::sync::Arc;
+use once_cell::sync::OnceCell;
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use tokio::runtime::Runtime as TokioRuntime;
@@ -9,6 +10,7 @@ use tracing::{trace, warn};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
+use crate::chain::handle::DefaultChainHandle;
 use crate::{
     chain::handle::ChainHandle,
     config::Config,
@@ -27,8 +29,8 @@ pub struct Registry<Chain: ChainHandle> {
 }
 
 #[derive(Clone)]
-pub struct SharedRegistry<Chain: ChainHandle> {
-    pub registry: RwArc<Registry<Chain>>,
+pub struct SharedRegistry {
+    pub registry: RwArc<Registry<DefaultChainHandle>>,
 }
 
 impl<Chain: ChainHandle> Registry<Chain> {
@@ -91,7 +93,22 @@ impl<Chain: ChainHandle> Registry<Chain> {
     }
 }
 
-impl<Chain: ChainHandle> SharedRegistry<Chain> {
+static GLOBAL_REGISTRY: OnceCell<SharedRegistry> = OnceCell::new();
+
+pub fn set_global_registry(registry: SharedRegistry) {
+    if GLOBAL_REGISTRY.set(registry).is_err() {
+        panic!("global registry already set");
+    }
+}
+
+pub fn get_global_registry() -> SharedRegistry {
+    GLOBAL_REGISTRY
+        .get()
+        .expect("global registry not set")
+        .clone()
+}
+
+impl SharedRegistry {
     pub fn new(config: Config) -> Self {
         let registry = Registry::new(config);
 
@@ -100,7 +117,7 @@ impl<Chain: ChainHandle> SharedRegistry<Chain> {
         }
     }
 
-    pub fn get_or_spawn(&self, chain_id: &ChainId) -> Result<Chain, SpawnError> {
+    pub fn get_or_spawn(&self, chain_id: &ChainId) -> Result<DefaultChainHandle, SpawnError> {
         self.registry.write().unwrap().get_or_spawn(chain_id)
     }
 
@@ -112,11 +129,11 @@ impl<Chain: ChainHandle> SharedRegistry<Chain> {
         self.write().shutdown(chain_id)
     }
 
-    pub fn write(&self) -> RwLockWriteGuard<'_, Registry<Chain>> {
+    pub fn write(&self) -> RwLockWriteGuard<'_, Registry<DefaultChainHandle>> {
         self.registry.write().unwrap()
     }
 
-    pub fn read(&self) -> RwLockReadGuard<'_, Registry<Chain>> {
+    pub fn read(&self) -> RwLockReadGuard<'_, Registry<DefaultChainHandle>> {
         self.registry.read().unwrap()
     }
 }
