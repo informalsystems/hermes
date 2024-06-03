@@ -107,6 +107,7 @@ impl QueryContext for SimpleHermesRpcQuerier {
             .map_err(|e| RegistryError::tendermint_url_parse_error(rpc_url.clone(), e))?;
 
         let client = HttpClient::builder(url)
+            .user_agent(format!("hermes/{}", ibc_relayer::HERMES_VERSION))
             .build()
             .map_err(|e| RegistryError::rpc_connect_error(rpc_url.clone(), e))?;
 

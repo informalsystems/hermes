@@ -161,7 +161,9 @@ fn subscribe(
                     interval,
                     max_retries,
                 } => {
-                    let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
+                    let mut rpc_client = HttpClient::builder(config.rpc_addr.clone().try_into()?)
+                        .user_agent(format!("hermes/{}", ibc_relayer::HERMES_VERSION))
+                        .build()
                         .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
                     rpc_client.set_compat_mode(compat_mode);
 
@@ -191,7 +193,10 @@ fn detect_compatibility_mode(
     let rpc_addr = match config {
         ChainConfig::CosmosSdk(config) => config.rpc_addr.clone(),
     };
-    let client = HttpClient::new(rpc_addr)?;
+    let client = HttpClient::builder(rpc_addr.try_into()?)
+        .user_agent(format!("hermes/{}", ibc_relayer::HERMES_VERSION))
+        .build()?;
+
     let status = rt.block_on(client.status())?;
     let compat_mode = match config {
         ChainConfig::CosmosSdk(config) => {

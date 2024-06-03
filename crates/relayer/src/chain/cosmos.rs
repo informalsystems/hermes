@@ -110,6 +110,7 @@ use crate::util::pretty::PrettySlice;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
+use crate::HERMES_VERSION;
 
 use self::gas::dynamic_gas_price;
 use self::types::app_state::GenesisAppState;
@@ -980,7 +981,9 @@ impl ChainEndpoint for CosmosSdkChain {
             return Err(Error::config(ConfigError::wrong_type()));
         };
 
-        let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
+        let mut rpc_client = HttpClient::builder(config.rpc_addr.clone().try_into().unwrap())
+            .user_agent(format!("hermes/{}", HERMES_VERSION))
+            .build()
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
