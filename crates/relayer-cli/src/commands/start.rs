@@ -6,9 +6,8 @@ use std::io;
 use abscissa_core::clap::Parser;
 use crossbeam_channel::Sender;
 
-use ibc_relayer::chain::handle::{CachingChainHandle, ChainHandle};
 use ibc_relayer::config::Config;
-use ibc_relayer::registry::SharedRegistry;
+use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 use ibc_relayer::rest;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, spawn_supervisor, SupervisorHandle};
 
@@ -59,10 +58,9 @@ impl Runnable for StartCmd {
             health_check: true,
         };
 
-        let supervisor_handle = make_supervisor::<CachingChainHandle>(config, options)
-            .unwrap_or_else(|e| {
-                Output::error(format!("Hermes failed to start, last error: {e}")).exit()
-            });
+        let supervisor_handle = make_supervisor(config, options).unwrap_or_else(|e| {
+            Output::error(format!("Hermes failed to start, last error: {e}")).exit()
+        });
 
         match crate::config::config_path() {
             Some(_) => {
@@ -202,11 +200,12 @@ fn spawn_telemetry_server(config: &Config) {
     });
 }
 
-fn make_supervisor<Chain: ChainHandle>(
+fn make_supervisor(
     config: Config,
     options: SupervisorOptions,
 ) -> Result<SupervisorHandle, Box<dyn Error + Send + Sync>> {
-    let registry = SharedRegistry::<Chain>::new(config.clone());
+    let registry = SharedRegistry::new(config.clone());
+    set_global_registry(registry.clone());
 
     spawn_telemetry_server(&config);
 
