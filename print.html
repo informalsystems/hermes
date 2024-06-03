@@ -356,8 +356,7 @@ currently impossible to build and run <code>Hermes</code> on <code>Windows</code
 <p>For instructions on how to install <code>Rust</code> on your machine please follow the official <a href="https://www.rust-lang.org/tools/install"><code>Notes about Rust Installation</code></a>.</p>
 <p>The provided instructions will install all the Rust tool chain including <code>rustc</code>, <code>cargo</code>, and <code>rustup</code> that are required to build the project.</p>
 <h3 id="version-requirements"><a class="header" href="#version-requirements">Version requirements</a></h3>
-<p>Hermes is developed and tested using the latest version of Rust, <code>1.71</code> at
-the moment. To check that your tool chain is up-to-date run:</p>
+<p>Hermes is developed and tested using the latest stable version of Rust. To check that your tool chain is up-to-date run:</p>
 <pre><code class="language-shell">rustc --version
 </code></pre>
 <p>In case you already had installed the Rust tool chain in the past, you can
@@ -3931,11 +3930,12 @@ grpc_addr = 'http://127.0.0.1:9090'
 
 # b) Pull: for polling for IBC events via the `/block_results` RPC endpoint.
 #
-#     `{ mode = 'pull', interval = '1s' }`
+#     `{ mode = 'pull', interval = '1s', max_retries = 4 }`
 #
 #    where
 #
 #    - `interval` is the interval at which to poll for blocks. Default: 1s
+#    - `max_retries` is the maximum number of retries to collect events for each block. Default: 4
 #
 #    This mode should only be used in situations where Hermes misses events that it should be
 #    receiving, such as when relaying for CosmWasm-enabled chains which emit IBC events without
@@ -10624,21 +10624,27 @@ OPTIONS:
     -h, --help    Print help information
 
 SUBCOMMANDS:
-    chan-close-confirm    Confirm the closing of a channel (ChannelCloseConfirm)
-    chan-close-init       Initiate the closing of a channel (ChannelCloseInit)
-    chan-open-ack         Relay acknowledgment of a channel attempt (ChannelOpenAck)
-    chan-open-confirm     Confirm opening of a channel (ChannelOpenConfirm)
-    chan-open-init        Initialize a channel (ChannelOpenInit)
-    chan-open-try         Relay the channel attempt (ChannelOpenTry)
-    conn-ack              Relay acknowledgment of a connection attempt (ConnectionOpenAck)
-    conn-confirm          Confirm opening of a connection (ConnectionOpenConfirm)
-    conn-init             Initialize a connection (ConnectionOpenInit)
-    conn-try              Relay the connection attempt (ConnectionOpenTry)
-    ft-transfer           Send a fungible token transfer test transaction (ICS20 MsgTransfer)
-    help                  Print this message or the help of the given subcommand(s)
-    packet-ack            Relay acknowledgment packets
-    packet-recv           Relay receive or timeout packets
-    upgrade-chain         Send an IBC upgrade plan
+    chan-close-confirm      Confirm the closing of a channel (ChannelCloseConfirm)
+    chan-close-init         Initiate the closing of a channel (ChannelCloseInit)
+    chan-open-ack           Relay acknowledgment of a channel attempt (ChannelOpenAck)
+    chan-open-confirm       Confirm opening of a channel (ChannelOpenConfirm)
+    chan-open-init          Initialize a channel (ChannelOpenInit)
+    chan-open-try           Relay the channel attempt (ChannelOpenTry)
+    chan-upgrade-ack        Relay the channel upgrade attempt (ChannelUpgradeAck)
+    chan-upgrade-cancel     Relay the channel upgrade cancellation (ChannelUpgradeCancel)
+    chan-upgrade-confirm    Relay the channel upgrade attempt (ChannelUpgradeConfirm)
+    chan-upgrade-open       Relay the channel upgrade attempt (ChannelUpgradeOpen)
+    chan-upgrade-timeout    Relay the channel upgrade timeout (ChannelUpgradeTimeout)
+    chan-upgrade-try        Relay the channel upgrade attempt (ChannelUpgradeTry)
+    conn-ack                Relay acknowledgment of a connection attempt (ConnectionOpenAck)
+    conn-confirm            Confirm opening of a connection (ConnectionOpenConfirm)
+    conn-init               Initialize a connection (ConnectionOpenInit)
+    conn-try                Relay the connection attempt (ConnectionOpenTry)
+    ft-transfer             Send a fungible token transfer test transaction (ICS20 MsgTransfer)
+    help                    Print this message or the help of the given subcommand(s)
+    packet-ack              Relay acknowledgment packets
+    packet-recv             Relay receive or timeout packets
+    upgrade-chain           Send an IBC upgrade plan
 
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="connection-handshake"><a class="header" href="#connection-handshake">Connection Handshake</a></h1>
