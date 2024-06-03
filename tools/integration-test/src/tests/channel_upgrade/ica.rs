@@ -35,7 +35,7 @@ use ibc_relayer_types::tx_msg::Msg;
 use ibc_test_framework::chain::config::{
     add_allow_message_interchainaccounts, set_max_deposit_period, set_voting_period,
 };
-use ibc_test_framework::chain::ext::ica::register_interchain_account;
+use ibc_test_framework::chain::ext::ica::register_ordered_interchain_account;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_closed, assert_eventually_channel_established,
@@ -98,7 +98,11 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
                 // Register an interchain account on behalf of
                 // controller wallet `user1` where the counterparty chain is the interchain accounts host.
                 let (wallet, controller_channel_id, controller_port_id) =
-                    register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
+                    register_ordered_interchain_account(
+                        &chains.node_a,
+                        chains.handle_a(),
+                        &connection,
+                    )?;
 
                 // Check that the corresponding ICA channel is eventually established.
                 let _counterparty_channel_id = assert_eventually_channel_established(
@@ -343,7 +347,7 @@ impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
         // Register an interchain account on behalf of
         // controller wallet `user1` where the counterparty chain is the interchain accounts host.
         let (wallet, controller_channel_id, controller_port_id) =
-            register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
+            register_ordered_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
 
         // Check that the corresponding ICA channel is eventually established.
         let _counterparty_channel_id = assert_eventually_channel_established(
