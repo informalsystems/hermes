@@ -20,14 +20,14 @@ exclude = [
 
 [workspace.dependencies]
 # Hermes dependencies
-ibc-relayer-cli      = { version = "1.8.2",  path = "crates/relayer-cli" }
-ibc-relayer          = { version = "0.27.2", path = "crates/relayer" }
-ibc-relayer-rest     = { version = "0.27.2", path = "crates/relayer-rest" }
-ibc-relayer-types    = { version = "0.27.2", path = "crates/relayer-types" }
-ibc-chain-registry   = { version = "0.27.2", path = "crates/chain-registry" }
-ibc-telemetry        = { version = "0.27.2", path = "crates/telemetry" }
-ibc-test-framework   = { version = "0.27.2", path = "tools/test-framework" }
-ibc-integration-test = { version = "0.27.2", path = "tools/integration-test" }
+ibc-relayer-cli      = { version = "1.9.0",  path = "crates/relayer-cli" }
+ibc-relayer          = { version = "0.28.0", path = "crates/relayer" }
+ibc-relayer-rest     = { version = "0.28.0", path = "crates/relayer-rest" }
+ibc-relayer-types    = { version = "0.28.0", path = "crates/relayer-types" }
+ibc-chain-registry   = { version = "0.28.0", path = "crates/chain-registry" }
+ibc-telemetry        = { version = "0.28.0", path = "crates/telemetry" }
+ibc-test-framework   = { version = "0.28.0", path = "tools/test-framework" }
+ibc-integration-test = { version = "0.28.0", path = "tools/integration-test" }
 
 # Tendermint dependencies
 tendermint                       = { version = "0.36.0", default-features = false }

@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-integration-test"
-version      = "0.27.3"
+version      = "0.28.0"
 edition      = "2021"
 rust-version = "1.71.1"
 license      = "Apache-2.0"
