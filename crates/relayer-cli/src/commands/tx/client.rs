@@ -342,7 +342,7 @@ impl Runnable for TxUpgradeClientCmd {
         );
 
         while reference_application_latest_height != target_reference_application_height {
-            //debug!("Reference application latest height {}, target app height {}", target_reference_application_height, reference_application_latest_height);
+            debug!("Reference application latest height {}, target app height {}", reference_application_latest_height, target_reference_application_height);
             thread::sleep(Duration::from_millis(500));
 
             reference_application_latest_height = match client.src_chain().query_latest_height() {
