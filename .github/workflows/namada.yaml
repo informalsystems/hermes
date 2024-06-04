@@ -94,10 +94,11 @@ jobs:
           echo "${HOME}/local/bin" >> $GITHUB_PATH
       - name: Download MASP parameters
         run: |
-          mkdir -p /home/runner/.masp-params
-          curl -o /home/runner/.masp-params/masp-spend.params -L https://github.com/anoma/masp-mpc/releases/download/namada-trusted-setup/masp-spend.params\?raw\=true
-          curl -o /home/runner/.masp-params/masp-output.params -L https://github.com/anoma/masp-mpc/releases/download/namada-trusted-setup/masp-output.params?raw=true
-          curl -o /home/runner/.masp-params/masp-convert.params -L https://github.com/anoma/masp-mpc/releases/download/namada-trusted-setup/masp-convert.params?raw=true
+          echo $HOME
+          mkdir -p $HOME/.masp-params
+          curl -o $HOME/.masp-params/masp-spend.params -L https://github.com/anoma/masp-mpc/releases/download/namada-trusted-setup/masp-spend.params\?raw\=true
+          curl -o $HOME/.masp-params/masp-output.params -L https://github.com/anoma/masp-mpc/releases/download/namada-trusted-setup/masp-output.params?raw=true
+          curl -o $HOME/.masp-params/masp-convert.params -L https://github.com/anoma/masp-mpc/releases/download/namada-trusted-setup/masp-convert.params?raw=true
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
