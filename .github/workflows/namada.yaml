@@ -43,8 +43,6 @@ jobs:
             account_prefix: cosmos,''
             native_token: stake,nam
     steps:
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@v1.3.1
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
