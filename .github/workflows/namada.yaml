@@ -2,6 +2,16 @@ name: Namada Integration
 on:
   workflow_dispatch:
   pull_request:
+    paths:
+      - .github/workflows/integration.yaml
+      - Cargo.toml
+      - Cargo.lock
+      - flake.nix
+      - flake.lock
+      - ci/**
+      - e2e/**
+      - crates/**
+      - tools/**
 
 env:
   CARGO_INCREMENTAL: 0
