@@ -86,7 +86,12 @@ jobs:
         run: |
           curl -o cometbft.tar.gz -LO https://github.com/cometbft/cometbft/releases/download/v0.37.2/cometbft_0.37.2_linux_amd64.tar.gz
           tar -xvzf cometbft.tar.gz
-          mv cometbft /usr/local/bin
+          mkdir -p ~/local/bin
+          chmod +x cometbft
+          mv cometbft ~/local/bin
+      - name: Update environment path
+        run: |
+          echo "${HOME}/local/bin" >> $GITHUB_PATH
       - name: Download MASP parameters
         run: |
           mkdir -p /home/runner/.masp-params
