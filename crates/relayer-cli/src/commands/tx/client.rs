@@ -326,9 +326,9 @@ impl Runnable for TxUpgradeClientCmd {
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let target_reference_application_height = reference_upgrade_height
-            .decrement()
-            .expect("Upgrade height cannot be 1");
+        let target_reference_application_height = reference_upgrade_height;
+        //     .decrement()
+        //     .expect("Upgrade height cannot be 1");
 
         let mut reference_application_latest_height = match client.src_chain().query_latest_height()
         {
@@ -342,6 +342,7 @@ impl Runnable for TxUpgradeClientCmd {
         );
 
         while reference_application_latest_height != target_reference_application_height {
+            //debug!("Reference application latest height {}, target app height {}", target_reference_application_height, reference_application_latest_height);
             thread::sleep(Duration::from_millis(500));
 
             reference_application_latest_height = match client.src_chain().query_latest_height() {

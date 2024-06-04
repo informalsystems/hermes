@@ -492,21 +492,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         fields(client = %self)
     )]
     pub fn upgrade(&self, src_upgrade_height: Height) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        let msgs = self
-            .build_update_client_with_trusted(src_upgrade_height, None)
-            .map_err(|_| {
-                ForeignClientError::client_upgrade_no_source(
-                    self.id.clone(),
-                    self.dst_chain.id(),
-                    format!(
-                        "is chain {} halted at height {}?",
-                        self.src_chain().id(),
-                        src_upgrade_height
-                    ),
-                )
-            })?;
-
-        let mut msgs: Vec<Any> = msgs.into_iter().map(Msg::to_any).collect();
 
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
@@ -562,9 +547,26 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
         .to_any();
 
-        msgs.push(msg_upgrade);
+        let update_msgs = self
+            .build_update_client_with_trusted(src_upgrade_height, None)
+            .map_err(|e| {
+                ForeignClientError::client_upgrade_no_source(
+                    self.id.clone(),
+                    self.dst_chain.id(),
+                    format!(
+                        "is chain {} halted at height {}? ({:?})",
+                        self.src_chain().id(),
+                        src_upgrade_height,
+                        e
+                    ),
+                )
+            })?;
 
-        let tm = TrackedMsgs::new_static(msgs, "upgrade client");
+        let mut update_msgs: Vec<Any> = update_msgs.into_iter().map(Msg::to_any).collect();
+
+        update_msgs.push(msg_upgrade);
+
+        let tm = TrackedMsgs::new_static(update_msgs, "upgrade client");
 
         let res = self
             .dst_chain
