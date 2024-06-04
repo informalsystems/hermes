@@ -6,14 +6,20 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionHop {
     pub connection: IdentifiedConnectionEnd,
-    pub reference_chain_id: ChainId,
+    pub src_chain_id: ChainId,
+    pub dst_chain_id: ChainId,
 }
 
 impl ConnectionHop {
-    pub fn new(connection: IdentifiedConnectionEnd, reference_chain_id: ChainId) -> Self {
+    pub fn new(
+        connection: IdentifiedConnectionEnd,
+        src_chain_id: ChainId,
+        dst_chain_id: ChainId,
+    ) -> Self {
         Self {
             connection,
-            reference_chain_id,
+            src_chain_id,
+            dst_chain_id,
         }
     }
 }

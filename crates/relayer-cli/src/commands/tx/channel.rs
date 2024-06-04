@@ -172,7 +172,8 @@ impl Runnable for TxChanOpenInitCmd {
                 self.dst_conn_id.clone(),
                 dst_connection.clone(),
             ),
-            reference_chain_id: dst_conn_client_state.chain_id().clone(),
+            src_chain_id: chains.dst.id(),
+            dst_chain_id: dst_conn_client_state.chain_id().clone(),
         });
 
         // FIXME: We are not currently checking for cycles in channel paths, e.g, the following channel hops are valid:
@@ -183,10 +184,10 @@ impl Runnable for TxChanOpenInitCmd {
         if let Some(connnection_ids) = &self.conn_hop_ids {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
             for connection_id in connnection_ids.as_slice().iter() {
-                // Retrieve the ChainId of the chain referenced by the previous connection hop
-                let chain_id = &b_side_hops.last().unwrap().reference_chain_id;
+                // Retrieve the ChainId of the chain to which the last hop pointed to
+                let chain_id = &b_side_hops.last().unwrap().dst_chain_id;
 
-                // Spawn a handle for the chain referenced in the previous hop
+                // Spawn a handle for the chain pointed to by the previous hop
                 let chain_handle = match spawn_chain_runtime(&config, chain_id) {
                     Ok(handle) => handle,
                     Err(e) => Output::error(e).exit(),
@@ -218,18 +219,19 @@ impl Runnable for TxChanOpenInitCmd {
 
                 b_side_hops.push(ConnectionHop {
                     connection: IdentifiedConnectionEnd::new(connection_id.clone(), hop_connection),
-                    reference_chain_id: hop_conn_client_state.chain_id().clone(),
+                    src_chain_id: chain_id.clone(),
+                    dst_chain_id: hop_conn_client_state.chain_id().clone(),
                 });
             }
         }
 
         // Ensure that the channel path leads to the chain passed to --src-chain
         if let Some(last_hop) = &b_side_hops.last() {
-            if last_hop.reference_chain_id != chains.src.id() {
+            if last_hop.dst_chain_id != chains.src.id() {
                 Output::error(Error::ics33_hops_destination_mismatch(
                     chains.src.id(),
                     chains.dst.id(),
-                    last_hop.reference_chain_id.clone(),
+                    last_hop.dst_chain_id.clone(),
                 ))
                 .exit()
             }
@@ -456,7 +458,8 @@ impl Runnable for TxChanOpenTryCmd {
                         a_side_connection_id.clone(),
                         a_side_hop_connection.clone(),
                     ),
-                    reference_chain_id: a_side_hop_conn_client_state.chain_id(),
+                    src_chain_id: chain_id.clone(),
+                    dst_chain_id: a_side_hop_conn_client_state.chain_id(),
                 });
 
                 // Build the current hop from the opposite direction
@@ -465,7 +468,8 @@ impl Runnable for TxChanOpenTryCmd {
                         counterparty_conn_id.clone(),
                         counterparty_connection,
                     ),
-                    reference_chain_id: chain_id.clone(),
+                    src_chain_id: a_side_hop_conn_client_state.chain_id(),
+                    dst_chain_id: chain_id.clone(),
                 });
 
                 // Update chain_id to point to the next chain in the channel path
@@ -514,7 +518,8 @@ impl Runnable for TxChanOpenTryCmd {
                     a_side_connection_id.clone(),
                     a_side_hop_connection,
                 ),
-                reference_chain_id: a_side_hop_conn_client_state.chain_id(),
+                src_chain_id: chains.src.id(),
+                dst_chain_id: a_side_hop_conn_client_state.chain_id(),
             });
 
             let b_side_hop_connection = match chains.dst.query_connection(
@@ -546,7 +551,8 @@ impl Runnable for TxChanOpenTryCmd {
                     self.dst_conn_id.clone(),
                     b_side_hop_connection.clone(),
                 ),
-                reference_chain_id: b_side_hop_conn_client_state.chain_id().clone(),
+                src_chain_id: chains.dst.id(),
+                dst_chain_id: b_side_hop_conn_client_state.chain_id().clone(),
             });
         }
 
@@ -554,16 +560,13 @@ impl Runnable for TxChanOpenTryCmd {
         // Reverse them to obtain the path from --dst-chain to --src-chain. Single hops remain unchanged.
         b_side_hops.reverse();
 
-        dbg!(&b_side_hops);
-        dbg!(&a_side_hops);
-
         // Ensure that the reverse channel path leads to the chain passed to --src-chain
         if let Some(last_hop) = &b_side_hops.last() {
-            if last_hop.reference_chain_id != chains.src.id() {
+            if last_hop.dst_chain_id != chains.src.id() {
                 Output::error(Error::ics33_hops_destination_mismatch(
                     chains.src.id(),
                     chains.dst.id(),
-                    last_hop.reference_chain_id.clone(),
+                    last_hop.dst_chain_id.clone(),
                 ))
                 .exit()
             }
