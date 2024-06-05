@@ -12,6 +12,7 @@ description  = """
 """
 
 [dependencies]
+ibc-relayer       = { workspace = true }
 ibc-relayer-types = { workspace = true }
 ibc-proto         = { workspace = true, features = ["serde"] }
 tendermint-rpc    = { workspace = true, features = ["http-client", "websocket-client"] }
