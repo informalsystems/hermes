@@ -39,17 +39,10 @@ tendermint-rpc                   = { version = "=0.36.0" }
 tendermint-testgen               = { version = "=0.36.0" }
 
 # Namada dependencies
-<<<<<<< HEAD
-namada_ibc         = { git = "https://github.com/anoma/namada", tag = "v0.37.0" }
-namada_parameters  = { git = "https://github.com/anoma/namada", tag = "v0.37.0" }
-namada_sdk         = { git = "https://github.com/anoma/namada", tag = "v0.37.0" }
-namada_trans_token = { git = "https://github.com/anoma/namada", tag = "v0.37.0" }
-=======
-namada_ibc        = { git = "https://github.com/anoma/namada", rev = "a0e2e6c09e4d7a2ee6b3114b6ba6560204d722a6" }
-namada_parameters = { git = "https://github.com/anoma/namada", rev = "a0e2e6c09e4d7a2ee6b3114b6ba6560204d722a6" }
-namada_sdk        = { git = "https://github.com/anoma/namada", rev = "a0e2e6c09e4d7a2ee6b3114b6ba6560204d722a6" }
-namada_token      = { git = "https://github.com/anoma/namada", rev = "a0e2e6c09e4d7a2ee6b3114b6ba6560204d722a6" }
->>>>>>> 1034b2d8 (for Namada/#3297 - split transfer tx)
+namada_ibc        = { git = "https://github.com/anoma/namada", rev = "eb8783d118c832923bd728144092de4e4231da72" }
+namada_parameters = { git = "https://github.com/anoma/namada", rev = "eb8783d118c832923bd728144092de4e4231da72" }
+namada_sdk        = { git = "https://github.com/anoma/namada", rev = "eb8783d118c832923bd728144092de4e4231da72" }
+namada_token      = { git = "https://github.com/anoma/namada", rev = "eb8783d118c832923bd728144092de4e4231da72" }
 
 # Other dependencies
 abscissa_core            = "=0.6.0"
