@@ -50,6 +50,9 @@ jobs:
         run: |
           cd namada
           echo "NAMADA_REPO_PATH=$(pwd)" >> "$GITHUB_OUTPUT"
+          ls
+          pwd
+          echo $NAMADA_REPO_PATH
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
