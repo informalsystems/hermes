@@ -150,7 +150,7 @@ jobs:
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - name: Download CometBFT
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/157259234" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          curl -o cometbft.tar.gz -LO https://github.com/cometbft/cometbft/releases/download/v0.37.2/cometbft_0.37.2_linux_amd64.tar.gz
           tar -xvzf cometbft.tar.gz
           mkdir -p ~/local/bin
           chmod +x cometbft
@@ -159,7 +159,7 @@ jobs:
         env:
           OPERATING_SYSTEM: Linux
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/v0.37.0" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/157259234" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
           cp ./namada*/namadac ~/local/bin/namadac
