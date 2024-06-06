@@ -32,6 +32,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
+use crate::registry::get_global_registry;
 use crate::supervisor::error::Error as SupervisorError;
 use crate::util::pretty::{PrettyDuration, PrettyOption};
 use crate::util::retry::retry_with_index;
@@ -135,6 +136,10 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
 
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id
+    }
+
+    pub fn connection_hops(&self) -> Option<&ConnectionHops> {
+        self.connection_hops.as_ref()
     }
 
     pub fn port_id(&self) -> &PortId {
@@ -987,17 +992,100 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(dst_expected_channel)
     }
 
+    pub fn update_channel_path_clients(&self, proof_height: Height) -> Result<(), ChannelError> {
+        // Get the registry to spawn chain handles
+        let registry = get_global_registry();
+
+        let channel_id = self
+            .a_side
+            .channel_id()
+            .ok_or(ChannelError::missing_local_channel_id())?;
+
+        let connection_hops =
+            self.a_side
+                .connection_hops()
+                .ok_or(ChannelError::missing_local_connection_hops(
+                    channel_id.clone(),
+                    self.a_side.chain_id().clone(),
+                ))?;
+
+        let mut consensus_height = proof_height;
+
+        let mut client_update_events = Vec::new();
+
+        // Update the clients along the channel path from the sending chain (a_side)
+        // towards the receiving chain (b_side), except for the client on the destination,
+        // which will receive the MsgUpdateClient bundled with the channel handshake message.
+        for conn_hop in connection_hops
+            .hops
+            .iter()
+            .take(connection_hops.hops.len() - 1)
+        {
+            let hop_src_chain_handle = registry
+                .get_or_spawn(&conn_hop.src_chain_id)
+                .map_err(ChannelError::spawn)?;
+
+            let hop_dst_chain_handle = registry
+                .get_or_spawn(&conn_hop.dst_chain_id)
+                .map_err(ChannelError::spawn)?;
+
+            // Restore client hosted by hop_dst to track the state of hop_src
+            let client = ForeignClient::restore(
+                conn_hop.connection().counterparty().client_id().clone(),
+                hop_dst_chain_handle.clone(),
+                hop_src_chain_handle.clone(),
+            );
+
+            // Send a message to update the client with the consensus state for `consensus_height`
+            client_update_events.push(
+                client
+                    .build_update_client_and_send(QueryHeight::Specific(consensus_height), None)
+                    .map_err(|e| {
+                        ChannelError::client_operation(
+                            client.id().clone(),
+                            hop_dst_chain_handle.id(),
+                            e,
+                        )
+                    })?,
+            );
+
+            let maybe_update = client
+                .fetch_update_client_event(consensus_height)
+                .map_err(|e| {
+                    ChannelError::client_operation(
+                        client.id().clone(),
+                        hop_dst_chain_handle.id(),
+                        e,
+                    )
+                })?;
+
+            // Retrieve the height on which the UpdateClient message was included in the chain that hosts the client
+            let update_height = match maybe_update {
+                Some((_, height)) => height,
+                None => {
+                    return Err(ChannelError::failed_channel_path_client_update(
+                        client.id().clone(),
+                        hop_dst_chain_handle.id(),
+                        channel_id.clone(),
+                        self.a_side.chain_id().clone(),
+                    ))
+                }
+            };
+
+            // The consensus_height to use for updating the next client in the channel path, if required
+            consensus_height = update_height.increment();
+        }
+
+        Ok(()) // REVIEW: Perhaps we would like to return a Vec with the events or their heights?
+    }
+
     pub fn build_multihop_chan_open_try(&self) -> Result<Vec<Any>, ChannelError> {
         // Source channel ID must be specified
-        //~ Self is a Channel with two ChannelSides, a_side and b_side
-        //~ --src-chain is now chain4 and --dst-chain is chain1
-        //~ src_channel_id is the id of the channel opened on chain4, which is in INIT state
         let src_channel_id = self
             .src_channel_id()
             .ok_or_else(ChannelError::missing_local_channel_id)?;
 
         // Channel must exist on source
-        //~ Query the --src-chain (chain4) for the channel in INIT state (--src-channel), (source chain is the one in which this is running)
         let (src_channel, _) = self
             .src_chain() //~ ChainA
             .query_channel(
@@ -1022,9 +1110,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             }
         }
 
-        //~ src_channel.counterparty().port_id() is the port_id of the counterparty (chain1)
-        //~ as specified in the channel in INIT state (in chain4). self.dst_port_id() is the port on chain1,
-        //~ which was passed to --dst-port
         if src_channel.counterparty().port_id() != self.dst_port_id() {
             return Err(ChannelError::mismatch_port(
                 self.dst_chain().id(),
@@ -1035,8 +1120,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ));
         }
 
-        //~ --dst-connection must exist on destination
-        //~ Query --dst-chain (chain1) for the specified --dst-connection
         self.dst_chain()
             .query_connection(
                 QueryConnectionRequest {
@@ -1047,21 +1130,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
-        //~ query_height is the latest height on src_chain (chain4)
         let query_height = self
             .src_chain()
             .query_latest_height()
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
         let proofs = self
-            .src_chain() //~ (chain4)
-            .build_channel_proofs(self.src_port_id(), src_channel_id, query_height) //~ Proof that there's a channel in INIT state in --src-chain
+            .src_chain()
+            .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
             .map_err(ChannelError::channel_proof)?;
+
+        self.update_channel_path_clients(proofs.height())?;
+
+        // ----- IN PROGRESS BELOW ----- ///
 
         // Build message(s) to update client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
 
-        //~ Set the counterparty for the TRYOPEN channel in --dst-chain (chain1) as src (chain4)
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
@@ -1072,7 +1157,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             State::TryOpen,
             *src_channel.ordering(),
             counterparty,
-            vec![self.dst_connection_id().clone()], //~ pass a single conn id or the connection hops
+            vec![self.dst_connection_id().clone()],
             version,
             0,
         );
@@ -1144,16 +1229,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ));
         }
 
-        // Connection must exist on destination
-        self.dst_chain()
-            .query_connection(
-                QueryConnectionRequest {
-                    connection_id: self.dst_connection_id().clone(),
-                    height: QueryHeight::Latest,
-                },
-                IncludeProof::No,
-            )
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+        // Connection must exist on destination -- THIS WAS ALREADY CHECKED ON fn run(), if we are not storing
+        // the connection or the proof here we should remove this.
+        // self.dst_chain()
+        //     .query_connection(
+        //         QueryConnectionRequest {
+        //             connection_id: self.dst_connection_id().clone(),
+        //             height: QueryHeight::Latest,
+        //         },
+        //         IncludeProof::No,
+        //     )
+        //     .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let query_height = self
             .src_chain()

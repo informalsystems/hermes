@@ -8,6 +8,7 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::channel::{Channel, ChannelError, ChannelSide};
 use ibc_relayer::connection::ConnectionError;
+use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
@@ -355,6 +356,9 @@ impl Runnable for TxChanOpenTryCmd {
     fn run(&self) {
         let config = app_config();
 
+        // Set a global registry to get_or_spawn() chain handles
+        set_global_registry(SharedRegistry::new((*app_config()).clone()));
+
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => Output::error(e).exit(),
@@ -433,6 +437,7 @@ impl Runnable for TxChanOpenTryCmd {
                     .unwrap_or_else(|| {
                         Output::error(ConnectionError::missing_counterparty_connection_id()).exit()
                     });
+
                 let counterparty_chain_id = a_side_hop_conn_client_state.chain_id().clone();
 
                 let counterparty_handle = match spawn_chain_runtime(&config, &counterparty_chain_id)

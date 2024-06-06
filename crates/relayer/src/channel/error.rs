@@ -11,6 +11,7 @@ use ibc_relayer_types::events::IbcEvent;
 
 use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
+use crate::spawn::SpawnError;
 use crate::supervisor::Error as SupervisorError;
 
 define_error! {
@@ -26,6 +27,10 @@ define_error! {
         Client
             [ ClientError ]
             |_| { "ICS02 client error" },
+
+        Spawn
+            [ SpawnError ]
+            | _ | { "spawn error" },
 
         InvalidChannel
             { reason: String }
@@ -208,6 +213,28 @@ define_error! {
         |e| {
             format_args!("channel {} on chain {} has no connection hops specified",
                 e.channel_id, e.chain_id)
+        },
+
+        MissingLocalConnectionHops
+        {
+            channel_id: ChannelId,
+            chain_id: ChainId,
+        }
+        | e | {
+            format_args!("failed due to missing local connection hops data for channel '{}' on \
+            chain '{}'", e.channel_id, e.chain_id)
+        },
+
+        FailedChannelPathClientUpdate
+        {
+            client_id: ClientId,
+            client_host_chain_id: ChainId,
+            channel_id: ChannelId,
+            chain_id: ChainId,
+        }
+        | e | {
+            format_args!("failed to update client '{}' on chain '{}' while updating the channel path \
+             for channel '{}' on chain '{}'", e.client_id, e.client_host_chain_id, e.channel_id, e.chain_id)
         },
     }
 }

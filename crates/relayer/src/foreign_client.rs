@@ -1397,7 +1397,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn fetch_update_client_event(
         &self,
         consensus_height: Height,
-    ) -> Result<Option<UpdateClient>, ForeignClientError> {
+    ) -> Result<Option<(UpdateClient, Height)>, ForeignClientError> {
         crate::time!(
             "fetch_update_client_event",
             {
@@ -1456,6 +1456,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // were submitted to chain. However this is not what it's observed during testing.
         // Regardless, just take the event from the first update.
         let event = &events_with_heights[0].event;
+        let height = &events_with_heights[0].height;
         let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
             ForeignClientError::unexpected_event(
                 self.id().clone(),
@@ -1464,7 +1465,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        Ok(Some(update))
+        Ok(Some((update, *height)))
     }
 
     /// Returns the consensus state at `height` or error if not found.
@@ -1620,7 +1621,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             let update_event = if let Some(event) = update {
                 // we are here only on the first iteration when called with `Some` update event
                 event.clone()
-            } else if let Some(event) = self.fetch_update_client_event(target_height)? {
+            } else if let Some((event, _)) = self.fetch_update_client_event(target_height)? {
                 // we are here either on the first iteration with `None` initial update event or
                 // subsequent iterations
                 event
