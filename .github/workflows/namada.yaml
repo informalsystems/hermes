@@ -91,7 +91,10 @@ jobs:
           release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/157259234" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
-          cp ./namada* ~/local/bin/
+          cp ./namada*/namadac ~/local/bin/namadac
+          cp ./namada*/namadan ~/local/bin/namadan
+          cp ./namada*/namadaw ~/local/bin/namadaw
+          cp ./namada*/namada ~/local/bin/namada
       - name: Update environment path
         run: |
           echo "${HOME}/local/bin" >> $GITHUB_PATH
