@@ -48,11 +48,9 @@ jobs:
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: |
-          cd namada
-          echo "NAMADA_REPO_PATH=$(pwd)" >> "$GITHUB_OUTPUT"
-          ls
-          pwd
-          echo $NAMADA_REPO_PATH
+          mkdir -p ~/local/bin
+          cp -r namada ~/local/namada
+          echo "NAMADA_REPO_PATH=~/local/namada" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -84,7 +82,6 @@ jobs:
         run: |
           curl -o cometbft.tar.gz -LO https://github.com/cometbft/cometbft/releases/download/v0.37.2/cometbft_0.37.2_linux_amd64.tar.gz
           tar -xvzf cometbft.tar.gz
-          mkdir -p ~/local/bin
           chmod +x cometbft
           mv cometbft ~/local/bin
       - name: Download Namada binaries
