@@ -63,8 +63,8 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install libudev
-        run: sudo apt-get update && sudo apt-get -y install libudev-dev
+      - name: Install libudev and libssl
+        run: sudo apt-get update && sudo apt-get -y install libudev-dev libssl-dev
       - name: Install Protoc
         uses: heliaxdev/setup-protoc@v2
         with:
@@ -135,8 +135,8 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install libudev
-        run: sudo apt-get update && sudo apt-get -y install libudev-dev
+      - name: Install libudev and libssl
+        run: sudo apt-get update && sudo apt-get -y install libudev-dev libssl-dev
       - name: Install Protoc
         uses: heliaxdev/setup-protoc@v2
         with:
