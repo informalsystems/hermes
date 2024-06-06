@@ -39,6 +39,7 @@ jobs:
             account_prefix: cosmos,''
             native_token: stake,nam
     steps:
+      - uses: actions/checkout@v4
       - name: Clone Namada
         uses: actions/checkout@v4
         with:
@@ -51,7 +52,6 @@ jobs:
         ls
         pwd
         echo "NAMADA_REPO_PATH=$(pwd)/namada" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
         with:
@@ -124,6 +124,7 @@ jobs:
     strategy:
       fail-fast: false
     steps:
+      - uses: actions/checkout@v4
       - name: Clone Namada
         uses: actions/checkout@v4
         with:
@@ -134,7 +135,6 @@ jobs:
         id: namada-repo-path
         run: |
           echo "NAMADA_REPO_PATH=$(pwd)/namada" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
