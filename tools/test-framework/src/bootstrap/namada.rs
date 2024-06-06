@@ -89,10 +89,8 @@ pub fn bootstrap_namada_node(
     // Init network
     let output = simple_exec_with_envs(
         "namada",
-        //&chain_driver.command_path,
         "namadac",
         &[
-            //"client",
             "utils",
             "init-network",
             "--chain-prefix",
@@ -116,12 +114,10 @@ pub fn bootstrap_namada_node(
 
     simple_exec_with_envs(
         &chain_id,
-        //&chain_driver.command_path,
         "namadac",
         &[
             "--base-dir",
             validator_base_dir,
-            //"client",
             "utils",
             "join-network",
             "--chain-id",
@@ -140,10 +136,8 @@ pub fn bootstrap_namada_node(
 
     simple_exec_with_envs(
         &chain_id,
-        //&chain_driver.command_path,
         "namadac",
         &[
-            //"client",
             "--base-dir",
             home_path,
             "utils",

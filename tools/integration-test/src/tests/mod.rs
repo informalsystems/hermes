@@ -31,6 +31,7 @@ pub mod memo;
 #[cfg(not(feature = "namada"))]
 pub mod python;
 pub mod query_packet;
+#[cfg(not(feature = "namada"))]
 pub mod supervisor;
 #[cfg(not(feature = "namada"))]
 pub mod tendermint;

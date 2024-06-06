@@ -49,8 +49,6 @@ jobs:
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: |
-          ls
-          pwd
           echo "NAMADA_REPO_PATH=$(pwd)/namada" >> "$GITHUB_ENV"
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -114,7 +112,6 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
           NATIVE_TOKENS: ${{ matrix.chain.native_token }}
         run: |
-          tree $NAMADA_REPO_PATH
           nix shell ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=1 \
             --features namada
@@ -165,7 +162,10 @@ jobs:
           release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/v0.37.0" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
-          sudo cp ./namada* ~/local/bin/
+          cp ./namada*/namadac ~/local/bin/namadac
+          cp ./namada*/namadan ~/local/bin/namadan
+          cp ./namada*/namadaw ~/local/bin/namadaw
+          cp ./namada*/namada ~/local/bin/namada
       - name: Update environment path
         run: |
           echo "${HOME}/local/bin" >> $GITHUB_PATH
@@ -184,7 +184,6 @@ jobs:
           ACCOUNT_PREFIXES: ''
           NATIVE_TOKENS: nam
         run: |
-          tree $NAMADA_REPO_PATH
           cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=1 \
             --features namada
 

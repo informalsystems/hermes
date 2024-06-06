@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
     flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix/luca_joss/expose-namada-repository;
+    cosmos-nix.url = github:informalsystems/cosmos.nix;
   };
 
   outputs = inputs: let
@@ -42,8 +42,6 @@
           ibc-go-v8-simapp
           interchain-security
           migaloo
-          namada
-          namada-src
           neutron
           juno
           osmosis
