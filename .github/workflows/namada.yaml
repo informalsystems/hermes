@@ -185,6 +185,7 @@ jobs:
           NATIVE_TOKENS: nam
           NAMADA_REPO_PATH: ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}
         run: |
+          tree $NAMADA_REPO_PATH
           cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=1 \
             --features namada
 
