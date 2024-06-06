@@ -48,9 +48,7 @@ jobs:
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: |
-          mkdir -p ~/local/bin
-          cp -r namada ~/local/namada
-          echo "NAMADA_REPO_PATH=~/local/namada" >> "$GITHUB_OUTPUT"
+          echo "NAMADA_REPO_PATH=$(pwd)/namada" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -83,6 +81,7 @@ jobs:
           curl -o cometbft.tar.gz -LO https://github.com/cometbft/cometbft/releases/download/v0.37.2/cometbft_0.37.2_linux_amd64.tar.gz
           tar -xvzf cometbft.tar.gz
           chmod +x cometbft
+          mkdir -p $HOME/local/bin
           mv cometbft ~/local/bin
       - name: Download Namada binaries
         env:
@@ -112,7 +111,6 @@ jobs:
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
           NATIVE_TOKENS: ${{ matrix.chain.native_token }}
-          NAMADA_REPO_PATH: ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}
         run: |
           tree $NAMADA_REPO_PATH
           nix shell ${{ matrix.chain.package }} -c \
@@ -133,8 +131,7 @@ jobs:
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: |
-          cd namada
-          echo "NAMADA_REPO_PATH=$(pwd)" >> "$GITHUB_OUTPUT"
+          echo "NAMADA_REPO_PATH=$(pwd)/namada" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -184,7 +181,6 @@ jobs:
           CHAIN_COMMAND_PATHS: namada
           ACCOUNT_PREFIXES: ''
           NATIVE_TOKENS: nam
-          NAMADA_REPO_PATH: ${{ steps.namada-repo-path.outputs.NAMADA_REPO_PATH }}
         run: |
           tree $NAMADA_REPO_PATH
           cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=1 \
