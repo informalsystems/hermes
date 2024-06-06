@@ -63,8 +63,8 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install libudev and libssl
-        run: sudo apt-get update && sudo apt-get -y install libudev-dev libssl-dev
+      - name: Install libudev
+        run: sudo apt-get update && sudo apt-get -y install libudev-dev
       - name: Install Protoc
         uses: heliaxdev/setup-protoc@v2
         with:
@@ -135,8 +135,8 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install libudev and libssl
-        run: sudo apt-get update && sudo apt-get -y install libudev-dev libssl-dev
+      - name: Install libudev
+        run: sudo apt-get update && sudo apt-get -y install libudev-dev
       - name: Install Protoc
         uses: heliaxdev/setup-protoc@v2
         with:
@@ -150,7 +150,7 @@ jobs:
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - name: Download CometBFT
         run: |
-          curl -o cometbft.tar.gz -LO https://github.com/cometbft/cometbft/releases/download/v0.37.2/cometbft_0.37.2_linux_amd64.tar.gz
+          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/157259234" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           tar -xvzf cometbft.tar.gz
           mkdir -p ~/local/bin
           chmod +x cometbft
