@@ -48,7 +48,9 @@ jobs:
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: |
-          echo "NAMADA_REPO_PATH=$(pwd)/namada" >> "$GITHUB_ENV"
+        ls
+        pwd
+        echo "NAMADA_REPO_PATH=$(pwd)/namada" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
