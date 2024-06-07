@@ -6,7 +6,6 @@
 use core::ops::Add;
 use core::time::Duration;
 use eyre::eyre;
-use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::events::IbcEvent;
 
 use ibc_proto::google::protobuf::Any;
@@ -20,6 +19,7 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::timestamp::Timestamp;
 use tendermint_rpc::HttpClient;
 
+use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::token::TaggedTokenRef;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
@@ -92,7 +92,7 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     token: &TaggedTokenRef<'_, SrcChain>,
     memo: Option<String>,
     timeout: Option<Duration>,
-) -> Result<Packet, Error> {
+) -> Result<(), Error> {
     let message = build_transfer_message(
         port_id,
         channel_id,
@@ -103,15 +103,21 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
         memo.clone(),
     )?;
 
+    let key = &sender
+        .value()
+        .key
+        .downcast()
+        .ok_or_else(|| eyre!("unable to downcast key"))
+        .map_err(Error::generic)?;
     let events = simple_send_tx(
         rpc_client.into_value(),
         tx_config.value(),
-        &sender.value().key,
+        key,
         vec![message],
     )
     .await?;
 
-    let packet = events
+    let _packet = events
         .into_iter()
         .find_map(|event| match event.event {
             IbcEvent::SendPacket(ev) => Some(ev.packet),
@@ -119,7 +125,45 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
         })
         .ok_or_else(|| eyre!("failed to find send packet event"))?;
 
-    Ok(packet)
+    //Ok(packet)
+    Ok(())
+}
+
+pub fn ibc_namada_token_transfer(
+    home_path: &str,
+    sender: &str,
+    receiver: &str,
+    denom: &str,
+    amount: &str,
+    channel_id: &str,
+    rpc_port: &str,
+) -> Result<(), Error> {
+    simple_exec(
+        "namada transfer",
+        "namadac",
+        &[
+            //"client",
+            "--base-dir",
+            home_path,
+            "ibc-transfer",
+            "--source",
+            sender,
+            "--receiver",
+            receiver,
+            "--token",
+            denom,
+            "--amount",
+            amount,
+            "--signing-keys",
+            &format!("{sender}-key"),
+            "--channel-id",
+            channel_id,
+            "--node",
+            &format!("http://127.0.0.1:{rpc_port}"),
+        ],
+    )?;
+
+    Ok(())
 }
 
 pub async fn batched_ibc_token_transfer<SrcChain, DstChain>(
@@ -147,13 +191,13 @@ pub async fn batched_ibc_token_transfer<SrcChain, DstChain>(
     .take(num_msgs)
     .collect::<Result<Vec<_>, _>>()?;
 
-    batched_send_tx(
-        rpc_client.value(),
-        tx_config.value(),
-        &sender.value().key,
-        messages,
-    )
-    .await?;
+    let key = &sender
+        .value()
+        .key
+        .downcast()
+        .ok_or_else(|| eyre!("unable to downcast key"))
+        .map_err(Error::generic)?;
+    batched_send_tx(rpc_client.value(), tx_config.value(), key, messages).await?;
 
     Ok(())
 }

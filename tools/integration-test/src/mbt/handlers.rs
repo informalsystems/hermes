@@ -219,7 +219,12 @@ pub fn ibc_transfer_receive_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
         DualTagged::new(channels.channel_id_b.value()),
     );
 
-    let denom_target = derive_ibc_denom(&port_target, &channel_id_target, &denom_source)?;
+    let denom_target = derive_ibc_denom(
+        &node_target.value().chain_driver.chain_type,
+        &port_target,
+        &channel_id_target,
+        &denom_source,
+    )?;
 
     info!(
         "Waiting for user on chain {} to receive IBC transferred amount of {} {} (chain {}/{})",

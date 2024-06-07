@@ -61,6 +61,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
         )?;
 
         let denom_a_to_b = derive_ibc_denom(
+            &node_b.chain_driver().value().chain_type,
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
@@ -92,6 +93,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
         let channel_b_to_c = channels.channel_at::<1, 2>()?;
 
         let denom_a_to_c = derive_ibc_denom(
+            &node_c.chain_driver().value().chain_type,
             &channel_b_to_c.port_b.as_ref(),
             &channel_b_to_c.channel_id_b.as_ref(),
             &denom_a_to_b.as_ref(),
@@ -129,6 +131,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
         let channel_c_to_a = channels.channel_at::<2, 0>()?;
 
         let denom_a_to_c_to_a = derive_ibc_denom(
+            &node_a.chain_driver().value().chain_type,
             &channel_c_to_a.port_b.as_ref(),
             &channel_c_to_a.channel_id_b.as_ref(),
             &denom_a_to_c.as_ref(),

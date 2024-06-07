@@ -1,7 +1,6 @@
 use core::time::Duration;
 
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::chain::cli::transfer::{local_transfer_token, transfer_from_chain};
@@ -9,7 +8,9 @@ use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
-use crate::relayer::transfer::{batched_ibc_token_transfer, ibc_token_transfer};
+use crate::relayer::transfer::{
+    batched_ibc_token_transfer, ibc_namada_token_transfer, ibc_token_transfer,
+};
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -42,7 +43,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
-    ) -> Result<Packet, Error>;
+    ) -> Result<(), Error>;
 
     fn ibc_transfer_token_with_memo_and_timeout<Counterparty>(
         &self,
@@ -53,7 +54,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         token: &TaggedTokenRef<Chain>,
         memo: Option<String>,
         timeout: Option<Duration>,
-    ) -> Result<Packet, Error>;
+    ) -> Result<(), Error>;
 
     fn ibc_transfer_token_multiple<Counterparty>(
         &self,
@@ -93,19 +94,32 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
-    ) -> Result<Packet, Error> {
-        let rpc_client = self.rpc_client()?;
-        self.value().runtime.block_on(ibc_token_transfer(
-            rpc_client.as_ref(),
-            &self.tx_config(),
-            port_id,
-            channel_id,
-            sender,
-            recipient,
-            token,
-            None,
-            None,
-        ))
+    ) -> Result<(), Error> {
+        match self.value().chain_type {
+            crate::chain::chain_type::ChainType::Namada => ibc_namada_token_transfer(
+                &self.value().home_path,
+                &sender.value().id.to_string(),
+                recipient.value().as_str(),
+                token.value().denom.as_str(),
+                &token.value().amount.to_string(),
+                &channel_id.to_string(),
+                &self.value().rpc_port.to_string(),
+            ),
+            _ => {
+                let rpc_client = self.rpc_client()?;
+                self.value().runtime.block_on(ibc_token_transfer(
+                    rpc_client.as_ref(),
+                    &self.tx_config(),
+                    port_id,
+                    channel_id,
+                    sender,
+                    recipient,
+                    token,
+                    None,
+                    None,
+                ))
+            }
+        }
     }
 
     fn ibc_transfer_token_with_memo_and_timeout<Counterparty>(
@@ -117,7 +131,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         token: &TaggedTokenRef<Chain>,
         memo: Option<String>,
         timeout: Option<Duration>,
-    ) -> Result<Packet, Error> {
+    ) -> Result<(), Error> {
         let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(ibc_token_transfer(
             rpc_client.as_ref(),

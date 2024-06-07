@@ -25,6 +25,7 @@ use ibc_relayer::foreign_client::CreateOptions;
 use ibc_relayer::object::ObjectType;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 
+use ibc_test_framework::chain::config;
 use ibc_test_framework::prelude::*;
 
 struct ClientFilterBlocksConnectionTest;
@@ -73,6 +74,11 @@ impl TestOverrides for ClientFilterAllowsConnectionTest {
             trusting_period: Some(Duration::from_secs(340_000)),
             trust_threshold: Some(TrustThreshold::ONE_THIRD),
         }
+    }
+
+    fn namada_modify_parameter_file(&self, parameter: &mut toml::Value) -> Result<(), Error> {
+        config::namada::set_pipeline_len(parameter, 120001)?;
+        Ok(())
     }
 }
 

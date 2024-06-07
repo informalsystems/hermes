@@ -1,13 +1,14 @@
 /*!
    Methods for tagged version of the chain driver.
 */
+use eyre::eyre;
+use serde_json as json;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::util::compat_mode::compat_mode_from_version;
-use serde_json as json;
 use tendermint_rpc::client::{Client, HttpClient};
 
 use crate::chain::cli::query::query_auth_module;
@@ -120,12 +121,18 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
         let rpc_client = self.rpc_client()?;
 
+        let key = &wallet
+            .value()
+            .key
+            .downcast()
+            .ok_or_else(|| eyre!("unable to downcast key"))
+            .map_err(Error::generic)?;
         self.value()
             .runtime
             .block_on(simple_send_tx(
                 rpc_client.as_ref().into_value(),
                 &self.value().tx_config,
-                &wallet.value().key,
+                key,
                 messages,
             ))
             .map_err(Error::relayer)

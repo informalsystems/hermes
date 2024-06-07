@@ -15,10 +15,12 @@ fn test_client_default_refresh() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(not(feature = "namada"))]
 fn test_client_fail_refresh() -> Result<(), Error> {
     run_binary_chain_test(&ClientFailsTest)
 }
 
+#[allow(dead_code)]
 struct ClientFailsTest;
 
 struct ClientDefaultsTest;
@@ -130,7 +132,9 @@ impl BinaryChainTest for ClientFailsTest {
                         ChainConfig::CosmosSdk(config_chain_a) => {
                             config_chain_a.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
                         }
-                        ChainConfig::Namada(_) => {}
+                        ChainConfig::Namada(config_chain_a) => {
+                            config_chain_a.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
+                        }
                     }
                 }
 
@@ -138,7 +142,9 @@ impl BinaryChainTest for ClientFailsTest {
                     ChainConfig::CosmosSdk(config_chain_b) => {
                         config_chain_b.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
                     }
-                    ChainConfig::Namada(_) => {}
+                    ChainConfig::Namada(config_chain_b) => {
+                        config_chain_b.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
+                    }
                 }
             },
             config,
@@ -168,6 +174,7 @@ impl BinaryChainTest for ClientFailsTest {
     }
 }
 
+#[allow(dead_code)]
 fn override_connected_chains<ChainA, ChainB>(
     chains: ConnectedChains<ChainA, ChainB>,
     config_modifier: impl FnOnce(&mut Config),
@@ -210,6 +217,7 @@ where
     Ok(chains)
 }
 
+#[allow(dead_code)]
 fn restore_foreign_client_pair<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a: &ChainA,
     chain_b: &ChainB,

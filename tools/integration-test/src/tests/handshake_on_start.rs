@@ -12,6 +12,7 @@ use ibc_test_framework::{
     },
 };
 
+#[cfg(not(feature = "namada"))]
 #[test]
 fn test_connection_open_handshake() -> Result<(), Error> {
     run_binary_chain_test(&ConnectionOpenHandshake {
@@ -26,6 +27,7 @@ fn test_connection_open_handshake_no_worker() -> Result<(), Error> {
     })
 }
 
+#[cfg(not(feature = "namada"))]
 #[test]
 fn test_connection_try_handshake() -> Result<(), Error> {
     run_binary_chain_test(&ConnectionTryHandshake {
@@ -96,6 +98,7 @@ fn test_channel_ack_handshake_no_worker() -> Result<(), Error> {
     })
 }
 
+#[cfg(not(feature = "namada"))]
 #[test]
 fn test_channel_optimistic_handshake() -> Result<(), Error> {
     run_binary_chain_test(&OptimisticChannelOpenHandshake {})

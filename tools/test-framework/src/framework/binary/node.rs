@@ -3,8 +3,14 @@
    running without setting up the relayer.
 */
 
+use std::str::FromStr;
+
+use toml;
+
+use crate::bootstrap::namada::bootstrap_namada_node;
 use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
+use crate::chain::chain_type::ChainType;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::{run_basic_test, BasicTest, TestConfigOverride};
@@ -18,7 +24,8 @@ pub fn run_binary_node_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + NodeGenesisOverride + TestConfigOverride,
+    Overrides:
+        NodeConfigOverride + NodeGenesisOverride + TestConfigOverride + NamadaParametersOverride,
 {
     run_basic_test(&RunBinaryNodeTest { test })
 }
@@ -87,6 +94,10 @@ pub trait NodeGenesisOverride {
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error>;
 }
 
+pub trait NamadaParametersOverride {
+    fn namada_modify_parameter_file(&self, parameter: &mut toml::Value) -> Result<(), Error>;
+}
+
 /**
    A wrapper type that lifts a test case that implements [`BinaryNodeTest`]
    into a test case that implements [`BasicTest`].
@@ -105,26 +116,59 @@ impl<'a, Test, Overrides> BasicTest for RunBinaryNodeTest<'a, Test>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + NodeGenesisOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride + NamadaParametersOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node_a = bootstrap_single_node(
-            builder,
-            "1",
-            config.bootstrap_with_random_ids,
-            |config| self.test.get_overrides().modify_node_config(config),
-            |genesis| self.test.get_overrides().modify_genesis_file(genesis),
-            0,
-        )?;
+        let command_paths_len = builder.command_paths.len();
+        let node_a_type = ChainType::from_str(&builder.command_paths[0 % command_paths_len])?;
+        let node_a = match node_a_type {
+            ChainType::Namada => bootstrap_namada_node(
+                builder,
+                "a",
+                false,
+                |config| self.test.get_overrides().modify_node_config(config),
+                |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+                |parameters| {
+                    self.test
+                        .get_overrides()
+                        .namada_modify_parameter_file(parameters)
+                },
+                0,
+            ),
+            _ => bootstrap_single_node(
+                builder,
+                "1",
+                config.bootstrap_with_random_ids,
+                |config| self.test.get_overrides().modify_node_config(config),
+                |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+                0,
+            ),
+        }?;
+        let node_b_type = ChainType::from_str(&builder.command_paths[1 % command_paths_len])?;
 
-        let node_b = bootstrap_single_node(
-            builder,
-            "2",
-            config.bootstrap_with_random_ids,
-            |config| self.test.get_overrides().modify_node_config(config),
-            |genesis| self.test.get_overrides().modify_genesis_file(genesis),
-            1,
-        )?;
+        let node_b = match node_b_type {
+            ChainType::Namada => bootstrap_namada_node(
+                builder,
+                "b",
+                false,
+                |config| self.test.get_overrides().modify_node_config(config),
+                |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+                |parameters| {
+                    self.test
+                        .get_overrides()
+                        .namada_modify_parameter_file(parameters)
+                },
+                1,
+            ),
+            _ => bootstrap_single_node(
+                builder,
+                "2",
+                config.bootstrap_with_random_ids,
+                |config| self.test.get_overrides().modify_node_config(config),
+                |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+                1,
+            ),
+        }?;
 
         let _node_process_a = node_a.process.clone();
         let _node_process_b = node_b.process.clone();

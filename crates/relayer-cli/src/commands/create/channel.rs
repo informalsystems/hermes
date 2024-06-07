@@ -101,8 +101,7 @@ pub struct CreateChannelCommand {
     #[clap(
         long = "order",
         value_name = "ORDER",
-        help = "The channel ordering, valid options 'unordered' (default) and 'ordered'",
-        default_value_t
+        help = "The channel ordering, valid options 'unordered' (default) and 'ordered'"
     )]
     order: Ordering,
 

@@ -67,6 +67,9 @@ pub fn bootstrap_chains_with_full_nodes(
 
     let registry = new_registry(config.clone());
 
+    // Wait before spawning the chain handle
+    std::thread::sleep(Duration::from_secs(10));
+
     // Pass in unique closure expressions `||{}` as the first argument so that
     // the returned chains are considered different types by Rust.
     // See [`spawn_chain_handle`] for more details.
@@ -211,7 +214,7 @@ pub fn add_key_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallet: &Wallet,
 ) -> Result<(), Error> {
-    let res = chain.add_key(wallet.id.0.clone(), wallet.key.clone().into());
+    let res = chain.add_key(wallet.id.0.clone(), wallet.key.clone());
 
     // Ignore error if chain handle already have the given key
     match res {

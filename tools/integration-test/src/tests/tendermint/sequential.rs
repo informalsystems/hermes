@@ -22,11 +22,11 @@ pub struct SequentialCommitTest;
 
 impl TestOverrides for SequentialCommitTest {
     fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
-        config::set_timeout_commit(config, BLOCK_TIME)?;
-        config::set_timeout_propose(config, BLOCK_TIME)?;
+        config::cosmos::set_timeout_commit(config, BLOCK_TIME)?;
+        config::cosmos::set_timeout_propose(config, BLOCK_TIME)?;
 
         // Enable priority mempool
-        config::set_mempool_version(config, "v1")?;
+        config::cosmos::set_mempool_version(config, "v1")?;
 
         Ok(())
     }

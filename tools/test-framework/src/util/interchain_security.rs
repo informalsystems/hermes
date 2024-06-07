@@ -1,4 +1,4 @@
-use crate::chain::config::set_voting_period;
+use crate::chain::config::cosmos::set_voting_period;
 use crate::prelude::*;
 
 use ibc_relayer::chain::tracking::TrackedMsgs;

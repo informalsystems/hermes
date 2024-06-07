@@ -127,8 +127,11 @@ impl BinaryChannelTest for ClearPacketTest {
 
             sleep(Duration::from_secs(1));
 
-            let amount_b =
-                amount2.transfer(&channel.port_b.as_ref(), &channel.channel_id_b.as_ref())?;
+            let amount_b = amount2.transfer(
+                &chains.node_b.chain_driver().value().chain_type,
+                &channel.port_b.as_ref(),
+                &channel.channel_id_b.as_ref(),
+            )?;
 
             // Wallet on chain A should have both amount deducted.
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
@@ -181,6 +184,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
         )?;
 
         let denom_b2 = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
@@ -224,7 +228,10 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        let fee_denom_a = MonoTagged::new(Denom::base(
+            &config.native_tokens[0],
+            &config.native_tokens[0],
+        ));
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -245,6 +252,7 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
         )?;
 
         let denom_b2 = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
@@ -346,7 +354,10 @@ impl BinaryChannelTest for ClearPacketOverrideTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        let fee_denom_a = MonoTagged::new(Denom::base(
+            &config.native_tokens[0],
+            &config.native_tokens[0],
+        ));
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -367,6 +378,7 @@ impl BinaryChannelTest for ClearPacketOverrideTest {
         )?;
 
         let denom_b2 = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,

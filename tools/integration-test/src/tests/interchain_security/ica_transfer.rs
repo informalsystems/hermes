@@ -87,7 +87,7 @@ impl BinaryChannelTest for InterchainSecurityIcaTransferTest {
             &channel.connection.connection_id_b.as_ref(),
         )?;
 
-        let stake_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base("stake"));
+        let stake_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
             &ica_address.as_ref(),

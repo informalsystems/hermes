@@ -313,6 +313,7 @@ impl BinaryChainTest for PacketExpirationTest {
             let denom_a = chains.node_a.denom();
 
             let denom_b = derive_ibc_denom(
+                &chains.node_b.chain_driver().value().chain_type,
                 &channels.port_b.as_ref(),
                 &channels.channel_id_b.as_ref(),
                 &denom_a,
