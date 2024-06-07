@@ -374,13 +374,15 @@ fn relay_on_object<Chain: ChainHandle>(
     };
 
     // Then, apply the client filter
+    // If the object is a CrossChain query discard it if the destination chain
+    // is not configured
     let client_filter_outcome = match object {
         Object::Client(client) => client_state_filter.control_client_object(registry, client),
         Object::Connection(conn) => client_state_filter.control_conn_object(registry, conn),
         Object::Channel(chan) => client_state_filter.control_chan_object(registry, chan),
         Object::Packet(packet) => client_state_filter.control_packet_object(registry, packet),
         Object::Wallet(_wallet) => Ok(Permission::Allow),
-        Object::CrossChainQuery(_) => Ok(Permission::Allow),
+        Object::CrossChainQuery(ccq) => Ok(ccq.check_validity(&config.chains)),
     };
 
     match client_filter_outcome {
