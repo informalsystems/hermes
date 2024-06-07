@@ -75,6 +75,7 @@ pub fn bootstrap_consumer_node(
         config::cosmos::set_soft_opt_out_threshold(genesis, "0.05")?;
         config::cosmos::consensus_params_max_gas(genesis, "3000000")?;
         config::cosmos::globalfee_minimum_gas_prices(genesis, globalfee_minimum_gas)?;
+        config::cosmos::set_retry_delay_period(genesis, "100s")?;
         Ok(())
     })?;
 

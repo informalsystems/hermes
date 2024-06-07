@@ -30,13 +30,13 @@ ibc-test-framework   = { version = "0.28.0", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.28.0", path = "tools/integration-test" }
 
 # Tendermint dependencies
-tendermint                       = { version = "0.36.0", default-features = false }
-tendermint-light-client          = { version = "0.36.0", default-features = false }
-tendermint-light-client-detector = { version = "0.36.0", default-features = false }
-tendermint-light-client-verifier = { version = "0.36.0", default-features = false }
-tendermint-proto                 = { version = "0.36.0" }
-tendermint-rpc                   = { version = "0.36.0" }
-tendermint-testgen               = { version = "0.36.0" }
+tendermint                       = { version = "=0.36.0", default-features = false }
+tendermint-light-client          = { version = "=0.36.0", default-features = false }
+tendermint-light-client-detector = { version = "=0.36.0", default-features = false }
+tendermint-light-client-verifier = { version = "=0.36.0", default-features = false }
+tendermint-proto                 = { version = "=0.36.0" }
+tendermint-rpc                   = { version = "=0.36.0" }
+tendermint-testgen               = { version = "=0.36.0" }
 
 # Namada dependencies
 namada_ibc         = { git = "https://github.com/anoma/namada", tag = "v0.37.0" }
@@ -78,7 +78,7 @@ hex                      = "0.4.3"
 http                     = "0.2.9"
 humantime                = "2.1.0"
 humantime-serde          = "1.1.1"
-ibc-proto                = "0.44.0"
+ibc-proto                = "=0.44.0"
 ics23                    = "0.11.1"
 itertools                = "0.12.1"
 moka                     = "0.12.5"
