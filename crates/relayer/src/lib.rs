@@ -47,3 +47,5 @@ pub mod transfer;
 pub mod upgrade_chain;
 pub mod util;
 pub mod worker;
+
+pub const HERMES_VERSION: &str = "1.9.0";
