@@ -381,8 +381,8 @@ fn relay_on_object<Chain: ChainHandle>(
         Object::Connection(conn) => client_state_filter.control_conn_object(registry, conn),
         Object::Channel(chan) => client_state_filter.control_chan_object(registry, chan),
         Object::Packet(packet) => client_state_filter.control_packet_object(registry, packet),
+        Object::CrossChainQuery(ccq) => Ok(ccq.intended_for_known_dst_chain(&config.chains)),
         Object::Wallet(_wallet) => Ok(Permission::Allow),
-        Object::CrossChainQuery(ccq) => Ok(ccq.check_validity(&config.chains)),
     };
 
     match client_filter_outcome {

@@ -148,14 +148,15 @@ impl CrossChainQuery {
         format!("cross_chain_query::{}/{}", self.dst_chain_id, self.query_id)
     }
 
-    pub fn check_validity(&self, chain_configs: &[ChainConfig]) -> Permission {
+    pub fn intended_for_known_dst_chain(&self, chain_configs: &[ChainConfig]) -> Permission {
         if chain_configs
             .iter()
             .any(|config| *config.id() == self.dst_chain_id)
         {
-            return Permission::Allow;
+            Permission::Allow
+        } else {
+            Permission::Deny
         }
-        Permission::Deny
     }
 }
 
