@@ -539,6 +539,31 @@ pub fn collect_events(
                     || Object::client_from_chan_open_events(&attributes, src_chain).ok(),
                 );
             }
+            IbcEvent::UpgradeInitChannel(..)
+            | IbcEvent::UpgradeTryChannel(..)
+            | IbcEvent::UpgradeAckChannel(..)
+            | IbcEvent::UpgradeOpenChannel(..)
+            | IbcEvent::UpgradeErrorChannel(..) => {
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.channels.enabled,
+                    || {
+                        event_with_height
+                            .event
+                            .clone()
+                            .channel_upgrade_attributes()
+                            .and_then(|attr| {
+                                Object::channel_from_chan_upgrade_events(
+                                    &attr,
+                                    src_chain,
+                                    mode.connections.enabled,
+                                )
+                                .ok()
+                            })
+                    },
+                );
+            }
             IbcEvent::SendPacket(ref packet) => {
                 collect_event(
                     &mut collected,

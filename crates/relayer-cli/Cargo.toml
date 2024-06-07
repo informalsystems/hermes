@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "1.8.2"
+version    = "1.9.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -8,7 +8,7 @@ keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
 repository = "https://github.com/informalsystems/hermes"
 authors    = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.71.1"
+rust-version = "1.76.0"
 description  = """
   Hermes is an IBC Relayer written in Rust
 """

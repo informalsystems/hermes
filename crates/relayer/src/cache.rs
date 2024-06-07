@@ -99,6 +99,9 @@ impl Cache {
     where
         F: FnOnce() -> Result<ChannelEnd, E>,
     {
+        // FIXME: If a channel being upgraded is queried using Latest
+        // Height, it might return the wrong Channel End information.
+        // Find an alternative to avoid this issue
         if let Some(chan) = self.channels.get(id) {
             // If cache hit, return it.
             Ok((chan, CacheStatus::Hit))

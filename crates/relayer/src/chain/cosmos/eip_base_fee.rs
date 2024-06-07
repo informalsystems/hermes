@@ -5,17 +5,35 @@ use std::str::FromStr;
 use serde::Deserialize;
 use subtle_encoding::base64;
 use tendermint_rpc::Url;
-use tracing::debug;
+use tracing::{debug, trace};
 
-use ibc_proto::cosmos::base::v1beta1::DecProto;
+use ibc_proto::cosmos::base::v1beta1::{DecCoin, DecProto};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::error::Error;
 
-pub async fn query_eip_base_fee(rpc_address: &Url) -> Result<f64, Error> {
+pub async fn query_eip_base_fee(
+    rpc_address: &Url,
+    gas_price_denom: &str,
+    chain_id: &ChainId,
+) -> Result<f64, Error> {
     debug!("Querying Omosis EIP-1559 base fee from {rpc_address}");
 
-    let url =
-        format!("{rpc_address}/abci_query?path=\"/osmosis.txfees.v1beta1.Query/GetEipBaseFee\"");
+    let chain_name = chain_id.name();
+
+    let is_osmosis = chain_name.starts_with("osmosis") || chain_name.starts_with("osmo-test");
+
+    let url = if is_osmosis {
+        format!(
+            "{}abci_query?path=\"/osmosis.txfees.v1beta1.Query/GetEipBaseFee\"",
+            rpc_address
+        )
+    } else {
+        format!(
+            "{}abci_query?path=\"/feemarket.feemarket.v1.Query/GasPrices\"&denom={}",
+            rpc_address, gas_price_denom
+        )
+    };
 
     let response = reqwest::get(&url).await.map_err(Error::http_request)?;
 
@@ -40,7 +58,34 @@ pub async fn query_eip_base_fee(rpc_address: &Url) -> Result<f64, Error> {
 
     let result: EipBaseFeeHTTPResult = response.json().await.map_err(Error::http_response_body)?;
 
-    let encoded = result.result.response.value;
+    let amount = if is_osmosis {
+        extract_dynamic_gas_price_osmosis(result.result.response.value)?
+    } else {
+        extract_dynamic_gas_price(result.result.response.value)?
+    };
+
+    trace!("EIP-1559 base fee: {amount}");
+
+    Ok(amount)
+}
+
+/// This method extracts the gas base fee from Skip's feemarket
+fn extract_dynamic_gas_price(encoded: String) -> Result<f64, Error> {
+    let decoded = base64::decode(encoded).map_err(Error::base64_decode)?;
+
+    let gas_price_response: GasPriceResponse =
+        prost::Message::decode(decoded.as_ref()).map_err(|e| {
+            Error::protobuf_decode("feemarket.feemarket.v1.GasPricesResponse".to_string(), e)
+        })?;
+    let dec_coin = gas_price_response.price.unwrap().clone();
+    let base_fee_uint128 = Uint128::from_str(&dec_coin.amount).map_err(Error::parse_int)?;
+
+    let dec = Decimal::new(base_fee_uint128);
+    f64::from_str(dec.to_string().as_str()).map_err(Error::parse_float)
+}
+
+/// This method extracts the gas base fee from Osmosis EIP-1559
+fn extract_dynamic_gas_price_osmosis(encoded: String) -> Result<f64, Error> {
     let decoded = base64::decode(encoded).map_err(Error::base64_decode)?;
 
     let dec_proto: DecProto = prost::Message::decode(decoded.as_ref())
@@ -49,11 +94,16 @@ pub async fn query_eip_base_fee(rpc_address: &Url) -> Result<f64, Error> {
     let base_fee_uint128 = Uint128::from_str(&dec_proto.dec).map_err(Error::parse_int)?;
 
     let dec = Decimal::new(base_fee_uint128);
-    let base_fee = f64::from_str(dec.to_string().as_str()).map_err(Error::parse_float)?;
+    f64::from_str(dec.to_string().as_str()).map_err(Error::parse_float)
+}
 
-    debug!("Omosis EIP-1559 base fee is {}", base_fee);
-
-    Ok(base_fee)
+/// GasPriceResponse is the response type for the Query/GasPrice RPC method.
+/// Returns a gas price in specified denom.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GasPriceResponse {
+    #[prost(message, optional, tag = "1")]
+    pub price: ::core::option::Option<DecCoin>,
 }
 
 /// Extracted from `cosmwasm-std`

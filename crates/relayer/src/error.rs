@@ -624,6 +624,14 @@ define_error! {
             [ TraceError<subtle_encoding::Error> ]
             |_| { "Error decoding base64-encoded data" },
 
+        InvalidPortString
+            { port: String }
+            |e| { format!("invalid port string {}", e.port) },
+
+        InvalidChannelString
+            { channel: String }
+            |e| { format!("invalid channel string {}", e.channel) },
+
         Namada
             [ NamadaError ]
             |_| { "Namada error" },

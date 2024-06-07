@@ -339,7 +339,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         assert_eventually_succeed(
             &format!("proposal `{}` status: {}", proposal_id, status.as_str()),
             10,
-            Duration::from_secs(2),
+            Duration::from_secs(3),
             || match query_gov_proposal(
                 chain_id,
                 command_path,

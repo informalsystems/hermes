@@ -42,6 +42,9 @@ pub mod transfer;
 #[cfg(any(doc, feature = "async-icq"))]
 pub mod async_icq;
 
+#[cfg(any(doc, feature = "channel-upgrade"))]
+pub mod channel_upgrade;
+
 #[cfg(any(doc, feature = "ics29-fee"))]
 pub mod fee;
 

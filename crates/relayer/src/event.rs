@@ -1,28 +1,37 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde::Serialize;
+use std::str::FromStr;
 use subtle_encoding::hex;
 use tendermint::abci::Event as AbciEvent;
 
 use ibc_relayer_types::{
-    applications::ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
-    applications::ics31_icq::events::CrossChainQueryPacket,
-    core::ics02_client::{
-        error::Error as ClientError,
-        events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
-        header::{decode_header, AnyHeader},
-        height::HeightErrorDetail,
+    applications::{
+        ics29_fee::events::{DistributeFeePacket, IncentivizedPacket},
+        ics31_icq::events::CrossChainQueryPacket,
     },
-    core::ics03_connection::{
-        error::Error as ConnectionError,
-        events::{self as connection_events, Attributes as ConnectionAttributes},
-    },
-    core::ics04_channel::{
-        error::Error as ChannelError,
-        events::{self as channel_events, Attributes as ChannelAttributes},
-        packet::Packet,
-        timeout::TimeoutHeight,
+    core::{
+        ics02_client::{
+            error::Error as ClientError,
+            events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
+            header::{decode_header, AnyHeader},
+            height::HeightErrorDetail,
+        },
+        ics03_connection::{
+            error::Error as ConnectionError,
+            events::{self as connection_events, Attributes as ConnectionAttributes},
+        },
+        ics04_channel::{
+            error::Error as ChannelError,
+            events::{
+                self as channel_events, Attributes as ChannelAttributes,
+                UpgradeAttributes as ChannelUpgradeAttributes,
+            },
+            packet::{Packet, Sequence},
+            timeout::TimeoutHeight,
+        },
     },
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
+    timestamp::Timestamp,
     Height,
 };
 
@@ -107,6 +116,34 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
         )),
         Ok(IbcEventType::CloseConfirmChannel) => Ok(IbcEvent::CloseConfirmChannel(
             channel_close_confirm_try_from_abci_event(abci_event)
+                .map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeInitChannel) => Ok(IbcEvent::UpgradeInitChannel(
+            channel_upgrade_init_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeTryChannel) => Ok(IbcEvent::UpgradeTryChannel(
+            channel_upgrade_try_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeAckChannel) => Ok(IbcEvent::UpgradeAckChannel(
+            channel_upgrade_ack_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeConfirmChannel) => Ok(IbcEvent::UpgradeConfirmChannel(
+            channel_upgrade_confirm_try_from_abci_event(abci_event)
+                .map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeOpenChannel) => Ok(IbcEvent::UpgradeOpenChannel(
+            channel_upgrade_open_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeCancelChannel) => Ok(IbcEvent::UpgradeCancelChannel(
+            channel_upgrade_cancelled_try_from_abci_event(abci_event)
+                .map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeTimeoutChannel) => Ok(IbcEvent::UpgradeTimeoutChannel(
+            channel_upgrade_timeout_try_from_abci_event(abci_event)
+                .map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::UpgradeErrorChannel) => Ok(IbcEvent::UpgradeErrorChannel(
+            channel_upgrade_error_try_from_abci_event(abci_event)
                 .map_err(IbcEventError::channel)?,
         )),
         Ok(IbcEventType::SendPacket) => Ok(IbcEvent::SendPacket(
@@ -245,6 +282,86 @@ pub fn channel_close_confirm_try_from_abci_event(
 ) -> Result<channel_events::CloseConfirm, ChannelError> {
     match channel_extract_attributes_from_tx(abci_event) {
         Ok(attrs) => channel_events::CloseConfirm::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_init_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeInit, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeInit::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_try_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeTry, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeTry::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_ack_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeAck, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeAck::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_confirm_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeConfirm, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeConfirm::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_open_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeOpen, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeOpen::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_cancelled_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeCancel, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeCancel::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_timeout_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeTimeout, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeTimeout::try_from(attrs)
+            .map_err(|_| ChannelError::implementation_specific()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn channel_upgrade_error_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<channel_events::UpgradeError, ChannelError> {
+    match channel_upgrade_extract_attributes_from_tx(abci_event) {
+        Ok(attrs) => channel_events::UpgradeError::try_from(attrs)
             .map_err(|_| ChannelError::implementation_specific()),
         Err(e) => Err(e),
     }
@@ -412,6 +529,58 @@ fn channel_extract_attributes_from_tx(
             }
             channel_events::COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_channel_id = value.parse().ok();
+            }
+            _ => {}
+        }
+    }
+
+    Ok(attr)
+}
+
+fn channel_upgrade_extract_attributes_from_tx(
+    event: &AbciEvent,
+) -> Result<ChannelUpgradeAttributes, ChannelError> {
+    let mut attr = ChannelUpgradeAttributes::default();
+
+    for tag in &event.attributes {
+        let key = tag
+            .key_str()
+            .map_err(|_| ChannelError::malformed_event_attribute_key())?;
+
+        let value = tag
+            .value_str()
+            .map_err(|_| ChannelError::malformed_event_attribute_value(key.to_owned()))?;
+
+        match key {
+            channel_events::PORT_ID_ATTRIBUTE_KEY => {
+                attr.port_id = value.parse().map_err(ChannelError::identifier)?
+            }
+            channel_events::CHANNEL_ID_ATTRIBUTE_KEY => {
+                attr.channel_id = value.parse().map_err(ChannelError::identifier)?;
+            }
+            channel_events::COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY => {
+                attr.counterparty_port_id = value.parse().map_err(ChannelError::identifier)?;
+            }
+            channel_events::COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
+                attr.counterparty_channel_id = value.parse().ok();
+            }
+            channel_events::UPGRADE_SEQUENCE => {
+                attr.upgrade_sequence =
+                    Sequence::from(value.parse::<u64>().map_err(|e| {
+                        ChannelError::invalid_string_as_sequence(value.to_string(), e)
+                    })?);
+            }
+            channel_events::UPGRADE_TIMEOUT_HEIGHT => {
+                let maybe_height = Height::from_str(value).ok();
+                attr.upgrade_timeout_height = maybe_height;
+            }
+            channel_events::UPGRADE_TIMEOUT_TIMESTAMP => {
+                let maybe_timestamp = Timestamp::from_str(value).ok();
+                attr.upgrade_timeout_timestamp = maybe_timestamp;
+            }
+            channel_events::UPGRADE_ERROR_RECEIPT => {
+                let maybe_error_receipt = value.to_string();
+                attr.error_receipt = Some(maybe_error_receipt);
             }
             _ => {}
         }

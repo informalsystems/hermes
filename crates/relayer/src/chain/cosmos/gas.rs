@@ -43,7 +43,7 @@ pub async fn dynamic_gas_price(
     rpc_address: &Url,
 ) -> GasPrice {
     if config.dynamic_gas_price.enabled {
-        let dynamic_gas_price = query_eip_base_fee(rpc_address)
+        let dynamic_gas_price = query_eip_base_fee(rpc_address, &config.gas_price.denom, chain_id)
             .await
             .map(|base_fee| base_fee * config.dynamic_gas_price.multiplier)
             .map(|new_price| GasPrice {
