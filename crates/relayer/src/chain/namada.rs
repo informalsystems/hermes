@@ -7,6 +7,7 @@ use core::time::Duration;
 use ibc_proto::ibc::applications::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_proto::Protobuf;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
@@ -20,14 +21,16 @@ use ibc_relayer_types::core::ics03_connection::connection::{
 };
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
 use ibc_relayer_types::core::ics24_host::path::{
-    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
-    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+    AcksPath, ChannelEndsPath, ChannelUpgradeErrorPath, ChannelUpgradePath,
+    ClientConsensusStatePath, ClientStatePath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
+    SeqRecvsPath,
 };
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::signer::Signer;
@@ -1219,6 +1222,50 @@ impl ChainEndpoint for NamadaChain {
     fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
         // not supported
         unimplemented!()
+    }
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: ICSHeight,
+        include_proof: IncludeProof,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
+        let port_id = PortId::from_str(&request.port_id)
+            .map_err(|_| Error::invalid_port_string(request.port_id))?;
+        let channel_id = ChannelId::from_str(&request.channel_id)
+            .map_err(|_| Error::invalid_channel_string(request.channel_id))?;
+        let path = ChannelUpgradePath {
+            port_id,
+            channel_id,
+        };
+        let key = storage::ibc_key(path.to_string()).expect("the path should be parsable");
+        let (value, proof) = self.query(key, QueryHeight::Specific(height), include_proof)?;
+
+        let upgrade = Upgrade::decode_vec(&value).map_err(Error::decode)?;
+
+        Ok((upgrade, proof))
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: ICSHeight,
+        include_proof: IncludeProof,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        let port_id = PortId::from_str(&request.port_id)
+            .map_err(|_| Error::invalid_port_string(request.port_id))?;
+        let channel_id = ChannelId::from_str(&request.channel_id)
+            .map_err(|_| Error::invalid_channel_string(request.channel_id))?;
+        let path = ChannelUpgradeErrorPath {
+            port_id,
+            channel_id,
+        };
+        let key = storage::ibc_key(path.to_string()).expect("the path should be parsable");
+        let (value, proof) = self.query(key, QueryHeight::Specific(height), include_proof)?;
+
+        let error_receipt = ErrorReceipt::decode_vec(&value).map_err(Error::decode)?;
+
+        Ok((error_receipt, proof))
     }
 }
 

@@ -32,7 +32,7 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 
-use ibc_test_framework::chain::config::{
+use ibc_test_framework::chain::config::cosmos::{
     add_allow_message_interchainaccounts, set_max_deposit_period, set_voting_period,
 };
 use ibc_test_framework::chain::ext::ica::register_ordered_interchain_account;
@@ -90,7 +90,7 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
         chains: ConnectedChains<Controller, Host>,
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
-        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
+        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
 
         // Run the block with supervisor in order to open and then upgrade the ICA channel
         let (wallet, ica_address, controller_channel_id, controller_port_id) = relayer
@@ -312,7 +312,7 @@ impl TestOverrides for ChannelUpgradeICAUnordered {
 
         for chain in &mut config.chains {
             match chain {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.packet_filter = self.packet_filter.clone();
                 }
             }
@@ -340,7 +340,7 @@ impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
         chains: ConnectedChains<Controller, Host>,
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
-        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
+        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
 
         info!("Will register interchain account...");
 
