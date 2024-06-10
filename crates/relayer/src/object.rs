@@ -21,9 +21,7 @@ use crate::chain::{
     handle::ChainHandle,
     requests::{IncludeProof, QueryClientStateRequest, QueryHeight},
 };
-use crate::config::ChainConfig;
 use crate::error::Error as RelayerError;
-use crate::supervisor::client_state_filter::Permission;
 use crate::supervisor::Error as SupervisorError;
 
 /// Client
@@ -146,17 +144,6 @@ pub struct CrossChainQuery {
 impl CrossChainQuery {
     pub fn short_name(&self) -> String {
         format!("cross_chain_query::{}/{}", self.dst_chain_id, self.query_id)
-    }
-
-    pub fn intended_for_known_dst_chain(&self, chain_configs: &[ChainConfig]) -> Permission {
-        if chain_configs
-            .iter()
-            .any(|config| *config.id() == self.dst_chain_id)
-        {
-            Permission::Allow
-        } else {
-            Permission::Deny
-        }
     }
 }
 
