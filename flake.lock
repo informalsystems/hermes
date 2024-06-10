@@ -212,11 +212,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1717072229,
-        "narHash": "sha256-166ggriJPlTWZ/xR6YfbPd3kveJ6Hhj0BclEL0DzDYA=",
+        "lastModified": 1718011615,
+        "narHash": "sha256-VluMd6vAPEP//hepHfE+/CDJKU8AfRRE/Sxo7cqIx3Y=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "9a18b54abb037e832a6854f053e274a7ba367074",
+        "rev": "eaf5f4da4b35d8138b2c42aa39bc314b9be89958",
         "type": "github"
       },
       "original": {
@@ -1124,16 +1124,16 @@
     "neutron-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1712330928,
-        "narHash": "sha256-3olixILNnkRcNwtpPDqQJ63cYjV5qiVYTM+fJEIH65s=",
+        "lastModified": 1713877185,
+        "narHash": "sha256-cslMi835EdyByhSUN1FG9ucXjh5tQxqs3YfCLqGwYLg=",
         "owner": "neutron-org",
         "repo": "neutron",
-        "rev": "d652580f204231a5d6d76c83a084d7110d981416",
+        "rev": "73f419c3c60a3b811b08788519063560e84d97a8",
         "type": "github"
       },
       "original": {
         "owner": "neutron-org",
-        "ref": "v3.0.2",
+        "ref": "v3.0.5",
         "repo": "neutron",
         "type": "github"
       }
@@ -1338,11 +1338,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1716977081,
-        "narHash": "sha256-pFe5jLeIPlKEln5n2h998d7cpzXFdbrBMRe3suz4K1o=",
+        "lastModified": 1717868076,
+        "narHash": "sha256-c83Y9t815Wa34khrux81j8K8ET94ESmCuwORSKm2bQY=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "ac82a513e55582291805d6f09d35b6d8b60637a1",
+        "rev": "cd18e2ae9ab8e2a0a8d715b60c91b54c0ac35ff9",
         "type": "github"
       },
       "original": {
@@ -1355,16 +1355,16 @@
     "osmosis-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1712687434,
-        "narHash": "sha256-j1PtSv4i/3IV6hUHxxgO/5t9/bfWs28i3D/uVAkf68Q=",
+        "lastModified": 1715157587,
+        "narHash": "sha256-D/CymboICWe73MBGF036W5NT/pyaV8Wvll2bJmYNmHg=",
         "owner": "osmosis-labs",
         "repo": "osmosis",
-        "rev": "0021d3812a8c8d2798ab17e58991a677b82e8955",
+        "rev": "15566f1f2945a16af9243dd376ee58a0d691b66a",
         "type": "github"
       },
       "original": {
         "owner": "osmosis-labs",
-        "ref": "v24.0.1",
+        "ref": "v25.0.0",
         "repo": "osmosis",
         "type": "github"
       }
