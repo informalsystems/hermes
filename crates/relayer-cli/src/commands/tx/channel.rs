@@ -565,7 +565,7 @@ impl Runnable for TxChanOpenTryCmd {
         // Reverse them to obtain the path from --dst-chain to --src-chain. Single hops remain unchanged.
         b_side_hops.reverse();
 
-        // Ensure that the reverse channel path leads to the chain passed to --src-chain
+        // Ensure that the reverse channel path correctly leads to the chain passed to --src-chain
         if let Some(last_hop) = &b_side_hops.last() {
             if last_hop.dst_chain_id != chains.src.id() {
                 Output::error(Error::ics33_hops_destination_mismatch(
