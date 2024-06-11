@@ -68,15 +68,16 @@
     "celestia-app-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-O6KrCStrZLmWy3xybQUNsWEb3O7vIRCFDE9MsEtsFro=",
+        "lastModified": 1717487173,
+        "narHash": "sha256-/17ysw5QX8hHdMPkp05eNqJFPYKU7NIn1jTFw688Fjg=",
         "owner": "celestiaorg",
         "repo": "celestia-app",
-        "rev": "2dbfabf1849e166974c1287c35b43e5e07727643",
+        "rev": "21b5bc747c8500e4888474df7d828e66c33f332d",
         "type": "github"
       },
       "original": {
         "owner": "celestiaorg",
-        "ref": "v1.4.0",
+        "ref": "v1.11.0",
         "repo": "celestia-app",
         "type": "github"
       }
@@ -215,11 +216,11 @@
         "wasmvm_2_0_0-src": "wasmvm_2_0_0-src"
       },
       "locked": {
-        "lastModified": 1718031449,
-        "narHash": "sha256-P5uawZndlGCExsNIdbh0eWAXNtblbsPbX+c07Oc33P8=",
+        "lastModified": 1718033821,
+        "narHash": "sha256-Y7zF1PWl6W6pSj2Hh6dl+n+udu/6jJV+ODinxk44YqU=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "d7f2eacb0e70c55c5499318cc9626b1fe80f338a",
+        "rev": "0475f2c4fff872218f70bae9c0c2ea49e2cfe785",
         "type": "github"
       },
       "original": {
