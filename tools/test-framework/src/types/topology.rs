@@ -45,6 +45,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::bootstrap::binary::chain::bootstrap_foreign_client;
 use crate::error::Error;
+use crate::util::two_dim_hash_map::TwoDimHashMap;
 
 pub enum TopologyType {
     Linear,
@@ -67,7 +68,7 @@ pub trait Topology<Handle: ChainHandle> {
     fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
-    ) -> Result<HashMap<usize, HashMap<usize, ForeignClient<Handle, Handle>>>, Error>;
+    ) -> Result<TwoDimHashMap<ForeignClient<Handle, Handle>>, Error>;
 }
 
 pub struct FullyConnectedTopology;
@@ -76,7 +77,7 @@ impl<Handle: ChainHandle> Topology<Handle> for FullyConnectedTopology {
     fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
-    ) -> Result<HashMap<usize, HashMap<usize, ForeignClient<Handle, Handle>>>, Error> {
+    ) -> Result<TwoDimHashMap<ForeignClient<Handle, Handle>>, Error> {
         let mut foreign_clients: HashMap<usize, HashMap<usize, ForeignClient<_, _>>> =
             HashMap::new();
 
@@ -92,7 +93,7 @@ impl<Handle: ChainHandle> Topology<Handle> for FullyConnectedTopology {
 
             foreign_clients.insert(i, foreign_clients_b);
         }
-        Ok(foreign_clients)
+        Ok(foreign_clients.into())
     }
 }
 
@@ -102,7 +103,7 @@ impl<Handle: ChainHandle> Topology<Handle> for LinearTopology {
     fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
-    ) -> Result<HashMap<usize, HashMap<usize, ForeignClient<Handle, Handle>>>, Error> {
+    ) -> Result<TwoDimHashMap<ForeignClient<Handle, Handle>>, Error> {
         let mut foreign_clients: HashMap<usize, HashMap<usize, ForeignClient<_, _>>> =
             HashMap::new();
 
@@ -128,7 +129,7 @@ impl<Handle: ChainHandle> Topology<Handle> for LinearTopology {
 
             foreign_clients.insert(i, clients);
         }
-        Ok(foreign_clients)
+        Ok(foreign_clients.into())
     }
 }
 

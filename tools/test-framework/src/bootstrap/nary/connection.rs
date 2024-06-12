@@ -14,6 +14,7 @@ use crate::types::binary::connection::ConnectedConnection;
 use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::nary::connection::{ConnectedConnections, DynamicConnectedConnections};
 use crate::types::nary::foreign_client::ForeignClientPairs;
+use crate::util::two_dim_hash_map::TwoDimHashMap;
 
 /**
    Bootstrap a dynamic number of connections based on the
@@ -21,14 +22,14 @@ use crate::types::nary::foreign_client::ForeignClientPairs;
    See [`crate::types::topology`] for more information.
 */
 pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
-    foreign_clients: &HashMap<usize, HashMap<usize, ForeignClient<Handle, Handle>>>,
+    foreign_clients: &TwoDimHashMap<ForeignClient<Handle, Handle>>,
     connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedConnections<Handle>, Error> {
     let mut connections: HashMap<usize, HashMap<usize, ConnectedConnection<Handle, Handle>>> =
         HashMap::new();
 
-    for foreign_client in foreign_clients.iter() {
+    for foreign_client in foreign_clients.map.iter() {
         let mut inner_connections: HashMap<usize, ConnectedConnection<Handle, Handle>> =
             HashMap::new();
 
@@ -48,8 +49,7 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
                 // No connection is found, will create one
                 let client_a_to_b = client.1.clone();
                 let client_b_to_a = foreign_clients
-                    .get(client.0)
-                    .and_then(|c| c.get(foreign_client.0))
+                    .get((*client.0, *foreign_client.0))
                     .ok_or_else(|| {
                         Error::generic(eyre!(
                             "No client entry found from chain `{}` to `{}`",
