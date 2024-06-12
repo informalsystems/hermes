@@ -35,7 +35,7 @@
 
    Example: Cyclic Topology
 
-   The cylic topology is similar to the linear topology with the addition of the first and
+   The cyclic topology is similar to the linear topology with the addition of the first and
    last chain being connected as well.
    For chains A, B, C and D, the clients are created as follows:
 
